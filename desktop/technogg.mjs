@@ -13,7 +13,7 @@
 // opens the hosted (always-synced) app in the same kind of window.
 import { createServer } from 'node:http';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, statSync, watchFile, writeFileSync } from 'node:fs';
 import { dirname, join, normalize, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import os from 'node:os';
@@ -123,8 +123,21 @@ function readStateRaw() {
 /** Atomic write (temp + rename) — same discipline as the TUI store. */
 function writeState(state) {
   mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(`${STATE_FILE}.tmp`, JSON.stringify(state));
-  renameSync(`${STATE_FILE}.tmp`, STATE_FILE);
+  const json = JSON.stringify(state);
+  writeFileSync(`${STATE_FILE}.tmp`, json);
+  // Windows: rename-over transiently EPERMs while AV/indexer holds the target.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      renameSync(`${STATE_FILE}.tmp`, STATE_FILE);
+      return;
+    } catch {
+      if (attempt >= 4) {
+        writeFileSync(STATE_FILE, json);
+        return;
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+    }
+  }
 }
 
 function respondJson(res, status, payload) {
@@ -149,13 +162,44 @@ function handleSync(req, res) {
     try {
       const { mergeState, normalizeState } = await loadMergeCore();
       const client = normalizeState(JSON.parse(body || '{}').state);
-      const merged = mergeState(normalizeState(readStateRaw()), client);
-      writeState(merged);
+      const current = normalizeState(readStateRaw());
+      const merged = mergeState(current, client);
+      // Only write when the merge changed something — otherwise every synced
+      // client's pull would bump the file's mtime and re-ping every client
+      // through /api/events, ad infinitum.
+      if (JSON.stringify(merged) !== JSON.stringify(current)) writeState(merged);
       respondJson(res, 200, { state: merged });
     } catch (e) {
       respondJson(res, 500, { error: String(e?.message ?? e) });
     }
   });
+}
+
+// Server-sent events: ping connected app windows when the state file changes
+// (e.g. the TUI saved an entry), so they pull immediately instead of polling.
+const sseClients = new Set();
+let stateWatcherStarted = false;
+
+function startStateWatcher() {
+  if (stateWatcherStarted) return;
+  stateWatcherStarted = true;
+  mkdirSync(DATA_DIR, { recursive: true });
+  watchFile(STATE_FILE, { interval: 1000 }, () => {
+    for (const client of sseClients) client.write('data: changed\n\n');
+  });
+}
+
+function handleEvents(req, res) {
+  startStateWatcher();
+  res.writeHead(200, {
+    'content-type': 'text/event-stream',
+    'cache-control': 'no-cache',
+    connection: 'keep-alive',
+    [MARKER]: '1',
+  });
+  res.write('retry: 2000\n\n');
+  sseClients.add(res);
+  req.on('close', () => sseClients.delete(res));
 }
 
 function handleHoyoProxy(req, res) {
@@ -182,6 +226,7 @@ function tryListen(port) {
     const server = createServer((req, res) => {
       const urlPath = decodeURIComponent((req.url ?? '/').split('?')[0]);
       if (req.method === 'POST' && urlPath === '/hoyolab-proxy') return handleHoyoProxy(req, res);
+      if (req.method === 'GET' && urlPath === '/api/events') return handleEvents(req, res);
       if (req.method === 'GET' && urlPath === '/api/state') return void handleGetState(res);
       if (req.method === 'POST' && urlPath === '/api/sync') return handleSync(req, res);
       if (req.method === 'POST' && urlPath === '/api/test-alert') {

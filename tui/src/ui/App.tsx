@@ -23,6 +23,7 @@ export function App({ initialGameId, detectedName }: { initialGameId: string | n
     return () => clearInterval(t);
   }, []);
   useEffect(() => {
+    store.startWatching();
     void store.sync();
   }, []);
 
@@ -55,7 +56,7 @@ export function App({ initialGameId, detectedName }: { initialGameId: string | n
           ? `sync error: ${store.syncError}`
           : syncCfg.url
             ? 'sync idle'
-            : 'local only';
+            : 'shared file · live';
 
   if (view.kind === 'entry') {
     const game = state.games.find((g) => g.id === view.gameId && !g.deleted);
