@@ -4,9 +4,9 @@ One dashboard for every gacha you play: live energy projections, dailies/weeklie
 that reset on each game's *server* time, an event timeline, and Discord/Telegram pings before
 you waste regen or miss a reset.
 
-Ships with editable presets for **Genshin, HSR, ZZZ, Wuthering Waves, NTE, Umamusume and
-Dokkan Battle** — every cap, regen rate and reset time is data you can change in the app in
-seconds when a patch changes something.
+Ships with editable presets for **Genshin, HSR, ZZZ, Wuthering Waves and NTE** — every
+cap, regen rate and reset time is data you can change in the app in seconds when a patch
+changes something.
 
 ## Layout
 
@@ -127,7 +127,7 @@ can occasionally move a field.
 2. Open TechnoGG and punch in what's actually left, right on the card: click the
    value box and type, or step with the keyboard — **A −10 · S −1 · D +1 · F +10**,
    Enter saves. Click the cap number ("/200") to change it when your max shifts
-   (Dokkan rank-ups, events). Tick the dailies. (HoYo games: auto-imported.)
+   (rank-ups, events). Tick the dailies. (HoYo games: auto-imported.)
 3. That's it — projections and alerts recalibrate from your entry.
 
 ## Quality of life
@@ -160,7 +160,7 @@ can occasionally move a field.
 ## Notes
 
 - Preset values (caps, rates, reset times) are best-effort defaults — verify against your
-  server/rank and edit in the app. NTE and Umamusume presets are explicitly marked as
-  needing verification.
+  server/rank and edit in the app. The NTE preset is explicitly marked as needing
+  verification.
 - Sync is last-write-wins per row — fine for one human on two devices.
 - Export a JSON backup from Settings whenever you feel paranoid.
