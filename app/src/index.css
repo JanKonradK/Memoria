@@ -1,0 +1,139 @@
+@import 'tailwindcss';
+
+@theme {
+  /* OLED Nightline: true black canvas, color lives on the cards. */
+  --color-ink: #000000;
+  --color-panel: #0b0a12;
+  --color-panel2: #141020;
+  --color-line: rgba(200, 180, 255, 0.12);
+  --color-gold: #e8b45a;
+  --color-rose: #ff6fa5;
+  --color-astral: #7c5cff;
+}
+
+html,
+body {
+  /* Pure black — no ambient washes; greys smear on OLED. */
+  background: var(--color-ink);
+  color: #f2eefa;
+  font-family:
+    ui-rounded,
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+::selection {
+  background: rgba(124, 92, 255, 0.5);
+}
+
+input,
+select,
+textarea {
+  color-scheme: dark;
+}
+
+/* Native dropdown lists: Windows renders them white unless told otherwise. */
+select option,
+select optgroup {
+  background-color: var(--color-panel2);
+  color: #f2eefa;
+}
+
+/* Hide number input spinners — we provide our own steppers. */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Energy-bar current: sweeps a half-width gradient through the (clipped) fill,
+   with a beat of rest between passes. */
+@keyframes energyFlow {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+/* Gentle attention pulse for warning TEXT — never dips below readable. */
+@keyframes warnPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+.warn-pulse {
+  animation: warnPulse 1.5s ease-in-out infinite;
+}
+
+/* Compositor-friendly pulse: animates only opacity on an overlay element. */
+@keyframes pulseFade {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+.pulse-fade {
+  animation: pulseFade 2.4s ease-in-out infinite;
+}
+
+/* Keyboard-only focus ring (mouse clicks stay clean). */
+:focus-visible {
+  outline: 2px solid rgba(168, 132, 255, 0.75);
+  outline-offset: 2px;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none; /* inputs already have their own focus ring */
+}
+
+/* Near-black panel with a whisper of violet — deep enough for OLED. */
+.glass {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01)),
+    var(--color-panel);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 0 0 1px rgba(200, 180, 255, 0.09),
+    0 18px 40px -24px rgba(0, 0, 0, 0.9);
+}
+
+.gold-hairline {
+  position: relative;
+}
+.gold-hairline::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232, 180, 90, 0.55), transparent);
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(200, 180, 255, 0.3) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
