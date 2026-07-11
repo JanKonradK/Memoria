@@ -17,7 +17,7 @@ export interface PresetResource {
   cap: number;
   regenMinutes: number;
   reserveCap: number;
-  /** Ask the user for their own cap when adding (rank-based caps like Dokkan). */
+  /** Ask the user for their own cap when adding (account-dependent caps like NTE City Stamina). */
   promptCap?: boolean;
 }
 
@@ -169,50 +169,5 @@ export const PRESETS: GamePreset[] = [
       { name: 'Beyond the Rails (per version)', cadence: 'custom', intervalDays: 42 },
     ],
     notes: 'Verify City Stamina cap for your account — it refills fully each Monday.',
-  },
-  {
-    key: 'uma',
-    name: 'Umamusume: Pretty Derby',
-    short: 'Uma',
-    color: '#f472b6',
-    icon: '🐎',
-    platform: 'both',
-    tz: 'Etc/UTC',
-    // Global resets 11:00 EDT / 10:00 EST = fixed 15:00 UTC.
-    dailyResetHour: 15,
-    weeklyResetDay: 1,
-    monthlyResetDay: 1,
-    resources: [
-      { name: 'TP', icon: 'stopwatch', cap: 100, regenMinutes: 10, reserveCap: 0, promptCap: true },
-      { name: 'RP', icon: 'horseshoe', cap: 5, regenMinutes: 720, reserveCap: 0 },
-    ],
-    tasks: [
-      { name: 'Daily Missions / Carats', cadence: 'daily' },
-      { name: 'Career Runs ×3', cadence: 'daily' },
-      { name: 'Team Trials ×5 RP', cadence: 'daily' },
-      { name: 'Weekly Missions', cadence: 'weekly' },
-      { name: 'Champions Meeting', cadence: 'monthly' },
-    ],
-    notes: 'TP cap grows with rank — set YOUR cap. Global reset 15:00 UTC; verify.',
-  },
-  {
-    key: 'dokkan',
-    name: 'Dokkan Battle',
-    short: 'Dokkan',
-    color: '#fbbf24',
-    icon: '🐉',
-    platform: 'mobile',
-    tz: 'America/Los_Angeles',
-    dailyResetHour: 17,
-    weeklyResetDay: 1,
-    monthlyResetDay: 1,
-    resources: [{ name: 'Stamina', icon: 'orb', cap: 200, regenMinutes: 5, reserveCap: 0, promptCap: true }],
-    tasks: [
-      { name: 'Daily Missions', cadence: 'daily' },
-      { name: '50-Stone Login/Events', cadence: 'daily' },
-      { name: 'Weekly Missions', cadence: 'weekly' },
-      { name: "Pan's Adventure / rank farm", cadence: 'weekly' },
-    ],
-    notes: 'Stamina cap grows with rank — set YOUR cap. Global reset ≈ 17:00 US Pacific; verify.',
   },
 ];
