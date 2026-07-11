@@ -1,0 +1,20 @@
+{
+  "name": "techno-gg",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "shared",
+    "app",
+    "worker"
+  ],
+  "scripts": {
+    "dev": "npm -w app run dev",
+    "build": "npm -w app run build",
+    "test": "npm -w shared run test",
+    "typecheck": "npm -w shared run typecheck && npm -w app run typecheck && npm -w worker run typecheck",
+    "deploy": "npm -w app run build && npm -w worker run deploy",
+    "icons": "node app/scripts/gen-icons.mjs",
+    "ico": "node app/scripts/gen-ico.mjs",
+    "install:desktop": "powershell -ExecutionPolicy Bypass -File desktop/Install-Shortcut.ps1"
+  }
+}
