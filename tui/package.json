@@ -1,0 +1,26 @@
+{
+  "name": "@technogg/tui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "tg": "dist/tg.js"
+  },
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --platform=node --format=esm --target=node18 --jsx=automatic --outfile=dist/tg.js --external:ink --external:react --external:luxon --banner:js=\"#!/usr/bin/env node\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@technogg/shared": "*",
+    "ink": "^6.0.0",
+    "luxon": "^3.6.1",
+    "react": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/luxon": "^3.4.2",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.5",
+    "esbuild": "^0.25.4",
+    "typescript": "^5.8.3"
+  }
+}

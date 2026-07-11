@@ -42,6 +42,8 @@ export interface GamePreset {
   resources: PresetResource[];
   tasks: PresetTask[];
   notes?: string;
+  /** Executable names (no .exe, case-insensitive) for "what was I just playing" detection. */
+  processNames?: string[];
 }
 
 export const SERVER_TZ_OPTIONS: Array<{ label: string; tz: string }> = [
@@ -81,6 +83,7 @@ export const PRESETS: GamePreset[] = [
       { name: 'Stygian Onslaught cycle', cadence: 'custom', intervalDays: 35 },
     ],
     notes: 'Europe server (UTC+1). Craft Condensed daily; it counts 60 Dire Prestige in Stygian.',
+    processNames: ['GenshinImpact', 'YuanShen'],
   },
   {
     key: 'hsr',
@@ -103,6 +106,7 @@ export const PRESETS: GamePreset[] = [
       { name: 'Endgame refresh (MoC/PF/AS/AA)', cadence: 'custom', intervalDays: 14 },
     ],
     notes: 'Reserve TB Power stores overflow (up to 2400). Europe server (UTC+1).',
+    processNames: ['StarRail'],
   },
   {
     key: 'zzz',
@@ -124,6 +128,7 @@ export const PRESETS: GamePreset[] = [
       { name: 'Shiyu Critical / Deadly Assault', cadence: 'custom', intervalDays: 14 },
     ],
     notes: 'Europe server (UTC+1). Matrix Operation weeklies pay ~4.6k Polychrome/month — don’t skip.',
+    processNames: ['ZenlessZoneZero'],
   },
   {
     key: 'wuwa',
@@ -145,6 +150,8 @@ export const PRESETS: GamePreset[] = [
       { name: 'Whimpering Wastes cycle', cadence: 'custom', intervalDays: 28 },
     ],
     notes: 'Europe server (UTC+1). Hazard Zone and WhiWa each rotate every 28 days (offset).',
+    // Kuro ships a generic UE executable name; both spellings seen across installs.
+    processNames: ['Wuthering Waves', 'Client-Win64-Shipping'],
   },
   {
     key: 'nte',
@@ -169,5 +176,7 @@ export const PRESETS: GamePreset[] = [
       { name: 'Beyond the Rails (per version)', cadence: 'custom', intervalDays: 42 },
     ],
     notes: 'Verify City Stamina cap for your account — it refills fully each Monday.',
+    // Best guess — verify in Task Manager while NTE runs and edit if needed.
+    processNames: ['NTE'],
   },
 ];
