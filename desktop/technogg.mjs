@@ -13,13 +13,18 @@
 // opens the hosted (always-synced) app in the same kind of window.
 import { createServer } from 'node:http';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, normalize, extname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import os from 'node:os';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, '..');
 const dist = join(repo, 'app', 'dist');
+
+// The one state document, shared with the TUI (tui/src/store.ts uses the same path).
+const DATA_DIR = join(process.env['APPDATA'] ?? join(os.homedir(), '.config'), 'technogg');
+const STATE_FILE = join(DATA_DIR, 'state.json');
 
 const PORTS = [17817, 17818, 17819];
 const MARKER = 'x-technogg';
@@ -92,6 +97,67 @@ function isAllowedHoyoUrl(url) {
   }
 }
 
+// Merge logic bundled from shared/src/merge.ts by `npm run build:desktop` —
+// the launcher stays zero-dependency, but merging must be the exact same code
+// the app and worker use.
+let mergeCore = null;
+async function loadMergeCore() {
+  if (mergeCore) return mergeCore;
+  const file = join(here, 'dist', 'merge.mjs');
+  if (!existsSync(file)) {
+    const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+    spawnSync(npm, ['run', 'build:desktop'], { cwd: repo, stdio: 'ignore' });
+  }
+  mergeCore = await import(pathToFileURL(file).href);
+  return mergeCore;
+}
+
+function readStateRaw() {
+  try {
+    return JSON.parse(readFileSync(STATE_FILE, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+/** Atomic write (temp + rename) — same discipline as the TUI store. */
+function writeState(state) {
+  mkdirSync(DATA_DIR, { recursive: true });
+  writeFileSync(`${STATE_FILE}.tmp`, JSON.stringify(state));
+  renameSync(`${STATE_FILE}.tmp`, STATE_FILE);
+}
+
+function respondJson(res, status, payload) {
+  res.writeHead(status, { 'content-type': 'application/json', [MARKER]: '1' });
+  res.end(JSON.stringify(payload));
+}
+
+async function handleGetState(res) {
+  try {
+    const { normalizeState } = await loadMergeCore();
+    respondJson(res, 200, { state: normalizeState(readStateRaw()) });
+  } catch (e) {
+    respondJson(res, 500, { error: String(e?.message ?? e) });
+  }
+}
+
+/** Same contract as the worker's POST /api/sync, backed by the shared state file. */
+function handleSync(req, res) {
+  let body = '';
+  req.on('data', (c) => (body += c));
+  req.on('end', async () => {
+    try {
+      const { mergeState, normalizeState } = await loadMergeCore();
+      const client = normalizeState(JSON.parse(body || '{}').state);
+      const merged = mergeState(normalizeState(readStateRaw()), client);
+      writeState(merged);
+      respondJson(res, 200, { state: merged });
+    } catch (e) {
+      respondJson(res, 500, { error: String(e?.message ?? e) });
+    }
+  });
+}
+
 function handleHoyoProxy(req, res) {
   let body = '';
   req.on('data', (c) => (body += c));
@@ -116,6 +182,11 @@ function tryListen(port) {
     const server = createServer((req, res) => {
       const urlPath = decodeURIComponent((req.url ?? '/').split('?')[0]);
       if (req.method === 'POST' && urlPath === '/hoyolab-proxy') return handleHoyoProxy(req, res);
+      if (req.method === 'GET' && urlPath === '/api/state') return void handleGetState(res);
+      if (req.method === 'POST' && urlPath === '/api/sync') return handleSync(req, res);
+      if (req.method === 'POST' && urlPath === '/api/test-alert') {
+        return respondJson(res, 400, { error: 'Alerts while closed need the deployed Cloudflare worker (see README).' });
+      }
       // Resolve within dist and block path traversal.
       let filePath = normalize(join(dist, urlPath));
       if (!filePath.startsWith(dist)) filePath = dist;
