@@ -166,6 +166,7 @@ export const useApp = create<AppStore>((set, get) => ({
         paused: false,
         sort: maxSort,
         notes: preset.notes,
+        processNames: preset.processNames,
         updatedAt: t,
       };
       const resources: Resource[] = preset.resources.map((r, i) => ({

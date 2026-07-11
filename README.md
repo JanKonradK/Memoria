@@ -11,6 +11,7 @@ changes something.
 ## Layout
 
 ```
+tui/     Terminal UI (Ink) — the fast path: `tg` after closing a game, type, done
 app/     React PWA (Vite + Tailwind + Framer Motion) — installable on PC and phone
 worker/  Cloudflare Worker — sync API (D1) + cron alert engine (Discord/Telegram)
 shared/  All the math: energy projection, reset periods, urgency, alerts, merge
@@ -26,6 +27,30 @@ npm test           # unit tests for the shared calculation core
 
 The app is completely usable without the worker — data lives in IndexedDB on the device.
 The worker adds two things: **sync between devices** and **alerts while the app is closed**.
+
+## Terminal UI (`tg`) — the fast path
+
+```sh
+npm run build:tui      # bundles tui/ into tui/dist/tg.js
+npm run tg             # or: node tui/dist/tg.js
+```
+
+Just closed a game? Run `tg` — it checks running processes (exe names live on each
+game/preset as editable `processNames` data) and drops you straight into that game's
+entry: **type digits** to set energy, **A/S/D/F** steps −10/−1/+1/+10, **space** ticks
+the focused task, ↑↓ move, **Enter saves and exits**. No detection hit → the dashboard:
+all games sorted by urgency with live projections, countdowns and dailies state.
+
+```
+tg              dashboard / auto-detected game entry
+tg gi           jump to a game by short name / prefix
+tg seed         add the 5 presets on a fresh machine
+tg import x.json  merge a PWA backup (Settings → Export)
+tg config <url> <token>   point at the worker; tg sync = one-shot sync
+```
+
+TUI state lives in `%APPDATA%\technogg\state.json` (same document the PWA syncs), so
+TUI ↔ PWA stay consistent through the worker — or exchange JSON exports when offline.
 
 ## Desktop shortcut (Windows)
 

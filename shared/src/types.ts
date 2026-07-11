@@ -31,6 +31,8 @@ export interface Game extends Syncable {
   sort: number;
   /** Free-form note, e.g. "verify reset time for your server". */
   notes?: string;
+  /** Executable names (no .exe, case-insensitive) the TUI matches against running processes. */
+  processNames?: string[];
 }
 
 export interface Resource extends Syncable {
