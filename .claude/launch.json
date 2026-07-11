@@ -6,6 +6,13 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 5183
+    },
+    {
+      "name": "technogg-launcher",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["desktop/technogg.mjs"],
+      "port": 17817,
+      "env": { "TECHNOGG_NO_BROWSER": "1" }
     }
   ]
 }

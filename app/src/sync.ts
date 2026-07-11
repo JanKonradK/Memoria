@@ -8,13 +8,23 @@ export interface SyncConfig {
   token: string;
 }
 
+/** Desktop-launcher origins (fixed ports — see desktop/technogg.mjs). */
+const LAUNCHER_ORIGIN = /^http:\/\/(127\.0\.0\.1|localhost):1781[789]$/;
+
 export function getSyncConfig(): SyncConfig {
   try {
     const raw = JSON.parse(localStorage.getItem(CFG_KEY) ?? '{}') as Partial<SyncConfig>;
-    return { url: raw.url ?? '', token: raw.token ?? '' };
+    if (raw.url) return { url: raw.url, token: raw.token ?? '' };
   } catch {
-    return { url: '', token: '' };
+    /* fall through to defaults */
   }
+  // Served by the desktop launcher: sync against it automatically, no setup.
+  // It shares %APPDATA%\technogg\state.json with the TUI; the token is unused
+  // locally (the server only listens on 127.0.0.1) but must be non-empty.
+  if (LAUNCHER_ORIGIN.test(window.location.origin)) {
+    return { url: window.location.origin, token: 'local' };
+  }
+  return { url: '', token: '' };
 }
 
 export function setSyncConfig(cfg: SyncConfig): void {

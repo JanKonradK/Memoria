@@ -49,8 +49,12 @@ tg import x.json  merge a PWA backup (Settings → Export)
 tg config <url> <token>   point at the worker; tg sync = one-shot sync
 ```
 
-TUI state lives in `%APPDATA%\technogg\state.json` (same document the PWA syncs), so
-TUI ↔ PWA stay consistent through the worker — or exchange JSON exports when offline.
+TUI state lives in `%APPDATA%\technogg\state.json` — and the desktop launcher serves
+that same file over `/api/sync`. The PWA auto-syncs against the launcher whenever it's
+opened through it (no setup, the token field stays empty): **TUI and app share one
+document on disk.** A deployed Cloudflare worker speaks the identical protocol when you
+want cross-device sync + closed-app alerts; `tg import <backup.json>` covers the
+fully-offline case.
 
 ## Desktop shortcut (Windows)
 
@@ -63,6 +67,8 @@ The shortcut opens the app in its own window and keeps serving on the **fixed po
 17817** — the port must never change, because all data (IndexedDB) is tied to the
 origin `http://127.0.0.1:17817`. Launching twice reuses the running instance.
 After a `npm run build`, just reopen the window to pick up the new version.
+The launcher also exposes `/api/state` + `/api/sync` backed by the TUI's
+`%APPDATA%\technogg\state.json`, so the app window and `tg` stay in sync locally.
 
 If you deploy to Cloudflare (below), create `desktop/config.json` with
 `{ "url": "https://technogg.<your-subdomain>.workers.dev" }` — the shortcut then

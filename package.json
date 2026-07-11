@@ -10,7 +10,8 @@
   ],
   "scripts": {
     "dev": "npm -w app run dev",
-    "build": "npm -w app run build",
+    "build": "npm -w app run build && npm run build:desktop",
+    "build:desktop": "esbuild shared/src/merge.ts --bundle --platform=node --format=esm --outfile=desktop/dist/merge.mjs",
     "build:tui": "npm -w tui run build",
     "tg": "node tui/dist/tg.js",
     "test": "npm -w shared run test",

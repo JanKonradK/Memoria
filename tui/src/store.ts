@@ -55,12 +55,16 @@ class Store {
   syncError = '';
   private listeners = new Set<Listener>();
 
-  load(): void {
+  private loadFromDisk(): AppState {
     try {
-      this.state = normalizeState(JSON.parse(readFileSync(stateFile(), 'utf8')));
+      return normalizeState(JSON.parse(readFileSync(stateFile(), 'utf8')));
     } catch {
-      this.state = emptyState();
+      return emptyState();
     }
+  }
+
+  load(): void {
+    this.state = this.loadFromDisk();
   }
 
   subscribe(fn: Listener): () => void {
@@ -81,7 +85,9 @@ class Store {
   }
 
   mutate(fn: (s: AppState) => AppState): void {
-    this.state = fn(this.state);
+    // The launcher (PWA sync) writes the same file while we're open — pick up
+    // its rows before writing, or this save would clobber them.
+    this.state = fn(mergeState(this.loadFromDisk(), this.state));
     this.persist();
     this.emit();
   }
