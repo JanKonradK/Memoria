@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import os from 'node:os';
 import type { AppState, Game, GamePreset, Resource, Task } from '@technogg/shared';
@@ -81,7 +81,47 @@ class Store {
     mkdirSync(dataDir(), { recursive: true });
     const tmp = `${stateFile()}.tmp`;
     writeFileSync(tmp, JSON.stringify(this.state));
-    renameSync(tmp, stateFile());
+    // Windows: rename-over transiently EPERMs while AV/indexer holds the target.
+    for (let attempt = 0; ; attempt++) {
+      try {
+        renameSync(tmp, stateFile());
+        break;
+      } catch {
+        if (attempt >= 4) {
+          writeFileSync(stateFile(), JSON.stringify(this.state));
+          break;
+        }
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+      }
+    }
+    this.lastMtime = this.fileMtime();
+  }
+
+  private lastMtime = 0;
+
+  private fileMtime(): number {
+    try {
+      return statSync(stateFile()).mtimeMs;
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Live-follow the state file: when the launcher (PWA sync) writes it, merge
+   * the changes in so an open TUI updates within a couple of seconds.
+   * persist() records its own mtime above, so our writes don't echo.
+   */
+  startWatching(intervalMs = 2000): void {
+    this.lastMtime = this.fileMtime();
+    const timer = setInterval(() => {
+      const m = this.fileMtime();
+      if (m === this.lastMtime) return;
+      this.lastMtime = m;
+      this.state = mergeState(this.loadFromDisk(), this.state);
+      this.emit();
+    }, intervalMs);
+    timer.unref();
   }
 
   mutate(fn: (s: AppState) => AppState): void {

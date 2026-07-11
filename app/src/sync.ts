@@ -86,6 +86,15 @@ export function initSync(): void {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => void syncNow(), 4000);
   });
+  // On the desktop launcher, it pushes a ping whenever the shared state file
+  // changes (TUI entries) — pull right away instead of waiting for the poll.
+  if (LAUNCHER_ORIGIN.test(window.location.origin)) {
+    const events = new EventSource('/api/events');
+    events.onmessage = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => void syncNow(), 300);
+    };
+  }
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) void syncNow();
   });

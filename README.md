@@ -52,7 +52,9 @@ tg config <url> <token>   point at the worker; tg sync = one-shot sync
 TUI state lives in `%APPDATA%\technogg\state.json` — and the desktop launcher serves
 that same file over `/api/sync`. The PWA auto-syncs against the launcher whenever it's
 opened through it (no setup, the token field stays empty): **TUI and app share one
-document on disk.** A deployed Cloudflare worker speaks the identical protocol when you
+document on disk, live in both directions** — the launcher pushes a `/api/events`
+ping to open app windows when the file changes, and an open `tg` follows the file
+and re-renders within ~2s. A deployed Cloudflare worker speaks the identical protocol when you
 want cross-device sync + closed-app alerts; `tg import <backup.json>` covers the
 fully-offline case.
 
