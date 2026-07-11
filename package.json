@@ -5,13 +5,16 @@
   "workspaces": [
     "shared",
     "app",
-    "worker"
+    "worker",
+    "tui"
   ],
   "scripts": {
     "dev": "npm -w app run dev",
     "build": "npm -w app run build",
+    "build:tui": "npm -w tui run build",
+    "tg": "node tui/dist/tg.js",
     "test": "npm -w shared run test",
-    "typecheck": "npm -w shared run typecheck && npm -w app run typecheck && npm -w worker run typecheck",
+    "typecheck": "npm -w shared run typecheck && npm -w app run typecheck && npm -w worker run typecheck && npm -w tui run typecheck",
     "deploy": "npm -w app run build && npm -w worker run deploy",
     "icons": "node app/scripts/gen-icons.mjs",
     "ico": "node app/scripts/gen-ico.mjs",
