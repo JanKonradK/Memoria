@@ -5,6 +5,7 @@ import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fmtClock, fmtDur, tint } from '../util';
 import { GameCard } from './GameCard';
+import { GameBadge } from './ui';
 
 export function DashboardPage({ now }: { now: number }) {
   const state = useApp((s) => s.state);
@@ -48,7 +49,7 @@ export function DashboardPage({ now }: { now: number }) {
             }}
           />
           <div className="relative flex items-center gap-3">
-            <span className="text-3xl">{heroGame.icon}</span>
+            <GameBadge short={heroGame.short} color={heroGame.color} size="lg" />
             <div className="min-w-0 flex-1">
               <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Up next</div>
               <div className="truncate text-lg font-black text-slate-50">
@@ -71,7 +72,10 @@ export function DashboardPage({ now }: { now: number }) {
           animate={{ opacity: 1, scale: 1 }}
           className="mt-16 flex flex-col items-center gap-4 text-center"
         >
-          <div className="text-5xl">🎰</div>
+          <div
+            className="h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-amber-300"
+            style={{ boxShadow: '0 0 40px rgba(124,92,255,0.5)' }}
+          />
           <h2 className="text-xl font-black text-slate-100">Track every gacha, waste no energy</h2>
           <p className="max-w-sm text-sm text-slate-400">
             Add your games, punch in your current energy after each session, and TechnoGG tells you exactly when to log

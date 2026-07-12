@@ -212,7 +212,7 @@ export const useApp = create<AppStore>((set, get) => ({
           name,
           short: name.slice(0, 4),
           color: '#8b5cf6',
-          icon: '🎮',
+          icon: '',
           platform: 'both',
           tz: 'Etc/UTC',
           dailyResetHour: 4,

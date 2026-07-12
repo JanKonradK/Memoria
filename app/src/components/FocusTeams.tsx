@@ -98,7 +98,7 @@ function TeamMemberInput({ onAdd }: { onAdd: (name: string) => void }) {
   );
 }
 
-/** Saved comps; click a member to flag 🔧 needs building (shows on the card). */
+/** Saved comps; click a member to flag as needs-building (shows on the card). */
 export function TeamsEditor({ gameId }: { gameId: string }) {
   const app = useApp();
   const teams = app.state.teams.filter((t) => t.gameId === gameId && !t.deleted).sort((a, b) => a.sort - b.sort);
@@ -143,7 +143,6 @@ export function TeamsEditor({ gameId }: { gameId: string }) {
                   }
                   title={m.needsWork ? 'Marked: needs building — click to clear' : 'Click to mark as needs building'}
                 >
-                  {m.needsWork && '🔧 '}
                   {m.name}
                 </button>
                 <button

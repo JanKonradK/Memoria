@@ -191,7 +191,7 @@ function GameStats({ game, now }: { game: Game; now: number }) {
           <div>
             <div className="mb-1.5 text-xs text-slate-400">
               Dailies, last 12 weeks
-              {streak >= 2 && <span className="ml-2 font-bold text-amber-200">🔥 {streak}-day streak</span>}
+              {streak >= 2 && <span className="ml-2 font-bold text-amber-200">{streak}-day streak</span>}
             </div>
             <Heatmap days={heat} color={game.color} />
           </div>

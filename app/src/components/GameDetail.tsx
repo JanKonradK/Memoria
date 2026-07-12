@@ -38,17 +38,14 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
   };
 
   return (
-    <Sheet open={open} onClose={close} wide title={`${game.icon} ${game.name}`}>
+    <Sheet open={open} onClose={close} wide title={game.name}>
       <SectionTitle>Basics</SectionTitle>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Name" className="col-span-2">
           <TextInput value={game.name} onChange={(e) => app.updateGame(game.id, { name: e.target.value })} />
         </Field>
-        <Field label="Short label">
+        <Field label="Short label (shown as the game's badge)">
           <TextInput value={game.short} onChange={(e) => app.updateGame(game.id, { short: e.target.value })} />
-        </Field>
-        <Field label="Icon (emoji, used in pings)">
-          <TextInput value={game.icon} onChange={(e) => app.updateGame(game.id, { icon: e.target.value })} />
         </Field>
         <Field label="Accent color">
           <input

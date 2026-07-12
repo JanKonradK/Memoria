@@ -71,7 +71,11 @@ function TaskRow({ item, color, now, onToggle }: { item: ChecklistItem; color: s
           {fmtDur(left)}
         </span>
       )}
-      {item.fromEvent && <span className="text-[10px]" title="From an event">🎫</span>}
+      {item.fromEvent && (
+        <span className="rounded bg-white/5 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-500" title="From an event">
+          event
+        </span>
+      )}
       {item.cadence !== 'daily' && (
         <span className="rounded bg-white/5 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">
           {item.cadence === 'custom' ? 'cycle' : item.cadence}
@@ -81,7 +85,7 @@ function TaskRow({ item, color, now, onToggle }: { item: ChecklistItem; color: s
   );
 }
 
-function Chip({ icon, text, warn, glow, title }: { icon: string; text: string; warn?: boolean; glow?: boolean; title?: string }) {
+function Chip({ icon, text, warn, glow, title }: { icon?: string; text: string; warn?: boolean; glow?: boolean; title?: string }) {
   return (
     <span
       title={title}
@@ -93,7 +97,7 @@ function Chip({ icon, text, warn, glow, title }: { icon: string; text: string; w
             : 'bg-white/[0.05] text-slate-300 ring-white/10'
       }`}
     >
-      <span className="text-[11px] leading-none">{icon}</span>
+      {icon && <span className="text-[11px] leading-none">{icon}</span>}
       {text}
     </span>
   );
@@ -139,11 +143,10 @@ function StatusStrip({ game, now }: { game: Game; now: number }) {
     <div className="mt-3 space-y-1.5">
       {hasChips && (
         <div className="flex flex-wrap items-center gap-1.5">
-          {streak >= 2 && <Chip icon="🔥" text={`${streak}d`} glow title={`${streak}-day full-clear streak`} />}
+          {streak >= 2 && <Chip text={`${streak}d streak`} glow title={`${streak}-day full-clear streak`} />}
           {expiring.map((p) => (
             <Chip
               key={p.id}
-              icon="🛒"
               text={p.expiresAt <= now ? `${p.name} expired` : `${p.name} ${fmtDur(p.expiresAt - now)}`}
               warn
               title="Purchase running out — renew on the Stats tab"
@@ -151,14 +154,13 @@ function StatusStrip({ game, now }: { game: Game; now: number }) {
           ))}
           {sleep &&
             (sleep.caps ? (
-              <Chip icon="🌙" text={`caps ${fmtClock(sleep.fullAt!)}`} warn title="Energy will cap while you sleep — spend before bed" />
+              <Chip text={`caps ${fmtClock(sleep.fullAt!)}`} warn title="Energy will cap while you sleep — spend before bed" />
             ) : (
-              <Chip icon="🌙" text="sleep safe" glow title={`Nothing caps in the next ${state.settings.sleepHours}h`} />
+              <Chip text="sleep safe" glow title={`Nothing caps in the next ${state.settings.sleepHours}h`} />
             ))}
           {daily && (
             <Chip
-              icon="📋"
-              text={dailyUnclaimed ? `${daily.done}/${daily.total} — claim!` : `${daily.done}/${daily.total}`}
+              text={dailyUnclaimed ? `dailies ${daily.done}/${daily.total} — claim!` : `dailies ${daily.done}/${daily.total}`}
               warn={dailyUnclaimed}
               title={`Dailies (imported ${fmtClock(status!.fetchedAt)})`}
             />
@@ -175,7 +177,7 @@ function StatusStrip({ game, now }: { game: Game; now: number }) {
           className="flex w-full items-center gap-1.5 truncate text-left text-[11px] text-slate-400 transition hover:text-slate-200"
           title="Current focus — click to edit"
         >
-          <span>🎯</span>
+          <span className="shrink-0 text-[9px] font-black uppercase tracking-wider text-slate-500">focus</span>
           <span className="truncate">
             <span className="font-semibold" style={{ color: game.color }}>
               {focus.name}
@@ -191,9 +193,9 @@ function StatusStrip({ game, now }: { game: Game; now: number }) {
           className="flex w-full items-center gap-1.5 truncate text-left text-[11px] text-slate-400 transition hover:text-slate-200"
           title="Team members flagged as needing building — click to edit"
         >
-          <span>🔧</span>
+          <span className="shrink-0 text-[9px] font-black uppercase tracking-wider text-slate-500">build</span>
           <span className="truncate">
-            build: <span className="font-semibold text-amber-200">{buildList.join(' · ')}</span>
+            <span className="font-semibold text-amber-200">{buildList.join(' · ')}</span>
           </span>
         </button>
       )}
@@ -347,7 +349,6 @@ export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
 
         {!game.paused && next && (
           <div className="mt-3 flex items-center gap-1.5 rounded-xl bg-white/[0.04] px-3 py-2 text-xs ring-1 ring-white/5">
-            <span>⏳</span>
             <span className="truncate text-slate-300">{next.label}</span>
             <span className="ml-auto shrink-0 font-bold tabular-nums" style={{ color: urgent ? '#fda4af' : game.color }}>
               {next.at <= now ? 'now' : fmtDur(next.at - now)}

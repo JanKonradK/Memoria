@@ -15,7 +15,7 @@ import { PRESETS } from '@technogg/shared';
  */
 
 /** When the bundled data was last refreshed. */
-export const SEED_UPDATED = '2026-07-09';
+export const SEED_UPDATED = '2026-07-12';
 
 export interface SeedEvent {
   /** Preset key — matched against the game's name/short (games carry no preset id). */
@@ -64,12 +64,20 @@ export const SEED_EVENTS: SeedEvent[] = [
     start: '2026-08-11 23:00', end: '2026-08-12 04:00', sourceKey: 'seed:genshin:6.8-maint' },
 
   /* ------------------------------------------- Honkai: Star Rail — 4.3 ends Jul 14; v4.4 "In Ravages
-     Does the Whistle Sound" launches Jul 15. HSR's public feed is empty (in-game calendar), so phase
-     boundaries follow the announced schedule; TBC items are marked and set to not alert. */
+     Does the Whistle Sound" launches Jul 15. HSR's public feed is empty (in-game calendar), so dates
+     follow the announced schedule + game8's event calendar; TBC items are marked. */
   { game: 'hsr', name: 'Cyrene banner — 4.3 final phase', type: 'banner',
     start: '2026-06-24 12:00', end: '2026-07-14 23:00', sourceKey: 'seed:hsr:4.3-cyrene' },
   { game: 'hsr', name: 'Phainon banner — 4.3 final phase', type: 'banner',
     start: '2026-06-24 12:00', end: '2026-07-14 23:00', sourceKey: 'seed:hsr:4.3-phainon' },
+  { game: 'hsr', name: 'Pixel Plane Rumble', type: 'event',
+    start: '2026-06-01 12:00', end: '2026-07-14 23:00', notes: 'Runs to the end of 4.3 — finish before maintenance.', sourceKey: 'seed:hsr:4.3-pixel-plane' },
+  { game: 'hsr', name: 'Wispae Amusement Park', type: 'event',
+    start: '2026-06-24 12:00', end: '2026-07-14 23:00', notes: 'Runs to the end of 4.3 — finish before maintenance.', sourceKey: 'seed:hsr:4.3-wispae' },
+  { game: 'hsr', name: 'Realm of the Strange — 2× Planar Ornaments', type: 'event', dailyTouch: true,
+    start: '2026-07-03 04:00', end: '2026-07-13 03:59', notes: 'Double ornament drops — dump Trailblaze Power here.', sourceKey: 'seed:hsr:4.3-realm' },
+  { game: 'hsr', name: 'Stellar Companion', type: 'event', notify: false,
+    start: '2026-04-22 04:00', end: '2026-08-25 23:00', notes: 'Long-runner — ends with 4.4.', sourceKey: 'seed:hsr:stellar-companion' },
   { game: 'hsr', name: 'v4.4 update maintenance', type: 'maintenance',
     start: '2026-07-14 23:00', end: '2026-07-15 04:00', sourceKey: 'seed:hsr:4.4-maint' },
   { game: 'hsr', name: 'Himeko • Nova (runs all of 4.4)', type: 'banner',
@@ -84,6 +92,14 @@ export const SEED_EVENTS: SeedEvent[] = [
     start: '2026-07-15 04:00', end: '2026-08-25 23:00', notes: 'Dates TBC — verify in-game.', sourceKey: 'seed:hsr:4.4-brickbuster' },
   { game: 'hsr', name: '4.4 login gift — 10 free pulls', type: 'event', dailyTouch: true,
     start: '2026-07-15 04:00', end: '2026-08-25 23:00', notes: 'Gift of Odyssey style — log in 7 days.', sourceKey: 'seed:hsr:4.4-login' },
+  { game: 'hsr', name: 'Fate Gift — free collab Light Cone', type: 'event', dailyTouch: true,
+    start: '2026-07-15 04:00', end: '2026-08-25 23:00', notes: 'Login gift alongside the collab.', sourceKey: 'seed:hsr:4.4-fate-gift' },
+  { game: 'hsr', name: 'Free Gilgamesh or Archer — claim window', type: 'event', notify: false,
+    start: '2026-07-24 12:00', end: '2026-11-17 23:00', notes: 'Claimable until the end of 4.6 — end date approximate.', sourceKey: 'seed:hsr:4.4-free-servant' },
+  { game: 'hsr', name: 'Planar Fissure — 2× Planar Ornaments', type: 'event', dailyTouch: true,
+    start: '2026-07-27 04:00', end: '2026-08-10 03:59', notes: 'Double ornament drops — plan Trailblaze Power.', sourceKey: 'seed:hsr:4.4-planar-fissure' },
+  { game: 'hsr', name: 'Garden of Plenty — 2× Calyx rewards', type: 'event', dailyTouch: true,
+    start: '2026-08-14 04:00', end: '2026-08-24 03:59', notes: 'Double Calyx drops — plan Trailblaze Power.', sourceKey: 'seed:hsr:4.4-garden' },
   { game: 'hsr', name: 'Cerydra · Anaxa · Aventurine reruns (phase 2)', type: 'banner',
     start: '2026-08-05 12:00', end: '2026-08-25 23:00', sourceKey: 'seed:hsr:4.4-p2-reruns' },
 
@@ -139,6 +155,10 @@ export const SEED_EVENTS: SeedEvent[] = [
     start: '2026-07-10 04:00', end: '2026-08-20 23:00', notes: 'End TBC — verify in-game.', sourceKey: 'seed:wuwa:3.5-recaptured' },
   { game: 'wuwa', name: 'Shape of Yesterday', type: 'event', notify: false,
     start: '2026-07-10 04:00', end: '2026-08-20 23:00', notes: 'End TBC — verify in-game.', sourceKey: 'seed:wuwa:3.5-shape' },
+  { game: 'wuwa', name: 'Bountiful Crescendo — double drops', type: 'event', dailyTouch: true,
+    start: '2026-07-23 04:00', end: '2026-08-13 03:59', notes: 'Double-drop window — plan Waveplates.', sourceKey: 'seed:wuwa:3.5-crescendo' },
+  { game: 'wuwa', name: 'Chord Cleansing — double drops', type: 'event', dailyTouch: true,
+    start: '2026-08-06 04:00', end: '2026-08-19 03:59', notes: 'Double-drop window — plan Waveplates.', sourceKey: 'seed:wuwa:3.5-chord' },
 
   /* ------------------------------------------- Neverness to Everness — v1.2 (Jul 8 – Aug 19).
      Hotta doesn't publish exact flip times; banner boundaries use the 05:00 daily reset. */
@@ -146,6 +166,8 @@ export const SEED_EVENTS: SeedEvent[] = [
     start: '2026-07-08 05:00', end: '2026-07-29 05:00', notes: 'Flip time approximate (reset-aligned).', sourceKey: 'seed:nte:1.2-shinku' },
   { game: 'nte', name: 'Iroha — The Lifeline (phase 2)', type: 'banner',
     start: '2026-07-29 05:00', end: '2026-08-19 05:00', notes: 'One source lists Aug 12 end — verify in-game.', sourceKey: 'seed:nte:1.2-iroha' },
+  { game: 'nte', name: '1.2 login — 10 Solid Dice + free S-class', type: 'event', dailyTouch: true,
+    start: '2026-07-08 05:00', end: '2026-08-19 05:00', notes: '7-day login; the free S-class pick is a one-time claim.', sourceKey: 'seed:nte:1.2-login' },
   { game: 'nte', name: '999 Night Tabletop', type: 'event', notify: false,
     start: '2026-07-08 05:00', end: '2026-08-19 05:00', sourceKey: 'seed:nte:1.2-tabletop' },
   { game: 'nte', name: 'Shadow-N-Seek', type: 'event', notify: false,
