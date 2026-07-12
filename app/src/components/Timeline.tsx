@@ -5,7 +5,7 @@ import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fmtDur, tint } from '../util';
 import { planSeedImport, SEED_UPDATED } from '../data/seed-events';
-import { Btn, SectionTitle } from './ui';
+import { Btn, GameBadge, SectionTitle } from './ui';
 
 const DAY = 86_400_000;
 
@@ -71,7 +71,11 @@ function EventRow({
         }}
       >
         {banner && <span className="text-[10px]" style={{ color: 'var(--color-gold)' }}>★</span>}
-        {maint && <span className="text-[10px]">🔧</span>}
+        {maint && (
+          <span className="rounded bg-white/10 px-1 text-[8px] font-black uppercase tracking-wider text-slate-400">
+            patch
+          </span>
+        )}
         <span
           className={`truncate text-xs ${
             maint ? 'font-medium text-slate-400' : banner ? 'font-bold text-white' : 'font-semibold text-slate-200'
@@ -152,13 +156,13 @@ export function TimelinePage({ now }: { now: number }) {
         <div className="flex gap-2">
           {seedPlan.length > 0 && (
             <Btn onClick={importSeed} title={`Bundled with the app (updated ${SEED_UPDATED}) — adds new events, fixes changed dates`}>
-              📦 Import {seedPlan.length}
+              Import {seedPlan.length}
             </Btn>
           )}
           {state.settings.hoyolabLinks.length > 0 && (
             <Btn onClick={() => openSheet({ kind: 'hoyoImport' })}>⤓ HoYoLAB</Btn>
           )}
-          <Btn onClick={() => openSheet({ kind: 'pasteEvents' })}>📋 Paste (AI)</Btn>
+          <Btn onClick={() => openSheet({ kind: 'pasteEvents' })}>Paste (AI)</Btn>
           <Btn kind="primary" onClick={() => openSheet({ kind: 'event' })}>
             + Event
           </Btn>
@@ -178,7 +182,7 @@ export function TimelinePage({ now }: { now: number }) {
                   onClick={() => openSheet({ kind: 'event', eventId: ev.id, gameId: ev.gameId })}
                   className="glass flex items-center gap-2 rounded-xl px-3 py-2 text-left transition hover:bg-white/[0.06]"
                 >
-                  <span className="text-base">{game.icon}</span>
+                  <GameBadge short={game.short} color={game.color} size="sm" />
                   <div className="min-w-0">
                     <div className="truncate text-[11px] font-semibold text-slate-200">{ev.name}</div>
                     <div
@@ -231,7 +235,7 @@ export function TimelinePage({ now }: { now: number }) {
             return (
               <div key={game.id} className="relative">
                 <div className="mb-1.5 mt-4 flex items-center gap-2 first:mt-0">
-                  <span className="text-sm">{game.icon}</span>
+                  <GameBadge short={game.short} color={game.color} />
                   <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: game.color }}>
                     {game.name}
                   </span>
@@ -275,7 +279,11 @@ export function TimelinePage({ now }: { now: number }) {
               key={r.id}
               className={`glass flex items-center gap-3 rounded-2xl px-4 py-3 ${due ? 'opacity-60' : ''}`}
             >
-              <span className="text-lg">{game?.icon ?? '⏰'}</span>
+              {game ? (
+                <GameBadge short={game.short} color={game.color} />
+              ) : (
+                <span className="h-2 w-2 shrink-0 rounded-full bg-slate-500" />
+              )}
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm text-slate-200">{r.message}</div>
                 <div className="text-[11px] tabular-nums text-slate-500">

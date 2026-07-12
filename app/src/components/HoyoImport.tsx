@@ -118,14 +118,14 @@ export function HoyoImportSheet({ open }: { open: boolean }) {
                 const g = app.state.games.find((x) => x.id === l.gameId)!;
                 return (
                   <option key={l.gameId} value={l.gameId}>
-                    {g.icon} {g.name} — {HOYO_KIND_LABEL[l.kind]}
+                    {g.name} — {HOYO_KIND_LABEL[l.kind]}
                   </option>
                 );
               })}
             </Select>
           </Field>
 
-          {error && <p className="mt-3 text-sm text-rose-300">⚠ {error}</p>}
+          {error && <p className="mt-3 text-sm text-rose-300">{error}</p>}
           {!error && anns == null && <p className="mt-4 text-sm text-slate-400">Fetching announcements…</p>}
           {anns != null && anns.length === 0 && (
             <p className="mt-4 text-sm text-slate-400">

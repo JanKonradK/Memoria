@@ -1,4 +1,32 @@
 import { Children, isValidElement, useEffect, useRef, useState, type ReactNode } from 'react';
+import { tint } from '../util';
+
+/**
+ * Game identity mark: the game's short code in its accent color. Replaces the
+ * old emoji icons everywhere — reads instantly at a glance and never depends
+ * on the user having set an icon.
+ */
+export function GameBadge({
+  short,
+  color,
+  size = 'md',
+  className = '',
+}: {
+  short: string;
+  color: string;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}) {
+  const sizes = { sm: 'h-4 px-1 text-[8px]', md: 'h-5 px-1.5 text-[9px]', lg: 'h-7 px-2 text-[11px]' };
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center justify-center rounded-md font-black uppercase tracking-wider ${sizes[size]} ${className}`}
+      style={{ color, background: tint(color, 0.14), boxShadow: `inset 0 0 0 1px ${tint(color, 0.45)}` }}
+    >
+      {short}
+    </span>
+  );
+}
 
 export function Field({ label, children, className = '' }: { label: string; children: ReactNode; className?: string }) {
   return (

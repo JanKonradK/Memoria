@@ -16,11 +16,11 @@ import { HoyoImportSheet } from './components/HoyoImport';
 import { PasteEventsSheet } from './components/PasteEvents';
 import { StatsPage } from './components/Stats';
 
-const TABS: Array<{ id: Tab; label: string; icon: string }> = [
-  { id: 'home', label: 'Games', icon: '⚡' },
-  { id: 'timeline', label: 'Timeline', icon: '📅' },
-  { id: 'stats', label: 'Stats', icon: '📊' },
-  { id: 'settings', label: 'Settings', icon: '⚙️' },
+const TABS: Array<{ id: Tab; label: string }> = [
+  { id: 'home', label: 'Games' },
+  { id: 'timeline', label: 'Timeline' },
+  { id: 'stats', label: 'Stats' },
+  { id: 'settings', label: 'Settings' },
 ];
 
 function SyncDot() {
@@ -119,11 +119,10 @@ export default function App() {
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold transition ${
+              className={`flex flex-1 items-center justify-center py-3.5 text-xs font-semibold transition ${
                 tab === t.id ? 'text-fuchsia-300' : 'text-slate-500'
               }`}
             >
-              <span className="text-base leading-none">{t.icon}</span>
               {t.label}
             </button>
           ))}
