@@ -6,7 +6,7 @@ import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { intOr, tint } from '../util';
 import { Sheet } from './Sheet';
-import { Btn, Field, NumInput, Select, TextInput } from './ui';
+import { Btn, Field, GameBadge, NumInput, Select, TextInput } from './ui';
 
 export function AddGameSheet({ open }: { open: boolean }) {
   const addGameFromPreset = useApp((s) => s.addGameFromPreset);
@@ -64,7 +64,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
                 className="flex items-center gap-3 rounded-2xl p-3 text-left ring-1 transition hover:brightness-125"
                 style={{ background: tint(p.color, 0.08), boxShadow: `inset 0 0 0 1px ${tint(p.color, 0.25)}` }}
               >
-                <span className="text-2xl">{p.icon}</span>
+                <GameBadge short={p.short} color={p.color} size="lg" />
                 <span>
                   <span className="block text-sm font-bold text-slate-100">{p.name}</span>
                   <span className="block text-[11px] text-slate-400">
@@ -114,7 +114,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
               </Field>
             ))}
             <p className="text-[11px] text-slate-500">
-              Reset: {String(picked.dailyResetHour).padStart(2, '0')}:00 server · everything is editable later via ⚙.
+              Reset: {String(picked.dailyResetHour).padStart(2, '0')}:00 server · everything is editable later in the game editor.
             </p>
           </div>
           <div className="mt-5 flex gap-2">

@@ -48,7 +48,7 @@ function HoyolabSection() {
       setDetectMsg(found.length ? found.join(' · ') : 'No game accounts found on this cookie.');
       if (found.length) void refreshHoyolab();
     } catch (e) {
-      setDetectMsg(`⚠ ${e instanceof Error ? e.message : String(e)}`);
+      setDetectMsg(`Error: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
@@ -109,9 +109,7 @@ function HoyolabSection() {
             const link = links.find((l) => l.gameId === game.id);
             return (
               <div key={game.id} className="grid grid-cols-[minmax(0,1fr)_110px_110px_110px] items-center gap-2">
-                <span className="truncate text-sm text-slate-200">
-                  {game.icon} {game.name}
-                </span>
+                <span className="truncate text-sm text-slate-200">{game.name}</span>
                 <Select
                   value={link?.kind ?? ''}
                   onChange={(e) => {
@@ -164,8 +162,8 @@ function HoyolabSection() {
             {hoyo.refreshing ? 'Refreshing…' : 'Refresh now'}
           </Btn>
           <span className="text-xs text-slate-400">
-            {hoyo.lastError && <span className="text-rose-300">⚠ {hoyo.lastError} </span>}
-            {hoyo.lastRefreshAt && !hoyo.lastError && `✅ Imported ${fmtClock(hoyo.lastRefreshAt)}`}
+            {hoyo.lastError && <span className="text-rose-300">{hoyo.lastError} </span>}
+            {hoyo.lastRefreshAt && !hoyo.lastError && `✓ Imported ${fmtClock(hoyo.lastRefreshAt)}`}
           </span>
         </div>
         {detectMsg && <p className="text-xs text-slate-400">{detectMsg}</p>}
@@ -241,8 +239,8 @@ export function SettingsPage() {
             </Btn>
             <span className="text-xs text-slate-400">
               {app.syncStatus === 'syncing' && 'Syncing…'}
-              {app.syncStatus === 'ok' && app.lastSyncAt && `✅ Synced ${fmtClock(app.lastSyncAt)}`}
-              {app.syncStatus === 'error' && <span className="text-rose-300">⚠ {app.syncError}</span>}
+              {app.syncStatus === 'ok' && app.lastSyncAt && `✓ Synced ${fmtClock(app.lastSyncAt)}`}
+              {app.syncStatus === 'error' && <span className="text-rose-300">{app.syncError}</span>}
               {app.syncStatus === 'idle' && 'Not configured'}
             </span>
           </div>

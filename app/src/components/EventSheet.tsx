@@ -60,7 +60,7 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
           <Select value={draft.gameId} onChange={(e) => setDraft({ ...draft, gameId: e.target.value })}>
             {games.map((g) => (
               <option key={g.id} value={g.id}>
-                {g.icon} {g.name}
+                {g.name}
               </option>
             ))}
           </Select>

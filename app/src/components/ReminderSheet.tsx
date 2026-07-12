@@ -49,7 +49,7 @@ export function ReminderSheet({ open }: { open: boolean }) {
               <option value="">—</option>
               {games.map((g) => (
                 <option key={g.id} value={g.id}>
-                  {g.icon} {g.name}
+                  {g.name}
                 </option>
               ))}
             </Select>

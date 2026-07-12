@@ -118,7 +118,7 @@ export function PasteEventsSheet({ open }: { open: boolean }) {
   };
 
   return (
-    <Sheet open={open} onClose={closeSheet} wide title="📋 Paste events (AI)">
+    <Sheet open={open} onClose={closeSheet} wide title="Paste events (AI)">
       {!game ? (
         <p className="py-6 text-sm text-slate-400">Add a game first.</p>
       ) : (
@@ -152,7 +152,7 @@ export function PasteEventsSheet({ open }: { open: boolean }) {
             />
           </Field>
 
-          {parsed.error && <p className="text-xs text-amber-300">⚠ {parsed.error}</p>}
+          {parsed.error && <p className="text-xs text-amber-300">{parsed.error}</p>}
 
           {parsed.events.length > 0 && (
             <>

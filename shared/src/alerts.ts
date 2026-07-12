@@ -62,7 +62,7 @@ export function evaluateAlerts(state: AppState, now: number): PendingAlert[] {
             dedupeKey: `energyfull:${res.id}:${snap.id}`,
             gameId: game.id,
             type: 'energy_cap',
-            title: `${game.icon} ${game.short}: ${res.name} is FULL`,
+            title: `${game.short}: ${res.name} is FULL`,
             body: `Regen is being wasted — log in and spend.`,
             color: game.color,
           });
@@ -71,7 +71,7 @@ export function evaluateAlerts(state: AppState, now: number): PendingAlert[] {
             dedupeKey: `energy:${res.id}:${snap.id}`,
             gameId: game.id,
             type: 'energy_cap',
-            title: `${game.icon} ${game.short}: ${res.name} caps at ${fmtClock(proj.fullAt, settings)}`,
+            title: `${game.short}: ${res.name} caps at ${fmtClock(proj.fullAt, settings)}`,
             body: `${proj.value}/${res.cap} now — full in ${fmtIn(proj.msToFull)}.`,
             color: game.color,
           });
@@ -97,7 +97,7 @@ export function evaluateAlerts(state: AppState, now: number): PendingAlert[] {
           dedupeKey: `${grp.type}:${game.id}:${grp.key}`,
           gameId: game.id,
           type: grp.type,
-          title: `${game.icon} ${game.short}: ${undone.length} ${grp.cadence} task${undone.length > 1 ? 's' : ''} left`,
+          title: `${game.short}: ${undone.length} ${grp.cadence} task${undone.length > 1 ? 's' : ''} left`,
           body: `${undone.map((u) => u.name).join(', ')} — resets at ${fmtClock(grp.resetAt, settings)} (in ${fmtIn(msToReset)}).`,
           color: game.color,
         });
@@ -117,7 +117,7 @@ export function evaluateAlerts(state: AppState, now: number): PendingAlert[] {
         dedupeKey: `event:${ev.id}`,
         gameId: game.id,
         type: 'event_end',
-        title: `${game.icon} ${game.short}: "${ev.name}" ends in ${fmtIn(ev.end - now)}`,
+        title: `${game.short}: "${ev.name}" ends in ${fmtIn(ev.end - now)}`,
         body: `Ends ${DateTime.fromMillis(ev.end, { zone: settings.localTz || 'system' }).toFormat('ccc dd LLL HH:mm')}.`,
         color: game.color,
       });
@@ -137,7 +137,7 @@ export function evaluateAlerts(state: AppState, now: number): PendingAlert[] {
       dedupeKey: `purchase:${p.id}:${p.expiresAt}`,
       gameId: game.id,
       type: 'reminder',
-      title: `${game.icon} ${game.short}: ${p.name} ${left <= 0 ? 'has expired' : `expires in ${fmtIn(left)}`}`,
+      title: `${game.short}: ${p.name} ${left <= 0 ? 'has expired' : `expires in ${fmtIn(left)}`}`,
       body: left <= 0 ? 'Renew it to keep the daily value flowing.' : `Runs out ${fmtClock(p.expiresAt, settings)} — renew in time.`,
       color: game.color,
     });
@@ -151,7 +151,7 @@ export function evaluateAlerts(state: AppState, now: number): PendingAlert[] {
       dedupeKey: `rem:${rem.id}`,
       gameId: rem.gameId,
       type: 'reminder',
-      title: game ? `${game.icon} ${game.short}: reminder` : '⏰ Reminder',
+      title: game ? `${game.short}: reminder` : 'Reminder',
       body: rem.message,
       color: game?.color ?? '#8b5cf6',
     });
