@@ -22,7 +22,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, '..');
 const dist = join(repo, 'app', 'dist');
 
-// The one state document, shared with the TUI (tui/src/store.ts uses the same path).
+// The one local state document — served over /api/sync to app windows.
 const DATA_DIR = join(process.env['APPDATA'] ?? join(os.homedir(), '.config'), 'technogg');
 const STATE_FILE = join(DATA_DIR, 'state.json');
 
@@ -120,7 +120,7 @@ function readStateRaw() {
   }
 }
 
-/** Atomic write (temp + rename) — same discipline as the TUI store. */
+/** Atomic write (temp + rename). */
 function writeState(state) {
   mkdirSync(DATA_DIR, { recursive: true });
   const json = JSON.stringify(state);
@@ -176,7 +176,7 @@ function handleSync(req, res) {
 }
 
 // Server-sent events: ping connected app windows when the state file changes
-// (e.g. the TUI saved an entry), so they pull immediately instead of polling.
+// on disk, so they pull immediately instead of polling.
 const sseClients = new Set();
 let stateWatcherStarted = false;
 

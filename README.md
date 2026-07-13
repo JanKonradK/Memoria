@@ -11,7 +11,6 @@ changes something.
 ## Layout
 
 ```
-tui/     Terminal UI (Ink) — the fast path: `tg` after closing a game, type, done
 app/     React PWA (Vite + Tailwind + Framer Motion) — installable on PC and phone
 worker/  Cloudflare Worker — sync API (D1) + cron alert engine (Discord/Telegram)
 shared/  All the math: energy projection, reset periods, urgency, alerts, merge
@@ -28,35 +27,15 @@ npm test           # unit tests for the shared calculation core
 The app is completely usable without the worker — data lives in IndexedDB on the device.
 The worker adds two things: **sync between devices** and **alerts while the app is closed**.
 
-## Terminal UI (`tg`) — the fast path
+## Local state file
 
-```sh
-npm run build:tui      # bundles tui/ into tui/dist/tg.js
-npm run tg             # or: node tui/dist/tg.js
-```
-
-Just closed a game? Run `tg` — it checks running processes (exe names live on each
-game/preset as editable `processNames` data) and drops you straight into that game's
-entry: **type digits** to set energy, **A/S/D/F** steps −10/−1/+1/+10, **space** ticks
-the focused task, ↑↓ move, **Enter saves and exits**. No detection hit → the dashboard:
-all games sorted by urgency with live projections, countdowns and dailies state.
-
-```
-tg              dashboard / auto-detected game entry
-tg gi           jump to a game by short name / prefix
-tg seed         add the 5 presets on a fresh machine
-tg import x.json  merge a PWA backup (Settings → Export)
-tg config <url> <token>   point at the worker; tg sync = one-shot sync
-```
-
-TUI state lives in `%APPDATA%\technogg\state.json` — and the desktop launcher serves
-that same file over `/api/sync`. The PWA auto-syncs against the launcher whenever it's
-opened through it (no setup, the token field stays empty): **TUI and app share one
-document on disk, live in both directions** — the launcher pushes a `/api/events`
-ping to open app windows when the file changes, and an open `tg` follows the file
-and re-renders within ~2s. A deployed Cloudflare worker speaks the identical protocol when you
-want cross-device sync + closed-app alerts; `tg import <backup.json>` covers the
-fully-offline case.
+The desktop launcher keeps the canonical local copy of your data in
+`%APPDATA%\technogg\state.json` and serves it over `/api/sync`. The PWA
+auto-syncs against the launcher whenever it's opened through it (no setup, the
+token field stays empty), and the launcher pushes a `/api/events` ping to open
+app windows whenever the file changes on disk. A deployed Cloudflare worker
+speaks the identical protocol when you want cross-device sync + closed-app
+alerts.
 
 ## Desktop shortcut (Windows)
 
@@ -69,8 +48,8 @@ The shortcut opens the app in its own window and keeps serving on the **fixed po
 17817** — the port must never change, because all data (IndexedDB) is tied to the
 origin `http://127.0.0.1:17817`. Launching twice reuses the running instance.
 After a `npm run build`, just reopen the window to pick up the new version.
-The launcher also exposes `/api/state` + `/api/sync` backed by the TUI's
-`%APPDATA%\technogg\state.json`, so the app window and `tg` stay in sync locally.
+The launcher also exposes `/api/state` + `/api/sync` backed by
+`%APPDATA%\technogg\state.json`, so app windows stay in sync locally.
 
 If you deploy to Cloudflare (below), create `desktop/config.json` with
 `{ "url": "https://technogg.<your-subdomain>.workers.dev" }` — the shortcut then
@@ -133,23 +112,23 @@ can occasionally move a field.
   → Z pulls". Re-enter the balance after pulling; the patch date rolls forward
   by the patch length automatically.
 - **Purchases**: track Welkin/monthly cards (30d) and Battle Passes (per
-  patch). Expiring ones warn on the game card (🛒) and ping via Discord/
+  patch). Expiring ones warn on the game card and ping via Discord/
   Telegram 48h before; "Renewed ✓" pushes the expiry one cycle out.
 - Waste + streak + heatmap for every game, in one place.
 
 ## Getting events in
 
-- **📦 Bundled feed** (Timeline): the app ships with the current patches' events in
+- **Bundled feed** (Timeline): the app ships with the current patches' events in
   [app/src/data/seed-events.ts](app/src/data/seed-events.ts). Whenever that file
   contains events (or corrected dates) your device doesn't have, the Timeline shows
-  an "📦 Import N" button — one click imports everything, deduped against HoYoLAB
+  an "Import N" button — one click imports everything, deduped against HoYoLAB
   imports and manual entries. After a new patch, ask Claude to refresh the file
   (it pulls the official announcement feeds + patch notes), `npm run build`, reopen,
   click import. Entries whose exact dates weren't announced yet carry a "TBC —
   verify in-game" note and don't fire alerts until a refresh confirms them.
 - **⤓ HoYoLAB** (Timeline): automatic import for Genshin/ZZZ from the public
   announcement feeds.
-- **📋 Paste (AI)** (Timeline): for every other game — copy the generated
+- **Paste (AI)** (Timeline): for every other game — copy the generated
   prompt, hand it to any AI, paste the JSON it returns, review, import.
   Handles code fences and skips malformed rows; times are read in the game's
   server timezone.
@@ -168,15 +147,15 @@ can occasionally move a field.
 - **Focus list** (Stats tab): what to build/farm next; the top goal is
   pinned on the card.
 - **Teams** (Stats tab): save your comps (e.g. three ZZZ squads); click a
-  member to flag them 🔧 needs building — flagged names show on the card.
+  member to flag them as needs-building — flagged names show on the card.
 - Game ⚙ is deliberately lean: identity, resets, resources, tasks. Everything
   else lives where it belongs (events → Timeline, the rest → Stats).
 - **Endgame cycles** ship as preset tasks with real 2026 cadences (Stygian 35d,
   HSR endgame refresh 14d, Shiyu/Deadly Assault 14d, ToA/WhiWa 28d, …) — all
   editable per game via ⚙ → Tasks, like everything else.
 - **Stats** (game ⚙ → Stats): regen wasted at cap (today / 7 days) and a
-  12-week dailies heatmap with your current streak (🔥 on the card from 2 days).
-- **Safe to sleep**: evenings (20:00–05:00) each card shows 🌙 — either "sleep
+  12-week dailies heatmap with your current streak (on the card from 2 days).
+- **Safe to sleep**: evenings (20:00–05:00) each card shows either "sleep
   safe" or the time it caps within your sleep window (Settings → sleepHours).
 - **Stable card order**: cards never re-sort themselves while you're entering
   values — when urgency changes, a "↻ Sort by urgency" button appears instead.
