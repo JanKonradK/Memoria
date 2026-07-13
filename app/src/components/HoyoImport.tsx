@@ -16,6 +16,7 @@ const MAX_SENSIBLE_DURATION = 70 * DAY;
 const TYPE_BADGE: Record<EventType, { label: string; cls: string }> = {
   banner: { label: 'banner', cls: 'bg-fuchsia-400/15 text-fuchsia-200 ring-fuchsia-300/25' },
   event: { label: 'event', cls: 'bg-sky-400/15 text-sky-200 ring-sky-300/25' },
+  cycle: { label: 'cycle', cls: 'bg-violet-400/15 text-violet-200 ring-violet-300/25' },
   maintenance: { label: 'maint', cls: 'bg-slate-400/15 text-slate-300 ring-slate-300/25' },
   custom: { label: 'custom', cls: 'bg-white/10 text-slate-300 ring-white/15' },
 };

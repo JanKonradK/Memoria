@@ -79,7 +79,8 @@ export interface Completion extends Syncable {
   done: boolean;
 }
 
-export type EventType = 'banner' | 'event' | 'maintenance' | 'custom';
+/** 'cycle' = recurring endgame windows (Abyss/Theater, MoC/PF/AS/AA, Shiyu/DA…). */
+export type EventType = 'banner' | 'event' | 'cycle' | 'maintenance' | 'custom';
 
 export interface GameEvent extends Syncable {
   id: string;

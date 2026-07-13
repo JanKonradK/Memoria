@@ -7,7 +7,7 @@ import { Sheet } from './Sheet';
 import { Btn, Field, Select, TextInput, Toggle } from './ui';
 
 const DAY = 86_400_000;
-const TYPES: EventType[] = ['banner', 'event', 'maintenance', 'custom'];
+const TYPES: EventType[] = ['banner', 'event', 'cycle', 'maintenance', 'custom'];
 
 /** Add/edit an event from anywhere (Timeline, dashboard). */
 export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?: string; gameId?: string }) {
