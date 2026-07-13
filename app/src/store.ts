@@ -157,6 +157,7 @@ export const useApp = create<AppStore>((set, get) => ({
         name: preset.name,
         short: preset.short,
         color: preset.color,
+        color2: preset.color2,
         icon: preset.icon,
         platform: preset.platform,
         tz: over.tz ?? preset.tz,

@@ -64,7 +64,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
                 className="flex items-center gap-3 rounded-2xl p-3 text-left ring-1 transition hover:brightness-125"
                 style={{ background: tint(p.color, 0.08), boxShadow: `inset 0 0 0 1px ${tint(p.color, 0.25)}` }}
               >
-                <GameBadge short={p.short} color={p.color} size="lg" />
+                <GameBadge short={p.short} color={p.color} color2={p.color2} size="lg" />
                 <span>
                   <span className="block text-sm font-bold text-slate-100">{p.name}</span>
                   <span className="block text-[11px] text-slate-400">

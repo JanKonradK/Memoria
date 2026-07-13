@@ -33,6 +33,8 @@ export interface GamePreset {
   name: string;
   short: string;
   color: string;
+  /** Secondary accent for two-tone gradients. */
+  color2?: string;
   icon: string;
   platform: 'pc' | 'mobile' | 'both';
   tz: string;
@@ -62,8 +64,9 @@ export const PRESETS: GamePreset[] = [
     key: 'genshin',
     name: 'Genshin Impact',
     short: 'GI',
-    // App-icon palette: Paimon white on dark.
-    color: '#ececec',
+    // App-icon palette: Paimon — warm white fading to smoke, black in the text.
+    color: '#f2f0eb',
+    color2: '#9b9aa2',
     icon: '',
     platform: 'both',
     tz: 'Etc/GMT-1',
@@ -90,8 +93,9 @@ export const PRESETS: GamePreset[] = [
     key: 'hsr',
     name: 'Honkai: Star Rail',
     short: 'HSR',
-    // App-icon palette: March 7th pink (blue lives in her eyes, pink wins the icon).
-    color: '#f472b6',
+    // App-icon palette: March 7th — pink into her blue tips.
+    color: '#f78cc0',
+    color2: '#7cc3f7',
     icon: '',
     platform: 'both',
     tz: 'Etc/GMT-1',
@@ -114,8 +118,9 @@ export const PRESETS: GamePreset[] = [
     key: 'zzz',
     name: 'Zenless Zone Zero',
     short: 'ZZZ',
-    // App-icon palette: Belle/dial orange.
-    color: '#fb923c',
+    // App-icon palette: signature vivid orange into amber.
+    color: '#ff8a00',
+    color2: '#ffc24b',
     icon: '',
     platform: 'both',
     tz: 'Etc/GMT-1',
@@ -137,8 +142,9 @@ export const PRESETS: GamePreset[] = [
     key: 'wuwa',
     name: 'Wuthering Waves',
     short: 'WuWa',
-    // App-icon palette: monochrome grey/black era.
-    color: '#a8a8b3',
+    // App-icon palette: silver into near-black (monochrome era).
+    color: '#c3c3cc',
+    color2: '#63636e',
     icon: '',
     platform: 'both',
     tz: 'Etc/GMT-1',
@@ -161,8 +167,9 @@ export const PRESETS: GamePreset[] = [
     key: 'nte',
     name: 'Neverness to Everness',
     short: 'NTE',
-    // App-icon palette: Mint teal/cyan.
-    color: '#22d3ee',
+    // App-icon palette: Mint — teal/cyan with her yellow.
+    color: '#2fd6e2',
+    color2: '#ffd84d',
     icon: '',
     platform: 'both',
     tz: 'Etc/GMT-1',

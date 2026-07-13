@@ -55,6 +55,14 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
             className="h-9 w-full cursor-pointer rounded-xl bg-white/5 ring-1 ring-white/10"
           />
         </Field>
+        <Field label="Accent color 2 (gradient partner)">
+          <input
+            type="color"
+            value={game.color2 ?? game.color}
+            onChange={(e) => app.updateGame(game.id, { color2: e.target.value })}
+            className="h-9 w-full cursor-pointer rounded-xl bg-white/5 ring-1 ring-white/10"
+          />
+        </Field>
         <div className="flex items-end pb-1">
           <Toggle checked={game.paused} onChange={(v) => app.updateGame(game.id, { paused: v })} label="Paused" />
         </div>
