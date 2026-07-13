@@ -19,7 +19,7 @@ export function getSyncConfig(): SyncConfig {
     /* fall through to defaults */
   }
   // Served by the desktop launcher: sync against it automatically, no setup.
-  // It shares %APPDATA%\technogg\state.json with the TUI; the token is unused
+  // It's backed by %APPDATA%\technogg\state.json; the token is unused
   // locally (the server only listens on 127.0.0.1) but must be non-empty.
   if (LAUNCHER_ORIGIN.test(window.location.origin)) {
     return { url: window.location.origin, token: 'local' };
@@ -87,7 +87,7 @@ export function initSync(): void {
     debounceTimer = setTimeout(() => void syncNow(), 4000);
   });
   // On the desktop launcher, it pushes a ping whenever the shared state file
-  // changes (TUI entries) — pull right away instead of waiting for the poll.
+  // changes on disk — pull right away instead of waiting for the poll.
   if (LAUNCHER_ORIGIN.test(window.location.origin)) {
     const events = new EventSource('/api/events');
     events.onmessage = () => {
