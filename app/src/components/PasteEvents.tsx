@@ -15,12 +15,13 @@ interface ParsedEvent {
   dailyTouch: boolean;
 }
 
-const TYPES = new Set<EventType>(['banner', 'event', 'maintenance', 'custom']);
+const TYPES = new Set<EventType>(['banner', 'event', 'cycle', 'maintenance', 'custom']);
 
 function aiPrompt(game: Game): string {
   return `List every event, banner and maintenance window in ${game.name} that is currently running or already announced (current patch and next).
 Reply with ONLY a JSON array — no prose, no markdown fences — in exactly this schema:
-[{"name":"Event name","type":"banner|event|maintenance","start":"2026-07-09 04:00","end":"2026-07-30 03:59","dailyTouch":false}]
+[{"name":"Event name","type":"banner|event|cycle|maintenance","start":"2026-07-09 04:00","end":"2026-07-30 03:59","dailyTouch":false}]
+Use type "cycle" for recurring endgame windows (Spiral Abyss, Memory of Chaos, Shiyu Defense and the like).
 All times in the game's SERVER time (${game.tz}). Set "dailyTouch": true only for events that require a daily login or claim.`;
 }
 
