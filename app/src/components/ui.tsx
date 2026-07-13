@@ -9,19 +9,26 @@ import { tint } from '../util';
 export function GameBadge({
   short,
   color,
+  color2,
   size = 'md',
   className = '',
 }: {
   short: string;
   color: string;
+  color2?: string;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }) {
   const sizes = { sm: 'h-4 px-1 text-[8px]', md: 'h-5 px-1.5 text-[9px]', lg: 'h-7 px-2 text-[11px]' };
+  const c2 = color2 ?? color;
   return (
     <span
       className={`inline-flex shrink-0 items-center justify-center rounded-md font-black uppercase tracking-wider ${sizes[size]} ${className}`}
-      style={{ color, background: tint(color, 0.14), boxShadow: `inset 0 0 0 1px ${tint(color, 0.45)}` }}
+      style={{
+        color,
+        background: `linear-gradient(135deg, ${tint(color, 0.16)}, ${tint(c2, 0.26)})`,
+        boxShadow: `inset 0 0 0 1px ${tint(color, 0.45)}`,
+      }}
     >
       {short}
     </span>
