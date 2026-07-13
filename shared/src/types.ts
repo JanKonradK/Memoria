@@ -14,6 +14,8 @@ export interface Game extends Syncable {
   short: string;
   /** Accent color (hex). */
   color: string;
+  /** Secondary accent (hex) — gradients run color → color2 ("pink with hints of blue"). */
+  color2?: string;
   /** Emoji used as the game icon (fallback when no image is set). */
   icon: string;
   /** Optional character/cover art (data URL or remote URL). Shown on the card. */

@@ -88,11 +88,12 @@ function EventRow({
           left: `${left * 100}%`,
           width: `${Math.max(width * 100, 8)}%`,
           // Events are the loud ones — banners you've already made your mind up about.
+          // Two-tone: color → color2 carries each game's real icon palette.
           background: maint
             ? 'rgba(148,163,184,0.08)'
             : banner
-              ? `linear-gradient(90deg, ${tint(game.color, 0.08)}, ${tint(game.color, 0.18)})`
-              : `linear-gradient(90deg, ${tint(game.color, 0.4)}, ${tint(game.color, 0.7)})`,
+              ? `linear-gradient(90deg, ${tint(game.color, 0.08)}, ${tint(game.color2 ?? game.color, 0.16)})`
+              : `linear-gradient(90deg, ${tint(game.color, 0.5)}, ${tint(game.color2 ?? game.color, 0.62)})`,
           boxShadow: maint ? undefined : `inset 0 0 0 1px ${tint(game.color, banner ? 0.3 : 0.85)}`,
           opacity: ended ? 0.35 : 1,
         }}
@@ -244,7 +245,7 @@ export function TimelinePage({ now }: { now: number }) {
                   onClick={() => openSheet({ kind: 'event', eventId: ev.id, gameId: ev.gameId })}
                   className="glass flex items-center gap-2 rounded-xl px-3 py-2 text-left transition hover:bg-white/[0.06]"
                 >
-                  <GameBadge short={game.short} color={game.color} size="sm" />
+                  <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" />
                   <div className="min-w-0">
                     <div className="truncate text-[11px] font-semibold text-slate-200">{ev.name}</div>
                     <div
@@ -299,11 +300,14 @@ export function TimelinePage({ now }: { now: number }) {
             return (
               <div key={game.id} className="relative">
                 <div className="mb-1.5 mt-4 flex items-center gap-2 first:mt-0">
-                  <GameBadge short={game.short} color={game.color} />
+                  <GameBadge short={game.short} color={game.color} color2={game.color2} />
                   <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: game.color }}>
                     {game.name}
                   </span>
-                  <span className="h-px flex-1" style={{ background: tint(game.color, 0.2) }} />
+                  <span
+                    className="h-px flex-1"
+                    style={{ background: `linear-gradient(90deg, ${tint(game.color, 0.3)}, ${tint(game.color2 ?? game.color, 0.12)})` }}
+                  />
                   {nextEnd && (
                     <span className="text-[10px] font-semibold tabular-nums" style={{ color: endTone(nextEnd.end - now) }}>
                       next ends {fmtDur(nextEnd.end - now)}
@@ -360,7 +364,7 @@ export function TimelinePage({ now }: { now: number }) {
               className={`glass flex items-center gap-3 rounded-2xl px-4 py-3 ${due ? 'opacity-60' : ''}`}
             >
               {game ? (
-                <GameBadge short={game.short} color={game.color} />
+                <GameBadge short={game.short} color={game.color} color2={game.color2} />
               ) : (
                 <span className="h-2 w-2 shrink-0 rounded-full bg-slate-500" />
               )}

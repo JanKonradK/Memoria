@@ -242,13 +242,13 @@ export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
       style={{
         // Each card carries its game's color: tinted corners over a near-black
         // core, hairline ring and a soft outer glow in the same hue (OLED-safe).
-        background: `linear-gradient(155deg, ${tint(game.color, 0.2)} 0%, transparent 46%), linear-gradient(335deg, ${tint(game.color, 0.11)} 0%, transparent 42%), #07060c`,
+        background: `linear-gradient(155deg, ${tint(game.color, 0.2)} 0%, transparent 46%), linear-gradient(335deg, ${tint(game.color2 ?? game.color, 0.13)} 0%, transparent 42%), #07060c`,
         boxShadow: `inset 0 0 0 1px ${tint(game.color, 0.3)}, inset 0 1px 0 rgba(255,255,255,0.07), 0 0 56px -22px ${tint(game.color, 0.55)}`,
       }}
     >
       <div
         className="absolute inset-x-0 top-0 h-[3px]"
-        style={{ background: `linear-gradient(90deg, transparent, ${game.color}, transparent)` }}
+        style={{ background: `linear-gradient(90deg, transparent, ${game.color}, ${game.color2 ?? game.color}, transparent)` }}
       />
       {/* Character art wash: the chosen image fades in from the right edge. */}
       {game.image && (

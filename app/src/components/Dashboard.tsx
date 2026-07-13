@@ -37,7 +37,7 @@ export function DashboardPage({ now }: { now: number }) {
           onClick={() => openSheet({ kind: 'game', gameId: heroGame.id })}
           className="relative mb-4 block w-full overflow-hidden rounded-3xl p-4 text-left"
           style={{
-            background: `linear-gradient(120deg, ${tint(heroGame.color, 0.3)}, rgba(0,0,0,0.92) 62%)`,
+            background: `linear-gradient(120deg, ${tint(heroGame.color, 0.3)}, ${tint(heroGame.color2 ?? heroGame.color, 0.12)} 38%, rgba(0,0,0,0.92) 62%)`,
             boxShadow: `inset 0 0 0 1px ${tint(heroGame.color, 0.35)}, 0 0 44px -16px ${tint(heroGame.color, 0.5)}`,
           }}
         >
@@ -49,7 +49,7 @@ export function DashboardPage({ now }: { now: number }) {
             }}
           />
           <div className="relative flex items-center gap-3">
-            <GameBadge short={heroGame.short} color={heroGame.color} size="lg" />
+            <GameBadge short={heroGame.short} color={heroGame.color} color2={heroGame.color2} size="lg" />
             <div className="min-w-0 flex-1">
               <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Up next</div>
               <div className="truncate text-lg font-black text-slate-50">
