@@ -1,5 +1,5 @@
-import { motion, useReducedMotion } from 'framer-motion';
 import type { ReactNode } from 'react';
+import { useReducedMotion } from '../hooks';
 
 export function ProgressRing({
   fraction,
@@ -22,7 +22,7 @@ export function ProgressRing({
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
-        <motion.circle
+        <circle
           cx={size / 2}
           cy={size / 2}
           r={r}
@@ -31,9 +31,8 @@ export function ProgressRing({
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={c}
-          initial={false}
-          animate={{ strokeDashoffset: c * (1 - f) }}
-          transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 60, damping: 16 }}
+          strokeDashoffset={c * (1 - f)}
+          style={reduced ? undefined : { transition: 'stroke-dashoffset 0.6s ease-out' }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-slate-200">

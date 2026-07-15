@@ -101,7 +101,10 @@ describe('event ending alerts', () => {
     const now = 1_000_000;
     const state = makeState({
       games: [game],
-      events: [makeEvent({ id: 'a', end: now + MIN, notify: false }), makeEvent({ id: 'b', end: now - 1, notify: true })],
+      events: [
+        makeEvent({ id: 'a', end: now + MIN, notify: false }),
+        makeEvent({ id: 'b', end: now - 1, notify: true }),
+      ],
     });
     expect(evaluateAlerts(state, now).filter((a) => a.type === 'event_end')).toHaveLength(0);
   });
@@ -109,7 +112,9 @@ describe('event ending alerts', () => {
 
 describe('reminders', () => {
   it('fires once due', () => {
-    const state = makeState({ reminders: [{ id: 'm1', gameId: null, message: 'spend before maintenance', at: 100, updatedAt: 1 }] });
+    const state = makeState({
+      reminders: [{ id: 'm1', gameId: null, message: 'spend before maintenance', at: 100, updatedAt: 1 }],
+    });
     const alerts = evaluateAlerts(state, 200);
     expect(alerts).toHaveLength(1);
     expect(alerts[0]!.dedupeKey).toBe('rem:m1');

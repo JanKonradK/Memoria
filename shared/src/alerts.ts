@@ -3,7 +3,15 @@ import type { AlertType, AppState, Settings } from './types';
 import { DEFAULT_THRESHOLDS } from './types';
 import { latestSnapshots, projectEnergy } from './energy';
 import { checklistFor } from './checklist';
-import { dailyPeriodKey, monthlyPeriodKey, nextDailyReset, nextMonthlyReset, nextWeeklyReset, weeklyPeriodKey } from './periods';
+import {
+  dailyPeriodKey,
+  monthlyPeriodKey,
+  nextDailyReset,
+  nextMonthlyReset,
+  nextWeeklyReset,
+  weeklyPeriodKey,
+} from './periods';
+import { effectiveResourceKind } from './tracking';
 
 export interface PendingAlert {
   /** Stable key so the same alert never fires twice (recorded server-side). */
@@ -53,10 +61,10 @@ export function evaluateAlerts(state: AppState, now: number): PendingAlert[] {
     const energyThreshold = thresholdFor(state, game.id, 'energy_cap');
     if (energyThreshold != null) {
       for (const res of state.resources) {
-        if (res.gameId !== game.id || res.deleted || res.regenMinutes <= 0) continue;
+        if (res.gameId !== game.id || res.deleted || effectiveResourceKind(res) !== 'regen') continue;
         const snap = snaps.get(res.id);
         if (!snap) continue;
-        const proj = projectEnergy(res, snap, now);
+        const proj = projectEnergy(res, snap, now, game);
         if (proj.isFull) {
           out.push({
             dedupeKey: `energyfull:${res.id}:${snap.id}`,
@@ -83,8 +91,18 @@ export function evaluateAlerts(state: AppState, now: number): PendingAlert[] {
     const checklist = checklistFor(state, game, now);
     const groups: Array<{ cadence: 'daily' | 'weekly' | 'monthly'; type: AlertType; resetAt: number; key: string }> = [
       { cadence: 'daily', type: 'daily_undone', resetAt: nextDailyReset(game, now), key: dailyPeriodKey(game, now) },
-      { cadence: 'weekly', type: 'weekly_undone', resetAt: nextWeeklyReset(game, now), key: weeklyPeriodKey(game, now) },
-      { cadence: 'monthly', type: 'monthly_undone', resetAt: nextMonthlyReset(game, now), key: monthlyPeriodKey(game, now) },
+      {
+        cadence: 'weekly',
+        type: 'weekly_undone',
+        resetAt: nextWeeklyReset(game, now),
+        key: weeklyPeriodKey(game, now),
+      },
+      {
+        cadence: 'monthly',
+        type: 'monthly_undone',
+        resetAt: nextMonthlyReset(game, now),
+        key: monthlyPeriodKey(game, now),
+      },
     ];
     for (const grp of groups) {
       const threshold = thresholdFor(state, game.id, grp.type);
@@ -107,7 +125,7 @@ export function evaluateAlerts(state: AppState, now: number): PendingAlert[] {
 
   // --- Events ending ---
   for (const ev of state.events) {
-    if (ev.deleted || !ev.notify || ev.end <= now) continue;
+    if (ev.deleted || ev.done || !ev.notify || ev.end <= now) continue;
     const game = state.games.find((g) => g.id === ev.gameId && !g.deleted && !g.paused);
     if (!game) continue;
     const threshold = thresholdFor(state, game.id, 'event_end');
@@ -122,25 +140,6 @@ export function evaluateAlerts(state: AppState, now: number): PendingAlert[] {
         color: game.color,
       });
     }
-  }
-
-  // --- Purchases (Welkin / Battle Pass) about to lapse ---
-  const PURCHASE_ALERT_MS = 48 * 3_600_000;
-  for (const p of state.purchases) {
-    if (p.deleted || !p.notify) continue;
-    const game = games.find((g) => g.id === p.gameId);
-    if (!game) continue;
-    const left = p.expiresAt - now;
-    if (left > PURCHASE_ALERT_MS) continue;
-    out.push({
-      // expiresAt in the key re-arms the alert after every renewal.
-      dedupeKey: `purchase:${p.id}:${p.expiresAt}`,
-      gameId: game.id,
-      type: 'reminder',
-      title: `${game.short}: ${p.name} ${left <= 0 ? 'has expired' : `expires in ${fmtIn(left)}`}`,
-      body: left <= 0 ? 'Renew it to keep the daily value flowing.' : `Runs out ${fmtClock(p.expiresAt, settings)} — renew in time.`,
-      color: game.color,
-    });
   }
 
   // --- One-off reminders ---
