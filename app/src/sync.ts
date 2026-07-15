@@ -1,4 +1,5 @@
 import { mergeState, normalizeState } from '@technogg/shared';
+import { authHeaders, isHostedSession } from './auth-session';
 import { useApp } from './store';
 
 const CFG_KEY = 'technogg-sync-config';
@@ -36,25 +37,46 @@ function apiBase(url: string): string {
 }
 
 let syncing = false;
+let serverVersion: number | null = null;
+
+async function apiConnection(): Promise<{ base: string; headers: Record<string, string> } | null> {
+  if (isHostedSession()) return { base: '', headers: await authHeaders() };
+  const { url, token } = getSyncConfig();
+  if (!url || !token) return null;
+  return { base: apiBase(url), headers: { authorization: `Bearer ${token}` } };
+}
 
 /** Push local state, receive the server-merged state, merge it back in. */
 export async function syncNow(): Promise<void> {
-  const { url, token } = getSyncConfig();
-  if (!url || !token || syncing || !navigator.onLine) return;
+  const connection = await apiConnection();
+  if (!connection || syncing || !navigator.onLine) return;
   const store = useApp.getState();
   syncing = true;
   store.setSyncStatus('syncing');
   try {
-    const res = await fetch(`${apiBase(url)}/api/sync`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-      body: JSON.stringify({ state: useApp.getState().state }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = (await res.json()) as { state: unknown };
-    const merged = mergeState(useApp.getState().state, normalizeState(data.state));
-    useApp.getState().replaceState(merged);
-    useApp.getState().setSyncStatus('ok');
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const res = await fetch(`${connection.base}/api/sync`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...connection.headers },
+        body: JSON.stringify({ state: useApp.getState().state, version: serverVersion }),
+      });
+      if (res.status === 409 && attempt < 2) {
+        const latest = await fetch(`${connection.base}/api/state`, { headers: connection.headers });
+        if (!latest.ok) throw new Error(`HTTP ${latest.status}`);
+        const body = (await latest.json()) as { state: unknown; version?: number };
+        serverVersion = typeof body.version === 'number' ? body.version : serverVersion;
+        useApp.getState().replaceState(mergeState(useApp.getState().state, normalizeState(body.state)));
+        continue;
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as { state: unknown; version?: number };
+      serverVersion = typeof data.version === 'number' ? data.version : serverVersion;
+      const merged = mergeState(useApp.getState().state, normalizeState(data.state));
+      useApp.getState().replaceState(merged);
+      useApp.getState().setSyncStatus('ok');
+      return;
+    }
+    throw new Error('Sync remained conflicted after three attempts.');
   } catch (e) {
     useApp.getState().setSyncStatus('error', e instanceof Error ? e.message : String(e));
   } finally {
@@ -64,12 +86,13 @@ export async function syncNow(): Promise<void> {
 
 /** Ask the worker to send a test notification through the configured channels. */
 export async function sendTestPing(): Promise<string> {
-  const { url, token } = getSyncConfig();
-  if (!url || !token) return 'Set the sync server URL and token first.';
+  const connection = await apiConnection();
+  if (!connection) return 'Sign in or configure the advanced local sync server first.';
+  if (!navigator.onLine) return 'You are offline. Reconnect before sending a test ping.';
   try {
-    const res = await fetch(`${apiBase(url)}/api/test-alert`, {
+    const res = await fetch(`${connection.base}/api/test-alert`, {
       method: 'POST',
-      headers: { authorization: `Bearer ${token}` },
+      headers: connection.headers,
     });
     const body = (await res.json().catch(() => ({}))) as { sent?: string[]; error?: string };
     if (!res.ok) return body.error ?? `HTTP ${res.status}`;
@@ -80,8 +103,11 @@ export async function sendTestPing(): Promise<string> {
 }
 
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+let initialized = false;
 
 export function initSync(): void {
+  if (initialized) return;
+  initialized = true;
   document.addEventListener('tg-mutated', () => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => void syncNow(), 4000);

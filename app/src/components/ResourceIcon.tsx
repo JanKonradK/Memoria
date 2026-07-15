@@ -16,10 +16,7 @@ const ICONS: Record<string, ReactElement> = {
   // Astral sparkle with a trailing spark — HSR Trailblaze Power.
   comet: (
     <>
-      <path
-        d="M12 2c0 6 2 8 8 8-6 0-8 2-8 8 0-6-2-8-8-8 6 0 8-2 8-8z"
-        fill="currentColor"
-      />
+      <path d="M12 2c0 6 2 8 8 8-6 0-8 2-8 8 0-6-2-8-8-8 6 0 8-2 8-8z" fill="currentColor" />
       <circle cx="19.5" cy="18.5" r="1.6" fill="currentColor" />
     </>
   ),
@@ -60,32 +57,14 @@ const ICONS: Record<string, ReactElement> = {
   orb: (
     <>
       <circle cx="12" cy="12" r="9" fill="currentColor" />
-      <path
-        d="M12 7l1.3 2.9 3.2.3-2.4 2.1.7 3.1-2.8-1.7-2.8 1.7.7-3.1-2.4-2.1 3.2-.3z"
-        fill="rgba(0,0,0,0.35)"
-      />
+      <path d="M12 7l1.3 2.9 3.2.3-2.4 2.1.7 3.1-2.8-1.7-2.8 1.7.7-3.1-2.4-2.1 3.2-.3z" fill="rgba(0,0,0,0.35)" />
     </>
   ),
-  heart: (
-    <path
-      d="M12 21C5 15 3 11 3 8a4.5 4.5 0 0 1 9-1 4.5 4.5 0 0 1 9 1c0 3-2 7-9 13z"
-      fill="currentColor"
-    />
-  ),
-  flame: (
-    <path
-      d="M12 2c3 4 6 6 6 10a6 6 0 0 1-12 0c0-2 1-3.2 2-4 .2 1.2 1 2 2 2 0-3 1-5 2-8z"
-      fill="currentColor"
-    />
-  ),
+  heart: <path d="M12 21C5 15 3 11 3 8a4.5 4.5 0 0 1 9-1 4.5 4.5 0 0 1 9 1c0 3-2 7-9 13z" fill="currentColor" />,
+  flame: <path d="M12 2c3 4 6 6 6 10a6 6 0 0 1-12 0c0-2 1-3.2 2-4 .2 1.2 1 2 2 2 0-3 1-5 2-8z" fill="currentColor" />,
   droplet: <path d="M12 2c4 6 7 9 7 12a7 7 0 0 1-14 0c0-3 3-6 7-12z" fill="currentColor" />,
   moon: <path d="M20 14a8 8 0 1 1-9-11 6.5 6.5 0 0 0 9 11z" fill="currentColor" />,
-  star: (
-    <path
-      d="M12 2l2.9 6.2 6.8.7-5 4.6 1.4 6.7L12 17.8 5.9 20.9l1.4-6.7-5-4.6 6.8-.7z"
-      fill="currentColor"
-    />
-  ),
+  star: <path d="M12 2l2.9 6.2 6.8.7-5 4.6 1.4 6.7L12 17.8 5.9 20.9l1.4-6.7-5-4.6 6.8-.7z" fill="currentColor" />,
   ticket: (
     <path
       d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"

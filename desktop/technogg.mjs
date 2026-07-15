@@ -1,6 +1,8 @@
 // TechnoGG desktop launcher.
-// Serves the built PWA (app/dist) on a FIXED local port, opens it in its own
-// Edge/Chrome "app" window, and shuts the server down when that window closes.
+// Serves the built PWA (app/dist) on a FIXED local port and opens it as a
+// chromeless "app" window inside the user's default Chromium browser (shared
+// profile — costs about one tab). The server exits on its own once no app
+// window has been connected for a few minutes.
 // Zero dependencies — plain Node. Invoked hidden by TechnoGG.vbs.
 //
 // The port must stay identical between launches: IndexedDB (all app data) is
@@ -13,7 +15,7 @@
 // opens the hosted (always-synced) app in the same kind of window.
 import { createServer } from 'node:http';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, renameSync, statSync, watchFile, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, statSync, watch, writeFileSync } from 'node:fs';
 import { dirname, join, normalize, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import os from 'node:os';
@@ -82,16 +84,6 @@ async function isTechnoGG(port) {
   try {
     const res = await fetch(`http://127.0.0.1:${port}/`, { signal: AbortSignal.timeout(1500) });
     return res.headers.get(MARKER) === '1';
-  } catch {
-    return false;
-  }
-}
-
-/** Same allowlist the worker enforces — the app relays HoYoLAB calls through us. */
-function isAllowedHoyoUrl(url) {
-  try {
-    const u = new URL(url);
-    return u.protocol === 'https:' && ['.hoyolab.com', '.hoyoverse.com'].some((s) => u.hostname.endsWith(s));
   } catch {
     return false;
   }
@@ -178,14 +170,22 @@ function handleSync(req, res) {
 // Server-sent events: ping connected app windows when the state file changes
 // on disk, so they pull immediately instead of polling.
 const sseClients = new Set();
+let lastActivity = Date.now();
 let stateWatcherStarted = false;
+let pingTimer;
 
 function startStateWatcher() {
   if (stateWatcherStarted) return;
   stateWatcherStarted = true;
   mkdirSync(DATA_DIR, { recursive: true });
-  watchFile(STATE_FILE, { interval: 1000 }, () => {
-    for (const client of sseClients) client.write('data: changed\n\n');
+  // Event-based (no polling). Watch the directory, not the file: writeState
+  // replaces state.json via rename, which unbinds a direct file watcher.
+  watch(DATA_DIR, (_event, filename) => {
+    if (filename !== 'state.json') return;
+    clearTimeout(pingTimer);
+    pingTimer = setTimeout(() => {
+      for (const client of sseClients) client.write('data: changed\n\n');
+    }, 100);
   });
 }
 
@@ -199,38 +199,24 @@ function handleEvents(req, res) {
   });
   res.write('retry: 2000\n\n');
   sseClients.add(res);
-  req.on('close', () => sseClients.delete(res));
-}
-
-function handleHoyoProxy(req, res) {
-  let body = '';
-  req.on('data', (c) => (body += c));
-  req.on('end', async () => {
-    const respond = (status, payload) => {
-      res.writeHead(status, { 'content-type': 'application/json', 'x-technogg': '1' });
-      res.end(typeof payload === 'string' ? payload : JSON.stringify(payload));
-    };
-    try {
-      const { url, headers } = JSON.parse(body || '{}');
-      if (!url || !isAllowedHoyoUrl(url)) return respond(400, { error: 'url not allowed' });
-      const upstream = await fetch(url, { headers });
-      respond(200, await upstream.text());
-    } catch (e) {
-      respond(502, { error: String(e?.message ?? e) });
-    }
+  req.on('close', () => {
+    sseClients.delete(res);
+    lastActivity = Date.now(); // idle countdown starts when the last window closes
   });
 }
 
 function tryListen(port) {
   return new Promise((resolve) => {
     const server = createServer((req, res) => {
+      lastActivity = Date.now();
       const urlPath = decodeURIComponent((req.url ?? '/').split('?')[0]);
-      if (req.method === 'POST' && urlPath === '/hoyolab-proxy') return handleHoyoProxy(req, res);
       if (req.method === 'GET' && urlPath === '/api/events') return handleEvents(req, res);
       if (req.method === 'GET' && urlPath === '/api/state') return void handleGetState(res);
       if (req.method === 'POST' && urlPath === '/api/sync') return handleSync(req, res);
       if (req.method === 'POST' && urlPath === '/api/test-alert') {
-        return respondJson(res, 400, { error: 'Alerts while closed need the deployed Cloudflare worker (see README).' });
+        return respondJson(res, 400, {
+          error: 'Alerts while closed need the deployed Cloudflare worker (see README).',
+        });
       }
       // Resolve within dist and block path traversal.
       let filePath = normalize(join(dist, urlPath));
@@ -260,44 +246,71 @@ async function startOrReuse() {
   return null;
 }
 
+/** Chromium-family exe names — safe to hand a `--app=` flag. Helium ships as chrome.exe. */
+const CHROMIUM_EXES = new Set(['chrome.exe', 'msedge.exe', 'brave.exe', 'vivaldi.exe', 'helium.exe', 'opera.exe']);
+
+/** The user's default browser exe (Windows registry), if it's Chromium-based. */
+function defaultChromiumBrowser() {
+  if (process.platform !== 'win32') return null;
+  try {
+    const progId = spawnSync(
+      'reg',
+      [
+        'query',
+        'HKCU\\Software\\Microsoft\\Windows\\Shell\\Associations\\UrlAssociations\\https\\UserChoice',
+        '/v',
+        'ProgId',
+      ],
+      { encoding: 'utf8' },
+    ).stdout?.match(/ProgId\s+REG_SZ\s+(\S+)/)?.[1];
+    if (!progId) return null;
+    const command = spawnSync('reg', ['query', `HKCR\\${progId}\\shell\\open\\command`, '/ve'], {
+      encoding: 'utf8',
+    }).stdout;
+    const exe = command?.match(/"([^"]+\.exe)"/)?.[1];
+    if (!exe || !existsSync(exe)) return null;
+    return CHROMIUM_EXES.has(exe.split('\\').pop().toLowerCase()) ? exe : null;
+  } catch {
+    return null;
+  }
+}
+
 function findBrowser() {
+  const fromRegistry = defaultChromiumBrowser();
+  if (fromRegistry) return fromRegistry;
   const pf = process.env['ProgramFiles'] ?? 'C:\\Program Files';
   const pf86 = process.env['ProgramFiles(x86)'] ?? 'C:\\Program Files (x86)';
   const local = process.env['LOCALAPPDATA'] ?? '';
   const candidates = [
-    join(pf, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
-    join(pf86, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+    local && join(local, 'imput', 'Helium', 'Application', 'chrome.exe'),
     join(pf, 'Google', 'Chrome', 'Application', 'chrome.exe'),
     join(pf86, 'Google', 'Chrome', 'Application', 'chrome.exe'),
     local && join(local, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+    join(pf, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+    join(pf86, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
   ].filter(Boolean);
   return candidates.find((p) => existsSync(p));
 }
 
-function openAppWindow(url, onExit) {
+/**
+ * Open a chromeless app window INSIDE the user's running browser (default
+ * profile — no --user-data-dir). Costs roughly one tab; the old dedicated
+ * profile booted an entire second browser instance (~300-600 MB). The spawn
+ * delegates to the existing browser process and exits immediately, so window
+ * lifetime is untrackable — the server shuts itself down when idle instead.
+ */
+function openAppWindow(url) {
   const browser = findBrowser();
   if (!browser) {
-    // No Chromium browser found: open the default browser instead.
+    // No Chromium browser found: open the default browser as a plain tab.
     spawnSync('cmd', ['/c', 'start', '', url], { shell: false });
     return;
   }
-  const profile = join(process.env['LOCALAPPDATA'] ?? here, 'TechnoGG', 'browser');
-  const child = spawn(
-    browser,
-    [
-      `--app=${url}`,
-      `--user-data-dir=${profile}`,
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--window-size=1200,860',
-    ],
-    { detached: false },
-  );
-  // When the app window (its own profile → its own process) closes, quit.
-  child.on('exit', onExit);
+  const child = spawn(browser, [`--app=${url}`, '--window-size=1200,860'], { detached: true, stdio: 'ignore' });
   child.on('error', () => {
     spawnSync('cmd', ['/c', 'start', '', url], { shell: false });
   });
+  child.unref();
 }
 
 async function main() {
@@ -308,7 +321,7 @@ async function main() {
       console.log(hosted);
       return;
     }
-    openAppWindow(hosted, () => process.exit(0));
+    openAppWindow(hosted);
     return;
   }
 
@@ -338,16 +351,23 @@ async function main() {
   }
 
   // Reuse case: another TechnoGG owns the server; just open a window on it.
-  // Our process can exit immediately — the window belongs to the running
-  // browser profile and the other instance manages the server lifetime.
+  // Our process can exit immediately — the other instance manages lifetime.
   if (!server) {
-    openAppWindow(url, () => process.exit(0));
+    openAppWindow(url);
     return;
   }
 
-  openAppWindow(url, shutdown);
+  openAppWindow(url);
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
+
+  // The app window lives inside the user's own browser, so there is no child
+  // process to watch. Open windows hold an SSE connection (/api/events);
+  // once none are connected and nothing has talked to us for a while, exit.
+  const IDLE_MS = 5 * 60_000;
+  setInterval(() => {
+    if (sseClients.size === 0 && Date.now() - lastActivity > IDLE_MS) shutdown();
+  }, 60_000);
 }
 
 main();

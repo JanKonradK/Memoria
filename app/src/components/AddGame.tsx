@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { useState } from 'react';
 import type { GamePreset } from '@technogg/shared';
 import { PRESETS, SERVER_TZ_OPTIONS } from '@technogg/shared';
@@ -53,25 +52,22 @@ export function AddGameSheet({ open }: { open: boolean }) {
         <>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {PRESETS.map((p) => (
-              <motion.button
+              <button
                 key={p.key}
                 type="button"
-                whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   setPicked(p);
                   setTz(p.tz);
                 }}
-                className="flex items-center gap-3 rounded-2xl p-3 text-left ring-1 transition hover:brightness-125"
+                className="flex items-center gap-3 rounded-2xl p-3 text-left ring-1 transition hover:brightness-125 active:scale-95"
                 style={{ background: tint(p.color, 0.08), boxShadow: `inset 0 0 0 1px ${tint(p.color, 0.25)}` }}
               >
                 <GameBadge short={p.short} color={p.color} color2={p.color2} size="lg" />
                 <span>
                   <span className="block text-sm font-bold text-slate-100">{p.name}</span>
-                  <span className="block text-[11px] text-slate-400">
-                    {p.resources.map((r) => r.name).join(' + ')}
-                  </span>
+                  <span className="block text-[11px] text-slate-400">{p.resources.map((r) => r.name).join(' + ')}</span>
                 </span>
-              </motion.button>
+              </button>
             ))}
           </div>
           <div className="mt-5 flex gap-2">
@@ -100,9 +96,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
                     {o.label}
                   </option>
                 ))}
-                {!SERVER_TZ_OPTIONS.some((o) => o.tz === picked.tz) && (
-                  <option value={picked.tz}>{picked.tz}</option>
-                )}
+                {!SERVER_TZ_OPTIONS.some((o) => o.tz === picked.tz) && <option value={picked.tz}>{picked.tz}</option>}
               </Select>
             </Field>
             {picked.resources.map((r, i) => (
@@ -114,7 +108,8 @@ export function AddGameSheet({ open }: { open: boolean }) {
               </Field>
             ))}
             <p className="text-[11px] text-slate-500">
-              Reset: {String(picked.dailyResetHour).padStart(2, '0')}:00 server · everything is editable later in the game editor.
+              Reset: {String(picked.dailyResetHour).padStart(2, '0')}:00 server · everything is editable later in the
+              game editor.
             </p>
           </div>
           <div className="mt-5 flex gap-2">

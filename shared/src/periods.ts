@@ -52,6 +52,29 @@ export function nextWeeklyReset(game: ResetGame, now: number): number {
   throw new Error('nextWeeklyReset: no reset found within 8 days');
 }
 
+/** Epoch ms when the current weekly period began (most recent weekly reset at or before `now`). */
+export function lastWeeklyReset(game: ResetGame, now: number): number {
+  const dt = DateTime.fromMillis(now, { zone: game.tz });
+  let day = dt.startOf('day');
+  for (let i = 0; i <= 7; i++) {
+    const candidate = atHour(day, game.dailyResetHour);
+    if (candidate.toMillis() <= now && day.weekday === game.weeklyResetDay) return candidate.toMillis();
+    day = day.minus({ days: 1 }).startOf('day');
+  }
+  /* istanbul ignore next */
+  return now;
+}
+
+export function currentMonthlyPeriodStart(game: ResetGame, now: number): number {
+  const dt = DateTime.fromMillis(now, { zone: game.tz });
+  const day = Math.min(28, Math.max(1, game.monthlyResetDay));
+  let candidate = atHour(dt.startOf('month').set({ day }), game.dailyResetHour);
+  if (candidate.toMillis() > now) {
+    candidate = atHour(dt.startOf('month').minus({ months: 1 }).set({ day }), game.dailyResetHour);
+  }
+  return candidate.toMillis();
+}
+
 export function nextMonthlyReset(game: ResetGame, now: number): number {
   const dt = DateTime.fromMillis(now, { zone: game.tz });
   const day = Math.min(28, Math.max(1, game.monthlyResetDay));

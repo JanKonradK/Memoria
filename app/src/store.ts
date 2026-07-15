@@ -1,26 +1,25 @@
 import { create } from 'zustand';
-import { get as idbGet, set as idbSet } from 'idb-keyval';
+import { del as idbDel, get as idbGet, set as idbSet } from 'idb-keyval';
 import type {
   AlertRule,
   AppState,
   Cadence,
-  FocusItem,
   Game,
   GameEvent,
   GamePreset,
   Reminder,
   Resource,
   Settings,
-  Purchase,
+  SettingsField,
+  QuickChip,
   Task,
-  Team,
-  Wallet,
 } from '@technogg/shared';
 import { completionId, emptyState, latestSnapshots, mergeState, normalizeState, projectEnergy } from '@technogg/shared';
+import { clearLocalSecrets, migrateLegacySecrets } from './secret-store';
 import { uid } from './util';
 
 const IDB_KEY = 'technogg-state';
-/** Matches the merge-side retention; generous so waste stats can look back weeks. */
+/** Matches the merge-side retention. */
 const SNAPSHOTS_KEPT = 200;
 
 type SyncStatus = 'idle' | 'syncing' | 'ok' | 'error';
@@ -63,11 +62,13 @@ function announceMutation(): void {
 export interface AppStore {
   state: AppState;
   loaded: boolean;
+  loadError: string;
   syncStatus: SyncStatus;
   syncError: string;
   lastSyncAt: number | null;
 
   load(): Promise<void>;
+  clearLocalData(): Promise<void>;
   /** Replace state (sync merge / import) without re-announcing a local mutation. */
   replaceState(next: AppState): void;
   setSyncStatus(status: SyncStatus, error?: string): void;
@@ -80,11 +81,16 @@ export interface AppStore {
 
   upsertResource(res: Partial<Resource> & { gameId: string }): void;
   deleteResource(id: string): void;
+  upsertChip(chip: Partial<QuickChip> & { gameId: string }): void;
+  deleteChip(id: string): void;
 
-  setEnergy(resourceId: string, value: number): void;
+  setEnergy(resourceId: string, value: number, reserve?: number): void;
   adjustEnergy(resourceId: string, delta: number): void;
 
   setTaskDone(taskId: string, periodKey: string, done: boolean): void;
+  startTaskTimer(taskId: string, periodKey: string): void;
+  restartTaskTimer(taskId: string, periodKey: string): void;
+  setTaskCount(taskId: string, periodKey: string, countDone: number): void;
   addTask(gameId: string, name: string, cadence: Cadence, intervalDays?: number): void;
   updateTask(id: string, patch: Partial<Task>): void;
   deleteTask(id: string): void;
@@ -93,27 +99,10 @@ export interface AppStore {
   deleteEvent(id: string): void;
 
   upsertRule(rule: Partial<AlertRule> & { type: AlertRule['type']; gameId: string | null }): void;
+  clearRule(type: AlertRule['type'], gameId: string | null): void;
 
   addReminder(message: string, at: number, gameId: string | null): void;
   deleteReminder(id: string): void;
-
-  addFocus(gameId: string, name: string): void;
-  updateFocus(id: string, patch: Partial<FocusItem>): void;
-  deleteFocus(id: string): void;
-  /** Swap with the previous/next live focus item of the same game. */
-  moveFocus(id: string, dir: -1 | 1): void;
-
-  addTeam(gameId: string, name: string): void;
-  updateTeam(id: string, patch: Partial<Team>): void;
-  deleteTeam(id: string): void;
-
-  /** Create-or-patch the game's wallet (id = gameId). */
-  upsertWallet(gameId: string, patch: Partial<Wallet>): void;
-  addPurchase(gameId: string, name: string, cycleDays: number): void;
-  updatePurchase(id: string, patch: Partial<Purchase>): void;
-  deletePurchase(id: string): void;
-  /** Extend expiry by one cycle (from now if already lapsed). */
-  renewPurchase(id: string): void;
 
   updateSettings(patch: Partial<Settings>): void;
   importJson(text: string): boolean;
@@ -122,13 +111,33 @@ export interface AppStore {
 export const useApp = create<AppStore>((set, get) => ({
   state: emptyState(),
   loaded: false,
+  loadError: '',
   syncStatus: 'idle',
   syncError: '',
   lastSyncAt: null,
 
   async load() {
-    const raw = await idbGet(IDB_KEY);
-    set({ state: normalizeState(raw), loaded: true });
+    set({ loadError: '' });
+    try {
+      const raw = await idbGet(IDB_KEY);
+      migrateLegacySecrets(raw);
+      set({ state: normalizeState(raw), loaded: true, loadError: '' });
+    } catch (error) {
+      set({
+        loaded: false,
+        loadError: error instanceof Error ? error.message : 'Local data could not be opened.',
+      });
+    }
+  },
+
+  async clearLocalData() {
+    try {
+      await idbDel(IDB_KEY);
+      clearLocalSecrets();
+      set({ state: emptyState(), loaded: true, loadError: '' });
+    } catch (error) {
+      set({ loadError: error instanceof Error ? error.message : 'Local data could not be cleared.' });
+    }
   },
 
   replaceState(next) {
@@ -178,6 +187,8 @@ export const useApp = create<AppStore>((set, get) => ({
         cap: over.capOverrides?.[i] ?? r.cap,
         regenMinutes: r.regenMinutes,
         reserveCap: r.reserveCap,
+        kind: r.kind,
+        reserveLabel: r.reserveLabel,
         sort: i,
         updatedAt: t,
       }));
@@ -188,6 +199,10 @@ export const useApp = create<AppStore>((set, get) => ({
         cadence: tk.cadence,
         intervalDays: tk.intervalDays ?? 1,
         anchorAt: t,
+        mode: tk.mode,
+        timerDurationMinutes: tk.timerDurationMinutes,
+        countTarget: tk.countTarget,
+        timerEndsAt: tk.mode === 'timer' ? null : undefined,
         sort: i,
         updatedAt: t,
       }));
@@ -226,7 +241,17 @@ export const useApp = create<AppStore>((set, get) => ({
       ],
       resources: [
         ...s.resources,
-        { id: uid(), gameId, name: 'Energy', icon: 'bolt', cap: 100, regenMinutes: 6, reserveCap: 0, sort: 0, updatedAt: t },
+        {
+          id: uid(),
+          gameId,
+          name: 'Energy',
+          icon: 'bolt',
+          cap: 100,
+          regenMinutes: 6,
+          reserveCap: 0,
+          sort: 0,
+          updatedAt: t,
+        },
       ],
     }));
     return gameId;
@@ -271,9 +296,41 @@ export const useApp = create<AppStore>((set, get) => ({
     get().mutate((s) => ({ ...s, resources: tombstone(s.resources, (r) => r.id === id) }));
   },
 
-  setEnergy(resourceId, value) {
+  upsertChip(chip) {
     get().mutate((s) => {
-      const snap = { id: uid(), resourceId, value: Math.max(0, Math.round(value)), takenAt: now() };
+      if (chip.id && s.chips.some((c) => c.id === chip.id)) {
+        return { ...s, chips: patchIn(s.chips, chip.id, chip) };
+      }
+      const item: QuickChip = {
+        id: chip.id ?? uid(),
+        gameId: chip.gameId,
+        label: chip.label ?? 'Spend',
+        delta: chip.delta ?? -20,
+        sort: chip.sort ?? s.chips.filter((c) => c.gameId === chip.gameId && !c.deleted).length,
+        updatedAt: now(),
+      };
+      return { ...s, chips: [...s.chips, item] };
+    });
+  },
+
+  deleteChip(id) {
+    get().mutate((s) => ({ ...s, chips: tombstone(s.chips, (c) => c.id === id) }));
+  },
+
+  setEnergy(resourceId, value, reserve) {
+    get().mutate((s) => {
+      const res = s.resources.find((item) => item.id === resourceId && !item.deleted);
+      if (!res) return s;
+      const clamped = Math.min(res.cap, Math.max(0, Math.round(value)));
+      const clampedReserve =
+        reserve != null && res.reserveCap > 0 ? Math.min(res.reserveCap, Math.max(0, Math.round(reserve))) : undefined;
+      const snap = {
+        id: uid(),
+        resourceId,
+        value: clamped,
+        takenAt: now(),
+        ...(clampedReserve != null ? { reserve: clampedReserve } : {}),
+      };
       const mine = s.snapshots.filter((x) => x.resourceId === resourceId);
       mine.sort((a, b) => b.takenAt - a.takenAt);
       const keep = new Set(mine.slice(0, SNAPSHOTS_KEPT - 1).map((x) => x.id));
@@ -287,9 +344,12 @@ export const useApp = create<AppStore>((set, get) => ({
   adjustEnergy(resourceId, delta) {
     const s = get().state;
     const res = s.resources.find((r) => r.id === resourceId);
+    const game = s.games.find((g) => g.id === res?.gameId);
     if (!res) return;
-    const proj = projectEnergy(res, latestSnapshots(s.snapshots).get(resourceId), now());
-    get().setEnergy(resourceId, Math.max(0, proj.value + delta));
+    const snap = latestSnapshots(s.snapshots).get(resourceId);
+    const proj = projectEnergy(res, snap, now(), game);
+    const next = Math.max(0, Math.min(res.cap, proj.value + delta));
+    get().setEnergy(resourceId, next, snap?.reserve);
   },
 
   setTaskDone(taskId, periodKey, done) {
@@ -300,6 +360,59 @@ export const useApp = create<AppStore>((set, get) => ({
         taskId,
         periodKey,
         done,
+        updatedAt: now(),
+      }),
+    }));
+  },
+
+  startTaskTimer(taskId, periodKey) {
+    const t = now();
+    const task = get().state.tasks.find((item) => item.id === taskId);
+    if (!task) return;
+    const duration = (task.timerDurationMinutes ?? 20 * 60) * 60_000;
+    get().mutate((s) => ({
+      ...s,
+      tasks: patchIn(s.tasks, taskId, { timerEndsAt: t + duration }),
+      completions: upsert(s.completions, {
+        id: completionId(taskId, periodKey),
+        taskId,
+        periodKey,
+        done: true,
+        updatedAt: t,
+      }),
+    }));
+  },
+
+  restartTaskTimer(taskId, periodKey) {
+    const t = now();
+    const task = get().state.tasks.find((item) => item.id === taskId);
+    if (!task) return;
+    const duration = (task.timerDurationMinutes ?? 20 * 60) * 60_000;
+    get().mutate((s) => ({
+      ...s,
+      tasks: patchIn(s.tasks, taskId, { timerEndsAt: t + duration }),
+      completions: upsert(s.completions, {
+        id: completionId(taskId, periodKey),
+        taskId,
+        periodKey,
+        done: true,
+        updatedAt: t,
+      }),
+    }));
+  },
+
+  setTaskCount(taskId, periodKey, countDone) {
+    const task = get().state.tasks.find((item) => item.id === taskId);
+    const target = task?.countTarget ?? 1;
+    const done = countDone >= target;
+    get().mutate((s) => ({
+      ...s,
+      completions: upsert(s.completions, {
+        id: completionId(taskId, periodKey),
+        taskId,
+        periodKey,
+        done,
+        countDone,
         updatedAt: now(),
       }),
     }));
@@ -378,6 +491,13 @@ export const useApp = create<AppStore>((set, get) => ({
     });
   },
 
+  clearRule(type, gameId) {
+    get().mutate((s) => ({
+      ...s,
+      alertRules: tombstone(s.alertRules, (r) => r.type === type && r.gameId === gameId && !r.deleted),
+    }));
+  },
+
   addReminder(message, at, gameId) {
     get().mutate((s) => ({
       ...s,
@@ -389,132 +509,32 @@ export const useApp = create<AppStore>((set, get) => ({
     get().mutate((s) => ({ ...s, reminders: tombstone(s.reminders, (r) => r.id === id) }));
   },
 
-  addFocus(gameId, name) {
-    get().mutate((s) => ({
-      ...s,
-      focus: [
-        ...s.focus,
-        {
-          id: uid(),
-          gameId,
-          name,
-          note: '',
-          done: false,
-          sort: Math.max(0, ...s.focus.filter((f) => f.gameId === gameId).map((f) => f.sort + 1)),
-          updatedAt: now(),
-        },
-      ],
-    }));
-  },
-
-  updateFocus(id, patch) {
-    get().mutate((s) => ({ ...s, focus: patchIn(s.focus, id, patch) }));
-  },
-
-  deleteFocus(id) {
-    get().mutate((s) => ({ ...s, focus: tombstone(s.focus, (f) => f.id === id) }));
-  },
-
-  addTeam(gameId, name) {
-    get().mutate((s) => ({
-      ...s,
-      teams: [
-        ...s.teams,
-        {
-          id: uid(),
-          gameId,
-          name,
-          members: [],
-          sort: Math.max(0, ...s.teams.filter((t) => t.gameId === gameId).map((t) => t.sort + 1)),
-          updatedAt: now(),
-        },
-      ],
-    }));
-  },
-
-  updateTeam(id, patch) {
-    get().mutate((s) => ({ ...s, teams: patchIn(s.teams, id, patch) }));
-  },
-
-  deleteTeam(id) {
-    get().mutate((s) => ({ ...s, teams: tombstone(s.teams, (t) => t.id === id) }));
-  },
-
-  upsertWallet(gameId, patch) {
+  updateSettings(patch) {
     get().mutate((s) => {
-      const existing = s.wallets.find((w) => w.id === gameId);
-      if (existing) return { ...s, wallets: patchIn(s.wallets, gameId, patch) };
-      const t = now();
-      const wallet: Wallet = {
-        id: gameId,
-        gameId,
-        balance: 0,
-        balanceAt: t,
-        dailyIncome: 60,
-        pullCost: 160,
-        nextPatchAt: null,
-        patchDays: 42,
-        updatedAt: t,
-        ...patch,
-      };
-      return { ...s, wallets: [...s.wallets, wallet] };
-    });
-  },
-
-  addPurchase(gameId, name, cycleDays) {
-    const t = now();
-    get().mutate((s) => ({
-      ...s,
-      purchases: [
-        ...s.purchases,
-        { id: uid(), gameId, name, cycleDays, expiresAt: t + cycleDays * 86_400_000, notify: true, updatedAt: t },
-      ],
-    }));
-  },
-
-  updatePurchase(id, patch) {
-    get().mutate((s) => ({ ...s, purchases: patchIn(s.purchases, id, patch) }));
-  },
-
-  deletePurchase(id) {
-    get().mutate((s) => ({ ...s, purchases: tombstone(s.purchases, (p) => p.id === id) }));
-  },
-
-  renewPurchase(id) {
-    const t = now();
-    get().mutate((s) => ({
-      ...s,
-      purchases: s.purchases.map((p) =>
-        p.id === id ? { ...p, expiresAt: Math.max(t, p.expiresAt) + p.cycleDays * 86_400_000, updatedAt: t } : p,
-      ),
-    }));
-  },
-
-  moveFocus(id, dir) {
-    get().mutate((s) => {
-      const item = s.focus.find((f) => f.id === id);
-      if (!item) return s;
-      const siblings = s.focus.filter((f) => f.gameId === item.gameId && !f.deleted).sort((a, b) => a.sort - b.sort);
-      const i = siblings.findIndex((f) => f.id === id);
-      const other = siblings[i + dir];
-      if (!other) return s;
-      const t = now();
+      const updatedAt = now();
+      const fields = Object.keys(patch).filter(
+        (field): field is SettingsField => field !== 'updatedAt' && field !== 'deleted' && field !== 'fieldUpdatedAt',
+      );
       return {
         ...s,
-        focus: s.focus.map((f) =>
-          f.id === item.id ? { ...f, sort: other.sort, updatedAt: t } : f.id === other.id ? { ...f, sort: item.sort, updatedAt: t } : f,
-        ),
+        settings: {
+          ...s.settings,
+          ...patch,
+          updatedAt,
+          fieldUpdatedAt: {
+            ...s.settings.fieldUpdatedAt,
+            ...Object.fromEntries(fields.map((field) => [field, updatedAt])),
+          },
+        },
       };
     });
-  },
-
-  updateSettings(patch) {
-    get().mutate((s) => ({ ...s, settings: { ...s.settings, ...patch, updatedAt: now() } }));
   },
 
   importJson(text) {
     try {
-      const incoming = normalizeState(JSON.parse(text));
+      const raw = JSON.parse(text) as unknown;
+      migrateLegacySecrets(raw);
+      const incoming = normalizeState(raw);
       get().mutate((s) => mergeState(s, incoming));
       return true;
     } catch {

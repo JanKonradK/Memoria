@@ -27,7 +27,13 @@ All times in the game's SERVER time (${game.tz}). Set "dailyTouch": true only fo
 
 function parseWhen(v: unknown, tz: string): number | null {
   const s = String(v ?? '').trim();
-  for (const fmt of ['yyyy-LL-dd HH:mm:ss', 'yyyy-LL-dd HH:mm', "yyyy-LL-dd'T'HH:mm:ss", "yyyy-LL-dd'T'HH:mm", 'yyyy-LL-dd']) {
+  for (const fmt of [
+    'yyyy-LL-dd HH:mm:ss',
+    'yyyy-LL-dd HH:mm',
+    "yyyy-LL-dd'T'HH:mm:ss",
+    "yyyy-LL-dd'T'HH:mm",
+    'yyyy-LL-dd',
+  ]) {
     const dt = DateTime.fromFormat(s, fmt, { zone: tz });
     if (dt.isValid) return dt.toMillis();
   }
@@ -36,7 +42,10 @@ function parseWhen(v: unknown, tz: string): number | null {
 }
 
 function parsePasted(text: string, game: Game): { events: ParsedEvent[]; error: string } {
-  const cleaned = text.replace(/^```[a-z]*\s*/im, '').replace(/```\s*$/m, '').trim();
+  const cleaned = text
+    .replace(/^```[a-z]*\s*/im, '')
+    .replace(/```\s*$/m, '')
+    .trim();
   if (!cleaned) return { events: [], error: '' };
   let raw: unknown;
   try {
@@ -68,7 +77,9 @@ function parsePasted(text: string, game: Game): { events: ParsedEvent[]; error: 
   });
   return {
     events,
-    error: problems.length ? `Skipped ${problems.length} malformed item${problems.length > 1 ? 's' : ''}: ${problems.join(', ')}` : '',
+    error: problems.length
+      ? `Skipped ${problems.length} malformed item${problems.length > 1 ? 's' : ''}: ${problems.join(', ')}`
+      : '',
   };
 }
 
@@ -184,7 +195,8 @@ export function PasteEventsSheet({ open }: { open: boolean }) {
                       </span>
                       <span className="min-w-0 flex-1 truncate text-sm text-slate-200">{e.name}</span>
                       <span className="shrink-0 text-[11px] tabular-nums text-slate-500">
-                        {DateTime.fromMillis(e.start).toFormat('dd LLL HH:mm')} → {DateTime.fromMillis(e.end).toFormat('dd LLL HH:mm')}
+                        {DateTime.fromMillis(e.start).toFormat('dd LLL HH:mm')} →{' '}
+                        {DateTime.fromMillis(e.end).toFormat('dd LLL HH:mm')}
                         {dup && ' · already imported'}
                       </span>
                     </label>
@@ -193,7 +205,9 @@ export function PasteEventsSheet({ open }: { open: boolean }) {
               </div>
               <div className="flex items-center gap-3">
                 <Btn kind="primary" onClick={doImport}>
-                  Import {parsed.events.filter((e) => !unchecked.has(e.sourceKey) && !existingKeys.has(e.sourceKey)).length} events
+                  Import{' '}
+                  {parsed.events.filter((e) => !unchecked.has(e.sourceKey) && !existingKeys.has(e.sourceKey)).length}{' '}
+                  events
                 </Btn>
                 {importedMsg && <span className="text-xs text-emerald-300">{importedMsg}</span>}
               </div>

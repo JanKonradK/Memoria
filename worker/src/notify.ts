@@ -1,4 +1,9 @@
-import type { PendingAlert, Settings } from '@technogg/shared';
+import type { PendingAlert } from '@technogg/shared';
+
+export interface NotificationSecrets {
+  discord?: { webhook: string };
+  telegram?: { token: string; chatId: string };
+}
 
 function hexToInt(hex: string): number {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -17,6 +22,7 @@ async function sendDiscord(webhook: string, alerts: PendingAlert[]): Promise<boo
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ username: 'TechnoGG', embeds }),
+      signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return false;
   }
@@ -29,18 +35,20 @@ async function sendTelegram(token: string, chatId: string, alerts: PendingAlert[
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ chat_id: chatId, text }),
+    signal: AbortSignal.timeout(10_000),
   });
   return res.ok;
 }
 
 /** Send a batch of alerts to every configured channel. Returns channels that succeeded. */
-export async function dispatchAlerts(settings: Settings, alerts: PendingAlert[]): Promise<string[]> {
+export async function dispatchAlerts(secrets: NotificationSecrets, alerts: PendingAlert[]): Promise<string[]> {
   const ok: string[] = [];
-  if (settings.discordWebhook) {
-    if (await sendDiscord(settings.discordWebhook, alerts).catch(() => false)) ok.push('discord');
+  if (secrets.discord?.webhook) {
+    if (await sendDiscord(secrets.discord.webhook, alerts).catch(() => false)) ok.push('discord');
   }
-  if (settings.telegramToken && settings.telegramChatId) {
-    if (await sendTelegram(settings.telegramToken, settings.telegramChatId, alerts).catch(() => false)) ok.push('telegram');
+  if (secrets.telegram?.token && secrets.telegram.chatId) {
+    if (await sendTelegram(secrets.telegram.token, secrets.telegram.chatId, alerts).catch(() => false))
+      ok.push('telegram');
   }
   return ok;
 }

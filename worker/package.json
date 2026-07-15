@@ -6,17 +6,25 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "wrangler d1 execute technogg --remote --file=./schema.sql",
-    "db:migrate:local": "wrangler d1 execute technogg --local --file=./schema.sql"
+    "cf:types": "wrangler types worker-env.d.ts",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:staging": "wrangler d1 migrations apply DB --remote --env staging",
+    "db:migrate:production": "wrangler d1 migrations apply DB --remote --env production"
   },
   "dependencies": {
+    "@clerk/backend": "^3.11.4",
     "@technogg/shared": "*",
     "hono": "^4.7.10"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250525.0",
+    "@cloudflare/vitest-pool-workers": "^0.18.4",
+    "@types/node": "^26.1.1",
     "typescript": "^5.8.3",
+    "vitest": "^4.1.10",
     "wrangler": "^4.16.1"
   }
 }
