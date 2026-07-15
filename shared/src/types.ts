@@ -1,4 +1,7 @@
 export type Cadence = 'daily' | 'weekly' | 'monthly' | 'custom';
+export type ResourceKind = 'regen' | 'weekly' | 'counter';
+export type TaskMode = 'check' | 'timer' | 'count';
+export const CURRENT_SCHEMA_VERSION = 3;
 
 /** Everything syncable carries updatedAt (epoch ms) for last-write-wins merge. */
 export interface Syncable {
@@ -49,6 +52,10 @@ export interface Resource extends Syncable {
   /** Overflow reserve capacity (e.g. HSR Reserve Trailblaze Power). 0 = none. */
   reserveCap: number;
   sort: number;
+  /** Regenerating bar, weekly refill counter, or manual-only counter. */
+  kind?: ResourceKind;
+  /** Display label for the reserve/overflow counter on the main resource row. */
+  reserveLabel?: string;
 }
 
 /** A reading (manual or auto-imported): "this resource had `value` points at `takenAt`". */
@@ -71,6 +78,14 @@ export interface Task extends Syncable {
   /** For cadence "custom": epoch ms anchoring period boundaries. */
   anchorAt: number;
   sort: number;
+  /** Presentation on the game card. Defaults to checkbox. */
+  mode?: TaskMode;
+  /** Timer length in minutes (expeditions / assignments). */
+  timerDurationMinutes?: number;
+  /** Epoch ms when the active timer ends; null when idle. */
+  timerEndsAt?: number | null;
+  /** Required completions per period (weekly bosses). */
+  countTarget?: number;
 }
 
 /** Completion state of a task within one period. id = `${taskId}|${periodKey}`. */
@@ -79,6 +94,8 @@ export interface Completion extends Syncable {
   taskId: string;
   periodKey: string;
   done: boolean;
+  /** Progress for count-mode tasks in this period. */
+  countDone?: number;
 }
 
 /** 'cycle' = recurring endgame windows (Abyss/Theater, MoC/PF/AS/AA, Shiyu/DA…). */
@@ -95,6 +112,8 @@ export interface GameEvent extends Syncable {
   dailyTouch: boolean;
   /** Include in "event ending soon" alerts. */
   notify: boolean;
+  /** User marked it complete — collapsed on the timeline, no alerts, no checklist entry. */
+  done?: boolean;
   notes: string;
   /** Stable id of the imported source (e.g. "genshin:21788") — used to dedupe re-imports. */
   sourceKey?: string;
@@ -109,12 +128,7 @@ export interface QuickChip extends Syncable {
   sort: number;
 }
 
-export type AlertType =
-  | 'energy_cap'
-  | 'daily_undone'
-  | 'weekly_undone'
-  | 'monthly_undone'
-  | 'event_end';
+export type AlertType = 'energy_cap' | 'daily_undone' | 'weekly_undone' | 'monthly_undone' | 'event_end';
 
 export interface AlertRule extends Syncable {
   id: string;
@@ -134,111 +148,39 @@ export interface Reminder extends Syncable {
   at: number;
 }
 
-/** HoYoLAB-supported games. */
-export type HoyoKind = 'genshin' | 'hsr' | 'zzz';
+export type IntegrationKind = 'discord' | 'telegram';
 
-/** Binds one TechnoGG game to a HoYoLAB game account for auto-import. */
-export interface HoyoLink {
-  gameId: string;
-  kind: HoyoKind;
-  uid: string;
-  /** HoYo region code, e.g. "os_euro" / "prod_official_eu" / "prod_gf_eu". */
-  region: string;
+export interface IntegrationStatus {
+  kind: IntegrationKind;
+  connected: boolean;
+  maskedLabel: string;
+  updatedAt: number | null;
+  consentedAt: number | null;
 }
 
-export interface NoteStat {
-  label: string;
-  value: string;
-  /** Highlight (something is ready/claimable/about to overflow). */
-  urgent?: boolean;
+/** Accepted only during local migration; these fields must never enter synced AppState JSON. */
+export interface LegacySecretSettings {
+  discordWebhook?: string;
+  telegramToken?: string;
+  telegramChatId?: string;
 }
 
-/** Normalized HoYoLAB daily note — the "yet to do in game" summary. */
-export interface NoteSummary {
-  primary: { value: number; cap: number; recoverSeconds: number | null };
-  reserve: { value: number; cap: number } | null;
-  daily: { done: number; total: number; claimed: boolean } | null;
-  stats: NoteStat[];
-}
-
-/** Latest imported note per game. id = gameId (one row per game, LWW-merged). */
-export interface GameStatus extends Syncable {
-  id: string;
-  gameId: string;
-  fetchedAt: number;
-  summary: NoteSummary;
-}
-
-/** One "what to build/farm next" goal for a game. */
-export interface FocusItem extends Syncable {
-  id: string;
-  gameId: string;
-  name: string;
-  note: string;
-  done: boolean;
-  sort: number;
-}
-
-/** Recurring paid perk (Welkin, Battle Pass) tracked by expiry date. */
-export interface Purchase extends Syncable {
-  id: string;
-  gameId: string;
-  name: string;
-  /** Renewal cycle in days (30 = monthly card, ~42 = per patch). */
-  cycleDays: number;
-  expiresAt: number;
-  /** Ping via the alert engine when about to expire. */
-  notify: boolean;
-}
-
-/** Premium-currency wallet + income model, one per game (id = gameId). */
-export interface Wallet extends Syncable {
-  id: string;
-  gameId: string;
-  /** Balance as entered at `balanceAt`. */
-  balance: number;
-  balanceAt: number;
-  /** Average earned per day (include Welkin/BP drip if bought). */
-  dailyIncome: number;
-  /** Premium cost of one pull (160 for HoYo games). */
-  pullCost: number;
-  /** Start of the next version/patch; rolls forward by patchDays. */
-  nextPatchAt: number | null;
-  patchDays: number;
-}
-
-export interface TeamMember {
-  name: string;
-  /** Flagged as underbuilt — surfaces on the game card. */
-  needsWork: boolean;
-}
-
-/** A saved team comp (e.g. one of your three ZZZ squads). */
-export interface Team extends Syncable {
-  id: string;
-  gameId: string;
-  name: string;
-  members: TeamMember[];
-  sort: number;
-}
+export type SettingsField = 'quietStart' | 'quietEnd' | 'localTz' | 'sleepHours';
 
 export interface Settings extends Syncable {
-  discordWebhook: string;
-  telegramToken: string;
-  telegramChatId: string;
   /** Quiet hours in minutes-from-midnight local time; null = disabled. */
   quietStart: number | null;
   quietEnd: number | null;
   /** IANA timezone used to format alert messages + quiet hours. */
   localTz: string;
-  /** Raw hoyolab.com cookie header for auto-import ("" = disabled). */
-  hoyolabCookie: string;
-  hoyolabLinks: HoyoLink[];
   /** Hours of sleep used by the "safe to sleep" check. */
   sleepHours: number;
+  /** Per-field clocks prevent unrelated settings edits on two devices from overwriting each other. */
+  fieldUpdatedAt?: Partial<Record<SettingsField, number>>;
 }
 
 export interface AppState {
+  schemaVersion: number;
   games: Game[];
   resources: Resource[];
   snapshots: Snapshot[];
@@ -248,29 +190,21 @@ export interface AppState {
   chips: QuickChip[];
   alertRules: AlertRule[];
   reminders: Reminder[];
-  focus: FocusItem[];
-  teams: Team[];
-  purchases: Purchase[];
-  wallets: Wallet[];
-  statuses: GameStatus[];
   settings: Settings;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  discordWebhook: '',
-  telegramToken: '',
-  telegramChatId: '',
   quietStart: 60, // 01:00
   quietEnd: 480, // 08:00
   localTz: 'Europe/Warsaw',
-  hoyolabCookie: '',
-  hoyolabLinks: [],
   sleepHours: 8,
+  fieldUpdatedAt: {},
   updatedAt: 0,
 };
 
 export function emptyState(): AppState {
   return {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     games: [],
     resources: [],
     snapshots: [],
@@ -280,11 +214,6 @@ export function emptyState(): AppState {
     chips: [],
     alertRules: [],
     reminders: [],
-    focus: [],
-    teams: [],
-    purchases: [],
-    wallets: [],
-    statuses: [],
     settings: { ...DEFAULT_SETTINGS },
   };
 }

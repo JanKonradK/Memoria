@@ -72,7 +72,10 @@ export function drawPixels(size, { maskable = false } = {}) {
   const SS = 2; // 2× supersample for smooth edges
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      let r = 0, g = 0, b = 0, a = 0;
+      let r = 0,
+        g = 0,
+        b = 0,
+        a = 0;
       for (let sy = 0; sy < SS; sy++) {
         for (let sx = 0; sx < SS; sx++) {
           const u = (x + (sx + 0.5) / SS) / size;

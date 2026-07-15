@@ -78,6 +78,16 @@ export function fileToImageDataUrl(file: File, maxDim = 640): Promise<string> {
   });
 }
 
+const DAY = 86_400_000;
+
+/** Countdown urgency: rose <24h, gold <72h, muted beyond that / after the end. */
+export function endTone(msLeft: number): string {
+  if (msLeft <= 0) return 'rgba(148,163,184,0.6)';
+  if (msLeft < DAY) return 'var(--color-rose)';
+  if (msLeft < 3 * DAY) return 'var(--color-gold)';
+  return 'rgb(148,163,184)';
+}
+
 /** Hex accent → translucent rgba for glows/backgrounds. */
 export function tint(hex: string, alpha: number): string {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());

@@ -1,0 +1,52 @@
+import { expect, test } from '@playwright/test';
+
+test('backup export and merge preview stay within the viewport', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Add your first game' }).click();
+  await page.getByRole('button', { name: /Genshin Impact/ }).click();
+  await page.getByRole('button', { name: 'Add GI' }).click();
+  await expect(page.getByRole('heading', { name: 'Genshin Impact', exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export backup' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^technogg-backup-/);
+
+  const backup = await download.createReadStream();
+  expect(backup).toBeTruthy();
+
+  await page.getByText('Import backup').click();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: 'technogg-backup.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify({
+        exportedAt: new Date().toISOString(),
+        schemaVersion: 2,
+        state: {
+          games: [],
+          resources: [],
+          snapshots: [],
+          tasks: [],
+          completions: [],
+          events: [],
+          chips: [],
+          alertRules: [],
+          reminders: [],
+          settings: {
+            quietStart: null,
+            quietEnd: null,
+            localTz: 'UTC',
+            sleepHours: 8,
+            updatedAt: Date.now(),
+          },
+        },
+        integrations: [],
+        secretsIncluded: false,
+      }),
+    ),
+  });
+  await expect(page.getByText(/Merge backup with/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Merge backup' })).toBeVisible();
+});

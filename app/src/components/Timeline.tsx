@@ -1,10 +1,9 @@
-import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { DateTime } from 'luxon';
 import type { Game, GameEvent } from '@technogg/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
-import { fmtDur, tint } from '../util';
+import { endTone, fmtDur, tint } from '../util';
 import { planSeedImport, SEED_UPDATED } from '../data/seed-events';
 import { Btn, GameBadge, SectionTitle } from './ui';
 
@@ -16,30 +15,20 @@ const DAY = 86_400_000;
  */
 const TYPE_RANK = { event: 0, custom: 0, cycle: 1, banner: 2, maintenance: 3 } as const;
 
-/** Countdown urgency: rose <24h, gold <72h, muted beyond that / after the end. */
-function endTone(msLeft: number): string {
-  if (msLeft <= 0) return 'rgba(148,163,184,0.6)';
-  if (msLeft < DAY) return 'var(--color-rose)';
-  if (msLeft < 3 * DAY) return 'var(--color-gold)';
-  return 'rgb(148,163,184)';
-}
-
-/** Readable text on a strong game-color fill (GI is near-white — needs dark text). */
-function isLightColor(hex: string): boolean {
+function lum(hex: string): number {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return false;
-  // Bars are the color at 0.4–0.7 alpha over black, so only near-white
-  // accents (GI) actually produce a light surface.
+  if (!m) return 0;
   const n = parseInt(m[1]!, 16);
-  return 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) > 200;
+  return 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
 }
 
 /**
- * Version-long ambient filler (no alert, no daily claim) — collapsed behind a
- * per-game toggle so the timeline stays about actual deadlines.
+ * Readable text on a strong two-tone fill: judge the WHOLE gradient (bars run
+ * color → color2 at ~0.5 alpha over black), so only pairings that stay light
+ * end-to-end (GI's cream→tan) get dark text.
  */
-function isQuiet(ev: GameEvent, now: number): boolean {
-  return (ev.type === 'event' || ev.type === 'custom') && !ev.notify && !ev.dailyTouch && ev.end > now;
+function isLightFill(color: string, color2?: string): boolean {
+  return (lum(color) + lum(color2 ?? color)) / 2 > 200;
 }
 
 function EventRow({
@@ -49,6 +38,7 @@ function EventRow({
   ws,
   we,
   onOpen,
+  onToggleDone,
 }: {
   ev: GameEvent;
   game: Game;
@@ -56,10 +46,13 @@ function EventRow({
   ws: number;
   we: number;
   onOpen: () => void;
+  onToggleDone: () => void;
 }) {
   const span = we - ws;
   const left = (Math.max(ev.start, ws) - ws) / span;
   const width = (Math.min(ev.end, we) - Math.max(ev.start, ws)) / span;
+  const displayWidth = Math.min(100, Math.max(width * 100, 8));
+  const displayLeft = Math.max(0, Math.min(left * 100, 100 - displayWidth));
   const msLeft = ev.end - now;
   const ended = msLeft <= 0;
   const maint = ev.type === 'maintenance';
@@ -68,25 +61,25 @@ function EventRow({
   const tone = maint ? 'rgba(148,163,184,0.6)' : endTone(msLeft);
 
   return (
-    <motion.button
-      key={ev.id}
-      type="button"
-      layout
-      initial={{ opacity: 0, x: -12 }}
-      animate={{ opacity: 1, x: 0 }}
-      onClick={onOpen}
-      className={`relative block w-full rounded-xl text-left ${maint ? 'h-6' : 'h-9'}`}
-      title={`${game.name}: ${ev.name}`}
+    <div
+      className={`slide-in group/row relative block h-11 w-full rounded-xl text-left ${maint ? 'sm:h-6' : 'sm:h-9'} ${ev.done ? 'opacity-40' : ''}`}
     >
+      <button
+        type="button"
+        onClick={onOpen}
+        className="absolute inset-0 z-10 rounded-xl"
+        aria-label={`Open ${game.name} event: ${ev.name}`}
+        title={`${game.name}: ${ev.name}`}
+      />
       <div className="absolute inset-0 rounded-xl bg-white/[0.03]" />
-      <motion.div
-        layout
+      <div
+        data-event-bar
         className={`absolute inset-y-0 flex items-center gap-1.5 overflow-hidden rounded-xl px-2 ${
           maint ? 'border border-dashed border-slate-500/50' : ''
         }`}
         style={{
-          left: `${left * 100}%`,
-          width: `${Math.max(width * 100, 8)}%`,
+          left: `${displayLeft}%`,
+          width: `${displayWidth}%`,
           // Events are the loud ones — banners you've already made your mind up about.
           // Two-tone: color → color2 carries each game's real icon palette.
           background: maint
@@ -98,11 +91,15 @@ function EventRow({
           opacity: ended ? 0.35 : 1,
         }}
       >
-        {banner && <span className="text-[10px]" style={{ color: 'rgba(232,180,90,0.45)' }}>★</span>}
+        {banner && (
+          <span className="text-[10px]" style={{ color: 'rgba(232,180,90,0.45)' }}>
+            ★
+          </span>
+        )}
         {cycle && (
           <span
             className={`rounded px-1 text-[8px] font-black uppercase tracking-wider ${
-              isLightColor(game.color) ? 'bg-black/15 text-slate-800' : 'bg-black/30 text-white/85'
+              isLightFill(game.color, game.color2) ? 'bg-black/15 text-slate-800' : 'bg-black/30 text-white/85'
             }`}
           >
             cycle
@@ -119,23 +116,49 @@ function EventRow({
               ? 'font-medium text-slate-400'
               : banner
                 ? 'font-medium text-slate-400'
-                : isLightColor(game.color)
+                : isLightFill(game.color, game.color2)
                   ? 'font-bold text-slate-900'
                   : 'font-bold text-white'
           }`}
         >
           {ev.name}
         </span>
-      </motion.div>
-      <span
-        className={`absolute inset-y-0 right-1 z-10 my-auto flex h-fit items-center rounded-md bg-black/70 px-1.5 py-px text-[10px] font-bold tabular-nums ${
-          !ended && !maint && msLeft < DAY ? 'warn-pulse' : ''
-        }`}
-        style={{ color: tone }}
-      >
-        {ended ? 'ended' : maint ? DateTime.fromMillis(ev.start).toFormat('dd LLL HH:mm') : `ends ${fmtDur(msLeft)}`}
+      </div>
+      <span className="pointer-events-none absolute inset-y-0 right-1 z-20 my-auto flex h-fit items-center gap-1">
+        <button
+          type="button"
+          title={ev.done ? 'Marked done — click to bring it back' : 'Done with this — hide it'}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleDone();
+          }}
+          aria-label={ev.done ? `Restore ${ev.name}` : `Mark ${ev.name} done`}
+          className={`pointer-events-auto flex items-center justify-center rounded-full font-black transition ${
+            maint ? 'h-9 w-9 text-[9px] sm:h-6 sm:w-6' : 'h-9 w-9 text-xs sm:h-8 sm:w-8'
+          } ${
+            ev.done
+              ? 'bg-emerald-400/90 text-black'
+              : 'bg-black/70 text-slate-400 opacity-60 hover:text-emerald-300 focus-visible:opacity-100 sm:opacity-0 sm:group-hover/row:opacity-100'
+          }`}
+        >
+          ✓
+        </button>
+        <span
+          className={`rounded-md bg-black/70 px-1.5 py-px text-[10px] font-bold tabular-nums ${
+            !ended && !maint && !ev.done && msLeft < DAY ? 'warn-pulse' : ''
+          }`}
+          style={{ color: ev.done ? 'rgb(52,211,153)' : tone }}
+        >
+          {ev.done
+            ? 'done'
+            : ended
+              ? 'ended'
+              : maint
+                ? DateTime.fromMillis(ev.start).toFormat('dd LLL HH:mm')
+                : `ends ${fmtDur(msLeft)}`}
+        </span>
       </span>
-    </motion.button>
+    </div>
   );
 }
 
@@ -156,7 +179,7 @@ export function TimelinePage({ now }: { now: number }) {
           start: p.start,
           end: p.end,
           dailyTouch: p.seed.dailyTouch ?? false,
-          notify: p.seed.type === 'maintenance' ? false : p.seed.notify ?? true,
+          notify: p.seed.type === 'maintenance' ? false : (p.seed.notify ?? true),
           notes: p.seed.notes ?? '',
           sourceKey: p.seed.sourceKey,
         });
@@ -167,11 +190,12 @@ export function TimelinePage({ now }: { now: number }) {
     }
   };
 
-  // 30 days ahead so next month's cycle windows (e.g. August Abyss) are visible.
+  // 28 days ahead so next month's cycle windows (e.g. next Abyss) stay visible;
+  // 30-day span / 10 ticks = a readable gridline every 3 days.
   const ws = now - 2 * DAY;
-  const we = now + 30 * DAY;
+  const we = now + 28 * DAY;
   const span = we - ws;
-  const TICKS = 8;
+  const TICKS = 10;
 
   const games = state.games.filter((g) => !g.deleted);
   const live = state.events.filter((e) => !e.deleted);
@@ -179,19 +203,19 @@ export function TimelinePage({ now }: { now: number }) {
     games.map((g) => [
       g.id,
       live
-        .filter((e) => e.gameId === g.id && e.end >= ws && e.start <= we)
-        .sort((a, b) => TYPE_RANK[a.type] - TYPE_RANK[b.type] || a.end - b.end),
+        .filter((e) => e.gameId === g.id && e.end > ws && e.start < we)
+        .sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || TYPE_RANK[a.type] - TYPE_RANK[b.type] || a.end - b.end),
     ]),
   );
   const gameById = new Map(games.map((g) => [g.id, g]));
 
   // Soonest PLAY deadlines across all games — events and endgame cycles.
-  // Banners and quiet filler are excluded: you already know if you're pulling.
+  // Banners and things you've marked done are excluded.
   const endingSoon = live
     .filter(
       (e) =>
         (e.type === 'event' || e.type === 'custom' || e.type === 'cycle') &&
-        (e.notify || e.dailyTouch) &&
+        !e.done &&
         e.end > now &&
         e.start <= now &&
         gameById.has(e.gameId),
@@ -200,9 +224,9 @@ export function TimelinePage({ now }: { now: number }) {
     .slice(0, 5);
 
   const reminders = state.reminders.filter((r) => !r.deleted).sort((a, b) => a.at - b.at);
-  const [quietOpen, setQuietOpen] = useState<Set<string>>(new Set());
-  const toggleQuiet = (gameId: string) =>
-    setQuietOpen((s) => {
+  const [doneOpen, setDoneOpen] = useState<Set<string>>(new Set());
+  const toggleDoneOpen = (gameId: string) =>
+    setDoneOpen((s) => {
       const next = new Set(s);
       if (next.has(gameId)) next.delete(gameId);
       else next.add(gameId);
@@ -213,17 +237,17 @@ export function TimelinePage({ now }: { now: number }) {
   for (let i = 0; i <= TICKS; i++) ticks.push(DateTime.fromMillis(ws + (span / TICKS) * i));
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-5 pb-28 pt-5">
-      <div className="mb-3 flex items-center justify-between gap-2">
+    <div className="mx-auto w-full max-w-[1800px] px-3 pb-28 pt-4 sm:px-5 sm:pt-5 lg:pb-8">
+      <div className="mb-3 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-lg font-black tracking-tight text-slate-100">Event timeline</h2>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
           {seedPlan.length > 0 && (
-            <Btn onClick={importSeed} title={`Bundled with the app (updated ${SEED_UPDATED}) — adds new events, fixes changed dates`}>
+            <Btn
+              onClick={importSeed}
+              title={`Bundled with the app (updated ${SEED_UPDATED}) — adds new events, fixes changed dates`}
+            >
               Import {seedPlan.length}
             </Btn>
-          )}
-          {state.settings.hoyolabLinks.length > 0 && (
-            <Btn onClick={() => openSheet({ kind: 'hoyoImport' })}>⤓ HoYoLAB</Btn>
           )}
           <Btn onClick={() => openSheet({ kind: 'pasteEvents' })}>Paste (AI)</Btn>
           <Btn kind="primary" onClick={() => openSheet({ kind: 'event' })}>
@@ -243,7 +267,7 @@ export function TimelinePage({ now }: { now: number }) {
                   key={ev.id}
                   type="button"
                   onClick={() => openSheet({ kind: 'event', eventId: ev.id, gameId: ev.gameId })}
-                  className="glass flex items-center gap-2 rounded-xl px-3 py-2 text-left transition hover:bg-white/[0.06]"
+                  className="glass flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-left transition hover:bg-white/[0.06]"
                 >
                   <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" />
                   <div className="min-w-0">
@@ -296,7 +320,7 @@ export function TimelinePage({ now }: { now: number }) {
             const evs = eventsByGame.get(game.id) ?? [];
             const nextEnd = [...evs]
               .sort((a, b) => a.end - b.end)
-              .find((e) => e.end > now && e.type !== 'maintenance' && e.type !== 'banner' && !isQuiet(e, now));
+              .find((e) => e.end > now && !e.done && e.type !== 'maintenance' && e.type !== 'banner');
             return (
               <div key={game.id} className="relative">
                 <div className="mb-1.5 mt-4 flex items-center gap-2 first:mt-0">
@@ -306,10 +330,15 @@ export function TimelinePage({ now }: { now: number }) {
                   </span>
                   <span
                     className="h-px flex-1"
-                    style={{ background: `linear-gradient(90deg, ${tint(game.color, 0.3)}, ${tint(game.color2 ?? game.color, 0.12)})` }}
+                    style={{
+                      background: `linear-gradient(90deg, ${tint(game.color, 0.3)}, ${tint(game.color2 ?? game.color, 0.12)})`,
+                    }}
                   />
                   {nextEnd && (
-                    <span className="text-[10px] font-semibold tabular-nums" style={{ color: endTone(nextEnd.end - now) }}>
+                    <span
+                      className="text-[10px] font-semibold tabular-nums"
+                      style={{ color: endTone(nextEnd.end - now) }}
+                    >
                       next ends {fmtDur(nextEnd.end - now)}
                     </span>
                   )}
@@ -318,9 +347,10 @@ export function TimelinePage({ now }: { now: number }) {
                   <p className="py-1 text-[11px] text-slate-600">Nothing in this window — import or add events.</p>
                 ) : (
                   (() => {
-                    const open = quietOpen.has(game.id);
-                    const shown = open ? evs : evs.filter((e) => !isQuiet(e, now));
-                    const hidden = evs.length - evs.filter((e) => !isQuiet(e, now)).length;
+                    const open = doneOpen.has(game.id);
+                    const active = evs.filter((e) => !e.done);
+                    const doneCount = evs.length - active.length;
+                    const shown = open ? evs : active;
                     return (
                       <div className="space-y-1.5">
                         {shown.map((ev) => (
@@ -332,15 +362,16 @@ export function TimelinePage({ now }: { now: number }) {
                             ws={ws}
                             we={we}
                             onOpen={() => openSheet({ kind: 'event', eventId: ev.id, gameId: ev.gameId })}
+                            onToggleDone={() => upsertEvent({ id: ev.id, gameId: ev.gameId, done: !ev.done })}
                           />
                         ))}
-                        {hidden > 0 && (
+                        {doneCount > 0 && (
                           <button
                             type="button"
-                            onClick={() => toggleQuiet(game.id)}
-                            className="block w-full rounded-lg py-0.5 text-left text-[10px] font-semibold text-slate-600 transition hover:text-slate-400"
+                            onClick={() => toggleDoneOpen(game.id)}
+                            className="block min-h-11 w-full rounded-lg py-0.5 text-left text-[10px] font-semibold text-slate-600 transition hover:text-slate-400 sm:min-h-8"
                           >
-                            {open ? '− hide quiet events' : `+ ${hidden} quiet event${hidden > 1 ? 's' : ''} (no deadline pressure)`}
+                            {open ? '− collapse done events' : `+ ${doneCount} done event${doneCount > 1 ? 's' : ''}`}
                           </button>
                         )}
                       </div>
@@ -371,13 +402,14 @@ export function TimelinePage({ now }: { now: number }) {
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm text-slate-200">{r.message}</div>
                 <div className="text-[11px] tabular-nums text-slate-500">
-                  {DateTime.fromMillis(r.at).toFormat('ccc dd LLL HH:mm')} {due ? '· sent/due' : `· in ${fmtDur(r.at - now)}`}
+                  {DateTime.fromMillis(r.at).toFormat('ccc dd LLL HH:mm')}{' '}
+                  {due ? '· sent/due' : `· in ${fmtDur(r.at - now)}`}
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => deleteReminder(r.id)}
-                className="text-slate-500 transition hover:text-rose-400"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-rose-400/10 hover:text-rose-400 sm:h-9 sm:w-9"
                 aria-label="Delete reminder"
               >
                 ✕
@@ -385,6 +417,11 @@ export function TimelinePage({ now }: { now: number }) {
             </div>
           );
         })}
+        {reminders.length === 0 && (
+          <p className="rounded-2xl bg-white/[0.025] px-4 py-5 text-sm text-slate-500">
+            No reminders yet. Add one for maintenance, shop resets, or anything that does not fit a recurring task.
+          </p>
+        )}
         <Btn onClick={() => openSheet({ kind: 'reminder' })}>+ Reminder</Btn>
       </div>
     </div>

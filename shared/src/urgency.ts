@@ -1,6 +1,7 @@
 import type { AppState, Game } from './types';
 import { latestSnapshots, projectEnergy } from './energy';
 import { checklistFor } from './checklist';
+import { effectiveResourceKind } from './tracking';
 
 export type ActionKind = 'energy_full' | 'energy_soon' | 'daily' | 'weekly' | 'monthly' | 'custom' | 'event';
 
@@ -18,8 +19,8 @@ export function gameActions(state: AppState, game: Game, now: number): NextActio
   const snaps = latestSnapshots(state.snapshots);
 
   for (const res of state.resources) {
-    if (res.gameId !== game.id || res.deleted || res.regenMinutes <= 0) continue;
-    const proj = projectEnergy(res, snaps.get(res.id), now);
+    if (res.gameId !== game.id || res.deleted || effectiveResourceKind(res) !== 'regen') continue;
+    const proj = projectEnergy(res, snaps.get(res.id), now, game);
     if (!proj.hasSnapshot) continue;
     if (proj.isFull) {
       actions.push({ kind: 'energy_full', gameId: game.id, at: now, label: `${res.name} is FULL` });
@@ -30,7 +31,14 @@ export function gameActions(state: AppState, game: Game, now: number): NextActio
 
   for (const item of checklistFor(state, game, now)) {
     if (item.done) continue;
-    const kind = item.cadence === 'daily' ? 'daily' : item.cadence === 'weekly' ? 'weekly' : item.cadence === 'monthly' ? 'monthly' : 'custom';
+    const kind =
+      item.cadence === 'daily'
+        ? 'daily'
+        : item.cadence === 'weekly'
+          ? 'weekly'
+          : item.cadence === 'monthly'
+            ? 'monthly'
+            : 'custom';
     actions.push({ kind, gameId: game.id, at: item.resetAt, label: `${item.name} resets` });
   }
 

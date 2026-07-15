@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
 import { urgencyOrder } from '@technogg/shared';
 import { useApp } from '../store';
@@ -6,10 +5,14 @@ import { useUI } from '../ui-store';
 import { fmtClock, fmtDur, tint } from '../util';
 import { GameCard } from './GameCard';
 import { GameBadge } from './ui';
+import { useSession } from '../auth';
 
 export function DashboardPage({ now }: { now: number }) {
+  const session = useSession();
   const state = useApp((s) => s.state);
   const openSheet = useUI((s) => s.openSheet);
+  const setTab = useUI((s) => s.setTab);
+  const [setupDismissed, setSetupDismissed] = useState(() => localStorage.getItem('technogg-setup-dismissed') === '1');
   const order = urgencyOrder(state, now);
   const hero = order.find((o) => o.next)?.next ?? null;
   const heroGame = hero ? state.games.find((g) => g.id === hero.gameId) : undefined;
@@ -27,15 +30,49 @@ export function DashboardPage({ now }: { now: number }) {
   const orderStale = displayIds.join('|') !== liveIds.join('|');
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-5 pb-28 pt-5">
+    <div className="mx-auto w-full max-w-[1800px] px-3 pb-28 pt-4 sm:px-5 sm:pt-5 lg:pb-8">
+      {session.hosted && !setupDismissed && order.length > 0 && (
+        <section className="glass gold-hairline mb-4 rounded-3xl p-4" aria-label="Account setup checklist">
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-black text-slate-100">Finish account setup</p>
+              <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                <span className="rounded-lg bg-emerald-400/10 px-2 py-1 text-emerald-200">✓ Game added</span>
+                <span
+                  className={`rounded-lg px-2 py-1 ${
+                    state.snapshots.length > 0 ? 'bg-emerald-400/10 text-emerald-200' : 'bg-white/5 text-slate-400'
+                  }`}
+                >
+                  {state.snapshots.length > 0 ? '✓' : '○'} Enter energy
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setTab('settings')}
+                  className="rounded-lg bg-white/5 px-2 py-1 text-slate-300"
+                >
+                  ○ Optional alert channels
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem('technogg-setup-dismissed', '1');
+                setSetupDismissed(true);
+              }}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 sm:h-9 sm:w-9"
+              aria-label="Dismiss setup checklist"
+            >
+              ✕
+            </button>
+          </div>
+        </section>
+      )}
       {hero && heroGame && (
-        <motion.button
+        <button
           type="button"
-          layout
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
           onClick={() => openSheet({ kind: 'game', gameId: heroGame.id })}
-          className="relative mb-4 block w-full overflow-hidden rounded-3xl p-4 text-left"
+          className="fade-down relative mb-4 block w-full overflow-hidden rounded-3xl p-4 text-left"
           style={{
             background: `linear-gradient(120deg, ${tint(heroGame.color, 0.3)}, ${tint(heroGame.color2 ?? heroGame.color, 0.12)} 38%, rgba(0,0,0,0.92) 62%)`,
             boxShadow: `inset 0 0 0 1px ${tint(heroGame.color, 0.35)}, 0 0 44px -16px ${tint(heroGame.color, 0.5)}`,
@@ -63,71 +100,56 @@ export function DashboardPage({ now }: { now: number }) {
               {hero.at > now && <div className="text-[11px] tabular-nums text-slate-500">{fmtClock(hero.at)}</div>}
             </div>
           </div>
-        </motion.button>
+        </button>
       )}
 
       {order.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="mt-16 flex flex-col items-center gap-4 text-center"
-        >
+        <div className="fade-in mt-16 flex flex-col items-center gap-4 text-center">
           <div
             className="h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-amber-300"
             style={{ boxShadow: '0 0 40px rgba(124,92,255,0.5)' }}
           />
           <h2 className="text-xl font-black text-slate-100">Track every gacha, waste no energy</h2>
-          <p className="max-w-sm text-sm text-slate-400">
+          <p className="max-w-sm text-sm text-slate-300">
             Add your games, punch in your current energy after each session, and TechnoGG tells you exactly when to log
             in next.
           </p>
-          <motion.button
+          <button
             type="button"
-            whileTap={{ scale: 0.95 }}
             onClick={() => openSheet({ kind: 'addGame' })}
-            className="rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 px-6 py-3 text-base font-bold text-white shadow-lg shadow-fuchsia-500/30 ring-1 ring-white/15 transition hover:brightness-110"
+            className="rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 px-6 py-3 text-base font-bold text-white shadow-lg shadow-fuchsia-500/30 ring-1 ring-white/15 transition hover:brightness-110 active:scale-95"
           >
             + Add your first game
-          </motion.button>
-        </motion.div>
+          </button>
+        </div>
       ) : (
         <>
-        <AnimatePresence>
-          {orderStale && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
+          <div className="mb-3 flex min-h-11 items-center justify-end gap-2 sm:min-h-9">
+            {orderStale && (
+              <button
+                type="button"
+                onClick={() => setSortedIds(liveIds)}
+                className="fade-in flex min-h-11 items-center gap-1.5 rounded-xl bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white sm:min-h-9"
+                title="Urgency changed — click to re-order the cards"
+              >
+                <span aria-hidden>↻</span> Sort by urgency
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => openSheet({ kind: 'addGame' })}
+              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-2xl font-light leading-none text-white shadow-lg shadow-fuchsia-500/20 ring-1 ring-white/20 transition hover:brightness-110 active:scale-90 sm:h-9 sm:w-9 sm:rounded-xl"
+              aria-label="Add game"
+              title="Add game"
             >
-              <div className="mb-3 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setSortedIds(liveIds)}
-                  className="flex items-center gap-1.5 rounded-xl bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white"
-                  title="Urgency changed — click to re-order the cards"
-                >
-                  <span aria-hidden>↻</span> Sort by urgency
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        <motion.div layout className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-          <AnimatePresence mode="popLayout">
+              +
+            </button>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {displayIds.map((id) => (
               <GameCard key={id} entry={entryById.get(id)!} now={now} />
             ))}
-          </AnimatePresence>
-          <motion.button
-            layout
-            type="button"
-            onClick={() => openSheet({ kind: 'addGame' })}
-            className="flex min-h-28 items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-white/10 text-sm font-semibold text-slate-500 transition hover:border-white/25 hover:text-slate-300"
-          >
-            <span className="text-xl">+</span> Add game
-          </motion.button>
-        </motion.div>
+          </div>
         </>
       )}
     </div>

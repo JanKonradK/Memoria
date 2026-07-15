@@ -27,6 +27,7 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
     end: Date.now() + 7 * DAY,
     dailyTouch: false,
     notify: true,
+    done: false,
   });
 
   useEffect(() => {
@@ -40,9 +41,16 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
         end: existing.end,
         dailyTouch: existing.dailyTouch,
         notify: existing.notify,
+        done: existing.done ?? false,
       });
     } else {
-      setDraft((d) => ({ ...d, gameId: gameId ?? games[0]?.id ?? '', name: '', start: Date.now(), end: Date.now() + 7 * DAY }));
+      setDraft((d) => ({
+        ...d,
+        gameId: gameId ?? games[0]?.id ?? '',
+        name: '',
+        start: Date.now(),
+        end: Date.now() + 7 * DAY,
+      }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, eventId]);
@@ -105,8 +113,13 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
           </Field>
         </div>
         <div className="flex flex-wrap gap-5 pt-1">
-          <Toggle checked={draft.dailyTouch} onChange={(v) => setDraft({ ...draft, dailyTouch: v })} label="Needs daily touch" />
+          <Toggle
+            checked={draft.dailyTouch}
+            onChange={(v) => setDraft({ ...draft, dailyTouch: v })}
+            label="Needs daily touch"
+          />
           <Toggle checked={draft.notify} onChange={(v) => setDraft({ ...draft, notify: v })} label="Alert before end" />
+          <Toggle checked={draft.done} onChange={(v) => setDraft({ ...draft, done: v })} label="Done (hide + mute)" />
         </div>
         <div className="flex gap-2 pt-2">
           {existing && (

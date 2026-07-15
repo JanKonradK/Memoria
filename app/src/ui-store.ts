@@ -1,13 +1,12 @@
 import { create } from 'zustand';
 
-export type Tab = 'home' | 'timeline' | 'stats' | 'settings';
+export type Tab = 'home' | 'timeline' | 'settings';
 
 export type SheetRoute =
   | { kind: 'game'; gameId: string }
   | { kind: 'addGame' }
   | { kind: 'event'; gameId?: string; eventId?: string }
   | { kind: 'reminder' }
-  | { kind: 'hoyoImport' }
   | { kind: 'pasteEvents' }
   | null;
 
