@@ -70,6 +70,7 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   await page.getByRole('button', { name: 'Edit Genshin Impact' }).click();
   const dialog = page.getByRole('dialog', { name: 'Genshin Impact' });
   await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Resources', exact: true }).click();
   await expect(dialog.getByText('Quick spend')).toBeVisible();
   await dialog.getByPlaceholder('Label, e.g. Domain').fill('Domain');
   await dialog.getByRole('button', { name: '+ Shortcut' }).click();
@@ -114,9 +115,14 @@ test('tabs, timeline controls, and settings fit after adding a game', async ({ p
   await page.keyboard.press('Escape');
 
   await page.getByRole('button', { name: 'Settings' }).click();
-  await expect(page.getByText('Per-game alert overrides')).toBeVisible();
   await expect(page.getByLabel('Sleep window (hours)')).toHaveValue('8');
   await expectNoPageOverflow(page);
+
+  await page.getByRole('button', { name: 'Dashboard' }).click();
+  await page.getByRole('button', { name: 'Edit Genshin Impact' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Genshin Impact' });
+  await dialog.getByRole('button', { name: 'Alerts', exact: true }).click();
+  await expect(dialog.getByText('Energy nearing cap', { exact: true })).toBeVisible();
 });
 
 test('full 16:9 dashboard fits five games and timeline bars stay in scale', async ({ page }, testInfo) => {
