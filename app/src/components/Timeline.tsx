@@ -7,7 +7,7 @@ import { useUI } from '../ui-store';
 import { endTone, fmtDur, tint } from '../util';
 import { planSeedImport, SEED_UPDATED } from '../data/seed-events';
 import { TimelineAgenda } from './TimelineAgenda';
-import { Btn, GameBadge, SectionTitle, Segmented } from './ui';
+import { Btn, GameBadge, Page, SectionTitle, Segmented } from './ui';
 
 const DAY = 86_400_000;
 
@@ -235,7 +235,7 @@ export function TimelinePage({ now }: { now: number }) {
   for (let i = 0; i <= TICKS; i++) ticks.push(DateTime.fromMillis(ws + (span / TICKS) * i));
 
   return (
-    <div className="mx-auto w-full max-w-[1800px] px-3 pb-28 pt-4 sm:px-5 sm:pt-5 lg:pb-8">
+    <Page className="pb-28 pt-4 sm:pt-5 lg:pb-8">
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <h2 className="text-lg font-black tracking-tight text-slate-100">Event timeline</h2>
         <Segmented
@@ -439,6 +439,6 @@ export function TimelinePage({ now }: { now: number }) {
         )}
         <Btn onClick={() => openSheet({ kind: 'reminder' })}>+ Reminder</Btn>
       </div>
-    </div>
+    </Page>
   );
 }
