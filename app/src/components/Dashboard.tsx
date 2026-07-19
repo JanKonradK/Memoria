@@ -69,38 +69,49 @@ export function DashboardPage({ now }: { now: number }) {
         </section>
       )}
       {hero && heroGame && (
-        <button
-          type="button"
-          onClick={() => openSheet({ kind: 'game', gameId: heroGame.id })}
-          className="fade-down relative mb-4 block w-full overflow-hidden rounded-3xl p-4 text-left"
-          style={{
-            background: `linear-gradient(120deg, ${tint(heroGame.color, 0.3)}, ${tint(heroGame.color2 ?? heroGame.color, 0.12)} 38%, rgba(0,0,0,0.92) 62%)`,
-            boxShadow: `inset 0 0 0 1px ${tint(heroGame.color, 0.35)}, 0 0 44px -16px ${tint(heroGame.color, 0.5)}`,
-          }}
-        >
-          <div
-            className="pointer-events-none absolute inset-0"
+        <div className="fade-down mb-4 flex items-stretch gap-3">
+          <button
+            type="button"
+            onClick={() => openSheet({ kind: 'game', gameId: heroGame.id })}
+            className="relative block min-w-0 flex-1 overflow-hidden rounded-3xl p-4 text-left"
             style={{
-              background: `radial-gradient(400px 120px at 15% 0%, ${tint(heroGame.color, 0.25)}, transparent 70%)`,
-              animation: 'pulseFade 3.6s ease-in-out infinite',
+              background: `linear-gradient(120deg, ${tint(heroGame.color, 0.3)}, ${tint(heroGame.color2 ?? heroGame.color, 0.12)} 38%, rgba(0,0,0,0.92) 62%)`,
+              boxShadow: `inset 0 0 0 1px ${tint(heroGame.color, 0.35)}, 0 0 44px -16px ${tint(heroGame.color, 0.5)}`,
             }}
-          />
-          <div className="relative flex items-center gap-3">
-            <GameBadge short={heroGame.short} color={heroGame.color} color2={heroGame.color2} size="lg" />
-            <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Up next</div>
-              <div className="truncate text-lg font-black text-slate-50">
-                {heroGame.short}: {hero.label}
+          >
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background: `radial-gradient(400px 120px at 15% 0%, ${tint(heroGame.color, 0.25)}, transparent 70%)`,
+                animation: 'pulseFade 3.6s ease-in-out infinite',
+              }}
+            />
+            <div className="relative flex items-center gap-3">
+              <GameBadge short={heroGame.short} color={heroGame.color} color2={heroGame.color2} size="lg" />
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Up next</div>
+                <div className="truncate text-lg font-black text-slate-50" style={{ fontFamily: heroGame.titleFont }}>
+                  {heroGame.short}: {hero.label}
+                </div>
+              </div>
+              <div className="shrink-0 text-right">
+                <div className="text-xl font-black tabular-nums" style={{ color: heroGame.color }}>
+                  {hero.at <= now ? 'NOW' : fmtDur(hero.at - now)}
+                </div>
+                {hero.at > now && <div className="text-[11px] tabular-nums text-slate-500">{fmtClock(hero.at)}</div>}
               </div>
             </div>
-            <div className="shrink-0 text-right">
-              <div className="text-xl font-black tabular-nums" style={{ color: heroGame.color }}>
-                {hero.at <= now ? 'NOW' : fmtDur(hero.at - now)}
-              </div>
-              {hero.at > now && <div className="text-[11px] tabular-nums text-slate-500">{fmtClock(hero.at)}</div>}
-            </div>
-          </div>
-        </button>
+          </button>
+          <button
+            type="button"
+            onClick={() => openSheet({ kind: 'addGame' })}
+            className="flex w-14 shrink-0 items-center justify-center rounded-3xl bg-white/[0.06] text-3xl font-light leading-none text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white active:scale-95 sm:w-16"
+            aria-label="Add game"
+            title="Add game"
+          >
+            +
+          </button>
+        </div>
       )}
 
       {order.length === 0 ? (
@@ -124,7 +135,11 @@ export function DashboardPage({ now }: { now: number }) {
         </div>
       ) : (
         <>
-          <div className="mb-3 flex min-h-11 items-center justify-end gap-2 sm:min-h-9">
+          <div
+            className={`mb-3 flex items-center justify-end gap-2 ${
+              orderStale || !(hero && heroGame) ? 'min-h-11 sm:min-h-9' : ''
+            }`}
+          >
             {orderStale && (
               <button
                 type="button"
@@ -135,15 +150,18 @@ export function DashboardPage({ now }: { now: number }) {
                 <span aria-hidden>↻</span> Sort by urgency
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => openSheet({ kind: 'addGame' })}
-              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-2xl font-light leading-none text-white shadow-lg shadow-fuchsia-500/20 ring-1 ring-white/20 transition hover:brightness-110 active:scale-90 sm:h-9 sm:w-9 sm:rounded-xl"
-              aria-label="Add game"
-              title="Add game"
-            >
-              +
-            </button>
+            {/* The main add button lives beside the "Up next" hero; keep one here only when there is no hero. */}
+            {!(hero && heroGame) && (
+              <button
+                type="button"
+                onClick={() => openSheet({ kind: 'addGame' })}
+                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.06] text-2xl font-light leading-none text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white active:scale-90 sm:h-9 sm:w-9 sm:rounded-xl"
+                aria-label="Add game"
+                title="Add game"
+              >
+                +
+              </button>
+            )}
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {displayIds.map((id) => (

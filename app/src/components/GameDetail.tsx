@@ -7,6 +7,7 @@ import { fileToImageDataUrl, intOr } from '../util';
 import { Sheet } from './Sheet';
 import { Btn, Field, NumInput, SectionTitle, Select, TextArea, TextInput, Toggle } from './ui';
 import { RESOURCE_ICON_KEYS, ResourceIcon } from './ResourceIcon';
+import { FONT_OPTIONS } from '../fonts';
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const CADENCES: Cadence[] = ['daily', 'weekly', 'monthly', 'custom'];
@@ -71,6 +72,22 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
             onChange={(e) => app.updateGame(game.id, { color2: e.target.value })}
             className="h-9 w-full cursor-pointer rounded-xl bg-white/5 ring-1 ring-white/10"
           />
+        </Field>
+        <Field label="Title font">
+          <Select
+            value={game.titleFont ?? ''}
+            onChange={(e) => app.updateGame(game.id, { titleFont: e.target.value || undefined })}
+          >
+            <option value="">Default</option>
+            {FONT_OPTIONS.map((font) => (
+              <option key={font.css} value={font.css}>
+                {font.label}
+              </option>
+            ))}
+            {game.titleFont && !FONT_OPTIONS.some((font) => font.css === game.titleFont) && (
+              <option value={game.titleFont}>{game.titleFont}</option>
+            )}
+          </Select>
         </Field>
         <div className="flex items-end pb-1">
           <Toggle checked={game.paused} onChange={(v) => app.updateGame(game.id, { paused: v })} label="Paused" />
@@ -189,7 +206,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                   }
                 />
               </Field>
-              <Field label="Kind" className="order-7 col-span-3 sm:col-span-2">
+              <Field label="Kind" className="order-7 col-span-2 sm:col-span-2">
                 <Select
                   value={r.kind ?? 'regen'}
                   onChange={(e) =>
@@ -203,11 +220,23 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                   ))}
                 </Select>
               </Field>
-              <Field label="Reserve label" className="order-8 col-span-3 sm:col-span-2">
+              <Field label="Reserve label" className="order-8 col-span-2 sm:col-span-2">
                 <TextInput
                   value={r.reserveLabel ?? ''}
                   onChange={(e) =>
                     app.upsertResource({ id: r.id, gameId: game.id, reserveLabel: e.target.value || undefined })
+                  }
+                />
+              </Field>
+              <Field label="Rsv min/pt" className="order-9 col-span-2 sm:col-span-1">
+                <NumInput
+                  value={String(r.reserveRegenMinutes ?? r.regenMinutes * 2)}
+                  onChange={(e) =>
+                    app.upsertResource({
+                      id: r.id,
+                      gameId: game.id,
+                      reserveRegenMinutes: Math.max(1, intOr(e.target.value, r.regenMinutes * 2)),
+                    })
                   }
                 />
               </Field>
@@ -245,7 +274,10 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
           </div>
         ))}
         <Btn onClick={() => app.upsertResource({ gameId: game.id, name: 'Energy' })}>+ Resource</Btn>
-        <p className="text-[11px] text-slate-500">Min/pt = minutes per point of regen. 0 = doesn't regenerate.</p>
+        <p className="text-[11px] text-slate-500">
+          Min/pt = minutes per point of regen. 0 = doesn't regenerate. Rsv min/pt = minutes per reserve point once the
+          bar is capped (defaults to double Min/pt — reserve fills at half speed).
+        </p>
       </div>
 
       <SectionTitle>Quick spend</SectionTitle>
@@ -348,13 +380,35 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                 ))}
               </Select>
               {t.cadence === 'custom' && (
-                <NumInput
-                  className="!w-24 shrink-0 sm:!w-16"
-                  title="Cycle length (days)"
-                  aria-label={`Cycle days for ${t.name}`}
-                  value={String(t.intervalDays)}
-                  onChange={(e) => app.updateTask(t.id, { intervalDays: Math.max(1, intOr(e.target.value, 2)) })}
-                />
+                <>
+                  <NumInput
+                    className="!w-24 shrink-0 sm:!w-16"
+                    title="Cycle length (days) — used only when no timeline window matches"
+                    aria-label={`Cycle days for ${t.name}`}
+                    value={String(t.intervalDays)}
+                    onChange={(e) => app.updateTask(t.id, { intervalDays: Math.max(1, intOr(e.target.value, 2)) })}
+                  />
+                  <div
+                    className="flex shrink-0 items-center"
+                    title="Follow the matching Timeline window (resets when it ends, hidden between windows)"
+                  >
+                    <Toggle
+                      checked={t.timelineLinked !== false}
+                      onChange={(v) => app.updateTask(t.id, { timelineLinked: v ? undefined : false })}
+                      label="Timeline"
+                    />
+                  </div>
+                  {t.timelineLinked !== false && (
+                    <TextInput
+                      className="min-w-0 flex-1 sm:!w-32 sm:flex-none"
+                      placeholder="match: auto"
+                      title="Keyword to match timeline event names (empty = match by task name)"
+                      aria-label={`Timeline match for ${t.name}`}
+                      value={t.timelineMatch ?? ''}
+                      onChange={(e) => app.updateTask(t.id, { timelineMatch: e.target.value || undefined })}
+                    />
+                  )}
+                </>
               )}
               {(t.mode ?? 'check') === 'timer' && (
                 <NumInput
@@ -373,7 +427,9 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                   title="Runs required"
                   aria-label={`Count target for ${t.name}`}
                   value={String(t.countTarget ?? 1)}
-                  onChange={(e) => app.updateTask(t.id, { countTarget: Math.max(1, intOr(e.target.value, 1)) })}
+                  onChange={(e) =>
+                    app.updateTask(t.id, { countTarget: Math.min(365, Math.max(1, intOr(e.target.value, 1))) })
+                  }
                 />
               )}
             </div>
@@ -411,6 +467,31 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
         </div>
         <p className="text-[11px] text-slate-500">
           Events → Timeline tab · focus, teams, currency & stats → Stats tab.
+        </p>
+      </div>
+
+      <SectionTitle>Card display</SectionTitle>
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-x-6 gap-y-3">
+          <Toggle
+            checked={!game.hideProgressRing}
+            onChange={(v) => app.updateGame(game.id, { hideProgressRing: !v })}
+            label="Daily progress ring"
+          />
+          <Toggle
+            checked={!game.hideEventStrip}
+            onChange={(v) => app.updateGame(game.id, { hideEventStrip: !v })}
+            label="Active events strip"
+          />
+          <Toggle
+            checked={!game.hideSleepChip}
+            onChange={(v) => app.updateGame(game.id, { hideSleepChip: !v })}
+            label="Safe-to-sleep chip"
+          />
+        </div>
+        <p className="text-[11px] text-slate-500">
+          Turns whole blocks of the game card on or off. Individual energy bars, quick-spend buttons and tasks are
+          removed above; individual events are edited on the Timeline.
         </p>
       </div>
 
