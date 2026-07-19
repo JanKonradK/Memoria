@@ -62,6 +62,37 @@ describe('projectEnergy', () => {
     expect(p.value).toBe(3);
     expect(p.msToFull).toBeNull();
   });
+
+  describe('reserve projection', () => {
+    // HSR-style: 6 min/point main bar, reserve fills at half speed (12 min/point) once capped.
+    const reserveRes = makeResource({ cap: 300, regenMinutes: 6, reserveCap: 2400 });
+
+    it('grows the reserve at half speed while the bar sits at cap', () => {
+      const snap = makeSnapshot({ value: 300, takenAt: 0, reserve: 100 });
+      const p = projectEnergy(reserveRes, snap, 60 * MIN); // 60 min at 12 min/point → +5
+      expect(p.isFull).toBe(true);
+      expect(p.reserve).toBe(105);
+    });
+
+    it('honors an explicit reserveRegenMinutes override', () => {
+      const custom = makeResource({ cap: 300, regenMinutes: 6, reserveCap: 2400, reserveRegenMinutes: 6 });
+      const snap = makeSnapshot({ value: 300, takenAt: 0, reserve: 0 });
+      expect(projectEnergy(custom, snap, 60 * MIN).reserve).toBe(10);
+    });
+
+    it('does not grow the reserve before the bar caps, then grows from the cap moment', () => {
+      // 290/300 at t0 → caps after 60 min; 84 min elapsed → 24 min at cap → +2 reserve
+      const snap = makeSnapshot({ value: 290, takenAt: 0, reserve: 50 });
+      expect(projectEnergy(reserveRes, snap, 30 * MIN).reserve).toBe(50);
+      expect(projectEnergy(reserveRes, snap, 84 * MIN).reserve).toBe(52);
+    });
+
+    it('clamps the reserve at its cap and is null without a reserve', () => {
+      const snap = makeSnapshot({ value: 300, takenAt: 0, reserve: 2399 });
+      expect(projectEnergy(reserveRes, snap, 10_000 * MIN).reserve).toBe(2400);
+      expect(projectEnergy(res, makeSnapshot({ value: 200, takenAt: 0 }), 0).reserve).toBeNull();
+    });
+  });
 });
 
 describe('latestSnapshots', () => {

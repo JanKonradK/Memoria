@@ -18,6 +18,13 @@ export function effectiveResourceKind(res: Pick<Resource, 'regenMinutes' | 'kind
   return 'regen';
 }
 
+/** Minutes per reserve point once the main bar is capped — reserve fills at half speed by default. */
+export function effectiveReserveRegenMinutes(
+  res: Pick<Resource, 'regenMinutes'> & { reserveRegenMinutes?: number },
+): number {
+  return res.reserveRegenMinutes ?? res.regenMinutes * 2;
+}
+
 export function effectiveReserveLabel(res: Pick<Resource, 'name' | 'reserveCap' | 'reserveLabel'>): string | undefined {
   if (res.reserveLabel) return res.reserveLabel;
   if (res.reserveCap <= 0) return undefined;

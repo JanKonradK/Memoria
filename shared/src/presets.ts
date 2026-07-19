@@ -17,6 +17,8 @@ export interface PresetResource {
   cap: number;
   regenMinutes: number;
   reserveCap: number;
+  /** Minutes per reserve point once the bar is capped; omit for the 2 × regenMinutes default. */
+  reserveRegenMinutes?: number;
   kind?: ResourceKind;
   reserveLabel?: string;
   /** Ask the user for their own cap when adding (account-dependent caps like NTE City Stamina). */
@@ -40,6 +42,8 @@ export interface GamePreset {
   color: string;
   /** Secondary accent for two-tone gradients. */
   color2?: string;
+  /** CSS font-family evoking the game's own logo/identity (bundled via @fontsource in the app). */
+  titleFont?: string;
   icon: string;
   platform: 'pc' | 'mobile' | 'both';
   tz: string;
@@ -72,6 +76,8 @@ export const PRESETS: GamePreset[] = [
     // App-icon palette (sampled): Paimon's warm cream into soft tan.
     color: '#f8efdb',
     color2: '#d8c9b4',
+    // Fantasy serif — Genshin's storybook look.
+    titleFont: "'Marcellus', serif",
     icon: '',
     platform: 'both',
     tz: 'Etc/GMT-1',
@@ -118,6 +124,8 @@ export const PRESETS: GamePreset[] = [
     // App-icon palette (sampled): March 7th pink into the icon's turquoise backdrop.
     color: '#f2a7c8',
     color2: '#74d8e6',
+    // Condensed sci-fi — the Astral Express dashboard vibe.
+    titleFont: "'Rajdhani', sans-serif",
     icon: '',
     platform: 'both',
     tz: 'Etc/GMT-1',
@@ -159,6 +167,8 @@ export const PRESETS: GamePreset[] = [
     // App-icon palette (sampled): the icon's exact orange into charcoal black.
     color: '#f3841b',
     color2: '#3b3b40',
+    // Heavy urban display — New Eridu street style.
+    titleFont: "'Archivo Black', sans-serif",
     icon: '',
     platform: 'both',
     tz: 'Etc/GMT-1',
@@ -195,6 +205,8 @@ export const PRESETS: GamePreset[] = [
     // App-icon palette (sampled): mist silver into the hair's blue-charcoal.
     color: '#dde0e6',
     color2: '#3d4453',
+    // Wide sleek tech — WuWa's minimal futurism.
+    titleFont: "'Michroma', sans-serif",
     icon: '',
     platform: 'both',
     tz: 'Etc/GMT-1',
@@ -230,6 +242,8 @@ export const PRESETS: GamePreset[] = [
     // App-icon palette (sampled): Mint's teal into the polka-dot yellow.
     color: '#28e1d7',
     color2: '#fedc40',
+    // Playful rounded pop — Mint's polka-dot energy.
+    titleFont: "'Baloo 2', sans-serif",
     icon: '',
     platform: 'both',
     tz: 'Etc/GMT-1',

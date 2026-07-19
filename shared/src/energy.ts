@@ -1,6 +1,6 @@
 import type { AppState, Game, Resource, Snapshot } from './types';
 import { lastWeeklyReset, nextWeeklyReset } from './periods';
-import { effectiveResourceKind } from './tracking';
+import { effectiveReserveRegenMinutes, effectiveResourceKind } from './tracking';
 
 export interface EnergyProjection {
   /** Whole-point value right now, clamped to cap (unless snapshot was over cap). */
@@ -17,9 +17,15 @@ export interface EnergyProjection {
   hasSnapshot: boolean;
   /** Weekly-refill resources show when they reset to cap. */
   weeklyResetAt?: number | null;
+  /** Projected reserve level — grows while the bar sits at cap; null when the resource has no reserve. */
+  reserve?: number | null;
 }
 
-type EnergyResource = Pick<Resource, 'cap' | 'regenMinutes' | 'kind'> & { name?: string };
+type EnergyResource = Pick<Resource, 'cap' | 'regenMinutes' | 'kind'> & {
+  name?: string;
+  reserveCap?: number;
+  reserveRegenMinutes?: number;
+};
 type EnergyGame = Pick<Game, 'tz' | 'dailyResetHour' | 'weeklyResetDay' | 'monthlyResetDay'>;
 
 function effectiveSnapshot(
@@ -36,11 +42,21 @@ function effectiveSnapshot(
 
 export function projectEnergy(
   res: EnergyResource,
-  snap: Pick<Snapshot, 'value' | 'takenAt'> | undefined,
+  snap: Pick<Snapshot, 'value' | 'takenAt' | 'reserve'> | undefined,
   now: number,
   game?: EnergyGame,
 ): EnergyProjection {
   const kind = effectiveResourceKind(res);
+
+  // Reserve (overflow) storage fills only while the bar sits at cap, at half
+  // the main regen speed by default (2 × regenMinutes per point).
+  const reserveSince = (capSince: number): number | null => {
+    if (!res.reserveCap || res.reserveCap <= 0) return null;
+    const base = snap?.reserve ?? 0;
+    const perPointMs = effectiveReserveRegenMinutes(res) * 60_000;
+    const gained = perPointMs > 0 ? Math.floor(Math.max(0, now - capSince) / perPointMs) : 0;
+    return Math.min(res.reserveCap, base + gained);
+  };
 
   if (!snap) {
     return {
@@ -52,6 +68,7 @@ export function projectEnergy(
       overflow: 0,
       hasSnapshot: false,
       weeklyResetAt: kind === 'weekly' && game ? nextWeeklyReset(game, now) : undefined,
+      reserve: null,
     };
   }
 
@@ -68,6 +85,7 @@ export function projectEnergy(
       overflow: 0,
       hasSnapshot: true,
       weeklyResetAt,
+      reserve: null,
     };
   }
 
@@ -80,6 +98,7 @@ export function projectEnergy(
       msToFull: null,
       overflow: 0,
       hasSnapshot: true,
+      reserve: null,
     };
   }
 
@@ -93,6 +112,7 @@ export function projectEnergy(
       msToFull: 0,
       overflow: Math.floor(Math.max(0, now - live.takenAt) / periodMs),
       hasSnapshot: true,
+      reserve: reserveSince(live.takenAt),
     };
   }
   const elapsed = Math.max(0, now - live.takenAt);
@@ -109,6 +129,7 @@ export function projectEnergy(
     msToFull,
     overflow: Math.max(0, raw - res.cap),
     hasSnapshot: true,
+    reserve: reserveSince(fullAt),
   };
 }
 

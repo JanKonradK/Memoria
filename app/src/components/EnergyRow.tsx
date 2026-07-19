@@ -50,7 +50,7 @@ function StepBtn({ delta, onStep }: { delta: number; onStep: (d: number) => void
         hold.start(delta);
       }}
       onTouchEnd={hold.clear}
-      className="flex h-11 min-w-9 items-center justify-center rounded-lg bg-white/[0.06] px-2 text-sm font-bold text-slate-200 ring-1 ring-white/10 transition hover:bg-white/[0.12] active:scale-90 sm:h-8 sm:min-w-8"
+      className="flex h-9 min-w-8 items-center justify-center rounded-lg bg-white/[0.06] px-1.5 text-xs font-bold text-slate-200 ring-1 ring-white/10 transition hover:bg-white/[0.12] active:scale-90 sm:h-7 sm:min-w-7"
       aria-label={`${delta > 0 ? '+' : ''}${delta}`}
     >
       {delta > 0 ? `+${delta}` : delta}
@@ -107,7 +107,17 @@ export function EnergyRow({
   };
 
   const pct = res.cap > 0 ? Math.min(100, (proj.precise / res.cap) * 100) : 0;
-  const nearCap = !compact && proj.hasSnapshot && pct >= 90 && !proj.isFull;
+  // Urgency is TIME based, not %: red when capping within 2h (or already full),
+  // amber within 8h, green otherwise.
+  const urgency =
+    !compact && proj.hasSnapshot && res.regenMinutes > 0
+      ? proj.isFull || (proj.msToFull != null && proj.msToFull < 2 * 3_600_000)
+        ? 'danger'
+        : proj.msToFull != null && proj.msToFull < 8 * 3_600_000
+          ? 'warn'
+          : 'ok'
+      : null;
+  const glow = proj.isFull || urgency === 'danger';
 
   let subtitle = '';
   if (compact) {
@@ -125,51 +135,9 @@ export function EnergyRow({
 
   return (
     <div className="group/row">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-        <span className="flex min-w-0 items-center gap-1.5">
-          <ResourceIcon iconKey={res.icon} color={color} size={13} className="shrink-0" />
-          <span className="truncate text-[11px] font-semibold uppercase tracking-wider text-slate-400">{res.name}</span>
-        </span>
-
-        <span className="ml-auto flex w-full items-center justify-end gap-1 sm:w-auto">
-          <StepBtn delta={-1} onStep={step} />
-          <input
-            ref={inputRef}
-            value={shown}
-            placeholder="—"
-            inputMode="numeric"
-            onFocus={(e) => {
-              setDraft(liveValue == null ? '' : String(liveValue));
-              e.target.select();
-            }}
-            onChange={(e) => setDraft(e.target.value.replace(/[^\d]/g, ''))}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                commit(intOr(shown, liveValue ?? 0));
-                inputRef.current?.blur();
-              }
-              if (e.key === 'Escape') {
-                setDraft(null);
-                inputRef.current?.blur();
-              }
-            }}
-            onBlur={() => {
-              if (draft != null && draft !== '' && intOr(draft, -1) !== liveValue) {
-                commit(intOr(draft, liveValue ?? 0));
-              } else setDraft(null);
-            }}
-            className="h-11 w-14 rounded-lg bg-white/[0.07] text-center text-base font-bold tabular-nums ring-1 ring-white/10 outline-none transition focus:bg-white/[0.1] focus:ring-2 sm:h-8"
-            style={{ color }}
-            aria-label={`${res.name} current value`}
-          />
-          <StepBtn delta={1} onStep={step} />
-          <span className="pl-0.5 text-xs text-slate-500">/ {res.cap}</span>
-        </span>
-      </div>
-
       {res.reserveCap > 0 && (
-        <div className="mt-2 flex items-center justify-end gap-2 text-xs text-slate-400">
-          <span>{res.reserveLabel ?? 'Reserve'}</span>
+        <div className="mb-1 flex items-center justify-end gap-1 text-[10px] uppercase tracking-wider text-slate-500">
+          <span className="truncate">{res.reserveLabel ?? 'Reserve'}</span>
           <input
             value={reserveDraft ?? String(reserve ?? 0)}
             inputMode="numeric"
@@ -181,21 +149,63 @@ export function EnergyRow({
               onCommit(liveRef.current.value, clamped);
               setReserveDraft(null);
             }}
-            className="h-9 w-16 rounded-lg bg-white/[0.07] text-center font-bold tabular-nums ring-1 ring-white/10 outline-none focus:ring-2 sm:h-8"
+            className="h-7 w-12 rounded-md bg-white/[0.05] text-center text-[11px] font-bold tabular-nums text-slate-300 ring-1 ring-white/10 outline-none focus:ring-2 sm:h-6"
             aria-label={`${res.reserveLabel ?? 'Reserve'} for ${res.name}`}
           />
-          <span>/ {res.reserveCap}</span>
+          <span className="tabular-nums">/ {res.reserveCap}</span>
         </div>
       )}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+        <span className="flex min-w-0 items-center gap-1.5">
+          <ResourceIcon iconKey={res.icon} color={color} size={13} className="shrink-0" />
+          <span className="truncate text-[11px] font-semibold uppercase tracking-wider text-slate-400">{res.name}</span>
+        </span>
+
+        <span className="ml-auto flex w-full items-center justify-end gap-1 sm:w-auto">
+          <StepBtn delta={-1} onStep={step} />
+          {/* One pill: editable value + "/ cap" together inside the same box. */}
+          <span className="flex h-9 items-center rounded-lg bg-white/[0.07] px-2 ring-1 ring-white/10 transition focus-within:bg-white/[0.1] focus-within:ring-2 sm:h-7">
+            <input
+              ref={inputRef}
+              value={shown}
+              placeholder="—"
+              inputMode="numeric"
+              onFocus={(e) => {
+                setDraft(liveValue == null ? '' : String(liveValue));
+                e.target.select();
+              }}
+              onChange={(e) => setDraft(e.target.value.replace(/[^\d]/g, ''))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  commit(intOr(shown, liveValue ?? 0));
+                  inputRef.current?.blur();
+                }
+                if (e.key === 'Escape') {
+                  setDraft(null);
+                  inputRef.current?.blur();
+                }
+              }}
+              onBlur={() => {
+                if (draft != null && draft !== '' && intOr(draft, -1) !== liveValue) {
+                  commit(intOr(draft, liveValue ?? 0));
+                } else setDraft(null);
+              }}
+              className="bg-transparent text-right text-sm font-bold tabular-nums outline-none"
+              style={{ color, width: `${Math.max(2, shown.length || 1) + 0.5}ch` }}
+              aria-label={`${res.name} current value`}
+            />
+            <span className="pl-1 text-[11px] tabular-nums text-slate-500">/ {res.cap}</span>
+          </span>
+          <StepBtn delta={1} onStep={step} />
+        </span>
+      </div>
 
       {!compact && (
         <>
           <div
             className="relative mt-1.5 h-3.5 overflow-hidden rounded-md bg-black/40 ring-1 ring-white/10"
             style={{
-              boxShadow: `inset 0 1px 3px rgba(0,0,0,0.6)${
-                proj.isFull || nearCap ? `, 0 0 12px ${tint(color, 0.45)}` : ''
-              }`,
+              boxShadow: `inset 0 1px 3px rgba(0,0,0,0.6)${glow ? `, 0 0 12px ${tint(color, 0.45)}` : ''}`,
             }}
           >
             <div
@@ -222,7 +232,15 @@ export function EnergyRow({
 
           <div
             className={`mt-1 text-xs tabular-nums ${
-              proj.isFull ? 'font-bold text-rose-300' : nearCap ? 'text-amber-300' : 'text-slate-300'
+              proj.isFull
+                ? 'font-bold text-rose-300'
+                : urgency === 'danger'
+                  ? 'text-rose-300'
+                  : urgency === 'warn'
+                    ? 'text-amber-300'
+                    : urgency === 'ok'
+                      ? 'text-emerald-300/90'
+                      : 'text-slate-300'
             }`}
           >
             {subtitle}

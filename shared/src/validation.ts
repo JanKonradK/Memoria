@@ -30,6 +30,10 @@ const game = z.object({
   sort: finite,
   notes: longText.optional(),
   processNames: z.array(z.string().max(160)).max(20).optional(),
+  hideProgressRing: z.boolean().optional(),
+  hideEventStrip: z.boolean().optional(),
+  hideSleepChip: z.boolean().optional(),
+  titleFont: z.string().max(120).optional(),
 });
 
 const resource = z.object({
@@ -41,6 +45,7 @@ const resource = z.object({
   cap: finite.nonnegative(),
   regenMinutes: finite.nonnegative(),
   reserveCap: finite.nonnegative(),
+  reserveRegenMinutes: finite.positive().optional(),
   sort: finite,
   kind: z.enum(['regen', 'weekly', 'counter']).optional(),
   reserveLabel: z.string().max(80).optional(),
@@ -66,7 +71,9 @@ const task = z.object({
   mode: z.enum(['check', 'timer', 'count']).optional(),
   timerDurationMinutes: finite.positive().optional(),
   timerEndsAt: timestamp.nullable().optional(),
-  countTarget: finite.positive().optional(),
+  countTarget: finite.positive().max(365).optional(),
+  timelineLinked: z.boolean().optional(),
+  timelineMatch: z.string().max(120).optional(),
 });
 
 const completion = z.object({

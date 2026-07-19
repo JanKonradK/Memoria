@@ -79,11 +79,11 @@ describe('daily undone alerts', () => {
     expect(evaluateAlerts(state, now).filter((a) => a.type === 'daily_undone')).toHaveLength(0);
   });
 
-  it('counts an active dailyTouch event as a daily task', () => {
+  it('does not count a dailyTouch event as a daily task (events are not checklist items)', () => {
     const now = utc('2026-07-02T01:00:00');
     const ev = makeEvent({ dailyTouch: true, start: now - 86_400_000, end: now + 86_400_000, notify: false });
     const state = makeState({ games: [game], events: [ev] });
-    expect(evaluateAlerts(state, now).filter((a) => a.type === 'daily_undone')).toHaveLength(1);
+    expect(evaluateAlerts(state, now).filter((a) => a.type === 'daily_undone')).toHaveLength(0);
   });
 });
 
