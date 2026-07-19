@@ -231,6 +231,43 @@ export function Toggle({
   );
 }
 
+export function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+  ariaLabel,
+}: {
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
+  ariaLabel: string;
+}) {
+  return (
+    <div
+      className="inline-flex rounded-xl bg-white/[0.06] p-0.5 ring-1 ring-white/10"
+      role="group"
+      aria-label={ariaLabel}
+    >
+      {options.map((option) => {
+        const active = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            aria-pressed={active}
+            className={`h-7 rounded-[10px] px-3 text-xs font-semibold transition ${
+              active ? 'bg-white/15 text-white' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Btn({
   children,
   onClick,
