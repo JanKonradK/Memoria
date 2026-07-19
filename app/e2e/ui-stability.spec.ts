@@ -85,7 +85,7 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   const resin = page.getByLabel('Original Resin current value');
   await resin.fill('0');
   await resin.blur();
-  await page.getByRole('button', { name: '-1' }).first().click();
+  await page.getByRole('button', { name: 'Decrease Original Resin' }).click();
   await expect(resin).toHaveValue('0');
 
   const bossRow = page.getByRole('button', { name: /Weekly Bosses ×3: 0 of 3 done/ });
@@ -118,7 +118,7 @@ test('tabs, timeline controls, and settings fit after adding a game', async ({ p
   await expect(page.getByLabel('Sleep window (hours)')).toHaveValue('8');
   await expectNoPageOverflow(page);
 
-  await page.getByRole('button', { name: 'Dashboard' }).click();
+  await page.getByRole('button', { name: 'Games' }).click();
   await page.getByRole('button', { name: 'Edit Genshin Impact' }).click();
   const dialog = page.getByRole('dialog', { name: 'Genshin Impact' });
   await dialog.getByRole('button', { name: 'Alerts', exact: true }).click();
