@@ -4,7 +4,7 @@ import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fmtClock, fmtDur, tint } from '../util';
 import { GameCard } from './GameCard';
-import { GameBadge } from './ui';
+import { GameBadge, Page } from './ui';
 import { useSession } from '../auth';
 
 export function DashboardPage({ now }: { now: number }) {
@@ -30,7 +30,7 @@ export function DashboardPage({ now }: { now: number }) {
   const orderStale = displayIds.join('|') !== liveIds.join('|');
 
   return (
-    <div className="mx-auto w-full max-w-[1800px] px-3 pb-28 pt-4 sm:px-5 sm:pt-5 lg:pb-8">
+    <Page className="pb-28 pt-4 sm:pt-5 lg:pb-8">
       {session.hosted && !setupDismissed && order.length > 0 && (
         <section className="glass gold-hairline mb-4 rounded-3xl p-4" aria-label="Account setup checklist">
           <div className="flex items-start gap-3">
@@ -170,6 +170,6 @@ export function DashboardPage({ now }: { now: number }) {
           </div>
         </>
       )}
-    </div>
+    </Page>
   );
 }

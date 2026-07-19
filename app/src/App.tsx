@@ -219,30 +219,34 @@ export default function App() {
         Skip to content
       </a>
       {/* True-black canvas — no ambient washes; color belongs to the cards (OLED). */}
-      <header className="gold-hairline !fixed inset-x-0 top-0 z-30 border-b border-white/5 bg-black/95">
-        <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-3 sm:gap-4 sm:px-5">
+      <header className="gold-hairline !fixed inset-x-0 top-0 z-30 border-b border-white/5 bg-black/95 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.8)] supports-[backdrop-filter]:bg-black/80 supports-[backdrop-filter]:backdrop-blur-md">
+        <div className="mx-auto flex h-14 w-full max-w-[1800px] items-center gap-2 px-3 sm:gap-4 sm:px-6">
           <h1 className="flex items-center gap-2 text-lg font-black tracking-tight">
             <span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-amber-200 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(168,85,247,0.35)]">
               TechnoGG
             </span>
           </h1>
-          <SyncDot />
-          <nav className="ml-auto hidden gap-1 lg:flex" aria-label="Primary">
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTab(t.id)}
-                aria-current={tab === t.id ? 'page' : undefined}
-                className={`relative min-h-9 rounded-xl px-4 py-1.5 text-sm font-semibold transition ${
-                  tab === t.id ? 'text-white' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                {tab === t.id && <span className="absolute inset-0 rounded-xl bg-white/10 ring-1 ring-white/15" />}
-                <span className="relative">{t.label}</span>
-              </button>
-            ))}
-          </nav>
+          <div className="ml-auto flex h-full items-center gap-3">
+            <nav className="hidden h-full gap-1 lg:flex" aria-label="Primary">
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTab(t.id)}
+                  aria-current={tab === t.id ? 'page' : undefined}
+                  className={`relative h-full px-4 text-sm font-semibold transition ${
+                    tab === t.id ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {t.label}
+                  {tab === t.id && (
+                    <span className="pointer-events-none absolute inset-x-2 bottom-0 h-0.5 bg-gradient-to-r from-transparent via-gold to-transparent" />
+                  )}
+                </button>
+              ))}
+            </nav>
+            <SyncDot />
+          </div>
         </div>
       </header>
       <div className="h-14" aria-hidden />

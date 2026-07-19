@@ -2,6 +2,15 @@ import { Children, isValidElement, useEffect, useId, useRef, useState, type Reac
 import { tint } from '../util';
 
 /**
+ * Single page-width container shared by the header and every tab so all edges
+ * align at any viewport. `className` is for vertical spacing only — width and
+ * horizontal padding overrides won't win against the defaults reliably.
+ */
+export function Page({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <div className={`mx-auto w-full max-w-[1800px] px-3 sm:px-6 ${className}`}>{children}</div>;
+}
+
+/**
  * Game identity mark: the game's short code in its accent color. Replaces the
  * old emoji icons everywhere — reads instantly at a glance and never depends
  * on the user having set an icon.
