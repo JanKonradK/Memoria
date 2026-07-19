@@ -18,7 +18,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('TechnoGG render failed', error, info);
+    console.error("Techno's Library render failed", error, info);
     void reportClientError(error, info.componentStack ?? 'render');
   }
 

@@ -21,7 +21,7 @@ async function sendDiscord(webhook: string, alerts: PendingAlert[]): Promise<boo
     const res = await fetch(webhook, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ username: 'TechnoGG', embeds }),
+      body: JSON.stringify({ username: "Techno's Library", embeds }),
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return false;

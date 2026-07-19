@@ -1,4 +1,4 @@
-# Creates "TechnoGG" shortcuts on the Desktop and Start Menu that launch the
+# Creates "Techno's Library" shortcuts on the Desktop and Start Menu that launch the
 # app in its own window via the hidden VBS wrapper, with the custom icon.
 # Run once:  powershell -ExecutionPolicy Bypass -File desktop\Install-Shortcut.ps1
 
@@ -30,16 +30,16 @@ function New-TechnoShortcut([string]$linkPath) {
   $sc.Arguments = '"' + $vbs + '"'
   $sc.WorkingDirectory = $repo
   $sc.IconLocation = $ico
-  $sc.Description = 'TechnoGG — gacha energy & daily tracker'
+  $sc.Description = 'Techno''s Library — gacha energy & daily tracker'
   $sc.Save()
 }
 
 $desktop = [Environment]::GetFolderPath('Desktop')
-New-TechnoShortcut (Join-Path $desktop 'TechnoGG.lnk')
+New-TechnoShortcut (Join-Path $desktop 'Techno''s Library.lnk')
 
 $startMenu = Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Microsoft\Windows\Start Menu\Programs'
-New-TechnoShortcut (Join-Path $startMenu 'TechnoGG.lnk')
+New-TechnoShortcut (Join-Path $startMenu 'Techno''s Library.lnk')
 
 Write-Host ''
-Write-Host 'Done. "TechnoGG" is now on your Desktop and Start Menu.' -ForegroundColor Green
+Write-Host 'Done. "Techno''s Library" is now on your Desktop and Start Menu.' -ForegroundColor Green
 Write-Host 'Double-click it to launch the app in its own window.'
