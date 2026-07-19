@@ -79,7 +79,7 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   await expect(page.getByRole('button', { name: /Domain -20/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Start' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /start timer/i })).toBeVisible();
 
   const resin = page.getByLabel('Original Resin current value');
   await resin.fill('0');
@@ -87,10 +87,10 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   await page.getByRole('button', { name: '-1' }).first().click();
   await expect(resin).toHaveValue('0');
 
-  const bossRun = page.getByRole('button', { name: /Weekly Bosses ×3 run 1/ });
-  await bossRun.scrollIntoViewIfNeeded();
-  await bossRun.click();
-  await expect(page.getByRole('button', { name: /Weekly Bosses ×3 run 1, done/ })).toBeVisible();
+  const bossRow = page.getByRole('button', { name: /Weekly Bosses ×3: 0 of 3 done/ });
+  await bossRow.scrollIntoViewIfNeeded();
+  await bossRow.click();
+  await expect(page.getByRole('button', { name: /Weekly Bosses ×3: 1 of 3 done/ })).toBeVisible();
 
   await addPreset(page, 'Honkai: Star Rail', 'HSR');
   await page.getByRole('heading', { name: 'Honkai: Star Rail', exact: true }).scrollIntoViewIfNeeded();

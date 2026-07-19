@@ -6,6 +6,14 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { initPwa } from './pwa';
 import { reportClientError } from './reporting';
 import './index.css';
+// Per-game title fonts (see fonts.ts) — bundled so the PWA stays offline-capable.
+import '@fontsource/marcellus/400.css';
+import '@fontsource/rajdhani/600.css';
+import '@fontsource/rajdhani/700.css';
+import '@fontsource/archivo-black/400.css';
+import '@fontsource/michroma/400.css';
+import '@fontsource/baloo-2/600.css';
+import '@fontsource/baloo-2/700.css';
 
 initPwa();
 window.addEventListener('unhandledrejection', (event) => {

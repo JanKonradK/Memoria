@@ -38,6 +38,12 @@ export interface Game extends Syncable {
   notes?: string;
   /** Executable names (no .exe, case-insensitive) the TUI matches against running processes. */
   processNames?: string[];
+  /** Card display toggles — every block on the game card can be switched off. Default: shown. */
+  hideProgressRing?: boolean;
+  hideEventStrip?: boolean;
+  hideSleepChip?: boolean;
+  /** CSS font-family for the card/hero title — each game keeps its own personality. */
+  titleFont?: string;
 }
 
 export interface Resource extends Syncable {
@@ -51,6 +57,8 @@ export interface Resource extends Syncable {
   regenMinutes: number;
   /** Overflow reserve capacity (e.g. HSR Reserve Trailblaze Power). 0 = none. */
   reserveCap: number;
+  /** Minutes per reserve point once the bar is capped. Default: 2 × regenMinutes (reserve fills at half speed). */
+  reserveRegenMinutes?: number;
   sort: number;
   /** Regenerating bar, weekly refill counter, or manual-only counter. */
   kind?: ResourceKind;
@@ -86,6 +94,14 @@ export interface Task extends Syncable {
   timerEndsAt?: number | null;
   /** Required completions per period (weekly bosses). */
   countTarget?: number;
+  /**
+   * Custom-cadence tasks follow the game's matching Timeline window by default:
+   * they reset when the window ends and hide between windows. false = use the
+   * internal intervalDays cooldown (personal cooldowns like Parametric Transformer).
+   */
+  timelineLinked?: boolean;
+  /** Keyword override for the timeline match (case-insensitive contains); empty = fuzzy name match. */
+  timelineMatch?: string;
 }
 
 /** Completion state of a task within one period. id = `${taskId}|${periodKey}`. */
@@ -108,11 +124,11 @@ export interface GameEvent extends Syncable {
   type: EventType;
   start: number;
   end: number;
-  /** Requires a daily touch (login/claim) — shows up in the daily checklist. */
+  /** Requires a daily touch (login/claim) — always shown on the game card's event strip while active. */
   dailyTouch: boolean;
   /** Include in "event ending soon" alerts. */
   notify: boolean;
-  /** User marked it complete — collapsed on the timeline, no alerts, no checklist entry. */
+  /** User marked it complete — collapsed on the timeline, no alerts, off the card. */
   done?: boolean;
   notes: string;
   /** Stable id of the imported source (e.g. "genshin:21788") — used to dedupe re-imports. */

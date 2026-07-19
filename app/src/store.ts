@@ -14,7 +14,15 @@ import type {
   QuickChip,
   Task,
 } from '@technogg/shared';
-import { completionId, emptyState, latestSnapshots, mergeState, normalizeState, projectEnergy } from '@technogg/shared';
+import {
+  completionId,
+  effectiveCountTarget,
+  emptyState,
+  latestSnapshots,
+  mergeState,
+  normalizeState,
+  projectEnergy,
+} from '@technogg/shared';
 import { clearLocalSecrets, migrateLegacySecrets } from './secret-store';
 import { uid } from './util';
 
@@ -167,6 +175,7 @@ export const useApp = create<AppStore>((set, get) => ({
         short: preset.short,
         color: preset.color,
         color2: preset.color2,
+        titleFont: preset.titleFont,
         icon: preset.icon,
         platform: preset.platform,
         tz: over.tz ?? preset.tz,
@@ -187,6 +196,7 @@ export const useApp = create<AppStore>((set, get) => ({
         cap: over.capOverrides?.[i] ?? r.cap,
         regenMinutes: r.regenMinutes,
         reserveCap: r.reserveCap,
+        reserveRegenMinutes: r.reserveRegenMinutes,
         kind: r.kind,
         reserveLabel: r.reserveLabel,
         sort: i,
@@ -285,6 +295,9 @@ export const useApp = create<AppStore>((set, get) => ({
         cap: res.cap ?? 100,
         regenMinutes: res.regenMinutes ?? 6,
         reserveCap: res.reserveCap ?? 0,
+        reserveRegenMinutes: res.reserveRegenMinutes,
+        kind: res.kind,
+        reserveLabel: res.reserveLabel,
         sort: res.sort ?? s.resources.filter((r) => r.gameId === res.gameId).length,
         updatedAt: now(),
       };
@@ -349,7 +362,9 @@ export const useApp = create<AppStore>((set, get) => ({
     const snap = latestSnapshots(s.snapshots).get(resourceId);
     const proj = projectEnergy(res, snap, now(), game);
     const next = Math.max(0, Math.min(res.cap, proj.value + delta));
-    get().setEnergy(resourceId, next, snap?.reserve);
+    // Persist the PROJECTED reserve, not the snapshot's — reserve keeps growing
+    // while the bar is capped and a quick adjustment must not roll it back.
+    get().setEnergy(resourceId, next, proj.reserve ?? snap?.reserve);
   },
 
   setTaskDone(taskId, periodKey, done) {
@@ -403,7 +418,7 @@ export const useApp = create<AppStore>((set, get) => ({
 
   setTaskCount(taskId, periodKey, countDone) {
     const task = get().state.tasks.find((item) => item.id === taskId);
-    const target = task?.countTarget ?? 1;
+    const target = task ? effectiveCountTarget(task) : 1;
     const done = countDone >= target;
     get().mutate((s) => ({
       ...s,
