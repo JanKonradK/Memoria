@@ -156,4 +156,11 @@ test('full 16:9 dashboard fits five games and timeline bars stay in scale', asyn
   );
   expect(outOfScale).toBe(0);
   await expectNoPageOverflow(page);
+
+  // Seed events age out of the agenda window over time, so assert on the
+  // section structure and that at least one seeded event row rendered.
+  await page.getByRole('button', { name: 'Agenda' }).click();
+  await expect(page.getByRole('heading', { name: 'Live now' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Open .+ event: / }).first()).toBeVisible();
+  await expectNoPageOverflow(page);
 });
