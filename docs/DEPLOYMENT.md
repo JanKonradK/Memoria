@@ -1,6 +1,6 @@
 # Deployment
 
-TechnoGG uses one Cloudflare Worker for the Hono API and static PWA assets. Staging and production must use different
+Techno's Library uses one Cloudflare Worker for the Hono API and static PWA assets. Staging and production must use different
 Clerk instances, D1 databases, Queues, secrets, origins, and GitHub environments.
 
 ## Provision each environment

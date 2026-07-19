@@ -1,4 +1,4 @@
-// TechnoGG desktop launcher.
+// Techno's Library desktop launcher.
 // Serves the built PWA (app/dist) on a FIXED local port and opens it as a
 // chromeless "app" window inside the user's default Chromium browser (shared
 // profile — costs about one tab). The server exits on its own once no app
@@ -79,7 +79,7 @@ function serveFile(res, filePath) {
   }
 }
 
-/** Is a TechnoGG instance already serving on this port? */
+/** Is a Techno's Library instance already serving on this port? */
 async function isTechnoGG(port) {
   try {
     const res = await fetch(`http://127.0.0.1:${port}/`, { signal: AbortSignal.timeout(1500) });
@@ -234,7 +234,7 @@ function tryListen(port) {
 }
 
 /**
- * Bind the first free port from PORTS, or detect a TechnoGG instance already
+ * Bind the first free port from PORTS, or detect a Techno's Library instance already
  * running on one (second launch) and reuse its URL instead of starting anew.
  */
 async function startOrReuse() {
@@ -330,7 +330,7 @@ async function main() {
   if (!got) {
     // All candidate ports are squatted by foreign apps — bail loudly rather
     // than fall back to a random port (that would strand the user's data).
-    console.error(`TechnoGG: ports ${PORTS.join(', ')} are all in use by other programs.`);
+    console.error(`Techno's Library: ports ${PORTS.join(', ')} are all in use by other programs.`);
     process.exit(1);
   }
   const { server, port } = got;
@@ -350,7 +350,7 @@ async function main() {
     return;
   }
 
-  // Reuse case: another TechnoGG owns the server; just open a window on it.
+  // Reuse case: another Techno's Library instance owns the server; just open a window on it.
   // Our process can exit immediately — the other instance manages lifetime.
   if (!server) {
     openAppWindow(url);

@@ -104,9 +104,9 @@ export default function App() {
       <main className="flex min-h-dvh items-center justify-center px-5 py-12">
         <section className="glass gold-hairline w-full max-w-lg rounded-3xl p-6" role="alert">
           <p className="text-xs font-bold uppercase tracking-widest text-rose-300">Local data unavailable</p>
-          <h1 className="mt-2 text-xl font-black text-slate-100">TechnoGG could not open this device's data.</h1>
+          <h1 className="mt-2 text-xl font-black text-slate-100">Techno's Library could not open this device's data.</h1>
           <p className="mt-2 text-sm text-slate-400">
-            Retry first. Starting fresh permanently clears this browser's local TechnoGG database; synced or exported
+            Retry first. Starting fresh permanently clears this browser's local Techno's Library database; synced or exported
             copies are not affected.
           </p>
           <p className="mt-3 rounded-xl bg-black/30 p-3 text-xs text-slate-500">{loadError}</p>
@@ -121,7 +121,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => {
-                if (window.confirm('Permanently clear TechnoGG data stored in this browser and start fresh?')) {
+                if (window.confirm("Permanently clear Techno's Library data stored in this browser and start fresh?")) {
                   void clearLocalData().then(() => {
                     if (!useApp.getState().loadError) window.location.reload();
                   });
@@ -139,7 +139,7 @@ export default function App() {
 
   if (!loaded) {
     return (
-      <div className="flex min-h-dvh items-center justify-center" role="status" aria-label="Loading TechnoGG">
+      <div className="flex min-h-dvh items-center justify-center" role="status" aria-label="Loading Techno's Library">
         <div
           className="loader-spin h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-amber-300"
           style={{ boxShadow: '0 0 40px rgba(124,92,255,0.5)' }}
@@ -223,7 +223,7 @@ export default function App() {
         <div className="mx-auto flex h-14 w-full max-w-[1800px] items-center gap-2 px-3 sm:gap-4 sm:px-6">
           <h1 className="flex items-center gap-2 text-lg font-black tracking-tight">
             <span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-amber-200 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(168,85,247,0.35)]">
-              TechnoGG
+              Techno's Library
             </span>
           </h1>
           <div className="ml-auto flex h-full items-center gap-3">
@@ -265,7 +265,7 @@ export default function App() {
           className={`sticky ${online ? 'top-14' : 'top-[88px]'} z-20 flex items-center justify-center gap-3 border-b border-violet-300/15 bg-violet-300/10 px-4 py-2 text-xs font-semibold text-violet-100`}
           role="status"
         >
-          <span>A new TechnoGG version is ready.</span>
+          <span>A new Techno's Library version is ready.</span>
           <button
             type="button"
             onClick={applyPwaUpdate}

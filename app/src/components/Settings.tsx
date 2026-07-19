@@ -87,7 +87,7 @@ export function SettingsPage() {
         const raw = JSON.parse(text) as unknown;
         const candidate = raw && typeof raw === 'object' && 'state' in raw ? (raw as { state: unknown }).state : raw;
         if (!candidate || typeof candidate !== 'object' || (!('games' in candidate) && !('settings' in candidate)))
-          throw new Error('Not a TechnoGG backup');
+          throw new Error("Not a Techno's Library backup");
         const normalized = normalizeState(candidate);
         const parsed = safeParseAppState(normalized);
         if (!parsed.success) throw new Error(parsed.error);
@@ -100,7 +100,7 @@ export function SettingsPage() {
         setPingResult('');
       } catch {
         setImportDraft(null);
-        setPingResult('Import failed — not a valid TechnoGG backup file.');
+        setPingResult("Import failed — not a valid Techno's Library backup file.");
       }
     });
   };
@@ -383,7 +383,7 @@ export function SettingsPage() {
                 onClick={() => {
                   if (
                     !window.confirm(
-                      'Permanently delete your TechnoGG account and all cloud data? This cannot be undone.',
+                      "Permanently delete your Techno's Library account and all cloud data? This cannot be undone.",
                     )
                   )
                     return;

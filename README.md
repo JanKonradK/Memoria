@@ -1,4 +1,4 @@
-# ⚡ TechnoGG — Gacha Daily / Energy / Event Tracker
+# ⚡ Techno's Library — Gacha Daily / Energy / Event Tracker
 
 One dashboard for every gacha you play: live energy projections, dailies/weeklies/monthlies
 that reset on each game's _server_ time, an event timeline, and Discord/Telegram pings before
@@ -42,7 +42,7 @@ closed-app alerts.
 
 ```sh
 npm run build              # the launcher serves app/dist
-npm run install:desktop    # puts a TechnoGG shortcut on the Desktop
+npm run install:desktop    # puts a Techno's Library shortcut on the Desktop
 ```
 
 The shortcut opens the app in its own window and keeps serving on the **fixed port
@@ -94,7 +94,7 @@ every alert fires exactly once (re-armed each time you enter a new energy snapsh
 ## The daily loop
 
 1. Play your game(s).
-2. Open TechnoGG and punch in what's actually left, right on the card: click the
+2. Open Techno's Library and punch in what's actually left, right on the card: click the
    value box and type, or step with the keyboard — **A −10 · S −1 · D +1 · F +10**,
    Enter saves. Click the cap number ("/200") to change it when your max shifts
    (rank-ups, events), or add one-tap spend shortcuts in game ⚙ → Quick spend.

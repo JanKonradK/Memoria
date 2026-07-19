@@ -20,7 +20,7 @@ export async function sendTestAlert(env: Bindings, userId: string): Promise<stri
     dedupeKey: `test:${Date.now()}`,
     gameId: null,
     type: 'reminder',
-    title: 'TechnoGG test ping',
+    title: "Techno's Library test ping",
     body: 'Alerts are connected. May your pulls be golden.',
     color: '#8b5cf6',
   };
