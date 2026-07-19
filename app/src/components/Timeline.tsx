@@ -2,18 +2,14 @@ import { useState } from 'react';
 import { DateTime } from 'luxon';
 import type { Game, GameEvent } from '@technogg/shared';
 import { useApp } from '../store';
+import { TYPE_RANK } from '../timeline-sort';
 import { useUI } from '../ui-store';
 import { endTone, fmtDur, tint } from '../util';
 import { planSeedImport, SEED_UPDATED } from '../data/seed-events';
-import { Btn, GameBadge, SectionTitle } from './ui';
+import { TimelineAgenda } from './TimelineAgenda';
+import { Btn, GameBadge, SectionTitle, Segmented } from './ui';
 
 const DAY = 86_400_000;
-
-/**
- * Within a game: things to PLAY first (events), then endgame windows, then
- * banners (you already know whether you're pulling), maintenance last.
- */
-const TYPE_RANK = { event: 0, custom: 0, cycle: 1, banner: 2, maintenance: 3 } as const;
 
 function lum(hex: string): number {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -167,6 +163,8 @@ export function TimelinePage({ now }: { now: number }) {
   const deleteReminder = useApp((s) => s.deleteReminder);
   const upsertEvent = useApp((s) => s.upsertEvent);
   const openSheet = useUI((s) => s.openSheet);
+  const timelineView = useUI((s) => s.timelineView);
+  const setTimelineView = useUI((s) => s.setTimelineView);
 
   const seedPlan = planSeedImport(state, now);
   const importSeed = () => {
@@ -238,9 +236,18 @@ export function TimelinePage({ now }: { now: number }) {
 
   return (
     <div className="mx-auto w-full max-w-[1800px] px-3 pb-28 pt-4 sm:px-5 sm:pt-5 lg:pb-8">
-      <div className="mb-3 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-3 flex flex-wrap items-center gap-3">
         <h2 className="text-lg font-black tracking-tight text-slate-100">Event timeline</h2>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+        <Segmented
+          options={[
+            { value: 'lanes', label: 'Lanes' },
+            { value: 'agenda', label: 'Agenda' },
+          ]}
+          value={timelineView}
+          onChange={setTimelineView}
+          ariaLabel="Timeline view"
+        />
+        <div className="ml-auto grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
           {seedPlan.length > 0 && (
             <Btn
               onClick={importSeed}
@@ -256,7 +263,7 @@ export function TimelinePage({ now }: { now: number }) {
         </div>
       </div>
 
-      {endingSoon.length > 0 && (
+      {timelineView === 'lanes' && endingSoon.length > 0 && (
         <div className="mb-4">
           <div className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">Ending soonest</div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
@@ -286,103 +293,111 @@ export function TimelinePage({ now }: { now: number }) {
         </div>
       )}
 
-      <div className="glass gold-hairline relative rounded-3xl p-4">
-        <div className="relative mb-2 ml-0 h-4 text-[10px] text-slate-500">
-          {ticks.map((t, i) => (
-            <span key={i} className="absolute -translate-x-1/2 tabular-nums" style={{ left: `${(i / TICKS) * 100}%` }}>
-              {t.toFormat('dd LLL')}
-            </span>
-          ))}
-        </div>
-
-        <div className="relative py-1">
-          {ticks.map((_, i) => (
-            <div
-              key={i}
-              className="pointer-events-none absolute inset-y-0 w-px bg-white/[0.04]"
-              style={{ left: `${(i / TICKS) * 100}%` }}
-            />
-          ))}
-          <div
-            className="pointer-events-none absolute inset-y-0 z-10 w-px bg-rose-400/80"
-            style={{ left: `${((now - ws) / span) * 100}%` }}
-          >
-            <span className="absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-rose-400" />
+      {timelineView === 'agenda' ? (
+        <TimelineAgenda now={now} />
+      ) : (
+        <div className="glass gold-hairline relative rounded-3xl p-4">
+          <div className="relative mb-2 ml-0 h-4 text-[10px] text-slate-500">
+            {ticks.map((t, i) => (
+              <span
+                key={i}
+                className="absolute -translate-x-1/2 tabular-nums"
+                style={{ left: `${(i / TICKS) * 100}%` }}
+              >
+                {t.toFormat('dd LLL')}
+              </span>
+            ))}
           </div>
 
-          {games.length === 0 && (
-            <p className="py-8 text-center text-sm text-slate-500">
-              No events yet — add banners and events so nothing ends without you noticing.
-            </p>
-          )}
+          <div className="relative py-1">
+            {ticks.map((_, i) => (
+              <div
+                key={i}
+                className="pointer-events-none absolute inset-y-0 w-px bg-white/[0.04]"
+                style={{ left: `${(i / TICKS) * 100}%` }}
+              />
+            ))}
+            <div
+              className="pointer-events-none absolute inset-y-0 z-10 w-px bg-rose-400/80"
+              style={{ left: `${((now - ws) / span) * 100}%` }}
+            >
+              <span className="absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-rose-400" />
+            </div>
 
-          {games.map((game) => {
-            const evs = eventsByGame.get(game.id) ?? [];
-            const nextEnd = [...evs]
-              .sort((a, b) => a.end - b.end)
-              .find((e) => e.end > now && !e.done && e.type !== 'maintenance' && e.type !== 'banner');
-            return (
-              <div key={game.id} className="relative">
-                <div className="mb-1.5 mt-4 flex items-center gap-2 first:mt-0">
-                  <GameBadge short={game.short} color={game.color} color2={game.color2} />
-                  <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: game.color }}>
-                    {game.name}
-                  </span>
-                  <span
-                    className="h-px flex-1"
-                    style={{
-                      background: `linear-gradient(90deg, ${tint(game.color, 0.3)}, ${tint(game.color2 ?? game.color, 0.12)})`,
-                    }}
-                  />
-                  {nextEnd && (
-                    <span
-                      className="text-[10px] font-semibold tabular-nums"
-                      style={{ color: endTone(nextEnd.end - now) }}
-                    >
-                      next ends {fmtDur(nextEnd.end - now)}
+            {games.length === 0 && (
+              <p className="py-8 text-center text-sm text-slate-500">
+                No events yet — add banners and events so nothing ends without you noticing.
+              </p>
+            )}
+
+            {games.map((game) => {
+              const evs = eventsByGame.get(game.id) ?? [];
+              const nextEnd = [...evs]
+                .sort((a, b) => a.end - b.end)
+                .find((e) => e.end > now && !e.done && e.type !== 'maintenance' && e.type !== 'banner');
+              return (
+                <div key={game.id} className="relative">
+                  <div className="mb-1.5 mt-4 flex items-center gap-2 first:mt-0">
+                    <GameBadge short={game.short} color={game.color} color2={game.color2} />
+                    <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: game.color }}>
+                      {game.name}
                     </span>
+                    <span
+                      className="h-px flex-1"
+                      style={{
+                        background: `linear-gradient(90deg, ${tint(game.color, 0.3)}, ${tint(game.color2 ?? game.color, 0.12)})`,
+                      }}
+                    />
+                    {nextEnd && (
+                      <span
+                        className="text-[10px] font-semibold tabular-nums"
+                        style={{ color: endTone(nextEnd.end - now) }}
+                      >
+                        next ends {fmtDur(nextEnd.end - now)}
+                      </span>
+                    )}
+                  </div>
+                  {evs.length === 0 ? (
+                    <p className="py-1 text-[11px] text-slate-600">Nothing in this window — import or add events.</p>
+                  ) : (
+                    (() => {
+                      const open = doneOpen.has(game.id);
+                      const active = evs.filter((e) => !e.done);
+                      const doneCount = evs.length - active.length;
+                      const shown = open ? evs : active;
+                      return (
+                        <div className="space-y-1.5">
+                          {shown.map((ev) => (
+                            <EventRow
+                              key={ev.id}
+                              ev={ev}
+                              game={game}
+                              now={now}
+                              ws={ws}
+                              we={we}
+                              onOpen={() => openSheet({ kind: 'event', eventId: ev.id, gameId: ev.gameId })}
+                              onToggleDone={() => upsertEvent({ id: ev.id, gameId: ev.gameId, done: !ev.done })}
+                            />
+                          ))}
+                          {doneCount > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => toggleDoneOpen(game.id)}
+                              className="block min-h-11 w-full rounded-lg py-0.5 text-left text-[10px] font-semibold text-slate-600 transition hover:text-slate-400 sm:min-h-8"
+                            >
+                              {open ? '− collapse done events' : `+ ${doneCount} done event${doneCount > 1 ? 's' : ''}`}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()
                   )}
                 </div>
-                {evs.length === 0 ? (
-                  <p className="py-1 text-[11px] text-slate-600">Nothing in this window — import or add events.</p>
-                ) : (
-                  (() => {
-                    const open = doneOpen.has(game.id);
-                    const active = evs.filter((e) => !e.done);
-                    const doneCount = evs.length - active.length;
-                    const shown = open ? evs : active;
-                    return (
-                      <div className="space-y-1.5">
-                        {shown.map((ev) => (
-                          <EventRow
-                            key={ev.id}
-                            ev={ev}
-                            game={game}
-                            now={now}
-                            ws={ws}
-                            we={we}
-                            onOpen={() => openSheet({ kind: 'event', eventId: ev.id, gameId: ev.gameId })}
-                            onToggleDone={() => upsertEvent({ id: ev.id, gameId: ev.gameId, done: !ev.done })}
-                          />
-                        ))}
-                        {doneCount > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => toggleDoneOpen(game.id)}
-                            className="block min-h-11 w-full rounded-lg py-0.5 text-left text-[10px] font-semibold text-slate-600 transition hover:text-slate-400 sm:min-h-8"
-                          >
-                            {open ? '− collapse done events' : `+ ${doneCount} done event${doneCount > 1 ? 's' : ''}`}
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })()
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       <SectionTitle>One-off reminders</SectionTitle>
       <div className="space-y-2">
