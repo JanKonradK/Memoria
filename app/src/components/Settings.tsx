@@ -14,7 +14,7 @@ import {
 } from '../integrations';
 import { readLocalSecrets, updateLocalSecrets, type LocalSecrets } from '../secret-store';
 import { fmtClock, intOr, minToTimeInput, timeInputToMin } from '../util';
-import { Btn, Field, NumInput, SectionTitle, TextInput, Toggle } from './ui';
+import { Btn, Field, NumInput, Page, SectionTitle, TextInput, Toggle } from './ui';
 
 const ALERT_TYPES: AlertType[] = ['energy_cap', 'daily_undone', 'weekly_undone', 'monthly_undone', 'event_end'];
 
@@ -106,10 +106,10 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 pb-28 pt-5 sm:px-5">
+    <Page className="pb-28 pt-5">
       <h2 className="mb-3 text-lg font-black tracking-tight text-slate-100">Settings</h2>
 
-      <div className="grid items-start gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-4 lg:grid-cols-2 2xl:grid-cols-3">
         <section className="glass gold-hairline rounded-3xl p-5">
           <SectionTitle>{session.hosted ? 'Account and sync' : 'Advanced local sync'}</SectionTitle>
           {session.hosted ? (
@@ -399,6 +399,6 @@ export function SettingsPage() {
           )}
         </section>
       </div>
-    </div>
+    </Page>
   );
 }
