@@ -24,8 +24,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon-192.png', 'icon-512.png', 'icon-maskable.png'],
       manifest: {
-        name: 'TechnoGG — Gacha Tracker',
-        short_name: 'TechnoGG',
+        name: "Techno's Library — Gacha Tracker",
+        short_name: "Techno's Library",
         description: 'Energy, dailies and event tracker for all your gacha games.',
         theme_color: '#0b0f1a',
         background_color: '#0b0f1a',

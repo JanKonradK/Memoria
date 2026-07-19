@@ -122,7 +122,7 @@ export function DashboardPage({ now }: { now: number }) {
           />
           <h2 className="text-xl font-black text-slate-100">Track every gacha, waste no energy</h2>
           <p className="max-w-sm text-sm text-slate-300">
-            Add your games, punch in your current energy after each session, and TechnoGG tells you exactly when to log
+            Add your games, punch in your current energy after each session, and Techno's Library tells you exactly when to log
             in next.
           </p>
           <button

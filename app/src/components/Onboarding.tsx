@@ -24,7 +24,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-5xl px-4 py-10 sm:px-5">
-      <p className="text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300">Welcome to TechnoGG</p>
+      <p className="text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300">Welcome to Techno's Library</p>
       <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-50">Set up your first dashboard</h1>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
         Choose the games you actively play and enter the current value of their main energy. Server clocks and default

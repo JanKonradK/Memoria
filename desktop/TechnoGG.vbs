@@ -1,4 +1,4 @@
-' TechnoGG launcher — runs the Node launcher with no visible console window.
+' Techno's Library launcher — runs the Node launcher with no visible console window.
 ' Self-locating: works no matter where the project folder lives.
 Set fso = CreateObject("Scripting.FileSystemObject")
 scriptDir = fso.GetParentFolderName(WScript.ScriptFullName)
