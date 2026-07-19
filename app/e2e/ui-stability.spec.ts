@@ -94,6 +94,7 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
 
   await addPreset(page, 'Honkai: Star Rail', 'HSR');
   await page.getByRole('heading', { name: 'Honkai: Star Rail', exact: true }).scrollIntoViewIfNeeded();
+  await page.getByRole('button', { name: /Reserve TB Power/ }).click();
   await expect(page.getByLabel(/Reserve TB Power for Trailblaze Power/)).toBeVisible();
 
   await page.getByRole('button', { name: 'Add game', exact: true }).click();

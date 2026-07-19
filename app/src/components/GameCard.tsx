@@ -509,8 +509,10 @@ export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
                   key={res.id}
                   res={res}
                   color={game.color}
+                  reserveColor={game.color2}
                   proj={proj}
                   reserve={proj.reserve ?? snaps.get(res.id)?.reserve}
+                  now={now}
                   onCommit={(value, reserve) => setEnergy(res.id, value, reserve)}
                 />
               );
