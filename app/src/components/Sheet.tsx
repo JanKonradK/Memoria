@@ -129,7 +129,7 @@ export function Sheet({
           aria-labelledby={titleId}
           tabIndex={-1}
           className={`dialog-enter glass gold-hairline relative flex max-h-[85dvh] w-full flex-col rounded-3xl shadow-2xl ${
-            wide ? 'max-w-3xl' : 'max-w-xl'
+            wide ? 'max-w-4xl' : 'max-w-xl'
           }`}
         >
           <div className="flex shrink-0 items-center justify-between gap-3 px-6 pb-3 pt-5">

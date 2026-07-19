@@ -18,79 +18,6 @@ import { Btn, Field, NumInput, SectionTitle, TextInput, Toggle } from './ui';
 
 const ALERT_TYPES: AlertType[] = ['energy_cap', 'daily_undone', 'weekly_undone', 'monthly_undone', 'event_end'];
 
-function PerGameAlerts() {
-  const app = useApp();
-  const games = app.state.games.filter((g) => !g.deleted).sort((a, b) => a.sort - b.sort);
-  if (games.length === 0) return null;
-
-  const globalRule = (type: AlertType) =>
-    app.state.alertRules.find((r) => r.type === type && r.gameId === null && !r.deleted);
-
-  return (
-    <section className="glass gold-hairline rounded-3xl p-5">
-      <SectionTitle>Per-game alert overrides</SectionTitle>
-      <p className="mb-3 text-xs text-slate-400">
-        Leave a game on global defaults, or override only the alerts that need different timing.
-      </p>
-      <div className="space-y-2">
-        {games.map((game) => (
-          <details key={game.id} className="rounded-2xl bg-white/[0.035] px-3 py-2 ring-1 ring-white/10">
-            <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-slate-200 sm:min-h-9 sm:py-2">
-              {game.name}
-            </summary>
-            <div className="space-y-2 pb-2">
-              {ALERT_TYPES.map((type) => {
-                const override = app.state.alertRules.find(
-                  (r) => r.type === type && r.gameId === game.id && !r.deleted,
-                );
-                const inherited = globalRule(type);
-                const enabled = override?.enabled ?? inherited?.enabled ?? true;
-                const minutes = override?.thresholdMinutes ?? inherited?.thresholdMinutes ?? DEFAULT_THRESHOLDS[type];
-                return (
-                  <div key={type} className="flex flex-wrap items-center gap-2 rounded-xl bg-black/20 px-3 py-2">
-                    <Toggle
-                      checked={enabled}
-                      onChange={(value) =>
-                        app.upsertRule({ type, gameId: game.id, enabled: value, thresholdMinutes: minutes })
-                      }
-                      label={alertTypeLabel(type)}
-                    />
-                    <div className="ml-auto flex items-center gap-2">
-                      <NumInput
-                        className="!w-24"
-                        value={String(minutes)}
-                        aria-label={`${alertTypeLabel(type)} minutes before for ${game.name}`}
-                        onChange={(e) =>
-                          app.upsertRule({
-                            type,
-                            gameId: game.id,
-                            enabled,
-                            thresholdMinutes: Math.max(5, intOr(e.target.value, minutes)),
-                          })
-                        }
-                      />
-                      <span className="text-[11px] text-slate-500">min</span>
-                      {override && (
-                        <Btn
-                          className="!px-2 text-xs"
-                          onClick={() => app.clearRule(type, game.id)}
-                          title="Use the global default"
-                        >
-                          Reset
-                        </Btn>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </details>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 export function SettingsPage() {
   const app = useApp();
   const session = useSession();
@@ -361,8 +288,6 @@ export function SettingsPage() {
             </div>
           </div>
         </section>
-
-        <PerGameAlerts />
 
         <section className="glass gold-hairline rounded-3xl p-5">
           <SectionTitle>Alert timing (global defaults)</SectionTitle>
