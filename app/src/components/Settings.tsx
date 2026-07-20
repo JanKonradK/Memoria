@@ -274,7 +274,7 @@ export function SettingsPage() {
                 }
               />
             </Field>
-            <p className="text-[11px] text-slate-500">Used by the evening “sleep safe” check on game cards.</p>
+            <p className="text-2xs text-slate-500">Used by the evening “sleep safe” check on game cards.</p>
             <div className="flex items-center gap-3">
               <Btn
                 onClick={() => {
@@ -318,12 +318,12 @@ export function SettingsPage() {
                         })
                       }
                     />
-                    <span className="mt-1 block text-[10px] text-slate-500">minutes before</span>
+                    <span className="mt-1 block text-2xs text-slate-500">minutes before</span>
                   </div>
                 </div>
               );
             })}
-            <p className="text-[11px] text-slate-500">
+            <p className="text-2xs text-slate-500">
               e.g. "Energy nearing cap · 120" pings when a resource is within 2 hours of capping.
             </p>
           </div>
@@ -333,7 +333,7 @@ export function SettingsPage() {
           <SectionTitle>Data</SectionTitle>
           <div className="flex flex-wrap items-center gap-2 pb-1">
             <Btn onClick={() => void exportJson()}>Export backup</Btn>
-            <label className="flex min-h-11 cursor-pointer items-center rounded-xl bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 ring-1 ring-white/10 transition hover:bg-white/10 sm:min-h-9">
+            <label className="flex min-h-11 cursor-pointer items-center rounded-xl bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 ring-1 ring-white/10 transition hover:bg-white/10">
               Import backup
               <input
                 type="file"
@@ -342,7 +342,7 @@ export function SettingsPage() {
                 onChange={(e) => importJson(e.target.files?.[0])}
               />
             </label>
-            <span className="text-[11px] text-slate-500">
+            <span className="text-2xs text-slate-500">
               {app.state.games.filter((g) => !g.deleted).length} games ·{' '}
               {app.state.events.filter((e) => !e.deleted).length} events
             </span>

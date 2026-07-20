@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.61.9",
+    "@fontsource-variable/sora": "^5.3.0",
     "@fontsource/archivo-black": "^5.2.8",
     "@fontsource/baloo-2": "^5.2.7",
     "@fontsource/marcellus": "^5.2.8",

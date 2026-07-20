@@ -7,7 +7,7 @@ function CloseButton({ onClose }: { onClose: () => void }) {
     <button
       type="button"
       onClick={onClose}
-      className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 text-slate-400 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-slate-200 sm:h-9 sm:w-9"
+      className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 text-slate-400 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-slate-200"
       aria-label="Close"
     >
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">

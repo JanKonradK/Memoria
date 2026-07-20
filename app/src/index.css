@@ -3,12 +3,42 @@
 @theme {
   /* OLED Nightline: true black canvas, color lives on the cards. */
   --color-ink: #000000;
-  --color-panel: #0b0a12;
-  --color-panel2: #141020;
-  --color-line: rgba(200, 180, 255, 0.12);
-  --color-gold: #e8b45a;
+  --color-panel: #0c0a15;
+  --color-panel2: #161126;
+  --color-line: rgba(205, 185, 255, 0.14);
+  --color-gold: #eebc63;
   --color-rose: #ff6fa5;
-  --color-astral: #7c5cff;
+  --color-astral: #8b6dff;
+
+  /* 2560×1440 fullscreen gets the 3xl: treatment. */
+  --breakpoint-3xl: 120rem;
+
+  /* Fluid type scale: minimums hold at 320px, maximums land ~2560px viewport.
+     Overriding the --text-* tokens rescales every text-* utility app-wide;
+     2xs/3xs are new tokens replacing the old text-[8px]..text-[11px] micro-labels. */
+  --text-3xs: clamp(0.625rem, 0.55rem + 0.18vw, 0.78rem);
+  --text-3xs--line-height: 1.35;
+  --text-2xs: clamp(0.72rem, 0.64rem + 0.2vw, 0.9rem);
+  --text-2xs--line-height: 1.35;
+  --text-xs: clamp(0.78rem, 0.7rem + 0.2vw, 0.95rem);
+  --text-xs--line-height: 1.4;
+  --text-sm: clamp(0.9rem, 0.82rem + 0.22vw, 1.1rem);
+  --text-sm--line-height: 1.45;
+  --text-base: clamp(1rem, 0.92rem + 0.24vw, 1.2rem);
+  --text-base--line-height: 1.5;
+  --text-lg: clamp(1.125rem, 1.02rem + 0.3vw, 1.4rem);
+  --text-lg--line-height: 1.45;
+  --text-xl: clamp(1.25rem, 1.12rem + 0.36vw, 1.6rem);
+  --text-xl--line-height: 1.35;
+  --text-2xl: clamp(1.5rem, 1.32rem + 0.5vw, 2.05rem);
+  --text-2xl--line-height: 1.25;
+  --text-3xl: clamp(1.875rem, 1.6rem + 0.7vw, 2.6rem);
+  --text-3xl--line-height: 1.2;
+}
+
+/* Display voice for the wordmark and big headings — arcane-library serif. */
+@utility font-display {
+  font-family: 'Marcellus', serif;
 }
 
 html,
@@ -17,6 +47,7 @@ body {
   background: var(--color-ink);
   color: #f2eefa;
   font-family:
+    'Sora Variable',
     ui-rounded,
     'Segoe UI',
     system-ui,
@@ -225,7 +256,46 @@ textarea:focus-visible {
   position: absolute;
   inset: 0 0 auto 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(232, 180, 90, 0.55), transparent);
+  background: linear-gradient(90deg, transparent, rgba(238, 188, 99, 0.55), transparent);
+}
+
+/* Animated hairline: a gold shimmer drifts along the top edge. Frozen to a
+   static gradient under reduced motion by the global kill switch below. */
+@keyframes hairlineSlide {
+  to {
+    background-position: 200% 0;
+  }
+}
+.gold-hairline-live::before {
+  background: linear-gradient(90deg, transparent 20%, rgba(238, 188, 99, 0.75) 50%, transparent 80%);
+  background-size: 200% 100%;
+  animation: hairlineSlide 6s ease-in-out infinite;
+}
+
+/* Moving backlight: an oversized conic gradient slowly rotating behind card
+   content. Must sit inside an overflow-hidden rounded shell. Transform-only,
+   so it stays on the compositor; tint colors come from --aurora-c1/c2. */
+@keyframes auroraSpin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+.card-aurora {
+  position: absolute;
+  inset: -45%;
+  pointer-events: none;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    var(--aurora-c1) 10%,
+    transparent 28%,
+    transparent 50%,
+    var(--aurora-c2) 62%,
+    transparent 80%
+  );
+  opacity: 0.16;
+  animation: auroraSpin 22s linear infinite;
+  will-change: transform;
 }
 
 .scrollbar-thin {

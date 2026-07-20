@@ -3,6 +3,7 @@ import { urgencyOrder } from '@technogg/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fmtClock, fmtDur, tint } from '../util';
+import { titleFontFor } from '../fonts';
 import { GameCard } from './GameCard';
 import { GameBadge, Page } from './ui';
 import { useSession } from '../auth';
@@ -60,7 +61,7 @@ export function DashboardPage({ now }: { now: number }) {
                 localStorage.setItem('technogg-setup-dismissed', '1');
                 setSetupDismissed(true);
               }}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 sm:h-9 sm:w-9"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400"
               aria-label="Dismiss setup checklist"
             >
               ✕
@@ -89,8 +90,11 @@ export function DashboardPage({ now }: { now: number }) {
             <div className="relative flex items-center gap-3">
               <GameBadge short={heroGame.short} color={heroGame.color} color2={heroGame.color2} size="lg" />
               <div className="min-w-0 flex-1">
-                <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Up next</div>
-                <div className="truncate text-lg font-black text-slate-50" style={{ fontFamily: heroGame.titleFont }}>
+                <div className="text-2xs font-bold uppercase tracking-widest text-slate-400">Up next</div>
+                <div
+                  className="truncate text-xl font-black text-slate-50"
+                  style={{ fontFamily: titleFontFor(heroGame) }}
+                >
                   {heroGame.short}: {hero.label}
                 </div>
               </div>
@@ -98,7 +102,7 @@ export function DashboardPage({ now }: { now: number }) {
                 <div className="text-xl font-black tabular-nums" style={{ color: heroGame.color }}>
                   {hero.at <= now ? 'NOW' : fmtDur(hero.at - now)}
                 </div>
-                {hero.at > now && <div className="text-[11px] tabular-nums text-slate-500">{fmtClock(hero.at)}</div>}
+                {hero.at > now && <div className="text-2xs tabular-nums text-slate-500">{fmtClock(hero.at)}</div>}
               </div>
             </div>
           </button>
@@ -122,8 +126,8 @@ export function DashboardPage({ now }: { now: number }) {
           />
           <h2 className="text-xl font-black text-slate-100">Track every gacha, waste no energy</h2>
           <p className="max-w-sm text-sm text-slate-300">
-            Add your games, punch in your current energy after each session, and Techno's Library tells you exactly when to log
-            in next.
+            Add your games, punch in your current energy after each session, and Techno's Library tells you exactly when
+            to log in next.
           </p>
           <button
             type="button"
@@ -137,14 +141,14 @@ export function DashboardPage({ now }: { now: number }) {
         <>
           <div
             className={`mb-3 flex items-center justify-end gap-2 ${
-              orderStale || !(hero && heroGame) ? 'min-h-11 sm:min-h-9' : ''
+              orderStale || !(hero && heroGame) ? 'min-h-11' : ''
             }`}
           >
             {orderStale && (
               <button
                 type="button"
                 onClick={() => setSortedIds(liveIds)}
-                className="fade-in flex min-h-11 items-center gap-1.5 rounded-xl bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white sm:min-h-9"
+                className="fade-in flex min-h-11 items-center gap-1.5 rounded-xl bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white"
                 title="Urgency changed — click to re-order the cards"
               >
                 <span aria-hidden>↻</span> Sort by urgency
@@ -155,7 +159,7 @@ export function DashboardPage({ now }: { now: number }) {
               <button
                 type="button"
                 onClick={() => openSheet({ kind: 'addGame' })}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.06] text-2xl font-light leading-none text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white active:scale-90 sm:h-9 sm:w-9 sm:rounded-xl"
+                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.06] text-2xl font-light leading-none text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white active:scale-90"
                 aria-label="Add game"
                 title="Add game"
               >
@@ -163,7 +167,7 @@ export function DashboardPage({ now }: { now: number }) {
               </button>
             )}
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:gap-7">
             {displayIds.map((id) => (
               <GameCard key={id} entry={entryById.get(id)!} now={now} />
             ))}
