@@ -81,15 +81,15 @@ function EventRow({
           // Events are the loud ones — banners you've already made your mind up about.
           // Two-tone: color → color2 carries each game's real icon palette.
           background: maint
-            ? 'rgba(148,163,184,0.08)'
+            ? 'linear-gradient(90deg, rgba(100,116,139,0.12), rgba(148,163,184,0.2))'
             : banner
-              ? `linear-gradient(90deg, ${tint(game.color, 0.12)}, ${tint(game.color2 ?? game.color, 0.2)})`
+              ? `linear-gradient(90deg, ${tint(game.color, 0.12)}, ${tint(game.color2 ?? game.color, 0.22)})`
               : `linear-gradient(90deg, ${tint(game.color, 0.68)}, ${tint(game.color2 ?? game.color, 0.82)})`,
           boxShadow: maint
-            ? undefined
+            ? 'inset 0 1px 0 rgba(255,255,255,0.08)'
             : banner
-              ? `inset 0 0 0 1px ${tint(game.color, 0.45)}`
-              : `inset 0 0 0 1px ${tint(game.color, 0.9)}, inset 0 1px 0 rgba(255,255,255,0.18), 0 0 18px -6px ${tint(game.color, 0.55)}`,
+              ? `inset 0 1px 0 ${tint(game.color2 ?? game.color, 0.26)}, inset 0 0 0 1px ${tint(game.color, 0.34)}, 0 6px 18px -12px ${tint(game.color, 0.42)}`
+              : `inset 0 1px 0 rgba(255,255,255,0.38), inset 0 0 0 1px ${tint(game.color, 0.9)}, 0 5px 22px -9px ${tint(game.color, 0.72)}`,
           opacity: ended ? 0.35 : 1,
         }}
       >
@@ -261,31 +261,37 @@ export function TimelinePage({ now }: { now: number }) {
 
   return (
     <Page className="pb-28 pt-4 sm:pt-5 lg:pb-8">
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <h2 className="text-xl font-black tracking-tight text-slate-100">Event timeline</h2>
-        {/* One cohesive toolbar: view toggle + data actions + the gold primary
-            CTA live together instead of floating loose across the row. */}
-        <div className="ml-auto flex w-full flex-wrap items-center gap-1.5 rounded-2xl bg-white/[0.04] p-1.5 ring-1 ring-white/10 sm:w-auto">
-          <Segmented
-            options={[
-              { value: 'lanes', label: 'Lanes' },
-              { value: 'agenda', label: 'Agenda' },
-            ]}
-            value={timelineView}
-            onChange={setTimelineView}
-            ariaLabel="Timeline view"
-          />
-          <span className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
+      {/* One glass command bar: heading, view toggle, data actions, and the
+          gold primary CTA live together instead of floating loose in a row. */}
+      <div className="glass gold-hairline gold-hairline-live mb-4 flex flex-wrap items-center gap-2 overflow-hidden rounded-2xl p-2 sm:gap-3 sm:p-2.5">
+        <h2 className="min-w-0 flex-1 px-1 text-lg font-black tracking-tight text-slate-100">Event timeline</h2>
+        <Segmented
+          options={[
+            { value: 'lanes', label: 'Lanes' },
+            { value: 'agenda', label: 'Agenda' },
+          ]}
+          value={timelineView}
+          onChange={setTimelineView}
+          ariaLabel="Timeline view"
+        />
+        <div className="grid w-full grid-cols-2 gap-2 sm:ml-auto sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
           {seedPlan.length > 0 && (
             <Btn
               onClick={importSeed}
+              className="w-full sm:w-auto"
               title={`Bundled with the app (updated ${SEED_UPDATED}) — adds new events, fixes changed dates`}
             >
               Import {seedPlan.length}
             </Btn>
           )}
-          <Btn onClick={() => openSheet({ kind: 'pasteEvents' })}>Paste (AI)</Btn>
-          <Btn kind="gold" onClick={() => openSheet({ kind: 'event' })}>
+          <Btn className="w-full sm:w-auto" onClick={() => openSheet({ kind: 'pasteEvents' })}>
+            Paste (AI)
+          </Btn>
+          <Btn
+            className={`w-full sm:w-auto ${seedPlan.length > 0 ? 'col-span-2' : ''}`}
+            kind="gold"
+            onClick={() => openSheet({ kind: 'event' })}
+          >
             + Event
           </Btn>
         </div>
@@ -306,9 +312,10 @@ export function TimelinePage({ now }: { now: number }) {
                 >
                   <span
                     aria-hidden
-                    className="absolute inset-y-0 left-0 w-1"
+                    className="absolute inset-y-2 left-0 w-1 rounded-full"
                     style={{
                       background: `linear-gradient(180deg, ${game.color}, ${game.color2 ?? game.color})`,
+                      boxShadow: `0 0 12px ${tint(game.color, 0.85)}`,
                     }}
                   />
                   <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" />
@@ -336,7 +343,7 @@ export function TimelinePage({ now }: { now: number }) {
             {ticks.map((t, i) => (
               <span
                 key={i}
-                className="absolute -translate-x-1/2 tabular-nums"
+                className={`absolute tabular-nums ${i === 0 ? '' : i === TICKS ? '-translate-x-full' : '-translate-x-1/2'} ${i % 2 === 1 ? 'hidden sm:block' : ''}`}
                 style={{ left: `${(i / TICKS) * 100}%` }}
               >
                 {t.toFormat('dd LLL')}
@@ -347,13 +354,20 @@ export function TimelinePage({ now }: { now: number }) {
           <div className="relative py-1">
             {dayBands.map((band, i) => (
               <div
+                aria-hidden
                 key={`band-${i}`}
-                className={`pointer-events-none absolute inset-y-0 ${
-                  band.kind === 'today'
-                    ? 'bg-[color-mix(in_oklab,var(--color-astral)_8%,transparent)]'
-                    : 'bg-white/[0.03]'
-                }`}
-                style={{ left: `${band.left}%`, width: `${band.width}%` }}
+                className="pointer-events-none absolute inset-y-0"
+                style={{
+                  left: `${band.left}%`,
+                  width: `${band.width}%`,
+                  ...(band.kind === 'today'
+                    ? {
+                        background:
+                          'linear-gradient(90deg, rgba(139,109,255,0.025), rgba(139,109,255,0.1), rgba(139,109,255,0.025))',
+                        boxShadow: 'inset 1px 0 rgba(139,109,255,0.08), inset -1px 0 rgba(139,109,255,0.08)',
+                      }
+                    : { background: 'rgba(255,255,255,0.022)' }),
+                }}
               />
             ))}
             {ticks.map((_, i) => (
@@ -364,11 +378,11 @@ export function TimelinePage({ now }: { now: number }) {
               />
             ))}
             <div
-              className="pointer-events-none absolute inset-y-0 z-10 w-0.5 bg-gradient-to-b from-rose-400 via-rose-400/45 to-transparent"
+              className="pointer-events-none absolute inset-y-0 z-10 w-[2px] bg-gradient-to-b from-rose-100 via-rose-400 to-rose-500/20 shadow-[0_0_12px_rgba(255,111,165,0.8)]"
               style={{ left: `${((now - ws) / span) * 100}%` }}
             >
-              <span className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-rose-400 shadow-[0_0_10px_2px_rgba(255,111,165,0.6)]" />
-              <span className="absolute -top-[22px] left-1/2 -translate-x-1/2 rounded-full bg-rose-400/15 px-1.5 py-px text-3xs font-black uppercase tracking-wider text-rose-300 ring-1 ring-rose-400/30">
+              <span className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-rose-200 shadow-[0_0_12px_rgba(255,111,165,0.95)]" />
+              <span className="absolute -top-7 left-1/2 -translate-x-1/2 rounded-full border border-rose-300/25 bg-black/90 px-1.5 py-0.5 text-3xs font-black uppercase tracking-widest text-rose-200 shadow-[0_0_14px_rgba(255,111,165,0.22)]">
                 now
               </span>
             </div>
