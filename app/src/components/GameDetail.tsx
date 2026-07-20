@@ -4,7 +4,7 @@ import { SERVER_TZ_OPTIONS } from '@technogg/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fileToImageDataUrl, intOr } from '../util';
-import { FONT_OPTIONS, titleFontFor } from '../fonts';
+import { FONT_OPTIONS } from '../fonts';
 import { GameAlerts } from './game-detail/GameAlerts';
 import { ResourceEditor } from './game-detail/ResourceEditor';
 import { Sheet } from './Sheet';
@@ -93,7 +93,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
             </Field>
             <Field label="Title font">
               <Select
-                value={titleFontFor(game) ?? ''}
+                value={game.titleFont ?? ''}
                 onChange={(e) => app.updateGame(game.id, { titleFont: e.target.value || undefined })}
               >
                 <option value="">Default</option>
