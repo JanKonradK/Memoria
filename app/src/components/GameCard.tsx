@@ -4,6 +4,7 @@ import { checklistFor, effectiveResourceKind, latestSnapshots, projectEnergy, sl
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { useReducedMotion } from '../hooks';
+import { titleFontFor } from '../fonts';
 
 import { endTone, fmtClock, fmtDur, tint } from '../util';
 import { EnergyRow } from './EnergyRow';
@@ -22,7 +23,7 @@ const RING_C = 56.549;
 function CadenceTag({ cadence }: { cadence: ChecklistItem['cadence'] }) {
   if (cadence === 'daily') return null;
   return (
-    <span className="shrink-0 rounded bg-white/5 px-1 text-[8px] font-black uppercase tracking-wider text-slate-500">
+    <span className="shrink-0 rounded bg-white/5 px-1 text-3xs font-black uppercase tracking-wider text-slate-500">
       {cadence === 'custom' ? 'cycle' : cadence}
     </span>
   );
@@ -131,7 +132,7 @@ function TimerTaskRow({
     <button
       type="button"
       onClick={running || ready ? onRestart : onStart}
-      className="group flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/5 sm:min-h-8"
+      className="group flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/5"
       aria-label={`${item.name}: ${running ? 'restart timer' : ready ? 'timer ready — restart' : 'start timer'}`}
       title={running || ready ? 'Click to restart the timer' : 'Click to start the timer'}
     >
@@ -232,7 +233,7 @@ function CountTaskRow({ item, color, onAdvance }: { item: ChecklistItem; color: 
     <button
       type="button"
       onClick={onAdvance}
-      className="group flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/5 sm:min-h-8"
+      className="group flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/5"
       aria-label={`${item.name}: ${item.countDone} of ${item.countTarget} done${item.done ? ', complete — click to reset' : ', click to mark one more'}`}
     >
       <CadenceTag cadence={item.cadence} />
@@ -242,7 +243,7 @@ function CountTaskRow({ item, color, onAdvance }: { item: ChecklistItem; color: 
         {item.name}
       </span>
       {!item.done && item.countDone > 0 && (
-        <span className="shrink-0 text-[10px] font-bold tabular-nums text-slate-400">
+        <span className="shrink-0 text-2xs font-bold tabular-nums text-slate-400">
           {item.countDone}/{item.countTarget}
         </span>
       )}
@@ -273,7 +274,7 @@ function TaskRow({
     <button
       type="button"
       onClick={onToggle}
-      className="group flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/5 sm:min-h-8"
+      className="group flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/5"
     >
       <CadenceTag cadence={item.cadence} />
       <span
@@ -291,7 +292,7 @@ function TaskRow({
       </span>
       {(danger || warn) && (
         <span
-          className={`shrink-0 text-[10px] font-bold tabular-nums ${danger ? 'text-rose-300' : 'text-amber-300'}`}
+          className={`shrink-0 text-2xs font-bold tabular-nums ${danger ? 'text-rose-300' : 'text-amber-300'}`}
           title={`Resets in ${fmtDur(left)}`}
         >
           {fmtDur(left)}
@@ -328,15 +329,15 @@ function EventStrip({ game, now }: { game: Game; now: number }) {
           key={ev.id}
           type="button"
           onClick={() => openSheet({ kind: 'event', eventId: ev.id, gameId: game.id })}
-          className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-0.5 text-left text-[11px] transition hover:bg-white/5 sm:min-h-8"
+          className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-0.5 text-left text-2xs transition hover:bg-white/5"
           title={ev.notes || ev.name}
         >
-          <span className="shrink-0 rounded bg-white/5 px-1 text-[8px] font-black uppercase tracking-wider text-slate-500">
+          <span className="shrink-0 rounded bg-white/5 px-1 text-3xs font-black uppercase tracking-wider text-slate-500">
             {ev.type === 'cycle' ? 'cycle' : ev.type === 'banner' ? 'banner' : 'event'}
           </span>
           {ev.dailyTouch && (
             <span
-              className="shrink-0 rounded bg-amber-400/10 px-1 text-[8px] font-black uppercase tracking-wider text-amber-300/90"
+              className="shrink-0 rounded bg-amber-400/10 px-1 text-3xs font-black uppercase tracking-wider text-amber-300/90"
               title="Needs a daily login/claim"
             >
               daily
@@ -464,19 +465,19 @@ export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
             <h2
               className="truncate text-2xl font-black tracking-tight text-slate-50"
               style={{
-                fontFamily: game.titleFont,
+                fontFamily: titleFontFor(game),
                 textShadow: `0 0 24px ${tint(game.color, 0.55)}, 0 1px 0 rgba(0,0,0,0.4)`,
               }}
             >
               {game.name}
             </h2>
             {game.paused && (
-              <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <span className="rounded-full bg-white/10 px-2 py-0.5 text-2xs font-bold uppercase tracking-wider text-slate-400">
                 paused
               </span>
             )}
           </div>
-          <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500">
+          <div className="mt-0.5 flex items-center gap-1.5 text-2xs text-slate-500">
             <span className="h-[3px] w-8 rounded-full" style={{ background: game.color }} />
             reset {String(game.dailyResetHour).padStart(2, '0')}:00 server
           </div>
@@ -489,7 +490,7 @@ export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
         <button
           type="button"
           onClick={() => openSheet({ kind: 'game', gameId: game.id })}
-          className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/5 text-slate-400 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-slate-200 sm:h-9 sm:w-9"
+          className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/5 text-slate-400 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-slate-200"
           aria-label={`Edit ${game.name}`}
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -527,7 +528,7 @@ export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
                 key={chip.id}
                 type="button"
                 onClick={() => adjustEnergy(primaryEnergy.id, chip.delta)}
-                className="min-h-11 rounded-xl bg-white/[0.055] px-3 py-2 text-xs font-semibold text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white sm:min-h-8 sm:py-1"
+                className="min-h-11 rounded-xl bg-white/[0.055] px-3 py-2 text-xs font-semibold text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white"
                 title={`${chip.delta > 0 ? '+' : ''}${chip.delta} ${primaryEnergy.name}`}
               >
                 {chip.label}{' '}

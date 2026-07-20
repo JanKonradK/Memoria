@@ -66,7 +66,7 @@ export function ReminderSheet({ open }: { open: boolean }) {
         >
           Add reminder
         </Btn>
-        <p className="text-[11px] text-slate-500">
+        <p className="text-2xs text-slate-500">
           Delivered through your Discord/Telegram alerts at the chosen time (needs the sync server).
         </p>
       </div>

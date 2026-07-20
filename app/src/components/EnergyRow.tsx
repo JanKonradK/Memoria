@@ -73,7 +73,7 @@ function StepBtn({ delta, onStep, label }: { delta: number; onStep: (d: number) 
       onClick={(e) => {
         if (e.detail === 0) onStep(delta);
       }}
-      className="flex h-9 min-w-8 items-center justify-center rounded-lg bg-white/[0.06] px-1.5 text-xs font-bold text-slate-200 ring-1 ring-white/10 transition hover:bg-white/[0.12] active:scale-90 sm:h-7 sm:min-w-7"
+      className="flex h-9 min-w-8 items-center justify-center rounded-lg bg-white/[0.06] px-1.5 text-xs font-bold text-slate-200 ring-1 ring-white/10 transition hover:bg-white/[0.12] active:scale-90"
       aria-label={`${delta > 0 ? 'Increase' : 'Decrease'} ${label}`}
     >
       {delta > 0 ? `+${delta}` : delta}
@@ -233,14 +233,14 @@ export function EnergyRow({
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         <span className="flex min-w-0 items-center gap-1.5">
           <ResourceIcon iconKey={res.icon} color={color} size={13} className="shrink-0" />
-          <span className="truncate text-[11px] font-semibold uppercase tracking-wider text-slate-400">{res.name}</span>
+          <span className="truncate text-2xs font-semibold uppercase tracking-wider text-slate-400">{res.name}</span>
         </span>
 
         <span className="ml-auto flex w-full items-center justify-end gap-1 sm:w-auto">
           <StepBtn delta={-1} onStep={step} label={res.name} />
           {/* One pill: editable value + "/ cap" together inside the same box. */}
           <span
-            className="flex h-9 cursor-text items-center rounded-lg bg-white/[0.07] px-2 ring-1 ring-white/10 transition focus-within:bg-white/[0.1] focus-within:ring-2 sm:h-7"
+            className="flex h-9 cursor-text items-center rounded-lg bg-white/[0.07] px-2 ring-1 ring-white/10 transition focus-within:bg-white/[0.1] focus-within:ring-2"
             onMouseDown={(e) => {
               if (e.target !== inputRef.current) {
                 e.preventDefault();
@@ -290,7 +290,7 @@ export function EnergyRow({
               style={{ color, width: `${Math.max(2, shown.length || 1) + 0.5}ch` }}
               aria-label={`${res.name} current value`}
             />
-            <span className="pl-1 text-[11px] tabular-nums text-slate-500">/ {res.cap}</span>
+            <span className="pl-1 text-2xs tabular-nums text-slate-500">/ {res.cap}</span>
           </span>
           <StepBtn delta={1} onStep={step} label={res.name} />
         </span>
@@ -306,7 +306,7 @@ export function EnergyRow({
                 type="button"
                 aria-expanded={reserveIsOpen}
                 onClick={() => setReserveOpen(res.id, !reserveIsOpen)}
-                className="mt-1 w-full text-left text-[10px] font-semibold tabular-nums text-slate-500 transition hover:text-slate-300"
+                className="mt-1 w-full text-left text-2xs font-semibold tabular-nums text-slate-500 transition hover:text-slate-300"
               >
                 {reserveIsOpen ? '▾' : '▸'} {reserveLabel} {reserveValue}/{res.reserveCap}
               </button>
@@ -315,7 +315,7 @@ export function EnergyRow({
                 <div className="mt-1.5 border-t border-white/[0.08] pt-2">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
                     <span
-                      className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-wider"
+                      className="min-w-0 flex-1 truncate text-2xs font-semibold uppercase tracking-wider"
                       style={{ color: reserveAccent }}
                     >
                       {reserveLabel}
@@ -323,7 +323,7 @@ export function EnergyRow({
                     <span className="ml-auto flex w-full items-center justify-end gap-1 sm:w-auto">
                       <StepBtn delta={-1} onStep={reserveStep} label={reserveLabel} />
                       <span
-                        className="flex h-9 cursor-text items-center rounded-lg bg-white/[0.07] px-2 ring-1 ring-white/10 transition focus-within:bg-white/[0.1] focus-within:ring-2 sm:h-7"
+                        className="flex h-9 cursor-text items-center rounded-lg bg-white/[0.07] px-2 ring-1 ring-white/10 transition focus-within:bg-white/[0.1] focus-within:ring-2"
                         onMouseDown={(e) => {
                           if (e.target !== reserveInputRef.current) {
                             e.preventDefault();
@@ -368,7 +368,7 @@ export function EnergyRow({
                           }}
                           aria-label={`${reserveLabel} for ${res.name}`}
                         />
-                        <span className="pl-1 text-[11px] tabular-nums text-slate-500">/ {res.reserveCap}</span>
+                        <span className="pl-1 text-2xs tabular-nums text-slate-500">/ {res.reserveCap}</span>
                       </span>
                       <StepBtn delta={1} onStep={reserveStep} label={reserveLabel} />
                     </span>

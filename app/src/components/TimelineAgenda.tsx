@@ -14,7 +14,7 @@ function TypeTags({ event }: { event: GameEvent }) {
   return (
     <>
       <span
-        className={`shrink-0 rounded px-1 text-[8px] font-black uppercase tracking-wider ${
+        className={`shrink-0 rounded px-1 text-3xs font-black uppercase tracking-wider ${
           event.type === 'maintenance' ? 'bg-white/10 text-slate-400' : 'bg-white/5 text-slate-500'
         }`}
       >
@@ -22,7 +22,7 @@ function TypeTags({ event }: { event: GameEvent }) {
       </span>
       {event.dailyTouch && (
         <span
-          className="shrink-0 rounded bg-amber-400/10 px-1 text-[8px] font-black uppercase tracking-wider text-amber-300/90"
+          className="shrink-0 rounded bg-amber-400/10 px-1 text-3xs font-black uppercase tracking-wider text-amber-300/90"
           title="Needs a daily login/claim"
         >
           daily
@@ -66,19 +66,19 @@ function AgendaRow({ event, game, now }: { event: GameEvent; game: Game; now: nu
         >
           {event.name}
         </span>
-        <span className="ml-auto shrink-0 text-[10px] tabular-nums text-slate-500">
+        <span className="ml-auto shrink-0 text-2xs tabular-nums text-slate-500">
           {DateTime.fromMillis(event.start).toFormat('dd LLL')} → {DateTime.fromMillis(event.end).toFormat('dd LLL')}
         </span>
         {rank === 0 && (
           <span
-            className={`shrink-0 text-[10px] font-bold tabular-nums ${remaining < DAY ? 'warn-pulse' : ''}`}
+            className={`shrink-0 text-2xs font-bold tabular-nums ${remaining < DAY ? 'warn-pulse' : ''}`}
             style={{ color: endTone(remaining) }}
           >
             ends {fmtDur(remaining)}
           </span>
         )}
         {rank === 1 && (
-          <span className="shrink-0 text-[10px] font-semibold tabular-nums text-slate-400">
+          <span className="shrink-0 text-2xs font-semibold tabular-nums text-slate-400">
             starts in {fmtDur(event.start - now)}
           </span>
         )}
@@ -91,7 +91,7 @@ function AgendaRow({ event, game, now }: { event: GameEvent; game: Game; now: nu
           upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done });
         }}
         aria-label={event.done ? `Restore ${event.name}` : `Mark ${event.name} done`}
-        className={`relative z-30 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black transition sm:h-8 sm:w-8 ${
+        className={`relative z-30 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black transition ${
           event.done
             ? 'bg-emerald-400/90 text-black'
             : 'bg-black/70 text-slate-400 opacity-60 hover:text-emerald-300 focus-visible:opacity-100 sm:opacity-0 sm:group-hover/agenda:opacity-100'
@@ -118,7 +118,7 @@ function AgendaSection({
 }) {
   return (
     <section>
-      <h3 className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">{title}</h3>
+      <h3 className="mb-1.5 text-2xs font-bold uppercase tracking-widest text-slate-500">{title}</h3>
       {events.length > 0 ? (
         <div className="space-y-1">
           {events.map((event) => (
@@ -126,7 +126,7 @@ function AgendaSection({
           ))}
         </div>
       ) : (
-        <p className="px-3 py-1 text-[11px] text-slate-600">{emptyLabel}</p>
+        <p className="px-3 py-1 text-2xs text-slate-600">{emptyLabel}</p>
       )}
     </section>
   );
@@ -162,18 +162,18 @@ export function TimelineAgenda({ now }: { now: number }) {
             emptyLabel="Nothing upcoming in this window."
           />
           <section>
-            <h3 className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">Ended · done</h3>
+            <h3 className="mb-1.5 text-2xs font-bold uppercase tracking-widest text-slate-500">Ended · done</h3>
             {past.length > 0 ? (
               <button
                 type="button"
                 onClick={() => setPastOpen((open) => !open)}
-                className="block min-h-11 w-full rounded-lg py-0.5 text-left text-[10px] font-semibold text-slate-600 transition hover:text-slate-400 sm:min-h-8"
+                className="block min-h-11 w-full rounded-lg py-0.5 text-left text-2xs font-semibold text-slate-600 transition hover:text-slate-400"
                 aria-expanded={pastOpen}
               >
                 {pastOpen ? '− collapse past events' : `+ ${past.length} past event${past.length === 1 ? '' : 's'}`}
               </button>
             ) : (
-              <p className="px-3 py-1 text-[11px] text-slate-600">No past events in this window.</p>
+              <p className="px-3 py-1 text-2xs text-slate-600">No past events in this window.</p>
             )}
             {pastOpen && (
               <div className="mt-1 space-y-1">

@@ -35,7 +35,7 @@ export function ProgressRing({
           style={reduced ? undefined : { transition: 'stroke-dashoffset 0.6s ease-out' }}
         />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-slate-200">
+      <div className="absolute inset-0 flex items-center justify-center text-2xs font-bold text-slate-200">
         {children}
       </div>
     </div>

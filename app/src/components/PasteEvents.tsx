@@ -147,7 +147,7 @@ export function PasteEventsSheet({ open }: { open: boolean }) {
 
           <div className="flex items-center gap-2">
             <Btn onClick={copyPrompt}>{copied ? '✓ Copied' : 'Copy AI prompt'}</Btn>
-            <span className="text-[11px] text-slate-500">
+            <span className="text-2xs text-slate-500">
               Paste it to any AI (Claude, etc.), then paste the JSON it returns below.
             </span>
           </div>
@@ -190,11 +190,11 @@ export function PasteEventsSheet({ open }: { open: boolean }) {
                           })
                         }
                       />
-                      <span className="shrink-0 rounded bg-white/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-300">
+                      <span className="shrink-0 rounded bg-white/10 px-1.5 py-0.5 text-3xs font-bold uppercase tracking-wider text-slate-300">
                         {e.type}
                       </span>
                       <span className="min-w-0 flex-1 truncate text-sm text-slate-200">{e.name}</span>
-                      <span className="shrink-0 text-[11px] tabular-nums text-slate-500">
+                      <span className="shrink-0 text-2xs tabular-nums text-slate-500">
                         {DateTime.fromMillis(e.start).toFormat('dd LLL HH:mm')} →{' '}
                         {DateTime.fromMillis(e.end).toFormat('dd LLL HH:mm')}
                         {dup && ' · already imported'}
