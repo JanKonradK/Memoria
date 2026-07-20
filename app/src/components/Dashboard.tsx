@@ -3,7 +3,7 @@ import { urgencyOrder } from '@technogg/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fmtClock, fmtDur, tint } from '../util';
-import { titleFontFor } from '../fonts';
+import { titleFontFor, titleFontScale } from '../fonts';
 import { GameCard } from './GameCard';
 import { GameBadge, Page } from './ui';
 import { useSession } from '../auth';
@@ -93,7 +93,10 @@ export function DashboardPage({ now }: { now: number }) {
                 <div className="text-2xs font-bold uppercase tracking-widest text-slate-400">Up next</div>
                 <div
                   className="truncate text-xl font-black text-slate-50"
-                  style={{ fontFamily: titleFontFor(heroGame) }}
+                  style={{
+                    fontFamily: titleFontFor(heroGame),
+                    fontSize: `calc(var(--text-xl) * ${titleFontScale(titleFontFor(heroGame))})`,
+                  }}
                 >
                   {heroGame.short}: {hero.label}
                 </div>

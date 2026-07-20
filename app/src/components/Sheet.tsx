@@ -70,6 +70,8 @@ export function Sheet({
 }) {
   const desktop = useMediaQuery('(min-width: 640px)');
   const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const titleId = useId();
   const dragHandlers = useDragDismiss(dialogRef, onClose);
 
@@ -85,7 +87,7 @@ export function Sheet({
       (first ?? dialogRef.current)?.focus();
     }, 0);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
       if (e.key !== 'Tab' || !dialogRef.current) return;
       const focusable = [
         ...dialogRef.current.querySelectorAll<HTMLElement>(
@@ -114,7 +116,7 @@ export function Sheet({
       document.body.style.overflow = oldOverflow;
       previousFocus?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
