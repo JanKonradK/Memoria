@@ -4,7 +4,7 @@ import type { Game, GameEvent } from '@technogg/shared';
 import { useApp } from '../store';
 import { agendaCompare, agendaRank } from '../timeline-sort';
 import { useUI } from '../ui-store';
-import { endTone, fmtDur } from '../util';
+import { endTone, fmtDur, tint } from '../util';
 import { GameBadge } from './ui';
 
 const DAY = 86_400_000;
@@ -55,12 +55,15 @@ function AgendaRow({ event, game, now }: { event: GameEvent; game: Game; now: nu
         aria-label={`Open ${game.name} event: ${event.name}, ${status}`}
         title={`${game.name}: ${event.name}`}
       />
-      <span className="absolute inset-y-2 left-0 w-[3px] rounded-full" style={{ backgroundColor: game.color }} />
+      <span
+        className="absolute inset-y-2 left-0 w-1 rounded-full"
+        style={{ backgroundColor: game.color, boxShadow: `0 0 8px ${tint(game.color, 0.5)}` }}
+      />
       <div className="pointer-events-none relative z-20 flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:flex-nowrap">
         <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" />
         <TypeTags event={event} />
         <span
-          className={`min-w-24 flex-1 truncate text-xs font-medium ${
+          className={`min-w-24 flex-1 truncate text-sm font-medium ${
             event.done ? 'text-slate-500 line-through' : 'text-slate-200'
           }`}
         >
@@ -146,7 +149,7 @@ export function TimelineAgenda({ now }: { now: number }) {
   const past = events.filter((event) => agendaRank(event, now) >= 2);
 
   return (
-    <div className="glass gold-hairline relative rounded-3xl p-4">
+    <div className="glass gold-hairline gold-hairline-live relative rounded-3xl p-4 3xl:p-6">
       {events.length === 0 ? (
         <p className="py-8 text-center text-sm text-slate-500">
           No events in this window — import or add events so nothing ends without you noticing.

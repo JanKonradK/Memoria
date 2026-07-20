@@ -7,6 +7,7 @@ import { useUI } from '../ui-store';
 import { endTone, fmtDur, tint } from '../util';
 import { planSeedImport, SEED_UPDATED } from '../data/seed-events';
 import { TimelineAgenda } from './TimelineAgenda';
+import { titleFontFor } from '../fonts';
 import { Btn, GameBadge, Page, SectionTitle, Segmented } from './ui';
 
 const DAY = 86_400_000;
@@ -20,11 +21,12 @@ function lum(hex: string): number {
 
 /**
  * Readable text on a strong two-tone fill: judge the WHOLE gradient (bars run
- * color → color2 at ~0.5 alpha over black), so only pairings that stay light
- * end-to-end (GI's cream→tan) get dark text.
+ * color → color2 at ~0.7 alpha over black). With the brighter fills, any
+ * pairing that averages mid-light (GI cream, HSR pink, WuWa silver) flips to
+ * dark text so axe contrast holds.
  */
 function isLightFill(color: string, color2?: string): boolean {
-  return (lum(color) + lum(color2 ?? color)) / 2 > 200;
+  return (lum(color) + lum(color2 ?? color)) / 2 > 168;
 }
 
 function EventRow({
@@ -58,19 +60,19 @@ function EventRow({
 
   return (
     <div
-      className={`slide-in group/row relative block h-11 w-full rounded-xl text-left ${maint ? 'sm:h-6' : 'sm:h-9'} ${ev.done ? 'opacity-40' : ''}`}
+      className={`slide-in group/row relative block h-11 w-full rounded-full text-left ${maint ? 'sm:h-6' : 'sm:h-10'} ${ev.done ? 'opacity-40 saturate-50' : ''}`}
     >
       <button
         type="button"
         onClick={onOpen}
-        className="absolute inset-0 z-10 rounded-xl"
+        className="absolute inset-0 z-10 rounded-full"
         aria-label={`Open ${game.name} event: ${ev.name}`}
         title={`${game.name}: ${ev.name}`}
       />
-      <div className="absolute inset-0 rounded-xl bg-white/[0.03]" />
+      <div className="absolute inset-0 rounded-full bg-white/[0.03]" />
       <div
         data-event-bar
-        className={`absolute inset-y-0 flex items-center gap-1.5 overflow-hidden rounded-xl px-2 ${
+        className={`absolute inset-y-0 flex items-center gap-1.5 overflow-hidden rounded-full px-2.5 ${
           maint ? 'border border-dashed border-slate-500/50' : ''
         }`}
         style={{
@@ -81,14 +83,18 @@ function EventRow({
           background: maint
             ? 'rgba(148,163,184,0.08)'
             : banner
-              ? `linear-gradient(90deg, ${tint(game.color, 0.08)}, ${tint(game.color2 ?? game.color, 0.16)})`
-              : `linear-gradient(90deg, ${tint(game.color, 0.5)}, ${tint(game.color2 ?? game.color, 0.62)})`,
-          boxShadow: maint ? undefined : `inset 0 0 0 1px ${tint(game.color, banner ? 0.3 : 0.85)}`,
+              ? `linear-gradient(90deg, ${tint(game.color, 0.12)}, ${tint(game.color2 ?? game.color, 0.2)})`
+              : `linear-gradient(90deg, ${tint(game.color, 0.68)}, ${tint(game.color2 ?? game.color, 0.82)})`,
+          boxShadow: maint
+            ? undefined
+            : banner
+              ? `inset 0 0 0 1px ${tint(game.color, 0.45)}`
+              : `inset 0 0 0 1px ${tint(game.color, 0.9)}, inset 0 1px 0 rgba(255,255,255,0.18), 0 0 18px -6px ${tint(game.color, 0.55)}`,
           opacity: ended ? 0.35 : 1,
         }}
       >
         {banner && (
-          <span className="text-2xs" style={{ color: 'rgba(232,180,90,0.45)' }}>
+          <span className="text-2xs" style={{ color: 'rgba(238,188,99,0.8)' }}>
             ★
           </span>
         )}
@@ -140,7 +146,7 @@ function EventRow({
           ✓
         </button>
         <span
-          className={`rounded-md bg-black/70 px-1.5 py-px text-2xs font-bold tabular-nums ${
+          className={`rounded-full bg-black/80 px-2 py-px text-2xs font-bold tabular-nums ${
             !ended && !maint && !ev.done && msLeft < DAY ? 'warn-pulse' : ''
           }`}
           style={{ color: ev.done ? 'rgb(52,211,153)' : tone }}
@@ -234,20 +240,42 @@ export function TimelinePage({ now }: { now: number }) {
   const ticks: DateTime[] = [];
   for (let i = 0; i <= TICKS; i++) ticks.push(DateTime.fromMillis(ws + (span / TICKS) * i));
 
+  // Day bands under the lanes: weekends get a whisper of white, today a wash
+  // of astral — the eye finds "this weekend" and "right now" without reading.
+  const dayBands: Array<{ left: number; width: number; kind: 'weekend' | 'today' }> = [];
+  {
+    let d = DateTime.fromMillis(ws).startOf('day');
+    const endDt = DateTime.fromMillis(we);
+    while (d < endDt) {
+      const dayEnd = d.plus({ days: 1 });
+      const left = (Math.max(d.toMillis(), ws) - ws) / span;
+      const right = (Math.min(dayEnd.toMillis(), we) - ws) / span;
+      if (right > left) {
+        const today = now >= d.toMillis() && now < dayEnd.toMillis();
+        if (today) dayBands.push({ left: left * 100, width: (right - left) * 100, kind: 'today' });
+        else if (d.weekday >= 6) dayBands.push({ left: left * 100, width: (right - left) * 100, kind: 'weekend' });
+      }
+      d = dayEnd;
+    }
+  }
+
   return (
     <Page className="pb-28 pt-4 sm:pt-5 lg:pb-8">
-      <div className="mb-3 flex flex-wrap items-center gap-3">
-        <h2 className="text-lg font-black tracking-tight text-slate-100">Event timeline</h2>
-        <Segmented
-          options={[
-            { value: 'lanes', label: 'Lanes' },
-            { value: 'agenda', label: 'Agenda' },
-          ]}
-          value={timelineView}
-          onChange={setTimelineView}
-          ariaLabel="Timeline view"
-        />
-        <div className="ml-auto grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <h2 className="text-xl font-black tracking-tight text-slate-100">Event timeline</h2>
+        {/* One cohesive toolbar: view toggle + data actions + the gold primary
+            CTA live together instead of floating loose across the row. */}
+        <div className="ml-auto flex w-full flex-wrap items-center gap-1.5 rounded-2xl bg-white/[0.04] p-1.5 ring-1 ring-white/10 sm:w-auto">
+          <Segmented
+            options={[
+              { value: 'lanes', label: 'Lanes' },
+              { value: 'agenda', label: 'Agenda' },
+            ]}
+            value={timelineView}
+            onChange={setTimelineView}
+            ariaLabel="Timeline view"
+          />
+          <span className="hidden h-6 w-px bg-white/10 sm:block" aria-hidden />
           {seedPlan.length > 0 && (
             <Btn
               onClick={importSeed}
@@ -257,7 +285,7 @@ export function TimelinePage({ now }: { now: number }) {
             </Btn>
           )}
           <Btn onClick={() => openSheet({ kind: 'pasteEvents' })}>Paste (AI)</Btn>
-          <Btn kind="primary" onClick={() => openSheet({ kind: 'event' })}>
+          <Btn kind="gold" onClick={() => openSheet({ kind: 'event' })}>
             + Event
           </Btn>
         </div>
@@ -274,13 +302,20 @@ export function TimelinePage({ now }: { now: number }) {
                   key={ev.id}
                   type="button"
                   onClick={() => openSheet({ kind: 'event', eventId: ev.id, gameId: ev.gameId })}
-                  className="glass flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-left transition hover:bg-white/[0.06]"
+                  className="glass relative flex min-h-11 items-center gap-2.5 overflow-hidden rounded-2xl px-3.5 py-2.5 text-left transition hover:bg-white/[0.06]"
                 >
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-0 left-0 w-1"
+                    style={{
+                      background: `linear-gradient(180deg, ${game.color}, ${game.color2 ?? game.color})`,
+                    }}
+                  />
                   <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" />
                   <div className="min-w-0">
-                    <div className="truncate text-2xs font-semibold text-slate-200">{ev.name}</div>
+                    <div className="truncate text-sm font-semibold text-slate-200">{ev.name}</div>
                     <div
-                      className={`text-2xs font-bold tabular-nums ${ev.end - now < DAY ? 'warn-pulse' : ''}`}
+                      className={`text-xs font-black tabular-nums ${ev.end - now < DAY ? 'warn-pulse' : ''}`}
                       style={{ color: endTone(ev.end - now) }}
                     >
                       {fmtDur(ev.end - now)}
@@ -296,8 +331,8 @@ export function TimelinePage({ now }: { now: number }) {
       {timelineView === 'agenda' ? (
         <TimelineAgenda now={now} />
       ) : (
-        <div className="glass gold-hairline relative rounded-3xl p-4">
-          <div className="relative mb-2 ml-0 h-4 text-2xs text-slate-500">
+        <div className="glass gold-hairline gold-hairline-live relative rounded-3xl p-4 3xl:p-6">
+          <div className="relative mb-2 ml-0 h-4 text-2xs font-semibold text-slate-400">
             {ticks.map((t, i) => (
               <span
                 key={i}
@@ -310,6 +345,17 @@ export function TimelinePage({ now }: { now: number }) {
           </div>
 
           <div className="relative py-1">
+            {dayBands.map((band, i) => (
+              <div
+                key={`band-${i}`}
+                className={`pointer-events-none absolute inset-y-0 ${
+                  band.kind === 'today'
+                    ? 'bg-[color-mix(in_oklab,var(--color-astral)_8%,transparent)]'
+                    : 'bg-white/[0.03]'
+                }`}
+                style={{ left: `${band.left}%`, width: `${band.width}%` }}
+              />
+            ))}
             {ticks.map((_, i) => (
               <div
                 key={i}
@@ -318,10 +364,13 @@ export function TimelinePage({ now }: { now: number }) {
               />
             ))}
             <div
-              className="pointer-events-none absolute inset-y-0 z-10 w-px bg-rose-400/80"
+              className="pointer-events-none absolute inset-y-0 z-10 w-0.5 bg-gradient-to-b from-rose-400 via-rose-400/45 to-transparent"
               style={{ left: `${((now - ws) / span) * 100}%` }}
             >
-              <span className="absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-rose-400" />
+              <span className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-rose-400 shadow-[0_0_10px_2px_rgba(255,111,165,0.6)]" />
+              <span className="absolute -top-[22px] left-1/2 -translate-x-1/2 rounded-full bg-rose-400/15 px-1.5 py-px text-3xs font-black uppercase tracking-wider text-rose-300 ring-1 ring-rose-400/30">
+                now
+              </span>
             </div>
 
             {games.length === 0 && (
@@ -337,20 +386,23 @@ export function TimelinePage({ now }: { now: number }) {
                 .find((e) => e.end > now && !e.done && e.type !== 'maintenance' && e.type !== 'banner');
               return (
                 <div key={game.id} className="relative">
-                  <div className="mb-1.5 mt-4 flex items-center gap-2 first:mt-0">
+                  <div className="mb-1.5 mt-5 flex items-center gap-2.5 first:mt-0">
                     <GameBadge short={game.short} color={game.color} color2={game.color2} />
-                    <span className="text-2xs font-black uppercase tracking-wider" style={{ color: game.color }}>
+                    <span
+                      className="truncate text-sm font-bold"
+                      style={{ color: game.color, fontFamily: titleFontFor(game) }}
+                    >
                       {game.name}
                     </span>
                     <span
-                      className="h-px flex-1"
+                      className="h-0.5 flex-1 rounded-full"
                       style={{
-                        background: `linear-gradient(90deg, ${tint(game.color, 0.3)}, ${tint(game.color2 ?? game.color, 0.12)})`,
+                        background: `linear-gradient(90deg, ${tint(game.color, 0.5)}, ${tint(game.color2 ?? game.color, 0.2)})`,
                       }}
                     />
                     {nextEnd && (
                       <span
-                        className="text-2xs font-semibold tabular-nums"
+                        className="shrink-0 text-2xs font-bold tabular-nums"
                         style={{ color: endTone(nextEnd.end - now) }}
                       >
                         next ends {fmtDur(nextEnd.end - now)}

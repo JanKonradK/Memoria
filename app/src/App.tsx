@@ -221,9 +221,9 @@ export default function App() {
         Skip to content
       </a>
       {/* True-black canvas — no ambient washes; color belongs to the cards (OLED). */}
-      <header className="gold-hairline !fixed inset-x-0 top-0 z-30 border-b border-white/5 bg-black/95 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.8)] supports-[backdrop-filter]:bg-black/80 supports-[backdrop-filter]:backdrop-blur-md">
+      <header className="gold-hairline gold-hairline-live !fixed inset-x-0 top-0 z-30 border-b border-white/5 bg-black/95 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.8)] supports-[backdrop-filter]:bg-black/80 supports-[backdrop-filter]:backdrop-blur-md">
         <div className="mx-auto flex h-14 w-full max-w-[1800px] items-center gap-2 px-3 sm:gap-4 sm:px-6 3xl:h-16 3xl:max-w-[2080px] 3xl:px-10">
-          <h1 className="flex items-center gap-2 text-lg font-black tracking-tight">
+          <h1 className="font-display flex items-center gap-2 text-xl tracking-tight">
             <span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-amber-200 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(168,85,247,0.35)]">
               Techno's Library
             </span>
@@ -236,13 +236,13 @@ export default function App() {
                   type="button"
                   onClick={() => setTab(t.id)}
                   aria-current={tab === t.id ? 'page' : undefined}
-                  className={`relative h-full px-4 text-sm font-semibold transition ${
+                  className={`relative h-full px-4 text-sm font-semibold transition lg:text-base ${
                     tab === t.id ? 'text-white' : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   {t.label}
                   {tab === t.id && (
-                    <span className="pointer-events-none absolute inset-x-2 bottom-0 h-0.5 bg-gradient-to-r from-transparent via-gold to-transparent" />
+                    <span className="pointer-events-none absolute inset-x-2 bottom-0 h-[3px] rounded-full bg-gradient-to-r from-transparent via-gold to-transparent" />
                   )}
                 </button>
               ))}
@@ -303,7 +303,7 @@ export default function App() {
               type="button"
               onClick={() => setTab(t.id)}
               aria-current={tab === t.id ? 'page' : undefined}
-              className={`flex min-h-11 flex-1 items-center justify-center py-3.5 text-xs font-semibold transition ${
+              className={`flex min-h-11 flex-1 items-center justify-center py-3.5 text-sm font-semibold transition ${
                 tab === t.id ? 'text-fuchsia-300' : 'text-slate-400'
               }`}
             >

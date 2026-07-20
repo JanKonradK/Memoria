@@ -367,7 +367,7 @@ function StatusStrip({ game, now }: { game: Game; now: number }) {
     <div className="mt-auto pt-3">
       {sleep.caps ? (
         <div
-          className="flex min-h-12 flex-wrap items-baseline justify-center gap-x-2 gap-y-0 rounded-2xl bg-amber-400/10 px-3 py-2.5 ring-1 ring-amber-300/25"
+          className="flex min-h-12 flex-wrap items-baseline justify-center gap-x-2 gap-y-0 rounded-2xl bg-amber-400/10 px-3 py-2.5 ring-1 ring-amber-300/25 3xl:py-3.5"
           title="Energy will cap while you sleep — spend before bed"
         >
           <span className="text-lg font-black uppercase tracking-wider text-amber-200 tabular-nums">
@@ -377,7 +377,7 @@ function StatusStrip({ game, now }: { game: Game; now: number }) {
         </div>
       ) : (
         <div
-          className="flex min-h-12 flex-wrap items-baseline justify-center gap-x-2 gap-y-0 rounded-2xl bg-emerald-400/10 px-3 py-2.5 ring-1 ring-emerald-300/25"
+          className="flex min-h-12 flex-wrap items-baseline justify-center gap-x-2 gap-y-0 rounded-2xl bg-emerald-400/10 px-3 py-2.5 ring-1 ring-emerald-300/25 3xl:py-3.5"
           title={`Nothing caps in the next ${state.settings.sleepHours}h`}
         >
           <span className="text-lg font-black uppercase tracking-wider text-emerald-200">sleep safe</span>
@@ -418,14 +418,27 @@ export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
 
   return (
     <div
-      className="card-enter group relative flex h-full flex-col overflow-hidden rounded-3xl p-4"
+      className="card-enter group relative flex h-full flex-col overflow-hidden rounded-3xl p-4 3xl:p-6"
       style={{
         // Each card carries its game's color: tinted corners over a near-black
         // core, hairline ring and a soft outer glow in the same hue (OLED-safe).
         background: `linear-gradient(155deg, ${tint(game.color, 0.2)} 0%, transparent 46%), linear-gradient(335deg, ${tint(game.color2 ?? game.color, 0.13)} 0%, transparent 42%), #07060c`,
-        boxShadow: `inset 0 0 0 1px ${tint(game.color, 0.3)}, inset 0 1px 0 rgba(255,255,255,0.07), 0 0 56px -22px ${tint(game.color, 0.55)}`,
+        boxShadow: `inset 0 0 0 1px ${tint(game.color, 0.3)}, inset 0 1px 0 rgba(255,255,255,0.07), 0 0 72px -24px ${tint(game.color, 0.6)}`,
       }}
     >
+      {/* Moving backlight: slow conic sweep in the game's hues, staggered per
+          card so the five cards never rotate in sync. */}
+      <div
+        aria-hidden
+        className="card-aurora"
+        style={
+          {
+            '--aurora-c1': tint(game.color, 0.55),
+            '--aurora-c2': tint(game.color2 ?? game.color, 0.45),
+            animationDelay: `${-((game.sort % 7) * 3)}s`,
+          } as React.CSSProperties
+        }
+      />
       <div
         className="absolute inset-x-0 top-0 h-[3px]"
         style={{
@@ -539,7 +552,7 @@ export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
         )}
 
         {!game.paused && checklist.length > 0 && (
-          <div className="mt-3 space-y-0.5">
+          <div className="mt-3 space-y-0.5 3xl:space-y-1.5">
             {checklist.map((item) =>
               item.mode === 'timer' ? (
                 <TimerTaskRow
