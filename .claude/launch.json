@@ -8,6 +8,18 @@
       "port": 5183
     },
     {
+      "name": "technogg-luna",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "C:/Users/ADA/Documents/Projects/TechnoGG-codex", "run", "dev"],
+      "port": 5183
+    },
+    {
+      "name": "technogg-sol",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "C:/Users/ADA/Documents/Projects/TechnoGG-sol", "run", "dev"],
+      "port": 5183
+    },
+    {
       "name": "technogg-launcher",
       "runtimeExecutable": "node",
       "runtimeArgs": ["desktop/technogg.mjs"],
