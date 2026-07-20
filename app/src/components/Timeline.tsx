@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { DateTime } from 'luxon';
 import type { Game, GameEvent } from '@technogg/shared';
+import { checklistFor, lastWeeklyReset, nextWeeklyReset } from '@technogg/shared';
 import { useApp } from '../store';
 import { TYPE_RANK } from '../timeline-sort';
 import { useUI } from '../ui-store';
 import { endTone, fmtDur, tint } from '../util';
 import { planSeedImport, SEED_UPDATED } from '../data/seed-events';
 import { TimelineAgenda } from './TimelineAgenda';
-import { titleFontFor } from '../fonts';
+import { titleFontFor, titleFontScale } from '../fonts';
 import { Btn, GameBadge, Page, SectionTitle, Segmented } from './ui';
 
 const DAY = 86_400_000;
@@ -167,6 +168,58 @@ function EventRow({
                 : `ends ${fmtDur(msLeft)}`}
         </span>
       </span>
+    </div>
+  );
+}
+
+function WeeklyTaskRow({
+  game,
+  count,
+  now,
+  ws,
+  we,
+  onOpen,
+}: {
+  game: Game;
+  count: number;
+  now: number;
+  ws: number;
+  we: number;
+  onOpen: () => void;
+}) {
+  const start = lastWeeklyReset(game, now);
+  const end = nextWeeklyReset(game, now);
+  const span = we - ws;
+  const left = (Math.max(start, ws) - ws) / span;
+  const width = (Math.min(end, we) - Math.max(start, ws)) / span;
+  const displayWidth = Math.min(100, Math.max(width * 100, 8));
+  const displayLeft = Math.max(0, Math.min(left * 100, 100 - displayWidth));
+
+  return (
+    <div className="relative block h-11 w-full rounded-full text-left sm:h-9">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="absolute inset-0 z-10 rounded-full"
+        aria-label={`Open ${game.name} weeklies`}
+        title={`${game.name}: Weeklies — ${count} left`}
+      />
+      <div className="absolute inset-0 rounded-full bg-white/[0.03]" />
+      <div
+        className="absolute inset-y-0 flex items-center gap-1.5 overflow-hidden rounded-full border border-dashed px-2.5"
+        style={{
+          left: `${displayLeft}%`,
+          width: `${displayWidth}%`,
+          borderColor: tint(game.color, 0.42),
+          background: `linear-gradient(90deg, ${tint(game.color, 0.14)}, ${tint(game.color2 ?? game.color, 0.22)})`,
+          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 1px ${tint(game.color, 0.18)}`,
+        }}
+      >
+        <span className="inline-flex w-[3.4rem] shrink-0 justify-center rounded bg-white/5 px-1 text-3xs font-black uppercase tracking-wider text-slate-400">
+          weekly
+        </span>
+        <span className="truncate text-xs font-semibold text-slate-300">Weeklies — {count} left</span>
+      </div>
     </div>
   );
 }
@@ -402,6 +455,9 @@ export function TimelinePage({ now }: { now: number }) {
 
             {games.map((game) => {
               const evs = eventsByGame.get(game.id) ?? [];
+              const weeklyUndone = checklistFor(state, game, now).filter(
+                (item) => item.cadence === 'weekly' && !item.done,
+              ).length;
               const nextEnd = [...evs]
                 .sort((a, b) => a.end - b.end)
                 .find((e) => e.end > now && !e.done && e.type !== 'maintenance' && e.type !== 'banner');
@@ -411,7 +467,11 @@ export function TimelinePage({ now }: { now: number }) {
                     <GameBadge short={game.short} color={game.color} color2={game.color2} />
                     <span
                       className="truncate text-sm font-bold"
-                      style={{ color: game.color, fontFamily: titleFontFor(game) }}
+                      style={{
+                        color: game.color,
+                        fontFamily: titleFontFor(game),
+                        fontSize: `calc(var(--text-sm) * ${titleFontScale(titleFontFor(game))})`,
+                      }}
                     >
                       {game.name}
                     </span>
@@ -430,7 +490,7 @@ export function TimelinePage({ now }: { now: number }) {
                       </span>
                     )}
                   </div>
-                  {evs.length === 0 ? (
+                  {evs.length === 0 && weeklyUndone === 0 ? (
                     <p className="py-1 text-2xs text-slate-600">Nothing in this window — import or add events.</p>
                   ) : (
                     (() => {
@@ -440,6 +500,16 @@ export function TimelinePage({ now }: { now: number }) {
                       const shown = open ? evs : active;
                       return (
                         <div className="space-y-1.5">
+                          {weeklyUndone > 0 && (
+                            <WeeklyTaskRow
+                              game={game}
+                              count={weeklyUndone}
+                              now={now}
+                              ws={ws}
+                              we={we}
+                              onOpen={() => openSheet({ kind: 'game', gameId: game.id })}
+                            />
+                          )}
                           {shown.map((ev) => (
                             <EventRow
                               key={ev.id}

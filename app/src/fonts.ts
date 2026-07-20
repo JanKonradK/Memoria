@@ -6,13 +6,18 @@ import { PRESETS } from '@technogg/shared';
  * Each game carries its own personality — the value is a CSS font-family
  * stored on Game.titleFont and editable per game in the game editor.
  */
-export const FONT_OPTIONS: Array<{ label: string; css: string }> = [
-  { label: 'Marcellus — fantasy serif', css: "'Marcellus', serif" },
-  { label: 'Rajdhani — sci-fi condensed', css: "'Rajdhani', sans-serif" },
-  { label: 'Archivo Black — heavy urban', css: "'Archivo Black', sans-serif" },
-  { label: 'Michroma — wide tech', css: "'Michroma', sans-serif" },
-  { label: 'Baloo 2 — playful rounded', css: "'Baloo 2', sans-serif" },
+export const FONT_OPTIONS: Array<{ label: string; css: string; titleScale: number }> = [
+  { label: 'Marcellus — fantasy serif', css: "'Marcellus', serif", titleScale: 1 },
+  { label: 'Rajdhani — sci-fi condensed', css: "'Rajdhani', sans-serif", titleScale: 1.05 },
+  { label: 'Archivo Black — heavy urban', css: "'Archivo Black', sans-serif", titleScale: 0.82 },
+  { label: 'Michroma — wide tech', css: "'Michroma', sans-serif", titleScale: 0.78 },
+  { label: 'Baloo 2 — playful rounded', css: "'Baloo 2', sans-serif", titleScale: 0.95 },
 ];
+
+/** Optical size correction for display fonts with very different metrics. */
+export function titleFontScale(css: string | undefined): number {
+  return FONT_OPTIONS.find((font) => font.css === css)?.titleScale ?? 1;
+}
 
 /**
  * Effective title font for display. Games saved before the titleFont field
