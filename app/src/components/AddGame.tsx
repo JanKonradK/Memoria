@@ -65,7 +65,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
                 <GameBadge short={p.short} color={p.color} color2={p.color2} size="lg" />
                 <span>
                   <span className="block text-sm font-bold text-slate-100">{p.name}</span>
-                  <span className="block text-[11px] text-slate-400">{p.resources.map((r) => r.name).join(' + ')}</span>
+                  <span className="block text-2xs text-slate-400">{p.resources.map((r) => r.name).join(' + ')}</span>
                 </span>
               </button>
             ))}
@@ -107,7 +107,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
                 />
               </Field>
             ))}
-            <p className="text-[11px] text-slate-500">
+            <p className="text-2xs text-slate-500">
               Reset: {String(picked.dailyResetHour).padStart(2, '0')}:00 server · everything is editable later in the
               game editor.
             </p>

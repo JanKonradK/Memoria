@@ -47,7 +47,7 @@ export function GameAlerts({ game }: { game: Game }) {
                   })
                 }
               />
-              <span className="text-[11px] text-slate-500">min</span>
+              <span className="text-2xs text-slate-500">min</span>
               {override && (
                 <Btn
                   className="!px-2 text-xs"
@@ -61,7 +61,7 @@ export function GameAlerts({ game }: { game: Game }) {
           </div>
         );
       })}
-      <p className="pt-1 text-[11px] text-slate-500">Overrides the global defaults in Settings → Alert timing.</p>
+      <p className="pt-1 text-2xs text-slate-500">Overrides the global defaults in Settings → Alert timing.</p>
     </div>
   );
 }

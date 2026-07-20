@@ -6,6 +6,8 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { initPwa } from './pwa';
 import { reportClientError } from './reporting';
 import './index.css';
+// Base UI font — bundled so the PWA stays offline-capable.
+import '@fontsource-variable/sora';
 // Per-game title fonts (see fonts.ts) — bundled so the PWA stays offline-capable.
 import '@fontsource/marcellus/400.css';
 import '@fontsource/rajdhani/600.css';

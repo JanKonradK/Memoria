@@ -88,13 +88,13 @@ function EventRow({
         }}
       >
         {banner && (
-          <span className="text-[10px]" style={{ color: 'rgba(232,180,90,0.45)' }}>
+          <span className="text-2xs" style={{ color: 'rgba(232,180,90,0.45)' }}>
             ★
           </span>
         )}
         {cycle && (
           <span
-            className={`rounded px-1 text-[8px] font-black uppercase tracking-wider ${
+            className={`rounded px-1 text-3xs font-black uppercase tracking-wider ${
               isLightFill(game.color, game.color2) ? 'bg-black/15 text-slate-800' : 'bg-black/30 text-white/85'
             }`}
           >
@@ -102,7 +102,7 @@ function EventRow({
           </span>
         )}
         {maint && (
-          <span className="rounded bg-white/10 px-1 text-[8px] font-black uppercase tracking-wider text-slate-400">
+          <span className="rounded bg-white/10 px-1 text-3xs font-black uppercase tracking-wider text-slate-400">
             patch
           </span>
         )}
@@ -130,7 +130,7 @@ function EventRow({
           }}
           aria-label={ev.done ? `Restore ${ev.name}` : `Mark ${ev.name} done`}
           className={`pointer-events-auto flex items-center justify-center rounded-full font-black transition ${
-            maint ? 'h-9 w-9 text-[9px] sm:h-6 sm:w-6' : 'h-9 w-9 text-xs sm:h-8 sm:w-8'
+            maint ? 'h-9 w-9 text-3xs sm:h-6 sm:w-6' : 'h-9 w-9 text-xs'
           } ${
             ev.done
               ? 'bg-emerald-400/90 text-black'
@@ -140,7 +140,7 @@ function EventRow({
           ✓
         </button>
         <span
-          className={`rounded-md bg-black/70 px-1.5 py-px text-[10px] font-bold tabular-nums ${
+          className={`rounded-md bg-black/70 px-1.5 py-px text-2xs font-bold tabular-nums ${
             !ended && !maint && !ev.done && msLeft < DAY ? 'warn-pulse' : ''
           }`}
           style={{ color: ev.done ? 'rgb(52,211,153)' : tone }}
@@ -265,7 +265,7 @@ export function TimelinePage({ now }: { now: number }) {
 
       {timelineView === 'lanes' && endingSoon.length > 0 && (
         <div className="mb-4">
-          <div className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">Ending soonest</div>
+          <div className="mb-1.5 text-2xs font-bold uppercase tracking-widest text-slate-500">Ending soonest</div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
             {endingSoon.map((ev) => {
               const game = gameById.get(ev.gameId)!;
@@ -278,9 +278,9 @@ export function TimelinePage({ now }: { now: number }) {
                 >
                   <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" />
                   <div className="min-w-0">
-                    <div className="truncate text-[11px] font-semibold text-slate-200">{ev.name}</div>
+                    <div className="truncate text-2xs font-semibold text-slate-200">{ev.name}</div>
                     <div
-                      className={`text-[10px] font-bold tabular-nums ${ev.end - now < DAY ? 'warn-pulse' : ''}`}
+                      className={`text-2xs font-bold tabular-nums ${ev.end - now < DAY ? 'warn-pulse' : ''}`}
                       style={{ color: endTone(ev.end - now) }}
                     >
                       {fmtDur(ev.end - now)}
@@ -297,7 +297,7 @@ export function TimelinePage({ now }: { now: number }) {
         <TimelineAgenda now={now} />
       ) : (
         <div className="glass gold-hairline relative rounded-3xl p-4">
-          <div className="relative mb-2 ml-0 h-4 text-[10px] text-slate-500">
+          <div className="relative mb-2 ml-0 h-4 text-2xs text-slate-500">
             {ticks.map((t, i) => (
               <span
                 key={i}
@@ -339,7 +339,7 @@ export function TimelinePage({ now }: { now: number }) {
                 <div key={game.id} className="relative">
                   <div className="mb-1.5 mt-4 flex items-center gap-2 first:mt-0">
                     <GameBadge short={game.short} color={game.color} color2={game.color2} />
-                    <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: game.color }}>
+                    <span className="text-2xs font-black uppercase tracking-wider" style={{ color: game.color }}>
                       {game.name}
                     </span>
                     <span
@@ -350,7 +350,7 @@ export function TimelinePage({ now }: { now: number }) {
                     />
                     {nextEnd && (
                       <span
-                        className="text-[10px] font-semibold tabular-nums"
+                        className="text-2xs font-semibold tabular-nums"
                         style={{ color: endTone(nextEnd.end - now) }}
                       >
                         next ends {fmtDur(nextEnd.end - now)}
@@ -358,7 +358,7 @@ export function TimelinePage({ now }: { now: number }) {
                     )}
                   </div>
                   {evs.length === 0 ? (
-                    <p className="py-1 text-[11px] text-slate-600">Nothing in this window — import or add events.</p>
+                    <p className="py-1 text-2xs text-slate-600">Nothing in this window — import or add events.</p>
                   ) : (
                     (() => {
                       const open = doneOpen.has(game.id);
@@ -383,7 +383,7 @@ export function TimelinePage({ now }: { now: number }) {
                             <button
                               type="button"
                               onClick={() => toggleDoneOpen(game.id)}
-                              className="block min-h-11 w-full rounded-lg py-0.5 text-left text-[10px] font-semibold text-slate-600 transition hover:text-slate-400 sm:min-h-8"
+                              className="block min-h-11 w-full rounded-lg py-0.5 text-left text-2xs font-semibold text-slate-600 transition hover:text-slate-400"
                             >
                               {open ? '− collapse done events' : `+ ${doneCount} done event${doneCount > 1 ? 's' : ''}`}
                             </button>
@@ -416,7 +416,7 @@ export function TimelinePage({ now }: { now: number }) {
               )}
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm text-slate-200">{r.message}</div>
-                <div className="text-[11px] tabular-nums text-slate-500">
+                <div className="text-2xs tabular-nums text-slate-500">
                   {DateTime.fromMillis(r.at).toFormat('ccc dd LLL HH:mm')}{' '}
                   {due ? '· sent/due' : `· in ${fmtDur(r.at - now)}`}
                 </div>
@@ -424,7 +424,7 @@ export function TimelinePage({ now }: { now: number }) {
               <button
                 type="button"
                 onClick={() => deleteReminder(r.id)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-rose-400/10 hover:text-rose-400 sm:h-9 sm:w-9"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-rose-400/10 hover:text-rose-400"
                 aria-label="Delete reminder"
               >
                 ✕

@@ -104,10 +104,12 @@ export default function App() {
       <main className="flex min-h-dvh items-center justify-center px-5 py-12">
         <section className="glass gold-hairline w-full max-w-lg rounded-3xl p-6" role="alert">
           <p className="text-xs font-bold uppercase tracking-widest text-rose-300">Local data unavailable</p>
-          <h1 className="mt-2 text-xl font-black text-slate-100">Techno's Library could not open this device's data.</h1>
+          <h1 className="mt-2 text-xl font-black text-slate-100">
+            Techno's Library could not open this device's data.
+          </h1>
           <p className="mt-2 text-sm text-slate-400">
-            Retry first. Starting fresh permanently clears this browser's local Techno's Library database; synced or exported
-            copies are not affected.
+            Retry first. Starting fresh permanently clears this browser's local Techno's Library database; synced or
+            exported copies are not affected.
           </p>
           <p className="mt-3 rounded-xl bg-black/30 p-3 text-xs text-slate-500">{loadError}</p>
           <div className="mt-5 flex flex-wrap gap-2">
@@ -220,7 +222,7 @@ export default function App() {
       </a>
       {/* True-black canvas — no ambient washes; color belongs to the cards (OLED). */}
       <header className="gold-hairline !fixed inset-x-0 top-0 z-30 border-b border-white/5 bg-black/95 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.8)] supports-[backdrop-filter]:bg-black/80 supports-[backdrop-filter]:backdrop-blur-md">
-        <div className="mx-auto flex h-14 w-full max-w-[1800px] items-center gap-2 px-3 sm:gap-4 sm:px-6">
+        <div className="mx-auto flex h-14 w-full max-w-[1800px] items-center gap-2 px-3 sm:gap-4 sm:px-6 3xl:h-16 3xl:max-w-[2080px] 3xl:px-10">
           <h1 className="flex items-center gap-2 text-lg font-black tracking-tight">
             <span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-amber-200 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(168,85,247,0.35)]">
               Techno's Library
@@ -249,11 +251,11 @@ export default function App() {
           </div>
         </div>
       </header>
-      <div className="h-14" aria-hidden />
+      <div className="h-14 3xl:h-16" aria-hidden />
 
       {!online && (
         <div
-          className="sticky top-14 z-20 border-b border-amber-300/15 bg-amber-300/10 px-4 py-2 text-center text-xs font-semibold text-amber-100"
+          className="sticky top-14 z-20 border-b border-amber-300/15 bg-amber-300/10 px-4 py-2 text-center text-xs font-semibold text-amber-100 3xl:top-16"
           role="status"
           aria-live="polite"
         >

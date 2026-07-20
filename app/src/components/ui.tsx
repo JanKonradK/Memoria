@@ -7,7 +7,11 @@ import { tint } from '../util';
  * horizontal padding overrides won't win against the defaults reliably.
  */
 export function Page({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`mx-auto w-full max-w-[1800px] px-3 sm:px-6 ${className}`}>{children}</div>;
+  return (
+    <div className={`mx-auto w-full max-w-[1800px] px-3 sm:px-6 3xl:max-w-[2080px] 3xl:px-10 ${className}`}>
+      {children}
+    </div>
+  );
 }
 
 /**
@@ -28,7 +32,7 @@ export function GameBadge({
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }) {
-  const sizes = { sm: 'h-4 px-1 text-[8px]', md: 'h-5 px-1.5 text-[9px]', lg: 'h-7 px-2 text-[11px]' };
+  const sizes = { sm: 'h-5 px-1 text-3xs', md: 'h-6 px-1.5 text-3xs', lg: 'h-8 px-2 text-2xs' };
   const c2 = color2 ?? color;
   return (
     <span
@@ -47,14 +51,14 @@ export function GameBadge({
 export function Field({ label, children, className = '' }: { label: string; children: ReactNode; className?: string }) {
   return (
     <label className={`block ${className}`}>
-      <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">{label}</span>
+      <span className="mb-1 block text-2xs font-semibold uppercase tracking-wider text-slate-400">{label}</span>
       {children}
     </label>
   );
 }
 
 const inputCls =
-  'min-h-11 w-full rounded-xl bg-white/[0.09] px-3 py-2 text-sm text-slate-50 ring-1 ring-white/15 outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-astral)_70%,white)] focus:bg-white/[0.12] transition sm:min-h-9';
+  'min-h-11 w-full rounded-xl bg-white/[0.09] px-3 py-2 text-sm text-slate-50 ring-1 ring-white/15 outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-[color-mix(in_oklab,var(--color-astral)_70%,white)] focus:bg-white/[0.12] transition lg:min-h-12 lg:text-base';
 
 export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${inputCls} ${props.className ?? ''}`} />;
@@ -187,7 +191,7 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
                 role="option"
                 aria-selected={selected}
                 onClick={() => pick(o.value)}
-                className={`block min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm transition sm:min-h-9 sm:py-1.5 ${
+                className={`block min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm transition ${
                   selected ? 'bg-white/15 font-semibold text-white' : 'text-slate-100 hover:bg-white/10'
                 }`}
               >
@@ -220,7 +224,7 @@ export function Toggle({
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className="flex min-h-11 items-center gap-2 text-sm text-slate-300 sm:min-h-9"
+      className="flex min-h-11 items-center gap-2 text-sm text-slate-300"
       aria-pressed={checked}
       aria-label={ariaLabel ?? label}
     >
@@ -253,7 +257,7 @@ export function Segmented<T extends string>({
 }) {
   return (
     <div
-      className="inline-flex rounded-xl bg-white/[0.06] p-0.5 ring-1 ring-white/10"
+      className="inline-flex rounded-xl bg-white/[0.06] p-1 ring-1 ring-white/10"
       role="group"
       aria-label={ariaLabel}
     >
@@ -265,8 +269,8 @@ export function Segmented<T extends string>({
             type="button"
             onClick={() => onChange(option.value)}
             aria-pressed={active}
-            className={`h-7 rounded-[10px] px-3 text-xs font-semibold transition ${
-              active ? 'bg-white/15 text-white' : 'text-slate-400 hover:text-slate-200'
+            className={`h-9 rounded-[10px] px-4 text-xs font-semibold transition lg:h-10 lg:px-5 ${
+              active ? 'bg-white/15 text-white shadow-inner shadow-black/40' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             {option.label}
@@ -287,16 +291,17 @@ export function Btn({
 }: {
   children: ReactNode;
   onClick?: () => void;
-  kind?: 'primary' | 'ghost' | 'danger';
+  kind?: 'primary' | 'gold' | 'ghost' | 'danger';
   className?: string;
   disabled?: boolean;
   title?: string;
 }) {
   const base =
-    'min-h-11 rounded-xl px-4 py-2 text-sm font-semibold transition active:scale-[0.97] disabled:opacity-40 sm:min-h-9';
+    'min-h-11 rounded-xl px-4 py-2 text-sm font-semibold transition active:scale-[0.97] disabled:opacity-40 lg:min-h-12 lg:px-5 lg:text-base';
   const kinds = {
     primary:
       'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white hover:brightness-110 shadow-lg shadow-fuchsia-500/25 ring-1 ring-white/15',
+    gold: 'bg-gradient-to-br from-amber-200 to-[var(--color-gold)] text-black hover:brightness-105 shadow-lg shadow-amber-500/25 ring-1 ring-amber-100/40',
     ghost: 'bg-white/[0.06] text-slate-200 ring-1 ring-white/10 hover:bg-white/[0.1]',
     danger: 'bg-rose-500/15 text-rose-200 ring-1 ring-rose-400/30 hover:bg-rose-500/25',
   };

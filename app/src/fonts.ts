@@ -1,3 +1,6 @@
+import type { Game } from '@technogg/shared';
+import { PRESETS } from '@technogg/shared';
+
 /**
  * Title fonts bundled with the app (@fontsource imports live in main.tsx).
  * Each game carries its own personality — the value is a CSS font-family
@@ -10,3 +13,15 @@ export const FONT_OPTIONS: Array<{ label: string; css: string }> = [
   { label: 'Michroma — wide tech', css: "'Michroma', sans-serif" },
   { label: 'Baloo 2 — playful rounded', css: "'Baloo 2', sans-serif" },
 ];
+
+/**
+ * Effective title font for display. Games saved before the titleFont field
+ * existed have no stored value — fall back to the matching preset's font by
+ * name/short so long-lived data still gets its personality. Display-time only:
+ * writing it back would bump updatedAt on every game and churn sync.
+ */
+export function titleFontFor(game: Pick<Game, 'titleFont' | 'name' | 'short'>): string | undefined {
+  if (game.titleFont) return game.titleFont;
+  const preset = PRESETS.find((p) => p.name === game.name || p.short.toLowerCase() === game.short.toLowerCase());
+  return preset?.titleFont;
+}

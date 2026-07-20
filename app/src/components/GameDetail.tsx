@@ -4,7 +4,7 @@ import { SERVER_TZ_OPTIONS } from '@technogg/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fileToImageDataUrl, intOr } from '../util';
-import { FONT_OPTIONS } from '../fonts';
+import { FONT_OPTIONS, titleFontFor } from '../fonts';
 import { GameAlerts } from './game-detail/GameAlerts';
 import { ResourceEditor } from './game-detail/ResourceEditor';
 import { Sheet } from './Sheet';
@@ -93,7 +93,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
             </Field>
             <Field label="Title font">
               <Select
-                value={game.titleFont ?? ''}
+                value={titleFontFor(game) ?? ''}
                 onChange={(e) => app.updateGame(game.id, { titleFont: e.target.value || undefined })}
               >
                 <option value="">Default</option>
@@ -156,11 +156,11 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
               <TextArea value={game.notes ?? ''} onChange={(e) => app.updateGame(game.id, { notes: e.target.value })} />
             </Field>
             <div className="sm:col-span-2">
-              <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              <span className="mb-1 block text-2xs font-semibold uppercase tracking-wider text-slate-400">
                 Card artwork
               </span>
               <div className="flex flex-col gap-2 sm:flex-row">
-                <label className="flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-xl bg-white/[0.06] px-4 py-2 text-sm font-semibold text-slate-200 ring-1 ring-white/10 sm:min-h-9">
+                <label className="flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-xl bg-white/[0.06] px-4 py-2 text-sm font-semibold text-slate-200 ring-1 ring-white/10">
                   {game.image ? 'Replace image' : 'Choose image'}
                   <input
                     type="file"
@@ -203,7 +203,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                 <button
                   type="button"
                   onClick={() => app.deleteChip(chip.id)}
-                  className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 transition hover:bg-rose-400/10 hover:text-rose-400 sm:h-9 sm:w-9"
+                  className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 transition hover:bg-rose-400/10 hover:text-rose-400"
                   aria-label={`Delete quick spend ${chip.label}`}
                 >
                   ✕
@@ -235,7 +235,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                 + Shortcut
               </Btn>
             </div>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-2xs text-slate-500">
               One-tap adjustments for the first energy resource. Use negative values for spending.
             </p>
           </div>
@@ -289,7 +289,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                     <button
                       type="button"
                       onClick={() => app.deleteTask(t.id)}
-                      className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 transition hover:bg-rose-400/10 hover:text-rose-400 sm:h-9 sm:w-9"
+                      className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 transition hover:bg-rose-400/10 hover:text-rose-400"
                       aria-label={`Delete task ${t.name}`}
                     >
                       ✕
@@ -393,7 +393,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                 + Task
               </Btn>
             </div>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-2xs text-slate-500">
               Events → Timeline tab · focus, teams, currency & stats → Stats tab.
             </p>
           </div>
@@ -421,7 +421,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                 label="Safe-to-sleep chip"
               />
             </div>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-2xs text-slate-500">
               Turns whole blocks of the game card on or off. Individual energy bars, quick-spend buttons and tasks are
               removed above; individual events are edited on the Timeline.
             </p>
