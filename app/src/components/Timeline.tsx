@@ -20,13 +20,18 @@ function lum(hex: string): number {
 }
 
 /**
- * Readable text on a strong two-tone fill: judge the WHOLE gradient (bars run
- * color → color2 at ~0.7 alpha over black). With the brighter fills, any
- * pairing that averages mid-light (GI cream, HSR pink, WuWa silver) flips to
- * dark text so axe contrast holds.
+ * Text treatment over a two-tone fill, judged PER ENDPOINT against the real
+ * blend alphas (0.68 → 0.82 over black). One averaged verdict fails gradients
+ * that cross brightness (WuWa silver → charcoal): 'dark' only when both ends
+ * stay light, 'light' only when both stay dark, otherwise 'mixed' — which gets
+ * a black backing capsule so a single foreground works end-to-end.
  */
-function isLightFill(color: string, color2?: string): boolean {
-  return (lum(color) + lum(color2 ?? color)) / 2 > 168;
+function fillTextTone(color: string, color2?: string): 'dark' | 'light' | 'mixed' {
+  const start = 0.68 * lum(color);
+  const end = 0.82 * lum(color2 ?? color);
+  if (start >= 150 && end >= 150) return 'dark';
+  if (start <= 110 && end <= 110) return 'light';
+  return 'mixed';
 }
 
 function EventRow({
@@ -101,7 +106,9 @@ function EventRow({
         {cycle && (
           <span
             className={`rounded px-1 text-3xs font-black uppercase tracking-wider ${
-              isLightFill(game.color, game.color2) ? 'bg-black/15 text-slate-800' : 'bg-black/30 text-white/85'
+              fillTextTone(game.color, game.color2) === 'dark'
+                ? 'bg-black/15 text-slate-800'
+                : 'bg-black/35 text-white/90'
             }`}
           >
             cycle
@@ -114,13 +121,13 @@ function EventRow({
         )}
         <span
           className={`truncate text-xs ${
-            maint
+            maint || banner
               ? 'font-medium text-slate-400'
-              : banner
-                ? 'font-medium text-slate-400'
-                : isLightFill(game.color, game.color2)
-                  ? 'font-bold text-slate-900'
-                  : 'font-bold text-white'
+              : {
+                  dark: 'font-bold text-slate-900',
+                  light: 'font-bold text-white',
+                  mixed: 'rounded-md bg-black/45 px-1.5 font-bold text-white',
+                }[fillTextTone(game.color, game.color2)]
           }`}
         >
           {ev.name}
