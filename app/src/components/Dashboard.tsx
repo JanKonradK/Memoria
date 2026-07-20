@@ -74,7 +74,7 @@ export function DashboardPage({ now }: { now: number }) {
           <button
             type="button"
             onClick={() => openSheet({ kind: 'game', gameId: heroGame.id })}
-            className="relative block min-w-0 flex-1 overflow-hidden rounded-3xl p-4 text-left"
+            className="gold-hairline gold-hairline-live relative block min-w-0 flex-1 overflow-hidden rounded-3xl p-4 text-left 3xl:p-6"
             style={{
               background: `linear-gradient(120deg, ${tint(heroGame.color, 0.3)}, ${tint(heroGame.color2 ?? heroGame.color, 0.12)} 38%, rgba(0,0,0,0.92) 62%)`,
               boxShadow: `inset 0 0 0 1px ${tint(heroGame.color, 0.35)}, 0 0 44px -16px ${tint(heroGame.color, 0.5)}`,
@@ -99,7 +99,7 @@ export function DashboardPage({ now }: { now: number }) {
                 </div>
               </div>
               <div className="shrink-0 text-right">
-                <div className="text-xl font-black tabular-nums" style={{ color: heroGame.color }}>
+                <div className="text-2xl font-black tabular-nums" style={{ color: heroGame.color }}>
                   {hero.at <= now ? 'NOW' : fmtDur(hero.at - now)}
                 </div>
                 {hero.at > now && <div className="text-2xs tabular-nums text-slate-500">{fmtClock(hero.at)}</div>}
