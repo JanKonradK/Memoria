@@ -84,8 +84,12 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
 
   const resin = page.getByLabel('Original Resin current value');
   await resin.fill('0');
-  await resin.blur();
-  await page.getByRole('button', { name: 'Decrease Original Resin' }).click();
+  await resin.press('Enter'); // Enter commits the draft — the keyboard-first path.
+  // Steppers are touch-only: hidden at lg+ where values are typed directly.
+  const decrease = page.getByRole('button', { name: 'Decrease Original Resin' });
+  if (await decrease.isVisible()) {
+    await decrease.click();
+  }
   await expect(resin).toHaveValue('0');
 
   const bossRow = page.getByRole('button', { name: /Weekly Bosses ×3: 0 of 3 done/ });
@@ -134,15 +138,26 @@ test('full 16:9 dashboard fits five games and timeline bars stay in scale', asyn
   await addPreset(page, 'Wuthering Waves', 'WuWa');
   await addPreset(page, 'Neverness to Everness', 'NTE');
 
+  // Card CONTAINER tops must share one row; heading glyph boxes vary now that
+  // titles are optically normalized per font (different sizes, same row).
   await expect
-    .poll(async () => {
-      const cards = await Promise.all(
-        ['Genshin Impact', 'Honkai: Star Rail', 'Zenless Zone Zero', 'Wuthering Waves', 'Neverness to Everness'].map(
-          (name) => page.getByRole('heading', { name, exact: true }).boundingBox(),
-        ),
-      );
-      return new Set(cards.map((box) => Math.round(box!.y))).size;
-    })
+    .poll(async () =>
+      page.evaluate(() => {
+        const names = [
+          'Genshin Impact',
+          'Honkai: Star Rail',
+          'Zenless Zone Zero',
+          'Wuthering Waves',
+          'Neverness to Everness',
+        ];
+        const tops = names.map((name) => {
+          const heading = [...document.querySelectorAll('h2')].find((el) => el.textContent?.trim() === name);
+          const card = heading?.closest('.card-enter');
+          return card ? Math.round(card.getBoundingClientRect().y) : NaN;
+        });
+        return tops.some(Number.isNaN) ? -1 : new Set(tops).size;
+      }),
+    )
     .toBe(1);
   await expect(page.getByRole('button', { name: 'Add game', exact: true })).toBeVisible();
   await expectNoPageOverflow(page);

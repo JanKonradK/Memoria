@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
-import type { ChecklistItem, Game, GameUrgency } from '@technogg/shared';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { ChecklistItem, Game, GameEvent, GameUrgency } from '@technogg/shared';
 import { checklistFor, effectiveResourceKind, latestSnapshots, projectEnergy, sleepCheck } from '@technogg/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { useReducedMotion } from '../hooks';
-import { titleFontFor } from '../fonts';
+import { titleFontFor, titleFontScale } from '../fonts';
 
 import { endTone, fmtClock, fmtDur, tint } from '../util';
 import { EnergyRow } from './EnergyRow';
@@ -19,12 +19,100 @@ const TASK_WARN_MS = 120 * 60_000;
 /** Circumference of the r=9 circle every 20×20 control is built on. */
 const RING_C = 56.549;
 
-/** Left-edge cadence tag — same shape the event strip uses, so rows share one language. */
-function CadenceTag({ cadence }: { cadence: ChecklistItem['cadence'] }) {
-  if (cadence === 'daily') return null;
+/** Fixed-width left-edge tags keep every task/event label on a shared column. */
+function TagChip({ children, amber = false }: { children: string; amber?: boolean }) {
   return (
-    <span className="shrink-0 rounded bg-white/5 px-1 text-3xs font-black uppercase tracking-wider text-slate-500">
-      {cadence === 'custom' ? 'cycle' : cadence}
+    <span
+      className={`inline-flex w-[3.4rem] shrink-0 justify-center rounded px-1 text-3xs font-black uppercase tracking-wider ${
+        amber ? 'bg-amber-400/10 text-amber-300/90' : 'bg-white/5 text-slate-500'
+      }`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function CadenceTag({ cadence }: { cadence: ChecklistItem['cadence'] }) {
+  const label = cadence === 'custom' ? 'cycle' : cadence;
+  return <TagChip amber={cadence === 'daily'}>{label}</TagChip>;
+}
+
+/** A one-line title that starts at its optically-normalized display size and fits down to 15px. */
+function AutoFitTitle({ game }: { game: Game }) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const fontFamily = titleFontFor(game);
+  const scale = titleFontScale(fontFamily);
+  const baseSize = `calc(var(--text-2xl) * ${scale})`;
+
+  useLayoutEffect(() => {
+    const fit = () => {
+      const title = titleRef.current;
+      if (!title || title.clientWidth <= 0) return;
+      title.style.fontSize = baseSize;
+      let size = Number.parseFloat(window.getComputedStyle(title).fontSize);
+      while (title.scrollWidth > title.clientWidth && size > 15) {
+        size = Math.max(15, size - 0.5);
+        title.style.fontSize = `${size}px`;
+      }
+    };
+
+    fit();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(fit);
+    if (boxRef.current) observer?.observe(boxRef.current);
+    let cancelled = false;
+    void document.fonts?.ready.then(() => {
+      if (!cancelled) fit();
+    });
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+    };
+  }, [baseSize, fontFamily, game.name]);
+
+  return (
+    <div ref={boxRef} className="min-w-0 flex-1">
+      <h2
+        ref={titleRef}
+        className="w-full whitespace-nowrap text-2xl font-black tracking-tight text-slate-50"
+        style={{
+          fontFamily,
+          fontSize: baseSize,
+          textShadow: `0 0 24px ${tint(game.color, 0.55)}, 0 1px 0 rgba(0,0,0,0.4)`,
+        }}
+      >
+        {game.name}
+      </h2>
+    </div>
+  );
+}
+
+function TaskLabel({
+  item,
+  cycleEvent,
+  className,
+  now,
+}: {
+  item: ChecklistItem;
+  cycleEvent?: GameEvent;
+  className: string;
+  now: number;
+}) {
+  const showCycleHint = item.cadence === 'custom' && item.name.includes('/') && cycleEvent;
+  return (
+    <span className="block min-w-0 flex-1">
+      <span className={`block truncate ${className}`}>{item.name}</span>
+      {showCycleHint && (
+        <span className="mt-0.5 flex min-w-0 items-baseline gap-1 text-2xs text-slate-500 no-underline">
+          <span aria-hidden>→</span>
+          <span className="truncate">{cycleEvent.name}</span>
+          <span aria-hidden>·</span>
+          <span className="shrink-0">ends</span>
+          <span className="shrink-0 font-semibold tabular-nums" style={{ color: endTone(cycleEvent.end - now) }}>
+            {fmtDur(cycleEvent.end - now)}
+          </span>
+        </span>
+      )}
     </span>
   );
 }
@@ -113,12 +201,14 @@ function TimerRing({ fraction, color }: { fraction: number; color: string }) {
 function TimerTaskRow({
   item,
   color,
+  cycleEvent,
   now,
   onStart,
   onRestart,
 }: {
   item: ChecklistItem;
   color: string;
+  cycleEvent?: GameEvent;
   now: number;
   onStart: () => void;
   onRestart: () => void;
@@ -132,14 +222,17 @@ function TimerTaskRow({
     <button
       type="button"
       onClick={running || ready ? onRestart : onStart}
-      className="group flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/5"
+      className="group flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/5 lg:min-h-9 lg:py-0.5"
       aria-label={`${item.name}: ${running ? 'restart timer' : ready ? 'timer ready — restart' : 'start timer'}`}
       title={running || ready ? 'Click to restart the timer' : 'Click to start the timer'}
     >
       <CadenceTag cadence={item.cadence} />
-      <span className={`min-w-0 flex-1 truncate text-sm ${ready ? 'text-slate-500 line-through' : 'text-slate-200'}`}>
-        {item.name}
-      </span>
+      <TaskLabel
+        item={item}
+        cycleEvent={cycleEvent}
+        now={now}
+        className={`text-sm ${ready ? 'text-slate-500 line-through' : 'text-slate-200'}`}
+      />
       {running && <span className="shrink-0 text-xs font-bold tabular-nums text-amber-200">{fmtDur(left)}</span>}
       {ready && <span className="shrink-0 text-xs font-bold text-emerald-300">Ready</span>}
       {running ? (
@@ -227,21 +320,34 @@ function SegmentedCircle({
   );
 }
 
-function CountTaskRow({ item, color, onAdvance }: { item: ChecklistItem; color: string; onAdvance: () => void }) {
+function CountTaskRow({
+  item,
+  color,
+  cycleEvent,
+  now,
+  onAdvance,
+}: {
+  item: ChecklistItem;
+  color: string;
+  cycleEvent?: GameEvent;
+  now: number;
+  onAdvance: () => void;
+}) {
   const { sweep, end } = useCompletionSweep(item.done);
   return (
     <button
       type="button"
       onClick={onAdvance}
-      className="group flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/5"
+      className="group flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/5 lg:min-h-9 lg:py-0.5"
       aria-label={`${item.name}: ${item.countDone} of ${item.countTarget} done${item.done ? ', complete — click to reset' : ', click to mark one more'}`}
     >
       <CadenceTag cadence={item.cadence} />
-      <span
-        className={`min-w-0 flex-1 truncate text-sm transition ${item.done ? 'text-slate-500 line-through' : 'text-slate-200'}`}
-      >
-        {item.name}
-      </span>
+      <TaskLabel
+        item={item}
+        cycleEvent={cycleEvent}
+        now={now}
+        className={`text-sm transition ${item.done ? 'text-slate-500 line-through' : 'text-slate-200'}`}
+      />
       {!item.done && item.countDone > 0 && (
         <span className="shrink-0 text-2xs font-bold tabular-nums text-slate-400">
           {item.countDone}/{item.countTarget}
@@ -259,11 +365,13 @@ function CountTaskRow({ item, color, onAdvance }: { item: ChecklistItem; color: 
 function TaskRow({
   item,
   color,
+  cycleEvent,
   now,
   onToggle,
 }: {
   item: ChecklistItem;
   color: string;
+  cycleEvent?: GameEvent;
   now: number;
   onToggle: () => void;
 }) {
@@ -274,11 +382,14 @@ function TaskRow({
     <button
       type="button"
       onClick={onToggle}
-      className="group flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/5"
+      className="group flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/5 lg:min-h-9 lg:py-0.5"
     >
       <CadenceTag cadence={item.cadence} />
-      <span
-        className={`min-w-0 flex-1 truncate text-sm transition ${
+      <TaskLabel
+        item={item}
+        cycleEvent={cycleEvent}
+        now={now}
+        className={`text-sm transition ${
           item.done
             ? 'text-slate-500 line-through'
             : danger
@@ -287,9 +398,7 @@ function TaskRow({
                 ? 'text-amber-200'
                 : 'text-slate-200'
         }`}
-      >
-        {item.name}
-      </span>
+      />
       {(danger || warn) && (
         <span
           className={`shrink-0 text-2xs font-bold tabular-nums ${danger ? 'text-rose-300' : 'text-amber-300'}`}
@@ -332,15 +441,10 @@ function EventStrip({ game, now }: { game: Game; now: number }) {
           className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-0.5 text-left text-2xs transition hover:bg-white/5"
           title={ev.notes || ev.name}
         >
-          <span className="shrink-0 rounded bg-white/5 px-1 text-3xs font-black uppercase tracking-wider text-slate-500">
-            {ev.type === 'cycle' ? 'cycle' : ev.type === 'banner' ? 'banner' : 'event'}
-          </span>
+          <TagChip>{ev.type === 'cycle' ? 'cycle' : ev.type === 'banner' ? 'banner' : 'event'}</TagChip>
           {ev.dailyTouch && (
-            <span
-              className="shrink-0 rounded bg-amber-400/10 px-1 text-3xs font-black uppercase tracking-wider text-amber-300/90"
-              title="Needs a daily login/claim"
-            >
-              daily
+            <span title="Needs a daily login/claim">
+              <TagChip amber>daily</TagChip>
             </span>
           )}
           <span className="truncate text-slate-300">{ev.name}</span>
@@ -413,6 +517,17 @@ export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
     (a, b) => CADENCE_RANK[a.cadence] - CADENCE_RANK[b.cadence] || a.sort - b.sort,
   );
   const dailies = checklist.filter((c) => c.cadence === 'daily');
+  const activeCycleEvent = state.events
+    .filter(
+      (event) =>
+        !event.deleted &&
+        !event.done &&
+        event.gameId === game.id &&
+        event.type === 'cycle' &&
+        event.start <= now &&
+        event.end > now,
+    )
+    .sort((a, b) => a.end - b.end)[0];
 
   const urgent = !game.paused && next != null && next.at - now < 60 * 60_000;
 
@@ -475,15 +590,7 @@ export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
       <div className="relative z-10 flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2.5">
-            <h2
-              className="truncate text-2xl font-black tracking-tight text-slate-50"
-              style={{
-                fontFamily: titleFontFor(game),
-                textShadow: `0 0 24px ${tint(game.color, 0.55)}, 0 1px 0 rgba(0,0,0,0.4)`,
-              }}
-            >
-              {game.name}
-            </h2>
+            <AutoFitTitle game={game} />
             {game.paused && (
               <span className="rounded-full bg-white/10 px-2 py-0.5 text-2xs font-bold uppercase tracking-wider text-slate-400">
                 paused
@@ -559,6 +666,7 @@ export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
                   key={`${item.taskId}|${item.periodKey}`}
                   item={item}
                   color={game.color}
+                  cycleEvent={activeCycleEvent}
                   now={now}
                   onStart={() => startTaskTimer(item.taskId, item.periodKey)}
                   onRestart={() => restartTaskTimer(item.taskId, item.periodKey)}
@@ -568,6 +676,8 @@ export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
                   key={`${item.taskId}|${item.periodKey}`}
                   item={item}
                   color={game.color}
+                  cycleEvent={activeCycleEvent}
+                  now={now}
                   onAdvance={() =>
                     setTaskCount(
                       item.taskId,
@@ -581,6 +691,7 @@ export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
                   key={`${item.taskId}|${item.periodKey}`}
                   item={item}
                   color={game.color}
+                  cycleEvent={activeCycleEvent}
                   now={now}
                   onToggle={() => setTaskDone(item.taskId, item.periodKey, !item.done)}
                 />
