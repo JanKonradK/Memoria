@@ -304,7 +304,11 @@ textarea:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
+  /* Pseudo-elements must be listed explicitly — bare * does not match them,
+     which would leave the ::before hairline shimmer running. */
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
   }
