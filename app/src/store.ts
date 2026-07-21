@@ -23,10 +23,11 @@ import {
   normalizeState,
   projectEnergy,
 } from '@technogg/shared';
-import { clearLocalSecrets, migrateLegacySecrets } from './secret-store';
+import { clearLocalSecrets, migrateLegacySecrets, setLocalSecretsIdentity } from './secret-store';
+import { storageKeyForIdentity } from './storage-identity';
 import { uid } from './util';
 
-const IDB_KEY = 'technogg-state';
+const LEGACY_IDB_KEY = 'technogg-state';
 /** Matches the merge-side retention. */
 const SNAPSHOTS_KEPT = 200;
 
@@ -55,11 +56,26 @@ function tombstone<T extends { id: string; updatedAt: number; deleted?: boolean 
   return list.map((x) => (match(x) ? { ...x, deleted: true, updatedAt: now() } : x));
 }
 
+let activeIdentity: string | null = null;
+let activeIdbKey: string | null = null;
+let identityRevision = 0;
 let persistTimer: ReturnType<typeof setTimeout> | undefined;
+
+export function getActiveIdentity(): string | null {
+  return activeIdentity;
+}
+
+export function getIdentityRevision(): number {
+  return identityRevision;
+}
+
 function persist(state: AppState): void {
+  const key = activeIdbKey;
+  if (!key) return;
   clearTimeout(persistTimer);
   persistTimer = setTimeout(() => {
-    void idbSet(IDB_KEY, state);
+    persistTimer = undefined;
+    void idbSet(key, state);
   }, 250);
 }
 
@@ -68,6 +84,7 @@ function announceMutation(): void {
 }
 
 export interface AppStore {
+  identity: string | null;
   state: AppState;
   loaded: boolean;
   loadError: string;
@@ -75,6 +92,7 @@ export interface AppStore {
   syncError: string;
   lastSyncAt: number | null;
 
+  setIdentity(identity: string): Promise<void>;
   load(): Promise<void>;
   clearLocalData(): Promise<void>;
   /** Replace state (sync merge / import) without re-announcing a local mutation. */
@@ -117,6 +135,7 @@ export interface AppStore {
 }
 
 export const useApp = create<AppStore>((set, get) => ({
+  identity: null,
   state: emptyState(),
   loaded: false,
   loadError: '',
@@ -124,13 +143,63 @@ export const useApp = create<AppStore>((set, get) => ({
   syncError: '',
   lastSyncAt: null,
 
-  async load() {
-    set({ loadError: '' });
+  async setIdentity(identity) {
+    if (identity === activeIdentity) return;
+
+    clearTimeout(persistTimer);
+    persistTimer = undefined;
+    activeIdentity = identity;
+    activeIdbKey = storageKeyForIdentity(LEGACY_IDB_KEY, identity);
+    identityRevision += 1;
+    setLocalSecretsIdentity(identity);
+    set({
+      identity,
+      state: emptyState(),
+      loaded: false,
+      loadError: '',
+      syncStatus: 'idle',
+      syncError: '',
+      lastSyncAt: null,
+    });
+
+    if (!activeIdbKey) {
+      set({ loaded: true });
+      return;
+    }
+
+    const key = activeIdbKey;
+    const revision = identityRevision;
     try {
-      const raw = await idbGet(IDB_KEY);
-      migrateLegacySecrets(raw);
+      const raw = await idbGet(key);
+      if (revision !== identityRevision) return;
+      migrateLegacySecrets(raw, identity);
       set({ state: normalizeState(raw), loaded: true, loadError: '' });
     } catch (error) {
+      if (revision !== identityRevision) return;
+      set({
+        loaded: false,
+        loadError: error instanceof Error ? error.message : 'Local data could not be opened.',
+      });
+    }
+  },
+
+  async load() {
+    const identity = activeIdentity;
+    const key = activeIdbKey;
+    const revision = identityRevision;
+    set({ loadError: '' });
+    if (!identity) return;
+    if (!key) {
+      set({ state: emptyState(), loaded: true });
+      return;
+    }
+    try {
+      const raw = await idbGet(key);
+      if (revision !== identityRevision) return;
+      migrateLegacySecrets(raw, identity);
+      set({ state: normalizeState(raw), loaded: true, loadError: '' });
+    } catch (error) {
+      if (revision !== identityRevision) return;
       set({
         loaded: false,
         loadError: error instanceof Error ? error.message : 'Local data could not be opened.',
@@ -139,11 +208,18 @@ export const useApp = create<AppStore>((set, get) => ({
   },
 
   async clearLocalData() {
+    const identity = activeIdentity;
+    const key = activeIdbKey;
+    const revision = identityRevision;
+    clearTimeout(persistTimer);
+    persistTimer = undefined;
     try {
-      await idbDel(IDB_KEY);
-      clearLocalSecrets();
+      if (key) await idbDel(key);
+      if (identity) clearLocalSecrets(identity);
+      if (revision !== identityRevision) return;
       set({ state: emptyState(), loaded: true, loadError: '' });
     } catch (error) {
+      if (revision !== identityRevision) return;
       set({ loadError: error instanceof Error ? error.message : 'Local data could not be cleared.' });
     }
   },
