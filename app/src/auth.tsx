@@ -1,6 +1,22 @@
-import { ClerkProvider, SignInButton, SignUpButton, useAuth, useClerk, useUser } from '@clerk/clerk-react';
+import {
+  AuthenticateWithRedirectCallback,
+  ClerkProvider,
+  SignInButton,
+  SignUpButton,
+  useAuth,
+  useClerk,
+  useUser,
+} from '@clerk/react';
+// v6's default `useSignIn` is the new signals API, which has no `authenticateWithRedirect`.
+// The classic hook (stable) lives at the /legacy entry and shares the same ClerkProvider
+// context, so we keep the redirect-based Google flow on it.
+import { useSignIn } from '@clerk/react/legacy';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { configureHostedSession } from './auth-session';
+import { reportClientError } from './reporting';
+import { useApp } from './store';
+import { ANONYMOUS_IDENTITY, DESKTOP_LAUNCHER_ORIGIN, LOCAL_IDENTITY } from './storage-identity';
+import { resetSyncState } from './sync';
 
 interface SessionContextValue {
   hosted: boolean;
@@ -134,6 +150,69 @@ function StatusPage() {
   );
 }
 
+function GoogleIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
+      <path
+        fill="#4285F4"
+        d="M23.52 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.88c2.27-2.09 3.57-5.17 3.57-8.87z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 24c3.24 0 5.96-1.08 7.95-2.91l-3.88-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09A12 12 0 0 0 12 24z"
+      />
+      <path fill="#FBBC05" d="M5.27 14.29a7.2 7.2 0 0 1 0-4.58V6.62H1.29a12 12 0 0 0 0 10.76l3.98-3.09z" />
+      <path
+        fill="#EA4335"
+        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.44-3.44A11.98 11.98 0 0 0 12 0 12 12 0 0 0 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"
+      />
+    </svg>
+  );
+}
+
+function ContinueWithGoogleButton() {
+  const { isLoaded, signIn } = useSignIn();
+  const [busy, setBusy] = useState(false);
+
+  async function startGoogleSignIn() {
+    if (!isLoaded || !signIn) return;
+    setBusy(true);
+    try {
+      // Clerk verifies the resulting session token the same way regardless of the
+      // sign-in strategy, so no Worker-side change is needed for Google.
+      await signIn.authenticateWithRedirect({
+        strategy: 'oauth_google',
+        redirectUrl: '/sso-callback',
+        redirectUrlComplete: '/',
+      });
+    } catch (error) {
+      setBusy(false);
+      void reportClientError(error instanceof Error ? error : new Error(String(error)), 'google sign-in');
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={startGoogleSignIn}
+      disabled={!isLoaded || busy}
+      className="inline-flex min-h-11 items-center gap-3 rounded-2xl bg-white px-5 py-3 text-sm font-bold text-slate-800 ring-1 ring-black/10 disabled:opacity-60"
+    >
+      <GoogleIcon />
+      {busy ? 'Redirecting…' : 'Continue with Google'}
+    </button>
+  );
+}
+
+function SsoCallback() {
+  return (
+    <div className="flex min-h-dvh items-center justify-center text-sm text-slate-400" role="status">
+      Completing sign-in…
+      <AuthenticateWithRedirectCallback signInFallbackRedirectUrl="/" signUpFallbackRedirectUrl="/" />
+    </div>
+  );
+}
+
 function PublicLanding() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col justify-center px-5 py-16">
@@ -143,10 +222,11 @@ function PublicLanding() {
           Know what resets next. Waste less energy.
         </h1>
         <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-          Techno's Library keeps server resets, energy caps, dailies and events together across your games. Your browser remains
-          usable offline; an account adds encrypted cloud sync and closed-app alerts.
+          Techno's Library keeps server resets, energy caps, dailies and events together across your games. Your browser
+          remains usable offline; an account adds encrypted cloud sync and closed-app alerts.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
+          <ContinueWithGoogleButton />
           <SignUpButton mode="modal">
             <button
               type="button"
@@ -191,12 +271,20 @@ function ClerkGate({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const clerk = useClerk();
   const { user } = useUser();
+  const storeIdentity = useApp((state) => state.identity);
+  const setIdentity = useApp((state) => state.setIdentity);
+  const identity = auth.isLoaded && auth.isSignedIn && auth.userId ? `user:${auth.userId}` : ANONYMOUS_IDENTITY;
 
   configureHostedSession({
     hosted: true,
     userId: auth.userId ?? null,
     getToken: auth.getToken,
   });
+
+  useEffect(() => {
+    resetSyncState();
+    void setIdentity(identity);
+  }, [identity, setIdentity]);
 
   if (!auth.isLoaded) {
     return (
@@ -205,7 +293,26 @@ function ClerkGate({ children }: { children: ReactNode }) {
       </div>
     );
   }
+  if (storeIdentity !== identity) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center text-sm text-slate-400" role="status">
+        Loading account data…
+      </div>
+    );
+  }
   if (!auth.isSignedIn) return <PublicLanding />;
+
+  const signOut = async () => {
+    resetSyncState();
+    await setIdentity(ANONYMOUS_IDENTITY);
+    try {
+      await clerk.signOut();
+    } catch (error) {
+      resetSyncState();
+      await setIdentity(identity);
+      throw error;
+    }
+  };
 
   return (
     <SessionContext.Provider
@@ -213,7 +320,7 @@ function ClerkGate({ children }: { children: ReactNode }) {
         hosted: true,
         userId: auth.userId ?? null,
         displayName: user?.firstName || user?.username || user?.primaryEmailAddress?.emailAddress || 'Account',
-        signOut: () => clerk.signOut(),
+        signOut,
         manageAccount: () => clerk.openUserProfile(),
       }}
     >
@@ -222,14 +329,44 @@ function ClerkGate({ children }: { children: ReactNode }) {
   );
 }
 
+function LocalIdentityGate({ children }: { children: ReactNode }) {
+  const identity = useApp((state) => state.identity);
+  const setIdentity = useApp((state) => state.setIdentity);
+
+  useEffect(() => {
+    resetSyncState();
+    void setIdentity(LOCAL_IDENTITY);
+  }, [setIdentity]);
+
+  if (identity !== LOCAL_IDENTITY) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center text-sm text-slate-400" role="status">
+        Loading local data…
+      </div>
+    );
+  }
+  return children;
+}
+
 export function AuthShell({ children }: { children: ReactNode }) {
   if (window.location.pathname === '/status') return <StatusPage />;
   const legal = LEGAL[window.location.pathname];
   if (legal) return <LegalPage document={legal} />;
   const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim();
-  if (!publishableKey) {
+  if (!publishableKey || DESKTOP_LAUNCHER_ORIGIN.test(window.location.origin)) {
     configureHostedSession({ hosted: false, userId: null });
-    return <SessionContext.Provider value={{ ...useLocalSession }}>{children}</SessionContext.Provider>;
+    return (
+      <SessionContext.Provider value={{ ...useLocalSession }}>
+        <LocalIdentityGate>{children}</LocalIdentityGate>
+      </SessionContext.Provider>
+    );
+  }
+  if (window.location.pathname === '/sso-callback') {
+    return (
+      <ClerkProvider publishableKey={publishableKey} afterSignOutUrl="/">
+        <SsoCallback />
+      </ClerkProvider>
+    );
   }
   return (
     <ClerkProvider publishableKey={publishableKey} afterSignOutUrl="/">

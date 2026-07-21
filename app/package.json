@@ -12,7 +12,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@clerk/clerk-react": "^5.61.9",
+    "@clerk/react": "^6.12.5",
     "@fontsource/archivo-black": "^5.2.8",
     "@fontsource/baloo-2": "^5.2.7",
     "@fontsource/marcellus": "^5.2.8",
