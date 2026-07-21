@@ -1,5 +1,4 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { emptyState } from '@technogg/shared';
 import { useApp } from './store';
 import { initSync } from './sync';
 import { useUI, type Tab } from './ui-store';
@@ -66,32 +65,12 @@ export default function App() {
   const now = useNow(30_000);
   const online = useOnline();
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [migrationChoice, setMigrationChoice] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(false);
 
   useEffect(() => {
-    void load();
-  }, [load]);
-
-  const migrationKey = session.userId ? `technogg-account-migrated:${session.userId}` : '';
-  const hasLocalData =
-    loaded &&
-    (useApp.getState().state.games.some((game) => !game.deleted) ||
-      useApp.getState().state.events.some((event) => !event.deleted));
-  const migrationPending =
-    session.hosted &&
-    Boolean(session.userId) &&
-    hasLocalData &&
-    !migrationChoice &&
-    !localStorage.getItem(migrationKey);
-
-  useEffect(() => {
-    if (!loaded || migrationPending) return;
-    if (session.hosted && migrationKey && !localStorage.getItem(migrationKey)) {
-      localStorage.setItem(migrationKey, 'empty');
-    }
+    if (!loaded) return;
     initSync();
-  }, [loaded, migrationKey, migrationPending, session.hosted]);
+  }, [loaded, session.hosted]);
 
   useEffect(() => {
     const showUpdate = () => setUpdateAvailable(true);
@@ -104,10 +83,12 @@ export default function App() {
       <main className="flex min-h-dvh items-center justify-center px-5 py-12">
         <section className="glass gold-hairline w-full max-w-lg rounded-3xl p-6" role="alert">
           <p className="text-xs font-bold uppercase tracking-widest text-rose-300">Local data unavailable</p>
-          <h1 className="mt-2 text-xl font-black text-slate-100">Techno's Library could not open this device's data.</h1>
+          <h1 className="mt-2 text-xl font-black text-slate-100">
+            Techno's Library could not open this device's data.
+          </h1>
           <p className="mt-2 text-sm text-slate-400">
-            Retry first. Starting fresh permanently clears this browser's local Techno's Library database; synced or exported
-            copies are not affected.
+            Retry first. Starting fresh permanently clears this browser's local Techno's Library database; synced or
+            exported copies are not affected.
           </p>
           <p className="mt-3 rounded-xl bg-black/30 p-3 text-xs text-slate-500">{loadError}</p>
           <div className="mt-5 flex flex-wrap gap-2">
@@ -145,50 +126,6 @@ export default function App() {
           style={{ boxShadow: '0 0 40px rgba(124,92,255,0.5)' }}
         />
       </div>
-    );
-  }
-
-  if (migrationPending) {
-    const local = useApp.getState().state;
-    const games = local.games.filter((game) => !game.deleted).length;
-    const events = local.events.filter((event) => !event.deleted).length;
-    return (
-      <main className="flex min-h-dvh items-center justify-center px-4 py-12">
-        <section className="glass gold-hairline w-full max-w-xl rounded-3xl p-6" aria-labelledby="migration-title">
-          <p className="text-xs font-bold uppercase tracking-widest text-violet-300">First sign-in on this device</p>
-          <h1 id="migration-title" className="mt-2 text-2xl font-black text-slate-100">
-            Bring your local data into your account?
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-slate-400">
-            This browser contains {games} game{games === 1 ? '' : 's'} and {events} event
-            {events === 1 ? '' : 's'}. You can explicitly merge them into your private cloud document, or load only what
-            is already stored in the account.
-          </p>
-          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={() => {
-                localStorage.setItem(migrationKey, 'merged');
-                setMigrationChoice(true);
-              }}
-              className="min-h-11 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 px-4 py-2 text-sm font-bold text-white"
-            >
-              Merge local data
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                useApp.getState().replaceState(emptyState());
-                localStorage.setItem(migrationKey, 'cloud-only');
-                setMigrationChoice(true);
-              }}
-              className="min-h-11 rounded-xl bg-white/[0.06] px-4 py-2 text-sm font-semibold text-slate-200 ring-1 ring-white/15"
-            >
-              Use account data only
-            </button>
-          </div>
-        </section>
-      </main>
     );
   }
 
