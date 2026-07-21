@@ -15,13 +15,16 @@ import { PRESETS } from '@technogg/shared';
  *
  * Rebuilt from scratch 2026-07-12, cross-checked against the official HoYo
  * announcement feeds, game8's per-game event calendars, nte.wiki and the
- * fandom wikis. Categories: 'event' (play these), 'cycle' (recurring endgame
+ * fandom wikis. Refreshed 2026-07-20: added the ZZZ v3.1 slate revealed in the
+ * 3.1 livestream (releases Jul 29) and corrected the NTE phase-2 name to Iroi;
+ * Genshin 6.7 / HSR 4.4 / WuWa 3.5 were mid-patch with no new announcements.
+ * Categories: 'event' (play these), 'cycle' (recurring endgame
  * windows — Abyss/Theater, MoC/PF/AS/AA, Shiyu/DA), 'banner' (pulls),
  * 'maintenance' (patch downtime). Web-only and permanent content is excluded.
  */
 
 /** When the bundled data was last refreshed. */
-export const SEED_UPDATED = '2026-07-12';
+export const SEED_UPDATED = '2026-07-20';
 
 export interface SeedEvent {
   /** Preset key — matched against the game's name/short (games carry no preset id). */
@@ -567,6 +570,59 @@ export const SEED_EVENTS: SeedEvent[] = [
     end: '2026-07-29 04:00',
     sourceKey: 'seed:zzz:3.1-maint',
   },
+  /* --- v3.1 (Jul 29 – ~Sep 8), revealed in the 3.1 livestream. 3.1 releases
+     Jul 29 (~11:00 UTC+8 = 04:00 EU). Phase 2 flips Aug 19; the Sep 8 version
+     boundary and the summer event's end are game8 estimates until 3.2 posts. */
+  // --- events
+  {
+    game: 'zzz',
+    name: 'Summer Waves Roll In — Fantasy Resort summer event',
+    type: 'event',
+    notify: false,
+    start: '2026-07-29 04:00',
+    end: '2026-09-08 05:59',
+    notes: 'Summer flagship (beachcombing + souvenir shop). End approximate — verify in-game.',
+    sourceKey: 'seed:zzz:3.1-summer-waves',
+  },
+  // --- banners
+  {
+    game: 'zzz',
+    name: 'Remielle — Paradise Regained (flagship)',
+    type: 'banner',
+    notify: false,
+    start: '2026-07-29 04:00',
+    end: '2026-09-08 14:59',
+    notes: 'Runs both phases of 3.1. End approximate — verify in-game.',
+    sourceKey: 'seed:zzz:3.1-remielle',
+  },
+  {
+    game: 'zzz',
+    name: 'Aria — Neon Angel rerun (phase 1)',
+    type: 'banner',
+    start: '2026-07-29 04:00',
+    end: '2026-08-19 11:59',
+    sourceKey: 'seed:zzz:3.1-aria',
+  },
+  {
+    game: 'zzz',
+    name: 'Sigrid — Till the Ends of the Sky (phase 2)',
+    type: 'banner',
+    notify: false,
+    start: '2026-08-19 12:00',
+    end: '2026-09-08 14:59',
+    notes: 'Phase 2 — verify in-game.',
+    sourceKey: 'seed:zzz:3.1-sigrid',
+  },
+  {
+    game: 'zzz',
+    name: 'Exclusive Rescreening: Dialyn · Yuzuha · Harumasa (phase 2)',
+    type: 'banner',
+    notify: false,
+    start: '2026-08-19 12:00',
+    end: '2026-09-08 14:59',
+    notes: 'Selectable rerun — verify in-game.',
+    sourceKey: 'seed:zzz:3.1-rescreening',
+  },
 
   /* ================================================== WUTHERING WAVES — v3.5 (Jul 10 – ~Aug 20,
      Mengzhou region, first SP character). Dates from game8's event list (12 Jul refresh);
@@ -813,7 +869,7 @@ export const SEED_EVENTS: SeedEvent[] = [
   },
   {
     game: 'nte',
-    name: 'Iroha — The Lifeline (+ The Wrong Gate arc, phase 2)',
+    name: 'Iroi — The Lifeline (+ The Wrong Gate arc, phase 2)',
     type: 'banner',
     start: '2026-07-29 05:00',
     end: '2026-08-19 05:00',
