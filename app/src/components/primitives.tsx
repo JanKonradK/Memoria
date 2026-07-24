@@ -12,26 +12,29 @@ const PILL_VARIANTS: Record<PillVariant, string> = {
   light: 'bg-black/15 text-slate-800',
 };
 
-/** Compact metadata label shared by task, event, timeline, and paused states. */
+/**
+ * Compact metadata label shared by task, event, timeline, and paused states.
+ *
+ * Native `title` tooltips are banned app-wide — the browser leaves them on
+ * screen for seconds after the element under the cursor is gone. Use the Radix
+ * `Tooltip` from ./ui when a hover hint is genuinely needed.
+ */
 export function Pill({
   children,
   variant = 'neutral',
   size = 'sm',
   className = '',
-  title,
 }: {
   children: ReactNode;
   variant?: PillVariant;
   size?: 'sm' | 'md';
   className?: string;
-  title?: string;
 }) {
   return (
     <span
       className={`shrink-0 rounded-ui-sm font-black uppercase tracking-wider ${
         size === 'sm' ? 'px-1 text-micro' : 'px-2 py-0.5 text-caption'
       } ${PILL_VARIANTS[variant]} ${className}`}
-      title={title}
     >
       {children}
     </span>
