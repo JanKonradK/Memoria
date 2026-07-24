@@ -5,6 +5,8 @@ test('backup export and merge preview stay within the viewport', async ({ page }
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add GI' }).click();
+  const expand = page.getByRole('button', { name: 'Expand Genshin Impact controls' });
+  if (await expand.isVisible()) await expand.click();
   await expect(page.getByRole('heading', { name: 'Genshin Impact', exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Settings' }).click();

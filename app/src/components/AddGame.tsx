@@ -59,13 +59,13 @@ export function AddGameSheet({ open }: { open: boolean }) {
                   setPicked(p);
                   setTz(p.tz);
                 }}
-                className="flex items-center gap-3 rounded-2xl p-3 text-left ring-1 transition hover:brightness-125 active:scale-95"
+                className="flex items-center gap-3 rounded-ui-xl p-3 text-left ring-1 transition hover:brightness-125 active:scale-95"
                 style={{ background: tint(p.color, 0.08), boxShadow: `inset 0 0 0 1px ${tint(p.color, 0.25)}` }}
               >
                 <GameBadge short={p.short} color={p.color} color2={p.color2} size="lg" />
                 <span>
-                  <span className="block text-sm font-bold text-slate-100">{p.name}</span>
-                  <span className="block text-[11px] text-slate-400">{p.resources.map((r) => r.name).join(' + ')}</span>
+                  <span className="block text-body font-bold text-slate-100">{p.name}</span>
+                  <span className="block text-label text-muted">{p.resources.map((r) => r.name).join(' + ')}</span>
                 </span>
               </button>
             ))}
@@ -84,7 +84,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
       ) : (
         <>
           {picked.notes && (
-            <p className="mb-4 rounded-xl bg-amber-400/10 px-3 py-2 text-xs text-amber-200 ring-1 ring-amber-400/20">
+            <p className="mb-4 rounded-ui-lg bg-warn/10 px-3 py-2 text-xs text-amber-200 ring-1 ring-warn/20">
               {picked.notes}
             </p>
           )}
@@ -107,7 +107,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
                 />
               </Field>
             ))}
-            <p className="text-[11px] text-slate-500">
+            <p className="text-label text-dim">
               Reset: {String(picked.dailyResetHour).padStart(2, '0')}:00 server · everything is editable later in the
               game editor.
             </p>

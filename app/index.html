@@ -8,6 +8,16 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="icon" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
+    <script>
+      try {
+        const storedUi = JSON.parse(localStorage.getItem('technogg-ui') || '{}');
+        const size = storedUi?.state?.textSize || 'm';
+        const scales = { s: 0.9, m: 1, l: 1.12, xl: 1.28 };
+        document.documentElement.style.setProperty('--ui-scale', String(scales[size] || 1));
+      } catch {
+        document.documentElement.style.setProperty('--ui-scale', '1');
+      }
+    </script>
     <title>Techno's Library</title>
   </head>
   <body>

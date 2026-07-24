@@ -15,6 +15,9 @@ const SettingsPage = lazy(() => import('./components/Settings').then((module) =>
 const GameDetailSheet = lazy(() =>
   import('./components/GameDetail').then((module) => ({ default: module.GameDetailSheet })),
 );
+const GameCardSheet = lazy(() =>
+  import('./components/GameCardSheet').then((module) => ({ default: module.GameCardSheet })),
+);
 const AddGameSheet = lazy(() => import('./components/AddGame').then((module) => ({ default: module.AddGameSheet })));
 const EventSheet = lazy(() => import('./components/EventSheet').then((module) => ({ default: module.EventSheet })));
 const ReminderSheet = lazy(() =>
@@ -32,7 +35,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
 
 function SyncDot() {
   const status = useApp((s) => s.syncStatus);
-  const color = { idle: 'bg-slate-600', syncing: 'bg-violet-400', ok: 'bg-emerald-400', error: 'bg-rose-400' }[status];
+  const color = { idle: 'bg-faint', syncing: 'bg-violet-400', ok: 'bg-ok', error: 'bg-rose-400' }[status];
   return (
     <span
       className="relative flex h-2.5 w-2.5"
@@ -42,9 +45,9 @@ function SyncDot() {
       aria-label={`Sync status: ${status}`}
     >
       {status === 'syncing' && (
-        <span className={`absolute inline-flex h-full w-full animate-ping rounded-full ${color} opacity-60`} />
+        <span className={`absolute inline-flex h-full w-full animate-ping rounded-ui-full ${color} opacity-60`} />
       )}
-      <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${color}`} />
+      <span className={`relative inline-flex h-2.5 w-2.5 rounded-ui-full ${color}`} />
     </span>
   );
 }
@@ -81,21 +84,21 @@ export default function App() {
   if (loadError) {
     return (
       <main className="flex min-h-dvh items-center justify-center px-5 py-12">
-        <section className="glass gold-hairline w-full max-w-lg rounded-3xl p-6" role="alert">
+        <section className="glass gold-hairline w-full max-w-lg rounded-ui-card p-6" role="alert">
           <p className="text-xs font-bold uppercase tracking-widest text-rose-300">Local data unavailable</p>
           <h1 className="mt-2 text-xl font-black text-slate-100">
             Techno's Library could not open this device's data.
           </h1>
-          <p className="mt-2 text-sm text-slate-400">
+          <p className="mt-2 text-body text-muted">
             Retry first. Starting fresh permanently clears this browser's local Techno's Library database; synced or
             exported copies are not affected.
           </p>
-          <p className="mt-3 rounded-xl bg-black/30 p-3 text-xs text-slate-500">{loadError}</p>
+          <p className="mt-3 rounded-ui-lg bg-black/30 p-3 text-xs text-dim">{loadError}</p>
           <div className="mt-5 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => void load()}
-              className="min-h-11 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/15"
+              className="min-h-11 rounded-ui-lg bg-gradient-to-br from-accent to-accent-2 px-4 py-2 text-body font-semibold text-white ring-1 ring-white/15"
             >
               Retry
             </button>
@@ -108,7 +111,7 @@ export default function App() {
                   });
                 }
               }}
-              className="min-h-11 rounded-xl bg-rose-500/15 px-4 py-2 text-sm font-semibold text-rose-200 ring-1 ring-rose-400/30"
+              className="min-h-11 rounded-ui-lg bg-danger/15 px-4 py-2 text-body font-semibold text-rose-200 ring-1 ring-rose-400/30"
             >
               Clear local data
             </button>
@@ -122,7 +125,7 @@ export default function App() {
     return (
       <div className="flex min-h-dvh items-center justify-center" role="status" aria-label="Loading Techno's Library">
         <div
-          className="loader-spin h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-amber-300"
+          className="loader-spin h-12 w-12 rounded-ui-xl bg-gradient-to-br from-accent via-accent-2 to-amber-300"
           style={{ boxShadow: '0 0 40px rgba(124,92,255,0.5)' }}
         />
       </div>
@@ -151,14 +154,14 @@ export default function App() {
     <div className="relative min-h-dvh">
       <a
         href="#main-content"
-        className="fixed left-3 top-3 z-[70] -translate-y-20 rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-950 transition focus:translate-y-0"
+        className="fixed left-3 top-3 z-[70] -translate-y-20 rounded-ui-lg bg-slate-100 px-4 py-2 text-body font-bold text-slate-950 transition focus:translate-y-0"
       >
         Skip to content
       </a>
       {/* True-black canvas — no ambient washes; color belongs to the cards (OLED). */}
       <header className="gold-hairline !fixed inset-x-0 top-0 z-30 border-b border-white/5 bg-black/95 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.8)] supports-[backdrop-filter]:bg-black/80 supports-[backdrop-filter]:backdrop-blur-md">
-        <div className="mx-auto flex h-14 w-full max-w-[1800px] items-center gap-2 px-3 sm:gap-4 sm:px-6">
-          <h1 className="flex items-center gap-2 text-lg font-black tracking-tight">
+        <div className="mx-auto flex h-14 w-full max-w-[2160px] items-center gap-2 px-3 sm:gap-4 sm:px-6">
+          <h1 className="flex items-center gap-2 text-title font-black tracking-tight">
             <span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-amber-200 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(168,85,247,0.35)]">
               Techno's Library
             </span>
@@ -171,8 +174,8 @@ export default function App() {
                   type="button"
                   onClick={() => setTab(t.id)}
                   aria-current={tab === t.id ? 'page' : undefined}
-                  className={`relative h-full px-4 text-sm font-semibold transition ${
-                    tab === t.id ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+                  className={`relative h-full px-4 text-body font-semibold transition ${
+                    tab === t.id ? 'text-white' : 'text-muted hover:text-fg-soft'
                   }`}
                 >
                   {t.label}
@@ -206,7 +209,7 @@ export default function App() {
           <button
             type="button"
             onClick={applyPwaUpdate}
-            className="min-h-9 rounded-lg bg-violet-300/15 px-3 py-1 text-violet-50 ring-1 ring-violet-200/25"
+            className="min-h-9 rounded-ui-md bg-violet-300/15 px-3 py-1 text-violet-50 ring-1 ring-violet-200/25"
           >
             Update now
           </button>
@@ -217,7 +220,7 @@ export default function App() {
       )}
 
       <main id="main-content" tabIndex={-1}>
-        <Suspense fallback={<div className="px-5 py-12 text-center text-sm text-slate-500">Loading view…</div>}>
+        <Suspense fallback={<div className="px-5 py-12 text-center text-body text-dim">Loading view…</div>}>
           <div key={tab} className="page-enter">
             {tab === 'home' && <DashboardPage now={now} />}
             {tab === 'timeline' && <TimelinePage now={now} />}
@@ -239,7 +242,7 @@ export default function App() {
               onClick={() => setTab(t.id)}
               aria-current={tab === t.id ? 'page' : undefined}
               className={`flex min-h-11 flex-1 items-center justify-center py-3.5 text-xs font-semibold transition ${
-                tab === t.id ? 'text-fuchsia-300' : 'text-slate-400'
+                tab === t.id ? 'text-fuchsia-300' : 'text-muted'
               }`}
             >
               {t.label}
@@ -250,6 +253,7 @@ export default function App() {
 
       <Suspense fallback={null}>
         {sheet?.kind === 'game' && <GameDetailSheet open gameId={sheet.gameId} />}
+        {sheet?.kind === 'gameCard' && <GameCardSheet open gameId={sheet.gameId} />}
         {sheet?.kind === 'addGame' && <AddGameSheet open />}
         {sheet?.kind === 'event' && <EventSheet open eventId={sheet.eventId} gameId={sheet.gameId} />}
         {sheet?.kind === 'reminder' && <ReminderSheet open />}
