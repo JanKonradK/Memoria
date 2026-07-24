@@ -25,6 +25,8 @@ export function SettingsPage() {
   const openSheet = useUI((state) => state.openSheet);
   const textSize = useUI((state) => state.textSize);
   const setTextSize = useUI((state) => state.setTextSize);
+  const focusColumns = useUI((state) => state.focusColumns);
+  const setFocusColumns = useUI((state) => state.setFocusColumns);
   const session = useSession();
   const settings = app.state.settings;
   const games = app.state.games.filter((game) => !game.deleted).sort((a, b) => a.sort - b.sort);
@@ -159,22 +161,42 @@ export function SettingsPage() {
 
           <section className="glass gold-hairline rounded-ui-card p-5" aria-label="Display and appearance">
             <SectionTitle>Display</SectionTitle>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-body font-semibold text-fg-soft">Text size</p>
-                <p className="mt-0.5 text-label text-dim">Scales labels, values, tasks, and navigation.</p>
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-body font-semibold text-fg-soft">Text size</p>
+                  <p className="mt-0.5 text-label text-dim">Scales labels, values, tasks, and navigation.</p>
+                </div>
+                <Segmented
+                  options={[
+                    { value: 's', label: 'S' },
+                    { value: 'm', label: 'M' },
+                    { value: 'l', label: 'L' },
+                    { value: 'xl', label: 'XL' },
+                  ]}
+                  value={textSize}
+                  onChange={setTextSize}
+                  ariaLabel="Text size"
+                />
               </div>
-              <Segmented
-                options={[
-                  { value: 's', label: 'S' },
-                  { value: 'm', label: 'M' },
-                  { value: 'l', label: 'L' },
-                  { value: 'xl', label: 'XL' },
-                ]}
-                value={textSize}
-                onChange={setTextSize}
-                ariaLabel="Text size"
-              />
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-body font-semibold text-fg-soft">Expanded card layout</p>
+                  <p className="mt-0.5 text-label text-dim">
+                    Auto splits into two columns on screens wider than 1500px.
+                  </p>
+                </div>
+                <Segmented
+                  options={[
+                    { value: 'one', label: 'One' },
+                    { value: 'two', label: 'Two' },
+                    { value: 'auto', label: 'Auto' },
+                  ]}
+                  value={focusColumns}
+                  onChange={setFocusColumns}
+                  ariaLabel="Expanded card layout"
+                />
+              </div>
             </div>
           </section>
 

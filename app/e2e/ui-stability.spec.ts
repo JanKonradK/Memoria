@@ -166,7 +166,7 @@ test('wide dashboard switches between nexus and cards rail while timeline bars s
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: 'Expand Honkai: Star Rail controls' })).toBeVisible();
 
-  await page.getByRole('radio', { name: 'Cards + rail' }).click();
+  await page.getByRole('radio', { name: 'Cards', exact: true }).click();
   await expect(page.getByRole('complementary', { name: 'Event horizon' })).toBeVisible();
   for (const name of [
     'Genshin Impact',

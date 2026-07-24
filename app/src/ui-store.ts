@@ -5,6 +5,7 @@ export type Tab = 'home' | 'timeline' | 'settings';
 export type TimelineView = 'lanes' | 'agenda';
 export type DashboardLayout = 'nexus' | 'cards';
 export type TextSize = 's' | 'm' | 'l' | 'xl';
+export type FocusColumns = 'one' | 'two' | 'auto';
 
 export const TEXT_SIZE_SCALE: Record<TextSize, number> = {
   s: 0.9,
@@ -36,6 +37,7 @@ interface UIStore {
   timelineView: TimelineView;
   dashboardLayout: DashboardLayout;
   textSize: TextSize;
+  focusColumns: FocusColumns;
   setTab(tab: Tab): void;
   openSheet(sheet: NonNullable<SheetRoute>): void;
   closeSheet(): void;
@@ -43,6 +45,7 @@ interface UIStore {
   setTimelineView(view: TimelineView): void;
   setDashboardLayout(layout: DashboardLayout): void;
   setTextSize(size: TextSize): void;
+  setFocusColumns(value: FocusColumns): void;
 }
 
 export const useUI = create<UIStore>()(
@@ -54,6 +57,7 @@ export const useUI = create<UIStore>()(
       timelineView: 'lanes',
       dashboardLayout: 'nexus',
       textSize: 'm',
+      focusColumns: 'auto',
       setTab: (tab) => set({ tab }),
       openSheet: (sheet) => set({ sheet }),
       closeSheet: () => set({ sheet: null }),
@@ -70,6 +74,7 @@ export const useUI = create<UIStore>()(
         applyTextSize(textSize);
         set({ textSize });
       },
+      setFocusColumns: (focusColumns) => set({ focusColumns }),
     }),
     {
       name: 'technogg-ui',
@@ -77,6 +82,7 @@ export const useUI = create<UIStore>()(
         timelineView: state.timelineView,
         dashboardLayout: state.dashboardLayout,
         textSize: state.textSize,
+        focusColumns: state.focusColumns,
       }),
       merge: (persisted, current) => {
         const merged = { ...current, ...(persisted as Partial<UIStore>) };

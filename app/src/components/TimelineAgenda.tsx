@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { DateTime } from 'luxon';
 import type { AppState, Game, GameEvent } from '@technogg/shared';
 import { useApp } from '../store';
-import { agendaCompare, agendaRank } from '../timeline-sort';
+import { agendaCompare, agendaRank, budgetAgenda, groupVersionUpdates, type AgendaRow } from '../timeline-sort';
 import { useUI } from '../ui-store';
 import { endTone, fmtDur } from '../util';
 import { Pill } from './primitives';
@@ -14,15 +14,15 @@ export type AgendaMode = 'full' | 'dashboard';
 
 export interface AgendaData {
   games: Map<string, Game>;
-  live: GameEvent[];
-  upcoming: GameEvent[];
+  live: AgendaRow[];
+  upcoming: AgendaRow[];
   past: GameEvent[];
 }
 
 /** Shared timeline window/ranking. Dashboard mode deliberately drops history and caps its rails. */
 export function selectAgendaData(state: AppState, now: number, mode: AgendaMode = 'full'): AgendaData {
   const windowStart = mode === 'dashboard' ? now : now - 2 * DAY;
-  const windowEnd = now + 28 * DAY;
+  const windowEnd = now + (mode === 'dashboard' ? 7 : 28) * DAY;
   const games = new Map(state.games.filter((game) => !game.deleted).map((game) => [game.id, game]));
   const events = state.events
     .filter((event) => !event.deleted && games.has(event.gameId) && event.end > windowStart && event.start < windowEnd)
@@ -30,11 +30,20 @@ export function selectAgendaData(state: AppState, now: number, mode: AgendaMode 
   const live = events.filter((event) => agendaRank(event, now) === 0);
   const upcoming = events.filter((event) => agendaRank(event, now) === 1);
 
+  if (mode === 'dashboard') {
+    const budgeted = budgetAgenda(
+      live.map((event) => ({ kind: 'event', event })),
+      groupVersionUpdates(upcoming, games, now),
+      9,
+    );
+    return { games, ...budgeted, past: [] };
+  }
+
   return {
     games,
-    live: mode === 'dashboard' ? live.slice(0, 4) : live,
-    upcoming: mode === 'dashboard' ? upcoming.slice(0, 6) : upcoming,
-    past: mode === 'dashboard' ? [] : events.filter((event) => agendaRank(event, now) >= 2),
+    live: live.map((event) => ({ kind: 'event', event })),
+    upcoming: upcoming.map((event) => ({ kind: 'event', event })),
+    past: events.filter((event) => agendaRank(event, now) >= 2),
   };
 }
 
@@ -43,16 +52,12 @@ function TypeTags({ event }: { event: GameEvent }) {
   return (
     <>
       <Pill variant={event.type === 'maintenance' ? 'muted' : 'neutral'}>{label}</Pill>
-      {event.dailyTouch && (
-        <Pill variant="warn" title="Needs a daily login/claim">
-          daily
-        </Pill>
-      )}
+      {event.dailyTouch && <Pill variant="warn">daily</Pill>}
     </>
   );
 }
 
-export function AgendaRow({
+function AgendaEventRow({
   event,
   game,
   now,
@@ -89,7 +94,6 @@ export function AgendaRow({
         onClick={() => onOpenEvent(event)}
         className="absolute inset-0 z-10 rounded-ui-lg"
         aria-label={`Open ${game.name} event: ${event.name}, ${status}`}
-        title={`${game.name}: ${event.name}`}
       />
       <span className="absolute inset-y-2 left-0 w-[3px] rounded-ui-full" style={{ backgroundColor: game.color }} />
       <div
@@ -138,7 +142,6 @@ export function AgendaRow({
       </div>
       <button
         type="button"
-        title={event.done ? 'Marked done — click to bring it back' : 'Done with this — hide it'}
         onClick={(clickEvent) => {
           clickEvent.stopPropagation();
           onToggleEvent(event);
@@ -158,41 +161,80 @@ export function AgendaRow({
   );
 }
 
+function AgendaGroupRow({
+  row,
+  game,
+  now,
+  onOpenTimeline,
+}: {
+  row: Extract<AgendaRow, { kind: 'group' }>;
+  game: Game;
+  now: number;
+  onOpenTimeline?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onOpenTimeline}
+      aria-label={`Open the timeline: ${row.label}, ${row.count} items`}
+      className="relative flex min-h-11 w-full items-center gap-2 overflow-hidden rounded-ui-lg bg-gold/10 px-2.5 py-2 text-left text-gold ring-1 ring-inset ring-gold/30 transition hover:bg-gold/15"
+    >
+      <span className="absolute inset-y-2 left-0 w-[3px] rounded-ui-full" style={{ backgroundColor: game.color }} />
+      <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" />
+      <span className="min-w-0 flex-1 truncate text-xs font-medium text-amber-100">{row.label}</span>
+      <span className="shrink-0 text-caption text-muted">{row.count} items</span>
+      <span className="shrink-0 text-caption font-bold tabular-nums text-gold">in {fmtDur(row.at - now)}</span>
+    </button>
+  );
+}
+
 function AgendaSection({
   title,
-  events,
+  rows,
   games,
   now,
   mode,
   emptyLabel,
   onOpenEvent,
   onToggleEvent,
+  onOpenTimeline,
 }: {
   title: string;
-  events: GameEvent[];
+  rows: AgendaRow[];
   games: Map<string, Game>;
   now: number;
   mode: AgendaMode;
   emptyLabel: string;
   onOpenEvent: (event: GameEvent) => void;
   onToggleEvent: (event: GameEvent) => void;
+  onOpenTimeline?: () => void;
 }) {
   return (
     <section>
       <h3 className="mb-1.5 text-caption font-bold uppercase tracking-widest text-dim">{title}</h3>
-      {events.length > 0 ? (
+      {rows.length > 0 ? (
         <div className="space-y-1">
-          {events.map((event) => (
-            <AgendaRow
-              key={event.id}
-              event={event}
-              game={games.get(event.gameId)!}
-              now={now}
-              mode={mode}
-              onOpenEvent={onOpenEvent}
-              onToggleEvent={onToggleEvent}
-            />
-          ))}
+          {rows.map((row) =>
+            row.kind === 'group' ? (
+              <AgendaGroupRow
+                key={`group-${row.gameId}-${row.at}`}
+                row={row}
+                game={games.get(row.gameId)!}
+                now={now}
+                onOpenTimeline={onOpenTimeline}
+              />
+            ) : (
+              <AgendaEventRow
+                key={row.event.id}
+                event={row.event}
+                game={games.get(row.event.gameId)!}
+                now={now}
+                mode={mode}
+                onOpenEvent={onOpenEvent}
+                onToggleEvent={onToggleEvent}
+              />
+            ),
+          )}
         </div>
       ) : (
         <p className="px-3 py-1 text-label text-faint">{emptyLabel}</p>
@@ -208,35 +250,39 @@ export function AgendaList({
   mode = 'full',
   onOpenEvent,
   onToggleEvent,
+  onOpenTimeline,
 }: {
   data: AgendaData;
   now: number;
   mode?: AgendaMode;
   onOpenEvent: (event: GameEvent) => void;
   onToggleEvent: (event: GameEvent) => void;
+  onOpenTimeline?: () => void;
 }) {
   const [pastOpen, setPastOpen] = useState(false);
   return (
     <div className={mode === 'dashboard' ? 'space-y-3.5' : 'space-y-4'}>
       <AgendaSection
         title="Live now"
-        events={data.live}
+        rows={data.live}
         games={data.games}
         now={now}
         mode={mode}
         emptyLabel="Nothing live right now."
         onOpenEvent={onOpenEvent}
         onToggleEvent={onToggleEvent}
+        onOpenTimeline={onOpenTimeline}
       />
       <AgendaSection
         title="Upcoming"
-        events={data.upcoming}
+        rows={data.upcoming}
         games={data.games}
         now={now}
         mode={mode}
         emptyLabel="Nothing upcoming in this window."
         onOpenEvent={onOpenEvent}
         onToggleEvent={onToggleEvent}
+        onOpenTimeline={onOpenTimeline}
       />
       {mode === 'full' && (
         <section>
@@ -258,7 +304,7 @@ export function AgendaList({
           {pastOpen && (
             <div className="mt-1 space-y-1">
               {data.past.map((event) => (
-                <AgendaRow
+                <AgendaEventRow
                   key={event.id}
                   event={event}
                   game={data.games.get(event.gameId)!}

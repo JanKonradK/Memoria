@@ -66,7 +66,6 @@ function EventRow({
         onClick={onOpen}
         className="absolute inset-0 z-10 rounded-ui-lg"
         aria-label={`Open ${game.name} event: ${ev.name}`}
-        title={`${game.name}: ${ev.name}`}
       />
       <div className="absolute inset-0 rounded-ui-lg bg-white/[0.03]" />
       <ProgressBar
@@ -114,7 +113,6 @@ function EventRow({
       <span className="pointer-events-none absolute inset-y-0 right-1 z-20 my-auto flex h-fit items-center gap-1">
         <button
           type="button"
-          title={ev.done ? 'Marked done — click to bring it back' : 'Done with this — hide it'}
           onClick={(e) => {
             e.stopPropagation();
             onToggleDone();
@@ -242,12 +240,12 @@ export function TimelinePage({ now }: { now: number }) {
         />
         <div className="ml-auto grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
           {seedPlan.length > 0 && (
-            <Btn
-              onClick={importSeed}
-              title={`Bundled with the app (updated ${SEED_UPDATED}) — adds new events, fixes changed dates`}
-            >
-              Import {seedPlan.length}
-            </Btn>
+            <Tooltip content={`Bundled with the app (updated ${SEED_UPDATED}) — adds new events, fixes changed dates`}>
+              {/* Btn takes a fixed prop set, so the trigger props land on a box-less wrapper. */}
+              <span className="contents">
+                <Btn onClick={importSeed}>Import {seedPlan.length}</Btn>
+              </span>
+            </Tooltip>
           )}
           <Btn onClick={() => openSheet({ kind: 'pasteEvents' })}>Paste (AI)</Btn>
           <Btn kind="primary" onClick={() => openSheet({ kind: 'event' })}>

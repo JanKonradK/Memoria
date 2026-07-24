@@ -31,7 +31,7 @@ function EventHorizonCard({
     .sort((a, b) => a.at - b.at)
     .slice(0, 3);
   const gameById = agenda.games;
-  const actionLimit = Math.max(0, 5 - Math.min(5, eventRows + reminders.length));
+  const actionLimit = Math.max(0, 4 - Math.min(4, eventRows + reminders.length));
   const nextActions = entries
     .flatMap((entry) => entry.actions.map((action) => ({ action, game: entry.game })))
     .filter(({ action }) => action.kind !== 'event' && action.at >= now)
@@ -40,45 +40,55 @@ function EventHorizonCard({
 
   return (
     <aside
-      className="cards-horizon card-enter scrollbar-thin relative flex flex-col overflow-y-auto rounded-ui-card p-4 xl:max-h-[calc(100dvh-11rem)]"
+      className="cards-horizon card-enter scrollbar-thin relative flex flex-col overflow-y-auto rounded-ui-card p-4"
       aria-label="Event horizon"
       style={{
         background:
           'linear-gradient(155deg, rgba(232,180,90,0.2), transparent 46%), linear-gradient(335deg, rgba(255,111,165,0.09), transparent 42%), #0a0805',
         boxShadow:
-          'inset 0 0 0 1px rgba(232,180,90,0.4), inset 0 1px 0 rgba(255,255,255,0.07), 0 0 70px -18px rgba(232,180,90,0.6)',
+          'inset 0 0 0 1.5px rgba(232,180,90,0.7), inset 0 1px 0 rgba(255,255,255,0.07), 0 0 90px -12px rgba(232,180,90,0.8)',
       }}
     >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-4 top-0 h-[3px] rounded-ui-full"
-        style={{ background: 'linear-gradient(90deg, transparent, var(--color-gold), #ffe9bb, transparent)' }}
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(232,180,90,0.9), #fff3d6, transparent)',
+          boxShadow: '0 0 18px rgba(232,180,90,0.75)',
+        }}
       />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{
-          background: 'radial-gradient(460px 150px at 50% 0%, rgba(232,180,90,0.22), transparent 70%)',
+          background: 'radial-gradient(460px 150px at 50% 0%, rgba(232,180,90,0.34), transparent 70%)',
           animation: 'pulseFade 4.2s ease-in-out infinite',
         }}
       />
       <div className="relative mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="text-caption font-bold uppercase tracking-[0.2em] text-gold/70">Event horizon</p>
+          <p className="text-caption font-bold uppercase tracking-[0.2em] text-gold">Event horizon</p>
           <h2
             className="text-title font-black text-fg"
-            style={{ textShadow: '0 0 24px rgba(232,180,90,0.45), 0 1px 0 rgba(0,0,0,0.4)' }}
+            style={{ textShadow: '0 0 34px rgba(232,180,90,0.7), 0 0 12px rgba(255,233,187,0.35), 0 1px 0 #000' }}
           >
             Across every game
           </h2>
         </div>
-        <span className="rounded-ui-full bg-gold/10 px-2 py-1 text-caption font-black tabular-nums text-amber-100 ring-1 ring-gold/30">
+        <span className="rounded-ui-full bg-gold/20 px-2 py-1 text-caption font-black tabular-nums text-amber-50 ring-1 ring-gold/50">
           {eventRows}
         </span>
       </div>
 
       <div className="relative">
-        <AgendaList data={agenda} now={now} mode="dashboard" onOpenEvent={onOpenEvent} onToggleEvent={onToggleEvent} />
+        <AgendaList
+          data={agenda}
+          now={now}
+          mode="dashboard"
+          onOpenEvent={onOpenEvent}
+          onToggleEvent={onToggleEvent}
+          onOpenTimeline={onOpenTimeline}
+        />
       </div>
 
       <section className="relative mt-4">
