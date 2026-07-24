@@ -38,7 +38,7 @@ function event(id: string, start: number, end: number): GameEvent {
 }
 
 describe('dashboard agenda selection', () => {
-  it('drops past events and caps the live and upcoming rails', () => {
+  it('drops past events and applies the shared nine-row budget', () => {
     const state = emptyState();
     state.games = [game];
     state.events = [
@@ -51,8 +51,10 @@ describe('dashboard agenda selection', () => {
 
     const agenda = selectAgendaData(state, NOW, 'dashboard');
 
-    expect(agenda.live).toHaveLength(4);
-    expect(agenda.upcoming).toHaveLength(6);
+    expect(agenda.live).toHaveLength(5);
+    expect(agenda.upcoming).toHaveLength(4);
+    expect(agenda.live.map((row) => row.kind)).toEqual(Array(5).fill('event'));
+    expect(agenda.upcoming.map((row) => row.kind)).toEqual(Array(4).fill('event'));
     expect(agenda.past).toEqual([]);
   });
 
@@ -71,6 +73,8 @@ describe('dashboard agenda selection', () => {
 
     expect(agenda.live).toHaveLength(5);
     expect(agenda.upcoming).toHaveLength(8);
+    expect(agenda.live.map((row) => row.kind)).toEqual(Array(5).fill('event'));
+    expect(agenda.upcoming.map((row) => row.kind)).toEqual(Array(8).fill('event'));
     expect(agenda.past.map((item) => item.id)).toEqual(['past']);
   });
 });

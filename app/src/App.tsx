@@ -37,13 +37,7 @@ function SyncDot() {
   const status = useApp((s) => s.syncStatus);
   const color = { idle: 'bg-faint', syncing: 'bg-violet-400', ok: 'bg-ok', error: 'bg-rose-400' }[status];
   return (
-    <span
-      className="relative flex h-2.5 w-2.5"
-      title={`Sync: ${status}`}
-      role="status"
-      aria-live="polite"
-      aria-label={`Sync status: ${status}`}
-    >
+    <span className="relative flex h-2.5 w-2.5" role="status" aria-live="polite" aria-label={`Sync status: ${status}`}>
       {status === 'syncing' && (
         <span className={`absolute inline-flex h-full w-full animate-ping rounded-ui-full ${color} opacity-60`} />
       )}

@@ -130,7 +130,6 @@ export function DashboardPage({ now }: { now: number }) {
             onClick={() => openSheet({ kind: 'addGame' })}
             className="flex w-14 shrink-0 items-center justify-center rounded-ui-card bg-white/[0.06] text-3xl font-light leading-none text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white active:scale-95 sm:w-16"
             aria-label="Add game"
-            title="Add game"
           >
             +
           </button>
@@ -171,7 +170,7 @@ export function DashboardPage({ now }: { now: number }) {
                 <Segmented
                   options={[
                     { value: 'nexus', label: 'Nexus' },
-                    { value: 'cards', label: 'Cards + rail' },
+                    { value: 'cards', label: 'Cards' },
                   ]}
                   value={dashboardLayout}
                   onChange={setDashboardLayout}
@@ -184,7 +183,6 @@ export function DashboardPage({ now }: { now: number }) {
                 type="button"
                 onClick={() => setSortedIds(liveIds)}
                 className="fade-in flex min-h-11 items-center gap-1.5 rounded-ui-lg bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white sm:min-h-9"
-                title="Urgency changed — click to re-order the cards"
               >
                 <span aria-hidden>↻</span> Sort by urgency
               </button>
@@ -196,7 +194,6 @@ export function DashboardPage({ now }: { now: number }) {
                 onClick={() => openSheet({ kind: 'addGame' })}
                 className="flex h-11 w-11 items-center justify-center rounded-ui-xl bg-white/[0.06] text-2xl font-light leading-none text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white active:scale-90 sm:h-9 sm:w-9 sm:rounded-ui-lg"
                 aria-label="Add game"
-                title="Add game"
               >
                 +
               </button>

@@ -3,7 +3,7 @@ import type { AppState, ChecklistItem, Game, GameUrgency } from '@technogg/share
 import { checklistFor, effectiveResourceKind, latestSnapshots, projectEnergy, sleepCheck } from '@technogg/shared';
 import { useApp, type AppStore } from '../store';
 import { useUI } from '../ui-store';
-import { useReducedMotion } from '../hooks';
+import { useMediaQuery, useReducedMotion } from '../hooks';
 
 import { endTone, fmtClock, fmtDur, tint } from '../util';
 import { EnergyRow } from './EnergyRow';
@@ -66,7 +66,6 @@ function TimerTaskRow({
       onClick={running || ready ? onRestart : onStart}
       className="group flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-1 text-left transition hover:bg-white/5 sm:min-h-8"
       aria-label={`${item.name}: ${running ? 'restart timer' : ready ? 'timer ready — restart' : 'start timer'}`}
-      title={running || ready ? 'Click to restart the timer' : 'Click to start the timer'}
     >
       <CadenceTag cadence={item.cadence} />
       <span className={`min-w-0 flex-1 truncate text-body ${ready ? 'text-dim line-through' : 'text-fg-soft'}`}>
@@ -155,10 +154,7 @@ function TaskRow({
         {item.name}
       </span>
       {(danger || warn) && (
-        <span
-          className={`shrink-0 text-caption font-bold tabular-nums ${danger ? 'text-rose-300' : 'text-amber-300'}`}
-          title={`Resets in ${fmtDur(left)}`}
-        >
+        <span className={`shrink-0 text-caption font-bold tabular-nums ${danger ? 'text-rose-300' : 'text-amber-300'}`}>
           {fmtDur(left)}
         </span>
       )}
@@ -202,14 +198,9 @@ export function EventStrip({
           type="button"
           onClick={() => onOpenEvent(ev.id, game.id)}
           className="flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-0.5 text-left text-label transition hover:bg-white/5 sm:min-h-8"
-          title={ev.notes || ev.name}
         >
           <Pill>{ev.type === 'cycle' ? 'cycle' : ev.type === 'banner' ? 'banner' : 'event'}</Pill>
-          {ev.dailyTouch && (
-            <Pill variant="warn" title="Needs a daily login/claim">
-              daily
-            </Pill>
-          )}
+          {ev.dailyTouch && <Pill variant="warn">daily</Pill>}
           <span className="truncate text-slate-300">{ev.name}</span>
           <Tooltip content="d = days · h = hours · m = minutes">
             <span className="ml-auto shrink-0 font-bold tabular-nums" style={{ color: endTone(ev.end - now) }}>
@@ -234,20 +225,14 @@ export function StatusStrip({ game, state, now }: { game: Game; state: AppState;
   return (
     <div className="mt-auto pt-3">
       {sleep.caps ? (
-        <div
-          className="flex min-h-12 flex-wrap items-baseline justify-center gap-x-2 gap-y-0 rounded-ui-xl bg-warn/10 px-3 py-2.5 ring-1 ring-amber-300/25"
-          title="Energy will cap while you sleep — spend before bed"
-        >
+        <div className="flex min-h-12 flex-wrap items-baseline justify-center gap-x-2 gap-y-0 rounded-ui-xl bg-warn/10 px-3 py-2.5 ring-1 ring-amber-300/25">
           <span className="text-title font-black uppercase tracking-wider text-amber-200 tabular-nums">
             caps {fmtClock(sleep.fullAt!)}
           </span>
           <span className="text-xs font-semibold text-amber-200/70">spend before bed</span>
         </div>
       ) : (
-        <div
-          className="flex min-h-12 flex-wrap items-baseline justify-center gap-x-2 gap-y-0 rounded-ui-xl bg-ok/10 px-3 py-2.5 ring-1 ring-emerald-300/25"
-          title={`Nothing caps in the next ${state.settings.sleepHours}h`}
-        >
+        <div className="flex min-h-12 flex-wrap items-baseline justify-center gap-x-2 gap-y-0 rounded-ui-xl bg-ok/10 px-3 py-2.5 ring-1 ring-emerald-300/25">
           <span className="text-title font-black uppercase tracking-wider text-emerald-200">sleep safe</span>
           <span className="text-xs font-semibold text-emerald-200/70">
             nothing caps in {state.settings.sleepHours}h
@@ -306,16 +291,16 @@ function ResourceControls({
       {!game.paused && primaryEnergy && quickChips.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5" aria-label={`${game.name} quick energy adjustments`}>
           {quickChips.map((chip) => (
-            <button
-              key={chip.id}
-              type="button"
-              onClick={() => actions.adjustEnergy(primaryEnergy.id, chip.delta)}
-              className="min-h-11 rounded-ui-lg bg-white/[0.055] px-3 py-2 text-xs font-semibold text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white sm:min-h-8 sm:py-1"
-              title={`${chip.delta > 0 ? '+' : ''}${chip.delta} ${primaryEnergy.name}`}
-            >
-              {chip.label}{' '}
-              <span className="tabular-nums text-dim">{chip.delta > 0 ? `+${chip.delta}` : chip.delta}</span>
-            </button>
+            <Tooltip key={chip.id} content={`${chip.delta > 0 ? '+' : ''}${chip.delta} ${primaryEnergy.name}`}>
+              <button
+                type="button"
+                onClick={() => actions.adjustEnergy(primaryEnergy.id, chip.delta)}
+                className="min-h-11 rounded-ui-lg bg-white/[0.055] px-3 py-2 text-xs font-semibold text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white sm:min-h-8 sm:py-1"
+              >
+                {chip.label}{' '}
+                <span className="tabular-nums text-dim">{chip.delta > 0 ? `+${chip.delta}` : chip.delta}</span>
+              </button>
+            </Tooltip>
           ))}
         </div>
       )}
@@ -393,7 +378,6 @@ function GameControlsHeader({
         onClick={onEdit}
         className="group/title -ml-1 min-w-0 flex-1 cursor-pointer rounded-ui-md px-1 py-0.5 text-left transition hover:bg-white/[0.045]"
         aria-label={`Edit ${game.name}`}
-        title={`Edit ${game.name}`}
       >
         <div className="flex items-center gap-2.5">
           <h2
@@ -432,6 +416,7 @@ export function GameControlsView({
   actions,
   now,
   layout = 'card',
+  columns = 1,
   onEditGame,
   onOpenEvent,
 }: {
@@ -440,6 +425,7 @@ export function GameControlsView({
   actions: GameControlActions;
   now: number;
   layout?: 'card' | 'focus';
+  columns?: 1 | 2;
   onEditGame: (gameId: string) => void;
   onOpenEvent: (eventId: string, gameId: string) => void;
 }) {
@@ -459,7 +445,7 @@ export function GameControlsView({
       <GameControlsHeader game={game} dailies={dailies} onEdit={() => onEditGame(game.id)} layout={layout} />
       <div className={`relative z-10 flex flex-1 flex-col ${game.paused ? 'opacity-50' : ''}`}>
         {layout === 'focus' ? (
-          <div className="focus-bay-grid grid gap-x-6 gap-y-1">
+          <div className="focus-bay-grid grid gap-x-6 gap-y-1" data-cols={columns}>
             <div className="min-w-0">{resources}</div>
             <div className="min-w-0">
               {tasks}
@@ -499,6 +485,9 @@ export function GameControls({
     adjustEnergy: useApp((s) => s.adjustEnergy),
   };
   const openSheet = useUI((store) => store.openSheet);
+  const focusColumns = useUI((store) => store.focusColumns);
+  const wideEnough = useMediaQuery('(min-width: 1500px)');
+  const columns = focusColumns === 'auto' ? (wideEnough ? 2 : 1) : focusColumns === 'two' ? 2 : 1;
   return (
     <GameControlsView
       entry={entry}
@@ -506,6 +495,7 @@ export function GameControls({
       actions={actions}
       now={now}
       layout={layout}
+      columns={columns}
       onEditGame={(gameId) => openSheet({ kind: 'game', gameId })}
       onOpenEvent={(eventId, gameId) => openSheet({ kind: 'event', eventId, gameId })}
     />

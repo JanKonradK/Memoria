@@ -2,7 +2,8 @@ import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import { DateTime } from 'luxon';
 import type { AppState, GameEvent, GameUrgency } from '@technogg/shared';
 import { checklistFor, effectiveResourceKind, latestSnapshots, projectEnergy, sleepCheck } from '@technogg/shared';
-import { useReducedMotion } from '../hooks';
+import { useMediaQuery, useReducedMotion } from '../hooks';
+import { useUI } from '../ui-store';
 import { endTone, fmtDur, tint } from '../util';
 import { GameControlsView, type GameControlActions } from './GameCard';
 import { ProgressRing } from './ProgressRing';
@@ -12,6 +13,7 @@ import { GameBadge } from './ui';
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
+const WEEK = 7 * DAY;
 
 type UrgencyTier = 'low' | 'med' | 'high';
 
@@ -49,6 +51,15 @@ const CONDUIT_JACKET_PAD = 6;
 /** Anything a click could plausibly be aimed at — everything else is "the background". */
 const INTERACTIVE_SELECTOR = 'button, a, input, textarea, select, label, [role="button"], [contenteditable]';
 
+/**
+ * Sheets, selects and tooltips portal to <body>, so they sit outside the stage
+ * in the DOM while being layered *over* it on screen. Clicks in there belong to
+ * the layer, not to "the background" — collapsing the card behind them would
+ * pull the rug out from under whatever the user just opened.
+ */
+const LAYER_SELECTOR =
+  '[role="dialog"], [role="listbox"], [role="tooltip"], [role="menu"], [data-radix-popper-content-wrapper]';
+
 type SharedNexusProps = {
   state: AppState;
   entries: GameUrgency[];
@@ -69,6 +80,7 @@ function NexusNode({
   now,
   expanded,
   collapsed,
+  columns,
   actions,
   setElement,
   onToggle,
@@ -80,6 +92,7 @@ function NexusNode({
   now: number;
   expanded: boolean;
   collapsed: boolean;
+  columns: 1 | 2;
   actions: GameControlActions;
   setElement: (element: HTMLElement | null) => void;
   onToggle: () => void;
@@ -111,7 +124,7 @@ function NexusNode({
         nodeRef.current = element;
         setElement(element);
       }}
-      className="nexus-node relative overflow-hidden rounded-ui-card bg-surface-1 outline-none transition-[box-shadow,transform,opacity] duration-300"
+      className="nexus-node relative overflow-hidden rounded-ui-card bg-surface-1 outline-none transition-[box-shadow,opacity] duration-300"
       data-expanded={expanded || undefined}
       data-collapsed={collapsed || undefined}
       // Expanded, the card has no collapse control: any click that lands on the
@@ -142,7 +155,6 @@ function NexusNode({
           boxShadow: expanded
             ? `inset 0 0 0 1.5px ${game.color}, 0 0 60px -18px ${tint(game.color, 0.7)}, 0 26px 50px -26px #000`
             : `inset 0 0 0 1px ${tint(game.color, 0.28)}, inset 0 1px 0 rgba(255,255,255,0.05), 0 20px 40px -28px #000`,
-          transform: expanded ? 'scale(1.005)' : undefined,
         } as CSSProperties
       }
     >
@@ -163,7 +175,6 @@ function NexusNode({
             aria-expanded
             aria-controls={controlsId}
             aria-label={`Collapse ${game.name} controls`}
-            title="Click any empty area to collapse"
             className="absolute inset-0 z-0 cursor-zoom-out rounded-ui-card"
           />
           <span
@@ -254,6 +265,7 @@ function NexusNode({
             actions={actions}
             now={now}
             layout="focus"
+            columns={columns}
             onEditGame={onEditGame}
             onOpenEvent={onOpenGameEvent}
           />
@@ -282,13 +294,10 @@ function NexusHub({
   onOpenReminder: () => void;
   onOpenTimeline: () => void;
 }) {
-  const horizon = now + DAY;
-  const selectedAgenda = selectAgendaData(state, now, 'dashboard');
-  const agenda = {
-    ...selectedAgenda,
-    live: selectedAgenda.live,
-    upcoming: selectedAgenda.upcoming.filter((event) => event.start <= horizon),
-  };
+  // A week, not a day: events run for days, so a 24h cut left "Upcoming" empty.
+  // The selector already windows and budgets the rails — the hub just consumes it.
+  const horizon = now + WEEK;
+  const agenda = selectAgendaData(state, now, 'dashboard');
   const reminders = state.reminders
     .filter((reminder) => !reminder.deleted && reminder.at > now - DAY && reminder.at <= horizon)
     .sort((a, b) => a.at - b.at)
@@ -296,6 +305,21 @@ function NexusHub({
   const dailyItems = entries.flatMap((entry) =>
     checklistFor(state, entry.game, now).filter((item) => item.cadence === 'daily'),
   );
+  const resetGames = entries.flatMap((entry) => {
+    if (entry.game.paused) return [];
+    const items = checklistFor(state, entry.game, now).filter(
+      (item) => (item.cadence === 'weekly' || item.cadence === 'monthly') && item.resetAt <= horizon,
+    );
+    if (items.length === 0) return [];
+    return [
+      {
+        game: entry.game,
+        done: items.filter((item) => item.done).length,
+        total: items.length,
+        resetAt: Math.min(...items.map((item) => item.resetAt)),
+      },
+    ];
+  });
   const dailiesDone = dailyItems.filter((item) => item.done).length;
   const capsDuringSleep = entries.filter(
     (entry) => !entry.game.paused && sleepCheck(state, entry.game, state.settings.sleepHours, now).caps,
@@ -305,7 +329,7 @@ function NexusHub({
   return (
     <section
       ref={hubRef}
-      className="scrollbar-thin gold-hairline relative z-10 flex max-h-[calc(100dvh-13rem)] min-w-0 flex-col gap-3 overflow-y-auto rounded-ui-card p-4"
+      className="gold-hairline relative z-10 grid h-[calc(100dvh-13rem)] min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-3 overflow-hidden rounded-ui-card p-4"
       aria-label="Across every game"
       style={{
         background:
@@ -324,116 +348,149 @@ function NexusHub({
           maskImage: 'radial-gradient(120% 90% at 50% 0%, #000 30%, transparent 75%)',
         }}
       />
-      <header className="relative">
-        <p className="text-caption font-bold uppercase tracking-[0.22em] text-dim">Across every game</p>
-        <h2 className="mt-0.5 text-title font-black text-fg">Tonight at a glance</h2>
-      </header>
+      <div className="grid gap-3">
+        <header className="relative">
+          <p className="text-caption font-bold uppercase tracking-[0.22em] text-dim">Across every game</p>
+          <h2 className="mt-0.5 text-title font-black text-fg">Tonight at a glance</h2>
+        </header>
 
-      <div className="relative grid gap-2 min-[1500px]:grid-cols-[auto_minmax(0,1fr)]">
-        <div className="flex items-center gap-3 rounded-ui-lg bg-surface-2/90 px-3 py-2.5 ring-1 ring-line">
-          <ProgressRing
-            fraction={dailyItems.length > 0 ? dailiesDone / dailyItems.length : 0}
-            color="var(--color-accent)"
-            size={54}
-            stroke={4}
+        <div className="relative grid gap-2 min-[1500px]:grid-cols-[auto_minmax(0,1fr)]">
+          <div className="flex items-center gap-3 rounded-ui-lg bg-surface-2/90 px-3 py-2.5 ring-1 ring-line">
+            <ProgressRing
+              fraction={dailyItems.length > 0 ? dailiesDone / dailyItems.length : 0}
+              color="var(--color-accent)"
+              size={54}
+              stroke={4}
+            >
+              {dailiesDone}/{dailyItems.length}
+            </ProgressRing>
+            <div>
+              <p className="text-title font-black tabular-nums text-fg">
+                {dailiesDone}
+                <span className="text-body text-dim">/{dailyItems.length}</span>
+              </p>
+              <p className="text-label text-muted">global dailies done</p>
+            </div>
+          </div>
+          <div
+            className={`flex items-center gap-2 rounded-ui-lg px-3 py-2.5 ring-1 ${
+              capsDuringSleep.length > 0
+                ? 'bg-danger/10 text-rose-100 ring-rose-300/30'
+                : 'bg-ok/10 text-emerald-100 ring-emerald-300/25'
+            }`}
           >
-            {dailiesDone}/{dailyItems.length}
-          </ProgressRing>
-          <div>
-            <p className="text-title font-black tabular-nums text-fg">
-              {dailiesDone}
-              <span className="text-body text-dim">/{dailyItems.length}</span>
-            </p>
-            <p className="text-label text-muted">global dailies done</p>
+            <span
+              aria-hidden
+              className={`h-2 w-2 shrink-0 rounded-ui-full ${capsDuringSleep.length > 0 ? 'warn-pulse bg-danger' : 'bg-ok'}`}
+            />
+            <div className="min-w-0">
+              <p className="text-body font-bold">
+                {capsDuringSleep.length} {capsDuringSleep.length === 1 ? 'game caps' : 'games cap'} during your{' '}
+                {state.settings.sleepHours}h sleep
+              </p>
+              <p className="truncate text-caption opacity-70">
+                {capsDuringSleep.length > 0
+                  ? capsDuringSleep.map((entry) => entry.game.short).join(' · ')
+                  : 'Every tracked regen resource is sleep safe.'}
+              </p>
+            </div>
           </div>
         </div>
-        <div
-          className={`flex items-center gap-2 rounded-ui-lg px-3 py-2.5 ring-1 ${
-            capsDuringSleep.length > 0
-              ? 'bg-danger/10 text-rose-100 ring-rose-300/30'
-              : 'bg-ok/10 text-emerald-100 ring-emerald-300/25'
-          }`}
-        >
-          <span
-            aria-hidden
-            className={`h-2 w-2 shrink-0 rounded-ui-full ${capsDuringSleep.length > 0 ? 'warn-pulse bg-danger' : 'bg-ok'}`}
+      </div>
+
+      <div className="scrollbar-thin relative grid min-h-0 gap-3 overflow-y-auto">
+        <div className="relative flex items-baseline justify-between gap-2 border-b border-white/[0.07] pb-2">
+          <h3 className="text-caption font-bold uppercase tracking-[0.2em] text-dim">Next 7 days</h3>
+          <span className="text-caption font-bold tabular-nums text-muted">
+            {timelineCount} {timelineCount === 1 ? 'item' : 'items'}
+          </span>
+        </div>
+        <div className="relative">
+          <AgendaList
+            data={agenda}
+            now={now}
+            mode="dashboard"
+            onOpenEvent={onOpenEvent}
+            onToggleEvent={onToggleEvent}
           />
-          <div className="min-w-0">
-            <p className="text-body font-bold">
-              {capsDuringSleep.length} {capsDuringSleep.length === 1 ? 'game caps' : 'games cap'} during your{' '}
-              {state.settings.sleepHours}h sleep
-            </p>
-            <p className="truncate text-caption opacity-70">
-              {capsDuringSleep.length > 0
-                ? capsDuringSleep.map((entry) => entry.game.short).join(' · ')
-                : 'Every tracked regen resource is sleep safe.'}
-            </p>
-          </div>
         </div>
-      </div>
 
-      <div className="relative flex items-baseline justify-between gap-2 border-b border-white/[0.07] pb-2">
-        <h3 className="text-caption font-bold uppercase tracking-[0.2em] text-dim">Next 24 hours</h3>
-        <span className="text-caption font-bold tabular-nums text-muted">
-          {timelineCount} {timelineCount === 1 ? 'item' : 'items'}
-        </span>
-      </div>
-      <div className="relative">
-        <AgendaList data={agenda} now={now} mode="dashboard" onOpenEvent={onOpenEvent} onToggleEvent={onToggleEvent} />
-      </div>
-
-      <section className="relative">
-        <div className="mb-1.5 flex items-center justify-between gap-2">
-          <h3 className="text-caption font-bold uppercase tracking-widest text-dim">Reminders</h3>
-          <button
-            type="button"
-            onClick={onOpenReminder}
-            className="rounded-ui-md px-2 py-1 text-caption font-semibold text-muted transition hover:bg-white/[0.06] hover:text-white"
-          >
-            + Add
-          </button>
-        </div>
-        {reminders.length > 0 ? (
-          <div className="space-y-1">
-            {reminders.map((reminder) => {
-              const game = reminder.gameId ? agenda.games.get(reminder.gameId) : undefined;
-              const due = reminder.at <= now;
-              return (
-                <div key={reminder.id} className="flex items-start gap-2 rounded-ui-lg bg-white/[0.025] px-2.5 py-2">
-                  {game ? (
-                    <GameBadge
-                      short={game.short}
-                      color={game.color}
-                      color2={game.color2}
-                      size="sm"
-                      className="mt-0.5"
-                    />
-                  ) : (
-                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-ui-full bg-gold" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium text-fg-soft">{reminder.message}</p>
-                    <p className={`mt-0.5 text-caption tabular-nums ${due ? 'text-rose-300' : 'text-dim'}`}>
-                      {due
-                        ? 'due now'
-                        : `${DateTime.fromMillis(reminder.at).toFormat('dd LLL · HH:mm')} · in ${fmtDur(reminder.at - now)}`}
-                    </p>
-                  </div>
+        <section className="relative">
+          <h3 className="mb-1.5 text-caption font-bold uppercase tracking-widest text-dim">Resets this week</h3>
+          {resetGames.length > 0 ? (
+            <div className="space-y-1">
+              {resetGames.map(({ game, done, total, resetAt }) => (
+                <div key={game.id} className="flex items-center gap-2 rounded-ui-lg bg-white/[0.025] px-2.5 py-2">
+                  <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" />
+                  <span className="min-w-0 flex-1 text-xs text-muted">
+                    {done}/{total} weeklies
+                  </span>
+                  <span className="shrink-0 text-caption font-bold tabular-nums text-dim">
+                    resets in {fmtDur(resetAt - now)}
+                  </span>
                 </div>
-              );
-            })}
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-ui-lg bg-white/[0.02] px-3 py-2 text-label text-faint">
+              Nothing resets in the next 7 days.
+            </p>
+          )}
+        </section>
+
+        <section className="relative">
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <h3 className="text-caption font-bold uppercase tracking-widest text-dim">Reminders</h3>
+            <button
+              type="button"
+              onClick={onOpenReminder}
+              className="rounded-ui-md px-2 py-1 text-caption font-semibold text-muted transition hover:bg-white/[0.06] hover:text-white"
+            >
+              + Add
+            </button>
           </div>
-        ) : (
-          <p className="rounded-ui-lg bg-white/[0.02] px-3 py-2 text-label text-faint">
-            No reminders due in the next 24 hours.
-          </p>
-        )}
-      </section>
+          {reminders.length > 0 ? (
+            <div className="space-y-1">
+              {reminders.map((reminder) => {
+                const game = reminder.gameId ? agenda.games.get(reminder.gameId) : undefined;
+                const due = reminder.at <= now;
+                return (
+                  <div key={reminder.id} className="flex items-start gap-2 rounded-ui-lg bg-white/[0.025] px-2.5 py-2">
+                    {game ? (
+                      <GameBadge
+                        short={game.short}
+                        color={game.color}
+                        color2={game.color2}
+                        size="sm"
+                        className="mt-0.5"
+                      />
+                    ) : (
+                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-ui-full bg-gold" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-medium text-fg-soft">{reminder.message}</p>
+                      <p className={`mt-0.5 text-caption tabular-nums ${due ? 'text-rose-300' : 'text-dim'}`}>
+                        {due
+                          ? 'due now'
+                          : `${DateTime.fromMillis(reminder.at).toFormat('dd LLL · HH:mm')} · in ${fmtDur(reminder.at - now)}`}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="rounded-ui-lg bg-white/[0.02] px-3 py-2 text-label text-faint">
+              No reminders due in the next 7 days.
+            </p>
+          )}
+        </section>
+      </div>
 
       <button
         type="button"
         onClick={onOpenTimeline}
-        className="relative mt-auto min-h-10 w-full rounded-ui-lg bg-gradient-to-r from-accent/20 to-accent-2/15 px-3 py-2 text-xs font-bold text-violet-100 ring-1 ring-accent/30 transition hover:brightness-125"
+        className="relative min-h-10 w-full rounded-ui-lg bg-gradient-to-r from-accent/20 to-accent-2/15 px-3 py-2 text-xs font-bold text-violet-100 ring-1 ring-accent/30 transition hover:brightness-125"
       >
         Open full timeline →
       </button>
@@ -456,6 +513,9 @@ export function NexusLayout({
 }: SharedNexusProps) {
   const [expandedGameId, setExpandedGameId] = useState<string | null>(null);
   const reducedMotion = useReducedMotion();
+  const focusColumns = useUI((store) => store.focusColumns);
+  const wideEnough = useMediaQuery('(min-width: 1500px)');
+  const columns = focusColumns === 'auto' ? (wideEnough ? 2 : 1) : focusColumns === 'two' ? 2 : 1;
   const idPrefix = useId().replace(/:/g, '');
   const stageRef = useRef<HTMLDivElement>(null);
   const hubRef = useRef<HTMLElement>(null);
@@ -535,7 +595,7 @@ export function NexusLayout({
       frame = requestAnimationFrame(loop);
     };
     const onTransitionEnd = (event: TransitionEvent) => {
-      if (['grid-template-columns', 'max-height', 'grid-template-rows'].includes(event.propertyName)) draw();
+      if (['grid-template-columns', 'grid-template-rows'].includes(event.propertyName)) draw();
     };
 
     if (reducedMotion) frame = requestAnimationFrame(draw);
@@ -557,6 +617,18 @@ export function NexusLayout({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeExpandedGameId, idsKey, reducedMotion, visualKey]);
 
+  useEffect(() => {
+    if (activeExpandedGameId == null) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element) || stageRef.current?.contains(target)) return;
+      if (target.closest(LAYER_SELECTOR)) return;
+      setExpandedGameId(null);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [activeExpandedGameId]);
+
   const renderRail = (ids: string[], side: 'left' | 'right') => (
     <aside className="relative z-10 flex min-w-0 flex-col justify-center gap-3" aria-label={`${side} game rail`}>
       {ids.map((id) => {
@@ -569,6 +641,7 @@ export function NexusLayout({
             now={now}
             expanded={activeExpandedGameId === id}
             collapsed={activeExpandedGameId != null && activeExpandedGameId !== id}
+            columns={columns}
             actions={gameControlActions}
             setElement={(element) => {
               if (element) nodeRefs.current.set(id, element);
@@ -588,6 +661,11 @@ export function NexusLayout({
       ref={stageRef}
       className="nexus-stage relative grid min-h-[35rem] items-stretch gap-[clamp(1.75rem,4vw,4rem)]"
       data-focus={expandedSide}
+      onClick={(event) => {
+        if (activeExpandedGameId == null) return;
+        const target = event.target as HTMLElement;
+        if (!target.closest('.nexus-node') && !target.closest(INTERACTIVE_SELECTOR)) setExpandedGameId(null);
+      }}
     >
       <svg aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 h-full w-full overflow-visible">
         <defs>

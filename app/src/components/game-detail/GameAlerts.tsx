@@ -49,11 +49,7 @@ export function GameAlerts({ game }: { game: Game }) {
               />
               <span className="text-label text-dim">min</span>
               {override && (
-                <Btn
-                  className="!px-2 text-xs"
-                  onClick={() => app.clearRule(type, game.id)}
-                  title="Use the global default"
-                >
+                <Btn className="!px-2 text-xs" onClick={() => app.clearRule(type, game.id)}>
                   Reset
                 </Btn>
               )}

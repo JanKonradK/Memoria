@@ -261,14 +261,12 @@ export function Btn({
   kind = 'ghost',
   className = '',
   disabled,
-  title,
 }: {
   children: ReactNode;
   onClick?: () => void;
   kind?: 'primary' | 'ghost' | 'danger';
   className?: string;
   disabled?: boolean;
-  title?: string;
 }) {
   const base =
     'min-h-11 rounded-ui-lg px-4 py-2 text-body font-semibold transition active:scale-[0.97] disabled:opacity-40 sm:min-h-9';
@@ -279,13 +277,7 @@ export function Btn({
     danger: 'bg-danger/15 text-rose-200 ring-1 ring-rose-400/30 hover:bg-danger/25',
   };
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      title={title}
-      className={`${base} ${kinds[kind]} ${className}`}
-    >
+    <button type="button" disabled={disabled} onClick={onClick} className={`${base} ${kinds[kind]} ${className}`}>
       {children}
     </button>
   );

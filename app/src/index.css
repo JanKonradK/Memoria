@@ -64,6 +64,8 @@
 
 :root {
   --ui-scale: 1;
+  --nexus-dur: 0.34s;
+  --nexus-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --focus-ring-color: color-mix(in oklab, var(--accent) 70%, white);
   --focus-ring-width: 2px;
   --focus-ring-offset: 0px;
@@ -304,19 +306,12 @@ input[type='number'] {
   scrollbar-color: rgba(200, 180, 255, 0.3) transparent;
 }
 
-/* The focus bay owns its reflow: it splits only when the bay itself has room,
-   independent of viewport chrome or the widths of either rail. */
-.focus-bay {
-  container-name: focus-bay;
-  container-type: inline-size;
-}
+/* Focus bays split only when callers opt into two columns. */
 .focus-bay-grid {
   grid-template-columns: minmax(0, 1fr);
 }
-@container focus-bay (min-width: 55rem) {
-  .focus-bay-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
+.focus-bay-grid[data-cols='2'] {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
 /* Cards + rail: the event horizon is a card in the same grid as the games,
@@ -327,13 +322,14 @@ input[type='number'] {
 .cards-horizon {
   grid-column: 2;
   grid-row: var(--horizon-row, 1);
+  align-self: stretch;
 }
 
 /* Nexus follows the approved three-column motion prototype: the selected rail
    gains room, the hub compresses, and the opposite rail yields. */
 .nexus-stage {
   grid-template-columns: minmax(0, 1fr) minmax(20rem, 1.15fr) minmax(0, 0.85fr);
-  transition: grid-template-columns 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: grid-template-columns var(--nexus-dur) var(--nexus-ease);
 }
 .nexus-stage[data-focus='left'] {
   grid-template-columns: minmax(0, 1.55fr) minmax(19rem, 0.95fr) minmax(0, 0.72fr);
@@ -342,27 +338,32 @@ input[type='number'] {
   grid-template-columns: minmax(0, 0.8fr) minmax(19rem, 0.95fr) minmax(0, 1.5fr);
 }
 .nexus-node-body {
-  max-height: 0;
+  display: grid;
+  grid-template-rows: 0fr;
   opacity: 0;
-  overflow: hidden;
   pointer-events: none;
   visibility: hidden;
   transition:
-    max-height 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.35s ease;
+    grid-template-rows var(--nexus-dur) var(--nexus-ease),
+    opacity var(--nexus-dur) var(--nexus-ease),
+    visibility 0s linear var(--nexus-dur);
 }
 .nexus-node[data-expanded='true'] .nexus-node-body {
-  max-height: calc(100dvh - 17rem);
+  grid-template-rows: 1fr;
   opacity: 1;
   pointer-events: auto;
   visibility: visible;
+  transition-delay: 0s;
+}
+.nexus-node-body > * {
+  min-height: 0;
+  overflow: hidden;
+}
+.nexus-node[data-expanded='true'] .nexus-node-body > * {
+  overflow-y: auto;
 }
 .nexus-stage[data-focus] .nexus-node[data-collapsed='true'] {
   opacity: 0.5;
-}
-.nexus-stage[data-focus] .nexus-node[data-collapsed='true'] .nexus-node-meter,
-.nexus-stage[data-focus] .nexus-node[data-collapsed='true'] .nexus-node-deadline {
-  display: none;
 }
 .nexus-conduit-pulse {
   stroke-dasharray: 5 16;

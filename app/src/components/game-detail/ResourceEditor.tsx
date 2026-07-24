@@ -28,7 +28,6 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg bg-white/[0.06] ring-1 ring-white/10 transition hover:bg-white/10 sm:h-9 sm:w-9"
                 style={{ boxShadow: iconPickerFor === r.id ? `inset 0 0 0 1.5px ${game.color}` : undefined }}
                 aria-label={`Icon for ${r.name}`}
-                title="Pick an icon"
               >
                 <ResourceIcon iconKey={r.icon} color={game.color} size={18} />
               </button>
@@ -77,7 +76,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                       boxShadow:
                         r.icon === key ? `inset 0 0 0 1.5px ${game.color}` : 'inset 0 0 0 1px rgba(255,255,255,0.08)',
                     }}
-                    title={key}
+                    aria-label={key}
                   >
                     <ResourceIcon iconKey={key} color={game.color} size={18} />
                   </button>
@@ -96,7 +95,6 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                 <NumInput
                   value={String(r.regenMinutes)}
                   disabled={kind !== 'regen'}
-                  title={kind !== 'regen' ? 'Only regenerating resources use Min/pt' : undefined}
                   onChange={(e) =>
                     app.upsertResource({
                       id: r.id,
