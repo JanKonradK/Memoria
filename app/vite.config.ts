@@ -17,6 +17,12 @@ export default defineConfig({
       },
     },
   },
+  resolve: {
+    // Force a single React instance across the app and every pre-bundled dep
+    // (Radix in particular) so no dep can grab a duplicate React and trip
+    // "Invalid hook call" at runtime.
+    dedupe: ['react', 'react-dom'],
+  },
   plugins: [
     react(),
     tailwindcss(),

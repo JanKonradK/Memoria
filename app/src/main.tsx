@@ -3,8 +3,10 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { AuthShell } from './auth';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { TooltipProvider } from './components/ui';
 import { initPwa } from './pwa';
 import { reportClientError } from './reporting';
+import { applyTextSize, useUI } from './ui-store';
 import './index.css';
 // Per-game title fonts (see fonts.ts) — bundled so the PWA stays offline-capable.
 import '@fontsource/marcellus/400.css';
@@ -15,6 +17,7 @@ import '@fontsource/michroma/400.css';
 import '@fontsource/baloo-2/600.css';
 import '@fontsource/baloo-2/700.css';
 
+applyTextSize(useUI.getState().textSize);
 initPwa();
 window.addEventListener('unhandledrejection', (event) => {
   const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
@@ -25,7 +28,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthShell>
       <ErrorBoundary>
-        <App />
+        <TooltipProvider delayDuration={350} skipDelayDuration={150}>
+          <App />
+        </TooltipProvider>
       </ErrorBoundary>
     </AuthShell>
   </StrictMode>,

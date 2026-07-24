@@ -25,8 +25,8 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
   return (
     <main className="mx-auto min-h-dvh w-full max-w-5xl px-4 py-10 sm:px-5">
       <p className="text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300">Welcome to Techno's Library</p>
-      <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-50">Set up your first dashboard</h1>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+      <h1 className="mt-3 text-3xl font-black tracking-tight text-fg">Set up your first dashboard</h1>
+      <p className="mt-2 max-w-2xl text-body leading-6 text-muted">
         Choose the games you actively play and enter the current value of their main energy. Server clocks and default
         resets are filled from the presets and can be changed later.
       </p>
@@ -36,7 +36,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
           return (
             <section
               key={preset.key}
-              className={`rounded-3xl p-4 ring-1 ${active ? 'bg-white/10 ring-white/25' : 'bg-white/[0.035] ring-white/10'}`}
+              className={`rounded-ui-card p-4 ring-1 ${active ? 'bg-white/10 ring-white/25' : 'bg-white/[0.035] ring-white/10'}`}
             >
               <button
                 type="button"
@@ -51,11 +51,11 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
                 <GameBadge short={preset.short} color={preset.color} color2={preset.color2} size="lg" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-black text-slate-100">{preset.name}</span>
-                  <span className="text-xs text-slate-500">{active ? 'Selected' : 'Add game'}</span>
+                  <span className="text-xs text-dim">{active ? 'Selected' : 'Add game'}</span>
                 </span>
               </button>
               {active && (
-                <label className="mt-3 block text-xs font-semibold text-slate-400">
+                <label className="mt-3 block text-xs font-semibold text-muted">
                   Current {preset.resources[0]?.name ?? 'energy'}
                   <NumInput
                     className="mt-1"
@@ -76,9 +76,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
         </Btn>
         <Btn onClick={onComplete}>Skip for now</Btn>
       </div>
-      <p className="mt-3 text-xs text-slate-500">
-        Notification connections are optional and live in Settings after setup.
-      </p>
+      <p className="mt-3 text-xs text-dim">Notification connections are optional and live in Settings after setup.</p>
     </main>
   );
 }

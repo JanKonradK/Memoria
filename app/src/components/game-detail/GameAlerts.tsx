@@ -25,14 +25,14 @@ export function GameAlerts({ game }: { game: Game }) {
         return (
           <div
             key={type}
-            className="flex flex-wrap items-center gap-2 rounded-xl bg-white/[0.03] px-3 py-2 ring-1 ring-white/10"
+            className="flex flex-wrap items-center gap-2 rounded-ui-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/10"
           >
             <Toggle
               checked={enabled}
               onChange={(value) => app.upsertRule({ type, gameId: game.id, enabled: value, thresholdMinutes: minutes })}
               ariaLabel={`${enabled ? 'Disable' : 'Enable'} ${label}`}
             />
-            <span className="min-w-40 flex-1 text-sm text-slate-200">{label}</span>
+            <span className="min-w-40 flex-1 text-body text-fg-soft">{label}</span>
             <div className="ml-auto flex items-center gap-2">
               <NumInput
                 className="!w-24"
@@ -47,7 +47,7 @@ export function GameAlerts({ game }: { game: Game }) {
                   })
                 }
               />
-              <span className="text-[11px] text-slate-500">min</span>
+              <span className="text-label text-dim">min</span>
               {override && (
                 <Btn
                   className="!px-2 text-xs"
@@ -61,7 +61,7 @@ export function GameAlerts({ game }: { game: Game }) {
           </div>
         );
       })}
-      <p className="pt-1 text-[11px] text-slate-500">Overrides the global defaults in Settings → Alert timing.</p>
+      <p className="pt-1 text-label text-dim">Overrides the global defaults in Settings → Alert timing.</p>
     </div>
   );
 }

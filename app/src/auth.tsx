@@ -97,15 +97,15 @@ const LEGAL: Record<string, { title: string; sections: Array<[string, string]> }
 function LegalPage({ document }: { document: (typeof LEGAL)[string] }) {
   return (
     <main className="mx-auto min-h-dvh w-full max-w-3xl px-5 py-14">
-      <a href="/" className="text-sm font-semibold text-violet-300">
+      <a href="/" className="text-body font-semibold text-violet-300">
         ← Techno's Library
       </a>
-      <h1 className="mt-6 text-3xl font-black text-slate-50">{document.title}</h1>
+      <h1 className="mt-6 text-3xl font-black text-fg">{document.title}</h1>
       <div className="mt-8 space-y-4">
         {document.sections.map(([title, body]) => (
-          <section key={title} className="glass gold-hairline rounded-3xl p-5">
+          <section key={title} className="glass gold-hairline rounded-ui-card p-5">
             <h2 className="font-black text-slate-100">{title}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-400">{body}</p>
+            <p className="mt-2 text-body leading-6 text-muted">{body}</p>
           </section>
         ))}
       </div>
@@ -122,11 +122,11 @@ function StatusPage() {
   }, []);
   return (
     <main className="mx-auto min-h-dvh w-full max-w-2xl px-5 py-14">
-      <a href="/" className="text-sm font-semibold text-violet-300">
+      <a href="/" className="text-body font-semibold text-violet-300">
         ← Techno's Library
       </a>
-      <h1 className="mt-6 text-3xl font-black text-slate-50">Service status</h1>
-      <section className="glass gold-hairline mt-8 rounded-3xl p-5" role="status">
+      <h1 className="mt-6 text-3xl font-black text-fg">Service status</h1>
+      <section className="glass gold-hairline mt-8 rounded-ui-card p-5" role="status">
         <p
           className={`font-black ${
             status === 'operational'
@@ -142,7 +142,7 @@ function StatusPage() {
               ? 'Service check unavailable'
               : 'Checking service…'}
         </p>
-        <p className="mt-2 text-sm text-slate-400">
+        <p className="mt-2 text-body text-muted">
           Offline app data remains available even during a cloud-service interruption.
         </p>
       </section>
@@ -196,7 +196,7 @@ function ContinueWithGoogleButton() {
       type="button"
       onClick={startGoogleSignIn}
       disabled={!isLoaded || busy}
-      className="inline-flex min-h-11 items-center gap-3 rounded-2xl bg-white px-5 py-3 text-sm font-bold text-slate-800 ring-1 ring-black/10 disabled:opacity-60"
+      className="inline-flex min-h-11 items-center gap-3 rounded-ui-xl bg-white px-5 py-3 text-body font-bold text-slate-800 ring-1 ring-black/10 disabled:opacity-60"
     >
       <GoogleIcon />
       {busy ? 'Redirecting…' : 'Continue with Google'}
@@ -206,7 +206,7 @@ function ContinueWithGoogleButton() {
 
 function SsoCallback() {
   return (
-    <div className="flex min-h-dvh items-center justify-center text-sm text-slate-400" role="status">
+    <div className="flex min-h-dvh items-center justify-center text-body text-muted" role="status">
       Completing sign-in…
       <AuthenticateWithRedirectCallback signInFallbackRedirectUrl="/" signUpFallbackRedirectUrl="/" />
     </div>
@@ -218,10 +218,10 @@ function PublicLanding() {
     <main className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col justify-center px-5 py-16">
       <div className="max-w-3xl">
         <p className="text-xs font-black uppercase tracking-[0.3em] text-fuchsia-300">Offline-first gacha planner</p>
-        <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-50 sm:text-6xl">
+        <h1 className="mt-4 text-4xl font-black tracking-tight text-fg sm:text-6xl">
           Know what resets next. Waste less energy.
         </h1>
-        <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
+        <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-title">
           Techno's Library keeps server resets, energy caps, dailies and events together across your games. Your browser
           remains usable offline; an account adds encrypted cloud sync and closed-app alerts.
         </p>
@@ -230,7 +230,7 @@ function PublicLanding() {
           <SignUpButton mode="modal">
             <button
               type="button"
-              className="min-h-11 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 px-5 py-3 text-sm font-bold text-white ring-1 ring-white/20"
+              className="min-h-11 rounded-ui-xl bg-gradient-to-br from-accent to-accent-2 px-5 py-3 text-body font-bold text-white ring-1 ring-white/20"
             >
               Create free account
             </button>
@@ -238,7 +238,7 @@ function PublicLanding() {
           <SignInButton mode="modal">
             <button
               type="button"
-              className="min-h-11 rounded-2xl bg-white/[0.06] px-5 py-3 text-sm font-bold text-slate-100 ring-1 ring-white/15"
+              className="min-h-11 rounded-ui-xl bg-white/[0.06] px-5 py-3 text-body font-bold text-slate-100 ring-1 ring-white/15"
             >
               Sign in
             </button>
@@ -251,13 +251,13 @@ function PublicLanding() {
           ['Works offline', 'Entries stay available in IndexedDB even when the network is unavailable.'],
           ['Private by design', 'Integration credentials are encrypted server-side and excluded from normal exports.'],
         ].map(([title, body]) => (
-          <section key={title} className="glass gold-hairline rounded-3xl p-5">
+          <section key={title} className="glass gold-hairline rounded-ui-card p-5">
             <h2 className="font-black text-slate-100">{title}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-400">{body}</p>
+            <p className="mt-2 text-body leading-6 text-muted">{body}</p>
           </section>
         ))}
       </div>
-      <nav className="mt-8 flex flex-wrap gap-4 text-xs text-slate-500" aria-label="Legal">
+      <nav className="mt-8 flex flex-wrap gap-4 text-xs text-dim" aria-label="Legal">
         <a href="/privacy">Privacy</a>
         <a href="/terms">Terms</a>
         <a href="/security">Security and data flow</a>
@@ -288,14 +288,14 @@ function ClerkGate({ children }: { children: ReactNode }) {
 
   if (!auth.isLoaded) {
     return (
-      <div className="flex min-h-dvh items-center justify-center text-sm text-slate-400" role="status">
+      <div className="flex min-h-dvh items-center justify-center text-body text-muted" role="status">
         Loading account…
       </div>
     );
   }
   if (storeIdentity !== identity) {
     return (
-      <div className="flex min-h-dvh items-center justify-center text-sm text-slate-400" role="status">
+      <div className="flex min-h-dvh items-center justify-center text-body text-muted" role="status">
         Loading account data…
       </div>
     );
@@ -340,7 +340,7 @@ function LocalIdentityGate({ children }: { children: ReactNode }) {
 
   if (identity !== LOCAL_IDENTITY) {
     return (
-      <div className="flex min-h-dvh items-center justify-center text-sm text-slate-400" role="status">
+      <div className="flex min-h-dvh items-center justify-center text-body text-muted" role="status">
         Loading local data…
       </div>
     );

@@ -7,3 +7,4 @@ package-lock.json
 app/public
 desktop/dist
 worker/worker-env.d.ts
+.claude

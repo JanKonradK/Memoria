@@ -26,6 +26,10 @@ async function addPreset(page: Page, name: string, short: string, first = false)
   await expect(page.getByRole('dialog', { name: 'Add a game' })).toBeVisible();
   await page.getByRole('button', { name: new RegExp(name) }).click();
   await page.getByRole('button', { name: `Add ${short}` }).click();
+  const expandButton = page.getByRole('button', { name: `Expand ${name} controls` });
+  if (await expandButton.isVisible()) await expandButton.click();
+  const focusButton = page.getByRole('button', { name: `Focus ${name}` });
+  if (await focusButton.isVisible()) await focusButton.click();
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
 }
 
@@ -43,7 +47,7 @@ test('empty app is accessible and fits the viewport', async ({ page }) => {
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
 
-  await page.getByRole('button', { name: 'Timeline' }).click();
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Event timeline' })).toBeVisible();
   await expectNoPageOverflow(page);
 
@@ -70,7 +74,7 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   await page.getByRole('button', { name: 'Edit Genshin Impact' }).click();
   const dialog = page.getByRole('dialog', { name: 'Genshin Impact' });
   await expect(dialog).toBeVisible();
-  await dialog.getByRole('button', { name: 'Resources', exact: true }).click();
+  await dialog.getByRole('radio', { name: 'Resources', exact: true }).click();
   await expect(dialog.getByText('Quick spend')).toBeVisible();
   await dialog.getByPlaceholder('Label, e.g. Domain').fill('Domain');
   await dialog.getByRole('button', { name: '+ Shortcut' }).click();
@@ -102,13 +106,17 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   await page.getByRole('button', { name: /Neverness to Everness/ }).click();
   await page.locator('label:has-text("City Stamina cap") input').fill('100');
   await page.getByRole('button', { name: 'Add NTE' }).click();
+  // On wide desktop the new card lands collapsed in the Nexus layout, where the
+  // name is a <span>; expand it to get the <h2> heading (as addPreset does).
+  const expandNte = page.getByRole('button', { name: 'Expand Neverness to Everness controls' });
+  if (await expandNte.isVisible()) await expandNte.click();
   await expect(page.getByRole('heading', { name: 'Neverness to Everness', exact: true })).toBeVisible();
 });
 
 test('tabs, timeline controls, and settings fit after adding a game', async ({ page }) => {
   await addGenshin(page);
 
-  await page.getByRole('button', { name: 'Timeline' }).click();
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await expectNoPageOverflow(page);
   await page.getByRole('button', { name: '+ Event' }).click();
   await expect(page.getByRole('dialog', { name: 'New event' })).toBeVisible();
@@ -116,16 +124,28 @@ test('tabs, timeline controls, and settings fit after adding a game', async ({ p
 
   await page.getByRole('button', { name: 'Settings' }).click();
   await expect(page.getByLabel('Sleep window (hours)')).toHaveValue('8');
+  const textSize = page.getByRole('radiogroup', { name: 'Text size' });
+  await expect(textSize.getByRole('radio', { name: 'M', exact: true })).toHaveAttribute('data-state', 'on');
+  await textSize.getByRole('radio', { name: 'XL', exact: true }).click();
+  await expect
+    .poll(() => page.locator('html').evaluate((html) => parseFloat(getComputedStyle(html).fontSize)))
+    .toBe(20.48);
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('technogg-ui') || '{}')?.state?.textSize as string))
+    .toBe('xl');
   await expectNoPageOverflow(page);
 
-  await page.getByRole('button', { name: 'Games' }).click();
-  await page.getByRole('button', { name: 'Edit Genshin Impact' }).click();
+  const gameSettings = page.getByRole('region', { name: 'Games' });
+  await expect(gameSettings.getByText('Genshin Impact', { exact: true })).toBeVisible();
+  await gameSettings.getByRole('button', { name: 'Edit Genshin Impact' }).click();
   const dialog = page.getByRole('dialog', { name: 'Genshin Impact' });
-  await dialog.getByRole('button', { name: 'Alerts', exact: true }).click();
+  await dialog.getByRole('radio', { name: 'Alerts', exact: true }).click();
   await expect(dialog.getByText('Energy nearing cap', { exact: true })).toBeVisible();
 });
 
-test('full 16:9 dashboard fits five games and timeline bars stay in scale', async ({ page }, testInfo) => {
+test('wide dashboard switches between nexus and cards rail while timeline bars stay in scale', async ({
+  page,
+}, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-16x9', '16:9 desktop layout check');
 
   await addGenshin(page);
@@ -134,20 +154,43 @@ test('full 16:9 dashboard fits five games and timeline bars stay in scale', asyn
   await addPreset(page, 'Wuthering Waves', 'WuWa');
   await addPreset(page, 'Neverness to Everness', 'NTE');
 
-  await expect
-    .poll(async () => {
-      const cards = await Promise.all(
-        ['Genshin Impact', 'Honkai: Star Rail', 'Zenless Zone Zero', 'Wuthering Waves', 'Neverness to Everness'].map(
-          (name) => page.getByRole('heading', { name, exact: true }).boundingBox(),
-        ),
-      );
-      return new Set(cards.map((box) => Math.round(box!.y))).size;
-    })
-    .toBe(1);
+  await expect(page.getByRole('region', { name: 'Across every game' })).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'left game rail' })).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'right game rail' })).toBeVisible();
+  await expect(page.locator('.nexus-conduit-pulse')).toHaveCount(5);
+  await page.getByRole('button', { name: 'Expand Honkai: Star Rail controls' }).click();
+  await expect(page.getByRole('region', { name: 'Honkai: Star Rail controls' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Collapse Honkai: Star Rail controls' })).toBeVisible();
+  await expectNoPageOverflow(page);
+  // The open card has no collapse control: its background and Escape close it.
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: 'Expand Honkai: Star Rail controls' })).toBeVisible();
+
+  await page.getByRole('radio', { name: 'Cards + rail' }).click();
+  await expect(page.getByRole('complementary', { name: 'Event horizon' })).toBeVisible();
+  for (const name of [
+    'Genshin Impact',
+    'Honkai: Star Rail',
+    'Zenless Zone Zero',
+    'Wuthering Waves',
+    'Neverness to Everness',
+  ]) {
+    await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+  }
+  const cardRows = await Promise.all(
+    ['Genshin Impact', 'Honkai: Star Rail', 'Zenless Zone Zero', 'Wuthering Waves', 'Neverness to Everness'].map(
+      async (name) => Math.round((await page.getByRole('heading', { name, exact: true }).boundingBox())!.y),
+    ),
+  );
+  expect(new Set(cardRows).size).toBe(2);
+  const cardsPerRow = [...new Set(cardRows)]
+    .map((row) => cardRows.filter((candidate) => candidate === row).length)
+    .sort();
+  expect(cardsPerRow).toEqual([2, 3]);
   await expect(page.getByRole('button', { name: 'Add game', exact: true })).toBeVisible();
   await expectNoPageOverflow(page);
 
-  await page.getByRole('button', { name: 'Timeline' }).click();
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   const importButton = page.getByRole('button', { name: /^Import \d+$/ });
   await expect(importButton).toBeVisible();
   await importButton.click();
@@ -165,7 +208,7 @@ test('full 16:9 dashboard fits five games and timeline bars stay in scale', asyn
 
   // Seed events age out of the agenda window over time, so assert on the
   // section structure and that at least one seeded event row rendered.
-  await page.getByRole('button', { name: 'Agenda' }).click();
+  await page.getByRole('radio', { name: 'Agenda' }).click();
   await expect(page.getByRole('heading', { name: 'Live now' })).toBeVisible();
   await expect(page.getByRole('button', { name: /^Open .+ event: / }).first()).toBeVisible();
   await expectNoPageOverflow(page);
