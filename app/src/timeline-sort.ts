@@ -19,10 +19,7 @@ export function agendaCompare(a: GameEvent, b: GameEvent, now: number): number {
   // even when events tie on every displayed field.
   if (aRank === 0) {
     return (
-      a.end - b.end ||
-      TYPE_RANK[a.type] - TYPE_RANK[b.type] ||
-      a.name.localeCompare(b.name) ||
-      a.id.localeCompare(b.id)
+      a.end - b.end || TYPE_RANK[a.type] - TYPE_RANK[b.type] || a.name.localeCompare(b.name) || a.id.localeCompare(b.id)
     );
   }
   if (aRank === 1) {

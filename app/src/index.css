@@ -2,13 +2,76 @@
 
 @theme {
   /* OLED Nightline: true black canvas, color lives on the cards. */
-  --color-ink: #000000;
-  --color-panel: #0b0a12;
-  --color-panel2: #141020;
-  --color-line: rgba(200, 180, 255, 0.12);
-  --color-gold: #e8b45a;
-  --color-rose: #ff6fa5;
-  --color-astral: #7c5cff;
+  --accent: #7c5cff;
+  --accent-2: #d946ef;
+  --gold: #e8b45a;
+  --rose: #ff6fa5;
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --danger: #f43f5e;
+  --muted: #94a3b8;
+  --surface-0: #000000;
+  --surface-1: #0b0a12;
+  --surface-2: #141020;
+  --line: rgba(200, 180, 255, 0.12);
+
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-gold: var(--gold);
+  --color-rose: var(--rose);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-muted: var(--muted);
+  /* Lightened from slate-500 #64748b (4.41:1) to clear WCAG AA 4.5:1 on the
+     near-black canvas for small caption text. */
+  --color-dim: #6e7d93;
+  --color-faint: #475569;
+  --color-fg: #f8fafc;
+  --color-fg-soft: #e2e8f0;
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-popover: #2b2347;
+  --color-line: var(--line);
+
+  /* Compatibility aliases keep existing one-off uses visually unchanged. */
+  --color-ink: var(--surface-0);
+  --color-panel: var(--surface-1);
+  --color-panel2: var(--surface-2);
+  --color-astral: var(--accent);
+
+  --radius-ui-sm: 0.375rem;
+  --radius-ui-md: 0.5rem;
+  --radius-ui-lg: 0.75rem;
+  --radius-ui-xl: 1rem;
+  --radius-ui-card: 1.5rem;
+  --radius-ui-full: 9999px;
+
+  --text-micro: 0.5rem;
+  --text-micro--line-height: 0.75rem;
+  --text-caption: 0.625rem;
+  --text-caption--line-height: 0.875rem;
+  --text-label: 0.6875rem;
+  --text-label--line-height: 1rem;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.25rem;
+  --text-title: 1.125rem;
+  --text-title--line-height: 1.75rem;
+
+  --font-body: ui-rounded, 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+:root {
+  --ui-scale: 1;
+  --focus-ring-color: color-mix(in oklab, var(--accent) 70%, white);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 0px;
+  --tick-idle: rgba(255, 255, 255, 0.25);
+  --tick-ring-width: 1.5px;
+  --tick-progress-width: 2px;
+  --tick-spoke-width: 1px;
+  --progress-track: rgba(255, 255, 255, 0.08);
 }
 
 html,
@@ -16,14 +79,13 @@ body {
   /* Pure black — no ambient washes; greys smear on OLED. */
   background: var(--color-ink);
   color: #f2eefa;
-  font-family:
-    ui-rounded,
-    'Segoe UI',
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: var(--font-body);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
+}
+
+html {
+  font-size: calc(16px * var(--ui-scale));
 }
 
 ::selection {
@@ -34,13 +96,6 @@ input,
 select,
 textarea {
   color-scheme: dark;
-}
-
-/* Native dropdown lists: Windows renders them white unless told otherwise. */
-select option,
-select optgroup {
-  background-color: var(--color-panel2);
-  color: #f2eefa;
 }
 
 /* Hide number input spinners — we provide our own steppers. */
@@ -197,15 +252,29 @@ input[type='number'] {
   animation: loaderSpin 1.6s ease-in-out infinite;
 }
 
-/* Keyboard-only focus ring (mouse clicks stay clean). */
-:focus-visible {
-  outline: 2px solid rgba(168, 132, 255, 0.75);
-  outline-offset: 2px;
+/* One keyboard-only, radius-following ring. It hugs tiny controls instead of blowing out. */
+:where(
+  button,
+  a[href],
+  input,
+  select,
+  textarea,
+  [role='button'],
+  [role='combobox'],
+  [role='option'],
+  [role='tab']
+):focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
 }
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: none; /* inputs already have their own focus ring */
+
+/* Compound editors expose one ring around the pill, never a second one around the input. */
+.focus-ring-group:has(:focus-visible) {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.focus-ring-group :focus-visible {
+  outline: none;
 }
 
 /* Near-black panel with a whisper of violet — deep enough for OLED. */
@@ -223,9 +292,11 @@ textarea:focus-visible {
 .gold-hairline::before {
   content: '';
   position: absolute;
-  inset: 0 0 auto 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(232, 180, 90, 0.55), transparent);
+  inset: 0;
+  pointer-events: none;
+  border: 1px solid transparent;
+  border-top-color: rgba(232, 180, 90, 0.38);
+  border-radius: inherit;
 }
 
 .scrollbar-thin {
@@ -233,9 +304,87 @@ textarea:focus-visible {
   scrollbar-color: rgba(200, 180, 255, 0.3) transparent;
 }
 
+/* The focus bay owns its reflow: it splits only when the bay itself has room,
+   independent of viewport chrome or the widths of either rail. */
+.focus-bay {
+  container-name: focus-bay;
+  container-type: inline-size;
+}
+.focus-bay-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+@container focus-bay (min-width: 55rem) {
+  .focus-bay-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* Cards + rail: the event horizon is a card in the same grid as the games,
+   parked in the centre column of the middle row while the cards flow around it. */
+.cards-grid {
+  grid-auto-flow: row dense;
+}
+.cards-horizon {
+  grid-column: 2;
+  grid-row: var(--horizon-row, 1);
+}
+
+/* Nexus follows the approved three-column motion prototype: the selected rail
+   gains room, the hub compresses, and the opposite rail yields. */
+.nexus-stage {
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 1.15fr) minmax(0, 0.85fr);
+  transition: grid-template-columns 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nexus-stage[data-focus='left'] {
+  grid-template-columns: minmax(0, 1.55fr) minmax(19rem, 0.95fr) minmax(0, 0.72fr);
+}
+.nexus-stage[data-focus='right'] {
+  grid-template-columns: minmax(0, 0.8fr) minmax(19rem, 0.95fr) minmax(0, 1.5fr);
+}
+.nexus-node-body {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    max-height 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.35s ease;
+}
+.nexus-node[data-expanded='true'] .nexus-node-body {
+  max-height: calc(100dvh - 17rem);
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+.nexus-stage[data-focus] .nexus-node[data-collapsed='true'] {
+  opacity: 0.5;
+}
+.nexus-stage[data-focus] .nexus-node[data-collapsed='true'] .nexus-node-meter,
+.nexus-stage[data-focus] .nexus-node[data-collapsed='true'] .nexus-node-deadline {
+  display: none;
+}
+.nexus-conduit-pulse {
+  stroke-dasharray: 5 16;
+  animation: nexusFlow 2.4s linear infinite;
+}
+
+@keyframes nexusFlow {
+  to {
+    stroke-dashoffset: -220;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
+  }
+  .nexus-stage,
+  .nexus-node-body {
+    transition-duration: 0.001ms !important;
+  }
+  .nexus-conduit-pulse {
+    display: none;
   }
 }

@@ -3,6 +3,7 @@ import { DateTime } from 'luxon';
 import type { EventType, Game } from '@technogg/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
+import { Pill } from './primitives';
 import { Sheet } from './Sheet';
 import { Btn, Field, Select, TextArea } from './ui';
 
@@ -132,7 +133,7 @@ export function PasteEventsSheet({ open }: { open: boolean }) {
   return (
     <Sheet open={open} onClose={closeSheet} wide title="Paste events (AI)">
       {!game ? (
-        <p className="py-6 text-sm text-slate-400">Add a game first.</p>
+        <p className="py-6 text-body text-muted">Add a game first.</p>
       ) : (
         <div className="space-y-3 pb-2">
           <Field label="Game">
@@ -147,7 +148,7 @@ export function PasteEventsSheet({ open }: { open: boolean }) {
 
           <div className="flex items-center gap-2">
             <Btn onClick={copyPrompt}>{copied ? '✓ Copied' : 'Copy AI prompt'}</Btn>
-            <span className="text-[11px] text-slate-500">
+            <span className="text-label text-dim">
               Paste it to any AI (Claude, etc.), then paste the JSON it returns below.
             </span>
           </div>
@@ -174,7 +175,7 @@ export function PasteEventsSheet({ open }: { open: boolean }) {
                   return (
                     <label
                       key={e.sourceKey}
-                      className={`flex cursor-pointer items-center gap-2.5 rounded-xl px-2 py-1.5 transition hover:bg-white/5 ${dup ? 'opacity-50' : ''}`}
+                      className={`flex cursor-pointer items-center gap-2.5 rounded-ui-lg px-2 py-1.5 transition hover:bg-white/5 ${dup ? 'opacity-50' : ''}`}
                     >
                       <input
                         type="checkbox"
@@ -190,11 +191,9 @@ export function PasteEventsSheet({ open }: { open: boolean }) {
                           })
                         }
                       />
-                      <span className="shrink-0 rounded bg-white/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-300">
-                        {e.type}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-sm text-slate-200">{e.name}</span>
-                      <span className="shrink-0 text-[11px] tabular-nums text-slate-500">
+                      <Pill variant="muted">{e.type}</Pill>
+                      <span className="min-w-0 flex-1 truncate text-body text-fg-soft">{e.name}</span>
+                      <span className="shrink-0 text-label tabular-nums text-dim">
                         {DateTime.fromMillis(e.start).toFormat('dd LLL HH:mm')} →{' '}
                         {DateTime.fromMillis(e.end).toFormat('dd LLL HH:mm')}
                         {dup && ' · already imported'}

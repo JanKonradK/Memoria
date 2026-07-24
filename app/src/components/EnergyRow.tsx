@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { EnergyProjection, Resource } from '@technogg/shared';
 import { effectiveReserveRegenMinutes, effectiveResourceKind } from '@technogg/shared';
-import { useReducedMotion } from '../hooks';
 import { useUI } from '../ui-store';
-import { clamp, fmtClock, fmtDur, intOr, tint } from '../util';
+import { clamp, fmtClock, fmtDur, intOr } from '../util';
+import { ProgressBar } from './primitives';
 import { ResourceIcon } from './ResourceIcon';
 
 /** Dark secondary card accents disappear on the reserve rail; fall back to the primary accent. */
@@ -26,7 +26,9 @@ function useHoldStep(onStep: (delta: number) => void) {
   // Repeat ticks must see the handler from the latest render, not the one
   // captured when the press started, or steps after the first reuse stale drafts.
   const stepRef = useRef(onStep);
-  stepRef.current = onStep;
+  useEffect(() => {
+    stepRef.current = onStep;
+  }, [onStep]);
 
   const clear = () => {
     active.current = false;
@@ -73,41 +75,11 @@ function StepBtn({ delta, onStep, label }: { delta: number; onStep: (d: number) 
       onClick={(e) => {
         if (e.detail === 0) onStep(delta);
       }}
-      className="flex h-9 min-w-8 items-center justify-center rounded-lg bg-white/[0.06] px-1.5 text-xs font-bold text-slate-200 ring-1 ring-white/10 transition hover:bg-white/[0.12] active:scale-90 sm:h-7 sm:min-w-7"
+      className="flex h-9 min-w-8 items-center justify-center rounded-ui-md bg-white/[0.06] px-1.5 text-xs font-bold text-fg-soft ring-1 ring-white/10 transition hover:bg-white/[0.12] active:scale-90 sm:h-7 sm:min-w-7"
       aria-label={`${delta > 0 ? 'Increase' : 'Decrease'} ${label}`}
     >
       {delta > 0 ? `+${delta}` : delta}
     </button>
-  );
-}
-
-function RegenBar({ pct, color, glow, reduced }: { pct: number; color: string; glow: boolean; reduced: boolean }) {
-  return (
-    <div
-      aria-hidden
-      className="relative mt-1.5 h-3.5 overflow-hidden rounded-md bg-black/40 ring-1 ring-white/10"
-      style={{
-        boxShadow: `inset 0 1px 3px rgba(0,0,0,0.6)${glow ? `, 0 0 12px ${tint(color, 0.45)}` : ''}`,
-      }}
-    >
-      <div
-        className="absolute inset-y-0 left-0 overflow-hidden rounded-r-[3px] transition-[width] duration-700 ease-out motion-reduce:transition-none"
-        style={{
-          width: `${pct}%`,
-          background: `linear-gradient(180deg, ${tint(color, 0.95)} 0%, ${color} 55%, ${tint(color, 0.72)} 100%)`,
-        }}
-      >
-        <span className="absolute inset-x-0 top-0 h-1/2 bg-white/25" />
-      </div>
-      <span
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(90deg, transparent 0, transparent calc(10% - 1px), rgba(10,7,19,0.55) calc(10% - 1px), rgba(10,7,19,0.55) 10%)',
-        }}
-      />
-      {glow && !reduced && <span className="pulse-fade pointer-events-none absolute inset-0 bg-white/25" />}
-    </div>
   );
 }
 
@@ -132,7 +104,6 @@ export function EnergyRow({
   now: number;
   onCommit: (value: number, reserve?: number) => void;
 }) {
-  const reduced = useReducedMotion();
   const kind = effectiveResourceKind(res);
   const compact = kind === 'counter' || kind === 'weekly';
   const inputRef = useRef<HTMLInputElement>(null);
@@ -233,14 +204,14 @@ export function EnergyRow({
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         <span className="flex min-w-0 items-center gap-1.5">
           <ResourceIcon iconKey={res.icon} color={color} size={13} className="shrink-0" />
-          <span className="truncate text-[11px] font-semibold uppercase tracking-wider text-slate-400">{res.name}</span>
+          <span className="truncate text-label font-semibold uppercase tracking-wider text-muted">{res.name}</span>
         </span>
 
         <span className="ml-auto flex w-full items-center justify-end gap-1 sm:w-auto">
           <StepBtn delta={-1} onStep={step} label={res.name} />
           {/* One pill: editable value + "/ cap" together inside the same box. */}
           <span
-            className="flex h-9 cursor-text items-center rounded-lg bg-white/[0.07] px-2 ring-1 ring-white/10 transition focus-within:bg-white/[0.1] focus-within:ring-2 sm:h-7"
+            className="focus-ring-group flex h-9 cursor-text items-center rounded-ui-md bg-white/[0.07] px-2 ring-1 ring-white/10 transition focus-within:bg-white/[0.1] sm:h-7"
             onMouseDown={(e) => {
               if (e.target !== inputRef.current) {
                 e.preventDefault();
@@ -286,11 +257,11 @@ export function EnergyRow({
                 } else setDraft(null);
                 mainEdit.current = { dirty: false, cancelled: false };
               }}
-              className="bg-transparent text-right text-sm font-bold tabular-nums outline-none"
+              className="bg-transparent text-right text-body font-bold tabular-nums outline-none"
               style={{ color, width: `${Math.max(2, shown.length || 1) + 0.5}ch` }}
               aria-label={`${res.name} current value`}
             />
-            <span className="pl-1 text-[11px] tabular-nums text-slate-500">/ {res.cap}</span>
+            <span className="pl-1 text-label tabular-nums text-dim">/ {res.cap}</span>
           </span>
           <StepBtn delta={1} onStep={step} label={res.name} />
         </span>
@@ -298,7 +269,7 @@ export function EnergyRow({
 
       {!compact && (
         <>
-          <RegenBar pct={pct} color={color} glow={glow} reduced={reduced} />
+          <ProgressBar value={pct / 100} color={color} glow={glow} segmented />
 
           {res.reserveCap > 0 && (
             <>
@@ -306,7 +277,7 @@ export function EnergyRow({
                 type="button"
                 aria-expanded={reserveIsOpen}
                 onClick={() => setReserveOpen(res.id, !reserveIsOpen)}
-                className="mt-1 w-full text-left text-[10px] font-semibold tabular-nums text-slate-500 transition hover:text-slate-300"
+                className="mt-1 w-full text-left text-caption font-semibold tabular-nums text-dim transition hover:text-slate-300"
               >
                 {reserveIsOpen ? '▾' : '▸'} {reserveLabel} {reserveValue}/{res.reserveCap}
               </button>
@@ -315,7 +286,7 @@ export function EnergyRow({
                 <div className="mt-1.5 border-t border-white/[0.08] pt-2">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
                     <span
-                      className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-wider"
+                      className="min-w-0 flex-1 truncate text-label font-semibold uppercase tracking-wider"
                       style={{ color: reserveAccent }}
                     >
                       {reserveLabel}
@@ -323,7 +294,7 @@ export function EnergyRow({
                     <span className="ml-auto flex w-full items-center justify-end gap-1 sm:w-auto">
                       <StepBtn delta={-1} onStep={reserveStep} label={reserveLabel} />
                       <span
-                        className="flex h-9 cursor-text items-center rounded-lg bg-white/[0.07] px-2 ring-1 ring-white/10 transition focus-within:bg-white/[0.1] focus-within:ring-2 sm:h-7"
+                        className="focus-ring-group flex h-9 cursor-text items-center rounded-ui-md bg-white/[0.07] px-2 ring-1 ring-white/10 transition focus-within:bg-white/[0.1] sm:h-7"
                         onMouseDown={(e) => {
                           if (e.target !== reserveInputRef.current) {
                             e.preventDefault();
@@ -361,23 +332,23 @@ export function EnergyRow({
                             setReserveDraft(null);
                             reserveEdit.current = { dirty: false, cancelled: false };
                           }}
-                          className="bg-transparent text-right text-sm font-bold tabular-nums outline-none"
+                          className="bg-transparent text-right text-body font-bold tabular-nums outline-none"
                           style={{
                             color: reserveAccent,
                             width: `${Math.max(2, (reserveDraft ?? String(reserveValue)).length) + 0.5}ch`,
                           }}
                           aria-label={`${reserveLabel} for ${res.name}`}
                         />
-                        <span className="pl-1 text-[11px] tabular-nums text-slate-500">/ {res.reserveCap}</span>
+                        <span className="pl-1 text-label tabular-nums text-dim">/ {res.reserveCap}</span>
                       </span>
                       <StepBtn delta={1} onStep={reserveStep} label={reserveLabel} />
                     </span>
                   </div>
-                  <RegenBar
-                    pct={reservePct}
+                  <ProgressBar
+                    value={reservePct / 100}
                     color={reserveAccent}
                     glow={reserveValue >= res.reserveCap}
-                    reduced={reduced}
+                    segmented
                   />
                   <div
                     className={`mt-1 text-xs tabular-nums ${
@@ -385,7 +356,7 @@ export function EnergyRow({
                         ? 'font-bold text-rose-300'
                         : proj.isFull
                           ? 'text-emerald-300/90'
-                          : 'text-slate-500'
+                          : 'text-dim'
                     }`}
                   >
                     {reserveSubtitle}

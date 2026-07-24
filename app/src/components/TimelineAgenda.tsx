@@ -1,40 +1,72 @@
 import { useState } from 'react';
 import { DateTime } from 'luxon';
-import type { Game, GameEvent } from '@technogg/shared';
+import type { AppState, Game, GameEvent } from '@technogg/shared';
 import { useApp } from '../store';
 import { agendaCompare, agendaRank } from '../timeline-sort';
 import { useUI } from '../ui-store';
 import { endTone, fmtDur } from '../util';
+import { Pill } from './primitives';
 import { GameBadge } from './ui';
 
 const DAY = 86_400_000;
+
+export type AgendaMode = 'full' | 'dashboard';
+
+export interface AgendaData {
+  games: Map<string, Game>;
+  live: GameEvent[];
+  upcoming: GameEvent[];
+  past: GameEvent[];
+}
+
+/** Shared timeline window/ranking. Dashboard mode deliberately drops history and caps its rails. */
+export function selectAgendaData(state: AppState, now: number, mode: AgendaMode = 'full'): AgendaData {
+  const windowStart = mode === 'dashboard' ? now : now - 2 * DAY;
+  const windowEnd = now + 28 * DAY;
+  const games = new Map(state.games.filter((game) => !game.deleted).map((game) => [game.id, game]));
+  const events = state.events
+    .filter((event) => !event.deleted && games.has(event.gameId) && event.end > windowStart && event.start < windowEnd)
+    .sort((a, b) => agendaCompare(a, b, now));
+  const live = events.filter((event) => agendaRank(event, now) === 0);
+  const upcoming = events.filter((event) => agendaRank(event, now) === 1);
+
+  return {
+    games,
+    live: mode === 'dashboard' ? live.slice(0, 4) : live,
+    upcoming: mode === 'dashboard' ? upcoming.slice(0, 6) : upcoming,
+    past: mode === 'dashboard' ? [] : events.filter((event) => agendaRank(event, now) >= 2),
+  };
+}
 
 function TypeTags({ event }: { event: GameEvent }) {
   const label = event.type === 'maintenance' ? 'patch' : event.type === 'custom' ? 'event' : event.type;
   return (
     <>
-      <span
-        className={`shrink-0 rounded px-1 text-[8px] font-black uppercase tracking-wider ${
-          event.type === 'maintenance' ? 'bg-white/10 text-slate-400' : 'bg-white/5 text-slate-500'
-        }`}
-      >
-        {label}
-      </span>
+      <Pill variant={event.type === 'maintenance' ? 'muted' : 'neutral'}>{label}</Pill>
       {event.dailyTouch && (
-        <span
-          className="shrink-0 rounded bg-amber-400/10 px-1 text-[8px] font-black uppercase tracking-wider text-amber-300/90"
-          title="Needs a daily login/claim"
-        >
+        <Pill variant="warn" title="Needs a daily login/claim">
           daily
-        </span>
+        </Pill>
       )}
     </>
   );
 }
 
-function AgendaRow({ event, game, now }: { event: GameEvent; game: Game; now: number }) {
-  const openSheet = useUI((state) => state.openSheet);
-  const upsertEvent = useApp((state) => state.upsertEvent);
+export function AgendaRow({
+  event,
+  game,
+  now,
+  mode,
+  onOpenEvent,
+  onToggleEvent,
+}: {
+  event: GameEvent;
+  game: Game;
+  now: number;
+  mode: AgendaMode;
+  onOpenEvent: (event: GameEvent) => void;
+  onToggleEvent: (event: GameEvent) => void;
+}) {
   const rank = agendaRank(event, now);
   const remaining = event.end - now;
   const status =
@@ -47,54 +79,77 @@ function AgendaRow({ event, game, now }: { event: GameEvent; game: Game; now: nu
           : 'ended';
 
   return (
-    <div className="group/agenda relative flex min-h-11 w-full items-center gap-2 overflow-hidden rounded-xl px-3 py-2 text-left transition hover:bg-white/[0.04]">
+    <div
+      className={`group/agenda relative flex min-h-11 w-full items-center gap-2 overflow-hidden rounded-ui-lg text-left transition hover:bg-white/[0.04] ${
+        mode === 'dashboard' ? 'px-2.5 py-2' : 'px-3 py-2'
+      }`}
+    >
       <button
         type="button"
-        onClick={() => openSheet({ kind: 'event', gameId: event.gameId, eventId: event.id })}
-        className="absolute inset-0 z-10 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/40"
+        onClick={() => onOpenEvent(event)}
+        className="absolute inset-0 z-10 rounded-ui-lg"
         aria-label={`Open ${game.name} event: ${event.name}, ${status}`}
         title={`${game.name}: ${event.name}`}
       />
-      <span className="absolute inset-y-2 left-0 w-[3px] rounded-full" style={{ backgroundColor: game.color }} />
-      <div className="pointer-events-none relative z-20 flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:flex-nowrap">
-        <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" />
-        <TypeTags event={event} />
-        <span
-          className={`min-w-24 flex-1 truncate text-xs font-medium ${
-            event.done ? 'text-slate-500 line-through' : 'text-slate-200'
-          }`}
-        >
-          {event.name}
-        </span>
-        <span className="ml-auto shrink-0 text-[10px] tabular-nums text-slate-500">
-          {DateTime.fromMillis(event.start).toFormat('dd LLL')} → {DateTime.fromMillis(event.end).toFormat('dd LLL')}
-        </span>
-        {rank === 0 && (
-          <span
-            className={`shrink-0 text-[10px] font-bold tabular-nums ${remaining < DAY ? 'warn-pulse' : ''}`}
-            style={{ color: endTone(remaining) }}
-          >
-            ends {fmtDur(remaining)}
-          </span>
-        )}
-        {rank === 1 && (
-          <span className="shrink-0 text-[10px] font-semibold tabular-nums text-slate-400">
-            starts in {fmtDur(event.start - now)}
-          </span>
-        )}
+      <span className="absolute inset-y-2 left-0 w-[3px] rounded-ui-full" style={{ backgroundColor: game.color }} />
+      <div
+        className={`pointer-events-none relative z-20 flex min-w-0 flex-1 ${
+          mode === 'dashboard' ? 'items-start gap-2' : 'flex-wrap items-center gap-1.5 sm:flex-nowrap'
+        }`}
+      >
+        <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" className="mt-0.5" />
+        <div className={mode === 'dashboard' ? 'min-w-0 flex-1' : 'contents'}>
+          <div className={mode === 'dashboard' ? 'flex min-w-0 items-center gap-1.5' : 'contents'}>
+            <TypeTags event={event} />
+            <span
+              className={`min-w-24 flex-1 truncate text-xs font-medium ${
+                event.done ? 'text-dim line-through' : 'text-fg-soft'
+              }`}
+            >
+              {event.name}
+            </span>
+          </div>
+          {mode === 'full' && (
+            <span className="ml-auto shrink-0 text-caption tabular-nums text-dim">
+              {DateTime.fromMillis(event.start).toFormat('dd LLL')} →{' '}
+              {DateTime.fromMillis(event.end).toFormat('dd LLL')}
+            </span>
+          )}
+          {rank === 0 && (
+            <span
+              className={`shrink-0 text-caption font-bold tabular-nums ${
+                remaining < DAY ? 'warn-pulse' : ''
+              } ${mode === 'dashboard' ? 'mt-1 block' : ''}`}
+              style={{ color: endTone(remaining) }}
+            >
+              ends {fmtDur(remaining)}
+            </span>
+          )}
+          {rank === 1 && (
+            <span
+              className={`shrink-0 text-caption font-semibold tabular-nums text-muted ${
+                mode === 'dashboard' ? 'mt-1 block' : ''
+              }`}
+            >
+              starts in {fmtDur(event.start - now)}
+            </span>
+          )}
+        </div>
       </div>
       <button
         type="button"
         title={event.done ? 'Marked done — click to bring it back' : 'Done with this — hide it'}
         onClick={(clickEvent) => {
           clickEvent.stopPropagation();
-          upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done });
+          onToggleEvent(event);
         }}
         aria-label={event.done ? `Restore ${event.name}` : `Mark ${event.name} done`}
-        className={`relative z-30 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black transition sm:h-8 sm:w-8 ${
+        className={`relative z-30 flex shrink-0 items-center justify-center rounded-ui-full text-xs font-black transition ${
+          mode === 'dashboard' ? 'h-8 w-8' : 'h-9 w-9 sm:h-8 sm:w-8'
+        } ${
           event.done
-            ? 'bg-emerald-400/90 text-black'
-            : 'bg-black/70 text-slate-400 opacity-60 hover:text-emerald-300 focus-visible:opacity-100 sm:opacity-0 sm:group-hover/agenda:opacity-100'
+            ? 'bg-ok/90 text-black'
+            : 'bg-black/70 text-muted opacity-60 hover:text-emerald-300 focus-visible:opacity-100 sm:opacity-0 sm:group-hover/agenda:opacity-100'
         }`}
       >
         ✓
@@ -108,82 +163,139 @@ function AgendaSection({
   events,
   games,
   now,
+  mode,
   emptyLabel,
+  onOpenEvent,
+  onToggleEvent,
 }: {
   title: string;
   events: GameEvent[];
   games: Map<string, Game>;
   now: number;
+  mode: AgendaMode;
   emptyLabel: string;
+  onOpenEvent: (event: GameEvent) => void;
+  onToggleEvent: (event: GameEvent) => void;
 }) {
   return (
     <section>
-      <h3 className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">{title}</h3>
+      <h3 className="mb-1.5 text-caption font-bold uppercase tracking-widest text-dim">{title}</h3>
       {events.length > 0 ? (
         <div className="space-y-1">
           {events.map((event) => (
-            <AgendaRow key={event.id} event={event} game={games.get(event.gameId)!} now={now} />
+            <AgendaRow
+              key={event.id}
+              event={event}
+              game={games.get(event.gameId)!}
+              now={now}
+              mode={mode}
+              onOpenEvent={onOpenEvent}
+              onToggleEvent={onToggleEvent}
+            />
           ))}
         </div>
       ) : (
-        <p className="px-3 py-1 text-[11px] text-slate-600">{emptyLabel}</p>
+        <p className="px-3 py-1 text-label text-faint">{emptyLabel}</p>
       )}
     </section>
   );
 }
 
-export function TimelineAgenda({ now }: { now: number }) {
-  const state = useApp((store) => store.state);
+/** Shared event list. Dashboard mode omits history and uses the capped selector above. */
+export function AgendaList({
+  data,
+  now,
+  mode = 'full',
+  onOpenEvent,
+  onToggleEvent,
+}: {
+  data: AgendaData;
+  now: number;
+  mode?: AgendaMode;
+  onOpenEvent: (event: GameEvent) => void;
+  onToggleEvent: (event: GameEvent) => void;
+}) {
   const [pastOpen, setPastOpen] = useState(false);
-  const windowStart = now - 2 * DAY;
-  const windowEnd = now + 28 * DAY;
-  const games = new Map(state.games.filter((game) => !game.deleted).map((game) => [game.id, game]));
-  const events = state.events
-    .filter((event) => !event.deleted && games.has(event.gameId) && event.end > windowStart && event.start < windowEnd)
-    .sort((a, b) => agendaCompare(a, b, now));
-  const live = events.filter((event) => agendaRank(event, now) === 0);
-  const upcoming = events.filter((event) => agendaRank(event, now) === 1);
-  const past = events.filter((event) => agendaRank(event, now) >= 2);
+  return (
+    <div className={mode === 'dashboard' ? 'space-y-3.5' : 'space-y-4'}>
+      <AgendaSection
+        title="Live now"
+        events={data.live}
+        games={data.games}
+        now={now}
+        mode={mode}
+        emptyLabel="Nothing live right now."
+        onOpenEvent={onOpenEvent}
+        onToggleEvent={onToggleEvent}
+      />
+      <AgendaSection
+        title="Upcoming"
+        events={data.upcoming}
+        games={data.games}
+        now={now}
+        mode={mode}
+        emptyLabel="Nothing upcoming in this window."
+        onOpenEvent={onOpenEvent}
+        onToggleEvent={onToggleEvent}
+      />
+      {mode === 'full' && (
+        <section>
+          <h3 className="mb-1.5 text-caption font-bold uppercase tracking-widest text-dim">Ended · done</h3>
+          {data.past.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setPastOpen((open) => !open)}
+              className="block min-h-11 w-full rounded-ui-md py-0.5 text-left text-caption font-semibold text-faint transition hover:text-muted sm:min-h-8"
+              aria-expanded={pastOpen}
+            >
+              {pastOpen
+                ? '− collapse past events'
+                : `+ ${data.past.length} past event${data.past.length === 1 ? '' : 's'}`}
+            </button>
+          ) : (
+            <p className="px-3 py-1 text-label text-faint">No past events in this window.</p>
+          )}
+          {pastOpen && (
+            <div className="mt-1 space-y-1">
+              {data.past.map((event) => (
+                <AgendaRow
+                  key={event.id}
+                  event={event}
+                  game={data.games.get(event.gameId)!}
+                  now={now}
+                  mode={mode}
+                  onOpenEvent={onOpenEvent}
+                  onToggleEvent={onToggleEvent}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+    </div>
+  );
+}
+
+export function TimelineAgenda({ now }: { now: number }) {
+  const state = useApp((s) => s.state);
+  const upsertEvent = useApp((s) => s.upsertEvent);
+  const openSheet = useUI((store) => store.openSheet);
+  const data = selectAgendaData(state, now);
+  const eventsExist = data.live.length + data.upcoming.length + data.past.length > 0;
 
   return (
-    <div className="glass gold-hairline relative rounded-3xl p-4">
-      {events.length === 0 ? (
-        <p className="py-8 text-center text-sm text-slate-500">
+    <div className="glass gold-hairline relative rounded-ui-card p-4">
+      {eventsExist ? (
+        <AgendaList
+          data={data}
+          now={now}
+          onOpenEvent={(event) => openSheet({ kind: 'event', gameId: event.gameId, eventId: event.id })}
+          onToggleEvent={(event) => upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done })}
+        />
+      ) : (
+        <p className="py-8 text-center text-body text-dim">
           No events in this window — import or add events so nothing ends without you noticing.
         </p>
-      ) : (
-        <div className="space-y-4">
-          <AgendaSection title="Live now" events={live} games={games} now={now} emptyLabel="Nothing live right now." />
-          <AgendaSection
-            title="Upcoming"
-            events={upcoming}
-            games={games}
-            now={now}
-            emptyLabel="Nothing upcoming in this window."
-          />
-          <section>
-            <h3 className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">Ended · done</h3>
-            {past.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => setPastOpen((open) => !open)}
-                className="block min-h-11 w-full rounded-lg py-0.5 text-left text-[10px] font-semibold text-slate-600 transition hover:text-slate-400 sm:min-h-8"
-                aria-expanded={pastOpen}
-              >
-                {pastOpen ? '− collapse past events' : `+ ${past.length} past event${past.length === 1 ? '' : 's'}`}
-              </button>
-            ) : (
-              <p className="px-3 py-1 text-[11px] text-slate-600">No past events in this window.</p>
-            )}
-            {pastOpen && (
-              <div className="mt-1 space-y-1">
-                {past.map((event) => (
-                  <AgendaRow key={event.id} event={event} game={games.get(event.gameId)!} now={now} />
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
       )}
     </div>
   );

@@ -20,12 +20,12 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
         const showReserveFields = r.reserveCap > 0 || reserveOpen[r.id];
 
         return (
-          <div key={r.id} className="rounded-2xl bg-white/[0.03] p-3 ring-1 ring-white/10">
+          <div key={r.id} className="rounded-ui-xl bg-white/[0.03] p-3 ring-1 ring-white/10">
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setIconPickerFor((cur) => (cur === r.id ? null : r.id))}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] ring-1 ring-white/10 transition hover:bg-white/10 sm:h-9 sm:w-9"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg bg-white/[0.06] ring-1 ring-white/10 transition hover:bg-white/10 sm:h-9 sm:w-9"
                 style={{ boxShadow: iconPickerFor === r.id ? `inset 0 0 0 1.5px ${game.color}` : undefined }}
                 aria-label={`Icon for ${r.name}`}
                 title="Pick an icon"
@@ -55,7 +55,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
               <button
                 type="button"
                 onClick={() => app.deleteResource(r.id)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg text-slate-500 transition hover:bg-rose-400/10 hover:text-rose-400 sm:h-9 sm:w-9"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg text-title text-dim transition hover:bg-rose-400/10 hover:text-rose-400 sm:h-9 sm:w-9"
                 aria-label={`Delete ${r.name}`}
               >
                 ✕
@@ -63,7 +63,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
             </div>
 
             {iconPickerFor === r.id && (
-              <div className="mt-2 flex flex-wrap gap-1.5 rounded-2xl bg-white/[0.04] p-2 ring-1 ring-white/10">
+              <div className="mt-2 flex flex-wrap gap-1.5 rounded-ui-xl bg-white/[0.04] p-2 ring-1 ring-white/10">
                 {RESOURCE_ICON_KEYS.map((key) => (
                   <button
                     key={key}
@@ -72,7 +72,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                       app.upsertResource({ id: r.id, gameId: game.id, icon: key });
                       setIconPickerFor(null);
                     }}
-                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/[0.06] ring-1 transition hover:bg-white/10 sm:h-9 sm:w-9"
+                    className="flex h-11 w-11 items-center justify-center rounded-ui-lg bg-white/[0.06] ring-1 transition hover:bg-white/10 sm:h-9 sm:w-9"
                     style={{
                       boxShadow:
                         r.icon === key ? `inset 0 0 0 1.5px ${game.color}` : 'inset 0 0 0 1px rgba(255,255,255,0.08)',
@@ -158,7 +158,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
         );
       })}
       <Btn onClick={() => app.upsertResource({ gameId: game.id, name: 'Energy' })}>+ Resource</Btn>
-      <p className="text-[11px] text-slate-500">
+      <p className="text-label text-dim">
         Min/pt = minutes per point of regen. 0 = doesn't regenerate. Rsv min/pt = minutes per reserve point once the bar
         is capped (defaults to double Min/pt — reserve fills at half speed).
       </p>
