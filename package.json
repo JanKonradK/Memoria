@@ -26,7 +26,7 @@
     "cf:types": "npm -w worker run cf:types",
     "audit": "npm audit --audit-level=high --omit=dev",
     "audit:all": "npm audit --audit-level=high",
-    "icons": "node app/scripts/gen-icons.mjs",
+    "icons": "node app/scripts/gen-mark.mjs && node app/scripts/gen-icons.mjs && node app/scripts/gen-ico.mjs",
     "ico": "node app/scripts/gen-ico.mjs",
     "install:desktop": "powershell -ExecutionPolicy Bypass -File desktop/Install-Shortcut.ps1"
   },

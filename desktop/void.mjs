@@ -69,14 +69,23 @@ const MIME = {
   '.txt': 'text/plain; charset=utf-8',
 };
 
-function hostedUrl() {
+/** Optional desktop/config.json: { "url": "https://…", "browser": "helium" }. */
+let configCache = null;
+function readConfig() {
+  if (configCache) return configCache;
   try {
-    const cfg = JSON.parse(readFileSync(join(here, 'config.json'), 'utf8'));
-    const url = typeof cfg.url === 'string' ? cfg.url.trim().replace(/\/+$/, '') : '';
-    return /^https?:\/\//.test(url) ? url : null;
+    const parsed = JSON.parse(readFileSync(join(here, 'config.json'), 'utf8'));
+    configCache = parsed && typeof parsed === 'object' ? parsed : {};
   } catch {
-    return null;
+    configCache = {};
   }
+  return configCache;
+}
+
+function hostedUrl() {
+  const value = readConfig().url;
+  const url = typeof value === 'string' ? value.trim().replace(/\/+$/, '') : '';
+  return /^https?:\/\//.test(url) ? url : null;
 }
 
 function ensureBuilt() {
@@ -268,8 +277,124 @@ async function startOrReuse() {
   return null;
 }
 
-/** Chromium-family exe names — safe to hand a `--app=` flag. Helium ships as chrome.exe. */
-const CHROMIUM_EXES = new Set(['chrome.exe', 'msedge.exe', 'brave.exe', 'vivaldi.exe', 'helium.exe', 'opera.exe']);
+/** Chromium-family programs — safe to hand a `--app=` flag. Helium ships as chrome.exe. */
+const CHROMIUM_APPS = new Set(['chrome', 'chromium', 'msedge', 'brave', 'vivaldi', 'helium', 'opera', 'thorium']);
+/** Gecko-family programs — no app mode, but they do take `-new-window`. */
+const FIREFOX_APPS = new Set(['firefox', 'librewolf', 'waterfox', 'zen']);
+
+/** `C:\...\Application\chrome.exe` → `chrome`. */
+function appName(exe) {
+  return (exe.split(/[\\/]/).pop() ?? '').replace(/\.exe$/i, '').toLowerCase();
+}
+
+/**
+ * Browsers Void knows how to find by name. `void.mjs --browser <key>`, the
+ * VOID_BROWSER environment variable, or `"browser": "<key>"` in config.json all
+ * accept these keys — as well as `system` (hand the URL to whatever the OS has
+ * registered) or a full path to any executable you like.
+ */
+const KNOWN_BROWSERS = [
+  {
+    key: 'helium',
+    label: 'Helium',
+    win: [['LOCALAPPDATA', 'imput\\Helium\\Application\\chrome.exe']],
+    unix: ['helium'],
+  },
+  {
+    key: 'chrome',
+    label: 'Google Chrome',
+    win: [
+      ['ProgramFiles', 'Google\\Chrome\\Application\\chrome.exe'],
+      ['ProgramFiles(x86)', 'Google\\Chrome\\Application\\chrome.exe'],
+      ['LOCALAPPDATA', 'Google\\Chrome\\Application\\chrome.exe'],
+    ],
+    unix: ['google-chrome', 'chromium'],
+  },
+  {
+    key: 'edge',
+    label: 'Microsoft Edge',
+    win: [
+      ['ProgramFiles', 'Microsoft\\Edge\\Application\\msedge.exe'],
+      ['ProgramFiles(x86)', 'Microsoft\\Edge\\Application\\msedge.exe'],
+    ],
+    unix: ['microsoft-edge'],
+  },
+  {
+    key: 'brave',
+    label: 'Brave',
+    win: [
+      ['ProgramFiles', 'BraveSoftware\\Brave-Browser\\Application\\brave.exe'],
+      ['ProgramFiles(x86)', 'BraveSoftware\\Brave-Browser\\Application\\brave.exe'],
+      ['LOCALAPPDATA', 'BraveSoftware\\Brave-Browser\\Application\\brave.exe'],
+    ],
+    unix: ['brave-browser', 'brave'],
+  },
+  {
+    key: 'vivaldi',
+    label: 'Vivaldi',
+    win: [
+      ['ProgramFiles', 'Vivaldi\\Application\\vivaldi.exe'],
+      ['LOCALAPPDATA', 'Vivaldi\\Application\\vivaldi.exe'],
+    ],
+    unix: ['vivaldi'],
+  },
+  {
+    key: 'opera',
+    label: 'Opera',
+    win: [
+      ['ProgramFiles', 'Opera\\opera.exe'],
+      ['LOCALAPPDATA', 'Programs\\Opera\\opera.exe'],
+    ],
+    unix: ['opera'],
+  },
+  {
+    key: 'firefox',
+    label: 'Firefox',
+    win: [
+      ['ProgramFiles', 'Mozilla Firefox\\firefox.exe'],
+      ['ProgramFiles(x86)', 'Mozilla Firefox\\firefox.exe'],
+    ],
+    unix: ['firefox'],
+  },
+  {
+    key: 'zen',
+    label: 'Zen Browser',
+    win: [
+      ['ProgramFiles', 'Zen Browser\\zen.exe'],
+      ['LOCALAPPDATA', 'Programs\\zen-browser\\zen.exe'],
+    ],
+    unix: ['zen-browser', 'zen'],
+  },
+  {
+    key: 'librewolf',
+    label: 'LibreWolf',
+    win: [
+      ['ProgramFiles', 'LibreWolf\\librewolf.exe'],
+      ['LOCALAPPDATA', 'LibreWolf\\librewolf.exe'],
+    ],
+    unix: ['librewolf'],
+  },
+];
+
+/** First existing install of a known browser, or null. */
+function findKnownBrowser(key) {
+  const entry = KNOWN_BROWSERS.find((b) => b.key === key);
+  if (!entry) return null;
+  if (process.platform === 'win32') {
+    for (const [envVar, tail] of entry.win) {
+      const base = process.env[envVar];
+      if (!base) continue;
+      const full = join(base, tail);
+      if (existsSync(full)) return full;
+    }
+    return null;
+  }
+  for (const command of entry.unix) {
+    const found = spawnSync('which', [command], { encoding: 'utf8' }).stdout?.trim();
+    if (found) return found;
+  }
+  return null;
+}
 
 /** The user's default browser exe (Windows registry), if it's Chromium-based. */
 function defaultChromiumBrowser() {
@@ -291,51 +416,118 @@ function defaultChromiumBrowser() {
     }).stdout;
     const exe = command?.match(/"([^"]+\.exe)"/)?.[1];
     if (!exe || !existsSync(exe)) return null;
-    return CHROMIUM_EXES.has(exe.split('\\').pop().toLowerCase()) ? exe : null;
+    return CHROMIUM_APPS.has(appName(exe)) ? exe : null;
   } catch {
     return null;
   }
 }
 
+/** No preference set: the default browser if it can do app windows, else the first one installed. */
 function findBrowser() {
-  const fromRegistry = defaultChromiumBrowser();
-  if (fromRegistry) return fromRegistry;
-  const pf = process.env['ProgramFiles'] ?? 'C:\\Program Files';
-  const pf86 = process.env['ProgramFiles(x86)'] ?? 'C:\\Program Files (x86)';
-  const local = process.env['LOCALAPPDATA'] ?? '';
-  const candidates = [
-    local && join(local, 'imput', 'Helium', 'Application', 'chrome.exe'),
-    join(pf, 'Google', 'Chrome', 'Application', 'chrome.exe'),
-    join(pf86, 'Google', 'Chrome', 'Application', 'chrome.exe'),
-    local && join(local, 'Google', 'Chrome', 'Application', 'chrome.exe'),
-    join(pf, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
-    join(pf86, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
-  ].filter(Boolean);
-  return candidates.find((p) => existsSync(p));
+  return defaultChromiumBrowser() ?? KNOWN_BROWSERS.map((b) => findKnownBrowser(b.key)).find(Boolean) ?? null;
 }
 
 /**
- * Open a chromeless app window INSIDE the user's running browser (default
- * profile — no --user-data-dir). Costs roughly one tab; the old dedicated
- * profile booted an entire second browser instance (~300-600 MB). The spawn
- * delegates to the existing browser process and exits immediately, so window
- * lifetime is untrackable — the server shuts itself down when idle instead.
+ * Which browser to open, most specific source first:
+ *   --browser <name|path>  →  VOID_BROWSER  →  config.json "browser"  →  auto
+ * `system` (or `default`) hands the URL to whatever the OS has registered, which
+ * is the escape hatch for anything not in KNOWN_BROWSERS.
  */
-function openAppWindow(url) {
-  const browser = findBrowser();
-  if (!browser) {
-    // No Chromium browser found: open the default browser as a plain tab.
+function browserPreference() {
+  const args = process.argv.slice(2);
+  const flag = args.find((arg) => arg.startsWith('--browser='));
+  if (flag) return { value: flag.slice('--browser='.length).trim(), source: '--browser' };
+  const bare = args.indexOf('--browser');
+  if (bare >= 0 && args[bare + 1]) return { value: args[bare + 1].trim(), source: '--browser' };
+  const fromEnv = process.env['VOID_BROWSER']?.trim();
+  if (fromEnv) return { value: fromEnv, source: 'VOID_BROWSER' };
+  const fromConfig = readConfig().browser;
+  if (typeof fromConfig === 'string' && fromConfig.trim()) {
+    return { value: fromConfig.trim(), source: 'desktop/config.json' };
+  }
+  return null;
+}
+
+function resolveBrowser() {
+  const preference = browserPreference();
+  if (!preference) return { kind: 'auto', exe: findBrowser() };
+
+  const value = preference.value;
+  const lower = value.toLowerCase();
+  if (lower === 'system' || lower === 'default') return { kind: 'system' };
+  if (lower === 'auto') return { kind: 'auto', exe: findBrowser() };
+
+  const known = findKnownBrowser(lower);
+  if (known) return { kind: 'exe', exe: known };
+  // Anything else is taken as a path (or, off Windows, a command on PATH).
+  if (existsSync(value)) return { kind: 'exe', exe: value };
+  if (process.platform !== 'win32') {
+    const onPath = spawnSync('which', [value], { encoding: 'utf8' }).stdout?.trim();
+    if (onPath) return { kind: 'exe', exe: onPath };
+  }
+  // Silently opening a different browser than the one that was asked for is
+  // worse than saying so — but not opening the app at all is worse still.
+  console.error(`Void: browser "${value}" (from ${preference.source}) was not found; using the system default.`);
+  return { kind: 'system' };
+}
+
+/** Hand the URL to the OS and let it pick — works with any browser, as a plain tab. */
+function openWithSystem(url) {
+  if (process.platform === 'win32') {
     spawnSync('cmd', ['/c', 'start', '', url], { shell: false });
     return;
   }
-  const child = spawn(browser, [`--app=${url}`, '--window-size=1200,860'], { detached: true, stdio: 'ignore' });
-  child.on('error', () => {
-    spawnSync('cmd', ['/c', 'start', '', url], { shell: false });
-  });
+  spawnSync(process.platform === 'darwin' ? 'open' : 'xdg-open', [url]);
+}
+
+/** Chromium gets a chromeless app window; Firefox at least gets its own window. */
+function browserArgs(exe, url) {
+  const name = appName(exe);
+  if (CHROMIUM_APPS.has(name)) return [`--app=${url}`, '--window-size=1200,860'];
+  if (FIREFOX_APPS.has(name)) return ['-new-window', url];
+  return [url];
+}
+
+/**
+ * Open the app INSIDE the chosen browser, in its default profile (no
+ * --user-data-dir). Costs roughly one tab; a dedicated profile would boot an
+ * entire second browser instance (~300-600 MB). The spawn delegates to the
+ * existing browser process and exits immediately, so window lifetime is
+ * untrackable — the server shuts itself down when idle instead.
+ */
+function openAppWindow(url) {
+  const choice = resolveBrowser();
+  if (choice.kind === 'system' || !choice.exe) {
+    openWithSystem(url);
+    return;
+  }
+  const child = spawn(choice.exe, browserArgs(choice.exe, url), { detached: true, stdio: 'ignore' });
+  child.on('error', () => openWithSystem(url));
   child.unref();
 }
 
+/** `node desktop/void.mjs --list-browsers` — what is installed, and what would open. */
+function listBrowsers() {
+  const choice = resolveBrowser();
+  const preference = browserPreference();
+  for (const entry of KNOWN_BROWSERS) {
+    const path = findKnownBrowser(entry.key);
+    console.log(`${path ? '•' : ' '} ${entry.key.padEnd(10)} ${path ?? '(not installed)'}`);
+  }
+  console.log(`\n  ${'system'.padEnd(10)} (whatever this machine has registered for https)`);
+  console.log(
+    `\nVoid will open: ${choice.kind === 'system' ? 'the system default browser' : choice.exe}` +
+      (preference ? ` — from ${preference.source}` : ' — no preference set'),
+  );
+  console.log('Set one with --browser <name|path>, VOID_BROWSER, or "browser" in desktop/config.json.');
+}
+
 async function main() {
+  if (process.argv.includes('--list-browsers')) {
+    listBrowsers();
+    return;
+  }
+
   // Hosted mode: the app lives on Cloudflare, no local server needed.
   const hosted = hostedUrl();
   if (hosted) {
