@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import {
-  infinityLobePath,
-  RING_PATH_LENGTH,
-  ringPath,
-  stadiumPath,
-  sweepDasharray,
-} from '../src/components/ring-geometry';
+import { RING_PATH_LENGTH, ringPath, stadiumPath, sweepDasharray } from '../src/components/ring-geometry';
+import { MARK_HEIGHT, MARK_PATH, MARK_WIDTH } from '../src/components/mark-path';
+import { bandBounds, bandSamples, MARK } from '../scripts/mobius.mjs';
 import { luminance } from '../src/util';
 
 describe('stadiumPath', () => {
@@ -61,21 +57,47 @@ describe('sweepDasharray', () => {
   });
 });
 
-describe('infinityLobePath', () => {
-  it('draws an open arc, not a closed circle', () => {
-    const lobe = infinityLobePath(20, 12, 8.5, false);
-    expect(lobe).toMatch(/^M[\d.-]+ [\d.-]+ A8\.5 8\.5/);
-    expect(lobe).not.toContain('Z');
-    expect(lobe).not.toMatch(/NaN|Infinity/);
+describe('the Möbius mark', () => {
+  const { band } = bandSamples();
+  const first = band[0];
+  const last = band[band.length - 1];
+
+  it('never closes: the band stops and restarts at the crossing', () => {
+    // The whole point of the mark. A gap narrower than the band itself would
+    // read as a rendering seam rather than as a beginning and an end.
+    const separation = Math.hypot(last.x - first.x, last.y - first.y);
+    expect(separation).toBeGreaterThan(first.w + last.w);
+    // Both loose ends belong to the same self-crossing, which sits at the origin.
+    expect(Math.hypot(first.x, first.y)).toBeLessThan(MARK.gapArc);
+    expect(Math.hypot(last.x, last.y)).toBeLessThan(MARK.gapArc);
   });
 
-  it('mirrors the second lobe so the two gaps face the crossing point', () => {
-    const left = infinityLobePath(14, 12, 8.5, false);
-    const right = infinityLobePath(30, 12, 8.5, true);
-    expect(left).not.toBe(right);
-    // Opposite arc sweep flags are what make the lobes mirror rather than repeat.
-    expect(left).toContain('A8.5 8.5 0 1 0');
-    expect(right).toContain('A8.5 8.5 0 1 1');
+  it('turns edge-on exactly once, which is what makes it a Möbius band', () => {
+    // Two pinches would be a full twist (a plain ring); none would be flat.
+    const pinched = band.map((s) => s.w < MARK.halfWidth * (MARK.pinch + 0.08));
+    const runs = pinched.reduce((count, on, i) => count + (on && !pinched[i - 1] ? 1 : 0), 0);
+    expect(runs).toBe(1);
+    expect(Math.min(...band.map((s) => s.w))).toBeCloseTo(MARK.halfWidth * MARK.pinch, 3);
+  });
+
+  it('keeps the infinity proportions: twice as wide as it is tall', () => {
+    const bounds = bandBounds();
+    expect(bounds.width / bounds.height).toBeGreaterThan(1.5);
+    expect(bounds.width / bounds.height).toBeLessThan(2.1);
+  });
+
+  it('generates one closed outline that stays inside its box', () => {
+    expect(MARK_PATH.startsWith('M')).toBe(true);
+    expect(MARK_PATH.endsWith('Z')).toBe(true);
+    expect(MARK_PATH.match(/M/g)).toHaveLength(1); // a single subpath, no stray islands
+    expect(MARK_PATH).not.toMatch(/NaN|Infinity/);
+    const numbers = MARK_PATH.match(/-?\d+(\.\d+)?/g)!.map(Number);
+    const xs = numbers.filter((_, i) => i % 2 === 0);
+    const ys = numbers.filter((_, i) => i % 2 === 1);
+    expect(Math.min(...xs)).toBeGreaterThanOrEqual(0);
+    expect(Math.max(...xs)).toBeLessThanOrEqual(MARK_WIDTH);
+    expect(Math.min(...ys)).toBeGreaterThanOrEqual(0);
+    expect(Math.max(...ys)).toBeLessThanOrEqual(MARK_HEIGHT);
   });
 });
 

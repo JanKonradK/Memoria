@@ -48,17 +48,6 @@ export function sweepDasharray(sweep: number): string {
   return `${Number((clamped * RING_PATH_LENGTH).toFixed(3))} ${RING_PATH_LENGTH}`;
 }
 
-/**
- * One lobe of the infinity mark: an open arc that leaves a gap, echoing the
- * download-ring language. `cx` positions the lobe; the two lobes meet at centre.
- */
-export function infinityLobePath(cx: number, cy: number, r: number, mirrored: boolean): string {
-  // Sweep ~300 degrees so a wedge stays open, with the gap facing the crossing point.
-  const start = mirrored ? -35 : 215;
-  const end = mirrored ? 265 : 145;
-  const toPoint = (deg: number) => {
-    const rad = (deg * Math.PI) / 180;
-    return `${coord(cx + r * Math.cos(rad))} ${coord(cy + r * Math.sin(rad))}`;
-  };
-  return `M${toPoint(start)} A${coord(r)} ${coord(r)} 0 1 ${mirrored ? 1 : 0} ${toPoint(end)}`;
-}
+// The Void mark used to be built from two open arcs here. It is now a Möbius
+// band with a break at its crossing — geometry in app/scripts/mobius.mjs,
+// generated outline in app/src/components/mark-path.ts.
