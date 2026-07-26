@@ -13,7 +13,7 @@ import { AddGameCell } from './AddGameCell';
 import { CardsAgendaLayout } from './DashboardLayouts';
 import { GameCard } from './GameCard';
 import { NexusLayout } from './NexusLayout';
-import { GameBadge, Page, Segmented } from './ui';
+import { GameBadge, Page } from './ui';
 
 export function DashboardPage({ now }: { now: number }) {
   const session = useSession();
@@ -45,7 +45,6 @@ export function DashboardPage({ now }: { now: number }) {
   const setTab = useUI((s) => s.setTab);
   const setTimelineView = useUI((s) => s.setTimelineView);
   const dashboardLayout = useUI((s) => s.dashboardLayout);
-  const setDashboardLayout = useUI((s) => s.setDashboardLayout);
   const editGame = useCallback((gameId: string) => openSheet({ kind: 'game', gameId }), [openSheet]);
   const openGameEvent = useCallback(
     (eventId: string, gameId: string) => openSheet({ kind: 'event', eventId, gameId }),
@@ -76,6 +75,10 @@ export function DashboardPage({ now }: { now: number }) {
   }, [setupStorageKey]);
   const hero = order.find((o) => o.next)?.next ?? null;
   const heroGame = hero ? state.games.find((g) => g.id === hero.gameId) : undefined;
+  // Cards already leads with the event horizon and every card carries its own
+  // countdown, so the hero band was a third copy of the same "what's next" —
+  // dropping it gives the grid back a full row.
+  const showHero = wide ? dashboardLayout !== 'cards' : true;
 
   // Card ORDER is frozen while you're on this page — live re-sorting made
   // cards jump away mid-entry. Values/timers stay live; position changes only
@@ -127,7 +130,7 @@ export function DashboardPage({ now }: { now: number }) {
           </div>
         </section>
       )}
-      {hero && heroGame && (
+      {showHero && hero && heroGame && (
         <m.div className="mb-4" variants={fadeDown} initial="hidden" animate="visible">
           {/* w-full, not flex-1: the hero used to sit in a flex row beside the Add Game
               button, which stretched it. That button now lives in the game rail, so a
@@ -191,24 +194,11 @@ export function DashboardPage({ now }: { now: number }) {
         </div>
       ) : (
         <>
-          <div className={`mb-3 flex items-center justify-end gap-2 ${orderStale ? 'min-h-11 sm:min-h-9' : ''}`}>
-            {wide && (
-              <div className="mr-auto flex items-center gap-2">
-                <span className="hidden text-caption font-bold uppercase tracking-widest text-dim min-[1450px]:inline">
-                  Wide layout
-                </span>
-                <Segmented
-                  options={[
-                    { value: 'nexus', label: 'Nexus' },
-                    { value: 'cards', label: 'Cards' },
-                  ]}
-                  value={dashboardLayout}
-                  onChange={setDashboardLayout}
-                  ariaLabel="Wide dashboard layout"
-                />
-              </div>
-            )}
-            {orderStale && (
+          {/* Only rendered when there is something to say — an always-present
+              control row is a band of empty space above every layout. The layout
+              switch and add-game control now live in the nav rail. */}
+          {orderStale && (
+            <div className="mb-3 flex min-h-11 items-center justify-end sm:min-h-9">
               <button
                 type="button"
                 onClick={() => setSortedIds(liveIds)}
@@ -216,8 +206,8 @@ export function DashboardPage({ now }: { now: number }) {
               >
                 <span aria-hidden>↻</span> Sort by urgency
               </button>
-            )}
-          </div>
+            </div>
+          )}
           {wide ? (
             dashboardLayout === 'nexus' ? (
               <NexusLayout
@@ -232,7 +222,6 @@ export function DashboardPage({ now }: { now: number }) {
                 onToggleEvent={toggleEvent}
                 onOpenReminder={openReminder}
                 onOpenTimeline={openTimeline}
-                onAddGame={() => openSheet({ kind: 'addGame' })}
               />
             ) : (
               <CardsAgendaLayout
@@ -244,7 +233,6 @@ export function DashboardPage({ now }: { now: number }) {
                 onToggleEvent={toggleEvent}
                 onOpenReminder={openReminder}
                 onOpenTimeline={openTimeline}
-                onAddGame={() => openSheet({ kind: 'addGame' })}
               />
             )
           ) : (
