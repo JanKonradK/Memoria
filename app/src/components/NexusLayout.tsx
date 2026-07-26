@@ -5,7 +5,6 @@ import { useMediaQuery, useReducedMotion } from '../hooks';
 import { useDerived } from '../selectors';
 import { useUI } from '../ui-store';
 import { endTone, fmtDur, tint } from '../util';
-import { AddGameCell } from './AddGameCell';
 import { GameControlsView, type GameControlActions } from './GameCard';
 import { ProgressBar } from './primitives';
 import { clusterCoreGeometry, clusterDotLayout } from './nexus/cluster-geometry';
@@ -151,7 +150,6 @@ type SharedNexusProps = {
   onToggleEvent: (event: GameEvent) => void;
   onOpenReminder: () => void;
   onOpenTimeline: () => void;
-  onAddGame: () => void;
 };
 
 function NexusNode({
@@ -393,7 +391,6 @@ export function NexusLayout({
   onToggleEvent,
   onOpenReminder,
   onOpenTimeline,
-  onAddGame,
 }: SharedNexusProps) {
   const [expandedGameId, setExpandedGameId] = useState<string | null>(null);
   const reducedMotion = useReducedMotion();
@@ -441,7 +438,6 @@ export function NexusLayout({
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [activeExpandedGameId]);
 
-  const addSide: 'left' | 'right' = rightIds.length <= leftIds.length ? 'right' : 'left';
   const renderRail = (ids: string[], side: 'left' | 'right') => (
     <aside className="relative z-10 flex min-w-0 flex-col justify-center gap-3" aria-label={`${side} game rail`}>
       {ids.map((id) => {
@@ -474,7 +470,6 @@ export function NexusLayout({
           />
         );
       })}
-      {side === addSide && <AddGameCell onAdd={onAddGame} />}
     </aside>
   );
 

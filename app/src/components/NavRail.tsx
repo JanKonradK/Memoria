@@ -1,10 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { m } from 'motion/react';
+import { useMediaQuery } from '../hooks';
 import { useApp } from '../store';
 import { useUI, type Tab } from '../ui-store';
 import { springs } from '../motion';
+import { AddGameButton } from './AddGameCell';
 import { Ring } from './Ring';
 import { Logo } from './Logo';
+import { Segmented } from './ui';
 
 const TABS: Array<{ id: Tab; label: string; icon: ReactNode }> = [
   {
@@ -89,6 +92,16 @@ function SyncLogo() {
 export function NavRail() {
   const tab = useUI((state) => state.tab);
   const setTab = useUI((state) => state.setTab);
+  const dashboardLayout = useUI((state) => state.dashboardLayout);
+  const setDashboardLayout = useUI((state) => state.setDashboardLayout);
+  const openSheet = useUI((state) => state.openSheet);
+  const hasGames = useApp((state) => state.state.games.some((game) => !game.deleted));
+  const wide = useMediaQuery('(min-width: 1280px)');
+  // The wide dashboard's own chrome lives here instead of above the stage: the
+  // layout switch and "add another game" are the only page-level controls the
+  // Nexus/Cards views have, and a header row for two buttons cost a whole band
+  // of vertical space on the one breakpoint where the stage wants it most.
+  const showDashboardTools = wide && tab === 'home' && hasGames;
   const [attention, setAttention] = useState(true);
 
   useEffect(() => {
@@ -162,6 +175,21 @@ export function NavRail() {
             );
           })}
         </nav>
+        {showDashboardTools && (
+          <div className="pointer-events-auto relative flex items-center gap-2 self-center pl-1">
+            <span aria-hidden className="h-9 w-px bg-white/10" />
+            <Segmented
+              options={[
+                { value: 'nexus', label: 'Nexus' },
+                { value: 'cards', label: 'Cards' },
+              ]}
+              value={dashboardLayout}
+              onChange={setDashboardLayout}
+              ariaLabel="Wide dashboard layout"
+            />
+            <AddGameButton onAdd={() => openSheet({ kind: 'addGame' })} size={40} />
+          </div>
+        )}
       </div>
     </div>
   );
