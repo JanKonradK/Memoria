@@ -56,6 +56,31 @@ If you deploy to Cloudflare (below), create `desktop/config.json` with
 `{ "url": "https://void.<your-subdomain>.workers.dev" }` — the shortcut then
 opens the hosted, always-synced app instead of a local server.
 
+### Choosing the browser
+
+By default Void opens in your default browser when that browser can do app
+windows (Chromium-based), otherwise in the first one it finds installed. To pin
+a specific one:
+
+```sh
+node desktop/void.mjs --list-browsers     # what's installed and what would open
+node desktop/void.mjs --browser zen       # this launch only
+```
+
+Persist the choice with `"browser"` in `desktop/config.json`, an environment
+variable, or arguments on the shortcut itself (`Void.vbs --browser zen`):
+
+```json
+{ "url": "https://void.<your-subdomain>.workers.dev", "browser": "helium" }
+```
+
+Known names: `helium`, `chrome`, `edge`, `brave`, `vivaldi`, `opera`, `firefox`,
+`zen`, `librewolf`. You can also pass a full path to any executable, or
+`system` to hand the URL to whatever the machine has registered for `https`
+(the escape hatch for anything not on the list). Chromium-based browsers get a
+chromeless app window; Firefox-based ones get a plain window; `system` gets a
+tab. Precedence is `--browser` → `VOID_BROWSER` → `config.json` → automatic.
+
 ## Deploy the hosted product
 
 Production uses its own Clerk application, D1 database, and encryption key.
