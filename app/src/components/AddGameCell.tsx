@@ -1,26 +1,33 @@
 import { Ring } from './Ring';
 
-/** Trailing rail slot: a dashed incomplete ring, which reads as "empty slot". */
+/** A dashed incomplete ring, which reads as "empty slot". */
+export function AddGameButton({ onAdd, size = 46 }: { onAdd: () => void; size?: number }) {
+  return (
+    <button
+      type="button"
+      onClick={onAdd}
+      aria-label="Add game"
+      className="group flex min-h-11 min-w-11 items-center justify-center rounded-ui-full transition active:scale-90"
+    >
+      <Ring
+        size={size}
+        strokeWidth={1.75}
+        dashed
+        stroke="rgba(200,180,255,0.42)"
+        fill="rgba(255,255,255,0.025)"
+        className="transition group-hover:brightness-150"
+      >
+        <span className="text-2xl font-light leading-none text-slate-300 transition group-hover:text-white">+</span>
+      </Ring>
+    </button>
+  );
+}
+
+/** Trailing grid slot for the narrow card grid; wide layouts add from the nav rail. */
 export function AddGameCell({ onAdd, className = '' }: { onAdd: () => void; className?: string }) {
   return (
     <div className={`flex min-h-16 items-center justify-center ${className}`}>
-      <button
-        type="button"
-        onClick={onAdd}
-        aria-label="Add game"
-        className="group flex min-h-11 min-w-11 items-center justify-center rounded-ui-full transition active:scale-90"
-      >
-        <Ring
-          size={46}
-          strokeWidth={1.75}
-          dashed
-          stroke="rgba(200,180,255,0.42)"
-          fill="rgba(255,255,255,0.025)"
-          className="transition group-hover:brightness-150"
-        >
-          <span className="text-2xl font-light leading-none text-slate-300 transition group-hover:text-white">+</span>
-        </Ring>
-      </button>
+      <AddGameButton onAdd={onAdd} />
     </div>
   );
 }

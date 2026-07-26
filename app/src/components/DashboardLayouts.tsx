@@ -5,7 +5,6 @@ import { m } from 'motion/react';
 import { useDerived } from '../selectors';
 import { fmtDur } from '../util';
 import { cardEnter } from '../motion';
-import { AddGameCell } from './AddGameCell';
 import { GameCard } from './GameCard';
 import { AgendaList } from './TimelineAgenda';
 import { GameBadge } from './ui';
@@ -191,7 +190,6 @@ type SharedLayoutProps = {
   onToggleEvent: (event: GameEvent) => void;
   onOpenReminder: () => void;
   onOpenTimeline: () => void;
-  onAddGame: () => void;
 };
 
 export function CardsAgendaLayout({
@@ -203,13 +201,13 @@ export function CardsAgendaLayout({
   onToggleEvent,
   onOpenReminder,
   onOpenTimeline,
-  onAddGame,
 }: SharedLayoutProps) {
   const entryById = new Map(entries.map((entry) => [entry.game.id, entry]));
   const cards = displayIds.filter((id) => entryById.has(id));
   // Three columns so column 2 is a real middle; the horizon takes the centre
-  // cell of the middle row and the game cards plus trailing add cell flow around it.
-  const rows = Math.ceil((cards.length + 2) / 3);
+  // cell of the middle row and the game cards flow around it. +1 for the horizon
+  // itself — adding a game is a nav-rail control, not a cell in this grid.
+  const rows = Math.ceil((cards.length + 1) / 3);
   const horizonRow = Math.max(1, Math.ceil(rows / 2));
 
   return (
@@ -229,7 +227,6 @@ export function CardsAgendaLayout({
         onOpenReminder={onOpenReminder}
         onOpenTimeline={onOpenTimeline}
       />
-      <AddGameCell onAdd={onAddGame} />
     </div>
   );
 }
