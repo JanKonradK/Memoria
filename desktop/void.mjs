@@ -1,16 +1,16 @@
-// Techno's Library desktop launcher.
+// Void desktop launcher.
 // Serves the built PWA (app/dist) on a FIXED local port and opens it as a
 // chromeless "app" window inside the user's default Chromium browser (shared
 // profile — costs about one tab). The server exits on its own once no app
 // window has been connected for a few minutes.
-// Zero dependencies — plain Node. Invoked hidden by TechnoGG.vbs.
+// Zero dependencies — plain Node. Invoked hidden by Void.vbs.
 //
 // The port must stay identical between launches: IndexedDB (all app data) is
 // scoped to the origin `http://127.0.0.1:<port>`, so a changing port silently
 // wipes the app's state on every launch. PORTS is an ordered list tried in the
 // same order every time; the first entry is used unless a foreign app squats it.
 //
-// Optional: create desktop/config.json with {"url": "https://technogg.<you>.workers.dev"}
+// Optional: create desktop/config.json with {"url": "https://void.<you>.workers.dev"}
 // after deploying to Cloudflare — the launcher then skips the local server and
 // opens the hosted (always-synced) app in the same kind of window.
 import { createServer } from 'node:http';
@@ -25,11 +25,33 @@ const repo = join(here, '..');
 const dist = join(repo, 'app', 'dist');
 
 // The one local state document — served over /api/sync to app windows.
-const DATA_DIR = join(process.env['APPDATA'] ?? join(os.homedir(), '.config'), 'technogg');
+const APP_DATA_ROOT = process.env['APPDATA'] ?? join(os.homedir(), '.config');
+const LEGACY_DATA_DIR = join(APP_DATA_ROOT, 'technogg');
+const DATA_DIR = join(APP_DATA_ROOT, 'void');
+
+function migrateLegacyDataDirectory() {
+  if (!existsSync(LEGACY_DATA_DIR)) return;
+  if (!existsSync(DATA_DIR)) {
+    renameSync(LEGACY_DATA_DIR, DATA_DIR);
+    return;
+  }
+
+  const legacyStateFile = join(LEGACY_DATA_DIR, 'state.json');
+  const stateFile = join(DATA_DIR, 'state.json');
+  if (!existsSync(legacyStateFile) || existsSync(stateFile)) return;
+  mkdirSync(DATA_DIR, { recursive: true });
+  const legacyState = readFileSync(legacyStateFile);
+  writeFileSync(stateFile, legacyState);
+  if (!readFileSync(stateFile).equals(legacyState)) {
+    throw new Error('Void could not verify the migrated desktop state file.');
+  }
+}
+
+migrateLegacyDataDirectory();
 const STATE_FILE = join(DATA_DIR, 'state.json');
 
 const PORTS = [17817, 17818, 17819];
-const MARKER = 'x-technogg';
+const MARKER = 'x-void';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -79,8 +101,8 @@ function serveFile(res, filePath) {
   }
 }
 
-/** Is a Techno's Library instance already serving on this port? */
-async function isTechnoGG(port) {
+/** Is a Void instance already serving on this port? */
+async function isVoid(port) {
   try {
     const res = await fetch(`http://127.0.0.1:${port}/`, { signal: AbortSignal.timeout(1500) });
     return res.headers.get(MARKER) === '1';
@@ -234,14 +256,14 @@ function tryListen(port) {
 }
 
 /**
- * Bind the first free port from PORTS, or detect a Techno's Library instance already
+ * Bind the first free port from PORTS, or detect a Void instance already
  * running on one (second launch) and reuse its URL instead of starting anew.
  */
 async function startOrReuse() {
   for (const port of PORTS) {
     const server = await tryListen(port);
     if (server) return { server, port };
-    if (await isTechnoGG(port)) return { server: null, port };
+    if (await isVoid(port)) return { server: null, port };
   }
   return null;
 }
@@ -317,7 +339,7 @@ async function main() {
   // Hosted mode: the app lives on Cloudflare, no local server needed.
   const hosted = hostedUrl();
   if (hosted) {
-    if (process.env['TECHNOGG_NO_BROWSER']) {
+    if (process.env['VOID_NO_BROWSER']) {
       console.log(hosted);
       return;
     }
@@ -330,7 +352,7 @@ async function main() {
   if (!got) {
     // All candidate ports are squatted by foreign apps — bail loudly rather
     // than fall back to a random port (that would strand the user's data).
-    console.error(`Techno's Library: ports ${PORTS.join(', ')} are all in use by other programs.`);
+    console.error(`Void: ports ${PORTS.join(', ')} are all in use by other programs.`);
     process.exit(1);
   }
   const { server, port } = got;
@@ -342,7 +364,7 @@ async function main() {
 
   // Headless mode for testing: serve (or point at the running instance),
   // print the URL, don't open a window.
-  if (process.env['TECHNOGG_NO_BROWSER']) {
+  if (process.env['VOID_NO_BROWSER']) {
     console.log(url);
     if (!server) return; // reusing another instance — nothing to keep alive
     process.on('SIGINT', shutdown);
@@ -350,7 +372,7 @@ async function main() {
     return;
   }
 
-  // Reuse case: another Techno's Library instance owns the server; just open a window on it.
+  // Reuse case: another Void instance owns the server; just open a window on it.
   // Our process can exit immediately — the other instance manages lifetime.
   if (!server) {
     openAppWindow(url);

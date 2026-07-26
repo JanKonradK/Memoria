@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "technogg-local",
+  "name": "void-local",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-13",
   "compatibility_flags": ["nodejs_compat"],
@@ -12,7 +12,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "technogg-local",
+      "database_name": "void-local",
       "database_id": "00000000-0000-0000-0000-000000000001",
       "migrations_dir": "migrations",
     },
@@ -20,62 +20,24 @@
   "vars": {
     "APP_ENV": "local",
     "ALLOWED_ORIGINS": "http://localhost:5173,http://127.0.0.1:5173",
+    "ALERT_SWEEP_MAX_USERS": "5",
+    "CLERK_FRONTEND_API": "https://clerk.technogg.app",
     "MASTER_KEY_VERSION": "1",
   },
   "triggers": {
     // Alert engine heartbeat — every 10 minutes.
     "crons": ["*/10 * * * *"],
   },
-  "queues": {
-    "producers": [{ "binding": "ALERT_QUEUE", "queue": "technogg-alerts-local" }],
-    "consumers": [
-      {
-        "queue": "technogg-alerts-local",
-        "max_batch_size": 10,
-        "max_batch_timeout": 5,
-        "max_retries": 5,
-        "dead_letter_queue": "technogg-alerts-local-dlq",
-      },
-    ],
-  },
   "observability": {
     "enabled": true,
   },
   "env": {
-    "staging": {
-      "name": "technogg-staging",
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "technogg-staging",
-          "database_id": "00000000-0000-0000-0000-000000000002",
-          "migrations_dir": "migrations",
-        },
-      ],
-      "vars": {
-        "APP_ENV": "staging",
-        "ALLOWED_ORIGINS": "https://staging.example.invalid",
-        "MASTER_KEY_VERSION": "1",
-      },
-      "queues": {
-        "producers": [{ "binding": "ALERT_QUEUE", "queue": "technogg-alerts-staging" }],
-        "consumers": [
-          {
-            "queue": "technogg-alerts-staging",
-            "max_batch_size": 10,
-            "max_batch_timeout": 5,
-            "max_retries": 5,
-            "dead_letter_queue": "technogg-alerts-staging-dlq",
-          },
-        ],
-      },
-    },
     "production": {
-      "name": "technogg",
+      "name": "void",
       "d1_databases": [
         {
           "binding": "DB",
-          "database_name": "technogg-production",
+          "database_name": "void-production",
           "database_id": "00000000-0000-0000-0000-000000000003",
           "migrations_dir": "migrations",
         },
@@ -83,19 +45,9 @@
       "vars": {
         "APP_ENV": "production",
         "ALLOWED_ORIGINS": "https://app.example.invalid",
+        "ALERT_SWEEP_MAX_USERS": "5",
+        "CLERK_FRONTEND_API": "https://clerk.technogg.app",
         "MASTER_KEY_VERSION": "1",
-      },
-      "queues": {
-        "producers": [{ "binding": "ALERT_QUEUE", "queue": "technogg-alerts-production" }],
-        "consumers": [
-          {
-            "queue": "technogg-alerts-production",
-            "max_batch_size": 10,
-            "max_batch_timeout": 5,
-            "max_retries": 5,
-            "dead_letter_queue": "technogg-alerts-production-dlq",
-          },
-        ],
       },
     },
   },

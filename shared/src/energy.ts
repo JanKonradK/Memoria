@@ -141,8 +141,13 @@ export interface SleepCheck {
 }
 
 /** Would sleeping `sleepHours` from now waste regen in this game? */
-export function sleepCheck(state: AppState, game: Game, sleepHours: number, now: number): SleepCheck {
-  const snaps = latestSnapshots(state.snapshots);
+export function sleepCheck(
+  state: AppState,
+  game: Game,
+  sleepHours: number,
+  now: number,
+  snaps: Map<string, Snapshot> = latestSnapshots(state.snapshots),
+): SleepCheck {
   const horizon = now + sleepHours * 3_600_000;
   let fullAt: number | null = null;
   for (const res of state.resources.filter((r) => r.gameId === game.id && !r.deleted && r.regenMinutes > 0)) {

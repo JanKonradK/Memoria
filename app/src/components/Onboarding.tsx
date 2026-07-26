@@ -1,11 +1,12 @@
-import { PRESETS } from '@technogg/shared';
+import { PRESETS } from '@void/shared';
 import { useState } from 'react';
 import { useApp } from '../store';
 import { intOr } from '../util';
 import { Btn, GameBadge, NumInput } from './ui';
 
 export function Onboarding({ onComplete }: { onComplete: () => void }) {
-  const app = useApp();
+  const addGameFromPreset = useApp((store) => store.addGameFromPreset);
+  const setEnergyValue = useApp((store) => store.setEnergy);
   const [selected, setSelected] = useState<string[]>([]);
   const [energy, setEnergy] = useState<Record<string, string>>({});
 
@@ -13,18 +14,18 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
     for (const key of selected) {
       const preset = PRESETS.find((item) => item.key === key);
       if (!preset) continue;
-      const gameId = app.addGameFromPreset(preset, {});
+      const gameId = addGameFromPreset(preset, {});
       const resource = useApp
         .getState()
         .state.resources.find((item) => item.gameId === gameId && !item.deleted && item.regenMinutes > 0);
-      if (resource) app.setEnergy(resource.id, Math.min(resource.cap, Math.max(0, intOr(energy[key] ?? '', 0))));
+      if (resource) setEnergyValue(resource.id, Math.min(resource.cap, Math.max(0, intOr(energy[key] ?? '', 0))));
     }
     onComplete();
   };
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-5xl px-4 py-10 sm:px-5">
-      <p className="text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300">Welcome to Techno's Library</p>
+      <p className="text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300">Welcome to Void</p>
       <h1 className="mt-3 text-3xl font-black tracking-tight text-fg">Set up your first dashboard</h1>
       <p className="mt-2 max-w-2xl text-body leading-6 text-muted">
         Choose the games you actively play and enter the current value of their main energy. Server clocks and default

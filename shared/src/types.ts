@@ -2,6 +2,7 @@ export type Cadence = 'daily' | 'weekly' | 'monthly' | 'custom';
 export type ResourceKind = 'regen' | 'weekly' | 'counter';
 export type TaskMode = 'check' | 'timer' | 'count';
 export const CURRENT_SCHEMA_VERSION = 3;
+export const MAX_GAME_IMAGE_LENGTH = 200_000;
 
 /** Everything syncable carries updatedAt (epoch ms) for last-write-wins merge. */
 export interface Syncable {

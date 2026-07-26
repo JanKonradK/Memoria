@@ -1,4 +1,4 @@
-import type { Game, GameEvent } from '@technogg/shared';
+import type { Game, GameEvent } from '@void/shared';
 
 /** Playable events first, followed by cycles, banners, then maintenance. */
 export const TYPE_RANK = { event: 0, custom: 0, cycle: 1, banner: 2, maintenance: 3 } as const;

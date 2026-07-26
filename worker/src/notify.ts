@@ -1,4 +1,4 @@
-import type { PendingAlert } from '@technogg/shared';
+import type { PendingAlert } from '@void/shared';
 
 export interface NotificationSecrets {
   discord?: { webhook: string };
@@ -21,7 +21,7 @@ async function sendDiscord(webhook: string, alerts: PendingAlert[]): Promise<boo
     const res = await fetch(webhook, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ username: "Techno's Library", embeds }),
+      body: JSON.stringify({ username: 'Void', embeds }),
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return false;

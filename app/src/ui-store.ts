@@ -1,11 +1,37 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export const UI_STORAGE_KEY = 'void-ui';
+export const LEGACY_UI_STORAGE_KEY = 'technogg-ui';
+
+export function migrateLegacyUiStorage(): void {
+  if (typeof localStorage === 'undefined' || localStorage.getItem(UI_STORAGE_KEY) !== null) return;
+  const legacyValue = localStorage.getItem(LEGACY_UI_STORAGE_KEY);
+  if (legacyValue === null) return;
+  try {
+    localStorage.setItem(UI_STORAGE_KEY, legacyValue);
+    if (localStorage.getItem(UI_STORAGE_KEY) === legacyValue) {
+      localStorage.removeItem(LEGACY_UI_STORAGE_KEY);
+    }
+  } catch {
+    // Keep the source intact so a later load can retry the migration.
+  }
+}
+
+migrateLegacyUiStorage();
+
 export type Tab = 'home' | 'timeline' | 'settings';
 export type TimelineView = 'lanes' | 'agenda';
+export type TimelineRange = '7d' | '30d' | '90d';
 export type DashboardLayout = 'nexus' | 'cards';
 export type TextSize = 's' | 'm' | 'l' | 'xl';
 export type FocusColumns = 'one' | 'two' | 'auto';
+
+export const TIMELINE_RANGE_DAYS: Record<TimelineRange, number> = {
+  '7d': 7,
+  '30d': 30,
+  '90d': 90,
+};
 
 export const TEXT_SIZE_SCALE: Record<TextSize, number> = {
   s: 0.9,
@@ -35,6 +61,7 @@ interface UIStore {
   sheet: SheetRoute;
   reserveOpen: Record<string, boolean>;
   timelineView: TimelineView;
+  timelineRange: TimelineRange;
   dashboardLayout: DashboardLayout;
   textSize: TextSize;
   focusColumns: FocusColumns;
@@ -43,6 +70,7 @@ interface UIStore {
   closeSheet(): void;
   setReserveOpen(id: string, open: boolean | undefined): void;
   setTimelineView(view: TimelineView): void;
+  setTimelineRange(range: TimelineRange): void;
   setDashboardLayout(layout: DashboardLayout): void;
   setTextSize(size: TextSize): void;
   setFocusColumns(value: FocusColumns): void;
@@ -55,6 +83,7 @@ export const useUI = create<UIStore>()(
       sheet: null,
       reserveOpen: {},
       timelineView: 'lanes',
+      timelineRange: '30d',
       dashboardLayout: 'nexus',
       textSize: 'm',
       focusColumns: 'auto',
@@ -69,6 +98,7 @@ export const useUI = create<UIStore>()(
           return { reserveOpen };
         }),
       setTimelineView: (timelineView) => set({ timelineView }),
+      setTimelineRange: (timelineRange) => set({ timelineRange }),
       setDashboardLayout: (dashboardLayout) => set({ dashboardLayout }),
       setTextSize: (textSize) => {
         applyTextSize(textSize);
@@ -77,9 +107,11 @@ export const useUI = create<UIStore>()(
       setFocusColumns: (focusColumns) => set({ focusColumns }),
     }),
     {
-      name: 'technogg-ui',
+      // Device-only display preferences are intentionally shared by every identity in this browser.
+      name: UI_STORAGE_KEY,
       partialize: (state) => ({
         timelineView: state.timelineView,
+        timelineRange: state.timelineRange,
         dashboardLayout: state.dashboardLayout,
         textSize: state.textSize,
         focusColumns: state.focusColumns,
@@ -89,6 +121,9 @@ export const useUI = create<UIStore>()(
         // The removed 'cockpit' layout may still be in older persisted state.
         if (merged.dashboardLayout !== 'nexus' && merged.dashboardLayout !== 'cards') {
           merged.dashboardLayout = 'nexus';
+        }
+        if (merged.timelineRange !== '7d' && merged.timelineRange !== '30d' && merged.timelineRange !== '90d') {
+          merged.timelineRange = '30d';
         }
         return merged;
       },

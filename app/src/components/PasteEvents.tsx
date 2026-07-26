@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { DateTime } from 'luxon';
-import type { EventType, Game } from '@technogg/shared';
+import type { EventType, Game } from '@void/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { Pill } from './primitives';
@@ -85,9 +85,10 @@ function parsePasted(text: string, game: Game): { events: ParsedEvent[]; error: 
 }
 
 export function PasteEventsSheet({ open }: { open: boolean }) {
-  const app = useApp();
+  const state = useApp((store) => store.state);
+  const upsertEvents = useApp((store) => store.upsertEvents);
   const closeSheet = useUI((s) => s.closeSheet);
-  const games = app.state.games.filter((g) => !g.deleted).sort((a, b) => a.sort - b.sort);
+  const games = state.games.filter((g) => !g.deleted).sort((a, b) => a.sort - b.sort);
 
   const [gameId, setGameId] = useState('');
   const game = games.find((g) => g.id === gameId) ?? games[0];
@@ -97,24 +98,30 @@ export function PasteEventsSheet({ open }: { open: boolean }) {
   const [importedMsg, setImportedMsg] = useState('');
 
   const existingKeys = useMemo(
-    () => new Set(app.state.events.filter((e) => !e.deleted && e.sourceKey).map((e) => e.sourceKey!)),
-    [app.state.events],
+    () => new Set(state.events.filter((e) => !e.deleted && e.sourceKey).map((e) => e.sourceKey!)),
+    [state.events],
   );
   const parsed = useMemo(() => (game ? parsePasted(text, game) : { events: [], error: '' }), [text, game]);
 
   const copyPrompt = () => {
     if (!game) return;
-    void navigator.clipboard.writeText(aiPrompt(game)).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    void navigator.clipboard
+      .writeText(aiPrompt(game))
+      .then(() => {
+        setImportedMsg('');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch((error: unknown) => {
+        setImportedMsg(`Copy failed — ${error instanceof Error ? error.message : 'clipboard permission was denied'}.`);
+      });
   };
 
   const doImport = () => {
     if (!game) return;
     const picked = parsed.events.filter((e) => !unchecked.has(e.sourceKey) && !existingKeys.has(e.sourceKey));
-    for (const e of picked) {
-      app.upsertEvent({
+    upsertEvents(
+      picked.map((e) => ({
         gameId: game.id,
         name: e.name,
         type: e.type,
@@ -123,8 +130,8 @@ export function PasteEventsSheet({ open }: { open: boolean }) {
         dailyTouch: e.dailyTouch,
         notify: e.type !== 'maintenance',
         sourceKey: e.sourceKey,
-      });
-    }
+      })),
+    );
     setImportedMsg(`Imported ${picked.length} event${picked.length === 1 ? '' : 's'} → Timeline.`);
     setText('');
     setUnchecked(new Set());

@@ -1,6 +1,7 @@
-import type { LegacySecretSettings } from '@technogg/shared';
-import { LOCAL_IDENTITY, storageKeyForIdentity } from './storage-identity';
+import type { LegacySecretSettings } from '@void/shared';
+import { LOCAL_IDENTITY, migrateLegacyStorageKeyForIdentity } from './storage-identity';
 
+const KEY = 'void-local-secrets-v1';
 const LEGACY_KEY = 'technogg-local-secrets-v1';
 let activeIdentity = LOCAL_IDENTITY;
 
@@ -21,7 +22,7 @@ export function setLocalSecretsIdentity(identity: string): void {
 }
 
 export function readLocalSecrets(identity = activeIdentity): LocalSecrets {
-  const key = storageKeyForIdentity(LEGACY_KEY, identity);
+  const key = migrateLegacyStorageKeyForIdentity(KEY, identity, LEGACY_KEY);
   if (!key) return { ...EMPTY };
   try {
     const raw = JSON.parse(localStorage.getItem(key) ?? '{}') as Partial<LocalSecrets>;
@@ -37,13 +38,13 @@ export function readLocalSecrets(identity = activeIdentity): LocalSecrets {
 
 export function updateLocalSecrets(patch: Partial<LocalSecrets>, identity = activeIdentity): LocalSecrets {
   const next = { ...readLocalSecrets(identity), ...patch };
-  const key = storageKeyForIdentity(LEGACY_KEY, identity);
+  const key = migrateLegacyStorageKeyForIdentity(KEY, identity, LEGACY_KEY);
   if (key) localStorage.setItem(key, JSON.stringify(next));
   return next;
 }
 
 export function clearLocalSecrets(identity = activeIdentity): void {
-  const key = storageKeyForIdentity(LEGACY_KEY, identity);
+  const key = migrateLegacyStorageKeyForIdentity(KEY, identity, LEGACY_KEY);
   if (key) localStorage.removeItem(key);
 }
 

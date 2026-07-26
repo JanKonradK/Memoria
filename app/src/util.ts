@@ -95,3 +95,14 @@ export function tint(hex: string, alpha: number): string {
   const n = parseInt(m[1]!, 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
 }
+
+/** WCAG-weighted sRGB luminance on a normalized 0–1 scale. */
+export function luminance(hex: string): number | null {
+  const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!match) return null;
+  const rgb = parseInt(match[1]!, 16);
+  const red = (rgb >> 16) & 255;
+  const green = (rgb >> 8) & 255;
+  const blue = rgb & 255;
+  return (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
+}

@@ -1,12 +1,14 @@
-import type { AppState } from '@technogg/shared';
+import type { AppState } from '@void/shared';
 import {
   CURRENT_SCHEMA_VERSION,
+  COMPLETION_RETENTION_MS,
   compactState,
   emptyState,
   mergeState,
   normalizeState,
   safeParseAppState,
-} from '@technogg/shared';
+  TOMBSTONE_RETENTION_MS,
+} from '@void/shared';
 
 export interface VersionedDocument {
   state: AppState;
@@ -14,7 +16,22 @@ export interface VersionedDocument {
   updatedAt: number;
 }
 
-const TOMBSTONE_RETENTION_MS = 90 * 86_400_000;
+export const MAX_DOCUMENT_BYTES = 1_000_000;
+const CLIENT_ERROR_RETENTION_MS = 30 * 86_400_000;
+const AUDIT_LOG_RETENTION_MS = 180 * 86_400_000;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+
+export class InvalidDocumentStateError extends Error {
+  constructor(readonly detail: string) {
+    super('invalid_state');
+  }
+}
+
+export class DocumentTooLargeError extends Error {
+  constructor(readonly bytes: number) {
+    super('document_quota_exceeded');
+  }
+}
 
 export async function ensureUser(db: D1Database, userId: string, now = Date.now()): Promise<void> {
   await db
@@ -48,11 +65,16 @@ export async function mergeUserDocument(
   await ensureUser(db, userId, now);
   for (let attempt = 0; attempt < 4; attempt++) {
     const current = await loadUserDocument(db, userId);
-    const merged = compactState(mergeState(current.state, incoming), now - TOMBSTONE_RETENTION_MS);
+    const merged = compactState(
+      mergeState(current.state, incoming),
+      now - TOMBSTONE_RETENTION_MS,
+      now - COMPLETION_RETENTION_MS,
+    );
     const validation = safeParseAppState(merged);
-    if (!validation.success) throw new Error('document_quota_exceeded');
+    if (!validation.success) throw new InvalidDocumentStateError(validation.error);
     const json = JSON.stringify(merged);
-    if (new TextEncoder().encode(json).byteLength > 1_000_000) throw new Error('document_quota_exceeded');
+    const bytes = new TextEncoder().encode(json).byteLength;
+    if (bytes > MAX_DOCUMENT_BYTES) throw new DocumentTooLargeError(bytes);
     if (current.version === 0) {
       const inserted = await db
         .prepare(
@@ -115,13 +137,13 @@ export async function deleteUserData(db: D1Database, userId: string, now = Date.
   ]);
 }
 
-export async function listActiveUserIds(db: D1Database, after = '', limit = 100): Promise<string[]> {
+export async function claimUsersForAlertSweep(db: D1Database, limit: number): Promise<string[]> {
   const rows = await db
     .prepare(
       'SELECT d.user_id FROM user_docs d JOIN users u ON u.user_id = d.user_id ' +
-        'WHERE d.user_id > ? AND u.deleted_at IS NULL ORDER BY d.user_id LIMIT ?',
+        'WHERE u.deleted_at IS NULL ORDER BY u.alerts_checked_at ASC LIMIT ?',
     )
-    .bind(after, Math.min(100, Math.max(1, limit)))
+    .bind(Math.max(1, Math.floor(limit)))
     .all<{ user_id: string }>();
   return rows.results.map((row) => row.user_id);
 }
@@ -137,4 +159,17 @@ export async function audit(
     .prepare('INSERT INTO audit_log (user_id, action, metadata_json, created_at) VALUES (?, ?, ?, ?)')
     .bind(userId, action, JSON.stringify(metadata), now)
     .run();
+}
+
+export function shouldRunOperationalRetention(now: number): boolean {
+  return now % 3_600_000 < 10 * 60_000;
+}
+
+/** Three global statements only; never add per-user retention work to the cron. */
+export async function pruneOperationalData(db: D1Database, now = Date.now()): Promise<void> {
+  await db.batch([
+    db.prepare('DELETE FROM client_errors WHERE created_at < ?').bind(now - CLIENT_ERROR_RETENTION_MS),
+    db.prepare('DELETE FROM audit_log WHERE created_at < ?').bind(now - AUDIT_LOG_RETENTION_MS),
+    db.prepare('DELETE FROM rate_limits WHERE window_start < ?').bind(now - 2 * RATE_LIMIT_WINDOW_MS),
+  ]);
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { EventType } from '@technogg/shared';
+import type { EventType } from '@void/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fmtDateTimeLocalInput, parseDateTimeLocalInput } from '../util';

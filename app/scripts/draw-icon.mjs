@@ -1,5 +1,6 @@
 // Shared, zero-dependency icon drawing used by both the PWA PNG generator and
-// the Windows .ico generator. Renders a rounded violet→rose tile with a bolt.
+// the Windows .ico generator. Renders the Void mark: a gold infinity built from
+// two OPEN arcs, each carrying the same gap as the app's incomplete-ring language.
 import { deflateSync } from 'node:zlib';
 
 // --- minimal PNG encoder (RGBA, 8-bit) ---
@@ -43,32 +44,36 @@ export function encodePng(size, pixels /* RGBA Uint8Array */) {
 }
 
 // --- drawing ---
-const BOLT = [
-  [0.585, 0.06],
-  [0.3, 0.54],
-  [0.475, 0.54],
-  [0.415, 0.94],
-  [0.72, 0.42],
-  [0.53, 0.42],
-];
-function inPolygon(px, py, poly) {
-  let inside = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const [xi, yi] = poly[i];
-    const [xj, yj] = poly[j];
-    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
-  }
-  return inside;
-}
 function lerp(a, b, t) {
   return a + (b - a) * t;
+}
+
+/**
+ * Signed distance to one open arc lobe, in normalised 0..1 icon space.
+ * `gapFrom`/`gapTo` are angles (radians) that stay UNDRAWN, which is what makes
+ * each lobe an incomplete ring rather than a closed circle.
+ */
+function arcDistance(u, v, cx, cy, radius, gapFrom, gapTo) {
+  const dx = u - cx;
+  const dy = v - cy;
+  const d = Math.hypot(dx, dy);
+  let angle = Math.atan2(dy, dx);
+  if (angle < 0) angle += Math.PI * 2;
+  let from = gapFrom;
+  let to = gapTo;
+  if (from < 0) from += Math.PI * 2;
+  if (to < 0) to += Math.PI * 2;
+  const inGap = from <= to ? angle >= from && angle <= to : angle >= from || angle <= to;
+  if (inGap) return Infinity;
+  return Math.abs(d - radius);
 }
 
 /** Draw the icon and return the raw RGBA pixel buffer for `size`×`size`. */
 export function drawPixels(size, { maskable = false } = {}) {
   const px = new Uint8Array(size * size * 4);
-  const radius = maskable ? 0 : size * 0.22;
-  const boltScale = maskable ? 0.62 : 0.8; // keep inside the maskable safe zone
+  const scale = maskable ? 0.66 : 0.84; // keep inside the maskable safe zone
+  const stroke = maskable ? 0.055 : 0.062;
+  const radius = 0.2;
   const SS = 2; // 2× supersample for smooth edges
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
@@ -78,32 +83,24 @@ export function drawPixels(size, { maskable = false } = {}) {
         a = 0;
       for (let sy = 0; sy < SS; sy++) {
         for (let sx = 0; sx < SS; sx++) {
-          const u = (x + (sx + 0.5) / SS) / size;
-          const v = (y + (sy + 0.5) / SS) / size;
-          const cx = Math.max(Math.abs(u * size - size / 2) - (size / 2 - radius), 0);
-          const cy = Math.max(Math.abs(v * size - size / 2) - (size / 2 - radius), 0);
-          if (radius > 0 && cx * cx + cy * cy > radius * radius) continue;
-          const t = (u + v) / 2;
-          let cr = lerp(0x14, 0x2a, t);
-          let cg = lerp(0x0a, 0x14, t);
-          let cb = lerp(0x28, 0x40, t);
-          cr = lerp(cr, lerp(0x7c, 0xff, t), 0.5);
-          cg = lerp(cg, lerp(0x5c, 0x6f, t), 0.5);
-          cb = lerp(cb, lerp(0xff, 0xa5, t), 0.5);
-          const edge = Math.max(u, v);
-          if (edge > 0.86) {
-            const g = (edge - 0.86) / 0.14;
-            cr = lerp(cr, 0xe8, g * 0.5);
-            cg = lerp(cg, 0xb4, g * 0.5);
-            cb = lerp(cb, 0x5a, g * 0.5);
+          const u0 = (x + (sx + 0.5) / SS) / size;
+          const v0 = (y + (sy + 0.5) / SS) / size;
+          const u = (u0 - 0.5) / scale + 0.5;
+          const v = (v0 - 0.5) / scale + 0.5;
+          // Two lobes meeting at centre; each leaves a wedge open toward the join.
+          const left = arcDistance(u, v, 0.5 - radius * 0.82, 0.5, radius, -0.62, 0.62);
+          const right = arcDistance(u, v, 0.5 + radius * 0.82, 0.5, radius, Math.PI - 0.62, Math.PI + 0.62);
+          const d = Math.min(left, right);
+          const edge = stroke / 2;
+          if (d > edge) {
+            if (maskable) a += 255;
+            continue;
           }
-          const bu = (u - 0.5) / boltScale + 0.5;
-          const bv = (v - 0.5) / boltScale + 0.5;
-          if (inPolygon(bu, bv, BOLT)) {
-            cr = 0xff;
-            cg = 0xf4;
-            cb = 0xe6;
-          }
+          // Gold → amber along the diagonal, brightest at the upper left.
+          const t = Math.min(1, Math.max(0, (u + v) / 2));
+          const cr = lerp(0xf5, 0xc7, t);
+          const cg = lerp(0xd6, 0x8a, t);
+          const cb = lerp(0x8a, 0x2e, t);
           r += cr;
           g += cg;
           b += cb;

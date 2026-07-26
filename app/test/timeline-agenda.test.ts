@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Game, GameEvent } from '@technogg/shared';
-import { emptyState } from '@technogg/shared';
+import type { Game, GameEvent } from '@void/shared';
+import { emptyState } from '@void/shared';
 import { selectAgendaData } from '../src/components/TimelineAgenda';
 
 const NOW = 1_000_000_000;

@@ -48,6 +48,9 @@
   --radius-ui-card: 1.5rem;
   --radius-ui-full: 9999px;
 
+  --lane-row-h: 2.75rem;
+  --lane-row-h-maint: 2.75rem;
+
   --text-micro: 0.5rem;
   --text-micro--line-height: 0.75rem;
   --text-caption: 0.625rem;
@@ -64,6 +67,15 @@
 
 :root {
   --ui-scale: 1;
+  --hex-corner: 3px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 140ms;
+  --dur-base: 260ms;
+  --dur-slow: 420ms;
+  --stagger: 40ms;
+  /* Nexus spatial motion intentionally sits between --dur-base and --dur-slow.
+     NEXUS_DUR_MS in nexus/Conduits.tsx mirrors this exact 340ms value. */
   --nexus-dur: 0.34s;
   --nexus-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --focus-ring-color: color-mix(in oklab, var(--accent) 70%, white);
@@ -74,6 +86,13 @@
   --tick-progress-width: 2px;
   --tick-spoke-width: 1px;
   --progress-track: rgba(255, 255, 255, 0.08);
+}
+
+@media (width >= 40rem) {
+  :root {
+    --lane-row-h: 2.25rem;
+    --lane-row-h-maint: 1.5rem;
+  }
 }
 
 html,
@@ -139,7 +158,7 @@ input[type='number'] {
   animation: pulseFade 2.4s ease-in-out infinite;
 }
 
-/* Enter animations (framer-motion replacement) — reduced motion kills them globally below. */
+/* Lightweight CSS one-shots remain here; component entrances and exits use the shared TypeScript tokens. */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -147,65 +166,6 @@ input[type='number'] {
 }
 .fade-in {
   animation: fadeIn 0.18s ease-out;
-}
-
-@keyframes fadeDown {
-  from {
-    opacity: 0;
-    transform: translateY(-12px);
-  }
-}
-.fade-down {
-  animation: fadeDown 0.2s ease-out;
-}
-
-@keyframes pageEnter {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-}
-.page-enter {
-  animation: pageEnter 0.14s ease-out;
-}
-
-@keyframes cardEnter {
-  from {
-    opacity: 0;
-    transform: translateY(18px) scale(0.98);
-  }
-}
-.card-enter {
-  animation: cardEnter 0.25s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-12px);
-  }
-}
-.slide-in {
-  animation: slideIn 0.2s ease-out;
-}
-
-@keyframes dialogEnter {
-  from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.96);
-  }
-}
-.dialog-enter {
-  animation: dialogEnter 0.18s ease-out;
-}
-
-@keyframes sheetEnter {
-  from {
-    transform: translateY(100%);
-  }
-}
-.sheet-enter {
-  animation: sheetEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes checkPop {
@@ -362,17 +322,56 @@ input[type='number'] {
 .nexus-node[data-expanded='true'] .nexus-node-body > * {
   overflow-y: auto;
 }
-.nexus-stage[data-focus] .nexus-node[data-collapsed='true'] {
-  opacity: 0.5;
+/* Let the decorative field yield during focus without fading any card text. */
+.nexus-stage[data-focus] .nexus-node[data-collapsed='true'] .nexus-cluster {
+  opacity: 0.4;
+}
+.nexus-cluster {
+  transition: opacity var(--nexus-dur) var(--nexus-ease);
+}
+.nexus-cluster-rotation {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.nexus-cluster[data-active='true'] .nexus-cluster-rotation {
+  animation: nexusClusterRotate 18s linear infinite;
+}
+.nexus-cluster-dot {
+  opacity: 0.72;
+}
+.nexus-cluster:not([data-active='true']) .nexus-cluster-dot {
+  opacity: 0.46;
+}
+.nexus-cluster[data-active='true'] .nexus-cluster-dot {
+  animation: nexusClusterTwinkle 2.8s ease-in-out infinite;
 }
 .nexus-conduit-pulse {
   stroke-dasharray: 5 16;
   animation: nexusFlow 2.4s linear infinite;
 }
+.nexus-conduit-fill {
+  transition: stroke-dasharray var(--dur-base) var(--ease-out);
+}
 
 @keyframes nexusFlow {
   to {
     stroke-dashoffset: -220;
+  }
+}
+
+@keyframes nexusClusterRotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes nexusClusterTwinkle {
+  0%,
+  100% {
+    opacity: 0.52;
+  }
+  50% {
+    opacity: 1;
   }
 }
 
@@ -382,8 +381,14 @@ input[type='number'] {
     animation-iteration-count: 1 !important;
   }
   .nexus-stage,
-  .nexus-node-body {
+  .nexus-node-body,
+  .nexus-cluster,
+  .nexus-conduit-fill {
     transition-duration: 0.001ms !important;
+  }
+  .nexus-cluster-rotation,
+  .nexus-cluster-dot {
+    animation: none !important;
   }
   .nexus-conduit-pulse {
     display: none;
