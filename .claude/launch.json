@@ -2,17 +2,17 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "technogg-app",
+      "name": "void-app",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 5183
     },
     {
-      "name": "technogg-launcher",
+      "name": "void-launcher",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["desktop/technogg.mjs"],
+      "runtimeArgs": ["desktop/void.mjs"],
       "port": 17817,
-      "env": { "TECHNOGG_NO_BROWSER": "1" }
+      "env": { "VOID_NO_BROWSER": "1" }
     }
   ]
 }

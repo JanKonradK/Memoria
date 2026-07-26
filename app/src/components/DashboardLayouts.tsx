@@ -1,9 +1,13 @@
 import type { CSSProperties } from 'react';
 import { DateTime } from 'luxon';
-import type { AppState, GameEvent, GameUrgency } from '@technogg/shared';
+import type { AppState, GameEvent, GameUrgency } from '@void/shared';
+import { m } from 'motion/react';
+import { useDerived } from '../selectors';
 import { fmtDur } from '../util';
+import { cardEnter } from '../motion';
+import { AddGameCell } from './AddGameCell';
 import { GameCard } from './GameCard';
-import { AgendaList, selectAgendaData } from './TimelineAgenda';
+import { AgendaList } from './TimelineAgenda';
 import { GameBadge } from './ui';
 
 /** The horizon is a card among the game cards — same shell, gold instead of a game colour. */
@@ -24,7 +28,7 @@ function EventHorizonCard({
   onOpenReminder: () => void;
   onOpenTimeline: () => void;
 }) {
-  const agenda = selectAgendaData(state, now, 'dashboard');
+  const agenda = useDerived(now).agenda('dashboard');
   const eventRows = agenda.live.length + agenda.upcoming.length;
   const reminders = state.reminders
     .filter((reminder) => !reminder.deleted && reminder.at > now - 86_400_000)
@@ -39,8 +43,11 @@ function EventHorizonCard({
     .slice(0, actionLimit);
 
   return (
-    <aside
-      className="cards-horizon card-enter scrollbar-thin relative flex flex-col overflow-y-auto rounded-ui-card p-4"
+    <m.aside
+      className="cards-horizon scrollbar-thin relative flex flex-col overflow-y-auto rounded-ui-card p-4"
+      variants={cardEnter}
+      initial="hidden"
+      animate="visible"
       aria-label="Event horizon"
       style={{
         background:
@@ -171,7 +178,7 @@ function EventHorizonCard({
       >
         Open full timeline →
       </button>
-    </aside>
+    </m.aside>
   );
 }
 
@@ -184,6 +191,7 @@ type SharedLayoutProps = {
   onToggleEvent: (event: GameEvent) => void;
   onOpenReminder: () => void;
   onOpenTimeline: () => void;
+  onAddGame: () => void;
 };
 
 export function CardsAgendaLayout({
@@ -195,12 +203,13 @@ export function CardsAgendaLayout({
   onToggleEvent,
   onOpenReminder,
   onOpenTimeline,
+  onAddGame,
 }: SharedLayoutProps) {
   const entryById = new Map(entries.map((entry) => [entry.game.id, entry]));
   const cards = displayIds.filter((id) => entryById.has(id));
   // Three columns so column 2 is a real middle; the horizon takes the centre
-  // cell of the middle row and the game cards flow around it.
-  const rows = Math.ceil((cards.length + 1) / 3);
+  // cell of the middle row and the game cards plus trailing add cell flow around it.
+  const rows = Math.ceil((cards.length + 2) / 3);
   const horizonRow = Math.max(1, Math.ceil(rows / 2));
 
   return (
@@ -220,6 +229,7 @@ export function CardsAgendaLayout({
         onOpenReminder={onOpenReminder}
         onOpenTimeline={onOpenTimeline}
       />
+      <AddGameCell onAdd={onAddGame} />
     </div>
   );
 }

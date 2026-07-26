@@ -1,8 +1,12 @@
 import type { AppState, Completion, Resource, Settings, SettingsField, Snapshot, Syncable, Task } from './types';
-import { emptyState } from './types';
+import { emptyState, MAX_GAME_IMAGE_LENGTH } from './types';
 import { inferLegacyResource, inferLegacyTask } from './tracking';
 
 const SNAPSHOTS_KEPT_PER_RESOURCE = 200;
+export const TOMBSTONE_RETENTION_MS = 90 * 86_400_000;
+// Completion history is not rendered today. Bounding it protects the 1 MB sync
+// document, but a future streak/history feature will need a separate durable model.
+export const COMPLETION_RETENTION_MS = 120 * 86_400_000;
 
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
@@ -80,12 +84,18 @@ function normalizeCompletion(raw: Completion): Completion {
   };
 }
 
+function normalizeGame(raw: AppState['games'][number]): AppState['games'][number] {
+  const game = { ...raw };
+  if (typeof game.image === 'string' && game.image.length > MAX_GAME_IMAGE_LENGTH) delete game.image;
+  return game;
+}
+
 /** Row-wise last-write-wins merge of two full states. Commutative and idempotent. */
 export function mergeState(a: AppState, b: AppState): AppState {
   const base = emptyState();
   return {
     schemaVersion: Math.max(a.schemaVersion ?? 1, b.schemaVersion ?? 1, base.schemaVersion),
-    games: mergeById(a.games, b.games),
+    games: mergeById(a.games, b.games).map(normalizeGame),
     resources: mergeById(a.resources, b.resources).map(normalizeResource),
     snapshots: mergeSnapshots(a.snapshots, b.snapshots),
     tasks: mergeById(a.tasks, b.tasks).map(normalizeTask),
@@ -141,7 +151,7 @@ export function normalizeState(raw: unknown): AppState {
   const r = raw as Partial<AppState>;
   return {
     schemaVersion: Math.max(base.schemaVersion, typeof r.schemaVersion === 'number' ? r.schemaVersion : 1),
-    games: Array.isArray(r.games) ? r.games : [],
+    games: Array.isArray(r.games) ? r.games.map((item) => normalizeGame(item as AppState['games'][number])) : [],
     resources: Array.isArray(r.resources) ? r.resources.map((item) => normalizeResource(item as Resource)) : [],
     snapshots: Array.isArray(r.snapshots) ? r.snapshots : [],
     tasks: Array.isArray(r.tasks) ? r.tasks.map((item) => normalizeTask(item as Task)) : [],
@@ -156,10 +166,28 @@ export function normalizeState(raw: unknown): AppState {
   };
 }
 
-/** Remove old tombstones after every device has had ample time to observe them. */
-export function compactState(state: AppState, before: number): AppState {
-  const live = <T extends Syncable>(items: T[]) => items.filter((item) => !item.deleted || item.updatedAt >= before);
+/**
+ * Drop completion history older than the retention boundary. These rows have no
+ * tombstones, so callers must merge every device's rows before applying this.
+ * No current view renders historical completions; bounding document growth here
+ * deliberately means a future streak/history feature cannot recover older rows.
+ */
+export function pruneCompletions(state: AppState, before: number): AppState {
   return {
+    ...state,
+    completions: state.completions.filter((completion) => completion.updatedAt >= before),
+  };
+}
+
+/** Remove old tombstones after every device has had ample time to observe them. */
+export function compactState(
+  state: AppState,
+  tombstonesBefore: number,
+  completionsBefore = tombstonesBefore + TOMBSTONE_RETENTION_MS - COMPLETION_RETENTION_MS,
+): AppState {
+  const live = <T extends Syncable>(items: T[]) =>
+    items.filter((item) => !item.deleted || item.updatedAt >= tombstonesBefore);
+  const compacted = {
     ...state,
     games: live(state.games),
     resources: live(state.resources),
@@ -170,4 +198,5 @@ export function compactState(state: AppState, before: number): AppState {
     alertRules: live(state.alertRules),
     reminders: live(state.reminders),
   };
+  return pruneCompletions(compacted, completionsBefore);
 }

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { AppState } from './types';
-import { CURRENT_SCHEMA_VERSION } from './types';
+import { CURRENT_SCHEMA_VERSION, MAX_GAME_IMAGE_LENGTH } from './types';
 
 const id = z.string().min(1).max(160);
 const shortText = z.string().max(500);
@@ -20,7 +20,7 @@ const game = z.object({
   color: z.string().max(32),
   color2: z.string().max(32).optional(),
   icon: z.string().max(64),
-  image: z.string().max(2_000_000).optional(),
+  image: z.string().max(MAX_GAME_IMAGE_LENGTH).optional(),
   platform: z.enum(['pc', 'mobile', 'both']),
   tz: z.string().max(100),
   dailyResetHour: z.number().int().min(0).max(23),

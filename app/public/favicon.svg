@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Void">
+  <defs>
+    <linearGradient id="void-gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f5d68a" />
+      <stop offset=".55" stop-color="#e8b45a" />
+      <stop offset="1" stop-color="#c78a2e" />
+    </linearGradient>
+  </defs>
+  <!-- Infinity built from two OPEN arcs. Each lobe keeps the same gap as the
+       app's incomplete-ring language, so the mark and the UI say one thing. -->
+  <g stroke="url(#void-gold)" stroke-width="5.5" stroke-linecap="round">
+    <path d="M28.7 42.6A13 13 0 1 1 28.7 21.4" />
+    <path d="M35.3 21.4A13 13 0 1 0 35.3 42.6" />
+  </g>
+</svg>

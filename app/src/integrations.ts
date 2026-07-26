@@ -1,4 +1,4 @@
-import type { IntegrationKind, IntegrationStatus } from '@technogg/shared';
+import type { IntegrationKind, IntegrationStatus } from '@void/shared';
 import { authHeaders, isHostedSession } from './auth-session';
 
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {

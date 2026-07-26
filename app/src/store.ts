@@ -13,20 +13,23 @@ import type {
   SettingsField,
   QuickChip,
   Task,
-} from '@technogg/shared';
+} from '@void/shared';
 import {
   completionId,
+  COMPLETION_RETENTION_MS,
   effectiveCountTarget,
   emptyState,
   latestSnapshots,
   mergeState,
   normalizeState,
+  pruneCompletions,
   projectEnergy,
-} from '@technogg/shared';
+} from '@void/shared';
 import { clearLocalSecrets, migrateLegacySecrets, setLocalSecretsIdentity } from './secret-store';
 import { storageKeyForIdentity } from './storage-identity';
 import { uid } from './util';
 
+const IDB_KEY = 'void-state';
 const LEGACY_IDB_KEY = 'technogg-state';
 /** Matches the merge-side retention. */
 const SNAPSHOTS_KEPT = 200;
@@ -49,6 +52,39 @@ function patchIn<T extends { id: string; updatedAt: number }>(list: T[], id: str
   return list.map((x) => (x.id === id ? { ...x, ...patch, updatedAt: now() } : x));
 }
 
+type EventUpsert = Partial<GameEvent> & { gameId: string };
+
+function applyEventUpsert(byId: Map<string, GameEvent>, ev: EventUpsert): void {
+  if (ev.id) {
+    const existing = byId.get(ev.id);
+    if (existing) {
+      byId.set(ev.id, { ...existing, ...ev, updatedAt: now() });
+      return;
+    }
+  }
+  const t = now();
+  const item: GameEvent = {
+    id: ev.id ?? uid(),
+    gameId: ev.gameId,
+    name: ev.name ?? 'Event',
+    type: ev.type ?? 'event',
+    start: ev.start ?? t,
+    end: ev.end ?? t + 7 * 86_400_000,
+    dailyTouch: ev.dailyTouch ?? false,
+    notify: ev.notify ?? true,
+    notes: ev.notes ?? '',
+    sourceKey: ev.sourceKey,
+    updatedAt: t,
+  };
+  byId.set(item.id, item);
+}
+
+function applyUpsertEvent(s: AppState, ev: EventUpsert): AppState {
+  const byId = new Map(s.events.map((event) => [event.id, event]));
+  applyEventUpsert(byId, ev);
+  return { ...s, events: [...byId.values()] };
+}
+
 function tombstone<T extends { id: string; updatedAt: number; deleted?: boolean }>(
   list: T[],
   match: (x: T) => boolean,
@@ -58,8 +94,10 @@ function tombstone<T extends { id: string; updatedAt: number; deleted?: boolean 
 
 let activeIdentity: string | null = null;
 let activeIdbKey: string | null = null;
+let activeLegacyIdbKey: string | null = null;
 let identityRevision = 0;
 let persistTimer: ReturnType<typeof setTimeout> | undefined;
+let pendingPersist: { key: string; state: AppState } | null = null;
 
 export function getActiveIdentity(): string | null {
   return activeIdentity;
@@ -73,14 +111,64 @@ function persist(state: AppState): void {
   const key = activeIdbKey;
   if (!key) return;
   clearTimeout(persistTimer);
+  pendingPersist = { key, state };
   persistTimer = setTimeout(() => {
-    persistTimer = undefined;
-    void idbSet(key, state);
-  }, 250);
+    void flushPersist().catch(() => undefined);
+  }, 120);
+}
+
+/**
+ * Flush the pending IndexedDB write on lifecycle boundaries. IndexedDB has no
+ * synchronous API, so an instant process kill still leaves a small residual loss window.
+ */
+export async function flushPersist(): Promise<void> {
+  clearTimeout(persistTimer);
+  persistTimer = undefined;
+  const pending = pendingPersist;
+  pendingPersist = null;
+  if (pending) await idbSet(pending.key, pending.state);
+}
+
+function stateForStorage(raw: unknown): { state: AppState; pruned: boolean } {
+  const normalized = normalizeState(raw);
+  const state = pruneCompletions(normalized, now() - COMPLETION_RETENTION_MS);
+  return { state, pruned: state.completions.length !== normalized.completions.length };
+}
+
+async function readStoredState(key: string, legacyKey: string | null): Promise<unknown> {
+  const existing = await idbGet(key);
+  if (existing !== undefined || !legacyKey || legacyKey === key) return existing;
+
+  const legacy = await idbGet(legacyKey);
+  if (legacy === undefined) return undefined;
+
+  // Re-check immediately before writing so an already-created Void value wins.
+  const current = await idbGet(key);
+  if (current !== undefined) return current;
+
+  await idbSet(key, legacy);
+  const migrated = await idbGet(key);
+  if (migrated !== undefined) {
+    try {
+      await idbDel(legacyKey);
+    } catch {
+      // The new copy is durable; leaving the old copy makes a later cleanup retry safe.
+    }
+  }
+  return migrated;
 }
 
 function announceMutation(): void {
   document.dispatchEvent(new CustomEvent('tg-mutated'));
+}
+
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  window.addEventListener('pagehide', () => {
+    void flushPersist().catch(() => undefined);
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) void flushPersist().catch(() => undefined);
+  });
 }
 
 export interface AppStore {
@@ -99,6 +187,7 @@ export interface AppStore {
   replaceState(next: AppState): void;
   setSyncStatus(status: SyncStatus, error?: string): void;
   mutate(fn: (s: AppState) => AppState): void;
+  batch(fn: (s: AppState) => AppState): void;
 
   addGameFromPreset(preset: GamePreset, over: { tz?: string; capOverrides?: Record<number, number> }): string;
   addBlankGame(name: string): string;
@@ -121,7 +210,8 @@ export interface AppStore {
   updateTask(id: string, patch: Partial<Task>): void;
   deleteTask(id: string): void;
 
-  upsertEvent(ev: Partial<GameEvent> & { gameId: string }): void;
+  upsertEvent(ev: EventUpsert): void;
+  upsertEvents(list: EventUpsert[]): void;
   deleteEvent(id: string): void;
 
   upsertRule(rule: Partial<AlertRule> & { type: AlertRule['type']; gameId: string | null }): void;
@@ -146,10 +236,10 @@ export const useApp = create<AppStore>((set, get) => ({
   async setIdentity(identity) {
     if (identity === activeIdentity) return;
 
-    clearTimeout(persistTimer);
-    persistTimer = undefined;
+    await flushPersist();
     activeIdentity = identity;
-    activeIdbKey = storageKeyForIdentity(LEGACY_IDB_KEY, identity);
+    activeIdbKey = storageKeyForIdentity(IDB_KEY, identity);
+    activeLegacyIdbKey = storageKeyForIdentity(LEGACY_IDB_KEY, identity);
     identityRevision += 1;
     setLocalSecretsIdentity(identity);
     set({
@@ -168,12 +258,15 @@ export const useApp = create<AppStore>((set, get) => ({
     }
 
     const key = activeIdbKey;
+    const legacyKey = activeLegacyIdbKey;
     const revision = identityRevision;
     try {
-      const raw = await idbGet(key);
+      const raw = await readStoredState(key, legacyKey);
       if (revision !== identityRevision) return;
       migrateLegacySecrets(raw, identity);
-      set({ state: normalizeState(raw), loaded: true, loadError: '' });
+      const stored = stateForStorage(raw);
+      set({ state: stored.state, loaded: true, loadError: '' });
+      if (stored.pruned) persist(stored.state);
     } catch (error) {
       if (revision !== identityRevision) return;
       set({
@@ -186,6 +279,7 @@ export const useApp = create<AppStore>((set, get) => ({
   async load() {
     const identity = activeIdentity;
     const key = activeIdbKey;
+    const legacyKey = activeLegacyIdbKey;
     const revision = identityRevision;
     set({ loadError: '' });
     if (!identity) return;
@@ -194,10 +288,12 @@ export const useApp = create<AppStore>((set, get) => ({
       return;
     }
     try {
-      const raw = await idbGet(key);
+      const raw = await readStoredState(key, legacyKey);
       if (revision !== identityRevision) return;
       migrateLegacySecrets(raw, identity);
-      set({ state: normalizeState(raw), loaded: true, loadError: '' });
+      const stored = stateForStorage(raw);
+      set({ state: stored.state, loaded: true, loadError: '' });
+      if (stored.pruned) persist(stored.state);
     } catch (error) {
       if (revision !== identityRevision) return;
       set({
@@ -210,11 +306,14 @@ export const useApp = create<AppStore>((set, get) => ({
   async clearLocalData() {
     const identity = activeIdentity;
     const key = activeIdbKey;
+    const legacyKey = activeLegacyIdbKey;
     const revision = identityRevision;
     clearTimeout(persistTimer);
     persistTimer = undefined;
+    pendingPersist = null;
     try {
       if (key) await idbDel(key);
+      if (legacyKey && legacyKey !== key) await idbDel(legacyKey);
       if (identity) clearLocalSecrets(identity);
       if (revision !== identityRevision) return;
       set({ state: emptyState(), loaded: true, loadError: '' });
@@ -234,6 +333,10 @@ export const useApp = create<AppStore>((set, get) => ({
   },
 
   mutate(fn) {
+    get().batch(fn);
+  },
+
+  batch(fn) {
     const next = fn(get().state);
     persist(next);
     set({ state: next });
@@ -538,25 +641,15 @@ export const useApp = create<AppStore>((set, get) => ({
   },
 
   upsertEvent(ev) {
-    get().mutate((s) => {
-      if (ev.id && s.events.some((e) => e.id === ev.id)) {
-        return { ...s, events: patchIn(s.events, ev.id, ev) };
-      }
-      const t = now();
-      const item: GameEvent = {
-        id: ev.id ?? uid(),
-        gameId: ev.gameId,
-        name: ev.name ?? 'Event',
-        type: ev.type ?? 'event',
-        start: ev.start ?? t,
-        end: ev.end ?? t + 7 * 86_400_000,
-        dailyTouch: ev.dailyTouch ?? false,
-        notify: ev.notify ?? true,
-        notes: ev.notes ?? '',
-        sourceKey: ev.sourceKey,
-        updatedAt: t,
-      };
-      return { ...s, events: [...s.events, item] };
+    get().batch((s) => applyUpsertEvent(s, ev));
+  },
+
+  upsertEvents(list) {
+    if (list.length === 0) return;
+    get().batch((s) => {
+      const byId = new Map(s.events.map((event) => [event.id, event]));
+      for (const event of list) applyEventUpsert(byId, event);
+      return { ...s, events: [...byId.values()] };
     });
   },
 

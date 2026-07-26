@@ -8,4 +8,3 @@ MASTER_KEY=replace-with-a-base64-encoded-32-byte-key
 MASTER_KEY_VERSION=1
 # Set only while rotating, then remove after every row has the new key version.
 PREVIOUS_MASTER_KEY=
-ADMIN_MIGRATION_KEY=replace-with-a-separate-random-token

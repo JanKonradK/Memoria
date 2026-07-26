@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
-import { emptyState, type Game } from '@technogg/shared';
+import { emptyState, type Game } from '@void/shared';
 import { deleteUserData, loadUserDocument, mergeUserDocument } from '../src/db';
 import { getSecret, putSecret, rotateSecretBatch } from '../src/secrets';
 

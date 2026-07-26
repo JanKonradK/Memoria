@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
-import type { AppState, EventType, Game } from '@technogg/shared';
-import { PRESETS } from '@technogg/shared';
+import type { AppState, EventType, Game } from '@void/shared';
+import { PRESETS } from '@void/shared';
 
 /**
  * Bundled event feed — current banners/events per game, refreshed by asking

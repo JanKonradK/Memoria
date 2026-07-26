@@ -1,23 +1,21 @@
 {
-  "name": "@technogg/worker",
+  "name": "@void/worker",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "deploy:staging": "wrangler deploy --env staging",
     "deploy:production": "wrangler deploy --env production",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "cf:types": "wrangler types worker-env.d.ts",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
-    "db:migrate:staging": "wrangler d1 migrations apply DB --remote --env staging",
     "db:migrate:production": "wrangler d1 migrations apply DB --remote --env production"
   },
   "dependencies": {
     "@clerk/backend": "^3.11.4",
-    "@technogg/shared": "*",
+    "@void/shared": "*",
     "hono": "^4.7.10"
   },
   "devDependencies": {

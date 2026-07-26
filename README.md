@@ -1,4 +1,4 @@
-# ⚡ Techno's Library — Gacha Daily / Energy / Event Tracker
+# ⚡ Void — Gacha Daily / Energy / Event Tracker
 
 One dashboard for every gacha you play: live energy projections, dailies/weeklies/monthlies
 that reset on each game's _server_ time, an event timeline, and Discord/Telegram pings before
@@ -31,7 +31,7 @@ The worker adds two things: **sync between devices** and **alerts while the app 
 ## Local state file
 
 The desktop launcher keeps the canonical local copy of your data in
-`%APPDATA%\technogg\state.json` and serves it over `/api/sync`. The PWA
+`%APPDATA%\void\state.json` and serves it over `/api/sync`. The PWA
 auto-syncs against the launcher whenever it's opened through it (no setup, the
 token field stays empty), and the launcher pushes a `/api/events` ping to open
 app windows whenever the file changes on disk. The hosted Cloudflare product
@@ -42,7 +42,7 @@ closed-app alerts.
 
 ```sh
 npm run build              # the launcher serves app/dist
-npm run install:desktop    # puts a Techno's Library shortcut on the Desktop
+npm run install:desktop    # puts a Void shortcut on the Desktop
 ```
 
 The shortcut opens the app in its own window and keeps serving on the **fixed port
@@ -50,16 +50,16 @@ The shortcut opens the app in its own window and keeps serving on the **fixed po
 origin `http://127.0.0.1:17817`. Launching twice reuses the running instance.
 After a `npm run build`, just reopen the window to pick up the new version.
 The launcher also exposes `/api/state` + `/api/sync` backed by
-`%APPDATA%\technogg\state.json`, so app windows stay in sync locally.
+`%APPDATA%\void\state.json`, so app windows stay in sync locally.
 
 If you deploy to Cloudflare (below), create `desktop/config.json` with
-`{ "url": "https://technogg.<your-subdomain>.workers.dev" }` — the shortcut then
+`{ "url": "https://void.<your-subdomain>.workers.dev" }` — the shortcut then
 opens the hosted, always-synced app instead of a local server.
 
 ## Deploy the hosted product
 
-Production uses separate staging/production Clerk applications, D1 databases,
-Queues and encryption keys. Follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md);
+Production uses its own Clerk application, D1 database, and encryption key.
+Follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md);
 deployments apply numbered migrations and require the CI launch gates.
 
 After signing in:
@@ -94,7 +94,7 @@ every alert fires exactly once (re-armed each time you enter a new energy snapsh
 ## The daily loop
 
 1. Play your game(s).
-2. Open Techno's Library and punch in what's actually left, right on the card: click the
+2. Open Void and punch in what's actually left, right on the card: click the
    value box and type, or step with the keyboard — **A −10 · S −1 · D +1 · F +10**,
    Enter saves. Click the cap number ("/200") to change it when your max shifts
    (rank-ups, events), or add one-tap spend shortcuts in game ⚙ → Quick spend.

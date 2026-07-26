@@ -1,14 +1,9 @@
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { checkConfig } from './check-config.mjs';
 
 const root = resolve(import.meta.dirname, '..');
-const placeholders = [
-  'staging.example.invalid',
-  'app.example.invalid',
-  '00000000-0000-0000-0000-000000000002',
-  '00000000-0000-0000-0000-000000000003',
-];
 
 function run(command) {
   console.log(`\n> ${command}`);
@@ -34,33 +29,37 @@ const automated = [
 
 const manual = [
   'Replace placeholder D1 IDs, origins, domains, contacts, and legal-review markers.',
-  'Configure independent staging/production Clerk, D1, Queue, secrets, GitHub environments, DNS, and TLS.',
-  'Run account export/deletion, D1 restore, migration failure, key rotation, Clerk outage, and queue replay drills.',
-  'Enable Workers Logs/Traces, uptime checks, queue/DLQ alerts, auth/sync/error alerts, and the public status page.',
+  'Configure production Clerk, D1, secrets, GitHub environment, DNS, and TLS.',
+  'Run account export/deletion, D1 restore, migration failure, key rotation, Clerk outage, and alert-sweep drills.',
+  'Enable Workers Logs/Traces, uptime checks, cron-sweep alerts, auth/sync/error alerts, and the public status page.',
   'Obtain legal review for Privacy, Terms, retention and subprocessors.',
   'Record mobile Lighthouse scores: performance ≥90; accessibility, best practices, and PWA ≥95.',
-  'Record normal staging sync p95 and agree the production SLO.',
-  'Complete a 72-hour staging soak with no unexplained sync, cron, queue, or notification failures.',
+  'Record pre-launch production sync p95 and agree the production SLO.',
   'Verify fair-use limits and cost alerts before announcing registration.',
   'Tag the approved release, deploy with manual production approval, and complete post-deploy verification.',
 ];
 
-console.log('TechnoGG automated launch gates\n');
+console.log('Void automated launch gates\n');
 for (const [name, step] of automated) {
   console.log(`\n== ${name} ==`);
   step();
 }
 
-const wrangler = read('worker/wrangler.jsonc');
 const auth = read('app/src/auth.tsx');
-const found = placeholders.filter((marker) => wrangler.includes(marker) || auth.includes('legal review'));
-if (found.length > 0) {
-  console.warn('\nPlaceholder markers still present (expected before first real deployment):');
-  for (const marker of found) console.warn(`  - ${marker}`);
+console.log('\n== deployment configuration ==');
+const configIssues = checkConfig({ strict: false });
+const legalReviewPresent = auth.includes('legal review');
+if (legalReviewPresent) {
+  console.warn('\nLegal-review marker is still present in app/src/auth.tsx.');
 } else {
-  console.log('\nNo known placeholder deployment markers found.');
+  console.log('\nNo legal-review marker found.');
 }
 
 console.log('\nManual launch gates still required before public registration:');
 for (const item of manual) console.log(`  - ${item}`);
-console.log('\nAutomated launch gates passed.');
+if (configIssues.length > 0 || legalReviewPresent) {
+  console.error('\nAutomated launch gates failed.');
+  process.exitCode = 1;
+} else {
+  console.log('\nAutomated launch gates passed.');
+}

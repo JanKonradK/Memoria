@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
-import type { AppState, ChecklistItem, Game, GameUrgency } from '@technogg/shared';
-import { checklistFor, effectiveResourceKind, latestSnapshots, projectEnergy, sleepCheck } from '@technogg/shared';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { AppState, ChecklistItem, Game, GameUrgency, Snapshot } from '@void/shared';
+import { effectiveResourceKind, projectEnergy } from '@void/shared';
+import { m } from 'motion/react';
+import { useDerived } from '../selectors';
 import { useApp, type AppStore } from '../store';
 import { useUI } from '../ui-store';
 import { useMediaQuery, useReducedMotion } from '../hooks';
+import { cardEnter } from '../motion';
 
 import { endTone, fmtClock, fmtDur, tint } from '../util';
 import { EnergyRow } from './EnergyRow';
@@ -23,7 +26,7 @@ function CadenceTag({ cadence }: { cadence: ChecklistItem['cadence'] }) {
   return <Pill>{cadence === 'custom' ? 'cycle' : cadence}</Pill>;
 }
 
-/** One green celebratory sweep when `done` flips true; skipped under reduced motion. */
+/** One green celebratory sweep when `done` flips true; skipped when reduced motion is preferred. */
 function useCompletionSweep(done: boolean): { sweep: boolean; end: () => void } {
   const reduced = useReducedMotion();
   const [sweep, setSweep] = useState(false);
@@ -215,9 +218,10 @@ export function EventStrip({
 
 /** Passive advance-notice banner: the evening safe-to-sleep verdict, big, at the bottom of the card. */
 export function StatusStrip({ game, state, now }: { game: Game; state: AppState; now: number }) {
+  const derived = useDerived(now);
   const hour = new Date(now).getHours();
   const night = hour >= 20 || hour < 5;
-  const sleep = night ? sleepCheck(state, game, state.settings.sleepHours, now) : null;
+  const sleep = night ? derived.sleepFor(game.id) : null;
   if (!sleep) return null;
 
   // mt-auto pins the banner to the card's bottom edge — every card in a grid
@@ -248,14 +252,47 @@ export type GameControlActions = Pick<
   'setTaskDone' | 'startTaskTimer' | 'restartTaskTimer' | 'setTaskCount' | 'setEnergy' | 'adjustEnergy'
 >;
 
+function EnergyControlRow({
+  game,
+  res,
+  snap,
+  now,
+  setEnergy,
+}: {
+  game: Game;
+  res: AppState['resources'][number];
+  snap: Snapshot | undefined;
+  now: number;
+  setEnergy: GameControlActions['setEnergy'];
+}) {
+  const projection = useMemo(() => projectEnergy(res, snap, now, game), [game, now, res, snap]);
+  const commit = useCallback(
+    (value: number, reserve?: number) => setEnergy(res.id, value, reserve),
+    [res.id, setEnergy],
+  );
+  return (
+    <EnergyRow
+      res={res}
+      color={game.color}
+      reserveColor={game.color2}
+      proj={projection}
+      reserve={projection.reserve ?? snap?.reserve}
+      now={now}
+      onCommit={commit}
+    />
+  );
+}
+
 function ResourceControls({
   game,
   state,
+  snaps,
   now,
   actions,
 }: {
   game: Game;
   state: AppState;
+  snaps: Map<string, Snapshot>;
   now: number;
   actions: GameControlActions;
 }) {
@@ -265,24 +302,20 @@ function ResourceControls({
   const quickChips = state.chips
     .filter((chip) => chip.gameId === game.id && !chip.deleted)
     .sort((a, b) => a.sort - b.sort);
-  const snaps = latestSnapshots(state.snapshots);
 
   return (
     <>
       {cardResources.length > 0 && (
         <div className="mt-3.5 space-y-3">
           {cardResources.map((res) => {
-            const proj = projectEnergy(res, snaps.get(res.id), now, game);
             return (
-              <EnergyRow
+              <EnergyControlRow
                 key={res.id}
+                game={game}
                 res={res}
-                color={game.color}
-                reserveColor={game.color2}
-                proj={proj}
-                reserve={proj.reserve ?? snaps.get(res.id)?.reserve}
+                snap={snaps.get(res.id)}
                 now={now}
-                onCommit={(value, reserve) => actions.setEnergy(res.id, value, reserve)}
+                setEnergy={actions.setEnergy}
               />
             );
           })}
@@ -430,11 +463,12 @@ export function GameControlsView({
   onOpenEvent: (eventId: string, gameId: string) => void;
 }) {
   const { game } = entry;
-  const checklist = [...checklistFor(state, game, now)].sort(
+  const derived = useDerived(now);
+  const checklist = [...(derived.checklistByGame.get(game.id) ?? [])].sort(
     (a, b) => CADENCE_RANK[a.cadence] - CADENCE_RANK[b.cadence] || a.sort - b.sort,
   );
   const dailies = checklist.filter((item) => item.cadence === 'daily');
-  const resources = <ResourceControls game={game} state={state} now={now} actions={actions} />;
+  const resources = <ResourceControls game={game} state={state} snaps={derived.snaps} now={now} actions={actions} />;
   const tasks = <ChecklistControls game={game} checklist={checklist} now={now} actions={actions} />;
   const events = !game.paused && !game.hideEventStrip && (
     <EventStrip game={game} events={state.events} now={now} onOpenEvent={onOpenEvent} />
@@ -476,14 +510,16 @@ export function GameControls({
   layout?: 'card' | 'focus';
 }) {
   const state = useApp((s) => s.state);
-  const actions = {
-    setTaskDone: useApp((s) => s.setTaskDone),
-    startTaskTimer: useApp((s) => s.startTaskTimer),
-    restartTaskTimer: useApp((s) => s.restartTaskTimer),
-    setTaskCount: useApp((s) => s.setTaskCount),
-    setEnergy: useApp((s) => s.setEnergy),
-    adjustEnergy: useApp((s) => s.adjustEnergy),
-  };
+  const setTaskDone = useApp((s) => s.setTaskDone);
+  const startTaskTimer = useApp((s) => s.startTaskTimer);
+  const restartTaskTimer = useApp((s) => s.restartTaskTimer);
+  const setTaskCount = useApp((s) => s.setTaskCount);
+  const setEnergy = useApp((s) => s.setEnergy);
+  const adjustEnergy = useApp((s) => s.adjustEnergy);
+  const actions = useMemo(
+    () => ({ setTaskDone, startTaskTimer, restartTaskTimer, setTaskCount, setEnergy, adjustEnergy }),
+    [adjustEnergy, restartTaskTimer, setEnergy, setTaskCount, setTaskDone, startTaskTimer],
+  );
   const openSheet = useUI((store) => store.openSheet);
   const focusColumns = useUI((store) => store.focusColumns);
   const wideEnough = useMediaQuery('(min-width: 1500px)');
@@ -502,7 +538,7 @@ export function GameControls({
   );
 }
 
-export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
+export const GameCard = memo(function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
   const { game, next } = entry;
   const reduced = useReducedMotion();
   const urgent = !game.paused && next != null && next.at - now < 60 * 60_000;
@@ -516,8 +552,11 @@ export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
     .join(', ');
 
   return (
-    <div
-      className="card-enter group relative flex h-full flex-col overflow-hidden rounded-ui-card p-4"
+    <m.div
+      className="group relative flex h-full flex-col overflow-hidden rounded-ui-card p-4"
+      variants={cardEnter}
+      initial="hidden"
+      animate="visible"
       style={{
         background: `linear-gradient(155deg, ${tint(game.color, 0.2)} 0%, transparent 46%), linear-gradient(335deg, ${tint(game.color2 ?? game.color, 0.13)} 0%, transparent 42%), #07060c`,
         boxShadow: cardShadows,
@@ -555,6 +594,6 @@ export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
         />
       )}
       <GameControls entry={entry} now={now} />
-    </div>
+    </m.div>
   );
-}
+});

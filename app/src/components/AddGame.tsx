@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { GamePreset } from '@technogg/shared';
-import { PRESETS, SERVER_TZ_OPTIONS } from '@technogg/shared';
+import type { GamePreset } from '@void/shared';
+import { PRESETS, SERVER_TZ_OPTIONS } from '@void/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { intOr, tint } from '../util';

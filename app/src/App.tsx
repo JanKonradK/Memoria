@@ -1,11 +1,31 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
+import { AnimatePresence, m } from 'motion/react';
 import { useApp } from './store';
 import { initSync } from './sync';
-import { useUI, type Tab } from './ui-store';
+import { useUI } from './ui-store';
 import { useNow, useOnline } from './hooks';
 import { applyPwaUpdate } from './pwa';
 import { useSession } from './auth';
+import { easing, pageEnter, duration } from './motion';
+import { NavRail } from './components/NavRail';
 import { Onboarding } from './components/Onboarding';
+import { migrateLegacyStorageKeyForIdentity } from './storage-identity';
+
+const toastMotion = {
+  hidden: { opacity: 0, y: 12, scale: 0.98 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: duration.fast, ease: easing.out },
+  },
+  exit: {
+    opacity: 0,
+    y: 8,
+    scale: 0.98,
+    transition: { duration: duration.fast, ease: easing.out },
+  },
+};
 
 const DashboardPage = lazy(() =>
   import('./components/Dashboard').then((module) => ({ default: module.DashboardPage })),
@@ -27,35 +47,15 @@ const PasteEventsSheet = lazy(() =>
   import('./components/PasteEvents').then((module) => ({ default: module.PasteEventsSheet })),
 );
 
-const TABS: Array<{ id: Tab; label: string }> = [
-  { id: 'home', label: 'Games' },
-  { id: 'timeline', label: 'Timeline' },
-  { id: 'settings', label: 'Settings' },
-];
-
-function SyncDot() {
-  const status = useApp((s) => s.syncStatus);
-  const color = { idle: 'bg-faint', syncing: 'bg-violet-400', ok: 'bg-ok', error: 'bg-rose-400' }[status];
-  return (
-    <span className="relative flex h-2.5 w-2.5" role="status" aria-live="polite" aria-label={`Sync status: ${status}`}>
-      {status === 'syncing' && (
-        <span className={`absolute inline-flex h-full w-full animate-ping rounded-ui-full ${color} opacity-60`} />
-      )}
-      <span className={`relative inline-flex h-2.5 w-2.5 rounded-ui-full ${color}`} />
-    </span>
-  );
-}
-
 export default function App() {
   const session = useSession();
   const load = useApp((s) => s.load);
   const loaded = useApp((s) => s.loaded);
-  const appState = useApp((s) => s.state);
+  const hasGames = useApp((s) => s.state.games.some((game) => !game.deleted));
   const syncStatus = useApp((s) => s.syncStatus);
   const loadError = useApp((s) => s.loadError);
   const clearLocalData = useApp((s) => s.clearLocalData);
   const tab = useUI((s) => s.tab);
-  const setTab = useUI((s) => s.setTab);
   const sheet = useUI((s) => s.sheet);
   // 30s tick: nothing on screen shows seconds, and a 1s tick re-rendered every
   // card + projection 60x/min for no visible benefit.
@@ -63,6 +63,9 @@ export default function App() {
   const online = useOnline();
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(false);
+  const reportLoadError = (error: unknown) => {
+    useApp.setState({ loadError: error instanceof Error ? error.message : 'Local data operation failed.' });
+  };
 
   useEffect(() => {
     if (!loaded) return;
@@ -80,18 +83,16 @@ export default function App() {
       <main className="flex min-h-dvh items-center justify-center px-5 py-12">
         <section className="glass gold-hairline w-full max-w-lg rounded-ui-card p-6" role="alert">
           <p className="text-xs font-bold uppercase tracking-widest text-rose-300">Local data unavailable</p>
-          <h1 className="mt-2 text-xl font-black text-slate-100">
-            Techno's Library could not open this device's data.
-          </h1>
+          <h1 className="mt-2 text-xl font-black text-slate-100">Void could not open this device's data.</h1>
           <p className="mt-2 text-body text-muted">
-            Retry first. Starting fresh permanently clears this browser's local Techno's Library database; synced or
-            exported copies are not affected.
+            Retry first. Starting fresh permanently clears this browser's local Void database; synced or exported copies
+            are not affected.
           </p>
           <p className="mt-3 rounded-ui-lg bg-black/30 p-3 text-xs text-dim">{loadError}</p>
           <div className="mt-5 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => void load()}
+              onClick={() => void load().catch(reportLoadError)}
               className="min-h-11 rounded-ui-lg bg-gradient-to-br from-accent to-accent-2 px-4 py-2 text-body font-semibold text-white ring-1 ring-white/15"
             >
               Retry
@@ -99,10 +100,12 @@ export default function App() {
             <button
               type="button"
               onClick={() => {
-                if (window.confirm("Permanently clear Techno's Library data stored in this browser and start fresh?")) {
-                  void clearLocalData().then(() => {
-                    if (!useApp.getState().loadError) window.location.reload();
-                  });
+                if (window.confirm('Permanently clear Void data stored in this browser and start fresh?')) {
+                  void clearLocalData()
+                    .then(() => {
+                      if (!useApp.getState().loadError) window.location.reload();
+                    })
+                    .catch(reportLoadError);
                 }
               }}
               className="min-h-11 rounded-ui-lg bg-danger/15 px-4 py-2 text-body font-semibold text-rose-200 ring-1 ring-rose-400/30"
@@ -117,7 +120,7 @@ export default function App() {
 
   if (!loaded) {
     return (
-      <div className="flex min-h-dvh items-center justify-center" role="status" aria-label="Loading Techno's Library">
+      <div className="flex min-h-dvh items-center justify-center" role="status" aria-label="Loading Void">
         <div
           className="loader-spin h-12 w-12 rounded-ui-xl bg-gradient-to-br from-accent via-accent-2 to-amber-300"
           style={{ boxShadow: '0 0 40px rgba(124,92,255,0.5)' }}
@@ -126,13 +129,16 @@ export default function App() {
     );
   }
 
-  const onboardingKey = session.userId ? `technogg-onboarding:${session.userId}` : '';
+  const onboardingKey = session.userId
+    ? (migrateLegacyStorageKeyForIdentity(
+        'void-onboarding',
+        `user:${session.userId}`,
+        'technogg-onboarding',
+        `technogg-onboarding:${session.userId}`,
+      ) ?? '')
+    : '';
   const showOnboarding =
-    session.hosted &&
-    !appState.games.some((game) => !game.deleted) &&
-    syncStatus !== 'idle' &&
-    !onboardingDone &&
-    !localStorage.getItem(onboardingKey);
+    session.hosted && !hasGames && syncStatus !== 'idle' && !onboardingDone && !localStorage.getItem(onboardingKey);
   if (showOnboarding) {
     return (
       <Onboarding
@@ -152,98 +158,61 @@ export default function App() {
       >
         Skip to content
       </a>
-      {/* True-black canvas — no ambient washes; color belongs to the cards (OLED). */}
-      <header className="gold-hairline !fixed inset-x-0 top-0 z-30 border-b border-white/5 bg-black/95 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.8)] supports-[backdrop-filter]:bg-black/80 supports-[backdrop-filter]:backdrop-blur-md">
-        <div className="mx-auto flex h-14 w-full max-w-[2160px] items-center gap-2 px-3 sm:gap-4 sm:px-6">
-          <h1 className="flex items-center gap-2 text-title font-black tracking-tight">
-            <span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-amber-200 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(168,85,247,0.35)]">
-              Techno's Library
-            </span>
-          </h1>
-          <div className="ml-auto flex h-full items-center gap-3">
-            <nav className="hidden h-full gap-1 lg:flex" aria-label="Primary">
-              {TABS.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setTab(t.id)}
-                  aria-current={tab === t.id ? 'page' : undefined}
-                  className={`relative h-full px-4 text-body font-semibold transition ${
-                    tab === t.id ? 'text-white' : 'text-muted hover:text-fg-soft'
-                  }`}
-                >
-                  {t.label}
-                  {tab === t.id && (
-                    <span className="pointer-events-none absolute inset-x-2 bottom-0 h-0.5 bg-gradient-to-r from-transparent via-gold to-transparent" />
-                  )}
-                </button>
-              ))}
-            </nav>
-            <SyncDot />
-          </div>
-        </div>
-      </header>
-      <div className="h-14" aria-hidden />
-
-      {!online && (
-        <div
-          className="sticky top-14 z-20 border-b border-amber-300/15 bg-amber-300/10 px-4 py-2 text-center text-xs font-semibold text-amber-100"
-          role="status"
-          aria-live="polite"
-        >
-          Offline — changes stay on this device and sync when your connection returns.
-        </div>
-      )}
-      {updateAvailable && (
-        <div
-          className={`sticky ${online ? 'top-14' : 'top-[88px]'} z-20 flex items-center justify-center gap-3 border-b border-violet-300/15 bg-violet-300/10 px-4 py-2 text-xs font-semibold text-violet-100`}
-          role="status"
-        >
-          <span>A new Techno's Library version is ready.</span>
-          <button
-            type="button"
-            onClick={applyPwaUpdate}
-            className="min-h-9 rounded-ui-md bg-violet-300/15 px-3 py-1 text-violet-50 ring-1 ring-violet-200/25"
-          >
-            Update now
-          </button>
-          <button type="button" onClick={() => setUpdateAvailable(false)} className="min-h-9 px-2 text-violet-200">
-            Later
-          </button>
-        </div>
-      )}
 
       <main id="main-content" tabIndex={-1}>
         <Suspense fallback={<div className="px-5 py-12 text-center text-body text-dim">Loading view…</div>}>
-          <div key={tab} className="page-enter">
+          <m.div key={tab} variants={pageEnter} initial="hidden" animate="visible">
             {tab === 'home' && <DashboardPage now={now} />}
             {tab === 'timeline' && <TimelinePage now={now} />}
             {tab === 'settings' && <SettingsPage />}
-          </div>
+          </m.div>
         </Suspense>
       </main>
 
-      {/* Mobile bottom tab bar */}
-      <nav
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-white/5 bg-black/95 pb-[env(safe-area-inset-bottom)] lg:hidden"
-        aria-label="Primary"
-      >
-        <div className="mx-auto flex max-w-xl">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              aria-current={tab === t.id ? 'page' : undefined}
-              className={`flex min-h-11 flex-1 items-center justify-center py-3.5 text-xs font-semibold transition ${
-                tab === t.id ? 'text-fuchsia-300' : 'text-muted'
-              }`}
+      <div className="pointer-events-none fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2 lg:bottom-28 lg:left-4 lg:right-auto lg:w-[min(28rem,calc(100vw-2rem))] lg:items-start">
+        <AnimatePresence>
+          {!online && (
+            <m.div
+              key="offline"
+              variants={toastMotion}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="pointer-events-auto w-full rounded-ui-xl bg-amber-950/95 px-4 py-3 text-center text-xs font-semibold text-amber-100 shadow-2xl ring-1 ring-amber-300/25 backdrop-blur-md"
+              role="status"
+              aria-live="polite"
             >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </nav>
+              Offline — changes stay on this device and sync when your connection returns.
+            </m.div>
+          )}
+          {updateAvailable && (
+            <m.div
+              key="update"
+              variants={toastMotion}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="pointer-events-auto flex w-full flex-wrap items-center justify-center gap-2 rounded-ui-xl bg-violet-950/95 px-4 py-2 text-xs font-semibold text-violet-100 shadow-2xl ring-1 ring-violet-300/25 backdrop-blur-md"
+              role="status"
+              aria-live="polite"
+            >
+              <span className="min-w-0 flex-1">A new Void version is ready.</span>
+              <button
+                type="button"
+                onClick={applyPwaUpdate}
+                className="min-h-9 rounded-ui-md bg-violet-300/15 px-3 py-1 text-violet-50 ring-1 ring-violet-200/25"
+              >
+                Update now
+              </button>
+              <button type="button" onClick={() => setUpdateAvailable(false)} className="min-h-9 px-2 text-violet-200">
+                Later
+              </button>
+            </m.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <NavRail />
 
       <Suspense fallback={null}>
         {sheet?.kind === 'game' && <GameDetailSheet open gameId={sheet.gameId} />}

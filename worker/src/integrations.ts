@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import type { IntegrationKind } from '@technogg/shared';
+import type { IntegrationKind } from '@void/shared';
 import type { Variables } from './auth';
 import type { Bindings } from './env';
 import { deleteSecret, listIntegrationStatuses, putSecret } from './secrets';

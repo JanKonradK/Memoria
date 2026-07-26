@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { Game, Resource, ResourceKind } from '@technogg/shared';
-import { effectiveReserveRegenMinutes } from '@technogg/shared';
+import type { Game, Resource, ResourceKind } from '@void/shared';
+import { effectiveReserveRegenMinutes } from '@void/shared';
 import { useApp } from '../../store';
 import { intOr } from '../../util';
 import { RESOURCE_ICON_KEYS, ResourceIcon } from '../ResourceIcon';
@@ -9,7 +9,8 @@ import { Btn, Field, NumInput, Select, TextInput } from '../ui';
 const RESOURCE_KINDS: ResourceKind[] = ['regen', 'weekly', 'counter'];
 
 export function ResourceEditor({ game, resources }: { game: Game; resources: Resource[] }) {
-  const app = useApp();
+  const upsertResource = useApp((store) => store.upsertResource);
+  const deleteResource = useApp((store) => store.deleteResource);
   const [iconPickerFor, setIconPickerFor] = useState<string | null>(null);
   const [reserveOpen, setReserveOpen] = useState<Record<string, boolean>>({});
 
@@ -35,15 +36,13 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                 className="min-w-32 flex-1"
                 value={r.name}
                 aria-label="Resource name"
-                onChange={(e) => app.upsertResource({ id: r.id, gameId: game.id, name: e.target.value })}
+                onChange={(e) => upsertResource({ id: r.id, gameId: game.id, name: e.target.value })}
               />
               <Select
                 className="w-32 shrink-0"
                 value={kind}
                 aria-label={`Kind for ${r.name}`}
-                onChange={(e) =>
-                  app.upsertResource({ id: r.id, gameId: game.id, kind: e.target.value as ResourceKind })
-                }
+                onChange={(e) => upsertResource({ id: r.id, gameId: game.id, kind: e.target.value as ResourceKind })}
               >
                 {RESOURCE_KINDS.map((resourceKind) => (
                   <option key={resourceKind} value={resourceKind}>
@@ -53,7 +52,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
               </Select>
               <button
                 type="button"
-                onClick={() => app.deleteResource(r.id)}
+                onClick={() => deleteResource(r.id)}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg text-title text-dim transition hover:bg-rose-400/10 hover:text-rose-400 sm:h-9 sm:w-9"
                 aria-label={`Delete ${r.name}`}
               >
@@ -68,7 +67,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                     key={key}
                     type="button"
                     onClick={() => {
-                      app.upsertResource({ id: r.id, gameId: game.id, icon: key });
+                      upsertResource({ id: r.id, gameId: game.id, icon: key });
                       setIconPickerFor(null);
                     }}
                     className="flex h-11 w-11 items-center justify-center rounded-ui-lg bg-white/[0.06] ring-1 transition hover:bg-white/10 sm:h-9 sm:w-9"
@@ -88,7 +87,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
               <Field label="Cap">
                 <NumInput
                   value={String(r.cap)}
-                  onChange={(e) => app.upsertResource({ id: r.id, gameId: game.id, cap: intOr(e.target.value, r.cap) })}
+                  onChange={(e) => upsertResource({ id: r.id, gameId: game.id, cap: intOr(e.target.value, r.cap) })}
                 />
               </Field>
               <Field label="Min/pt">
@@ -96,7 +95,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                   value={String(r.regenMinutes)}
                   disabled={kind !== 'regen'}
                   onChange={(e) =>
-                    app.upsertResource({
+                    upsertResource({
                       id: r.id,
                       gameId: game.id,
                       regenMinutes: intOr(e.target.value, r.regenMinutes),
@@ -118,7 +117,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                     <NumInput
                       value={String(r.reserveCap)}
                       onChange={(e) =>
-                        app.upsertResource({
+                        upsertResource({
                           id: r.id,
                           gameId: game.id,
                           reserveCap: intOr(e.target.value, r.reserveCap),
@@ -130,7 +129,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                     <TextInput
                       value={r.reserveLabel ?? ''}
                       onChange={(e) =>
-                        app.upsertResource({ id: r.id, gameId: game.id, reserveLabel: e.target.value || undefined })
+                        upsertResource({ id: r.id, gameId: game.id, reserveLabel: e.target.value || undefined })
                       }
                     />
                   </Field>
@@ -140,7 +139,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                       placeholder={String(effectiveReserveRegenMinutes(r))}
                       onChange={(e) => {
                         const value = e.target.value.trim();
-                        app.upsertResource({
+                        upsertResource({
                           id: r.id,
                           gameId: game.id,
                           reserveRegenMinutes:
@@ -155,7 +154,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
           </div>
         );
       })}
-      <Btn onClick={() => app.upsertResource({ gameId: game.id, name: 'Energy' })}>+ Resource</Btn>
+      <Btn onClick={() => upsertResource({ gameId: game.id, name: 'Energy' })}>+ Resource</Btn>
       <p className="text-label text-dim">
         Min/pt = minutes per point of regen. 0 = doesn't regenerate. Rsv min/pt = minutes per reserve point once the bar
         is capped (defaults to double Min/pt — reserve fills at half speed).
