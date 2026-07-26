@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { compactState, mergeState, normalizeState } from '../src/merge';
+import { compactState, mergeState, normalizeState, pruneCompletions } from '../src/merge';
+import { MAX_GAME_IMAGE_LENGTH } from '../src/types';
 import { makeGame, makeSnapshot, makeState } from './helpers';
 
 describe('mergeState', () => {
@@ -126,6 +127,13 @@ describe('normalizeState', () => {
     expect(state.tasks[0]!.mode).toBe('count');
     expect(state.tasks[0]!.countTarget).toBe(3);
   });
+
+  it('drops oversized images so imported documents self-heal before validation', () => {
+    const state = normalizeState({
+      games: [makeGame({ image: 'x'.repeat(MAX_GAME_IMAGE_LENGTH + 1) })],
+    });
+    expect(state.games[0]).not.toHaveProperty('image');
+  });
 });
 
 describe('compactState', () => {
@@ -140,5 +148,27 @@ describe('compactState', () => {
     });
     const compacted = compactState(state, cutoff);
     expect(compacted.games.map((game) => game.id)).toEqual(['live', 'fresh-tombstone']);
+  });
+
+  it('keeps completions at the retention boundary and prunes older rows', () => {
+    const cutoff = 1_000_000;
+    const state = makeState({
+      completions: [
+        { id: 'old', taskId: 'task', periodKey: 'old', done: true, updatedAt: cutoff - 1 },
+        { id: 'boundary', taskId: 'task', periodKey: 'boundary', done: true, updatedAt: cutoff },
+      ],
+    });
+    expect(pruneCompletions(state, cutoff).completions.map((completion) => completion.id)).toEqual(['boundary']);
+  });
+
+  it('prunes after merge because a stale device can resurrect a row pruned without a tombstone', () => {
+    const cutoff = 1_000_000;
+    const stale = makeState({
+      completions: [{ id: 'stale', taskId: 'task', periodKey: 'old', done: true, updatedAt: cutoff - 1 }],
+    });
+    const alreadyPruned = pruneCompletions(stale, cutoff);
+
+    expect(mergeState(alreadyPruned, stale).completions.map((completion) => completion.id)).toEqual(['stale']);
+    expect(compactState(mergeState(alreadyPruned, stale), 0, cutoff).completions).toEqual([]);
   });
 });

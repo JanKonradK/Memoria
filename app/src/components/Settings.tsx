@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { AlertType, IntegrationKind, IntegrationStatus } from '@technogg/shared';
-import { alertTypeLabel, DEFAULT_THRESHOLDS, normalizeState, safeParseAppState } from '@technogg/shared';
+import type { AlertType, IntegrationKind, IntegrationStatus } from '@void/shared';
+import { alertTypeLabel, DEFAULT_THRESHOLDS, normalizeState, safeParseAppState } from '@void/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { useSession } from '../auth';
@@ -16,25 +16,47 @@ import {
 import { readLocalSecrets, updateLocalSecrets, type LocalSecrets } from '../secret-store';
 import { fmtClock, intOr, minToTimeInput, timeInputToMin } from '../util';
 import { Pill } from './primitives';
-import { Btn, Field, GameBadge, NumInput, Page, SectionTitle, Segmented, TextInput, Toggle } from './ui';
+import { Disclosure } from './Disclosure';
+import { Btn, Field, GameBadge, NumInput, Page, Segmented, TextInput, Toggle } from './ui';
 
 const ALERT_TYPES: AlertType[] = ['energy_cap', 'daily_undone', 'weekly_undone', 'monthly_undone', 'event_end'];
+type SettingsSection = 'games' | 'display' | 'account' | 'notifications' | 'alerts' | 'data';
 
 export function SettingsPage() {
-  const app = useApp();
+  const state = useApp((store) => store.state);
+  const identity = useApp((store) => store.identity);
+  const syncStatus = useApp((store) => store.syncStatus);
+  const syncError = useApp((store) => store.syncError);
+  const lastSyncAt = useApp((store) => store.lastSyncAt);
+  const updateSettings = useApp((store) => store.updateSettings);
+  const upsertRule = useApp((store) => store.upsertRule);
+  const importStateJson = useApp((store) => store.importJson);
+  const clearLocalData = useApp((store) => store.clearLocalData);
   const openSheet = useUI((state) => state.openSheet);
   const textSize = useUI((state) => state.textSize);
   const setTextSize = useUI((state) => state.setTextSize);
   const focusColumns = useUI((state) => state.focusColumns);
   const setFocusColumns = useUI((state) => state.setFocusColumns);
   const session = useSession();
-  const settings = app.state.settings;
-  const games = app.state.games.filter((game) => !game.deleted).sort((a, b) => a.sort - b.sort);
+  const settings = state.settings;
+  const games = state.games.filter((game) => !game.deleted).sort((a, b) => a.sort - b.sort);
   const [syncCfg, setSyncCfgLocal] = useState(getSyncConfig());
   const [pingResult, setPingResult] = useState('');
   const [secrets, setSecrets] = useState<LocalSecrets>(() => readLocalSecrets());
   const [integrationStatuses, setIntegrationStatuses] = useState<IntegrationStatus[]>([]);
   const [importDraft, setImportDraft] = useState<{ text: string; games: number; events: number } | null>(null);
+  const [openSection, setOpenSection] = useState<SettingsSection | null>('games');
+  const disclosureProps = (section: SettingsSection) => ({
+    open: openSection === section,
+    onOpenChange: (open: boolean) => setOpenSection(open ? section : null),
+    fill: true,
+    className: 'glass gold-hairline rounded-ui-card px-4',
+    headingClassName: 'relative',
+    triggerClassName: 'py-2 text-xs font-bold uppercase tracking-widest text-muted',
+    contentClassName: 'scrollbar-thin h-full overflow-y-auto pb-4',
+  });
+  const reportError = (error: unknown) => setPingResult(error instanceof Error ? error.message : String(error));
+  const syncSizeWarning = syncStatus === 'error' && syncError.startsWith('Local data is ');
 
   const refreshStatuses = async () => {
     if (!integrationsHosted()) return;
@@ -42,8 +64,12 @@ export function SettingsPage() {
   };
 
   useEffect(() => {
-    void refreshStatuses().catch((error) => setPingResult(error instanceof Error ? error.message : String(error)));
+    void refreshStatuses().catch(reportError);
   }, []);
+
+  useEffect(() => {
+    setSyncCfgLocal(getSyncConfig());
+  }, [identity]);
 
   const integrationStatus = (kind: IntegrationKind) => integrationStatuses.find((item) => item.kind === kind);
   const saveSecret = async (kind: IntegrationKind, value: Record<string, string>) => {
@@ -67,18 +93,18 @@ export function SettingsPage() {
 
   const saveSyncCfg = () => {
     setSyncConfig(syncCfg);
-    void syncNow();
+    void syncNow().catch(reportError);
   };
 
   const globalRule = (type: AlertType) =>
-    app.state.alertRules.find((r) => r.type === type && r.gameId === null && !r.deleted);
+    state.alertRules.find((r) => r.type === type && r.gameId === null && !r.deleted);
 
   const exportJson = async () => {
-    const data = session.hosted ? await exportHostedAccount() : app.state;
+    const data = session.hosted ? await exportHostedAccount() : state;
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `technogg-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `void-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -90,40 +116,49 @@ export function SettingsPage() {
       setPingResult('Import failed — backup exceeds the 1 MB account limit.');
       return;
     }
-    void file.text().then((text) => {
-      try {
-        const raw = JSON.parse(text) as unknown;
-        const candidate = raw && typeof raw === 'object' && 'state' in raw ? (raw as { state: unknown }).state : raw;
-        if (!candidate || typeof candidate !== 'object' || (!('games' in candidate) && !('settings' in candidate)))
-          throw new Error("Not a Techno's Library backup");
-        const normalized = normalizeState(candidate);
-        const parsed = safeParseAppState(normalized);
-        if (!parsed.success) throw new Error(parsed.error);
-        const incoming = parsed.data;
-        setImportDraft({
-          text: JSON.stringify(candidate),
-          games: incoming.games.filter((g) => !g.deleted).length,
-          events: incoming.events.filter((e) => !e.deleted).length,
-        });
-        setPingResult('');
-      } catch {
-        setImportDraft(null);
-        setPingResult("Import failed — not a valid Techno's Library backup file.");
-      }
-    });
+    void file
+      .text()
+      .then((text) => {
+        try {
+          const raw = JSON.parse(text) as unknown;
+          const candidate = raw && typeof raw === 'object' && 'state' in raw ? (raw as { state: unknown }).state : raw;
+          if (!candidate || typeof candidate !== 'object' || (!('games' in candidate) && !('settings' in candidate)))
+            throw new Error('Not a Void backup');
+          const normalized = normalizeState(candidate);
+          const parsed = safeParseAppState(normalized);
+          if (!parsed.success) throw new Error(parsed.error);
+          const incoming = parsed.data;
+          setImportDraft({
+            text: JSON.stringify(candidate),
+            games: incoming.games.filter((g) => !g.deleted).length,
+            events: incoming.events.filter((e) => !e.deleted).length,
+          });
+          setPingResult('');
+        } catch {
+          setImportDraft(null);
+          setPingResult('Import failed — not a valid Void backup file.');
+        }
+      })
+      .catch(reportError);
   };
 
   return (
-    <Page className="pb-28 pt-5">
-      <div className="mx-auto max-w-[1600px]">
+    // Lock to the viewport only when there is room to be usable. Below ~700px tall
+    // the six section headers leave the open section a few pixels, so pinning the
+    // height turns "don't scroll" into "content is unreachable" — that is the case
+    // where scrolling is the right answer.
+    <Page className="min-h-dvh [@media(min-height:700px)]:h-dvh [@media(min-height:700px)]:overflow-hidden">
+      <div className="mx-auto flex max-w-[1600px] flex-col [@media(min-height:700px)]:h-full">
         <h2 className="mb-3 text-title font-black tracking-tight text-slate-100">Settings</h2>
 
-        {/* grid-cols-1 (minmax(0,1fr)) caps the single-column track at the viewport
-            so wide cards shrink instead of overflowing at small widths / large text. */}
-        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-          <section className="glass gold-hairline rounded-ui-card p-5 lg:col-span-2 2xl:col-span-3" aria-label="Games">
-            <div className="flex items-center justify-between gap-3">
-              <SectionTitle>Games</SectionTitle>
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
+          <Disclosure
+            {...disclosureProps('games')}
+            title="Games"
+            regionLabel="Games"
+            triggerLabel={`${openSection === 'games' ? 'Collapse' : 'Expand'} Games settings`}
+          >
+            <div className="mb-3 flex justify-end">
               <Btn onClick={() => openSheet({ kind: 'addGame' })}>+ Add game</Btn>
             </div>
             {games.length > 0 ? (
@@ -157,10 +192,14 @@ export function SettingsPage() {
             ) : (
               <p className="mt-3 text-body text-dim">No games yet. Add one to start tracking resources and tasks.</p>
             )}
-          </section>
+          </Disclosure>
 
-          <section className="glass gold-hairline rounded-ui-card p-5" aria-label="Display and appearance">
-            <SectionTitle>Display</SectionTitle>
+          <Disclosure
+            {...disclosureProps('display')}
+            title="Display"
+            regionLabel="Display and appearance"
+            triggerLabel={`${openSection === 'display' ? 'Collapse' : 'Expand'} Display settings`}
+          >
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -198,10 +237,16 @@ export function SettingsPage() {
                 />
               </div>
             </div>
-          </section>
+          </Disclosure>
 
-          <section className="glass gold-hairline rounded-ui-card p-5">
-            <SectionTitle>{session.hosted ? 'Account and sync' : 'Advanced local sync'}</SectionTitle>
+          <Disclosure
+            {...disclosureProps('account')}
+            title={session.hosted ? 'Account and sync' : 'Advanced local sync'}
+            regionLabel={session.hosted ? 'Account and sync' : 'Advanced local sync'}
+            triggerLabel={`${openSection === 'account' ? 'Collapse' : 'Expand'} ${
+              session.hosted ? 'Account and sync' : 'Advanced local sync'
+            } settings`}
+          >
             {session.hosted ? (
               <div className="space-y-3">
                 <p className="text-body font-semibold text-fg-soft">{session.displayName}</p>
@@ -210,15 +255,15 @@ export function SettingsPage() {
                   online.
                 </p>
                 <div className="flex flex-wrap items-center gap-3">
-                  <Btn kind="primary" onClick={() => void syncNow()}>
+                  <Btn kind="primary" onClick={() => void syncNow().catch(reportError)}>
                     Sync now
                   </Btn>
                   <Btn onClick={session.manageAccount}>Manage devices</Btn>
-                  <Btn onClick={() => void session.signOut()}>Sign out</Btn>
+                  <Btn onClick={() => void session.signOut().catch(reportError)}>Sign out</Btn>
                   <span className="text-xs text-muted">
-                    {app.syncStatus === 'syncing' && 'Syncing…'}
-                    {app.syncStatus === 'ok' && app.lastSyncAt && `✓ Synced ${fmtClock(app.lastSyncAt)}`}
-                    {app.syncStatus === 'error' && <span className="text-rose-300">{app.syncError}</span>}
+                    {syncStatus === 'syncing' && 'Syncing…'}
+                    {syncStatus === 'ok' && lastSyncAt && `✓ Synced ${fmtClock(lastSyncAt)}`}
+                    {syncStatus === 'error' && !syncSizeWarning && <span className="text-rose-300">{syncError}</span>}
                   </span>
                 </div>
               </div>
@@ -247,10 +292,19 @@ export function SettingsPage() {
                 </Btn>
               </div>
             )}
-          </section>
+            {syncSizeWarning && (
+              <p className="mt-3 rounded-ui-lg bg-amber-400/10 p-3 text-xs text-amber-200" role="status">
+                {syncError}
+              </p>
+            )}
+          </Disclosure>
 
-          <section className="glass gold-hairline rounded-ui-card p-5">
-            <SectionTitle>Notifications</SectionTitle>
+          <Disclosure
+            {...disclosureProps('notifications')}
+            title="Notifications"
+            regionLabel="Notifications"
+            triggerLabel={`${openSection === 'notifications' ? 'Collapse' : 'Expand'} Notifications settings`}
+          >
             <div className="space-y-3">
               <Field label="Discord webhook URL">
                 <TextInput
@@ -272,10 +326,12 @@ export function SettingsPage() {
                     <span className="text-xs text-emerald-300">{integrationStatus('discord')?.maskedLabel}</span>
                     <Btn
                       onClick={() =>
-                        void disconnectIntegration('discord').then(() => {
-                          setSecrets({ ...secrets, discordWebhook: '' });
-                          return refreshStatuses();
-                        })
+                        void disconnectIntegration('discord')
+                          .then(() => {
+                            setSecrets({ ...secrets, discordWebhook: '' });
+                            return refreshStatuses();
+                          })
+                          .catch(reportError)
                       }
                     >
                       Disconnect
@@ -291,6 +347,9 @@ export function SettingsPage() {
                     value={secrets.telegramToken}
                     onChange={(e) => setSecrets({ ...secrets, telegramToken: e.target.value.trim() })}
                   />
+                  <p className="mt-1 text-label text-dim">
+                    In local mode, this token is stored unencrypted on this device; use a dedicated bot.
+                  </p>
                 </Field>
                 <Field label="Telegram chat id">
                   <TextInput
@@ -314,10 +373,12 @@ export function SettingsPage() {
                     <span className="text-xs text-emerald-300">{integrationStatus('telegram')?.maskedLabel}</span>
                     <Btn
                       onClick={() =>
-                        void disconnectIntegration('telegram').then(() => {
-                          setSecrets({ ...secrets, telegramToken: '', telegramChatId: '' });
-                          return refreshStatuses();
-                        })
+                        void disconnectIntegration('telegram')
+                          .then(() => {
+                            setSecrets({ ...secrets, telegramToken: '', telegramChatId: '' });
+                            return refreshStatuses();
+                          })
+                          .catch(reportError)
                       }
                     >
                       Disconnect
@@ -330,26 +391,23 @@ export function SettingsPage() {
                   <TextInput
                     type="time"
                     value={minToTimeInput(settings.quietStart)}
-                    onChange={(e) => app.updateSettings({ quietStart: timeInputToMin(e.target.value) })}
+                    onChange={(e) => updateSettings({ quietStart: timeInputToMin(e.target.value) })}
                   />
                 </Field>
                 <Field label="Quiet hours end">
                   <TextInput
                     type="time"
                     value={minToTimeInput(settings.quietEnd)}
-                    onChange={(e) => app.updateSettings({ quietEnd: timeInputToMin(e.target.value) })}
+                    onChange={(e) => updateSettings({ quietEnd: timeInputToMin(e.target.value) })}
                   />
                 </Field>
               </div>
               <Field label="Your timezone (for alert clock times + quiet hours)">
                 <div className="flex flex-col gap-2 sm:flex-row">
-                  <TextInput
-                    value={settings.localTz}
-                    onChange={(e) => app.updateSettings({ localTz: e.target.value })}
-                  />
+                  <TextInput value={settings.localTz} onChange={(e) => updateSettings({ localTz: e.target.value })} />
                   <Btn
                     className="shrink-0"
-                    onClick={() => app.updateSettings({ localTz: Intl.DateTimeFormat().resolvedOptions().timeZone })}
+                    onClick={() => updateSettings({ localTz: Intl.DateTimeFormat().resolvedOptions().timeZone })}
                   >
                     Use device
                   </Btn>
@@ -361,7 +419,7 @@ export function SettingsPage() {
                   max={12}
                   value={String(settings.sleepHours)}
                   onChange={(e) =>
-                    app.updateSettings({
+                    updateSettings({
                       sleepHours: Math.min(12, Math.max(1, intOr(e.target.value, settings.sleepHours))),
                     })
                   }
@@ -372,7 +430,7 @@ export function SettingsPage() {
                 <Btn
                   onClick={() => {
                     setPingResult('Sending…');
-                    void sendTestPing().then(setPingResult);
+                    void sendTestPing().then(setPingResult).catch(reportError);
                   }}
                 >
                   Send test ping
@@ -380,10 +438,14 @@ export function SettingsPage() {
                 {pingResult && <span className="text-xs text-muted">{pingResult}</span>}
               </div>
             </div>
-          </section>
+          </Disclosure>
 
-          <section className="glass gold-hairline rounded-ui-card p-5">
-            <SectionTitle>Alert timing (global defaults)</SectionTitle>
+          <Disclosure
+            {...disclosureProps('alerts')}
+            title="Alert timing (global defaults)"
+            regionLabel="Alert timing (global defaults)"
+            triggerLabel={`${openSection === 'alerts' ? 'Collapse' : 'Expand'} Alert timing settings`}
+          >
             <div className="space-y-2.5">
               {ALERT_TYPES.map((type) => {
                 const rule = globalRule(type);
@@ -393,7 +455,7 @@ export function SettingsPage() {
                   <div key={type} className="grid grid-cols-[44px_minmax(0,1fr)_96px] items-center gap-2">
                     <Toggle
                       checked={enabled}
-                      onChange={(v) => app.upsertRule({ type, gameId: null, enabled: v, thresholdMinutes: minutes })}
+                      onChange={(v) => upsertRule({ type, gameId: null, enabled: v, thresholdMinutes: minutes })}
                       ariaLabel={`${enabled ? 'Disable' : 'Enable'} ${alertTypeLabel(type)}`}
                     />
                     <span className="flex-1 text-body text-fg-soft">{alertTypeLabel(type)}</span>
@@ -403,7 +465,7 @@ export function SettingsPage() {
                         value={String(minutes)}
                         aria-label={`${alertTypeLabel(type)} minutes before`}
                         onChange={(e) =>
-                          app.upsertRule({
+                          upsertRule({
                             type,
                             gameId: null,
                             enabled,
@@ -420,12 +482,16 @@ export function SettingsPage() {
                 e.g. "Energy nearing cap · 120" pings when a resource is within 2 hours of capping.
               </p>
             </div>
-          </section>
+          </Disclosure>
 
-          <section className="glass gold-hairline rounded-ui-card p-5">
-            <SectionTitle>Data</SectionTitle>
+          <Disclosure
+            {...disclosureProps('data')}
+            title="Data"
+            regionLabel="Data"
+            triggerLabel={`${openSection === 'data' ? 'Collapse' : 'Expand'} Data settings`}
+          >
             <div className="flex flex-wrap items-center gap-2 pb-1">
-              <Btn onClick={() => void exportJson()}>Export backup</Btn>
+              <Btn onClick={() => void exportJson().catch(reportError)}>Export backup</Btn>
               <label className="flex min-h-11 cursor-pointer items-center rounded-ui-lg bg-white/5 px-4 py-2 text-body font-semibold text-fg-soft ring-1 ring-white/10 transition hover:bg-white/10 sm:min-h-9">
                 Import backup
                 <input
@@ -436,8 +502,8 @@ export function SettingsPage() {
                 />
               </label>
               <span className="text-label text-dim">
-                {app.state.games.filter((g) => !g.deleted).length} games ·{' '}
-                {app.state.events.filter((e) => !e.deleted).length} events
+                {state.games.filter((g) => !g.deleted).length} games · {state.events.filter((e) => !e.deleted).length}{' '}
+                events
               </span>
             </div>
             {importDraft && (
@@ -454,7 +520,7 @@ export function SettingsPage() {
                   <Btn
                     kind="primary"
                     onClick={() => {
-                      const ok = app.importJson(importDraft.text);
+                      const ok = importStateJson(importDraft.text);
                       setPingResult(ok ? 'Backup imported and merged.' : 'Import failed.');
                       setImportDraft(null);
                     }}
@@ -475,22 +541,22 @@ export function SettingsPage() {
                   className="mt-3 text-rose-200 ring-rose-300/25"
                   onClick={() => {
                     if (
-                      !window.confirm(
-                        "Permanently delete your Techno's Library account and all cloud data? This cannot be undone.",
-                      )
+                      !window.confirm('Permanently delete your Void account and all cloud data? This cannot be undone.')
                     )
                       return;
-                    void deleteHostedAccount().then(async () => {
-                      await app.clearLocalData();
-                      await session.signOut();
-                    });
+                    void deleteHostedAccount()
+                      .then(async () => {
+                        await clearLocalData();
+                        await session.signOut();
+                      })
+                      .catch(reportError);
                   }}
                 >
                   Delete account permanently
                 </Btn>
               </div>
             )}
-          </section>
+          </Disclosure>
         </div>
       </div>
     </Page>

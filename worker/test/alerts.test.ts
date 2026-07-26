@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:test';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { emptyState } from '@technogg/shared';
+import { emptyState } from '@void/shared';
 import { processUserAlerts } from '../src/alerts';
 import { mergeUserDocument } from '../src/db';
 import { putSecret } from '../src/secrets';
@@ -9,7 +9,7 @@ const masterKey = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
 
 afterEach(() => vi.restoreAllMocks());
 
-describe('queued alert processing', () => {
+describe('alert processing', () => {
   it('deduplicates per user without leaking the ledger across tenants', async () => {
     const now = Date.now();
     const state = emptyState();

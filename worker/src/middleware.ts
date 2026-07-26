@@ -15,9 +15,10 @@ export const securityHeaders: MiddlewareHandler<AppEnv> = async (c, next) => {
   c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
   c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
   c.header('Cross-Origin-Opener-Policy', 'same-origin');
+  // Keep this policy in sync with app/public/_headers; that static copy uses the production CLERK_FRONTEND_API value.
   c.header(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://clerk.technogg.app; " +
+    `default-src 'self'; script-src 'self' https://*.clerk.accounts.dev https://*.clerk.com ${c.env.CLERK_FRONTEND_API}; ` +
       "style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.clerk.accounts.dev " +
       'https://*.clerk.com https://*.clerk.services; frame-src https://*.clerk.accounts.dev https://*.clerk.com; ' +
       "object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
@@ -70,23 +71,15 @@ export function rateLimit(limit: number, windowMs = 60_000): MiddlewareHandler<A
     const identityHash = await hashUserId(identity);
     const windowStart = Math.floor(Date.now() / windowMs) * windowMs;
     const key = `${identityHash}:${c.req.path.split('/').slice(0, 3).join('/')}`;
-    await c.env.DB.prepare(
+    const row = await c.env.DB.prepare(
       'INSERT INTO rate_limits (key, window_start, count) VALUES (?, ?, 1) ' +
-        'ON CONFLICT(key, window_start) DO UPDATE SET count = count + 1',
+        'ON CONFLICT(key, window_start) DO UPDATE SET count = count + 1 RETURNING count',
     )
-      .bind(key, windowStart)
-      .run();
-    const row = await c.env.DB.prepare('SELECT count FROM rate_limits WHERE key = ? AND window_start = ?')
       .bind(key, windowStart)
       .first<{ count: number }>();
     if ((row?.count ?? 0) > limit) {
       c.header('Retry-After', String(Math.ceil(windowMs / 1000)));
       return c.json({ error: 'rate_limited' }, 429);
-    }
-    if (Math.random() < 0.01) {
-      await c.env.DB.prepare('DELETE FROM rate_limits WHERE window_start < ?')
-        .bind(windowStart - 2 * windowMs)
-        .run();
     }
     await next();
   };

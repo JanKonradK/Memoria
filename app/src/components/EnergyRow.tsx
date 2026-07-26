@@ -1,22 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
-import type { EnergyProjection, Resource } from '@technogg/shared';
-import { effectiveReserveRegenMinutes, effectiveResourceKind } from '@technogg/shared';
+import { memo, useEffect, useRef, useState } from 'react';
+import type { EnergyProjection, Resource } from '@void/shared';
+import { effectiveReserveRegenMinutes, effectiveResourceKind } from '@void/shared';
 import { useUI } from '../ui-store';
-import { clamp, fmtClock, fmtDur, intOr } from '../util';
+import { clamp, fmtClock, fmtDur, intOr, luminance } from '../util';
 import { ProgressBar } from './primitives';
 import { ResourceIcon } from './ResourceIcon';
 
 /** Dark secondary card accents disappear on the reserve rail; fall back to the primary accent. */
 function visibleReserveAccent(primary: string, secondary?: string): string {
   if (!secondary) return primary;
-  const match = /^#?([0-9a-f]{6})$/i.exec(secondary.trim());
-  if (!match) return secondary;
-  const rgb = parseInt(match[1]!, 16);
-  const red = (rgb >> 16) & 255;
-  const green = (rgb >> 8) & 255;
-  const blue = rgb & 255;
-  const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
-  return luminance >= 0.28 ? secondary : primary;
+  const secondaryLuminance = luminance(secondary);
+  if (secondaryLuminance == null) return secondary;
+  return secondaryLuminance >= 0.28 ? secondary : primary;
 }
 
 /** Hold-to-repeat: starts at 180ms, accelerates down to 40ms. */
@@ -87,7 +82,7 @@ function StepBtn({ delta, onStep, label }: { delta: number; onStep: (d: number) 
  * Resource row: regenerating energy shows a bar; counters and weekly refills use
  * the same controls without a fake regeneration bar.
  */
-export function EnergyRow({
+export const EnergyRow = memo(function EnergyRow({
   res,
   color,
   reserveColor,
@@ -387,4 +382,4 @@ export function EnergyRow({
       {compact && subtitle && <div className="mt-1 text-xs tabular-nums text-slate-300">{subtitle}</div>}
     </div>
   );
-}
+});

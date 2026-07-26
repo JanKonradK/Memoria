@@ -21,6 +21,27 @@ async function expectNoSeriousAccessibilityViolations(page: Page) {
   );
 }
 
+async function expectTimelineTicksToFit(page: Page) {
+  const scale = page.locator('[data-timeline-scale]');
+  const ticks = page.locator('[data-timeline-tick]');
+  await expect(ticks.first()).toBeVisible();
+  const geometry = await scale.evaluate((element) => {
+    const scaleBox = element.getBoundingClientRect();
+    const tickBoxes = [...element.querySelectorAll<HTMLElement>('[data-timeline-tick]')].map((tick) => {
+      const box = tick.getBoundingClientRect();
+      return { left: box.left, right: box.right };
+    });
+    return { left: scaleBox.left, right: scaleBox.right, ticks: tickBoxes };
+  });
+
+  expect(geometry.ticks.length).toBeGreaterThanOrEqual(2);
+  expect(geometry.ticks[0]!.left).toBeGreaterThanOrEqual(geometry.left - 0.5);
+  expect(geometry.ticks.at(-1)!.right).toBeLessThanOrEqual(geometry.right + 0.5);
+  for (let index = 1; index < geometry.ticks.length; index++) {
+    expect(geometry.ticks[index - 1]!.right).toBeLessThanOrEqual(geometry.ticks[index]!.left + 0.5);
+  }
+}
+
 async function addPreset(page: Page, name: string, short: string, first = false) {
   await page.getByRole('button', first ? { name: 'Add your first game' } : { name: 'Add game', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Add a game' })).toBeVisible();
@@ -43,16 +64,23 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('empty app is accessible and fits the viewport', async ({ page }) => {
-  await expect.poll(() => page.locator('header').evaluate((header) => getComputedStyle(header).position)).toBe('fixed');
+  await expect(page.locator('header')).toHaveCount(0);
+  const navRail = page.locator('[data-nav-rail]');
+  await expect(navRail).toBeVisible();
+  await expect.poll(() => navRail.evaluate((rail) => getComputedStyle(rail).position)).toBe('fixed');
+  await expect(page.getByRole('button', { name: 'Games', exact: true })).toHaveAttribute('aria-current', 'page');
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
 
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Event timeline' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Timeline', exact: true })).toHaveAttribute('aria-current', 'page');
   await expectNoPageOverflow(page);
 
-  await page.getByRole('button', { name: 'Settings' }).click();
-  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  // exact: the accordion section triggers are headings too ("Expand Data settings" etc.)
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Settings', exact: true })).toHaveAttribute('aria-current', 'page');
   await expectNoPageOverflow(page);
 });
 
@@ -118,12 +146,24 @@ test('tabs, timeline controls, and settings fit after adding a game', async ({ p
 
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await expectNoPageOverflow(page);
+  const timelineRange = page.getByRole('radiogroup', { name: 'Timeline range' });
+  await expect(timelineRange.getByRole('radio', { name: '30d', exact: true })).toHaveAttribute('data-state', 'on');
+  for (const range of ['7d', '30d', '90d']) {
+    await timelineRange.getByRole('radio', { name: range, exact: true }).click();
+    await expect(timelineRange.getByRole('radio', { name: range, exact: true })).toHaveAttribute('data-state', 'on');
+    await expectTimelineTicksToFit(page);
+  }
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('void-ui') || '{}')?.state?.timelineRange))
+    .toBe('90d');
   await page.getByRole('button', { name: '+ Event' }).click();
   await expect(page.getByRole('dialog', { name: 'New event' })).toBeVisible();
   await page.keyboard.press('Escape');
 
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Expand Notifications settings' }).click();
   await expect(page.getByLabel('Sleep window (hours)')).toHaveValue('8');
+  await page.getByRole('button', { name: 'Expand Display settings' }).click();
   const textSize = page.getByRole('radiogroup', { name: 'Text size' });
   await expect(textSize.getByRole('radio', { name: 'M', exact: true })).toHaveAttribute('data-state', 'on');
   await textSize.getByRole('radio', { name: 'XL', exact: true }).click();
@@ -131,10 +171,11 @@ test('tabs, timeline controls, and settings fit after adding a game', async ({ p
     .poll(() => page.locator('html').evaluate((html) => parseFloat(getComputedStyle(html).fontSize)))
     .toBe(20.48);
   await expect
-    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('technogg-ui') || '{}')?.state?.textSize as string))
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('void-ui') || '{}')?.state?.textSize as string))
     .toBe('xl');
   await expectNoPageOverflow(page);
 
+  await page.getByRole('button', { name: 'Expand Games settings' }).click();
   const gameSettings = page.getByRole('region', { name: 'Games' });
   await expect(gameSettings.getByText('Genshin Impact', { exact: true })).toBeVisible();
   await gameSettings.getByRole('button', { name: 'Edit Genshin Impact' }).click();
@@ -158,6 +199,7 @@ test('wide dashboard switches between nexus and cards rail while timeline bars s
   await expect(page.getByRole('complementary', { name: 'left game rail' })).toBeVisible();
   await expect(page.getByRole('complementary', { name: 'right game rail' })).toBeVisible();
   await expect(page.locator('.nexus-conduit-pulse')).toHaveCount(5);
+  await expect(page.getByRole('button', { name: 'Add game', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Expand Honkai: Star Rail controls' }).click();
   await expect(page.getByRole('region', { name: 'Honkai: Star Rail controls' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Collapse Honkai: Star Rail controls' })).toBeVisible();

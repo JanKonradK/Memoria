@@ -1,4 +1,4 @@
-import type { Game, GameEvent } from '@technogg/shared';
+import type { Game, GameEvent } from '@void/shared';
 import { describe, expect, it } from 'vitest';
 import { agendaCompare, agendaRank, budgetAgenda, groupVersionUpdates, type AgendaRow } from '../src/timeline-sort';
 

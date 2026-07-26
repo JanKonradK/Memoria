@@ -1,24 +1,21 @@
 import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
-import { DateTime } from 'luxon';
-import type { AppState, GameEvent, GameUrgency } from '@technogg/shared';
-import { checklistFor, effectiveResourceKind, latestSnapshots, projectEnergy, sleepCheck } from '@technogg/shared';
+import type { AppState, EnergyProjection, GameEvent, GameUrgency, Resource } from '@void/shared';
+import { effectiveResourceKind, projectEnergy } from '@void/shared';
 import { useMediaQuery, useReducedMotion } from '../hooks';
+import { useDerived } from '../selectors';
 import { useUI } from '../ui-store';
 import { endTone, fmtDur, tint } from '../util';
+import { AddGameCell } from './AddGameCell';
 import { GameControlsView, type GameControlActions } from './GameCard';
-import { ProgressRing } from './ProgressRing';
 import { ProgressBar } from './primitives';
-import { AgendaList, selectAgendaData } from './TimelineAgenda';
-import { GameBadge } from './ui';
+import { clusterCoreGeometry, clusterDotLayout } from './nexus/cluster-geometry';
+import { Conduits, NEXUS_DUR_MS, type NexusEnergy } from './nexus/Conduits';
+import { NexusHub } from './nexus/NexusHub';
 
 const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
-const WEEK = 7 * DAY;
 
 type UrgencyTier = 'low' | 'med' | 'high';
 
-const URGENCY_STROKE: Record<UrgencyTier, number> = { low: 1.6, med: 2.6, high: 3.8 };
-const URGENCY_SPEED: Record<UrgencyTier, string> = { low: '2.4s', med: '2s', high: '1.3s' };
 const URGENCY_DOT: Record<UrgencyTier, string> = {
   low: 'var(--color-ok)',
   med: 'var(--color-warn)',
@@ -34,20 +31,6 @@ function urgencyTier(entry: GameUrgency, now: number): UrgencyTier {
   return 'low';
 }
 
-/**
- * A conduit is drawn as a real cable: a dark jacket, ribbed rim highlights on
- * that jacket, the game-tinted fibre core, and the light pulse travelling inside.
- */
-type ConduitPaths = {
-  jacket?: SVGPathElement;
-  rim?: SVGPathElement;
-  core?: SVGPathElement;
-  pulse?: SVGPathElement;
-};
-
-/** How far the jacket extends past the fibre core on each side. */
-const CONDUIT_JACKET_PAD = 6;
-
 /** Anything a click could plausibly be aimed at — everything else is "the background". */
 const INTERACTIVE_SELECTOR = 'button, a, input, textarea, select, label, [role="button"], [contenteditable]';
 
@@ -59,6 +42,102 @@ const INTERACTIVE_SELECTOR = 'button, a, input, textarea, select, label, [role="
  */
 const LAYER_SELECTOR =
   '[role="dialog"], [role="listbox"], [role="tooltip"], [role="menu"], [data-radix-popper-content-wrapper]';
+
+function GalaxyCluster({
+  gameId,
+  short,
+  color,
+  color2,
+  fraction,
+  openDailyCount,
+  active,
+}: {
+  gameId: string;
+  short: string;
+  color: string;
+  color2?: string;
+  fraction: number;
+  openDailyCount: number;
+  active: boolean;
+}) {
+  const idPrefix = useId().replaceAll(':', '');
+  const armGradientId = `cluster-arms-${idPrefix}`;
+  const coreGradientId = `cluster-core-${idPrefix}`;
+  const core = clusterCoreGeometry(fraction, active);
+  const dailyLayout = clusterDotLayout(openDailyCount, gameId);
+  const secondaryColor = color2 ?? color;
+
+  return (
+    <svg
+      aria-hidden="true"
+      className="nexus-cluster pointer-events-none absolute inset-y-0 left-0 h-full w-24 overflow-visible"
+      data-active={active || undefined}
+      viewBox="0 0 96 112"
+      preserveAspectRatio="xMinYMid meet"
+    >
+      <defs>
+        <linearGradient id={armGradientId} x1="7" y1="12" x2="76" y2="71" gradientUnits="userSpaceOnUse">
+          <stop stopColor={color} />
+          <stop offset="1" stopColor={secondaryColor} />
+        </linearGradient>
+        <radialGradient id={coreGradientId}>
+          <stop stopColor="#fff" />
+          <stop offset="0.35" stopColor={color} />
+          <stop offset="1" stopColor={secondaryColor} />
+        </radialGradient>
+      </defs>
+
+      <g transform="translate(8 16)">
+        <g className="nexus-cluster-rotation">
+          <g
+            className="nexus-cluster-arms"
+            fill="none"
+            stroke={`url(#${armGradientId})`}
+            strokeLinecap="round"
+            opacity={active ? 0.3 : 0.12}
+          >
+            <path d="M36 35c10-11 29-8 31 6 3 16-17 27-36 21C10 56 7 34 21 20" strokeWidth="2.2" />
+            <path d="M36 37c-8 9-21 8-26-3C4 20 18 5 37 7c24 2 38 23 32 44" strokeWidth="1.4" />
+            <ellipse
+              cx="36"
+              cy="36"
+              rx="30"
+              ry="20"
+              strokeWidth="0.8"
+              strokeDasharray="58 24"
+              transform="rotate(24 36 36)"
+            />
+          </g>
+
+          {dailyLayout.dots.map((dot, index) => (
+            <circle
+              key={index}
+              className="nexus-cluster-dot"
+              cx={dot.x}
+              cy={dot.y}
+              r={dot.radius}
+              fill={index % 2 === 0 ? color : secondaryColor}
+              style={{ animationDelay: `${dot.delayMs}ms` }}
+            />
+          ))}
+        </g>
+
+        <circle cx="36" cy="36" r={core.glowRadius} fill={`url(#${coreGradientId})`} opacity={core.glowOpacity} />
+        <circle cx="36" cy="36" r={core.radius} fill={`url(#${coreGradientId})`} opacity={core.opacity} />
+        <circle cx="34.5" cy="34.5" r={core.highlightRadius} fill="#fff" opacity={core.opacity} />
+      </g>
+
+      <text x="44" y="96" fill={color} fontSize="7" fontWeight="900" letterSpacing="0.8" textAnchor="middle">
+        {short}
+      </text>
+      {dailyLayout.overflow > 0 && (
+        <text x="68" y="86" fill="var(--color-fg-soft)" fontSize="8" fontWeight="900" textAnchor="middle">
+          +{dailyLayout.overflow}
+        </text>
+      )}
+    </svg>
+  );
+}
 
 type SharedNexusProps = {
   state: AppState;
@@ -72,6 +151,7 @@ type SharedNexusProps = {
   onToggleEvent: (event: GameEvent) => void;
   onOpenReminder: () => void;
   onOpenTimeline: () => void;
+  onAddGame: () => void;
 };
 
 function NexusNode({
@@ -81,6 +161,10 @@ function NexusNode({
   expanded,
   collapsed,
   columns,
+  reducedMotion,
+  primary,
+  projection,
+  openDailyCount,
   actions,
   setElement,
   onToggle,
@@ -93,6 +177,10 @@ function NexusNode({
   expanded: boolean;
   collapsed: boolean;
   columns: 1 | 2;
+  reducedMotion: boolean;
+  primary: Resource | undefined;
+  projection: EnergyProjection | null;
+  openDailyCount: number;
   actions: GameControlActions;
   setElement: (element: HTMLElement | null) => void;
   onToggle: () => void;
@@ -102,20 +190,27 @@ function NexusNode({
   const { game, next } = entry;
   const tier = urgencyTier(entry, now);
   const nodeRef = useRef<HTMLElement | null>(null);
+  const [mounted, setMounted] = useState(expanded);
   // The control that opened the card is gone once it is open, so hand focus to
   // the card itself — keyboard users land inside it, and Escape has a target.
   useEffect(() => {
     if (expanded) nodeRef.current?.focus({ preventScroll: true });
   }, [expanded]);
-  const primary = state.resources
-    .filter(
-      (resource) => resource.gameId === game.id && !resource.deleted && effectiveResourceKind(resource) === 'regen',
-    )
-    .sort((a, b) => a.sort - b.sort)[0];
-  const projection = primary
-    ? projectEnergy(primary, latestSnapshots(state.snapshots).get(primary.id), now, game)
-    : null;
+  useEffect(() => {
+    if (expanded) {
+      setMounted(true);
+      return;
+    }
+    if (reducedMotion) {
+      setMounted(false);
+      return;
+    }
+    const timer = setTimeout(() => setMounted(false), NEXUS_DUR_MS + 60);
+    return () => clearTimeout(timer);
+  }, [expanded, reducedMotion]);
   const fraction = primary && projection ? projection.precise / Math.max(1, primary.cap) : 0;
+  // Mirrors the conduit's paused/unknown boundary: colour remains, motion does not.
+  const clusterActive = !game.paused && primary != null && projection?.hasSnapshot === true;
   const controlsId = `nexus-controls-${game.id}`;
 
   return (
@@ -124,7 +219,7 @@ function NexusNode({
         nodeRef.current = element;
         setElement(element);
       }}
-      className="nexus-node relative overflow-hidden rounded-ui-card bg-surface-1 outline-none transition-[box-shadow,opacity] duration-300"
+      className="nexus-node relative overflow-hidden rounded-ui-card bg-surface-1 outline-none transition-shadow duration-300"
       data-expanded={expanded || undefined}
       data-collapsed={collapsed || undefined}
       // Expanded, the card has no collapse control: any click that lands on the
@@ -197,8 +292,17 @@ function NexusNode({
           aria-label={`Expand ${game.name} controls`}
           className="relative z-10 block w-full rounded-ui-card p-3 text-left transition hover:bg-white/[0.025]"
         >
-          <span className="flex items-center gap-2.5">
-            <GameBadge short={game.short} color={game.color} color2={game.color2} size="lg" />
+          <GalaxyCluster
+            gameId={game.id}
+            short={game.short}
+            color={game.color}
+            color2={game.color2}
+            fraction={fraction}
+            openDailyCount={openDailyCount}
+            active={clusterActive}
+          />
+
+          <span className="relative z-10 flex items-center gap-2.5 pl-16">
             <span className="min-w-0 flex-1">
               <span className="block truncate text-body font-black text-fg" style={{ fontFamily: game.titleFont }}>
                 {game.name}
@@ -231,7 +335,7 @@ function NexusNode({
             />
           </span>
 
-          <span className="nexus-node-meter mt-2.5 grid grid-cols-[auto_minmax(2rem,1fr)] items-center gap-2.5">
+          <span className="relative z-10 mt-2.5 grid grid-cols-[auto_minmax(2rem,1fr)] items-center gap-2.5 pl-16">
             <span className="text-xs font-black tabular-nums text-fg-soft">
               {primary && projection && projection.hasSnapshot ? projection.value : '—'}
               <span className="font-medium text-dim">/{primary?.cap ?? '—'}</span>
@@ -239,7 +343,7 @@ function NexusNode({
             <ProgressBar value={fraction} color={game.color} color2={game.color2} className="!mt-0 !h-1.5 min-w-8" />
           </span>
 
-          <span className="nexus-node-deadline mt-2 flex items-center justify-between gap-2 border-t border-white/[0.06] pt-2 text-caption">
+          <span className="relative z-10 mt-2 flex items-center justify-between gap-2 border-t border-white/[0.06] pl-16 pt-2 text-caption">
             <span className="truncate text-dim">{next?.label ?? (game.paused ? 'Tracking paused' : 'All clear')}</span>
             {next && (
               <span className="shrink-0 font-black tabular-nums" style={{ color: endTone(next.at - now) }}>
@@ -252,249 +356,28 @@ function NexusNode({
 
       <div
         id={controlsId}
-        className="nexus-node-body scrollbar-thin focus-bay"
+        className="nexus-node-body scrollbar-thin"
         role="region"
         aria-label={`${game.name} controls`}
         aria-hidden={!expanded}
         inert={!expanded}
       >
-        <div className="max-h-[calc(100dvh-18rem)] overflow-y-auto px-4 pb-4 pt-4">
-          <GameControlsView
-            entry={entry}
-            state={state}
-            actions={actions}
-            now={now}
-            layout="focus"
-            columns={columns}
-            onEditGame={onEditGame}
-            onOpenEvent={onOpenGameEvent}
-          />
-        </div>
+        {(expanded || mounted) && (
+          <div className="max-h-[calc(100dvh-18rem)] overflow-y-auto px-4 pb-4 pt-4">
+            <GameControlsView
+              entry={entry}
+              state={state}
+              actions={actions}
+              now={now}
+              layout="focus"
+              columns={columns}
+              onEditGame={onEditGame}
+              onOpenEvent={onOpenGameEvent}
+            />
+          </div>
+        )}
       </div>
     </article>
-  );
-}
-
-function NexusHub({
-  state,
-  entries,
-  now,
-  hubRef,
-  onOpenEvent,
-  onToggleEvent,
-  onOpenReminder,
-  onOpenTimeline,
-}: {
-  state: AppState;
-  entries: GameUrgency[];
-  now: number;
-  hubRef: React.RefObject<HTMLElement | null>;
-  onOpenEvent: (event: GameEvent) => void;
-  onToggleEvent: (event: GameEvent) => void;
-  onOpenReminder: () => void;
-  onOpenTimeline: () => void;
-}) {
-  // A week, not a day: events run for days, so a 24h cut left "Upcoming" empty.
-  // The selector already windows and budgets the rails — the hub just consumes it.
-  const horizon = now + WEEK;
-  const agenda = selectAgendaData(state, now, 'dashboard');
-  const reminders = state.reminders
-    .filter((reminder) => !reminder.deleted && reminder.at > now - DAY && reminder.at <= horizon)
-    .sort((a, b) => a.at - b.at)
-    .slice(0, 4);
-  const dailyItems = entries.flatMap((entry) =>
-    checklistFor(state, entry.game, now).filter((item) => item.cadence === 'daily'),
-  );
-  const resetGames = entries.flatMap((entry) => {
-    if (entry.game.paused) return [];
-    const items = checklistFor(state, entry.game, now).filter(
-      (item) => (item.cadence === 'weekly' || item.cadence === 'monthly') && item.resetAt <= horizon,
-    );
-    if (items.length === 0) return [];
-    return [
-      {
-        game: entry.game,
-        done: items.filter((item) => item.done).length,
-        total: items.length,
-        resetAt: Math.min(...items.map((item) => item.resetAt)),
-      },
-    ];
-  });
-  const dailiesDone = dailyItems.filter((item) => item.done).length;
-  const capsDuringSleep = entries.filter(
-    (entry) => !entry.game.paused && sleepCheck(state, entry.game, state.settings.sleepHours, now).caps,
-  );
-  const timelineCount = agenda.live.length + agenda.upcoming.length + reminders.length;
-
-  return (
-    <section
-      ref={hubRef}
-      className="gold-hairline relative z-10 grid h-[calc(100dvh-13rem)] min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-3 overflow-hidden rounded-ui-card p-4"
-      aria-label="Across every game"
-      style={{
-        background:
-          'linear-gradient(180deg, rgba(124,92,255,0.1), rgba(255,111,165,0.04) 40%, rgba(0,0,0,0.5)), var(--color-surface-1)',
-        boxShadow:
-          'inset 0 0 0 1px rgba(200,180,255,0.22), inset 0 1px 0 rgba(255,255,255,0.05), 0 30px 60px -30px #000',
-      }}
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-50"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(160,140,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(160,140,255,0.05) 1px, transparent 1px)',
-          backgroundSize: '26px 26px',
-          maskImage: 'radial-gradient(120% 90% at 50% 0%, #000 30%, transparent 75%)',
-        }}
-      />
-      <div className="grid gap-3">
-        <header className="relative">
-          <p className="text-caption font-bold uppercase tracking-[0.22em] text-dim">Across every game</p>
-          <h2 className="mt-0.5 text-title font-black text-fg">Tonight at a glance</h2>
-        </header>
-
-        <div className="relative grid gap-2 min-[1500px]:grid-cols-[auto_minmax(0,1fr)]">
-          <div className="flex items-center gap-3 rounded-ui-lg bg-surface-2/90 px-3 py-2.5 ring-1 ring-line">
-            <ProgressRing
-              fraction={dailyItems.length > 0 ? dailiesDone / dailyItems.length : 0}
-              color="var(--color-accent)"
-              size={54}
-              stroke={4}
-            >
-              {dailiesDone}/{dailyItems.length}
-            </ProgressRing>
-            <div>
-              <p className="text-title font-black tabular-nums text-fg">
-                {dailiesDone}
-                <span className="text-body text-dim">/{dailyItems.length}</span>
-              </p>
-              <p className="text-label text-muted">global dailies done</p>
-            </div>
-          </div>
-          <div
-            className={`flex items-center gap-2 rounded-ui-lg px-3 py-2.5 ring-1 ${
-              capsDuringSleep.length > 0
-                ? 'bg-danger/10 text-rose-100 ring-rose-300/30'
-                : 'bg-ok/10 text-emerald-100 ring-emerald-300/25'
-            }`}
-          >
-            <span
-              aria-hidden
-              className={`h-2 w-2 shrink-0 rounded-ui-full ${capsDuringSleep.length > 0 ? 'warn-pulse bg-danger' : 'bg-ok'}`}
-            />
-            <div className="min-w-0">
-              <p className="text-body font-bold">
-                {capsDuringSleep.length} {capsDuringSleep.length === 1 ? 'game caps' : 'games cap'} during your{' '}
-                {state.settings.sleepHours}h sleep
-              </p>
-              <p className="truncate text-caption opacity-70">
-                {capsDuringSleep.length > 0
-                  ? capsDuringSleep.map((entry) => entry.game.short).join(' · ')
-                  : 'Every tracked regen resource is sleep safe.'}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="scrollbar-thin relative grid min-h-0 gap-3 overflow-y-auto">
-        <div className="relative flex items-baseline justify-between gap-2 border-b border-white/[0.07] pb-2">
-          <h3 className="text-caption font-bold uppercase tracking-[0.2em] text-dim">Next 7 days</h3>
-          <span className="text-caption font-bold tabular-nums text-muted">
-            {timelineCount} {timelineCount === 1 ? 'item' : 'items'}
-          </span>
-        </div>
-        <div className="relative">
-          <AgendaList
-            data={agenda}
-            now={now}
-            mode="dashboard"
-            onOpenEvent={onOpenEvent}
-            onToggleEvent={onToggleEvent}
-          />
-        </div>
-
-        <section className="relative">
-          <h3 className="mb-1.5 text-caption font-bold uppercase tracking-widest text-dim">Resets this week</h3>
-          {resetGames.length > 0 ? (
-            <div className="space-y-1">
-              {resetGames.map(({ game, done, total, resetAt }) => (
-                <div key={game.id} className="flex items-center gap-2 rounded-ui-lg bg-white/[0.025] px-2.5 py-2">
-                  <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" />
-                  <span className="min-w-0 flex-1 text-xs text-muted">
-                    {done}/{total} weeklies
-                  </span>
-                  <span className="shrink-0 text-caption font-bold tabular-nums text-dim">
-                    resets in {fmtDur(resetAt - now)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="rounded-ui-lg bg-white/[0.02] px-3 py-2 text-label text-faint">
-              Nothing resets in the next 7 days.
-            </p>
-          )}
-        </section>
-
-        <section className="relative">
-          <div className="mb-1.5 flex items-center justify-between gap-2">
-            <h3 className="text-caption font-bold uppercase tracking-widest text-dim">Reminders</h3>
-            <button
-              type="button"
-              onClick={onOpenReminder}
-              className="rounded-ui-md px-2 py-1 text-caption font-semibold text-muted transition hover:bg-white/[0.06] hover:text-white"
-            >
-              + Add
-            </button>
-          </div>
-          {reminders.length > 0 ? (
-            <div className="space-y-1">
-              {reminders.map((reminder) => {
-                const game = reminder.gameId ? agenda.games.get(reminder.gameId) : undefined;
-                const due = reminder.at <= now;
-                return (
-                  <div key={reminder.id} className="flex items-start gap-2 rounded-ui-lg bg-white/[0.025] px-2.5 py-2">
-                    {game ? (
-                      <GameBadge
-                        short={game.short}
-                        color={game.color}
-                        color2={game.color2}
-                        size="sm"
-                        className="mt-0.5"
-                      />
-                    ) : (
-                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-ui-full bg-gold" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium text-fg-soft">{reminder.message}</p>
-                      <p className={`mt-0.5 text-caption tabular-nums ${due ? 'text-rose-300' : 'text-dim'}`}>
-                        {due
-                          ? 'due now'
-                          : `${DateTime.fromMillis(reminder.at).toFormat('dd LLL · HH:mm')} · in ${fmtDur(reminder.at - now)}`}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="rounded-ui-lg bg-white/[0.02] px-3 py-2 text-label text-faint">
-              No reminders due in the next 7 days.
-            </p>
-          )}
-        </section>
-      </div>
-
-      <button
-        type="button"
-        onClick={onOpenTimeline}
-        className="relative min-h-10 w-full rounded-ui-lg bg-gradient-to-r from-accent/20 to-accent-2/15 px-3 py-2 text-xs font-bold text-violet-100 ring-1 ring-accent/30 transition hover:brightness-125"
-      >
-        Open full timeline →
-      </button>
-    </section>
   );
 }
 
@@ -510,24 +393,17 @@ export function NexusLayout({
   onToggleEvent,
   onOpenReminder,
   onOpenTimeline,
+  onAddGame,
 }: SharedNexusProps) {
   const [expandedGameId, setExpandedGameId] = useState<string | null>(null);
   const reducedMotion = useReducedMotion();
   const focusColumns = useUI((store) => store.focusColumns);
   const wideEnough = useMediaQuery('(min-width: 1500px)');
   const columns = focusColumns === 'auto' ? (wideEnough ? 2 : 1) : focusColumns === 'two' ? 2 : 1;
-  const idPrefix = useId().replace(/:/g, '');
+  const derived = useDerived(now);
   const stageRef = useRef<HTMLDivElement>(null);
   const hubRef = useRef<HTMLElement>(null);
   const nodeRefs = useRef(new Map<string, HTMLElement>());
-  const conduitRefs = useRef(new Map<string, ConduitPaths>());
-  const conduitRef = (id: string, part: keyof ConduitPaths) => (element: SVGPathElement | null) => {
-    const paths = conduitRefs.current.get(id) ?? {};
-    if (element) paths[part] = element;
-    else delete paths[part];
-    if (Object.keys(paths).length > 0) conduitRefs.current.set(id, paths);
-    else conduitRefs.current.delete(id);
-  };
   const entryById = new Map(entries.map((entry) => [entry.game.id, entry]));
   const visibleIds = displayIds.filter((id) => entryById.has(id));
   const leftCount = Math.ceil(visibleIds.length / 2);
@@ -535,87 +411,23 @@ export function NexusLayout({
   const rightIds = visibleIds.slice(leftCount);
   const activeExpandedGameId = expandedGameId && visibleIds.includes(expandedGameId) ? expandedGameId : null;
   const expandedSide = activeExpandedGameId ? (leftIds.includes(activeExpandedGameId) ? 'left' : 'right') : undefined;
-  const visualKey = visibleIds
-    .map((id) => {
+  const energyById = new Map<string, NexusEnergy>(
+    visibleIds.map((id) => {
       const entry = entryById.get(id)!;
-      return `${id}:${entry.game.color}:${entry.game.color2 ?? ''}:${urgencyTier(entry, now)}`;
-    })
-    .join('|');
-  const idsKey = visibleIds.join('|');
-
-  useEffect(() => {
-    const stage = stageRef.current;
-    const hub = hubRef.current;
-    if (!stage || !hub) return;
-    let frame: number | undefined;
-
-    const draw = () => {
-      const stageBox = stage.getBoundingClientRect();
-      const hubBox = hub.getBoundingClientRect();
-      for (const id of visibleIds) {
-        const node = nodeRefs.current.get(id);
-        const { jacket, rim, core, pulse } = conduitRefs.current.get(id) ?? {};
-        const entry = entryById.get(id);
-        if (!node || !jacket || !rim || !core || !pulse || !entry) continue;
-
-        const nodeBox = node.getBoundingClientRect();
-        const left = (nodeBox.left + nodeBox.right) / 2 < (hubBox.left + hubBox.right) / 2;
-        const startX = (left ? nodeBox.right : nodeBox.left) - stageBox.left;
-        const startY = (nodeBox.top + nodeBox.bottom) / 2 - stageBox.top;
-        const endX = (left ? hubBox.left : hubBox.right) - stageBox.left;
-        const endY =
-          Math.max(hubBox.top + 16, Math.min(hubBox.bottom - 16, (nodeBox.top + nodeBox.bottom) / 2)) - stageBox.top;
-        const middleX = (startX + endX) / 2;
-        const path = `M ${startX} ${startY} C ${middleX} ${startY} ${middleX} ${endY} ${endX} ${endY}`;
-        const selected = id === activeExpandedGameId;
-        const dimmed = activeExpandedGameId != null && !selected;
-        const width = URGENCY_STROKE[urgencyTier(entry, now)];
-
-        const coreWidth = selected ? width + 1.6 : width;
-        const jacketWidth = coreWidth + CONDUIT_JACKET_PAD;
-
-        jacket.setAttribute('d', path);
-        jacket.setAttribute('opacity', dimmed ? '0.4' : '0.92');
-        jacket.setAttribute('stroke-width', String(jacketWidth));
-        rim.setAttribute('d', path);
-        rim.setAttribute('opacity', dimmed ? '0.06' : selected ? '0.4' : '0.22');
-        rim.setAttribute('stroke-width', String(jacketWidth));
-        core.setAttribute('d', path);
-        core.setAttribute('opacity', dimmed ? '0.14' : selected ? '0.95' : '0.55');
-        core.setAttribute('stroke-width', String(coreWidth));
-        core.style.filter = `drop-shadow(0 0 ${selected ? 9 : 5}px ${entry.game.color})`;
-        pulse.setAttribute('d', path);
-        pulse.setAttribute('opacity', dimmed ? '0.05' : selected ? '0.85' : '0.5');
-        pulse.setAttribute('stroke-width', String(width * 0.55 + (selected ? 0.8 : 0)));
-      }
-    };
-
-    const loop = () => {
-      draw();
-      frame = requestAnimationFrame(loop);
-    };
-    const onTransitionEnd = (event: TransitionEvent) => {
-      if (['grid-template-columns', 'grid-template-rows'].includes(event.propertyName)) draw();
-    };
-
-    if (reducedMotion) frame = requestAnimationFrame(draw);
-    else loop();
-    window.addEventListener('resize', draw);
-    stage.addEventListener('transitionend', onTransitionEnd);
-    const observer = new ResizeObserver(draw);
-    observer.observe(stage);
-    observer.observe(hub);
-    for (const node of nodeRefs.current.values()) observer.observe(node);
-
-    return () => {
-      if (frame != null) cancelAnimationFrame(frame);
-      observer.disconnect();
-      window.removeEventListener('resize', draw);
-      stage.removeEventListener('transitionend', onTransitionEnd);
-    };
-    // Entries are represented by the stable id/tier keys; rect reads use live DOM.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeExpandedGameId, idsKey, reducedMotion, visualKey]);
+      const resource = state.resources
+        .filter(
+          (candidate) => candidate.gameId === id && !candidate.deleted && effectiveResourceKind(candidate) === 'regen',
+        )
+        .sort((a, b) => a.sort - b.sort)[0];
+      return [
+        id,
+        {
+          resource,
+          projection: resource ? projectEnergy(resource, derived.snaps.get(resource.id), now, entry.game) : null,
+        },
+      ];
+    }),
+  );
 
   useEffect(() => {
     if (activeExpandedGameId == null) return;
@@ -629,10 +441,15 @@ export function NexusLayout({
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [activeExpandedGameId]);
 
+  const addSide: 'left' | 'right' = rightIds.length <= leftIds.length ? 'right' : 'left';
   const renderRail = (ids: string[], side: 'left' | 'right') => (
     <aside className="relative z-10 flex min-w-0 flex-col justify-center gap-3" aria-label={`${side} game rail`}>
       {ids.map((id) => {
         const entry = entryById.get(id)!;
+        const energy = energyById.get(id)!;
+        const openDailyCount = (derived.checklistByGame.get(id) ?? []).filter(
+          (item) => item.cadence === 'daily' && !item.done,
+        ).length;
         return (
           <NexusNode
             key={id}
@@ -642,6 +459,10 @@ export function NexusLayout({
             expanded={activeExpandedGameId === id}
             collapsed={activeExpandedGameId != null && activeExpandedGameId !== id}
             columns={columns}
+            reducedMotion={reducedMotion}
+            primary={energy.resource}
+            projection={energy.projection}
+            openDailyCount={openDailyCount}
             actions={gameControlActions}
             setElement={(element) => {
               if (element) nodeRefs.current.set(id, element);
@@ -653,6 +474,7 @@ export function NexusLayout({
           />
         );
       })}
+      {side === addSide && <AddGameCell onAdd={onAddGame} />}
     </aside>
   );
 
@@ -667,59 +489,18 @@ export function NexusLayout({
         if (!target.closest('.nexus-node') && !target.closest(INTERACTIVE_SELECTOR)) setExpandedGameId(null);
       }}
     >
-      <svg aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 h-full w-full overflow-visible">
-        <defs>
-          {visibleIds.map((id, index) => {
-            const game = entryById.get(id)!.game;
-            return (
-              <linearGradient key={id} id={`${idPrefix}-conduit-${index}`} x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stopColor={game.color} />
-                <stop offset="1" stopColor={game.color2 ?? game.color} />
-              </linearGradient>
-            );
-          })}
-        </defs>
-        {visibleIds.map((id, index) => {
-          const entry = entryById.get(id)!;
-          const tier = urgencyTier(entry, now);
-          return (
-            <g key={id}>
-              {/* Cable jacket: the fibre core reads as light running inside a sheath. */}
-              <path
-                ref={conduitRef(id, 'jacket')}
-                fill="none"
-                stroke="#0b0912"
-                strokeLinecap="round"
-                vectorEffect="non-scaling-stroke"
-              />
-              {/* Ribbing on the jacket — short dashes across its full width. */}
-              <path
-                ref={conduitRef(id, 'rim')}
-                fill="none"
-                stroke="rgba(214,205,255,0.55)"
-                strokeDasharray="1.5 7"
-                vectorEffect="non-scaling-stroke"
-              />
-              <path
-                ref={conduitRef(id, 'core')}
-                fill="none"
-                stroke={`url(#${idPrefix}-conduit-${index})`}
-                strokeLinecap="round"
-                vectorEffect="non-scaling-stroke"
-              />
-              <path
-                ref={conduitRef(id, 'pulse')}
-                fill="none"
-                stroke="white"
-                strokeLinecap="round"
-                vectorEffect="non-scaling-stroke"
-                className="nexus-conduit-pulse"
-                style={{ animationDuration: URGENCY_SPEED[tier] }}
-              />
-            </g>
-          );
-        })}
-      </svg>
+      <Conduits
+        visibleIds={visibleIds}
+        leftIds={leftIds}
+        entryById={entryById}
+        energyById={energyById}
+        now={now}
+        activeExpandedGameId={activeExpandedGameId}
+        reducedMotion={reducedMotion}
+        stageRef={stageRef}
+        hubRef={hubRef}
+        nodeRefs={nodeRefs}
+      />
 
       {renderRail(leftIds, 'left')}
       <NexusHub

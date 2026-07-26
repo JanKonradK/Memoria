@@ -40,7 +40,7 @@ const LEGAL: Record<string, { title: string; sections: Array<[string, string]> }
     sections: [
       [
         'Data we store',
-        "Account identity is handled by Clerk. Techno's Library stores your planner document in Cloudflare D1 and keeps an offline copy in this browser.",
+        'Account identity is handled by Clerk. Void stores your planner document in Cloudflare D1 and keeps an offline copy in this browser.',
       ],
       [
         'Integrations',
@@ -61,13 +61,13 @@ const LEGAL: Record<string, { title: string; sections: Array<[string, string]> }
     sections: [
       [
         'Service',
-        "Techno's Library is a free planning tool provided without guarantees of uninterrupted availability. Fair-use limits protect the shared service.",
+        'Void is a free planning tool provided without guarantees of uninterrupted availability. Fair-use limits protect the shared service.',
       ],
       [
         'Your account',
         'You are responsible for account security and for ensuring information you enter or connect may lawfully be processed.',
       ],
-      ['Affiliation', "Techno's Library is not affiliated with HoYoverse or other game publishers."],
+      ['Affiliation', 'Void is not affiliated with HoYoverse or other game publishers.'],
       [
         'Launch review',
         'These terms are operational draft copy and require legal review before registration is opened publicly.',
@@ -98,7 +98,7 @@ function LegalPage({ document }: { document: (typeof LEGAL)[string] }) {
   return (
     <main className="mx-auto min-h-dvh w-full max-w-3xl px-5 py-14">
       <a href="/" className="text-body font-semibold text-violet-300">
-        ← Techno's Library
+        ← Void
       </a>
       <h1 className="mt-6 text-3xl font-black text-fg">{document.title}</h1>
       <div className="mt-8 space-y-4">
@@ -123,7 +123,7 @@ function StatusPage() {
   return (
     <main className="mx-auto min-h-dvh w-full max-w-2xl px-5 py-14">
       <a href="/" className="text-body font-semibold text-violet-300">
-        ← Techno's Library
+        ← Void
       </a>
       <h1 className="mt-6 text-3xl font-black text-fg">Service status</h1>
       <section className="glass gold-hairline mt-8 rounded-ui-card p-5" role="status">
@@ -222,8 +222,8 @@ function PublicLanding() {
           Know what resets next. Waste less energy.
         </h1>
         <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-title">
-          Techno's Library keeps server resets, energy caps, dailies and events together across your games. Your browser
-          remains usable offline; an account adds encrypted cloud sync and closed-app alerts.
+          Void keeps server resets, energy caps, dailies and events together across your games. Your browser remains
+          usable offline; an account adds encrypted cloud sync and closed-app alerts.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <ContinueWithGoogleButton />

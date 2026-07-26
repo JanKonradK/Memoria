@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { DateTime } from 'luxon';
-import type { AppState, Game, GameEvent } from '@technogg/shared';
+import type { AppState, Game, GameEvent } from '@void/shared';
 import { useApp } from '../store';
 import { agendaCompare, agendaRank, budgetAgenda, groupVersionUpdates, type AgendaRow } from '../timeline-sort';
-import { useUI } from '../ui-store';
+import { TIMELINE_RANGE_DAYS, useUI, type TimelineRange } from '../ui-store';
 import { endTone, fmtDur } from '../util';
 import { Pill } from './primitives';
 import { GameBadge } from './ui';
@@ -20,9 +20,14 @@ export interface AgendaData {
 }
 
 /** Shared timeline window/ranking. Dashboard mode deliberately drops history and caps its rails. */
-export function selectAgendaData(state: AppState, now: number, mode: AgendaMode = 'full'): AgendaData {
+export function selectAgendaData(
+  state: AppState,
+  now: number,
+  mode: AgendaMode = 'full',
+  range: TimelineRange = '30d',
+): AgendaData {
   const windowStart = mode === 'dashboard' ? now : now - 2 * DAY;
-  const windowEnd = now + (mode === 'dashboard' ? 7 : 28) * DAY;
+  const windowEnd = mode === 'dashboard' ? now + 7 * DAY : windowStart + TIMELINE_RANGE_DAYS[range] * DAY;
   const games = new Map(state.games.filter((game) => !game.deleted).map((game) => [game.id, game]));
   const events = state.events
     .filter((event) => !event.deleted && games.has(event.gameId) && event.end > windowStart && event.start < windowEnd)
@@ -57,7 +62,7 @@ function TypeTags({ event }: { event: GameEvent }) {
   );
 }
 
-function AgendaEventRow({
+const AgendaEventRow = memo(function AgendaEventRow({
   event,
   game,
   now,
@@ -159,7 +164,7 @@ function AgendaEventRow({
       </button>
     </div>
   );
-}
+});
 
 function AgendaGroupRow({
   row,
@@ -322,22 +327,25 @@ export function AgendaList({
   );
 }
 
-export function TimelineAgenda({ now }: { now: number }) {
+export function TimelineAgenda({ now, range }: { now: number; range: TimelineRange }) {
   const state = useApp((s) => s.state);
   const upsertEvent = useApp((s) => s.upsertEvent);
   const openSheet = useUI((store) => store.openSheet);
-  const data = selectAgendaData(state, now);
+  const data = selectAgendaData(state, now, 'full', range);
   const eventsExist = data.live.length + data.upcoming.length + data.past.length > 0;
+  const openEvent = useCallback(
+    (event: GameEvent) => openSheet({ kind: 'event', gameId: event.gameId, eventId: event.id }),
+    [openSheet],
+  );
+  const toggleEvent = useCallback(
+    (event: GameEvent) => upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done }),
+    [upsertEvent],
+  );
 
   return (
     <div className="glass gold-hairline relative rounded-ui-card p-4">
       {eventsExist ? (
-        <AgendaList
-          data={data}
-          now={now}
-          onOpenEvent={(event) => openSheet({ kind: 'event', gameId: event.gameId, eventId: event.id })}
-          onToggleEvent={(event) => upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done })}
-        />
+        <AgendaList data={data} now={now} onOpenEvent={openEvent} onToggleEvent={toggleEvent} />
       ) : (
         <p className="py-8 text-center text-body text-dim">
           No events in this window — import or add events so nothing ends without you noticing.

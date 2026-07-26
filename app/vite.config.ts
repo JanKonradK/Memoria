@@ -12,6 +12,10 @@ export default defineConfig({
           if (id.includes('node_modules/@clerk')) return 'clerk';
           if (id.includes('node_modules/react') || id.includes('node_modules/scheduler')) return 'react';
           if (id.includes('node_modules/luxon')) return 'luxon';
+          // Motion is deliberately NOT force-chunked: main.tsx loads the
+          // domAnimation feature set via a dynamic import, and pinning every
+          // motion module to one manual chunk would merge that async chunk
+          // back into the eager graph and undo the split.
           return undefined;
         },
       },
@@ -30,11 +34,11 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon-192.png', 'icon-512.png', 'icon-maskable.png'],
       manifest: {
-        name: "Techno's Library — Gacha Tracker",
-        short_name: "Techno's Library",
-        description: 'Energy, dailies and event tracker for all your gacha games.',
-        theme_color: '#0b0f1a',
-        background_color: '#0b0f1a',
+        name: 'Void — Gacha Tracker',
+        short_name: 'Void',
+        description: 'Void tracks energy, dailies and events across all your gacha games.',
+        theme_color: '#000000',
+        background_color: '#000000',
         display: 'standalone',
         start_url: '/',
         icons: [
@@ -44,6 +48,12 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Workbox's default omits woff2, which is why the title fonts were never
+        // actually offline-capable. Precache only the subsets the UI can render:
+        // devanagari/vietnamese ship in dist/ but unicode-range keeps them from
+        // ever being requested, so precaching them would cost ~590 KB for nothing.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff2}'],
+        globIgnores: ['**/*-{devanagari,vietnamese}-*'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
       },

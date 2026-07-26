@@ -1,4 +1,4 @@
-import type { IntegrationKind, IntegrationStatus } from '@technogg/shared';
+import type { IntegrationKind, IntegrationStatus } from '@void/shared';
 import { audit, ensureUser } from './db';
 
 function bytesToBase64(bytes: Uint8Array): string {

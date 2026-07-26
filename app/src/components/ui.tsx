@@ -4,14 +4,24 @@ import * as SwitchPrimitive from '@radix-ui/react-switch';
 import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { tint } from '../util';
+import { Ring } from './Ring';
 
 /**
- * Single page-width container shared by the header and every tab so all edges
- * align at any viewport. `className` is for vertical spacing only — width and
- * horizontal padding overrides won't win against the defaults reliably.
+ * Single page-width container shared by every tab so all edges and shell
+ * clearance align at any viewport. `className` is for vertical spacing only —
+ * width and horizontal padding overrides won't win against the defaults reliably.
  */
 export function Page({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`mx-auto w-full max-w-[2160px] px-3 sm:px-6 ${className}`}>{children}</div>;
+  // Every breakpoint reserves the floating rail's height. Its background is
+  // click-through, but the nav hexes themselves must stay clickable, so any content
+  // laid out underneath them is genuinely unreachable — that is how Settings' import
+  // control ended up unclickable on a short window. Desktop needs 16px offset +
+  // ~76px rail; pb-24 (96px) covers it.
+  return (
+    <div className={`mx-auto w-full max-w-[2160px] px-3 pb-28 pt-4 sm:px-6 sm:pt-5 lg:pb-24 ${className}`}>
+      {children}
+    </div>
+  );
 }
 
 /**
@@ -24,26 +34,61 @@ export function GameBadge({
   color,
   color2,
   size = 'md',
+  progress,
   className = '',
 }: {
   short: string;
   color: string;
   color2?: string;
   size?: 'sm' | 'md' | 'lg';
+  /** 0..1 — closes the ring's gap. Pass where checklist data is already to hand. */
+  progress?: number;
   className?: string;
 }) {
-  const sizes = { sm: 'h-4 px-1 text-micro', md: 'h-5 px-1.5 text-[0.5625rem]', lg: 'h-7 px-2 text-label' };
+  // An INCOMPLETE RING around the short code. Shorts are user-editable and
+  // arbitrary (the presets alone include 'WuWa'), so a strict circle would clip
+  // worse than the old hexagon did. The ring is a stadium: circular caps, flat
+  // edges that stretch to the label. Sized to its own content via inline-flex
+  // padding rather than an estimated per-character width, because estimating
+  // undercounts wide glyphs like W.
+  const badgeHeights = { sm: 20, md: 24, lg: 32 } as const;
+  const strokeWidths = { sm: 1.5, md: 1.75, lg: 2 } as const;
+  const textSizes = {
+    sm: 'text-micro tracking-normal',
+    md: 'text-caption tracking-wider',
+    lg: 'text-label tracking-wider',
+  };
+  const height = badgeHeights[size];
+  const strokeWidth = strokeWidths[size];
   const c2 = color2 ?? color;
+  // Default leaves a deliberate gap so the "incomplete" language reads even
+  // where no progress data is available.
+  const sweep = progress == null ? 0.82 : Math.min(1, Math.max(0, progress));
+
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-ui-sm font-black uppercase tracking-wider ${sizes[size]} ${className}`}
+      className={`relative inline-flex shrink-0 items-center justify-center align-middle font-black ${textSizes[size]} ${className}`}
       style={{
-        color,
-        background: `linear-gradient(135deg, ${tint(color, 0.16)}, ${tint(c2, 0.26)})`,
-        boxShadow: `inset 0 0 0 1px ${tint(color, 0.45)}`,
+        height,
+        minWidth: height,
+        paddingInline: height * 0.42,
+        borderRadius: height / 2,
+        background: `linear-gradient(135deg, ${tint(color, 0.14)}, ${tint(c2, 0.22)})`,
       }}
     >
-      {short}
+      <span aria-hidden className="pointer-events-none absolute inset-0">
+        <Ring
+          size={height}
+          width="fluid"
+          strokeWidth={strokeWidth}
+          sweep={sweep}
+          stroke={[color, c2]}
+          track={tint(color, 0.18)}
+        />
+      </span>
+      <span className="relative leading-none" style={{ color }}>
+        {short}
+      </span>
     </span>
   );
 }
@@ -95,7 +140,7 @@ function collectOptions(children: ReactNode): SelectOpt[] {
   return out;
 }
 
-const RADIX_EMPTY_VALUE = '__technogg_empty_value__';
+const RADIX_EMPTY_VALUE = '__void_empty_value__';
 const toRadixValue = (value: string) => (value === '' ? RADIX_EMPTY_VALUE : value);
 const fromRadixValue = (value: string) => (value === RADIX_EMPTY_VALUE ? '' : value);
 

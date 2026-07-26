@@ -25,13 +25,16 @@ describe('local credential migration', () => {
 });
 
 describe('public and local auth states', () => {
-  it('keeps the app usable in explicit local mode without a Clerk key', () => {
+  it('keeps the app usable in explicit local mode without a Clerk key', async () => {
     render(
       <AuthShell>
         <SessionProbe />
       </AuthShell>,
     );
-    expect(screen.getByText('Local mode')).toBeInTheDocument();
+    // LocalIdentityGate is genuinely async: setIdentity awaits flushPersist before
+    // swapping the storage pointers, so any pending write lands under the OLD
+    // identity's key. The gate therefore opens a microtask later.
+    expect(await screen.findByText('Local mode')).toBeInTheDocument();
   });
 
   it('serves public trust pages without requiring a session', () => {

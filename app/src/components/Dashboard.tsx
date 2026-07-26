@@ -1,10 +1,15 @@
-import { useState } from 'react';
-import { urgencyOrder } from '@technogg/shared';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { GameEvent } from '@void/shared';
+import { m } from 'motion/react';
 import { useSession } from '../auth';
 import { useMediaQuery } from '../hooks';
+import { fadeDown } from '../motion';
+import { useDerived } from '../selectors';
+import { migrateLegacyStorageKeyForIdentity } from '../storage-identity';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fmtClock, fmtDur, tint } from '../util';
+import { AddGameCell } from './AddGameCell';
 import { CardsAgendaLayout } from './DashboardLayouts';
 import { GameCard } from './GameCard';
 import { NexusLayout } from './NexusLayout';
@@ -12,28 +17,63 @@ import { GameBadge, Page, Segmented } from './ui';
 
 export function DashboardPage({ now }: { now: number }) {
   const session = useSession();
+  const derived = useDerived(now);
+  const { state, order, entryById } = derived;
   // Individual selectors (zustand action refs are stable). Grouped into one
   // object for passing down to the layouts' game-control views.
-  const state = useApp((s) => s.state);
   const upsertEvent = useApp((s) => s.upsertEvent);
-  const dashboardStore = {
-    state,
-    upsertEvent,
-    setTaskDone: useApp((s) => s.setTaskDone),
-    startTaskTimer: useApp((s) => s.startTaskTimer),
-    restartTaskTimer: useApp((s) => s.restartTaskTimer),
-    setTaskCount: useApp((s) => s.setTaskCount),
-    setEnergy: useApp((s) => s.setEnergy),
-    adjustEnergy: useApp((s) => s.adjustEnergy),
-  };
+  const setTaskDone = useApp((s) => s.setTaskDone);
+  const startTaskTimer = useApp((s) => s.startTaskTimer);
+  const restartTaskTimer = useApp((s) => s.restartTaskTimer);
+  const setTaskCount = useApp((s) => s.setTaskCount);
+  const setEnergy = useApp((s) => s.setEnergy);
+  const adjustEnergy = useApp((s) => s.adjustEnergy);
+  const dashboardStore = useMemo(
+    () => ({
+      state,
+      upsertEvent,
+      setTaskDone,
+      startTaskTimer,
+      restartTaskTimer,
+      setTaskCount,
+      setEnergy,
+      adjustEnergy,
+    }),
+    [adjustEnergy, restartTaskTimer, setEnergy, setTaskCount, setTaskDone, startTaskTimer, state, upsertEvent],
+  );
   const openSheet = useUI((s) => s.openSheet);
   const setTab = useUI((s) => s.setTab);
   const setTimelineView = useUI((s) => s.setTimelineView);
   const dashboardLayout = useUI((s) => s.dashboardLayout);
   const setDashboardLayout = useUI((s) => s.setDashboardLayout);
+  const editGame = useCallback((gameId: string) => openSheet({ kind: 'game', gameId }), [openSheet]);
+  const openGameEvent = useCallback(
+    (eventId: string, gameId: string) => openSheet({ kind: 'event', eventId, gameId }),
+    [openSheet],
+  );
+  const openEvent = useCallback(
+    (event: GameEvent) => openSheet({ kind: 'event', gameId: event.gameId, eventId: event.id }),
+    [openSheet],
+  );
+  const toggleEvent = useCallback(
+    (event: GameEvent) => upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done }),
+    [upsertEvent],
+  );
+  const openReminder = useCallback(() => openSheet({ kind: 'reminder' }), [openSheet]);
+  const openTimeline = useCallback(() => {
+    setTimelineView('agenda');
+    setTab('timeline');
+  }, [setTab, setTimelineView]);
   const wide = useMediaQuery('(min-width: 1280px)');
-  const [setupDismissed, setSetupDismissed] = useState(() => localStorage.getItem('technogg-setup-dismissed') === '1');
-  const order = urgencyOrder(state, now);
+  const setupStorageKey = session.userId
+    ? migrateLegacyStorageKeyForIdentity('void-setup-dismissed', `user:${session.userId}`, 'technogg-setup-dismissed')
+    : null;
+  const [setupDismissed, setSetupDismissed] = useState(
+    () => setupStorageKey !== null && localStorage.getItem(setupStorageKey) === '1',
+  );
+  useEffect(() => {
+    setSetupDismissed(setupStorageKey !== null && localStorage.getItem(setupStorageKey) === '1');
+  }, [setupStorageKey]);
   const hero = order.find((o) => o.next)?.next ?? null;
   const heroGame = hero ? state.games.find((g) => g.id === hero.gameId) : undefined;
 
@@ -46,11 +86,10 @@ export function DashboardPage({ now }: { now: number }) {
     ...sortedIds.filter((id) => liveIds.includes(id)),
     ...liveIds.filter((id) => !sortedIds.includes(id)),
   ];
-  const entryById = new Map(order.map((o) => [o.game.id, o]));
   const orderStale = displayIds.join('|') !== liveIds.join('|');
 
   return (
-    <Page className="pb-28 pt-4 sm:pt-5 lg:pb-8">
+    <Page>
       {session.hosted && !setupDismissed && order.length > 0 && (
         <section className="glass gold-hairline mb-4 rounded-ui-card p-4" aria-label="Account setup checklist">
           <div className="flex items-start gap-3">
@@ -77,7 +116,7 @@ export function DashboardPage({ now }: { now: number }) {
             <button
               type="button"
               onClick={() => {
-                localStorage.setItem('technogg-setup-dismissed', '1');
+                if (setupStorageKey) localStorage.setItem(setupStorageKey, '1');
                 setSetupDismissed(true);
               }}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg text-muted sm:h-9 sm:w-9"
@@ -89,11 +128,14 @@ export function DashboardPage({ now }: { now: number }) {
         </section>
       )}
       {hero && heroGame && (
-        <div className="fade-down mb-4 flex items-stretch gap-3">
+        <m.div className="mb-4" variants={fadeDown} initial="hidden" animate="visible">
+          {/* w-full, not flex-1: the hero used to sit in a flex row beside the Add Game
+              button, which stretched it. That button now lives in the game rail, so a
+              bare button falls back to shrink-to-fit and blows past narrow viewports. */}
           <button
             type="button"
             onClick={() => openSheet({ kind: 'gameCard', gameId: heroGame.id })}
-            className="relative block min-w-0 flex-1 overflow-hidden rounded-ui-card p-4 text-left"
+            className="relative block w-full min-w-0 overflow-hidden rounded-ui-card p-4 text-left"
             style={{
               background: `linear-gradient(120deg, ${tint(heroGame.color, 0.3)}, ${tint(heroGame.color2 ?? heroGame.color, 0.12)} 38%, rgba(0,0,0,0.92) 62%)`,
               boxShadow: `inset 0 0 0 1px ${tint(heroGame.color, 0.35)}, 0 0 44px -16px ${tint(heroGame.color, 0.5)}`,
@@ -125,15 +167,7 @@ export function DashboardPage({ now }: { now: number }) {
               </div>
             </div>
           </button>
-          <button
-            type="button"
-            onClick={() => openSheet({ kind: 'addGame' })}
-            className="flex w-14 shrink-0 items-center justify-center rounded-ui-card bg-white/[0.06] text-3xl font-light leading-none text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white active:scale-95 sm:w-16"
-            aria-label="Add game"
-          >
-            +
-          </button>
-        </div>
+        </m.div>
       )}
 
       {order.length === 0 ? (
@@ -144,8 +178,8 @@ export function DashboardPage({ now }: { now: number }) {
           />
           <h2 className="text-xl font-black text-slate-100">Track every gacha, waste no energy</h2>
           <p className="max-w-sm text-body text-slate-300">
-            Add your games, punch in your current energy after each session, and Techno's Library tells you exactly when
-            to log in next.
+            Add your games, punch in your current energy after each session, and Void tells you exactly when to log in
+            next.
           </p>
           <button
             type="button"
@@ -157,11 +191,7 @@ export function DashboardPage({ now }: { now: number }) {
         </div>
       ) : (
         <>
-          <div
-            className={`mb-3 flex items-center justify-end gap-2 ${
-              orderStale || !(hero && heroGame) ? 'min-h-11 sm:min-h-9' : ''
-            }`}
-          >
+          <div className={`mb-3 flex items-center justify-end gap-2 ${orderStale ? 'min-h-11 sm:min-h-9' : ''}`}>
             {wide && (
               <div className="mr-auto flex items-center gap-2">
                 <span className="hidden text-caption font-bold uppercase tracking-widest text-dim min-[1450px]:inline">
@@ -187,17 +217,6 @@ export function DashboardPage({ now }: { now: number }) {
                 <span aria-hidden>↻</span> Sort by urgency
               </button>
             )}
-            {/* The main add button lives beside the "Up next" hero; keep one here only when there is no hero. */}
-            {!(hero && heroGame) && (
-              <button
-                type="button"
-                onClick={() => openSheet({ kind: 'addGame' })}
-                className="flex h-11 w-11 items-center justify-center rounded-ui-xl bg-white/[0.06] text-2xl font-light leading-none text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white active:scale-90 sm:h-9 sm:w-9 sm:rounded-ui-lg"
-                aria-label="Add game"
-              >
-                +
-              </button>
-            )}
           </div>
           {wide ? (
             dashboardLayout === 'nexus' ? (
@@ -207,15 +226,13 @@ export function DashboardPage({ now }: { now: number }) {
                 displayIds={displayIds}
                 now={now}
                 gameControlActions={dashboardStore}
-                onEditGame={(gameId) => openSheet({ kind: 'game', gameId })}
-                onOpenGameEvent={(eventId, gameId) => openSheet({ kind: 'event', eventId, gameId })}
-                onOpenEvent={(event) => openSheet({ kind: 'event', gameId: event.gameId, eventId: event.id })}
-                onToggleEvent={(event) => upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done })}
-                onOpenReminder={() => openSheet({ kind: 'reminder' })}
-                onOpenTimeline={() => {
-                  setTimelineView('agenda');
-                  setTab('timeline');
-                }}
+                onEditGame={editGame}
+                onOpenGameEvent={openGameEvent}
+                onOpenEvent={openEvent}
+                onToggleEvent={toggleEvent}
+                onOpenReminder={openReminder}
+                onOpenTimeline={openTimeline}
+                onAddGame={() => openSheet({ kind: 'addGame' })}
               />
             ) : (
               <CardsAgendaLayout
@@ -223,13 +240,11 @@ export function DashboardPage({ now }: { now: number }) {
                 entries={order}
                 displayIds={displayIds}
                 now={now}
-                onOpenEvent={(event) => openSheet({ kind: 'event', gameId: event.gameId, eventId: event.id })}
-                onToggleEvent={(event) => upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done })}
-                onOpenReminder={() => openSheet({ kind: 'reminder' })}
-                onOpenTimeline={() => {
-                  setTimelineView('agenda');
-                  setTab('timeline');
-                }}
+                onOpenEvent={openEvent}
+                onToggleEvent={toggleEvent}
+                onOpenReminder={openReminder}
+                onOpenTimeline={openTimeline}
+                onAddGame={() => openSheet({ kind: 'addGame' })}
               />
             )
           ) : (
@@ -237,6 +252,7 @@ export function DashboardPage({ now }: { now: number }) {
               {displayIds.map((id) => (
                 <GameCard key={id} entry={entryById.get(id)!} now={now} />
               ))}
+              <AddGameCell onAdd={() => openSheet({ kind: 'addGame' })} />
             </div>
           )}
         </>

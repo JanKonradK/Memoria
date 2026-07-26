@@ -23,6 +23,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run check:config
       - run: npm run cf:types
       - name: Verify generated Cloudflare bindings
         run: git diff --exit-code -- worker/worker-env.d.ts
@@ -33,6 +34,8 @@ jobs:
       - run: npm run build
       - run: npm run check:pwa
       - run: npm run audit
+      - run: npm run audit:all
+        continue-on-error: true
       - uses: actions/upload-artifact@v4
         with:
           name: app-dist

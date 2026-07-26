@@ -34,6 +34,6 @@ function packIco(imgs) {
   return Buffer.concat([header, entries, ...imgs.map((i) => i.png)]);
 }
 
-const out = join(outDir, 'technogg.ico');
+const out = join(outDir, 'void.ico');
 writeFileSync(out, packIco(images));
 console.log('Icon written to', out);

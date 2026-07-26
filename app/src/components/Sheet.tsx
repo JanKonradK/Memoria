@@ -1,6 +1,8 @@
-import { useRef, type ReactNode } from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { AnimatePresence, m } from 'motion/react';
 import { useMediaQuery } from '../hooks';
+import { backdropFade, dialogEnter, sheetEnter } from '../motion';
 
 function CloseButton() {
   return (
@@ -77,59 +79,85 @@ export function Sheet({
 }) {
   const desktop = useMediaQuery('(min-width: 640px)');
   const dialogRef = useRef<HTMLDivElement>(null);
-  const dragHandlers = useDragDismiss(dialogRef, onClose);
+  const [closing, setClosing] = useState(false);
+  const requestClose = useCallback(() => setClosing(true), []);
+  const dragHandlers = useDragDismiss(dialogRef, requestClose);
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fade-in fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px]" />
-        <div
-          className={`pointer-events-none fixed inset-0 z-50 flex justify-center ${desktop ? 'items-center p-6' : 'items-end'}`}
-        >
-          {desktop ? (
-            <DialogPrimitive.Content
-              ref={dialogRef}
-              aria-describedby={undefined}
-              className={`dialog-enter glass gold-hairline pointer-events-auto relative flex max-h-[85dvh] w-full flex-col rounded-ui-card shadow-2xl outline-none ${
-                wide ? 'max-w-4xl' : 'max-w-xl'
+    <DialogPrimitive.Root open={open && !closing} onOpenChange={(next) => !next && requestClose()}>
+      <DialogPrimitive.Portal forceMount>
+        <AnimatePresence onExitComplete={() => closing && onClose()}>
+          {open && !closing && (
+            <m.div
+              key={desktop ? 'dialog' : 'sheet'}
+              className={`pointer-events-none fixed inset-0 z-50 flex justify-center ${
+                desktop ? 'items-center p-6' : 'items-end'
               }`}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
             >
-              <div
-                className={`flex shrink-0 items-center justify-between gap-3 px-6 ${
-                  hideTitle ? 'pb-0 pt-3' : 'pb-3 pt-5'
-                }`}
-              >
-                <DialogPrimitive.Title asChild>
-                  <h2 className={hideTitle ? 'sr-only' : 'text-title font-bold tracking-tight text-fg'}>{title}</h2>
-                </DialogPrimitive.Title>
-                <CloseButton />
-              </div>
-              <div className="scrollbar-thin overflow-y-auto px-6 pb-6">{children}</div>
-            </DialogPrimitive.Content>
-          ) : (
-            <DialogPrimitive.Content
-              ref={dialogRef}
-              aria-describedby={undefined}
-              className="sheet-enter glass gold-hairline pointer-events-auto relative flex max-h-[90dvh] w-full max-w-xl flex-col rounded-t-ui-card shadow-2xl outline-none"
-            >
-              <div
-                className="flex shrink-0 cursor-grab touch-none items-center justify-between gap-3 px-5 pb-2 pt-3 active:cursor-grabbing"
-                {...dragHandlers}
-              >
-                <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-ui-full bg-white/20" />
-                <DialogPrimitive.Title asChild>
-                  <h2 className={hideTitle ? 'sr-only' : 'mt-2 text-base font-bold text-fg'}>{title}</h2>
-                </DialogPrimitive.Title>
-                <div className="mt-1">
-                  <CloseButton />
-                </div>
-              </div>
-              <div className="scrollbar-thin overflow-y-auto px-5 pb-[calc(2rem+env(safe-area-inset-bottom))]">
-                {children}
-              </div>
-            </DialogPrimitive.Content>
+              <DialogPrimitive.Overlay forceMount asChild>
+                <m.div
+                  className="pointer-events-auto fixed inset-0 bg-black/60 backdrop-blur-[2px]"
+                  variants={backdropFade}
+                />
+              </DialogPrimitive.Overlay>
+              {desktop ? (
+                <m.div
+                  className={`pointer-events-auto w-full ${wide ? 'max-w-4xl' : 'max-w-xl'}`}
+                  variants={dialogEnter}
+                >
+                  <DialogPrimitive.Content
+                    forceMount
+                    ref={dialogRef}
+                    aria-describedby={undefined}
+                    className="glass gold-hairline relative flex max-h-[85dvh] w-full flex-col rounded-ui-card shadow-2xl outline-none"
+                  >
+                    <div
+                      className={`flex shrink-0 items-center justify-between gap-3 px-6 ${
+                        hideTitle ? 'pb-0 pt-3' : 'pb-3 pt-5'
+                      }`}
+                    >
+                      <DialogPrimitive.Title asChild>
+                        <h2 className={hideTitle ? 'sr-only' : 'text-title font-bold tracking-tight text-fg'}>
+                          {title}
+                        </h2>
+                      </DialogPrimitive.Title>
+                      <CloseButton />
+                    </div>
+                    <div className="scrollbar-thin overflow-y-auto px-6 pb-6">{children}</div>
+                  </DialogPrimitive.Content>
+                </m.div>
+              ) : (
+                <m.div className="pointer-events-auto w-full max-w-xl" variants={sheetEnter}>
+                  <DialogPrimitive.Content
+                    forceMount
+                    ref={dialogRef}
+                    aria-describedby={undefined}
+                    className="glass gold-hairline relative flex max-h-[90dvh] w-full flex-col rounded-t-ui-card shadow-2xl outline-none"
+                  >
+                    <div
+                      className="flex shrink-0 cursor-grab touch-none items-center justify-between gap-3 px-5 pb-2 pt-3 active:cursor-grabbing"
+                      {...dragHandlers}
+                    >
+                      <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-ui-full bg-white/20" />
+                      <DialogPrimitive.Title asChild>
+                        <h2 className={hideTitle ? 'sr-only' : 'mt-2 text-base font-bold text-fg'}>{title}</h2>
+                      </DialogPrimitive.Title>
+                      <div className="mt-1">
+                        <CloseButton />
+                      </div>
+                    </div>
+                    <div className="scrollbar-thin overflow-y-auto px-5 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                      {children}
+                    </div>
+                  </DialogPrimitive.Content>
+                </m.div>
+              )}
+            </m.div>
           )}
-        </div>
+        </AnimatePresence>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
   );

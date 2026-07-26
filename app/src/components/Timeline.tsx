@@ -1,22 +1,86 @@
-import { useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DateTime } from 'luxon';
-import type { Game, GameEvent } from '@technogg/shared';
+import type { Game, GameEvent } from '@void/shared';
+import { AnimatePresence, useReducedMotionConfig } from 'motion/react';
+import { m } from 'motion/react';
 import { useApp } from '../store';
 import { TYPE_RANK } from '../timeline-sort';
-import { useUI } from '../ui-store';
-import { endTone, fmtDur, tint } from '../util';
+import { TIMELINE_RANGE_DAYS, useUI, type TimelineRange } from '../ui-store';
+import { duration, easing, slideIn } from '../motion';
+import { endTone, fmtDur, luminance, tint } from '../util';
 import { planSeedImport, SEED_UPDATED } from '../data/seed-events';
+import { Disclosure } from './Disclosure';
 import { TimelineAgenda } from './TimelineAgenda';
 import { Pill, ProgressBar } from './primitives';
 import { Btn, GameBadge, Page, SectionTitle, Segmented, Tooltip } from './ui';
 
 const DAY = 86_400_000;
+const HOUR = 3_600_000;
+const MIN_TICK_GAP_PX = 64;
 
-function lum(hex: string): number {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return 0;
-  const n = parseInt(m[1]!, 16);
-  return 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+const viewFade = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: duration.fast, ease: easing.out } },
+  exit: { opacity: 0, transition: { duration: duration.fast, ease: easing.out } },
+};
+
+function useElementWidth() {
+  const observerRef = useRef<ResizeObserver | null>(null);
+  const [width, setWidth] = useState(0);
+
+  const setElement = useCallback((element: HTMLDivElement | null) => {
+    observerRef.current?.disconnect();
+    observerRef.current = null;
+    if (!element) return;
+    const updateWidth = (nextWidth: number) => setWidth(Math.round(nextWidth));
+    updateWidth(element.getBoundingClientRect().width);
+
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) updateWidth(entry.contentRect.width);
+    });
+    observer.observe(element);
+    observerRef.current = observer;
+  }, []);
+
+  useEffect(() => () => observerRef.current?.disconnect(), []);
+
+  return [setElement, width] as const;
+}
+
+function buildGridTicks(rangeStart: number, rangeEnd: number, range: TimelineRange, width: number): DateTime[] {
+  const rangeSpan = rangeEnd - rangeStart;
+
+  if (range === '90d') {
+    const tickMillis = [rangeStart];
+    let lastPosition = 0;
+    let boundary = DateTime.fromMillis(rangeStart).startOf('month').plus({ months: 1 });
+
+    while (boundary.toMillis() < rangeEnd) {
+      const boundaryMillis = boundary.toMillis();
+      const position = width > 0 ? ((boundaryMillis - rangeStart) / rangeSpan) * width : 0;
+      if (width > 0 && position - lastPosition >= MIN_TICK_GAP_PX && width - position >= MIN_TICK_GAP_PX) {
+        tickMillis.push(boundaryMillis);
+        lastPosition = position;
+      }
+      boundary = boundary.plus({ months: 1 });
+    }
+
+    tickMillis.push(rangeEnd);
+    return tickMillis.map((millis) => DateTime.fromMillis(millis));
+  }
+
+  const maxIntervals = range === '7d' ? 7 : 10;
+  const intervalCount = Math.max(1, Math.min(maxIntervals, Math.floor(width / MIN_TICK_GAP_PX)));
+  return Array.from({ length: intervalCount + 1 }, (_, index) =>
+    DateTime.fromMillis(rangeStart + (rangeSpan / intervalCount) * index),
+  );
+}
+
+function tickLabelFormat(range: TimelineRange): string {
+  if (range === '7d') return 'ccc d';
+  if (range === '90d') return 'LLL';
+  return 'dd LLL';
 }
 
 /**
@@ -25,25 +89,29 @@ function lum(hex: string): number {
  * end-to-end (GI's cream→tan) get dark text.
  */
 function isLightFill(color: string, color2?: string): boolean {
-  return (lum(color) + lum(color2 ?? color)) / 2 > 200;
+  const primary = luminance(color) ?? 0;
+  const secondary = luminance(color2 ?? color) ?? primary;
+  // WCAG weighting lifts NTE's teal→yellow pair just above the old 200/255
+  // boundary; 210/255 keeps GI's cream→tan dark-text treatment without flips.
+  return (primary + secondary) / 2 > 210 / 255;
 }
 
-function EventRow({
+const EventRow = memo(function EventRow({
   ev,
   game,
   now,
   ws,
   we,
-  onOpen,
-  onToggleDone,
+  onOpenEvent,
+  onToggleEvent,
 }: {
   ev: GameEvent;
   game: Game;
   now: number;
   ws: number;
   we: number;
-  onOpen: () => void;
-  onToggleDone: () => void;
+  onOpenEvent: (event: GameEvent) => void;
+  onToggleEvent: (event: GameEvent) => void;
 }) {
   const span = we - ws;
   const left = (Math.max(ev.start, ws) - ws) / span;
@@ -56,164 +124,213 @@ function EventRow({
   const banner = ev.type === 'banner';
   const cycle = ev.type === 'cycle';
   const tone = maint ? 'rgba(148,163,184,0.6)' : endTone(msLeft);
+  const doneButtonSize = maint
+    ? 'min(var(--lane-row-h-maint), 2.25rem)'
+    : 'min(calc(var(--lane-row-h) - 0.25rem), 2.25rem)';
 
   return (
-    <div
-      className={`slide-in group/row relative block h-11 w-full rounded-ui-lg text-left ${maint ? 'sm:h-6' : 'sm:h-9'} ${ev.done ? 'opacity-40' : ''}`}
-    >
-      <button
-        type="button"
-        onClick={onOpen}
-        className="absolute inset-0 z-10 rounded-ui-lg"
-        aria-label={`Open ${game.name} event: ${ev.name}`}
-      />
-      <div className="absolute inset-0 rounded-ui-lg bg-white/[0.03]" />
-      <ProgressBar
-        variant="timeline"
-        value={displayWidth / 100}
-        start={displayLeft / 100}
-        color={game.color}
-        data-event-bar
-        className={`absolute inset-y-0 flex items-center gap-1.5 overflow-hidden rounded-ui-lg px-2 ${
-          maint ? 'border border-dashed border-dim/50' : ''
-        }`}
-        style={{
-          // Events are the loud ones — banners you've already made your mind up about.
-          // Two-tone: color → color2 carries each game's real icon palette.
-          background: maint
-            ? 'rgba(148,163,184,0.08)'
-            : banner
-              ? `linear-gradient(90deg, ${tint(game.color, 0.08)}, ${tint(game.color2 ?? game.color, 0.16)})`
-              : `linear-gradient(90deg, ${tint(game.color, 0.5)}, ${tint(game.color2 ?? game.color, 0.62)})`,
-          boxShadow: maint ? undefined : `inset 0 0 0 1px ${tint(game.color, banner ? 0.3 : 0.85)}`,
-          opacity: ended ? 0.35 : 1,
-        }}
+    <m.div variants={slideIn} initial="hidden" animate="visible">
+      <div
+        className={`group/row relative block w-full rounded-ui-lg text-left ${
+          maint ? 'h-[var(--lane-row-h-maint)]' : 'h-[var(--lane-row-h)]'
+        } ${ev.done ? 'opacity-40' : ''}`}
       >
-        {banner && (
-          <span className="text-caption" style={{ color: 'rgba(232,180,90,0.45)' }}>
-            ★
-          </span>
-        )}
-        {cycle && <Pill variant={isLightFill(game.color, game.color2) ? 'light' : 'dark'}>cycle</Pill>}
-        {maint && <Pill variant="muted">patch</Pill>}
-        <span
-          className={`truncate text-xs ${
-            maint
-              ? 'font-medium text-muted'
-              : banner
-                ? 'font-medium text-muted'
-                : isLightFill(game.color, game.color2)
-                  ? 'font-bold text-slate-900'
-                  : 'font-bold text-white'
-          }`}
-        >
-          {ev.name}
-        </span>
-      </ProgressBar>
-      <span className="pointer-events-none absolute inset-y-0 right-1 z-20 my-auto flex h-fit items-center gap-1">
         <button
           type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleDone();
-          }}
-          aria-label={ev.done ? `Restore ${ev.name}` : `Mark ${ev.name} done`}
-          className={`pointer-events-auto flex items-center justify-center rounded-ui-full font-black transition ${
-            maint ? 'h-9 w-9 text-[0.5625rem] sm:h-6 sm:w-6' : 'h-9 w-9 text-xs sm:h-8 sm:w-8'
-          } ${
-            ev.done
-              ? 'bg-ok/90 text-black'
-              : 'bg-black/70 text-muted opacity-60 hover:text-emerald-300 focus-visible:opacity-100 sm:opacity-0 sm:group-hover/row:opacity-100'
+          onClick={() => onOpenEvent(ev)}
+          className="absolute inset-0 z-10 rounded-ui-lg"
+          aria-label={`Open ${game.name} event: ${ev.name}`}
+        />
+        <div className="absolute inset-0 rounded-ui-lg bg-white/[0.03]" />
+        <ProgressBar
+          variant="timeline"
+          value={displayWidth / 100}
+          start={displayLeft / 100}
+          color={game.color}
+          data-event-bar
+          className={`absolute inset-y-0 flex items-center gap-1.5 overflow-hidden rounded-ui-lg px-2 ${
+            maint ? 'border border-dashed border-dim/50' : ''
           }`}
+          style={{
+            // Events are the loud ones — banners you've already made your mind up about.
+            // Two-tone: color → color2 carries each game's real icon palette.
+            background: maint
+              ? 'rgba(148,163,184,0.08)'
+              : banner
+                ? `linear-gradient(90deg, ${tint(game.color, 0.08)}, ${tint(game.color2 ?? game.color, 0.16)})`
+                : `linear-gradient(90deg, ${tint(game.color, 0.5)}, ${tint(game.color2 ?? game.color, 0.62)})`,
+            boxShadow: maint ? undefined : `inset 0 0 0 1px ${tint(game.color, banner ? 0.3 : 0.85)}`,
+            opacity: ended ? 0.35 : 1,
+          }}
         >
-          ✓
-        </button>
-        <Tooltip content="d = days · h = hours · m = minutes">
+          {banner && (
+            <span className="text-caption" style={{ color: 'rgba(232,180,90,0.45)' }}>
+              ★
+            </span>
+          )}
+          {cycle && <Pill variant={isLightFill(game.color, game.color2) ? 'light' : 'dark'}>cycle</Pill>}
+          {maint && <Pill variant="muted">patch</Pill>}
           <span
-            className={`rounded-ui-sm bg-black/70 px-1.5 py-px text-caption font-bold tabular-nums ${
-              !ended && !maint && !ev.done && msLeft < DAY ? 'warn-pulse' : ''
+            className={`truncate text-xs ${
+              maint
+                ? 'font-medium text-muted'
+                : banner
+                  ? 'font-medium text-muted'
+                  : isLightFill(game.color, game.color2)
+                    ? 'font-bold text-slate-900'
+                    : 'font-bold text-white'
             }`}
-            style={{ color: ev.done ? 'rgb(52,211,153)' : tone }}
           >
-            {ev.done
-              ? 'done'
-              : ended
-                ? 'ended'
-                : maint
-                  ? DateTime.fromMillis(ev.start).toFormat('dd LLL HH:mm')
-                  : `ends ${fmtDur(msLeft)}`}
+            {ev.name}
           </span>
-        </Tooltip>
-      </span>
-    </div>
+        </ProgressBar>
+        <span className="pointer-events-none absolute inset-y-0 right-1 z-20 my-auto flex h-fit items-center gap-1">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleEvent(ev);
+            }}
+            aria-label={ev.done ? `Restore ${ev.name}` : `Mark ${ev.name} done`}
+            className={`pointer-events-auto flex items-center justify-center rounded-ui-full font-black transition ${
+              maint ? 'text-[0.5625rem]' : 'text-xs'
+            } ${
+              ev.done
+                ? 'bg-ok/90 text-black'
+                : 'bg-black/70 text-muted opacity-60 hover:text-emerald-300 focus-visible:opacity-100 sm:opacity-0 sm:group-hover/row:opacity-100'
+            }`}
+            style={{ height: doneButtonSize, width: doneButtonSize }}
+          >
+            ✓
+          </button>
+          <Tooltip content="d = days · h = hours · m = minutes">
+            <span
+              className={`rounded-ui-sm bg-black/70 px-1.5 py-px text-caption font-bold tabular-nums ${
+                !ended && !maint && !ev.done && msLeft < DAY ? 'warn-pulse' : ''
+              }`}
+              style={{ color: ev.done ? 'rgb(52,211,153)' : tone }}
+            >
+              {ev.done
+                ? 'done'
+                : ended
+                  ? 'ended'
+                  : maint
+                    ? DateTime.fromMillis(ev.start).toFormat('dd LLL HH:mm')
+                    : `ends ${fmtDur(msLeft)}`}
+            </span>
+          </Tooltip>
+        </span>
+      </div>
+    </m.div>
   );
-}
+});
 
 export function TimelinePage({ now }: { now: number }) {
   const state = useApp((s) => s.state);
   const deleteReminder = useApp((s) => s.deleteReminder);
   const upsertEvent = useApp((s) => s.upsertEvent);
+  const upsertEvents = useApp((s) => s.upsertEvents);
   const openSheet = useUI((s) => s.openSheet);
   const timelineView = useUI((s) => s.timelineView);
   const setTimelineView = useUI((s) => s.setTimelineView);
+  const timelineRange = useUI((s) => s.timelineRange);
+  const setTimelineRange = useUI((s) => s.setTimelineRange);
+  const reducedMotion = useReducedMotionConfig();
+  const [timelineScaleRef, timelineWidth] = useElementWidth();
+  const openEvent = useCallback(
+    (event: GameEvent) => openSheet({ kind: 'event', eventId: event.id, gameId: event.gameId }),
+    [openSheet],
+  );
+  const toggleEvent = useCallback(
+    (event: GameEvent) => upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done }),
+    [upsertEvent],
+  );
 
-  const seedPlan = planSeedImport(state, now);
+  const hourBucket = Math.floor(now / HOUR);
+  // Seed expiry only needs to invalidate once per hour; state changes still
+  // recompute against the current raw clock value.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const seedPlan = useMemo(() => planSeedImport(state, now), [hourBucket, state]);
   const importSeed = () => {
-    for (const p of seedPlan) {
-      if (p.kind === 'add') {
-        upsertEvent({
+    upsertEvents(
+      seedPlan.map((p) => {
+        if (p.kind === 'add') {
+          return {
+            gameId: p.gameId,
+            name: p.seed.name,
+            type: p.seed.type,
+            start: p.start,
+            end: p.end,
+            dailyTouch: p.seed.dailyTouch ?? false,
+            notify: p.seed.type === 'maintenance' ? false : (p.seed.notify ?? true),
+            notes: p.seed.notes ?? '',
+            sourceKey: p.seed.sourceKey,
+          };
+        }
+        // Refresh pass: correct previously imported dates/names (TBC → confirmed).
+        return {
+          id: p.eventId,
           gameId: p.gameId,
           name: p.seed.name,
-          type: p.seed.type,
           start: p.start,
           end: p.end,
-          dailyTouch: p.seed.dailyTouch ?? false,
-          notify: p.seed.type === 'maintenance' ? false : (p.seed.notify ?? true),
-          notes: p.seed.notes ?? '',
-          sourceKey: p.seed.sourceKey,
-        });
-      } else {
-        // Refresh pass: correct previously imported dates/names (TBC → confirmed).
-        upsertEvent({ id: p.eventId, gameId: p.gameId, name: p.seed.name, start: p.start, end: p.end });
-      }
-    }
+        };
+      }),
+    );
   };
 
-  // 28 days ahead so next month's cycle windows (e.g. next Abyss) stay visible;
-  // 30-day span / 10 ticks = a readable gridline every 3 days.
-  const ws = now - 2 * DAY;
-  const we = now + 28 * DAY;
-  const span = we - ws;
-  const TICKS = 10;
+  const { games, eventsByGame, gameById, endingSoon, ticks, ws, we, span } = useMemo(() => {
+    const rangeNow = now;
+    const rangeStart = rangeNow - 2 * DAY;
+    const rangeEnd = rangeStart + TIMELINE_RANGE_DAYS[timelineRange] * DAY;
+    const rangeSpan = rangeEnd - rangeStart;
+    const live = state.events.filter((event) => !event.deleted);
+    const activeGames = state.games.filter((game) => !game.deleted);
+    const byGame = new Map<string, GameEvent[]>(
+      activeGames.map((game) => [
+        game.id,
+        live
+          .filter((event) => event.gameId === game.id && event.end > rangeStart && event.start < rangeEnd)
+          .sort(
+            (a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || TYPE_RANK[a.type] - TYPE_RANK[b.type] || a.end - b.end,
+          ),
+      ]),
+    );
+    const gamesById = new Map(activeGames.map((game) => [game.id, game]));
 
-  const games = state.games.filter((g) => !g.deleted);
-  const live = state.events.filter((e) => !e.deleted);
-  const eventsByGame = new Map<string, GameEvent[]>(
-    games.map((g) => [
-      g.id,
-      live
-        .filter((e) => e.gameId === g.id && e.end > ws && e.start < we)
-        .sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || TYPE_RANK[a.type] - TYPE_RANK[b.type] || a.end - b.end),
-    ]),
-  );
-  const gameById = new Map(games.map((g) => [g.id, g]));
+    // Soonest PLAY deadlines across all games — events and endgame cycles.
+    // Banners and things you've marked done are excluded.
+    const soon = live
+      .filter(
+        (event) =>
+          (event.type === 'event' || event.type === 'custom' || event.type === 'cycle') &&
+          !event.done &&
+          event.end > rangeNow &&
+          event.start <= rangeNow &&
+          gamesById.has(event.gameId),
+      )
+      .sort((a, b) => a.end - b.end)
+      .slice(0, 5);
+    const gridTicks = buildGridTicks(rangeStart, rangeEnd, timelineRange, timelineWidth);
 
-  // Soonest PLAY deadlines across all games — events and endgame cycles.
-  // Banners and things you've marked done are excluded.
-  const endingSoon = live
-    .filter(
-      (e) =>
-        (e.type === 'event' || e.type === 'custom' || e.type === 'cycle') &&
-        !e.done &&
-        e.end > now &&
-        e.start <= now &&
-        gameById.has(e.gameId),
-    )
-    .sort((a, b) => a.end - b.end)
-    .slice(0, 5);
+    return {
+      games: activeGames,
+      eventsByGame: byGame,
+      gameById: gamesById,
+      endingSoon: soon,
+      ticks: gridTicks,
+      ws: rangeStart,
+      we: rangeEnd,
+      span: rangeSpan,
+    };
+    // Timeline membership and grid construction intentionally invalidate on
+    // the hour bucket; the red playhead below continues to use raw `now`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hourBucket, state.events, state.games, timelineRange, timelineWidth]);
 
   const reminders = state.reminders.filter((r) => !r.deleted).sort((a, b) => a.at - b.at);
   const [doneOpen, setDoneOpen] = useState<Set<string>>(new Set());
+  const [laneOpen, setLaneOpen] = useState<Record<string, boolean>>({});
   const toggleDoneOpen = (gameId: string) =>
     setDoneOpen((s) => {
       const next = new Set(s);
@@ -222,11 +339,8 @@ export function TimelinePage({ now }: { now: number }) {
       return next;
     });
 
-  const ticks: DateTime[] = [];
-  for (let i = 0; i <= TICKS; i++) ticks.push(DateTime.fromMillis(ws + (span / TICKS) * i));
-
   return (
-    <Page className="pb-28 pt-4 sm:pt-5 lg:pb-8">
+    <Page>
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <h2 className="text-title font-black tracking-tight text-slate-100">Event timeline</h2>
         <Segmented
@@ -237,6 +351,16 @@ export function TimelinePage({ now }: { now: number }) {
           value={timelineView}
           onChange={setTimelineView}
           ariaLabel="Timeline view"
+        />
+        <Segmented
+          options={[
+            { value: '7d', label: '7d' },
+            { value: '30d', label: '30d' },
+            { value: '90d', label: '90d' },
+          ]}
+          value={timelineRange}
+          onChange={setTimelineRange}
+          ariaLabel="Timeline range"
         />
         <div className="ml-auto grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
           {seedPlan.length > 0 && (
@@ -254,7 +378,7 @@ export function TimelinePage({ now }: { now: number }) {
         </div>
       </div>
 
-      {timelineView === 'lanes' && endingSoon.length > 0 && (
+      {endingSoon.length > 0 && (
         <div className="mb-4">
           <div className="mb-1.5 text-caption font-bold uppercase tracking-widest text-dim">Ending soonest</div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
@@ -286,113 +410,150 @@ export function TimelinePage({ now }: { now: number }) {
         </div>
       )}
 
-      {timelineView === 'agenda' ? (
-        <TimelineAgenda now={now} />
-      ) : (
-        <div className="glass gold-hairline relative rounded-ui-card p-4">
-          <div className="relative mb-2 ml-0 h-4 text-caption text-dim">
-            {ticks.map((t, i) => (
-              <span
-                key={i}
-                className="absolute -translate-x-1/2 tabular-nums"
-                style={{ left: `${(i / TICKS) * 100}%` }}
-              >
-                {t.toFormat('dd LLL')}
-              </span>
-            ))}
-          </div>
-
-          <div className="relative py-1">
-            {ticks.map((_, i) => (
-              <div
-                key={i}
-                className="pointer-events-none absolute inset-y-0 w-px bg-white/[0.04]"
-                style={{ left: `${(i / TICKS) * 100}%` }}
-              />
-            ))}
-            <div
-              className="pointer-events-none absolute inset-y-0 z-10 w-px bg-rose-400/80"
-              style={{ left: `${((now - ws) / span) * 100}%` }}
-            >
-              <span className="absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-ui-full bg-rose-400" />
-            </div>
-
-            {games.length === 0 && (
-              <p className="py-8 text-center text-body text-dim">
-                No events yet — add banners and events so nothing ends without you noticing.
-              </p>
-            )}
-
-            {games.map((game) => {
-              const evs = eventsByGame.get(game.id) ?? [];
-              const nextEnd = [...evs]
-                .sort((a, b) => a.end - b.end)
-                .find((e) => e.end > now && !e.done && e.type !== 'maintenance' && e.type !== 'banner');
-              return (
-                <div key={game.id} className="relative">
-                  <div className="mb-1.5 mt-4 flex items-center gap-2 first:mt-0">
-                    <GameBadge short={game.short} color={game.color} color2={game.color2} />
-                    <span className="text-label font-black uppercase tracking-wider" style={{ color: game.color }}>
-                      {game.name}
-                    </span>
-                    <span
-                      className="h-px flex-1"
-                      style={{
-                        background: `linear-gradient(90deg, ${tint(game.color, 0.3)}, ${tint(game.color2 ?? game.color, 0.12)})`,
-                      }}
-                    />
-                    {nextEnd && (
-                      <Tooltip content="d = days · h = hours · m = minutes">
-                        <span
-                          className="text-caption font-semibold tabular-nums"
-                          style={{ color: endTone(nextEnd.end - now) }}
-                        >
-                          next ends {fmtDur(nextEnd.end - now)}
-                        </span>
-                      </Tooltip>
-                    )}
-                  </div>
-                  {evs.length === 0 ? (
-                    <p className="py-1 text-label text-faint">Nothing in this window — import or add events.</p>
-                  ) : (
-                    (() => {
-                      const open = doneOpen.has(game.id);
-                      const active = evs.filter((e) => !e.done);
-                      const doneCount = evs.length - active.length;
-                      const shown = open ? evs : active;
-                      return (
-                        <div className="space-y-1.5">
-                          {shown.map((ev) => (
-                            <EventRow
-                              key={ev.id}
-                              ev={ev}
-                              game={game}
-                              now={now}
-                              ws={ws}
-                              we={we}
-                              onOpen={() => openSheet({ kind: 'event', eventId: ev.id, gameId: ev.gameId })}
-                              onToggleDone={() => upsertEvent({ id: ev.id, gameId: ev.gameId, done: !ev.done })}
-                            />
-                          ))}
-                          {doneCount > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => toggleDoneOpen(game.id)}
-                              className="block min-h-11 w-full rounded-ui-md py-0.5 text-left text-caption font-semibold text-faint transition hover:text-muted sm:min-h-8"
-                            >
-                              {open ? '− collapse done events' : `+ ${doneCount} done event${doneCount > 1 ? 's' : ''}`}
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })()
-                  )}
+      <AnimatePresence mode="wait" initial={false}>
+        {timelineView === 'agenda' ? (
+          <m.div key="agenda" variants={viewFade} initial="hidden" animate="visible" exit="exit">
+            <TimelineAgenda now={now} range={timelineRange} />
+          </m.div>
+        ) : (
+          <m.div key="lanes" variants={viewFade} initial="hidden" animate="visible" exit="exit">
+            <div className="glass gold-hairline relative rounded-ui-card p-4">
+              <div ref={timelineScaleRef} data-timeline-scale>
+                <div className="relative mb-2 ml-0 h-4 text-caption text-dim">
+                  {ticks.map((tick, index) => {
+                    const first = index === 0;
+                    const last = index === ticks.length - 1;
+                    return (
+                      <span
+                        key={tick.toMillis()}
+                        data-timeline-tick
+                        className={`absolute tabular-nums ${
+                          first ? 'translate-x-0' : last ? '-translate-x-full' : '-translate-x-1/2'
+                        }`}
+                        style={{ left: `${((tick.toMillis() - ws) / span) * 100}%` }}
+                      >
+                        {tick.toFormat(tickLabelFormat(timelineRange))}
+                      </span>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+
+                <div className="relative py-1">
+                  {ticks.map((tick) => (
+                    <div
+                      key={tick.toMillis()}
+                      className="pointer-events-none absolute inset-y-0 w-px bg-white/[0.04]"
+                      style={{ left: `${((tick.toMillis() - ws) / span) * 100}%` }}
+                    />
+                  ))}
+                  <m.div
+                    initial={false}
+                    animate={{ left: `${((now - ws) / span) * 100}%` }}
+                    transition={{ duration: reducedMotion ? 0 : 0.6, ease: 'linear' }}
+                    className="pointer-events-none absolute inset-y-0 z-10 w-px bg-rose-400/80"
+                  >
+                    <span className="absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-ui-full bg-rose-400" />
+                  </m.div>
+
+                  {games.length === 0 && (
+                    <p className="py-8 text-center text-body text-dim">
+                      No events yet — add banners and events so nothing ends without you noticing.
+                    </p>
+                  )}
+
+                  {games.map((game) => {
+                    const evs = eventsByGame.get(game.id) ?? [];
+                    const open = laneOpen[game.id] ?? evs.length > 0;
+                    const nextEnd = [...evs]
+                      .sort((a, b) => a.end - b.end)
+                      .find((e) => e.end > now && !e.done && e.type !== 'maintenance' && e.type !== 'banner');
+                    const doneEventsOpen = doneOpen.has(game.id);
+                    const active = evs.filter((event) => !event.done);
+                    const doneCount = evs.length - active.length;
+                    const shown = doneEventsOpen ? evs : active;
+                    return (
+                      <Disclosure
+                        key={game.id}
+                        open={open}
+                        onOpenChange={(nextOpen) => setLaneOpen((current) => ({ ...current, [game.id]: nextOpen }))}
+                        title={
+                          <span className="flex min-w-0 items-center gap-2">
+                            <GameBadge short={game.short} color={game.color} color2={game.color2} />
+                            <span
+                              className="truncate text-label font-black uppercase tracking-wider"
+                              style={{ color: game.color }}
+                            >
+                              {game.name}
+                            </span>
+                            <span
+                              className="h-px flex-1"
+                              style={{
+                                background: `linear-gradient(90deg, ${tint(game.color, 0.3)}, ${tint(game.color2 ?? game.color, 0.12)})`,
+                              }}
+                            />
+                          </span>
+                        }
+                        summary={
+                          !open ? (
+                            <span className="flex flex-col text-caption font-semibold tabular-nums text-muted">
+                              <span>
+                                {evs.length} {evs.length === 1 ? 'event' : 'events'}
+                              </span>
+                              <span>
+                                {nextEnd ? (
+                                  <span style={{ color: endTone(nextEnd.end - now) }}>
+                                    next ends {fmtDur(nextEnd.end - now)}
+                                  </span>
+                                ) : (
+                                  'no upcoming deadline'
+                                )}
+                              </span>
+                            </span>
+                          ) : undefined
+                        }
+                        triggerLabel={`${open ? 'Collapse' : 'Expand'} ${game.name} lane`}
+                        className="relative"
+                        triggerClassName="relative z-20 mt-2 rounded-ui-lg px-1 transition hover:bg-white/[0.035]"
+                        contentClassName="pb-1"
+                      >
+                        {evs.length === 0 ? (
+                          <p className="py-1 text-label text-faint">Nothing in this window — import or add events.</p>
+                        ) : (
+                          <div className="space-y-1.5">
+                            {shown.map((ev) => (
+                              <EventRow
+                                key={ev.id}
+                                ev={ev}
+                                game={game}
+                                now={now}
+                                ws={ws}
+                                we={we}
+                                onOpenEvent={openEvent}
+                                onToggleEvent={toggleEvent}
+                              />
+                            ))}
+                            {doneCount > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => toggleDoneOpen(game.id)}
+                                className="block min-h-11 w-full rounded-ui-md py-0.5 text-left text-caption font-semibold text-faint transition hover:text-muted sm:min-h-8"
+                              >
+                                {doneEventsOpen
+                                  ? '− collapse done events'
+                                  : `+ ${doneCount} done event${doneCount > 1 ? 's' : ''}`}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </Disclosure>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </m.div>
+        )}
+      </AnimatePresence>
 
       <SectionTitle>One-off reminders</SectionTitle>
       <div className="space-y-2">

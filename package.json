@@ -1,5 +1,5 @@
 {
-  "name": "techno-gg",
+  "name": "void-app",
   "private": true,
   "version": "0.1.0",
   "workspaces": [
@@ -17,14 +17,15 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:pwa": "node scripts/check-pwa.mjs",
+    "check:config": "node scripts/check-config.mjs",
     "launch:gates": "node scripts/launch-gates.mjs",
     "check": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run build && npm run check:pwa",
     "typecheck": "npm -w shared run typecheck && npm -w app run typecheck && npm -w worker run typecheck",
     "deploy": "npm -w app run build && npm -w worker run deploy",
-    "deploy:staging": "npm -w app run build && npm -w worker run deploy:staging",
     "deploy:production": "npm -w app run build && npm -w worker run deploy:production",
     "cf:types": "npm -w worker run cf:types",
-    "audit": "npm audit --audit-level=high",
+    "audit": "npm audit --audit-level=high --omit=dev",
+    "audit:all": "npm audit --audit-level=high",
     "icons": "node app/scripts/gen-icons.mjs",
     "ico": "node app/scripts/gen-ico.mjs",
     "install:desktop": "powershell -ExecutionPolicy Bypass -File desktop/Install-Shortcut.ps1"

@@ -5,6 +5,7 @@ export * from './checklist';
 export * from './urgency';
 export * from './alerts';
 export * from './merge';
+export * from './migrations';
 export * from './presets';
 export * from './validation';
 export * from './tracking';

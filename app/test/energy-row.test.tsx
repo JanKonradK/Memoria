@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import type { EnergyProjection, Resource } from '@technogg/shared';
+import type { EnergyProjection, Resource } from '@void/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EnergyRow } from '../src/components/EnergyRow';
 import { useUI } from '../src/ui-store';

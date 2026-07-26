@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CURRENT_SCHEMA_VERSION } from '../src/types';
+import { CURRENT_SCHEMA_VERSION, MAX_GAME_IMAGE_LENGTH } from '../src/types';
 import { safeParseAppState } from '../src/validation';
 import { makeGame, makeState } from './helpers';
 
@@ -16,6 +16,9 @@ describe('safeParseAppState', () => {
   it('rejects malformed collections and oversized strings', () => {
     expect(safeParseAppState({ games: 'not-an-array' }).success).toBe(false);
     expect(safeParseAppState({ games: [makeGame({ name: 'x'.repeat(501) })] }).success).toBe(false);
+    expect(
+      safeParseAppState(makeState({ games: [makeGame({ image: 'x'.repeat(MAX_GAME_IMAGE_LENGTH + 1) })] })).success,
+    ).toBe(false);
   });
 
   it('rejects documents that exceed collection limits', () => {

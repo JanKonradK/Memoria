@@ -58,4 +58,17 @@ export default [
       globals: { ...globals.serviceworker },
     },
   },
+  {
+    files: ['app/src/**/*.{ts,tsx}', 'worker/src/**/*.ts', 'shared/src/**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: { attributes: false } }],
+    },
+  },
 ];
