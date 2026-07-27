@@ -219,16 +219,22 @@ test('wide dashboard switches between nexus and cards rail while timeline bars s
   ]) {
     await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
   }
-  const cardRows = await Promise.all(
+  // Games deal across three columns; the event horizon owns a fourth and sticks.
+  const cardColumns = await Promise.all(
     ['Genshin Impact', 'Honkai: Star Rail', 'Zenless Zone Zero', 'Wuthering Waves', 'Neverness to Everness'].map(
-      async (name) => Math.round((await page.getByRole('heading', { name, exact: true }).boundingBox())!.y),
+      async (name) => Math.round((await page.getByRole('heading', { name, exact: true }).boundingBox())!.x),
     ),
   );
-  expect(new Set(cardRows).size).toBe(2);
-  const cardsPerRow = [...new Set(cardRows)]
-    .map((row) => cardRows.filter((candidate) => candidate === row).length)
-    .sort();
-  expect(cardsPerRow).toEqual([2, 3]);
+  expect(new Set(cardColumns).size).toBe(3);
+  // No card is taller than what is inside it. The old row grid stretched every
+  // card to the height of the tallest thing beside it, which was the horizon.
+  const stretched = await page
+    .locator('[data-game-card]')
+    .evaluateAll(
+      (cards) => cards.filter((card) => card.getBoundingClientRect().height - card.scrollHeight > 24).length,
+    );
+  expect(stretched).toBe(0);
+  await expect(page.getByRole('complementary', { name: 'Event horizon' })).toHaveCSS('position', 'sticky');
   await expect(page.getByRole('button', { name: 'Add game', exact: true })).toBeVisible();
   await expectNoPageOverflow(page);
 

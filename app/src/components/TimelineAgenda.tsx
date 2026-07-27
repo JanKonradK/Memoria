@@ -19,7 +19,14 @@ export interface AgendaData {
   past: GameEvent[];
 }
 
-/** Shared timeline window/ranking. Dashboard mode deliberately drops history and caps its rails. */
+/**
+ * Shared timeline window/ranking. Dashboard mode drops history; both of its
+ * surfaces (the Nexus hub and the Cards event horizon) scroll, so it carries a
+ * fortnight and a generous cap rather than the one-screenful it used to.
+ */
+export const DASHBOARD_AGENDA_DAYS = 14;
+export const DASHBOARD_AGENDA_MAX = 24;
+
 export function selectAgendaData(
   state: AppState,
   now: number,
@@ -27,7 +34,8 @@ export function selectAgendaData(
   range: TimelineRange = '30d',
 ): AgendaData {
   const windowStart = mode === 'dashboard' ? now : now - 2 * DAY;
-  const windowEnd = mode === 'dashboard' ? now + 7 * DAY : windowStart + TIMELINE_RANGE_DAYS[range] * DAY;
+  const windowEnd =
+    mode === 'dashboard' ? now + DASHBOARD_AGENDA_DAYS * DAY : windowStart + TIMELINE_RANGE_DAYS[range] * DAY;
   const games = new Map(state.games.filter((game) => !game.deleted).map((game) => [game.id, game]));
   const events = state.events
     .filter((event) => !event.deleted && games.has(event.gameId) && event.end > windowStart && event.start < windowEnd)
@@ -39,7 +47,7 @@ export function selectAgendaData(
     const budgeted = budgetAgenda(
       live.map((event) => ({ kind: 'event', event })),
       groupVersionUpdates(upcoming, games, now),
-      9,
+      DASHBOARD_AGENDA_MAX,
     );
     return { games, ...budgeted, past: [] };
   }

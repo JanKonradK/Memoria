@@ -238,16 +238,11 @@ function NexusNode({
       data-expanded={expanded || undefined}
       data-settled={(expanded && settled) || undefined}
       data-collapsed={collapsed || undefined}
-      // Expanded, the card has no collapse control: any click that lands on the
-      // card itself rather than on a control closes it, as does Escape.
+      // Nothing INSIDE an open card closes it. It used to collapse on any click
+      // that missed a control, which meant misjudging the edge of an energy field
+      // threw away the card you were working in. It closes from its own control,
+      // from Escape, or by clicking off the card entirely.
       tabIndex={expanded ? -1 : undefined}
-      onClick={
-        expanded
-          ? (event) => {
-              if (!(event.target as HTMLElement).closest(INTERACTIVE_SELECTOR)) onToggle();
-            }
-          : undefined
-      }
       onKeyDown={
         expanded
           ? (event) => {
@@ -276,30 +271,7 @@ function NexusNode({
           background: `linear-gradient(90deg, transparent, ${game.color}, ${game.color2 ?? game.color}, transparent)`,
         }}
       />
-      {expanded ? (
-        <>
-          {/* The card's own background is the collapse target — it sits behind the
-              controls, so only empty space (and Escape) closes the card. */}
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-expanded
-            aria-controls={controlsId}
-            aria-label={`Collapse ${game.name} controls`}
-            className="absolute inset-0 z-0 cursor-zoom-out rounded-ui-card"
-          />
-          <span
-            aria-hidden
-            className={`pointer-events-none absolute right-3 top-3 z-20 h-2.5 w-2.5 rounded-ui-full ${
-              tier === 'high' ? 'warn-pulse' : ''
-            }`}
-            style={{
-              background: URGENCY_DOT[tier],
-              boxShadow: `0 0 ${tier === 'high' ? 10 : 8}px ${URGENCY_DOT[tier]}`,
-            }}
-          />
-        </>
-      ) : (
+      {!expanded && (
         <button
           type="button"
           onClick={onToggle}
@@ -387,6 +359,42 @@ function NexusNode({
               now={now}
               layout="focus"
               columns={columns}
+              // The close lives in the card's own header row rather than floating
+              // over it — the header already owns that corner (dailies ring).
+              headerTrailing={
+                <span className="flex shrink-0 items-center gap-2.5">
+                  <span
+                    aria-hidden
+                    className={`h-2.5 w-2.5 rounded-ui-full ${tier === 'high' ? 'warn-pulse' : ''}`}
+                    style={{
+                      background: URGENCY_DOT[tier],
+                      boxShadow: `0 0 ${tier === 'high' ? 10 : 8}px ${URGENCY_DOT[tier]}`,
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={onToggle}
+                    aria-expanded
+                    aria-controls={controlsId}
+                    aria-label={`Collapse ${game.name} controls`}
+                    className="flex h-10 w-10 items-center justify-center rounded-ui-full bg-white/[0.06] text-muted ring-1 ring-white/10 transition hover:bg-white/15 hover:text-white"
+                  >
+                    <svg
+                      aria-hidden
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M6 15l6-6 6 6" />
+                    </svg>
+                  </button>
+                </span>
+              }
               onEditGame={onEditGame}
               onOpenEvent={onOpenGameEvent}
             />

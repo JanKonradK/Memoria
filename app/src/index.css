@@ -274,17 +274,6 @@ input[type='number'] {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
-/* Cards + rail: the event horizon is a card in the same grid as the games,
-   parked in the centre column of the middle row while the cards flow around it. */
-.cards-grid {
-  grid-auto-flow: row dense;
-}
-.cards-horizon {
-  grid-column: 2;
-  grid-row: var(--horizon-row, 1);
-  align-self: stretch;
-}
-
 /* Nexus follows the approved three-column motion prototype: the selected rail
    gains room, the hub compresses, and the opposite rail yields. */
 .nexus-stage {
@@ -306,7 +295,13 @@ input[type='number'] {
 }
 .nexus-node-body {
   display: grid;
-  grid-template-rows: 0fr;
+  /* minmax(0, Xfr), never a bare Xfr: a bare fr track keeps an `auto` minimum,
+     and the scroll child's own padding (41px at this text size) is a floor that
+     minimum cannot go below. The close animation therefore ran 448px → 41px and
+     the card only reached its real shape when the content later unmounted —
+     that visible drop at the end was the whole "clunky" close. */
+  grid-template-rows: minmax(0, 0fr);
+  overflow: hidden;
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
@@ -319,7 +314,7 @@ input[type='number'] {
     visibility 0s linear var(--nexus-dur);
 }
 .nexus-node[data-expanded='true'] .nexus-node-body {
-  grid-template-rows: 1fr;
+  grid-template-rows: minmax(0, 1fr);
   opacity: 1;
   pointer-events: auto;
   visibility: visible;
