@@ -491,11 +491,6 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                 onChange={(v) => updateGame(game.id, { hideEventStrip: !v })}
                 label="Active events strip"
               />
-              <Toggle
-                checked={!game.hideSleepChip}
-                onChange={(v) => updateGame(game.id, { hideSleepChip: !v })}
-                label="Safe-to-sleep chip"
-              />
             </div>
             <p className="text-label text-dim">
               Turns whole blocks of the game card on or off. Individual energy bars, quick-spend buttons and tasks are

@@ -425,7 +425,9 @@ export function SettingsPage() {
                   }
                 />
               </Field>
-              <p className="text-label text-dim">Used by the evening “sleep safe” check on game cards.</p>
+              <p className="text-label text-dim">
+                Used by the hub's overnight check: how many games cap before you wake.
+              </p>
               <div className="flex items-center gap-3">
                 <Btn
                   onClick={() => {

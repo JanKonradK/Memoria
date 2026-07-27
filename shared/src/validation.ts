@@ -32,7 +32,6 @@ const game = z.object({
   processNames: z.array(z.string().max(160)).max(20).optional(),
   hideProgressRing: z.boolean().optional(),
   hideEventStrip: z.boolean().optional(),
-  hideSleepChip: z.boolean().optional(),
   titleFont: z.string().max(120).optional(),
 });
 
