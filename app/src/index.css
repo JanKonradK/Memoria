@@ -297,15 +297,25 @@ input[type='number'] {
 .nexus-stage[data-focus='right'] {
   grid-template-columns: minmax(0, 0.8fr) minmax(19rem, 0.95fr) minmax(0, 1.5fr);
 }
+/* Each card owns its layout and its paint. Without containment, a card growing
+   mid-animation invalidates paint across the whole stage — with it, the damage
+   stops at the card's own box. Safe here because the card already clips to it
+   (overflow-hidden), so nothing that used to be visible gets cut off. */
+.nexus-node {
+  contain: layout paint;
+}
 .nexus-node-body {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
+  /* The fade is deliberately shorter than the height change. Fading a subtree
+     repaints all of it every frame, so it finishes early and leaves the rest of
+     the animation to the (cheaper) height alone. */
   transition:
     grid-template-rows var(--nexus-dur) var(--nexus-ease),
-    opacity var(--nexus-dur) var(--nexus-ease),
+    opacity calc(var(--nexus-dur) * 0.45) var(--nexus-ease),
     visibility 0s linear var(--nexus-dur);
 }
 .nexus-node[data-expanded='true'] .nexus-node-body {
@@ -319,7 +329,8 @@ input[type='number'] {
   min-height: 0;
   overflow: hidden;
 }
-.nexus-node[data-expanded='true'] .nexus-node-body > * {
+/* Only once the growing has stopped — see the note on data-settled in NexusLayout. */
+.nexus-node[data-expanded='true'][data-settled='true'] .nexus-node-body > * {
   overflow-y: auto;
 }
 /* Let the decorative field yield during focus without fading any card text. */

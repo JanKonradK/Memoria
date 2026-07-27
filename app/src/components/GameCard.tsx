@@ -8,7 +8,7 @@ import { useUI } from '../ui-store';
 import { useMediaQuery, useReducedMotion } from '../hooks';
 import { cardEnter } from '../motion';
 
-import { endTone, fmtClock, fmtDur, tint } from '../util';
+import { endTone, fmtDur, tint } from '../util';
 import { EnergyRow } from './EnergyRow';
 import { ProgressRing } from './ProgressRing';
 import { Pill, Tick } from './primitives';
@@ -216,36 +216,11 @@ export function EventStrip({
   );
 }
 
-/** Passive advance-notice banner: the evening safe-to-sleep verdict, big, at the bottom of the card. */
-export function StatusStrip({ game, state, now }: { game: Game; state: AppState; now: number }) {
-  const derived = useDerived(now);
-  const hour = new Date(now).getHours();
-  const night = hour >= 20 || hour < 5;
-  const sleep = night ? derived.sleepFor(game.id) : null;
-  if (!sleep) return null;
-
-  // mt-auto pins the banner to the card's bottom edge — every card in a grid
-  // row shares its height, so all banners sit at the same distance.
-  return (
-    <div className="mt-auto pt-3">
-      {sleep.caps ? (
-        <div className="flex min-h-12 flex-wrap items-baseline justify-center gap-x-2 gap-y-0 rounded-ui-xl bg-warn/10 px-3 py-2.5 ring-1 ring-amber-300/25">
-          <span className="text-title font-black uppercase tracking-wider text-amber-200 tabular-nums">
-            caps {fmtClock(sleep.fullAt!)}
-          </span>
-          <span className="text-xs font-semibold text-amber-200/70">spend before bed</span>
-        </div>
-      ) : (
-        <div className="flex min-h-12 flex-wrap items-baseline justify-center gap-x-2 gap-y-0 rounded-ui-xl bg-ok/10 px-3 py-2.5 ring-1 ring-emerald-300/25">
-          <span className="text-title font-black uppercase tracking-wider text-emerald-200">sleep safe</span>
-          <span className="text-xs font-semibold text-emerald-200/70">
-            nothing caps in {state.settings.sleepHours}h
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
+// Cards used to end in a full-width "sleep safe" / "caps 03:40" banner after
+// 20:00. It only existed for part of the day, so every card silently changed
+// height in the evening — mid-session, and inside the Nexus card that animates
+// its own height. The same verdict is on the hub as one line across all games,
+// which is where a once-a-night check belongs.
 
 export type GameControlActions = Pick<
   AppStore,
@@ -493,7 +468,6 @@ export function GameControlsView({
             {events}
           </>
         )}
-        {!game.paused && !game.hideSleepChip && <StatusStrip game={game} state={state} now={now} />}
       </div>
     </>
   );

@@ -63,6 +63,8 @@ export function Conduits({
   const conduitVisualsRef = useRef(new Map<string, ConduitVisualState>());
   const scheduleRef = useRef<(ms?: number) => void>(() => undefined);
   const lastExpandedGameIdRef = useRef<string | null>(null);
+  /** While the stage is moving, the cables are redrawn every frame — see draw(). */
+  const animatingUntilRef = useRef(0);
 
   const conduitPathRef = (id: string, part: ConduitPathPart) => (element: SVGPathElement | null) => {
     const elements = conduitRefs.current.get(id) ?? {};
@@ -116,6 +118,11 @@ export function Conduits({
       settleUntil = 0;
 
     const draw = () => {
+      // Glow is a per-frame filter pass over the whole cable layer. It is worth
+      // it when the picture is still; while the stage is expanding or collapsing
+      // it is the most expensive thing on screen, and it is the one effect
+      // nobody can see during 340ms of movement. Flat strokes until it settles.
+      const animating = performance.now() < animatingUntilRef.current;
       const stageBox = stage.getBoundingClientRect();
       const hubBox = hub.getBoundingClientRect();
       const geometry = visibleIds.flatMap((id) => {
@@ -196,7 +203,7 @@ export function Conduits({
           'core:filter',
           core,
           'filter',
-          active ? `drop-shadow(0 0 ${visual.selected ? 9 : 5}px ${visual.core})` : 'none',
+          active && !animating ? `drop-shadow(0 0 ${visual.selected ? 9 : 5}px ${visual.core})` : 'none',
         );
         writeAttribute('mask:width', pulseMask, 'stroke-width', String(coreWidth));
         writeAttribute('mask:fill', pulseMask, 'stroke-dasharray', `${visual.fill * 100} 100`);
@@ -217,10 +224,10 @@ export function Conduits({
         writeStyle('pulse:duration', pulse, 'animation-duration', `${visual.flowMs}ms`);
         writeStyle('pulse:state', pulse, 'animation-play-state', visual.state === 'flowing' ? 'running' : 'paused');
 
-        const jacketState = capped ? 'capped' : 'normal';
+        const jacketState = capped ? (animating ? 'capped-flat' : 'capped') : 'normal';
         if (visual.lastAttributes['jacket:state'] !== jacketState) {
           jacket.classList.toggle('warn-pulse', capped);
-          jacket.style.filter = capped ? 'drop-shadow(0 0 7px var(--danger))' : '';
+          jacket.style.filter = capped && !animating ? 'drop-shadow(0 0 7px var(--danger))' : '';
           visual.lastAttributes['jacket:state'] = jacketState;
         }
       }
@@ -242,6 +249,10 @@ export function Conduits({
       }
     };
     const onResize = () => schedule(120);
+    // A resize observation means the geometry has ALREADY changed, so one draw
+    // settles it. Asking for a full animation's worth of frames on every
+    // observation kept the loop running for ~340ms after everything had stopped.
+    const onObserved = () => schedule(0);
     const onVisibilityChange = () => {
       if (!document.hidden) schedule();
     };
@@ -251,7 +262,7 @@ export function Conduits({
     window.addEventListener('resize', onResize);
     document.addEventListener('visibilitychange', onVisibilityChange);
     stage.addEventListener('transitionend', onTransitionEnd);
-    const observer = new ResizeObserver(() => schedule(NEXUS_DUR_MS));
+    const observer = new ResizeObserver(onObserved);
     observer.observe(stage);
     observer.observe(hub);
     for (const node of nodeRefs.current.values()) observer.observe(node);
@@ -290,6 +301,7 @@ export function Conduits({
     );
     const expandedChanged = lastExpandedGameIdRef.current !== activeExpandedGameId;
     lastExpandedGameIdRef.current = activeExpandedGameId;
+    if (expandedChanged) animatingUntilRef.current = performance.now() + NEXUS_DUR_MS;
     scheduleRef.current(expandedChanged ? NEXUS_DUR_MS + 60 : 0);
     // visualKey represents energy/color inputs; expansion only changes desired visual state and settle time.
     // eslint-disable-next-line react-hooks/exhaustive-deps

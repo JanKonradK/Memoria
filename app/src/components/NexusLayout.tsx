@@ -189,6 +189,7 @@ function NexusNode({
   const tier = urgencyTier(entry, now);
   const nodeRef = useRef<HTMLElement | null>(null);
   const [mounted, setMounted] = useState(expanded);
+  const [settled, setSettled] = useState(expanded);
   // The control that opened the card is gone once it is open, so hand focus to
   // the card itself — keyboard users land inside it, and Escape has a target.
   useEffect(() => {
@@ -197,13 +198,25 @@ function NexusNode({
   useEffect(() => {
     if (expanded) {
       setMounted(true);
-      return;
+      if (reducedMotion) {
+        setSettled(true);
+        return;
+      }
+      // Scrolling is switched on only after the card has finished growing. The
+      // controls are taller than the card is for most of the animation, so an
+      // always-scrollable body flashes a scrollbar in at the start and drops it
+      // at the end — a width change on the content, right as the motion stops.
+      const timer = setTimeout(() => setSettled(true), NEXUS_DUR_MS);
+      return () => clearTimeout(timer);
     }
+    setSettled(false);
     if (reducedMotion) {
       setMounted(false);
       return;
     }
-    const timer = setTimeout(() => setMounted(false), NEXUS_DUR_MS + 60);
+    // Unmounting the controls is a layout and paint spike. It is invisible by
+    // now (opacity 0, hidden, inert), so it waits until well clear of the motion.
+    const timer = setTimeout(() => setMounted(false), NEXUS_DUR_MS + 220);
     return () => clearTimeout(timer);
   }, [expanded, reducedMotion]);
   const fraction = primary && projection ? projection.precise / Math.max(1, primary.cap) : 0;
@@ -217,8 +230,13 @@ function NexusNode({
         nodeRef.current = element;
         setElement(element);
       }}
-      className="nexus-node relative overflow-hidden rounded-ui-card bg-surface-1 outline-none transition-shadow duration-300"
+      // No shadow transition: these are two large-radius blurs, and animating
+      // them re-rasterises the card's whole shadow on every frame of an
+      // expansion that is already moving the grid. They snap; the eye is on the
+      // card growing, not on the glow fading in.
+      className="nexus-node relative overflow-hidden rounded-ui-card bg-surface-1 outline-none"
       data-expanded={expanded || undefined}
+      data-settled={(expanded && settled) || undefined}
       data-collapsed={collapsed || undefined}
       // Expanded, the card has no collapse control: any click that lands on the
       // card itself rather than on a control closes it, as does Escape.
