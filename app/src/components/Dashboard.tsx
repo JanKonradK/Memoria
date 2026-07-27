@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { GameEvent } from '@void/shared';
+import { missingPresetTasks } from '@void/shared';
 import { m } from 'motion/react';
 import { useSession } from '../auth';
 import { useMediaQuery } from '../hooks';
@@ -28,6 +29,7 @@ export function DashboardPage({ now }: { now: number }) {
   const setTaskCount = useApp((s) => s.setTaskCount);
   const setEnergy = useApp((s) => s.setEnergy);
   const adjustEnergy = useApp((s) => s.adjustEnergy);
+  const addMissingPresetTasksEverywhere = useApp((s) => s.addMissingPresetTasksEverywhere);
   const dashboardStore = useMemo(
     () => ({
       state,
@@ -91,8 +93,63 @@ export function DashboardPage({ now }: { now: number }) {
   ];
   const orderStale = displayIds.join('|') !== liveIds.join('|');
 
+  // Presets only apply when a game is ADDED, so a preset that grows later is
+  // invisible to everyone already tracking that game — which is exactly the
+  // case where the new routines matter. The banner is dismissed against the
+  // COUNT, so it comes back when a later update adds more.
+  const presetShortfalls = state.games
+    .filter((game) => !game.deleted)
+    .map(
+      (game) =>
+        missingPresetTasks(
+          game,
+          state.tasks.filter((task) => task.gameId === game.id),
+        ).length,
+    );
+  const presetGap = presetShortfalls.reduce((sum, count) => sum + count, 0);
+  const presetGamesBehind = presetShortfalls.filter((count) => count > 0).length;
+  const presetGapStorageKey = session.userId
+    ? `void-preset-gap-dismissed:user:${session.userId}`
+    : 'void-preset-gap-dismissed';
+  const [dismissedGap, setDismissedGap] = useState(() => Number(localStorage.getItem(presetGapStorageKey) ?? '0'));
+  const presetGapDismissed = dismissedGap >= presetGap;
+  const setPresetGapDismissed = (value: boolean) => setDismissedGap(value ? presetGap : 0);
+
   return (
     <Page>
+      {presetGap > 0 && !presetGapDismissed && (
+        <section className="glass gold-hairline mb-4 rounded-ui-card p-4" aria-label="New preset routines">
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-body font-black text-slate-100">
+                {presetGap} new {presetGap === 1 ? 'routine' : 'routines'} for {presetGamesBehind}{' '}
+                {presetGamesBehind === 1 ? 'game' : 'games'}
+              </p>
+              <p className="mt-0.5 text-label text-muted">
+                Presets gained dailies and weeklies since these games were added. Nothing you deleted comes back.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => addMissingPresetTasksEverywhere()}
+              className="min-h-11 shrink-0 rounded-ui-lg bg-gradient-to-br from-accent to-accent-2 px-4 py-2 text-body font-bold text-white ring-1 ring-white/15 transition hover:brightness-110 sm:min-h-9"
+            >
+              Add them
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (presetGapStorageKey) localStorage.setItem(presetGapStorageKey, String(presetGap));
+                setPresetGapDismissed(true);
+              }}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg text-muted sm:h-9 sm:w-9"
+              aria-label="Dismiss new routines"
+            >
+              ✕
+            </button>
+          </div>
+        </section>
+      )}
       {session.hosted && !setupDismissed && order.length > 0 && (
         <section className="glass gold-hairline mb-4 rounded-ui-card p-4" aria-label="Account setup checklist">
           <div className="flex items-start gap-3">

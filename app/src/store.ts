@@ -210,6 +210,8 @@ export interface AppStore {
   addTask(gameId: string, name: string, cadence: Cadence, intervalDays?: number): void;
   /** Add preset tasks this game is missing (presets grow; existing games do not). */
   addMissingPresetTasks(gameId: string): number;
+  /** The same, for every tracked game, in one write. */
+  addMissingPresetTasksEverywhere(): number;
   updateTask(id: string, patch: Partial<Task>): void;
   deleteTask(id: string): void;
 
@@ -663,6 +665,39 @@ export const useApp = create<AppStore>((set, get) => ({
       return { ...s, tasks: [...s.tasks, ...added] };
     });
     return missing.length;
+  },
+
+  addMissingPresetTasksEverywhere() {
+    const state = get().state;
+    const t = now();
+    let total = 0;
+    const added: Task[] = [];
+    for (const game of state.games) {
+      if (game.deleted) continue;
+      const existing = state.tasks.filter((task) => task.gameId === game.id);
+      const missing = missingPresetTasks(game, existing);
+      const sortBase = Math.max(0, ...existing.map((task) => task.sort + 1));
+      missing.forEach((task, index) => {
+        added.push({
+          id: uid(),
+          gameId: game.id,
+          name: task.name,
+          cadence: task.cadence,
+          intervalDays: task.intervalDays ?? 1,
+          anchorAt: t,
+          mode: task.mode,
+          timerDurationMinutes: task.timerDurationMinutes,
+          countTarget: task.countTarget,
+          timerEndsAt: task.mode === 'timer' ? null : undefined,
+          sort: sortBase + index,
+          updatedAt: t,
+        });
+      });
+      total += missing.length;
+    }
+    if (total === 0) return 0;
+    get().mutate((s) => ({ ...s, tasks: [...s.tasks, ...added] }));
+    return total;
   },
 
   updateTask(id, patch) {
