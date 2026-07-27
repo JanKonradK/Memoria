@@ -42,7 +42,6 @@ export interface Game extends Syncable {
   /** Card display toggles — every block on the game card can be switched off. Default: shown. */
   hideProgressRing?: boolean;
   hideEventStrip?: boolean;
-  hideSleepChip?: boolean;
   /** CSS font-family for the card/hero title — each game keeps its own personality. */
   titleFont?: string;
 }
