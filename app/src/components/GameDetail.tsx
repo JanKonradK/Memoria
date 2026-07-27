@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Cadence, Game, TaskMode } from '@void/shared';
-import { SERVER_TZ_OPTIONS } from '@void/shared';
+import { missingPresetTasks, SERVER_TZ_OPTIONS } from '@void/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fileToImageDataUrl, intOr } from '../util';
@@ -39,6 +39,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
   const upsertChip = useApp((s) => s.upsertChip);
   const deleteChip = useApp((s) => s.deleteChip);
   const addTask = useApp((s) => s.addTask);
+  const addMissingPresetTasks = useApp((s) => s.addMissingPresetTasks);
   const updateTask = useApp((s) => s.updateTask);
   const deleteTask = useApp((s) => s.deleteTask);
   const closeSheet = useUI((s) => s.closeSheet);
@@ -107,6 +108,12 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
   const resources = state.resources.filter((r) => r.gameId === game.id && !r.deleted).sort((a, b) => a.sort - b.sort);
   const chips = state.chips.filter((c) => c.gameId === game.id && !c.deleted).sort((a, b) => a.sort - b.sort);
   const tasks = state.tasks.filter((t) => t.gameId === game.id && !t.deleted).sort((a, b) => a.sort - b.sort);
+  // Presets grow with the games; a game added last month keeps the routine list
+  // it was born with, so offer the difference rather than silently backfilling.
+  const presetGap = missingPresetTasks(
+    game,
+    state.tasks.filter((t) => t.gameId === game.id),
+  ).length;
 
   const close = () => {
     commitDraft();
@@ -471,6 +478,14 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                 + Task
               </Btn>
             </div>
+            {presetGap > 0 && (
+              <div className="flex flex-wrap items-center gap-2 rounded-ui-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/10">
+                <p className="min-w-0 flex-1 text-label text-muted">
+                  This game's preset has {presetGap} {presetGap === 1 ? 'routine' : 'routines'} you are not tracking.
+                </p>
+                <Btn onClick={() => addMissingPresetTasks(game.id)}>+ Add {presetGap}</Btn>
+              </div>
+            )}
             <p className="text-label text-dim">Events → Timeline tab · focus, teams, currency & stats → Stats tab.</p>
           </div>
         </>

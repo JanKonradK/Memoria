@@ -68,6 +68,33 @@ export const SERVER_TZ_OPTIONS: Array<{ label: string; tz: string }> = [
   { label: 'Central Europe (DST)', tz: 'Europe/Warsaw' },
 ];
 
+/**
+ * The preset a game was created from, matched after the fact: games do not store
+ * a preset key (they are fully editable copies), and renaming one should not
+ * break the link, so `short` is the identity that actually survives editing.
+ */
+export function presetForGame(game: { name: string; short: string }): GamePreset | undefined {
+  const short = game.short.trim().toLowerCase();
+  const name = game.name.trim().toLowerCase();
+  return (
+    PRESETS.find((preset) => preset.short.toLowerCase() === short) ??
+    PRESETS.find((preset) => preset.name.toLowerCase() === name)
+  );
+}
+
+/** Preset tasks a game has not got, by name — what a "catch me up" action would add. */
+export function missingPresetTasks(
+  game: { name: string; short: string },
+  existing: Array<{ name: string; deleted?: boolean }>,
+): PresetTask[] {
+  const preset = presetForGame(game);
+  if (!preset) return [];
+  // Deleted tasks count as present: the user removed them on purpose, and an
+  // update that quietly resurrects them is worse than one that misses a few.
+  const have = new Set(existing.map((task) => task.name.trim().toLowerCase()));
+  return preset.tasks.filter((task) => !have.has(task.name.trim().toLowerCase()));
+}
+
 export const PRESETS: GamePreset[] = [
   {
     key: 'genshin',
@@ -98,15 +125,22 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     tasks: [
-      { name: 'Daily Commissions', cadence: 'daily' },
+      { name: 'Daily Commissions ×4', cadence: 'daily', mode: 'count', countTarget: 4 },
       { name: 'Spend Resin', cadence: 'daily' },
+      // Condensed banks 40 Resin at a time and is the only way to carry Resin
+      // past the cap without wasting regen — craft before logging off.
+      { name: 'Craft Condensed Resin', cadence: 'daily' },
       {
         name: 'Expeditions (collect + resend)',
         cadence: 'daily',
         mode: 'timer',
         timerDurationMinutes: 20 * 60,
       },
+      // Realm Currency fills its cap in under three days, so this is daily in practice.
+      { name: 'Teapot: currency + gifts', cadence: 'daily' },
       { name: 'Weekly Bosses ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
+      { name: 'Reputation bounties + requests', cadence: 'weekly' },
+      { name: 'Battle Pass weeklies', cadence: 'weekly' },
       // Both run permanently: Abyss resets the 15th, Theater the 1st (timeline tracks the windows).
       { name: 'Spiral Abyss + Imaginarium Theater', cadence: 'monthly' },
       { name: 'Stygian Onslaught cycle', cadence: 'custom', intervalDays: 35 },
@@ -144,7 +178,8 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     tasks: [
-      { name: 'Daily Training', cadence: 'daily' },
+      { name: 'Daily Training (500)', cadence: 'daily' },
+      { name: 'Spend Trailblaze Power', cadence: 'daily' },
       {
         name: 'Assignments (collect + resend)',
         cadence: 'daily',
@@ -153,6 +188,7 @@ export const PRESETS: GamePreset[] = [
       },
       { name: 'Simulated/Divergent Universe', cadence: 'weekly' },
       { name: 'Echo of War ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
+      { name: 'Nameless Honor weeklies', cadence: 'weekly' },
       // MoC / Pure Fiction / Apocalyptic Shadow / Anomaly Arbitration run
       // staggered 6-week cycles — a different one refreshes every ~2 weeks.
       { name: 'Endgame refresh (MoC/PF/AS/AA)', cadence: 'custom', intervalDays: 14 },
@@ -187,11 +223,17 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     tasks: [
-      { name: 'Daily Engagement', cadence: 'daily' },
+      { name: 'Daily Engagement (400)', cadence: 'daily' },
+      { name: 'Spend Battery Charge', cadence: 'daily' },
       // Coffee Shop: +60 Battery on top of the 240 cap, once a day — free energy.
       { name: 'Coffee (+60 Battery)', cadence: 'daily' },
-      { name: 'Matrix Op / Lost Void (weekly)', cadence: 'weekly' },
-      { name: 'Weekly Boss', cadence: 'weekly' },
+      // Also feeds the Ridu Weekly grid, so it is never just the scratch reward.
+      { name: 'Scratch Card', cadence: 'daily' },
+      // 3×3 grid, 1300 points for the full payout — the biggest weekly Polychrome block.
+      { name: 'Ridu Weekly (1300)', cadence: 'weekly' },
+      { name: 'Notorious Hunt ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
+      { name: 'Hollow Zero: bounties + research', cadence: 'weekly' },
+      { name: 'Matrix Op / Lost Void', cadence: 'weekly' },
       // Shiyu Critical and Deadly Assault alternate every two weeks.
       { name: 'Shiyu Critical / Deadly Assault', cadence: 'custom', intervalDays: 14 },
     ],
@@ -225,9 +267,11 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     tasks: [
-      { name: 'Daily Activity', cadence: 'daily' },
+      { name: 'Daily Activity (100)', cadence: 'daily' },
+      { name: 'Spend Waveplates', cadence: 'daily' },
       { name: 'Weekly Challenges', cadence: 'weekly' },
       { name: 'Weekly Boss ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
+      { name: 'Sim Battle Pass weeklies', cadence: 'weekly' },
       { name: 'ToA Hazard Zone cycle', cadence: 'custom', intervalDays: 28 },
       { name: 'Whimpering Wastes cycle', cadence: 'custom', intervalDays: 28 },
     ],
@@ -263,10 +307,22 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     tasks: [
-      { name: 'Spend Pixels / 100 Participation', cadence: 'daily' },
+      { name: 'Spend Character Pixels', cadence: 'daily' },
+      { name: 'Daily quests / 100 Participation', cadence: 'daily' },
+      // "Make a Sincere Wish" every day — the Mhm! Coins path to a free S-Rank Arc.
+      { name: "Nacupeda's Pool wish", cadence: 'daily' },
       { name: 'Mews Flash lottery', cadence: 'daily' },
+      { name: 'Café by Origen (collect + restock)', cadence: 'daily' },
+      // Capped at three attempts a week and the only Esper upgrade source — the
+      // one weekly that actually costs you progress if you skip it.
       { name: 'Anomaly Pilgrimage ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
+      // Every Hobby pays a flat 1000 Fons per City Stamina, so what you play is
+      // taste; leaving stamina unspent before Monday is the only wrong answer.
       { name: 'Spend City Stamina (Hobbies)', cadence: 'weekly' },
+      { name: "Ebisu's Auction", cadence: 'weekly' },
+      { name: 'Realm of Greed', cadence: 'weekly' },
+      { name: 'Special Commissions', cadence: 'weekly' },
+      { name: 'Lost / Warp Exchange + Arc Selection', cadence: 'monthly' },
       { name: 'Beyond the Rails (per version)', cadence: 'custom', intervalDays: 42 },
     ],
     notes: 'Verify City Stamina cap for your account — it refills fully each Monday.',

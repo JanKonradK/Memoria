@@ -71,6 +71,18 @@ describe('dashboard agenda selection', () => {
     expect(agenda.upcoming.flatMap((row) => (row.kind === 'event' ? [row.event.id] : []))).toEqual(['inside']);
   });
 
+  it('excludes long-running live events beyond the dashboard fortnight without changing full mode', () => {
+    const state = emptyState();
+    state.games = [game];
+    state.events = [event('long-running', NOW - 30 * DAY, NOW + 30 * DAY)];
+
+    const dashboardAgenda = selectAgendaData(state, NOW, 'dashboard');
+    const fullAgenda = selectAgendaData(state, NOW, 'full');
+
+    expect(dashboardAgenda.live).toEqual([]);
+    expect(fullAgenda.live.flatMap((row) => (row.kind === 'event' ? [row.event.id] : []))).toEqual(['long-running']);
+  });
+
   it('still budgets the rails when a fortnight is more than the surface can hold', () => {
     const state = emptyState();
     state.games = [game];

@@ -183,15 +183,23 @@ export function EventStrip({
   now: number;
   onOpenEvent: (eventId: string, gameId: string) => void;
 }) {
-  const active = allEvents
-    .filter((e) => !e.deleted && !e.done && e.gameId === game.id && e.start <= now && e.end > now)
-    .sort((a, b) => a.end - b.end);
-  const events = [
-    ...active.filter((e) => e.dailyTouch),
-    ...active
-      .filter((e) => !e.dailyTouch && e.notify && (e.type === 'event' || e.type === 'custom' || e.type === 'cycle'))
-      .slice(0, 3),
-  ].sort((a, b) => a.end - b.end);
+  const mine = allEvents.filter((e) => !e.deleted && !e.done && e.gameId === game.id);
+  // `notify` used to gate this list, which meant an event with alerts switched
+  // off vanished from its own card — a ZZZ card could sit there showing nothing
+  // while two of its events were live. Whether you want a push notification and
+  // whether the card should show the event are different questions.
+  const active = mine.filter((e) => e.start <= now && e.end > now).sort((a, b) => a.end - b.end);
+  // Banners count: which banner is running is exactly the kind of thing you open
+  // the card to check.
+  const shown = [...active.filter((e) => e.dailyTouch), ...active.filter((e) => !e.dailyTouch).slice(0, 4)].sort(
+    (a, b) => a.end - b.end,
+  );
+  // The next thing to start (a patch, usually) is worth a row of its own.
+  const next = mine
+    .filter((e) => e.start > now)
+    .sort((a, b) => a.start - b.start)
+    .slice(0, 1);
+  const events = [...shown, ...next];
   if (events.length === 0) return null;
   return (
     <div className="mt-3 space-y-0.5">
@@ -206,9 +214,13 @@ export function EventStrip({
           {ev.dailyTouch && <Pill variant="warn">daily</Pill>}
           <span className="truncate text-slate-300">{ev.name}</span>
           <Tooltip content="d = days · h = hours · m = minutes">
-            <span className="ml-auto shrink-0 font-bold tabular-nums" style={{ color: endTone(ev.end - now) }}>
-              {fmtDur(ev.end - now)}
-            </span>
+            {ev.start > now ? (
+              <span className="ml-auto shrink-0 font-bold tabular-nums text-muted">in {fmtDur(ev.start - now)}</span>
+            ) : (
+              <span className="ml-auto shrink-0 font-bold tabular-nums" style={{ color: endTone(ev.end - now) }}>
+                {fmtDur(ev.end - now)}
+              </span>
+            )}
           </Tooltip>
         </button>
       ))}
