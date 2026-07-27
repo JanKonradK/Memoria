@@ -5,7 +5,7 @@ import { useDerived } from '../../selectors';
 import { fmtDur } from '../../util';
 import { Disclosure } from '../Disclosure';
 import { ProgressRing } from '../ProgressRing';
-import { AgendaList } from '../TimelineAgenda';
+import { AgendaList, DASHBOARD_AGENDA_DAYS } from '../TimelineAgenda';
 import { GameBadge } from '../ui';
 
 const DAY = 86_400_000;
@@ -143,13 +143,17 @@ export function NexusHub({
         <Disclosure
           open={openSection === 'timeline'}
           onOpenChange={(open) => setOpenSection(open ? 'timeline' : null)}
-          title={<span className="text-caption font-bold uppercase tracking-[0.2em] text-dim">Next 7 days</span>}
+          title={
+            <span className="text-caption font-bold uppercase tracking-[0.2em] text-dim">
+              Next {DASHBOARD_AGENDA_DAYS} days
+            </span>
+          }
           summary={
             <span className="text-caption font-bold tabular-nums text-muted">
               {timelineCount} {timelineCount === 1 ? 'item' : 'items'}
             </span>
           }
-          triggerLabel={`${openSection === 'timeline' ? 'Collapse' : 'Expand'} Next 7 days`}
+          triggerLabel={`${openSection === 'timeline' ? 'Collapse' : 'Expand'} Next ${DASHBOARD_AGENDA_DAYS} days`}
           className="border-b border-white/[0.07]"
           triggerClassName="pb-1"
           contentClassName="scrollbar-thin h-full overflow-y-auto pb-2"
