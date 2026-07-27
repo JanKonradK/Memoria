@@ -8,9 +8,10 @@ import { endTone, fmtDur, tint } from '../util';
 import { GameControlsView, type GameControlActions } from './GameCard';
 import { ProgressBar } from './primitives';
 import { clusterCoreGeometry, clusterDotLayout } from './nexus/cluster-geometry';
-import { Conduits, NEXUS_DUR_MS, type NexusEnergy } from './nexus/Conduits';
 import { NexusHub } from './nexus/NexusHub';
 
+/** Mirrors --nexus-dur in app/src/index.css. */
+const NEXUS_DUR_MS = 340;
 const HOUR = 3_600_000;
 
 type UrgencyTier = 'low' | 'med' | 'high';
@@ -19,6 +20,22 @@ const URGENCY_DOT: Record<UrgencyTier, string> = {
   low: 'var(--color-ok)',
   med: 'var(--color-warn)',
   high: 'var(--color-danger)',
+};
+
+/**
+ * How hard a card announces itself. This is the job the conduits were supposed
+ * to do — they drew a cable per game whose fill tracked energy, which turned out
+ * to say nothing you could act on, at the cost of a per-frame SVG repaint across
+ * the whole stage. A card that needs you now simply glows like it.
+ *
+ * Concrete colour, not a game tint: at a glance across six cards the question is
+ * "which one is on fire", and every game answering in its own hue made that
+ * unreadable. The game's colour still owns the card's border and background.
+ */
+const URGENCY_HALO: Record<UrgencyTier, string> = {
+  low: '',
+  med: '0 0 34px -12px rgba(232,180,90,0.75)',
+  high: '0 0 60px -10px rgba(255,90,120,0.95)',
 };
 
 /** The same time bands used by resource controls: red <2h, amber <8h, green beyond. */
@@ -164,7 +181,6 @@ function NexusNode({
   projection,
   openDailyCount,
   actions,
-  setElement,
   onToggle,
   onEditGame,
   onOpenGameEvent,
@@ -180,7 +196,6 @@ function NexusNode({
   projection: EnergyProjection | null;
   openDailyCount: number;
   actions: GameControlActions;
-  setElement: (element: HTMLElement | null) => void;
   onToggle: () => void;
   onEditGame: (gameId: string) => void;
   onOpenGameEvent: (eventId: string, gameId: string) => void;
@@ -220,21 +235,22 @@ function NexusNode({
     return () => clearTimeout(timer);
   }, [expanded, reducedMotion]);
   const fraction = primary && projection ? projection.precise / Math.max(1, primary.cap) : 0;
-  // Mirrors the conduit's paused/unknown boundary: colour remains, motion does not.
+  // Paused or unmeasured: colour remains, motion does not.
   const clusterActive = !game.paused && primary != null && projection?.hasSnapshot === true;
   const controlsId = `nexus-controls-${game.id}`;
 
   return (
     <article
-      ref={(element) => {
-        nodeRef.current = element;
-        setElement(element);
-      }}
+      ref={nodeRef}
       // No shadow transition: these are two large-radius blurs, and animating
       // them re-rasterises the card's whole shadow on every frame of an
       // expansion that is already moving the grid. They snap; the eye is on the
       // card growing, not on the glow fading in.
       className="nexus-node relative overflow-hidden rounded-ui-card bg-surface-1 outline-none"
+      // Only a card that is genuinely out of time pulses, and only while it is
+      // closed: a breathing card you are typing into is a distraction, and if
+      // everything pulses, nothing does.
+      data-urgent={!expanded && tier === 'high' ? 'true' : undefined}
       data-expanded={expanded || undefined}
       data-settled={(expanded && settled) || undefined}
       data-collapsed={collapsed || undefined}
@@ -260,7 +276,21 @@ function NexusNode({
           background: `linear-gradient(155deg, ${tint(game.color, expanded ? 0.2 : 0.1)}, transparent 48%), linear-gradient(335deg, ${tint(game.color2 ?? game.color, expanded ? 0.12 : 0.05)}, transparent 44%), var(--color-surface-1)`,
           boxShadow: expanded
             ? `inset 0 0 0 1.5px ${game.color}, 0 0 60px -18px ${tint(game.color, 0.7)}, 0 26px 50px -26px #000`
-            : `inset 0 0 0 1px ${tint(game.color, 0.28)}, inset 0 1px 0 rgba(255,255,255,0.05), 0 20px 40px -28px #000`,
+            : [
+                // The urgency ring sits INSIDE the game's own ring rather than
+                // replacing it, so a card never stops looking like its game.
+                `inset 0 0 0 1px ${tint(game.color, 0.28)}`,
+                tier === 'high'
+                  ? 'inset 0 0 0 2px rgba(255,90,120,0.75)'
+                  : tier === 'med'
+                    ? 'inset 0 0 0 1.5px rgba(232,180,90,0.5)'
+                    : '',
+                'inset 0 1px 0 rgba(255,255,255,0.05)',
+                URGENCY_HALO[tier],
+                '0 20px 40px -28px #000',
+              ]
+                .filter(Boolean)
+                .join(', '),
         } as CSSProperties
       }
     >
@@ -425,8 +455,6 @@ export function NexusLayout({
   const columns = focusColumns === 'auto' ? (wideEnough ? 2 : 1) : focusColumns === 'two' ? 2 : 1;
   const derived = useDerived(now);
   const stageRef = useRef<HTMLDivElement>(null);
-  const hubRef = useRef<HTMLElement>(null);
-  const nodeRefs = useRef(new Map<string, HTMLElement>());
   const entryById = new Map(entries.map((entry) => [entry.game.id, entry]));
   const visibleIds = displayIds.filter((id) => entryById.has(id));
   const leftCount = Math.ceil(visibleIds.length / 2);
@@ -434,7 +462,7 @@ export function NexusLayout({
   const rightIds = visibleIds.slice(leftCount);
   const activeExpandedGameId = expandedGameId && visibleIds.includes(expandedGameId) ? expandedGameId : null;
   const expandedSide = activeExpandedGameId ? (leftIds.includes(activeExpandedGameId) ? 'left' : 'right') : undefined;
-  const energyById = new Map<string, NexusEnergy>(
+  const energyById = new Map<string, { resource: Resource | undefined; projection: EnergyProjection | null }>(
     visibleIds.map((id) => {
       const entry = entryById.get(id)!;
       const resource = state.resources
@@ -486,10 +514,6 @@ export function NexusLayout({
             projection={energy.projection}
             openDailyCount={openDailyCount}
             actions={gameControlActions}
-            setElement={(element) => {
-              if (element) nodeRefs.current.set(id, element);
-              else nodeRefs.current.delete(id);
-            }}
             onToggle={() => setExpandedGameId((current) => (current === id ? null : id))}
             onEditGame={onEditGame}
             onOpenGameEvent={onOpenGameEvent}
@@ -510,25 +534,11 @@ export function NexusLayout({
         if (!target.closest('.nexus-node') && !target.closest(INTERACTIVE_SELECTOR)) setExpandedGameId(null);
       }}
     >
-      <Conduits
-        visibleIds={visibleIds}
-        leftIds={leftIds}
-        entryById={entryById}
-        energyById={energyById}
-        now={now}
-        activeExpandedGameId={activeExpandedGameId}
-        reducedMotion={reducedMotion}
-        stageRef={stageRef}
-        hubRef={hubRef}
-        nodeRefs={nodeRefs}
-      />
-
       {renderRail(leftIds, 'left')}
       <NexusHub
         state={state}
         entries={entries}
         now={now}
-        hubRef={hubRef}
         onOpenEvent={onOpenEvent}
         onToggleEvent={onToggleEvent}
         onOpenReminder={onOpenReminder}

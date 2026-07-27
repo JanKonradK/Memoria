@@ -75,7 +75,7 @@
   --dur-slow: 420ms;
   --stagger: 40ms;
   /* Nexus spatial motion intentionally sits between --dur-base and --dur-slow.
-     NEXUS_DUR_MS in nexus/Conduits.tsx mirrors this exact 340ms value. */
+     NEXUS_DUR_MS in NexusLayout.tsx mirrors this exact 340ms value. */
   --nexus-dur: 0.34s;
   --nexus-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --focus-ring-color: color-mix(in oklab, var(--accent) 70%, white);
@@ -351,17 +351,27 @@ input[type='number'] {
 .nexus-cluster[data-active='true'] .nexus-cluster-dot {
   animation: nexusClusterTwinkle 2.8s ease-in-out infinite;
 }
-.nexus-conduit-pulse {
-  stroke-dasharray: 5 16;
-  animation: nexusFlow 2.4s linear infinite;
-}
-.nexus-conduit-fill {
-  transition: stroke-dasharray var(--dur-base) var(--ease-out);
+/* The card that is about to waste something breathes. Opacity on a pseudo
+   element, never the card's own box-shadow: animating that would re-rasterise
+   two large blurs every frame, which is the cost the expansion animation was
+   deliberately relieved of. */
+.nexus-node[data-urgent='true']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 2px rgba(255, 90, 120, 0.85);
+  animation: nexusUrgent 2.2s ease-in-out infinite;
 }
 
-@keyframes nexusFlow {
-  to {
-    stroke-dashoffset: -220;
+@keyframes nexusUrgent {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
   }
 }
 
@@ -388,15 +398,11 @@ input[type='number'] {
   }
   .nexus-stage,
   .nexus-node-body,
-  .nexus-cluster,
-  .nexus-conduit-fill {
+  .nexus-cluster {
     transition-duration: 0.001ms !important;
   }
   .nexus-cluster-rotation,
   .nexus-cluster-dot {
     animation: none !important;
-  }
-  .nexus-conduit-pulse {
-    display: none;
   }
 }

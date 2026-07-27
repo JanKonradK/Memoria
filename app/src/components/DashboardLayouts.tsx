@@ -46,7 +46,7 @@ function EventHorizonCard({
     <m.aside
       // Sticky: the outer columns of game cards are usually taller than this, so
       // the cross-game view stays on screen while you scroll them.
-      className="scrollbar-thin sticky top-4 flex max-h-[calc(100dvh-8rem)] flex-col overflow-y-auto rounded-ui-card p-4"
+      className="scrollbar-thin sticky top-4 flex h-full max-h-[calc(100dvh-8rem)] flex-col overflow-y-auto rounded-ui-card p-4"
       variants={cardEnter}
       initial="hidden"
       animate="visible"
@@ -212,13 +212,20 @@ export function CardsAgendaLayout({
   // stretched with hundreds of pixels of nothing inside them while the row below
   // fell off the screen. Here each card is its own height.
   //
-  // Games take three columns and deal across them, so the most urgent stay along
-  // the top; the horizon takes a fourth and stays put while the games scroll.
-  const columns: string[][] = [[], [], []];
-  cards.forEach((id, index) => columns[index % columns.length].push(id));
+  // The lead gets a quiet column of its own. Dealing the rest across the paired
+  // columns preserves urgency across each visual row without padding either stack.
+  const pairedColumns: string[][] = [[], []];
+  cards.slice(1).forEach((id, index) => pairedColumns[index % pairedColumns.length].push(id));
+  const columns = [cards.length > 0 ? [cards[0]] : [], ...pairedColumns];
 
   return (
-    <div className="grid grid-cols-4 items-stretch gap-4">
+    <div
+      className="grid items-stretch gap-4"
+      style={{
+        gridTemplateColumns:
+          '[lead] minmax(0, 1fr) [paired-one] minmax(0, 1fr) [paired-two] minmax(0, 1fr) [horizon] minmax(0, 1.2fr) [end]',
+      }}
+    >
       {columns.map((ids, index) => (
         <div key={index} className="flex min-w-0 flex-col gap-4">
           {ids.map((id) => (
@@ -226,8 +233,9 @@ export function CardsAgendaLayout({
           ))}
         </div>
       ))}
-      {/* min-w-0 on the cell so the sticky child measures against the column. */}
-      <div className="min-w-0">
+      {/* Size containment keeps dense horizon rows from making the board taller
+          than its games; the stretched cell still gives the scroller a real cap. */}
+      <div className="min-h-0 min-w-0 contain-size">
         <EventHorizonCard
           state={state}
           entries={entries}
