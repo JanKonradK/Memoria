@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { AppState, ChecklistItem, Game, GameUrgency, Snapshot } from '@void/shared';
 import { effectiveResourceKind, projectEnergy } from '@void/shared';
 import { m } from 'motion/react';
@@ -372,11 +372,14 @@ function GameControlsHeader({
   dailies,
   onEdit,
   layout = 'card',
+  trailing,
 }: {
   game: Game;
   dailies: ChecklistItem[];
   onEdit: () => void;
   layout?: 'card' | 'focus';
+  /** Owner-supplied control for the header's right edge (the Nexus collapse). */
+  trailing?: ReactNode;
 }) {
   const completed = dailies.filter((daily) => daily.done).length;
   return (
@@ -413,6 +416,7 @@ function GameControlsHeader({
           {completed}/{dailies.length}
         </ProgressRing>
       )}
+      {trailing}
     </div>
   );
 }
@@ -425,6 +429,7 @@ export function GameControlsView({
   now,
   layout = 'card',
   columns = 1,
+  headerTrailing,
   onEditGame,
   onOpenEvent,
 }: {
@@ -434,6 +439,7 @@ export function GameControlsView({
   now: number;
   layout?: 'card' | 'focus';
   columns?: 1 | 2;
+  headerTrailing?: ReactNode;
   onEditGame: (gameId: string) => void;
   onOpenEvent: (eventId: string, gameId: string) => void;
 }) {
@@ -451,7 +457,13 @@ export function GameControlsView({
 
   return (
     <>
-      <GameControlsHeader game={game} dailies={dailies} onEdit={() => onEditGame(game.id)} layout={layout} />
+      <GameControlsHeader
+        game={game}
+        dailies={dailies}
+        onEdit={() => onEditGame(game.id)}
+        layout={layout}
+        trailing={headerTrailing}
+      />
       <div className={`relative z-10 flex flex-1 flex-col ${game.paused ? 'opacity-50' : ''}`}>
         {layout === 'focus' ? (
           <div className="focus-bay-grid grid gap-x-6 gap-y-1" data-cols={columns}>
@@ -527,7 +539,11 @@ export const GameCard = memo(function GameCard({ entry, now }: { entry: GameUrge
 
   return (
     <m.div
-      className="group relative flex h-full flex-col overflow-hidden rounded-ui-card p-4"
+      data-game-card={game.id}
+      // No h-full: in the narrow grid the cell already stretches the card, and in
+      // the Cards columns it made a lone card grow to the height of the tallest
+      // column — the empty-card problem in a new place.
+      className="group relative flex flex-col overflow-hidden rounded-ui-card p-4"
       variants={cardEnter}
       initial="hidden"
       animate="visible"

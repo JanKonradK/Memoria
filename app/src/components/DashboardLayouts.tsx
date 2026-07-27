@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react';
 import { DateTime } from 'luxon';
 import type { AppState, GameEvent, GameUrgency } from '@void/shared';
 import { m } from 'motion/react';
@@ -34,7 +33,9 @@ function EventHorizonCard({
     .sort((a, b) => a.at - b.at)
     .slice(0, 3);
   const gameById = agenda.games;
-  const actionLimit = Math.max(0, 4 - Math.min(4, eventRows + reminders.length));
+  // The horizon scrolls and sticks now, so next actions no longer have to give
+  // their room back to the event rails — they just tail the list.
+  const actionLimit = 4;
   const nextActions = entries
     .flatMap((entry) => entry.actions.map((action) => ({ action, game: entry.game })))
     .filter(({ action }) => action.kind !== 'event' && action.at >= now)
@@ -43,7 +44,9 @@ function EventHorizonCard({
 
   return (
     <m.aside
-      className="cards-horizon scrollbar-thin relative flex flex-col overflow-y-auto rounded-ui-card p-4"
+      // Sticky: the outer columns of game cards are usually taller than this, so
+      // the cross-game view stays on screen while you scroll them.
+      className="scrollbar-thin sticky top-4 flex max-h-[calc(100dvh-8rem)] flex-col overflow-y-auto rounded-ui-card p-4"
       variants={cardEnter}
       initial="hidden"
       animate="visible"
@@ -204,29 +207,37 @@ export function CardsAgendaLayout({
 }: SharedLayoutProps) {
   const entryById = new Map(entries.map((entry) => [entry.game.id, entry]));
   const cards = displayIds.filter((id) => entryById.has(id));
-  // Three columns so column 2 is a real middle; the horizon takes the centre
-  // cell of the middle row and the game cards flow around it. +1 for the horizon
-  // itself — adding a game is a nav-rail control, not a cell in this grid.
-  const rows = Math.ceil((cards.length + 1) / 3);
-  const horizonRow = Math.max(1, Math.ceil(rows / 2));
+  // INDEPENDENT columns, not a grid of rows. In a grid every card in a row is as
+  // tall as the tallest thing in it — which was the horizon — so short cards were
+  // stretched with hundreds of pixels of nothing inside them while the row below
+  // fell off the screen. Here each card is its own height.
+  //
+  // Games take three columns and deal across them, so the most urgent stay along
+  // the top; the horizon takes a fourth and stays put while the games scroll.
+  const columns: string[][] = [[], [], []];
+  cards.forEach((id, index) => columns[index % columns.length].push(id));
 
   return (
-    <div
-      className="cards-grid grid grid-cols-3 items-start gap-4"
-      style={{ '--horizon-row': horizonRow } as CSSProperties}
-    >
-      {cards.map((id) => (
-        <GameCard key={id} entry={entryById.get(id)!} now={now} />
+    <div className="grid grid-cols-4 items-stretch gap-4">
+      {columns.map((ids, index) => (
+        <div key={index} className="flex min-w-0 flex-col gap-4">
+          {ids.map((id) => (
+            <GameCard key={id} entry={entryById.get(id)!} now={now} />
+          ))}
+        </div>
       ))}
-      <EventHorizonCard
-        state={state}
-        entries={entries}
-        now={now}
-        onOpenEvent={onOpenEvent}
-        onToggleEvent={onToggleEvent}
-        onOpenReminder={onOpenReminder}
-        onOpenTimeline={onOpenTimeline}
-      />
+      {/* min-w-0 on the cell so the sticky child measures against the column. */}
+      <div className="min-w-0">
+        <EventHorizonCard
+          state={state}
+          entries={entries}
+          now={now}
+          onOpenEvent={onOpenEvent}
+          onToggleEvent={onToggleEvent}
+          onOpenReminder={onOpenReminder}
+          onOpenTimeline={onOpenTimeline}
+        />
+      </div>
     </div>
   );
 }
