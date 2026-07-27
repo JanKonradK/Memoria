@@ -24,6 +24,7 @@ import {
   normalizeState,
   pruneCompletions,
   projectEnergy,
+  missingPresetTasks,
 } from '@void/shared';
 import { clearLocalSecrets, migrateLegacySecrets, setLocalSecretsIdentity } from './secret-store';
 import { storageKeyForIdentity } from './storage-identity';
@@ -207,6 +208,8 @@ export interface AppStore {
   restartTaskTimer(taskId: string, periodKey: string): void;
   setTaskCount(taskId: string, periodKey: string, countDone: number): void;
   addTask(gameId: string, name: string, cadence: Cadence, intervalDays?: number): void;
+  /** Add preset tasks this game is missing (presets grow; existing games do not). */
+  addMissingPresetTasks(gameId: string): number;
   updateTask(id: string, patch: Partial<Task>): void;
   deleteTask(id: string): void;
 
@@ -630,6 +633,36 @@ export const useApp = create<AppStore>((set, get) => ({
         },
       ],
     }));
+  },
+
+  addMissingPresetTasks(gameId) {
+    const state = get().state;
+    const game = state.games.find((candidate) => candidate.id === gameId);
+    if (!game) return 0;
+    const existing = state.tasks.filter((task) => task.gameId === gameId);
+    const missing = missingPresetTasks(game, existing);
+    if (missing.length === 0) return 0;
+
+    const t = now();
+    get().mutate((s) => {
+      const sortBase = Math.max(0, ...s.tasks.filter((task) => task.gameId === gameId).map((task) => task.sort + 1));
+      const added: Task[] = missing.map((task, index) => ({
+        id: uid(),
+        gameId,
+        name: task.name,
+        cadence: task.cadence,
+        intervalDays: task.intervalDays ?? 1,
+        anchorAt: t,
+        mode: task.mode,
+        timerDurationMinutes: task.timerDurationMinutes,
+        countTarget: task.countTarget,
+        timerEndsAt: task.mode === 'timer' ? null : undefined,
+        sort: sortBase + index,
+        updatedAt: t,
+      }));
+      return { ...s, tasks: [...s.tasks, ...added] };
+    });
+    return missing.length;
   },
 
   updateTask(id, patch) {

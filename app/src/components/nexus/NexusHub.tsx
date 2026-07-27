@@ -1,4 +1,4 @@
-import { useState, type RefObject } from 'react';
+import { useState } from 'react';
 import { DateTime } from 'luxon';
 import type { AppState, GameEvent, GameUrgency } from '@void/shared';
 import { useDerived } from '../../selectors';
@@ -15,7 +15,6 @@ export function NexusHub({
   state,
   entries,
   now,
-  hubRef,
   onOpenEvent,
   onToggleEvent,
   onOpenReminder,
@@ -24,7 +23,6 @@ export function NexusHub({
   state: AppState;
   entries: GameUrgency[];
   now: number;
-  hubRef: RefObject<HTMLElement | null>;
   onOpenEvent: (event: GameEvent) => void;
   onToggleEvent: (event: GameEvent) => void;
   onOpenReminder: () => void;
@@ -68,7 +66,6 @@ export function NexusHub({
   // height (lg:pb-24), so the hub has to give that back or Games overflows the viewport.
   return (
     <section
-      ref={hubRef}
       className="gold-hairline relative z-10 grid h-[calc(100dvh-17rem)] min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-3 overflow-hidden rounded-ui-card p-4"
       aria-label="Across every game"
       style={{
@@ -92,7 +89,7 @@ export function NexusHub({
         <header className="relative">
           <p className="text-caption font-bold uppercase tracking-[0.22em] text-dim">Across every game</p>
           <h2 className="mt-0.5 text-title font-black text-fg">Tonight at a glance</h2>
-          <p className="mt-1 text-caption text-dim">Cable fill shows current energy against cap.</p>
+          <p className="mt-1 text-caption text-dim">A card glows when its next deadline is close.</p>
         </header>
 
         <div className="relative grid gap-2 min-[1500px]:grid-cols-[auto_minmax(0,1fr)]">

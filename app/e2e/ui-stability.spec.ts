@@ -198,7 +198,7 @@ test('wide dashboard switches between nexus and cards rail while timeline bars s
   await expect(page.getByRole('region', { name: 'Across every game' })).toBeVisible();
   await expect(page.getByRole('complementary', { name: 'left game rail' })).toBeVisible();
   await expect(page.getByRole('complementary', { name: 'right game rail' })).toBeVisible();
-  await expect(page.locator('.nexus-conduit-pulse')).toHaveCount(5);
+  await expect(page.locator('.nexus-node')).toHaveCount(5);
   await expect(page.getByRole('button', { name: 'Add game', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Expand Honkai: Star Rail controls' }).click();
   await expect(page.getByRole('region', { name: 'Honkai: Star Rail controls' })).toBeVisible();

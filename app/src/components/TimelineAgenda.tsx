@@ -38,7 +38,14 @@ export function selectAgendaData(
     mode === 'dashboard' ? now + DASHBOARD_AGENDA_DAYS * DAY : windowStart + TIMELINE_RANGE_DAYS[range] * DAY;
   const games = new Map(state.games.filter((game) => !game.deleted).map((game) => [game.id, game]));
   const events = state.events
-    .filter((event) => !event.deleted && games.has(event.gameId) && event.end > windowStart && event.start < windowEnd)
+    .filter(
+      (event) =>
+        !event.deleted &&
+        games.has(event.gameId) &&
+        event.end > windowStart &&
+        event.start < windowEnd &&
+        (mode !== 'dashboard' || event.end <= windowEnd),
+    )
     .sort((a, b) => agendaCompare(a, b, now));
   const live = events.filter((event) => agendaRank(event, now) === 0);
   const upcoming = events.filter((event) => agendaRank(event, now) === 1);
@@ -99,7 +106,7 @@ const AgendaEventRow = memo(function AgendaEventRow({
   return (
     <div
       className={`group/agenda relative flex min-h-11 w-full items-center gap-2 overflow-hidden rounded-ui-lg text-left transition hover:bg-white/[0.04] ${
-        mode === 'dashboard' ? 'px-2.5 py-2' : 'px-3 py-2'
+        mode === 'dashboard' ? 'px-2.5 py-1.5' : 'px-3 py-2'
       }`}
     >
       <button
@@ -111,47 +118,69 @@ const AgendaEventRow = memo(function AgendaEventRow({
       <span className="absolute inset-y-2 left-0 w-[3px] rounded-ui-full" style={{ backgroundColor: game.color }} />
       <div
         className={`pointer-events-none relative z-20 flex min-w-0 flex-1 ${
-          mode === 'dashboard' ? 'items-start gap-2' : 'flex-wrap items-center gap-1.5 sm:flex-nowrap'
+          mode === 'dashboard' ? 'items-center gap-2' : 'flex-wrap items-center gap-1.5 sm:flex-nowrap'
         }`}
       >
-        <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" className="mt-0.5" />
-        <div className={mode === 'dashboard' ? 'min-w-0 flex-1' : 'contents'}>
-          <div className={mode === 'dashboard' ? 'flex min-w-0 items-center gap-1.5' : 'contents'}>
+        <GameBadge
+          short={game.short}
+          color={game.color}
+          color2={game.color2}
+          size="sm"
+          className={mode === 'dashboard' ? 'w-12' : 'mt-0.5'}
+        />
+        {mode === 'dashboard' ? (
+          <>
             <TypeTags event={event} />
             <span
-              className={`min-w-24 flex-1 truncate text-xs font-medium ${
-                event.done ? 'text-dim line-through' : 'text-fg-soft'
-              }`}
+              className={`min-w-0 flex-1 truncate text-xs font-medium ${event.done ? 'text-dim line-through' : 'text-fg-soft'}`}
             >
               {event.name}
             </span>
-          </div>
-          {mode === 'full' && (
+            {rank === 0 && (
+              <span
+                className={`shrink-0 text-caption font-bold tabular-nums ${remaining < DAY ? 'warn-pulse' : ''}`}
+                style={{ color: endTone(remaining) }}
+              >
+                ends {fmtDur(remaining)}
+              </span>
+            )}
+            {rank === 1 && (
+              <span className="shrink-0 text-caption font-semibold tabular-nums text-muted">
+                starts in {fmtDur(event.start - now)}
+              </span>
+            )}
+          </>
+        ) : (
+          <div className="contents">
+            <div className="contents">
+              <TypeTags event={event} />
+              <span
+                className={`min-w-24 flex-1 truncate text-xs font-medium ${
+                  event.done ? 'text-dim line-through' : 'text-fg-soft'
+                }`}
+              >
+                {event.name}
+              </span>
+            </div>
             <span className="ml-auto shrink-0 text-caption tabular-nums text-dim">
               {DateTime.fromMillis(event.start).toFormat('dd LLL')} →{' '}
               {DateTime.fromMillis(event.end).toFormat('dd LLL')}
             </span>
-          )}
-          {rank === 0 && (
-            <span
-              className={`shrink-0 text-caption font-bold tabular-nums ${
-                remaining < DAY ? 'warn-pulse' : ''
-              } ${mode === 'dashboard' ? 'mt-1 block' : ''}`}
-              style={{ color: endTone(remaining) }}
-            >
-              ends {fmtDur(remaining)}
-            </span>
-          )}
-          {rank === 1 && (
-            <span
-              className={`shrink-0 text-caption font-semibold tabular-nums text-muted ${
-                mode === 'dashboard' ? 'mt-1 block' : ''
-              }`}
-            >
-              starts in {fmtDur(event.start - now)}
-            </span>
-          )}
-        </div>
+            {rank === 0 && (
+              <span
+                className={`shrink-0 text-caption font-bold tabular-nums ${remaining < DAY ? 'warn-pulse' : ''}`}
+                style={{ color: endTone(remaining) }}
+              >
+                ends {fmtDur(remaining)}
+              </span>
+            )}
+            {rank === 1 && (
+              <span className="shrink-0 text-caption font-semibold tabular-nums text-muted">
+                starts in {fmtDur(event.start - now)}
+              </span>
+            )}
+          </div>
+        )}
       </div>
       <button
         type="button"
@@ -193,7 +222,7 @@ function AgendaGroupRow({
       className="relative flex min-h-11 w-full items-center gap-2 overflow-hidden rounded-ui-lg bg-gold/10 px-2.5 py-2 text-left text-gold ring-1 ring-inset ring-gold/30 transition hover:bg-gold/15"
     >
       <span className="absolute inset-y-2 left-0 w-[3px] rounded-ui-full" style={{ backgroundColor: game.color }} />
-      <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" />
+      <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" className="w-12" />
       <span className="min-w-0 flex-1 truncate text-xs font-medium text-amber-100">{row.label}</span>
       <span className="shrink-0 text-caption text-muted">{row.count} items</span>
       <span className="shrink-0 text-caption font-bold tabular-nums text-gold">in {fmtDur(row.at - now)}</span>
