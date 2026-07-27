@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# Per-machine launcher settings: which browser to open, and the deployed URL.
+desktop/config.json
 .wrangler/
 *.local
 .env*
