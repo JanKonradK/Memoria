@@ -43,13 +43,13 @@ describe('catching an existing game up with its preset', () => {
     const existing = genshin.tasks.slice(0, 3).map((task) => ({ name: task.name }));
     const missing = missingPresetTasks(game, existing);
     expect(missing).toHaveLength(genshin.tasks.length - 3);
-    expect(missing.map((task) => task.name)).not.toContain(genshin.tasks[0].name);
+    expect(missing.map((task) => task.name)).not.toContain(genshin.tasks[0]!.name);
   });
 
   it('never resurrects a task the user deleted', () => {
     const game = { name: 'Genshin Impact', short: 'GI' };
-    const deletedOne = [{ name: genshin.tasks[0].name, deleted: true }];
-    expect(missingPresetTasks(game, deletedOne).map((task) => task.name)).not.toContain(genshin.tasks[0].name);
+    const deletedOne = [{ name: genshin.tasks[0]!.name, deleted: true }];
+    expect(missingPresetTasks(game, deletedOne).map((task) => task.name)).not.toContain(genshin.tasks[0]!.name);
   });
 
   it('has nothing to add once a game is up to date', () => {
