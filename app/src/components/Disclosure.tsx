@@ -84,7 +84,7 @@ export function Disclosure({
             strokeWidth="2.25"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className={`shrink-0 text-dim transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+            className={`shrink-0 text-dim transition-transform duration-(--dur-fast) ${open ? 'rotate-180' : ''}`}
           >
             <path d="m5 7.5 5 5 5-5" />
           </svg>

@@ -32,10 +32,16 @@ const URGENCY_DOT: Record<UrgencyTier, string> = {
  * "which one is on fire", and every game answering in its own hue made that
  * unreadable. The game's colour still owns the card's border and background.
  */
-const URGENCY_HALO: Record<UrgencyTier, string> = {
+/**
+ * Urgency reads from the inset ring, the pulsing overlay and the dot — three
+ * signals that all survive on a black canvas. The outer halo this used to add
+ * was a fourth, and it was the only one that cost a full-card raster every
+ * frame the card animated. See the Shadows Float Only Rule in DESIGN.md.
+ */
+const URGENCY_RING: Record<UrgencyTier, string> = {
   low: '',
-  med: '0 0 34px -12px rgba(232,180,90,0.75)',
-  high: '0 0 60px -10px rgba(255,90,120,0.95)',
+  med: 'inset 0 0 0 1.5px color-mix(in oklab, var(--warn) 50%, transparent)',
+  high: 'inset 0 0 0 2px color-mix(in oklab, var(--danger) 75%, transparent)',
 };
 
 /** The same time bands used by resource controls: red <2h, amber <8h, green beyond. */
@@ -143,11 +149,15 @@ function GalaxyCluster({
         <circle cx="34.5" cy="34.5" r={core.highlightRadius} fill="#fff" opacity={core.opacity} />
       </g>
 
-      <text x="44" y="96" fill={color} fontSize="7" fontWeight="900" letterSpacing="0.8" textAnchor="middle">
+      {/* This viewBox renders 1:1, so these are literal pixel sizes — 10 is the
+          Caption floor from DESIGN.md, not a decorative choice. The short code
+          is how the user picks the right card out of a rail at a glance; it was
+          set to 7 here, which is below anything legible. */}
+      <text x="44" y="96" fill={color} fontSize="10" fontWeight="900" letterSpacing="0.8" textAnchor="middle">
         {short}
       </text>
       {dailyLayout.overflow > 0 && (
-        <text x="68" y="86" fill="var(--color-fg-soft)" fontSize="8" fontWeight="900" textAnchor="middle">
+        <text x="70" y="86" fill="var(--color-fg-soft)" fontSize="10" fontWeight="900" textAnchor="middle">
           +{dailyLayout.overflow}
         </text>
       )}
@@ -275,19 +285,13 @@ function NexusNode({
           '--nexus-accent': game.color,
           background: `linear-gradient(155deg, ${tint(game.color, expanded ? 0.2 : 0.1)}, transparent 48%), linear-gradient(335deg, ${tint(game.color2 ?? game.color, expanded ? 0.12 : 0.05)}, transparent 44%), var(--color-surface-1)`,
           boxShadow: expanded
-            ? `inset 0 0 0 1.5px ${game.color}, 0 0 60px -18px ${tint(game.color, 0.7)}, 0 26px 50px -26px #000`
+            ? `inset 0 0 0 1.5px ${game.color}, inset 0 1px 0 var(--color-line-hairline)`
             : [
                 // The urgency ring sits INSIDE the game's own ring rather than
                 // replacing it, so a card never stops looking like its game.
                 `inset 0 0 0 1px ${tint(game.color, 0.28)}`,
-                tier === 'high'
-                  ? 'inset 0 0 0 2px rgba(255,90,120,0.75)'
-                  : tier === 'med'
-                    ? 'inset 0 0 0 1.5px rgba(232,180,90,0.5)'
-                    : '',
-                'inset 0 1px 0 rgba(255,255,255,0.05)',
-                URGENCY_HALO[tier],
-                '0 20px 40px -28px #000',
+                URGENCY_RING[tier],
+                'inset 0 1px 0 var(--color-line-hairline)',
               ]
                 .filter(Boolean)
                 .join(', '),
@@ -308,7 +312,7 @@ function NexusNode({
           aria-expanded={false}
           aria-controls={controlsId}
           aria-label={`Expand ${game.name} controls`}
-          className="relative z-10 block w-full rounded-ui-card p-3 text-left transition hover:bg-white/[0.025]"
+          className="relative z-10 block w-full rounded-ui-card p-3 text-left transition hover:bg-fill-1"
         >
           <GalaxyCluster
             gameId={game.id}
@@ -354,14 +358,14 @@ function NexusNode({
           </span>
 
           <span className="relative z-10 mt-2.5 grid grid-cols-[auto_minmax(2rem,1fr)] items-center gap-2.5 pl-16">
-            <span className="text-xs font-black tabular-nums text-fg-soft">
+            <span className="text-meta font-black tabular-nums text-fg-soft">
               {primary && projection && projection.hasSnapshot ? projection.value : '—'}
               <span className="font-medium text-dim">/{primary?.cap ?? '—'}</span>
             </span>
             <ProgressBar value={fraction} color={game.color} color2={game.color2} className="!mt-0 !h-1.5 min-w-8" />
           </span>
 
-          <span className="relative z-10 mt-2 flex items-center justify-between gap-2 border-t border-white/[0.06] pl-16 pt-2 text-caption">
+          <span className="relative z-10 mt-2 flex items-center justify-between gap-2 border-t border-line-hairline pl-16 pt-2 text-caption">
             <span className="truncate text-dim">{next?.label ?? (game.paused ? 'Tracking paused' : 'All clear')}</span>
             {next && (
               <span className="shrink-0 font-black tabular-nums" style={{ color: endTone(next.at - now) }}>
@@ -407,7 +411,7 @@ function NexusNode({
                     aria-expanded
                     aria-controls={controlsId}
                     aria-label={`Collapse ${game.name} controls`}
-                    className="flex h-10 w-10 items-center justify-center rounded-ui-full bg-white/[0.06] text-muted ring-1 ring-white/10 transition hover:bg-white/15 hover:text-white"
+                    className="flex h-10 w-10 items-center justify-center rounded-ui-full bg-fill-2 text-muted ring-1 ring-line-hairline transition hover:bg-fill-4 hover:text-white"
                   >
                     <svg
                       aria-hidden

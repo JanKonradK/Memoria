@@ -172,7 +172,7 @@ export function PasteEventsSheet({ open }: { open: boolean }) {
             />
           </Field>
 
-          {parsed.error && <p className="text-xs text-amber-300">{parsed.error}</p>}
+          {parsed.error && <p className="text-meta text-warn-fg">{parsed.error}</p>}
 
           {parsed.events.length > 0 && (
             <>
@@ -182,11 +182,11 @@ export function PasteEventsSheet({ open }: { open: boolean }) {
                   return (
                     <label
                       key={e.sourceKey}
-                      className={`flex cursor-pointer items-center gap-2.5 rounded-ui-lg px-2 py-1.5 transition hover:bg-white/5 ${dup ? 'opacity-50' : ''}`}
+                      className={`flex cursor-pointer items-center gap-2.5 rounded-ui-lg px-2 py-1.5 transition hover:bg-fill-2 ${dup ? 'opacity-50' : ''}`}
                     >
                       <input
                         type="checkbox"
-                        className="h-4 w-4 shrink-0 accent-fuchsia-400"
+                        className="h-4 w-4 shrink-0 accent-accent-2"
                         checked={!dup && !unchecked.has(e.sourceKey)}
                         disabled={dup}
                         onChange={() =>
@@ -215,11 +215,11 @@ export function PasteEventsSheet({ open }: { open: boolean }) {
                   {parsed.events.filter((e) => !unchecked.has(e.sourceKey) && !existingKeys.has(e.sourceKey)).length}{' '}
                   events
                 </Btn>
-                {importedMsg && <span className="text-xs text-emerald-300">{importedMsg}</span>}
+                {importedMsg && <span className="text-meta text-ok-fg">{importedMsg}</span>}
               </div>
             </>
           )}
-          {importedMsg && parsed.events.length === 0 && <p className="text-xs text-emerald-300">{importedMsg}</p>}
+          {importedMsg && parsed.events.length === 0 && <p className="text-meta text-ok-fg">{importedMsg}</p>}
         </div>
       )}
     </Sheet>

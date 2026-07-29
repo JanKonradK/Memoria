@@ -13,7 +13,6 @@ export const duration = {
 /** Cubic bezier tuples, mirroring the easing custom properties in index.css. */
 export const easing = {
   out: [0.22, 1, 0.36, 1] as CubicBezier,
-  spring: [0.34, 1.56, 0.64, 1] as CubicBezier,
 } as const;
 
 export const springs = {

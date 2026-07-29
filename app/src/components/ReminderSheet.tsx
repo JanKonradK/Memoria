@@ -66,9 +66,7 @@ export function ReminderSheet({ open }: { open: boolean }) {
         >
           Add reminder
         </Btn>
-        <p className="text-label text-dim">
-          Delivered through your Discord/Telegram alerts at the chosen time (needs the sync server).
-        </p>
+        <p className="text-label text-dim">Shown in the in-app reminder lists until you delete it.</p>
       </div>
     </Sheet>
   );

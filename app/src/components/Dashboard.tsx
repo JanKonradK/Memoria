@@ -121,7 +121,7 @@ export function DashboardPage({ now }: { now: number }) {
         <section className="glass gold-hairline mb-4 rounded-ui-card p-4" aria-label="New preset routines">
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-body font-black text-slate-100">
+              <p className="text-body font-black text-fg-soft">
                 {presetGap} new {presetGap === 1 ? 'routine' : 'routines'} for {presetGamesBehind}{' '}
                 {presetGamesBehind === 1 ? 'game' : 'games'}
               </p>
@@ -132,7 +132,7 @@ export function DashboardPage({ now }: { now: number }) {
             <button
               type="button"
               onClick={() => addMissingPresetTasksEverywhere()}
-              className="min-h-11 shrink-0 rounded-ui-lg bg-gradient-to-br from-accent to-accent-2 px-4 py-2 text-body font-bold text-white ring-1 ring-white/15 transition hover:brightness-110 sm:min-h-9"
+              className="min-h-11 shrink-0 rounded-ui-lg bg-gradient-to-br from-accent to-accent-2 px-4 py-2 text-body font-bold text-white ring-1 ring-line-edge transition hover:brightness-110 sm:min-h-9"
             >
               Add them
             </button>
@@ -154,23 +154,16 @@ export function DashboardPage({ now }: { now: number }) {
         <section className="glass gold-hairline mb-4 rounded-ui-card p-4" aria-label="Account setup checklist">
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-body font-black text-slate-100">Finish account setup</p>
-              <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                <span className="rounded-ui-md bg-ok/10 px-2 py-1 text-emerald-200">✓ Game added</span>
+              <p className="text-body font-black text-fg-soft">Finish account setup</p>
+              <div className="mt-2 flex flex-wrap gap-2 text-meta">
+                <span className="rounded-ui-md bg-ok/10 px-2 py-1 text-ok-fg">✓ Game added</span>
                 <span
                   className={`rounded-ui-md px-2 py-1 ${
-                    state.snapshots.length > 0 ? 'bg-ok/10 text-emerald-200' : 'bg-white/5 text-muted'
+                    state.snapshots.length > 0 ? 'bg-ok/10 text-ok-fg' : 'bg-fill-2 text-muted'
                   }`}
                 >
                   {state.snapshots.length > 0 ? '✓' : '○'} Enter energy
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setTab('settings')}
-                  className="rounded-ui-md bg-white/5 px-2 py-1 text-slate-300"
-                >
-                  ○ Optional alert channels
-                </button>
               </div>
             </div>
             <button
@@ -198,7 +191,7 @@ export function DashboardPage({ now }: { now: number }) {
             className="relative block w-full min-w-0 overflow-hidden rounded-ui-card p-4 text-left"
             style={{
               background: `linear-gradient(120deg, ${tint(heroGame.color, 0.3)}, ${tint(heroGame.color2 ?? heroGame.color, 0.12)} 38%, rgba(0,0,0,0.92) 62%)`,
-              boxShadow: `inset 0 0 0 1px ${tint(heroGame.color, 0.35)}, 0 0 44px -16px ${tint(heroGame.color, 0.5)}`,
+              boxShadow: `inset 0 0 0 1px ${tint(heroGame.color, 0.35)}, inset 0 1px 0 var(--color-line-hairline)`,
             }}
           >
             <div
@@ -220,7 +213,7 @@ export function DashboardPage({ now }: { now: number }) {
                 </div>
               </div>
               <div className="shrink-0 text-right">
-                <div className="text-xl font-black tabular-nums" style={{ color: heroGame.color }}>
+                <div className="text-heading font-black tabular-nums" style={{ color: heroGame.color }}>
                   {hero.at <= now ? 'NOW' : fmtDur(hero.at - now)}
                 </div>
                 {hero.at > now && <div className="text-label tabular-nums text-dim">{fmtClock(hero.at)}</div>}
@@ -232,19 +225,16 @@ export function DashboardPage({ now }: { now: number }) {
 
       {order.length === 0 ? (
         <div className="fade-in mt-16 flex flex-col items-center gap-4 text-center">
-          <div
-            className="h-14 w-14 rounded-ui-xl bg-gradient-to-br from-accent via-accent-2 to-amber-300"
-            style={{ boxShadow: '0 0 40px rgba(124,92,255,0.5)' }}
-          />
-          <h2 className="text-xl font-black text-slate-100">Track every gacha, waste no energy</h2>
-          <p className="max-w-sm text-body text-slate-300">
+          <div className="h-14 w-14 rounded-ui-xl bg-gradient-to-br from-accent via-accent-2 to-gold" />
+          <h2 className="text-heading font-black text-fg-soft">Track every gacha, waste no energy</h2>
+          <p className="max-w-sm text-body text-fg-soft">
             Add your games, punch in your current energy after each session, and Void tells you exactly when to log in
             next.
           </p>
           <button
             type="button"
             onClick={() => openSheet({ kind: 'addGame' })}
-            className="rounded-ui-xl bg-gradient-to-br from-accent to-accent-2 px-6 py-3 text-base font-bold text-white shadow-lg shadow-accent-2/30 ring-1 ring-white/15 transition hover:brightness-110 active:scale-95"
+            className="rounded-ui-xl bg-gradient-to-br from-accent to-accent-2 px-6 py-3 text-lead font-bold text-white ring-1 ring-line-edge transition hover:brightness-110 active:scale-95"
           >
             + Add your first game
           </button>
@@ -259,7 +249,7 @@ export function DashboardPage({ now }: { now: number }) {
               <button
                 type="button"
                 onClick={() => setSortedIds(liveIds)}
-                className="fade-in flex min-h-11 items-center gap-1.5 rounded-ui-lg bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white sm:min-h-9"
+                className="fade-in flex min-h-11 items-center gap-1.5 rounded-ui-lg bg-fill-2 px-3 py-1.5 text-meta font-semibold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 hover:text-white sm:min-h-9"
               >
                 <span aria-hidden>↻</span> Sort by urgency
               </button>
