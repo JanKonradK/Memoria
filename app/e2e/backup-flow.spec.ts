@@ -46,8 +46,6 @@ test('backup export and merge preview stay within the viewport', async ({ page }
             updatedAt: Date.now(),
           },
         },
-        integrations: [],
-        secretsIncluded: false,
       }),
     ),
   });

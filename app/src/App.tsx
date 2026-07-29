@@ -82,18 +82,18 @@ export default function App() {
     return (
       <main className="flex min-h-dvh items-center justify-center px-5 py-12">
         <section className="glass gold-hairline w-full max-w-lg rounded-ui-card p-6" role="alert">
-          <p className="text-xs font-bold uppercase tracking-widest text-rose-300">Local data unavailable</p>
-          <h1 className="mt-2 text-xl font-black text-slate-100">Void could not open this device's data.</h1>
+          <p className="text-meta font-bold uppercase tracking-widest text-danger-fg">Local data unavailable</p>
+          <h1 className="mt-2 text-heading font-black text-fg-soft">Void could not open this device's data.</h1>
           <p className="mt-2 text-body text-muted">
             Retry first. Starting fresh permanently clears this browser's local Void database; synced or exported copies
             are not affected.
           </p>
-          <p className="mt-3 rounded-ui-lg bg-black/30 p-3 text-xs text-dim">{loadError}</p>
+          <p className="mt-3 rounded-ui-lg bg-scrim-well p-3 text-meta text-dim">{loadError}</p>
           <div className="mt-5 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => void load().catch(reportLoadError)}
-              className="min-h-11 rounded-ui-lg bg-gradient-to-br from-accent to-accent-2 px-4 py-2 text-body font-semibold text-white ring-1 ring-white/15"
+              className="min-h-11 rounded-ui-lg bg-gradient-to-br from-accent to-accent-2 px-4 py-2 text-body font-semibold text-white ring-1 ring-line-edge"
             >
               Retry
             </button>
@@ -108,7 +108,7 @@ export default function App() {
                     .catch(reportLoadError);
                 }
               }}
-              className="min-h-11 rounded-ui-lg bg-danger/15 px-4 py-2 text-body font-semibold text-rose-200 ring-1 ring-rose-400/30"
+              className="min-h-11 rounded-ui-lg bg-danger/15 px-4 py-2 text-body font-semibold text-danger-fg ring-1 ring-danger/30"
             >
               Clear local data
             </button>
@@ -121,10 +121,7 @@ export default function App() {
   if (!loaded) {
     return (
       <div className="flex min-h-dvh items-center justify-center" role="status" aria-label="Loading Void">
-        <div
-          className="loader-spin h-12 w-12 rounded-ui-xl bg-gradient-to-br from-accent via-accent-2 to-amber-300"
-          style={{ boxShadow: '0 0 40px rgba(124,92,255,0.5)' }}
-        />
+        <div className="loader-spin h-12 w-12 rounded-ui-xl bg-gradient-to-br from-accent via-accent-2 to-gold" />
       </div>
     );
   }
@@ -154,7 +151,7 @@ export default function App() {
     <div className="relative min-h-dvh">
       <a
         href="#main-content"
-        className="fixed left-3 top-3 z-[70] -translate-y-20 rounded-ui-lg bg-slate-100 px-4 py-2 text-body font-bold text-slate-950 transition focus:translate-y-0"
+        className="fixed left-3 top-3 z-[70] -translate-y-20 rounded-ui-lg bg-fg px-4 py-2 text-body font-bold text-fg-invert transition focus:translate-y-0"
       >
         Skip to content
       </a>
@@ -178,7 +175,7 @@ export default function App() {
               initial="hidden"
               animate="visible"
               exit="exit"
-              className="pointer-events-auto w-full rounded-ui-xl bg-amber-950/95 px-4 py-3 text-center text-xs font-semibold text-amber-100 shadow-2xl ring-1 ring-amber-300/25 backdrop-blur-md"
+              className="pointer-events-auto w-full rounded-ui-xl bg-popover/95 px-4 py-3 text-center text-meta font-semibold text-warn-fg shadow-float ring-1 ring-warn/25 backdrop-blur-md"
               role="status"
               aria-live="polite"
             >
@@ -192,7 +189,7 @@ export default function App() {
               initial="hidden"
               animate="visible"
               exit="exit"
-              className="pointer-events-auto flex w-full flex-wrap items-center justify-center gap-2 rounded-ui-xl bg-violet-950/95 px-4 py-2 text-xs font-semibold text-violet-100 shadow-2xl ring-1 ring-violet-300/25 backdrop-blur-md"
+              className="pointer-events-auto flex w-full flex-wrap items-center justify-center gap-2 rounded-ui-xl bg-popover/95 px-4 py-2 text-meta font-semibold text-accent-fg shadow-float ring-1 ring-accent/25 backdrop-blur-md"
               role="status"
               aria-live="polite"
             >
@@ -200,11 +197,11 @@ export default function App() {
               <button
                 type="button"
                 onClick={applyPwaUpdate}
-                className="min-h-9 rounded-ui-md bg-violet-300/15 px-3 py-1 text-violet-50 ring-1 ring-violet-200/25"
+                className="min-h-9 rounded-ui-md bg-accent/15 px-3 py-1 text-accent-fg ring-1 ring-accent/25"
               >
                 Update now
               </button>
-              <button type="button" onClick={() => setUpdateAvailable(false)} className="min-h-9 px-2 text-violet-200">
+              <button type="button" onClick={() => setUpdateAvailable(false)} className="min-h-9 px-2 text-accent-fg">
                 Later
               </button>
             </m.div>

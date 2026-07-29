@@ -128,7 +128,7 @@ export function NavRail() {
             overlap (Settings' export button on a short window). */}
         <span
           aria-hidden
-          className={`pointer-events-none absolute inset-0 rounded-t-ui-card bg-black/90 shadow-[0_-12px_30px_-18px_rgba(124,92,255,0.8)] ring-1 ring-white/10 backdrop-blur-md transition-opacity duration-300 lg:rounded-ui-card ${
+          className={`pointer-events-none absolute inset-0 rounded-t-ui-card bg-scrim-modal shadow-float ring-1 ring-line-strong backdrop-blur-md transition-opacity duration-(--dur-base) lg:rounded-ui-card ${
             attention ? 'opacity-100' : 'opacity-40 group-focus-within:opacity-100 group-hover:opacity-100'
           }`}
         />
@@ -170,14 +170,14 @@ export function NavRail() {
                     <span className="relative">{item.icon}</span>
                   </Ring>
                 </span>
-                <span className="mt-0.5 text-micro font-bold uppercase tracking-wider">{item.label}</span>
+                <span className="mt-0.5 text-caption font-bold uppercase tracking-wider">{item.label}</span>
               </button>
             );
           })}
         </nav>
         {showDashboardTools && (
           <div className="pointer-events-auto relative flex items-center gap-2 self-center pl-1">
-            <span aria-hidden className="h-9 w-px bg-white/10" />
+            <span aria-hidden className="h-9 w-px bg-fill-3" />
             <Segmented
               options={[
                 { value: 'nexus', label: 'Nexus' },

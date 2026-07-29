@@ -118,7 +118,11 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
             onChange={(v) => setDraft({ ...draft, dailyTouch: v })}
             label="Needs daily touch (pinned on card)"
           />
-          <Toggle checked={draft.notify} onChange={(v) => setDraft({ ...draft, notify: v })} label="Alert before end" />
+          <Toggle
+            checked={draft.notify}
+            onChange={(v) => setDraft({ ...draft, notify: v })}
+            label="Include in next actions"
+          />
           <Toggle checked={draft.done} onChange={(v) => setDraft({ ...draft, done: v })} label="Done (hide + mute)" />
         </div>
         <div className="flex gap-2 pt-2">

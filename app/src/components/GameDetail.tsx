@@ -5,7 +5,6 @@ import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fileToImageDataUrl, intOr } from '../util';
 import { FONT_OPTIONS } from '../fonts';
-import { GameAlerts } from './game-detail/GameAlerts';
 import { ResourceEditor } from './game-detail/ResourceEditor';
 import { Sheet } from './Sheet';
 import { Btn, Field, NumInput, SectionTitle, Segmented, Select, TextArea, TextInput, Toggle } from './ui';
@@ -14,14 +13,13 @@ const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Satur
 const CADENCES: Cadence[] = ['daily', 'weekly', 'monthly', 'custom'];
 const TASK_MODES: TaskMode[] = ['check', 'timer', 'count'];
 
-type GameDetailSection = 'basics' | 'resources' | 'tasks' | 'display' | 'alerts' | 'danger';
+type GameDetailSection = 'basics' | 'resources' | 'tasks' | 'display' | 'danger';
 
 const SECTIONS: { value: GameDetailSection; label: string }[] = [
   { value: 'basics', label: 'Basics' },
   { value: 'resources', label: 'Resources' },
   { value: 'tasks', label: 'Tasks' },
   { value: 'display', label: 'Display' },
-  { value: 'alerts', label: 'Alerts' },
   { value: 'danger', label: 'Danger' },
 ];
 
@@ -150,7 +148,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                 type="color"
                 value={game.color}
                 onChange={(e) => updateGame(game.id, { color: e.target.value })}
-                className="h-9 w-full cursor-pointer rounded-ui-lg bg-white/5 ring-1 ring-white/10"
+                className="h-9 w-full cursor-pointer rounded-ui-lg bg-fill-2 ring-1 ring-line-hairline"
               />
             </Field>
             <Field label="Accent color 2 (gradient partner)">
@@ -158,7 +156,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                 type="color"
                 value={game.color2 ?? game.color}
                 onChange={(e) => updateGame(game.id, { color2: e.target.value })}
-                className="h-9 w-full cursor-pointer rounded-ui-lg bg-white/5 ring-1 ring-white/10"
+                className="h-9 w-full cursor-pointer rounded-ui-lg bg-fill-2 ring-1 ring-line-hairline"
               />
             </Field>
             <Field label="Title font">
@@ -234,7 +232,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                 Card artwork
               </span>
               <div className="flex flex-col gap-2 sm:flex-row">
-                <label className="flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-ui-lg bg-white/[0.06] px-4 py-2 text-body font-semibold text-fg-soft ring-1 ring-white/10 sm:min-h-9">
+                <label className="flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-ui-lg bg-fill-2 px-4 py-2 text-body font-semibold text-fg-soft ring-1 ring-line-hairline sm:min-h-9">
                   {game.image ? 'Replace image' : 'Choose image'}
                   <input
                     type="file"
@@ -288,7 +286,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                 <button
                   type="button"
                   onClick={() => deleteChip(chip.id)}
-                  className="flex h-11 w-11 items-center justify-center rounded-ui-lg text-dim transition hover:bg-rose-400/10 hover:text-rose-400 sm:h-9 sm:w-9"
+                  className="flex h-11 w-11 items-center justify-center rounded-ui-lg text-dim transition hover:bg-danger/10 hover:text-danger sm:h-9 sm:w-9"
                   aria-label={`Delete quick spend ${chip.label}`}
                 >
                   ✕
@@ -336,7 +334,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
               const hasConditionalControls = t.cadence === 'custom' || mode === 'timer' || mode === 'count';
 
               return (
-                <div key={t.id} className="rounded-ui-xl bg-white/[0.03] p-3 ring-1 ring-white/10">
+                <div key={t.id} className="rounded-ui-xl bg-fill-1 p-3 ring-1 ring-line-hairline">
                   <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_128px_128px_44px]">
                     <Field label="Name">
                       <TextInput
@@ -374,7 +372,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                     <button
                       type="button"
                       onClick={() => deleteTask(t.id)}
-                      className="flex h-11 w-11 items-center justify-center rounded-ui-lg text-dim transition hover:bg-rose-400/10 hover:text-rose-400 sm:h-9 sm:w-9"
+                      className="flex h-11 w-11 items-center justify-center rounded-ui-lg text-dim transition hover:bg-danger/10 hover:text-danger sm:h-9 sm:w-9"
                       aria-label={`Delete task ${t.name}`}
                     >
                       ✕
@@ -382,7 +380,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                   </div>
 
                   {hasConditionalControls && (
-                    <div className="mt-3 grid grid-cols-1 gap-3 border-t border-white/[0.08] pt-3 sm:grid-cols-3">
+                    <div className="mt-3 grid grid-cols-1 gap-3 border-t border-line-hairline pt-3 sm:grid-cols-3">
                       {t.cadence === 'custom' && (
                         <>
                           <Field label="Cycle days">
@@ -479,7 +477,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
               </Btn>
             </div>
             {presetGap > 0 && (
-              <div className="flex flex-wrap items-center gap-2 rounded-ui-lg bg-white/[0.03] px-3 py-2 ring-1 ring-white/10">
+              <div className="flex flex-wrap items-center gap-2 rounded-ui-lg bg-fill-1 px-3 py-2 ring-1 ring-line-hairline">
                 <p className="min-w-0 flex-1 text-label text-muted">
                   This game's preset has {presetGap} {presetGap === 1 ? 'routine' : 'routines'} you are not tracking.
                 </p>
@@ -512,13 +510,6 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
               removed above; individual events are edited on the Timeline.
             </p>
           </div>
-        </>
-      )}
-
-      {section === 'alerts' && (
-        <>
-          <SectionTitle>Alert overrides</SectionTitle>
-          <GameAlerts game={game} />
         </>
       )}
 
