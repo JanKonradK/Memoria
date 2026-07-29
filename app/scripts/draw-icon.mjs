@@ -1,11 +1,11 @@
 // Shared, zero-dependency icon drawing used by both the PWA PNG generator and
-// the Windows .ico generator. Renders the Void app icon: the Möbius mark (see
-// mobius.mjs) in polished gold on a golden-black squircle.
+// the Windows .ico generator. Renders the Void app icon: the infinity mark (see
+// mobius.mjs) in white-into-gold on a pure black squircle.
 //
 // Everything is drawn from a signed distance field rather than sampled shapes,
-// so edges antialias analytically and the bevel/glow can read the distance and
-// the surface normal at every pixel — that is what gives the glyph its lit,
-// three-dimensional edge at 512px without turning to mush at 16px.
+// so edges antialias analytically and the bevel can read the distance and the
+// surface normal at every pixel — that is what keeps the sword tips genuinely
+// pointed at 512px and still legible at 16px.
 import { deflateSync } from 'node:zlib';
 import { bandBounds, bandSamples } from './mobius.mjs';
 
@@ -99,13 +99,18 @@ export function encodePng(size, pixels /* RGBA Uint8Array */) {
 }
 
 // --- palette: black field, gold light. No blue anywhere. ---
-const FIELD_TOP = [0x0a, 0x08, 0x06];
-const FIELD_BOTTOM = [0x4c, 0x35, 0x0d];
-const GLOW = [0xe8, 0xb4, 0x5a];
-const GLYPH_TOP = [0xff, 0xf6, 0xe0];
-const GLYPH_MID = [0xe8, 0xb4, 0x5a];
-const GLYPH_BOTTOM = [0xb0, 0x74, 0x1e];
-const GLYPH_SHADE = [0x5c, 0x3a, 0x09];
+// Pure black, top to bottom. The tile used to run warm-black into gold, which
+// on an OLED panel is the one thing a black background must never do: the
+// gradient is visible as a smear where true black is simply off.
+const FIELD = [0x00, 0x00, 0x00];
+// White-led. The mark reads white first and gold second: pure white through the
+// upper two thirds, warming to gold only as it falls away. The old ramp started
+// at cream and was gold by the midpoint, so the "white and gold" idea never
+// actually got any white in it.
+const GLYPH_TOP = [0xff, 0xff, 0xff];
+const GLYPH_MID = [0xff, 0xfa, 0xed];
+const GLYPH_BOTTOM = [0xe8, 0xb4, 0x5a];
+const GLYPH_SHADE = [0x8a, 0x5c, 0x14];
 const WHITE = [0xff, 0xff, 0xff];
 /** Up and to the left, so the mark is lit like the reference app icons. */
 const LIGHT = [-0.42, -0.91];
@@ -127,7 +132,6 @@ function bandField(size, scale, cx, cy, pad) {
   const nx = new Float32Array(size * size);
   const ny = new Float32Array(size * size);
   const halfWidth = new Float32Array(size * size);
-  const flat = new Float32Array(size * size);
   const { band } = bandSamples();
 
   for (const s of band) {
@@ -136,8 +140,6 @@ function bandField(size, scale, cx, cy, pad) {
     const px = cx + s.x * scale;
     const py = cy - s.y * scale;
     const r = s.w * scale;
-    // How square-on the strip faces the viewer here: 1 flat, 0 edge-on.
-    const facing = Math.abs(Math.cos(s.t / 2));
     const reach = r + pad;
     const x0 = Math.max(0, Math.floor(px - reach));
     const x1 = Math.min(size - 1, Math.ceil(px + reach));
@@ -158,11 +160,10 @@ function bandField(size, scale, cx, cy, pad) {
         nx[i] = dx * inv;
         ny[i] = dy * inv;
         halfWidth[i] = r;
-        flat[i] = facing;
       }
     }
   }
-  return { sd, nx, ny, halfWidth, flat };
+  return { sd, nx, ny, halfWidth };
 }
 
 /** Draw the icon and return the raw RGBA pixel buffer for `size`×`size`. */
@@ -178,8 +179,9 @@ export function drawPixels(size, { maskable = false, squircle = true } = {}) {
   const glyphTop = cy - bounds.maxY * scale;
   const glyphHeight = bounds.height * scale;
 
-  const glowRadius = Math.max(2, size * 0.038);
-  const field = bandField(size, scale, cx, cy, glowRadius * 2.2);
+  // Just enough padding to antialias the edge. This used to be sized from the
+  // halo radius; with no halo it only has to cover the coverage ramp.
+  const field = bandField(size, scale, cx, cy, Math.max(2, size * 0.02));
 
   // Squircle: a superellipse, the shape every platform's app icon actually is.
   const exponent = 4.4;
@@ -201,40 +203,30 @@ export function drawPixels(size, { maskable = false, squircle = true } = {}) {
         if (shell <= 0) continue;
       }
 
-      // Field: warm black at the top falling into gold at the bottom, with the
-      // mark sitting in its own pool of light.
-      const down = clamp01((y + 0.5) / size);
-      let color = mix(FIELD_TOP, FIELD_BOTTOM, down * down);
+      // Pure black. No field gradient, no halo around the mark, no rim light on
+      // the shell — every one of those was a soft edge competing with a symbol
+      // whose whole job is to be crisp.
+      let color = FIELD;
       const dist = field.sd[i];
-      if (Number.isFinite(dist) && dist > 0) {
-        // Small icons get less halo: at 16-32px it is most of the glyph's width
-        // and eats the contrast the mark needs to stay readable.
-        const glow = Math.exp(-(dist / glowRadius) * (dist / glowRadius)) * (size >= 64 ? 0.32 : 0.16);
-        color = mix(color, GLOW, glow);
-      }
-      // Rim light along the top of the shell, the way a glass tile catches light.
-      if (!maskable && squircle) {
-        const rim = smoothstep(1, 0.93, Math.hypot(u, v)) * smoothstep(0.1, -0.95, v);
-        color = mix(color, WHITE, rim * 0.14);
-      }
 
       let alpha = shell * 255;
 
       // The mark itself.
       const cover = clamp01(0.5 - dist);
       if (cover > 0) {
+        // White through the top two thirds, warming to gold only at the bottom.
+        // The old split put gold at the midpoint, so almost none of the mark was
+        // ever actually white.
         const g = clamp01((y + 0.5 - glyphTop) / glyphHeight);
-        let glyph = g < 0.5 ? mix(GLYPH_TOP, GLYPH_MID, g * 2) : mix(GLYPH_MID, GLYPH_BOTTOM, (g - 0.5) * 2);
-        // The strip turning edge-on catches less light — this is the shading that
-        // says "twisted ribbon" rather than "bent tube".
-        glyph = mix(glyph, GLYPH_BOTTOM, (1 - field.flat[i]) * 0.4);
-        // Bevel: the band's own edge normal against the light. Only the outer
-        // third of the band's width picks it up, so the middle stays flat gold.
+        let glyph = g < 0.68 ? mix(GLYPH_TOP, GLYPH_MID, g / 0.68) : mix(GLYPH_MID, GLYPH_BOTTOM, (g - 0.68) / 0.32);
+        // Bevel, tightened to the outermost sliver of the band. A wide soft
+        // bevel is what made the mark look airbrushed; keeping it narrow leaves
+        // a hard lit edge and a flat white body.
         const w = field.halfWidth[i] || 1;
-        const edge = smoothstep(0.3, 0.98, 1 + dist / w);
+        const edge = smoothstep(0.62, 1, 1 + dist / w);
         const lit = field.nx[i] * LIGHT[0] + field.ny[i] * LIGHT[1];
-        glyph = mix(glyph, WHITE, clamp01(lit) * edge * 0.8);
-        glyph = mix(glyph, GLYPH_SHADE, clamp01(-lit) * edge * 0.55);
+        glyph = mix(glyph, WHITE, clamp01(lit) * edge * 0.5);
+        glyph = mix(glyph, GLYPH_SHADE, clamp01(-lit) * edge * 0.4);
         color = mix(color, glyph, cover);
         alpha = Math.max(alpha, cover * 255);
       }
