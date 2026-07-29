@@ -57,27 +57,73 @@ describe('sweepDasharray', () => {
   });
 });
 
-describe('the Möbius mark', () => {
+describe('the infinity mark', () => {
   const { band } = bandSamples();
   const first = band[0];
   const last = band[band.length - 1];
 
-  it('never closes: the band stops and restarts at the crossing', () => {
-    // The whole point of the mark. A gap narrower than the band itself would
-    // read as a rendering seam rather than as a beginning and an end.
-    const separation = Math.hypot(last.x - first.x, last.y - first.y);
-    expect(separation).toBeGreaterThan(first.w + last.w);
-    // Both loose ends belong to the same self-crossing, which sits at the origin.
-    expect(Math.hypot(first.x, first.y)).toBeLessThan(MARK.gapArc);
-    expect(Math.hypot(last.x, last.y)).toBeLessThan(MARK.gapArc);
+  it('never closes: the band stops and restarts on a lobe', () => {
+    // Both loose ends sit out at the far lobe, well away from the origin. The
+    // break used to be taken out of a crossing, which cost the mark its ∞.
+    expect(Math.hypot(first.x, first.y)).toBeGreaterThan(0.5);
+    expect(Math.hypot(last.x, last.y)).toBeGreaterThan(0.5);
+    // Arc was genuinely removed — the band is an open strip, not a closed loop.
+    expect(first.t).toBeGreaterThan(MARK.gapAt);
+    expect(last.t).toBeLessThan(MARK.gapAt + 2 * Math.PI);
+
+    // Deliberately NOT asserting that the centreline endpoints are further apart
+    // than the band is thick. At a lobe tip the tangent is vertical, so the band
+    // extends horizontally while the two ends separate vertically — the two
+    // quantities are measured along perpendicular axes and comparing them says
+    // nothing. Whether the break is visibly open is the tip-clearance test's job.
   });
 
-  it('turns edge-on exactly once, which is what makes it a Möbius band', () => {
-    // Two pinches would be a full twist (a plain ring); none would be flat.
+  it('keeps both crossings, which is what makes it read as infinity', () => {
+    // THE regression guard for this mark. An ∞ is legible because two strokes
+    // cross; take one out and the silhouette collapses to a sideways S. The
+    // stroke thins at each crossing, so two surviving narrow runs — both at the
+    // origin — prove the X is still there.
     const pinched = band.map((s) => s.w < MARK.halfWidth * (MARK.pinch + 0.08));
     const runs = pinched.reduce((count, on, i) => count + (on && !pinched[i - 1] ? 1 : 0), 0);
-    expect(runs).toBe(1);
+    expect(runs).toBe(2);
     expect(Math.min(...band.map((s) => s.w))).toBeCloseTo(MARK.halfWidth * MARK.pinch, 3);
+
+    // Every narrow sample is at the centre, not out on a lobe.
+    for (const sample of band.filter((s) => s.w < MARK.halfWidth * (MARK.pinch + 0.02))) {
+      expect(Math.hypot(sample.x, sample.y)).toBeLessThan(0.08);
+    }
+  });
+
+  it('keeps the sword tips clear of each other', () => {
+    // The ends taper to a point along the tangent, which eats into the gap from
+    // both sides. tipLength and gapArc are therefore coupled: push either one
+    // and the two blades meet, and the mark silently stops having a break in it.
+    const tipOf = (sample: (typeof band)[number], sign: number) => ({
+      x: sample.x + sample.w * MARK.tipLength * sign * sample.tx,
+      y: sample.y + sample.w * MARK.tipLength * sign * sample.ty,
+    });
+    const start = tipOf(first, -1);
+    const end = tipOf(last, 1);
+    const gap = Math.hypot(end.x - start.x, end.y - start.y);
+    expect(gap).toBeGreaterThan(2 * first.w * 1.4);
+  });
+
+  it('cuts the band at equal widths, so the gap reads as one clean break', () => {
+    // The old half-twisted geometry met itself at two different thicknesses;
+    // the break looked like a mistake rather than a decision.
+    expect(band[0].w).toBeCloseTo(band[band.length - 1].w, 6);
+  });
+
+  it('stays mirror-symmetric about the horizontal axis', () => {
+    // The two lobes are no longer identical — one has a bite out of it — but
+    // the mark must still fold onto itself top-to-bottom, which is the property
+    // the old half-twisted geometry could never satisfy.
+    const width = (predicate: (s: (typeof band)[number]) => boolean) =>
+      Math.max(...band.filter(predicate).map((s) => s.w));
+    expect(width((s) => s.y > 0.2)).toBeCloseTo(
+      width((s) => s.y < -0.2),
+      6,
+    );
   });
 
   it('keeps the infinity proportions: twice as wide as it is tall', () => {
