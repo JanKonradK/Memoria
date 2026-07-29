@@ -5,7 +5,7 @@ import { useDerived } from '../../selectors';
 import { fmtDur } from '../../util';
 import { Disclosure } from '../Disclosure';
 import { ProgressRing } from '../ProgressRing';
-import { AgendaList, DASHBOARD_AGENDA_DAYS } from '../TimelineAgenda';
+import { AgendaList } from '../TimelineAgenda';
 import { GameBadge } from '../ui';
 
 const DAY = 86_400_000;
@@ -59,7 +59,7 @@ export function NexusHub({
   });
   const dailiesDone = dailyItems.filter((item) => item.done).length;
   const capsDuringSleep = entries.filter((entry) => !entry.game.paused && derived.sleepFor(entry.game.id).caps);
-  const timelineCount = agenda.live.length + agenda.upcoming.length + reminders.length;
+  const timelineCount = agenda.live.length + agenda.upcoming.length + agenda.endingSoon.length + reminders.length;
   const [openSection, setOpenSection] = useState<'timeline' | 'resets' | 'reminders' | null>('timeline');
 
   // Hub height subtracts 17rem, not 13rem: Page now reserves the floating nav rail's
@@ -71,8 +71,7 @@ export function NexusHub({
       style={{
         background:
           'linear-gradient(180deg, rgba(124,92,255,0.1), rgba(255,111,165,0.04) 40%, rgba(0,0,0,0.5)), var(--color-surface-1)',
-        boxShadow:
-          'inset 0 0 0 1px rgba(200,180,255,0.22), inset 0 1px 0 rgba(255,255,255,0.05), 0 30px 60px -30px #000',
+        boxShadow: 'inset 0 0 0 1px var(--color-line-strong), inset 0 1px 0 var(--color-line-hairline)',
       }}
     >
       <div
@@ -113,8 +112,8 @@ export function NexusHub({
           <div
             className={`flex items-center gap-2 rounded-ui-lg px-3 py-2.5 ring-1 ${
               capsDuringSleep.length > 0
-                ? 'bg-danger/10 text-rose-100 ring-rose-300/30'
-                : 'bg-ok/10 text-emerald-100 ring-emerald-300/25'
+                ? 'bg-danger/10 text-danger-fg ring-danger/30'
+                : 'bg-ok/10 text-ok-fg ring-ok/25'
             }`}
           >
             <span
@@ -140,20 +139,16 @@ export function NexusHub({
         <Disclosure
           open={openSection === 'timeline'}
           onOpenChange={(open) => setOpenSection(open ? 'timeline' : null)}
-          title={
-            <span className="text-caption font-bold uppercase tracking-[0.2em] text-dim">
-              Next {DASHBOARD_AGENDA_DAYS} days
-            </span>
-          }
+          title={<span className="text-caption font-bold uppercase tracking-[0.2em] text-dim">Event pulse</span>}
           summary={
             <span className="text-caption font-bold tabular-nums text-muted">
               {timelineCount} {timelineCount === 1 ? 'item' : 'items'}
             </span>
           }
-          triggerLabel={`${openSection === 'timeline' ? 'Collapse' : 'Expand'} Next ${DASHBOARD_AGENDA_DAYS} days`}
-          className="border-b border-white/[0.07]"
+          triggerLabel={`${openSection === 'timeline' ? 'Collapse' : 'Expand'} event pulse`}
+          className="border-b border-line-hairline"
           triggerClassName="pb-1"
-          contentClassName="scrollbar-thin h-full overflow-y-auto pb-2"
+          contentClassName="h-full overflow-hidden pb-2"
           fill
         >
           <AgendaList
@@ -175,7 +170,7 @@ export function NexusHub({
             </span>
           }
           triggerLabel={`${openSection === 'resets' ? 'Collapse' : 'Expand'} Resets this week`}
-          className="border-b border-white/[0.07]"
+          className="border-b border-line-hairline"
           triggerClassName="pb-1"
           contentClassName="scrollbar-thin h-full overflow-y-auto pb-2"
           fill
@@ -183,9 +178,9 @@ export function NexusHub({
           {resetGames.length > 0 ? (
             <div className="space-y-1">
               {resetGames.map(({ game, done, total, resetAt }) => (
-                <div key={game.id} className="flex items-center gap-2 rounded-ui-lg bg-white/[0.025] px-2.5 py-2">
+                <div key={game.id} className="flex items-center gap-2 rounded-ui-lg bg-fill-1 px-2.5 py-2">
                   <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" />
-                  <span className="min-w-0 flex-1 text-xs text-muted">
+                  <span className="min-w-0 flex-1 text-meta text-muted">
                     {done}/{total} weeklies
                   </span>
                   <span className="shrink-0 text-caption font-bold tabular-nums text-dim">
@@ -195,7 +190,7 @@ export function NexusHub({
               ))}
             </div>
           ) : (
-            <p className="rounded-ui-lg bg-white/[0.02] px-3 py-2 text-label text-faint">
+            <p className="rounded-ui-lg bg-fill-1 px-3 py-2 text-label text-faint">
               Nothing resets in the next 7 days.
             </p>
           )}
@@ -219,7 +214,7 @@ export function NexusHub({
             <button
               type="button"
               onClick={onOpenReminder}
-              className="rounded-ui-md px-2 py-1 text-caption font-semibold text-muted transition hover:bg-white/[0.06] hover:text-white"
+              className="rounded-ui-md px-2 py-1 text-caption font-semibold text-muted transition hover:bg-fill-2 hover:text-white"
             >
               + Add
             </button>
@@ -230,7 +225,7 @@ export function NexusHub({
                 const game = reminder.gameId ? agenda.games.get(reminder.gameId) : undefined;
                 const due = reminder.at <= now;
                 return (
-                  <div key={reminder.id} className="flex items-start gap-2 rounded-ui-lg bg-white/[0.025] px-2.5 py-2">
+                  <div key={reminder.id} className="flex items-start gap-2 rounded-ui-lg bg-fill-1 px-2.5 py-2">
                     {game ? (
                       <GameBadge
                         short={game.short}
@@ -243,8 +238,8 @@ export function NexusHub({
                       <span className="mt-1.5 h-2 w-2 shrink-0 rounded-ui-full bg-gold" />
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium text-fg-soft">{reminder.message}</p>
-                      <p className={`mt-0.5 text-caption tabular-nums ${due ? 'text-rose-300' : 'text-dim'}`}>
+                      <p className="truncate text-meta font-medium text-fg-soft">{reminder.message}</p>
+                      <p className={`mt-0.5 text-caption tabular-nums ${due ? 'text-danger-fg' : 'text-dim'}`}>
                         {due
                           ? 'due now'
                           : `${DateTime.fromMillis(reminder.at).toFormat('dd LLL · HH:mm')} · in ${fmtDur(reminder.at - now)}`}
@@ -255,7 +250,7 @@ export function NexusHub({
               })}
             </div>
           ) : (
-            <p className="rounded-ui-lg bg-white/[0.02] px-3 py-2 text-label text-faint">
+            <p className="rounded-ui-lg bg-fill-1 px-3 py-2 text-label text-faint">
               No reminders due in the next 7 days.
             </p>
           )}
@@ -265,7 +260,7 @@ export function NexusHub({
       <button
         type="button"
         onClick={onOpenTimeline}
-        className="relative min-h-10 w-full rounded-ui-lg bg-gradient-to-r from-accent/20 to-accent-2/15 px-3 py-2 text-xs font-bold text-violet-100 ring-1 ring-accent/30 transition hover:brightness-125"
+        className="relative min-h-10 w-full rounded-ui-lg bg-gradient-to-r from-accent/20 to-accent-2/15 px-3 py-2 text-meta font-bold text-accent-fg ring-1 ring-accent/30 transition hover:brightness-125"
       >
         Open full timeline →
       </button>

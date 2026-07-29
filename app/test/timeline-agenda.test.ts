@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Game, GameEvent } from '@void/shared';
 import { emptyState } from '@void/shared';
-import { DASHBOARD_AGENDA_DAYS, DASHBOARD_AGENDA_MAX, selectAgendaData } from '../src/components/TimelineAgenda';
+import { DASHBOARD_AGENDA_DAYS, selectAgendaData } from '../src/components/TimelineAgenda';
 
 const NOW = 1_000_000_000;
 const HOUR = 3_600_000;
@@ -39,12 +39,17 @@ function event(id: string, start: number, end: number): GameEvent {
 }
 
 describe('dashboard agenda selection', () => {
-  it('drops past events but keeps everything else in the window', () => {
+  it('shows every new arrival and only the next three upcoming events', () => {
     const state = emptyState();
     state.games = [game];
+    const DAY = 24 * HOUR;
     state.events = [
       event('past', NOW - 2 * HOUR, NOW - HOUR),
+      // Fresh: inside the 2-day arrival window, so New arrivals claims them even
+      // though they also end within nine days.
       ...Array.from({ length: 5 }, (_, index) => event(`live-${index}`, NOW - HOUR, NOW + (index + 1) * HOUR)),
+      // Aged past the arrival window, so these are the ones Ending soon owns.
+      ...Array.from({ length: 2 }, (_, index) => event(`ending-${index}`, NOW - 5 * DAY, NOW + (index + 1) * DAY)),
       ...Array.from({ length: 8 }, (_, index) =>
         event(`upcoming-${index}`, NOW + (index + 1) * HOUR, NOW + (index + 2) * HOUR),
       ),
@@ -52,9 +57,9 @@ describe('dashboard agenda selection', () => {
 
     const agenda = selectAgendaData(state, NOW, 'dashboard');
 
-    // The dashboard surfaces scroll, so a screenful is no longer the limit.
     expect(agenda.live).toHaveLength(5);
-    expect(agenda.upcoming).toHaveLength(8);
+    expect(agenda.upcoming).toHaveLength(3);
+    expect(agenda.endingSoon).toHaveLength(2);
     expect(agenda.past).toEqual([]);
   });
 
@@ -83,7 +88,7 @@ describe('dashboard agenda selection', () => {
     expect(fullAgenda.live.flatMap((row) => (row.kind === 'event' ? [row.event.id] : []))).toEqual(['long-running']);
   });
 
-  it('still budgets the rails when a fortnight is more than the surface can hold', () => {
+  it('does not cap new arrivals while keeping upcoming at three', () => {
     const state = emptyState();
     state.games = [game];
     state.events = [
@@ -93,9 +98,8 @@ describe('dashboard agenda selection', () => {
 
     const agenda = selectAgendaData(state, NOW, 'dashboard');
 
-    expect(agenda.live.length + agenda.upcoming.length).toBe(DASHBOARD_AGENDA_MAX);
-    // A wall of live events must never squeeze out what is coming next.
-    expect(agenda.upcoming.length).toBeGreaterThan(0);
+    expect(agenda.live).toHaveLength(40);
+    expect(agenda.upcoming).toHaveLength(3);
   });
 
   it('keeps the complete timeline window in full mode', () => {
