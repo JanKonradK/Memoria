@@ -6,6 +6,13 @@ import { clamp, fmtClock, fmtDur, intOr, luminance } from '../util';
 import { ProgressBar } from './primitives';
 import { ResourceIcon } from './ResourceIcon';
 
+const ENERGY_STEP_KEYS: Readonly<Record<string, number>> = {
+  a: -10,
+  s: -1,
+  d: 1,
+  f: 10,
+};
+
 /** Dark secondary card accents disappear on the reserve rail; fall back to the primary accent. */
 function visibleReserveAccent(primary: string, secondary?: string): string {
   if (!secondary) return primary;
@@ -70,7 +77,7 @@ function StepBtn({ delta, onStep, label }: { delta: number; onStep: (d: number) 
       onClick={(e) => {
         if (e.detail === 0) onStep(delta);
       }}
-      className="flex h-9 min-w-8 items-center justify-center rounded-ui-md bg-white/[0.06] px-1.5 text-xs font-bold text-fg-soft ring-1 ring-white/10 transition hover:bg-white/[0.12] active:scale-90 sm:h-7 sm:min-w-7"
+      className="flex h-9 min-w-8 items-center justify-center rounded-ui-md bg-fill-2 px-1.5 text-meta font-bold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 active:scale-90 sm:h-7 sm:min-w-7"
       aria-label={`${delta > 0 ? 'Increase' : 'Decrease'} ${label}`}
     >
       {delta > 0 ? `+${delta}` : delta}
@@ -206,7 +213,7 @@ export const EnergyRow = memo(function EnergyRow({
           <StepBtn delta={-1} onStep={step} label={res.name} />
           {/* One pill: editable value + "/ cap" together inside the same box. */}
           <span
-            className="focus-ring-group flex h-9 cursor-text items-center rounded-ui-md bg-white/[0.07] px-2 ring-1 ring-white/10 transition focus-within:bg-white/[0.1] sm:h-7"
+            className="focus-ring-group flex h-9 cursor-text items-center rounded-ui-md bg-fill-2 px-2 ring-1 ring-line-hairline transition focus-within:bg-fill-3 sm:h-7"
             onMouseDown={(e) => {
               if (e.target !== inputRef.current) {
                 e.preventDefault();
@@ -229,6 +236,14 @@ export const EnergyRow = memo(function EnergyRow({
                 setDraft(e.target.value.replace(/[^\d]/g, ''));
               }}
               onKeyDown={(e) => {
+                const delta = ENERGY_STEP_KEYS[e.key.toLowerCase()];
+                if (delta !== undefined && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                  // Browser repeat already supplies one event per tick; a second
+                  // timer here would make a held key accelerate unpredictably.
+                  e.preventDefault();
+                  step(delta);
+                  return;
+                }
                 if (e.key === 'Enter') {
                   commit(intOr(shown, liveValue ?? 0));
                   inputRef.current?.blur();
@@ -252,9 +267,15 @@ export const EnergyRow = memo(function EnergyRow({
                 } else setDraft(null);
                 mainEdit.current = { dirty: false, cancelled: false };
               }}
-              className="bg-transparent text-right text-body font-bold tabular-nums outline-none"
+              // The readout is the content. It used to sit at text-body, the
+              // same size as every task name on the card, which left the number
+              // the user opened the app to read tied for smallest-thing-on-
+              // screen. Title size makes it the clear second voice after the
+              // game's own name. leading-none keeps it inside the 28px pill.
+              className="bg-transparent text-right text-title font-black leading-none tabular-nums outline-none"
               style={{ color, width: `${Math.max(2, shown.length || 1) + 0.5}ch` }}
               aria-label={`${res.name} current value`}
+              aria-keyshortcuts="a s d f Enter Escape"
             />
             <span className="pl-1 text-label tabular-nums text-dim">/ {res.cap}</span>
           </span>
@@ -272,13 +293,13 @@ export const EnergyRow = memo(function EnergyRow({
                 type="button"
                 aria-expanded={reserveIsOpen}
                 onClick={() => setReserveOpen(res.id, !reserveIsOpen)}
-                className="mt-1 w-full text-left text-caption font-semibold tabular-nums text-dim transition hover:text-slate-300"
+                className="mt-1 w-full text-left text-caption font-semibold tabular-nums text-dim transition hover:text-fg-soft"
               >
                 {reserveIsOpen ? '▾' : '▸'} {reserveLabel} {reserveValue}/{res.reserveCap}
               </button>
 
               {reserveIsOpen && (
-                <div className="mt-1.5 border-t border-white/[0.08] pt-2">
+                <div className="mt-1.5 border-t border-line-hairline pt-2">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
                     <span
                       className="min-w-0 flex-1 truncate text-label font-semibold uppercase tracking-wider"
@@ -289,7 +310,7 @@ export const EnergyRow = memo(function EnergyRow({
                     <span className="ml-auto flex w-full items-center justify-end gap-1 sm:w-auto">
                       <StepBtn delta={-1} onStep={reserveStep} label={reserveLabel} />
                       <span
-                        className="focus-ring-group flex h-9 cursor-text items-center rounded-ui-md bg-white/[0.07] px-2 ring-1 ring-white/10 transition focus-within:bg-white/[0.1] sm:h-7"
+                        className="focus-ring-group flex h-9 cursor-text items-center rounded-ui-md bg-fill-2 px-2 ring-1 ring-line-hairline transition focus-within:bg-fill-3 sm:h-7"
                         onMouseDown={(e) => {
                           if (e.target !== reserveInputRef.current) {
                             e.preventDefault();
@@ -311,6 +332,12 @@ export const EnergyRow = memo(function EnergyRow({
                             setReserveDraft(e.target.value.replace(/[^\d]/g, ''));
                           }}
                           onKeyDown={(e) => {
+                            const delta = ENERGY_STEP_KEYS[e.key.toLowerCase()];
+                            if (delta !== undefined && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                              e.preventDefault();
+                              reserveStep(delta);
+                              return;
+                            }
                             if (e.key === 'Enter') e.currentTarget.blur();
                             if (e.key === 'Escape') {
                               reserveEdit.current.cancelled = true;
@@ -333,6 +360,7 @@ export const EnergyRow = memo(function EnergyRow({
                             width: `${Math.max(2, (reserveDraft ?? String(reserveValue)).length) + 0.5}ch`,
                           }}
                           aria-label={`${reserveLabel} for ${res.name}`}
+                          aria-keyshortcuts="a s d f Enter Escape"
                         />
                         <span className="pl-1 text-label tabular-nums text-dim">/ {res.reserveCap}</span>
                       </span>
@@ -346,11 +374,11 @@ export const EnergyRow = memo(function EnergyRow({
                     segmented
                   />
                   <div
-                    className={`mt-1 text-xs tabular-nums ${
+                    className={`mt-1 text-meta tabular-nums ${
                       reserveValue >= res.reserveCap
-                        ? 'font-bold text-rose-300'
+                        ? 'font-bold text-danger-fg'
                         : proj.isFull
-                          ? 'text-emerald-300/90'
+                          ? 'text-ok-fg'
                           : 'text-dim'
                     }`}
                   >
@@ -362,16 +390,16 @@ export const EnergyRow = memo(function EnergyRow({
           )}
 
           <div
-            className={`mt-1 text-xs tabular-nums ${
+            className={`mt-1 text-meta tabular-nums ${
               proj.isFull
-                ? 'font-bold text-rose-300'
+                ? 'font-bold text-danger-fg'
                 : urgency === 'danger'
-                  ? 'text-rose-300'
+                  ? 'text-danger-fg'
                   : urgency === 'warn'
-                    ? 'text-amber-300'
+                    ? 'text-warn-fg'
                     : urgency === 'ok'
-                      ? 'text-emerald-300/90'
-                      : 'text-slate-300'
+                      ? 'text-ok-fg'
+                      : 'text-fg-soft'
             }`}
           >
             {subtitle}
@@ -379,7 +407,7 @@ export const EnergyRow = memo(function EnergyRow({
         </>
       )}
 
-      {compact && subtitle && <div className="mt-1 text-xs tabular-nums text-slate-300">{subtitle}</div>}
+      {compact && subtitle && <div className="mt-1 text-meta tabular-nums text-fg-soft">{subtitle}</div>}
     </div>
   );
 });

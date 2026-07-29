@@ -26,23 +26,58 @@ function CadenceTag({ cadence }: { cadence: ChecklistItem['cadence'] }) {
   return <Pill>{cadence === 'custom' ? 'cycle' : cadence}</Pill>;
 }
 
-/** One green celebratory sweep when `done` flips true; skipped when reduced motion is preferred. */
-function useCompletionSweep(done: boolean): { sweep: boolean; end: () => void } {
+/** Duration of the completion burst in index.css, plus headroom for the fallback. */
+const SWEEP_TIMEOUT_MS = 1200;
+
+/** One completion burst when `done` flips true; skipped when reduced motion is preferred. */
+function useCompletionSweep(done: boolean): {
+  sweep: boolean;
+  checkEnter: 'burst' | 'pop' | 'none';
+  end: () => void;
+} {
   const reduced = useReducedMotion();
   const [sweep, setSweep] = useState(false);
+  // Whether the CURRENT completed state already celebrated. Without this the
+  // check re-ran its entrance the moment the burst finished — the tick appeared
+  // with the explosion, then animated in a second time straight after.
+  const [burst, setBurst] = useState(false);
   const prev = useRef(done);
   useEffect(() => {
-    if (done && !prev.current && !reduced) setSweep(true);
-    if (!done) setSweep(false);
+    if (done && !prev.current && !reduced) {
+      setSweep(true);
+      setBurst(true);
+    }
+    if (!done) {
+      setSweep(false);
+      setBurst(false);
+    }
     prev.current = done;
   }, [done, reduced]);
-  return { sweep, end: () => setSweep(false) };
+
+  // The burst normally clears itself from `animationend`. That event never
+  // arrives if the document is hidden when it mounts — CSS animations do not
+  // advance in a background tab — so ticking something off and switching away
+  // left the overlay frozen over the tick until the next toggle. Tick something
+  // off, alt-tab, come back: it was still sitting there. Always arm a fallback.
+  useEffect(() => {
+    if (!sweep) return undefined;
+    const timer = setTimeout(() => setSweep(false), SWEEP_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [sweep]);
+
+  return {
+    sweep,
+    // Mid-burst it is the burst; after one it is already there; otherwise (a
+    // reload, reduced motion, a row scrolling in already done) it just pops.
+    checkEnter: sweep ? 'burst' : burst ? 'none' : 'pop',
+    end: useCallback(() => setSweep(false), []),
+  };
 }
 
 /** Circular tick box at the right edge of a row: sweep plays, then the tick pops. */
 function CompletionTick({ done, color }: { done: boolean; color: string }) {
-  const { sweep, end } = useCompletionSweep(done);
-  return <Tick checked={done} color={color} sweep={sweep} onSweepEnd={end} />;
+  const { sweep, checkEnter, end } = useCompletionSweep(done);
+  return <Tick checked={done} color={color} sweep={sweep} checkEnter={checkEnter} onSweepEnd={end} />;
 }
 
 function TimerTaskRow({
@@ -67,7 +102,7 @@ function TimerTaskRow({
     <button
       type="button"
       onClick={running || ready ? onRestart : onStart}
-      className="group flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-1 text-left transition hover:bg-white/5 sm:min-h-8"
+      className="group flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-1 text-left transition hover:bg-fill-2 sm:min-h-8"
       aria-label={`${item.name}: ${running ? 'restart timer' : ready ? 'timer ready — restart' : 'start timer'}`}
     >
       <CadenceTag cadence={item.cadence} />
@@ -76,10 +111,10 @@ function TimerTaskRow({
       </span>
       {running && (
         <Tooltip content="d = days · h = hours · m = minutes">
-          <span className="shrink-0 text-xs font-bold tabular-nums text-amber-200">{fmtDur(left)}</span>
+          <span className="shrink-0 text-meta font-bold tabular-nums text-warn-fg">{fmtDur(left)}</span>
         </Tooltip>
       )}
-      {ready && <span className="shrink-0 text-xs font-bold text-emerald-300">Ready</span>}
+      {ready && <span className="shrink-0 text-meta font-bold text-ok-fg">Ready</span>}
       {running ? <Tick fraction={fraction} color={color} /> : <CompletionTick done={ready} color={color} />}
     </button>
   );
@@ -91,12 +126,12 @@ function TimerTaskRow({
  * fills one sector clockwise from the top; a click on the full circle clears it.
  */
 function CountTaskRow({ item, color, onAdvance }: { item: ChecklistItem; color: string; onAdvance: () => void }) {
-  const { sweep, end } = useCompletionSweep(item.done);
+  const { sweep, checkEnter, end } = useCompletionSweep(item.done);
   return (
     <button
       type="button"
       onClick={onAdvance}
-      className="group flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-1 text-left transition hover:bg-white/5 sm:min-h-8"
+      className="group flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-1 text-left transition hover:bg-fill-2 sm:min-h-8"
       aria-label={`${item.name}: ${item.countDone} of ${item.countTarget} done${item.done ? ', complete — click to reset' : ', click to mark one more'}`}
     >
       <CadenceTag cadence={item.cadence} />
@@ -110,12 +145,15 @@ function CountTaskRow({ item, color, onAdvance }: { item: ChecklistItem; color: 
           {item.countDone}/{item.countTarget}
         </span>
       )}
-      {/* No checkmark on the pie — fully filled sectors ARE the done state. */}
+      {/* Filling the last sector of a multi-step task earns the same burst and
+          the same tick as a single one — it is the bigger achievement of the
+          two, and it used to be the only one that got nothing. */}
       <Tick
         checked={item.done}
         segments={{ current: item.countDone, total: item.countTarget }}
         color={color}
         sweep={sweep}
+        checkEnter={checkEnter}
         onSweepEnd={end}
       />
     </button>
@@ -140,7 +178,7 @@ function TaskRow({
     <button
       type="button"
       onClick={onToggle}
-      className="group flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-1 text-left transition hover:bg-white/5 sm:min-h-8"
+      className="group flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-1 text-left transition hover:bg-fill-2 sm:min-h-8"
     >
       <CadenceTag cadence={item.cadence} />
       <span
@@ -148,16 +186,22 @@ function TaskRow({
           item.done
             ? 'text-dim line-through'
             : danger
-              ? 'warn-pulse font-bold text-rose-300'
+              ? 'warn-pulse font-bold text-danger-fg'
               : warn
-                ? 'text-amber-200'
-                : 'text-fg-soft'
+                ? 'text-warn-fg'
+                : // Core tasks pay the game's premium currency, so they get the
+                  // brightest step and the heavier weight — a second tier inside
+                  // Body rather than a fourth type size (see the Three Voices
+                  // Rule). Everything else recedes to the soft step.
+                  item.core
+                  ? 'font-bold text-fg'
+                  : 'text-fg-soft'
         }`}
       >
         {item.name}
       </span>
       {(danger || warn) && (
-        <span className={`shrink-0 text-caption font-bold tabular-nums ${danger ? 'text-rose-300' : 'text-amber-300'}`}>
+        <span className={`shrink-0 text-caption font-bold tabular-nums ${danger ? 'text-danger-fg' : 'text-warn-fg'}`}>
           {fmtDur(left)}
         </span>
       )}
@@ -184,10 +228,9 @@ export function EventStrip({
   onOpenEvent: (eventId: string, gameId: string) => void;
 }) {
   const mine = allEvents.filter((e) => !e.deleted && !e.done && e.gameId === game.id);
-  // `notify` used to gate this list, which meant an event with alerts switched
-  // off vanished from its own card — a ZZZ card could sit there showing nothing
-  // while two of its events were live. Whether you want a push notification and
-  // whether the card should show the event are different questions.
+  // `notify` used to gate this list, which meant an event omitted from next
+  // actions vanished from its own card — a ZZZ card could sit there showing
+  // nothing while two of its events were live. Card visibility is independent.
   const active = mine.filter((e) => e.start <= now && e.end > now).sort((a, b) => a.end - b.end);
   // Banners count: which banner is running is exactly the kind of thing you open
   // the card to check.
@@ -208,11 +251,11 @@ export function EventStrip({
           key={ev.id}
           type="button"
           onClick={() => onOpenEvent(ev.id, game.id)}
-          className="flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-0.5 text-left text-label transition hover:bg-white/5 sm:min-h-8"
+          className="flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-0.5 text-left text-label transition hover:bg-fill-2 sm:min-h-8"
         >
           <Pill>{ev.type === 'cycle' ? 'cycle' : ev.type === 'banner' ? 'banner' : 'event'}</Pill>
           {ev.dailyTouch && <Pill variant="warn">daily</Pill>}
-          <span className="truncate text-slate-300">{ev.name}</span>
+          <span className="truncate text-fg-soft">{ev.name}</span>
           <Tooltip content="d = days · h = hours · m = minutes">
             {ev.start > now ? (
               <span className="ml-auto shrink-0 font-bold tabular-nums text-muted">in {fmtDur(ev.start - now)}</span>
@@ -315,7 +358,7 @@ function ResourceControls({
               <button
                 type="button"
                 onClick={() => actions.adjustEnergy(primaryEnergy.id, chip.delta)}
-                className="min-h-11 rounded-ui-lg bg-white/[0.055] px-3 py-2 text-xs font-semibold text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white sm:min-h-8 sm:py-1"
+                className="min-h-11 rounded-ui-lg bg-fill-2 px-3 py-2 text-meta font-semibold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 hover:text-white sm:min-h-8 sm:py-1"
               >
                 {chip.label}{' '}
                 <span className="tabular-nums text-dim">{chip.delta > 0 ? `+${chip.delta}` : chip.delta}</span>
@@ -399,15 +442,17 @@ function GameControlsHeader({
       <button
         type="button"
         onClick={onEdit}
-        className="group/title -ml-1 min-w-0 flex-1 cursor-pointer rounded-ui-md px-1 py-0.5 text-left transition hover:bg-white/[0.045]"
+        className="group/title -ml-1 min-w-0 flex-1 cursor-pointer rounded-ui-md px-1 py-0.5 text-left transition hover:bg-fill-2"
         aria-label={`Edit ${game.name}`}
       >
         <div className="flex items-center gap-2.5">
           <h2
-            className={`truncate ${layout === 'focus' ? 'text-4xl min-[1500px]:text-5xl' : 'text-2xl'} font-black tracking-tight text-fg transition group-hover/title:text-white`}
+            className={`truncate ${layout === 'focus' ? 'text-display min-[1500px]:text-hero' : 'text-heading'} font-black tracking-tight text-fg transition group-hover/title:text-white`}
             style={{
               fontFamily: game.titleFont,
-              textShadow: `0 0 24px ${tint(game.color, 0.55)}, 0 1px 0 rgba(0,0,0,0.4)`,
+              // A 1px offset for legibility over the card's own gradient — not
+              // the coloured halo that used to sit behind it.
+              textShadow: '0 1px 0 rgba(0, 0, 0, 0.4)',
             }}
           >
             {game.name}
@@ -541,10 +586,12 @@ export const GameCard = memo(function GameCard({ entry, now }: { entry: GameUrge
   const reduced = useReducedMotion();
   const urgent = !game.paused && next != null && next.at - now < 60 * 60_000;
   const pulseUrgent = urgent && !reduced;
+  // Depth is the game's own inset ring plus the top-edge highlight — nothing
+  // outside the box. See the Shadows Float Only Rule in DESIGN.md: a card does
+  // not overlay the page, so it casts nothing.
   const cardShadows = [
     !pulseUrgent && `inset 0 0 0 1px ${tint(game.color, 0.3)}`,
-    'inset 0 1px 0 rgba(255,255,255,0.07)',
-    `0 0 56px -22px ${tint(game.color, 0.55)}`,
+    'inset 0 1px 0 var(--color-line-hairline)',
   ]
     .filter(Boolean)
     .join(', ');
@@ -575,7 +622,7 @@ export const GameCard = memo(function GameCard({ entry, now }: { entry: GameUrge
           <img
             src={game.image}
             alt=""
-            className="absolute right-0 top-1/2 h-[135%] max-w-none -translate-y-1/2 object-cover opacity-40 saturate-125 transition duration-500 group-hover:opacity-55"
+            className="absolute right-0 top-1/2 h-[135%] max-w-none -translate-y-1/2 object-cover opacity-40 saturate-125 transition duration-(--dur-slow) group-hover:opacity-55"
             style={{
               WebkitMaskImage: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.55) 55%, #000 100%)',
               maskImage: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.55) 55%, #000 100%)',

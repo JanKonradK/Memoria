@@ -4,12 +4,12 @@ import { tint } from '../util';
 export type PillVariant = 'neutral' | 'muted' | 'warn' | 'paused' | 'dark' | 'light';
 
 const PILL_VARIANTS: Record<PillVariant, string> = {
-  neutral: 'bg-white/5 text-dim',
-  muted: 'bg-white/10 text-muted',
-  warn: 'bg-warn/10 text-amber-300/90',
-  paused: 'bg-white/10 text-muted',
-  dark: 'bg-black/30 text-white/85',
-  light: 'bg-black/15 text-slate-800',
+  neutral: 'bg-fill-2 text-dim',
+  muted: 'bg-fill-3 text-muted',
+  warn: 'bg-warn/10 text-warn-fg',
+  paused: 'bg-fill-3 text-muted',
+  dark: 'bg-scrim-well text-fg-soft',
+  light: 'bg-scrim-well text-fg-invert',
 };
 
 /**
@@ -33,13 +33,16 @@ export function Pill({
   return (
     <span
       className={`shrink-0 rounded-ui-sm font-black uppercase tracking-wider ${
-        size === 'sm' ? 'px-1 text-micro' : 'px-2 py-0.5 text-caption'
+        size === 'sm' ? 'px-1 text-caption' : 'px-2 py-0.5 text-caption'
       } ${PILL_VARIANTS[variant]} ${className}`}
     >
       {children}
     </span>
   );
 }
+
+/** Ejecta angles for the completion burst — eight, evenly spaced. */
+const NOVA_SHARDS = [0, 45, 90, 135, 180, 225, 270, 315];
 
 const TICK_CENTER = 10;
 const TICK_RADIUS = 9;
@@ -67,6 +70,7 @@ export function Tick({
   fraction,
   segments,
   sweep = false,
+  checkEnter = 'pop',
   onSweepEnd,
   className = '',
 }: {
@@ -75,6 +79,12 @@ export function Tick({
   fraction?: number;
   segments?: { current: number; total: number };
   sweep?: boolean;
+  /**
+   * How the completed face arrives. `none` matters: once the burst has played,
+   * the tick must simply BE there. Re-running the pop on the next render made
+   * the check animate in a second time, right after the celebration.
+   */
+  checkEnter?: 'burst' | 'pop' | 'none';
   onSweepEnd?: () => void;
   className?: string;
 }) {
@@ -84,13 +94,18 @@ export function Tick({
   );
   const segmented = segments && segments.total > 1 && segments.total <= 12;
   const progressRing = fraction != null || (segments != null && segments.total > 12);
+  // Timer and large-count ticks read their state from the arc, so they never
+  // get a check; everything else does the moment it is done.
+  const completed = checked && !progressRing;
 
   return (
     <span
       aria-hidden
       className={`relative flex h-5 w-5 shrink-0 items-center justify-center rounded-ui-full transition group-active:scale-75 ${className}`}
     >
-      <svg className="absolute inset-0" width="20" height="20" viewBox="0 0 20 20">
+      {/* overflow-visible: the burst deliberately overshoots past the ring, and
+          an SVG clips to its viewBox by default. */}
+      <svg className="absolute inset-0 overflow-visible" width="20" height="20" viewBox="0 0 20 20">
         {segmented &&
           Array.from({ length: segments.total }, (_, index) => {
             const [x, y] = pointOnTick(-90 + index * (360 / segments.total));
@@ -118,7 +133,24 @@ export function Tick({
               />
             ) : null,
           )}
-        {!segments && !progressRing && checked && <circle cx="10" cy="10" r="9" fill={color} />}
+        {/* The completed face: the filled disc and the check as ONE group, so
+            the burst scales them together. Scaling the check alone would throw a
+            dark mark onto the dark card at the top of the overshoot, where there
+            is no disc under it any more. Drawn for segmented counts too — a
+            finished multi-step task earns the same tick as a single one. */}
+        {completed && (
+          <g className={checkEnter === 'none' ? undefined : checkEnter === 'burst' ? 'check-burst' : 'check-pop'}>
+            <circle cx="10" cy="10" r="9" fill={color} />
+            <path
+              d="M6 10.5L8.8 13.2 14 7"
+              fill="none"
+              stroke="var(--color-surface-0)"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </g>
+        )}
         {!segments && !progressRing && (
           <circle
             cx="10"
@@ -129,7 +161,6 @@ export function Tick({
             strokeWidth="var(--tick-ring-width)"
           />
         )}
-        {segments && segments.total <= 1 && segments.current > 0 && <circle cx="10" cy="10" r="9" fill={color} />}
         {segments && !progressRing && (
           <circle
             cx="10"
@@ -157,33 +188,24 @@ export function Tick({
             />
           </>
         )}
-        {checked && !segments && !sweep && (
-          <path
-            className="check-pop"
-            d="M6 10.5L8.8 13.2 14 7"
-            fill="none"
-            stroke="var(--color-surface-1)"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        )}
-        {sweep && (
-          <circle
-            cx="10"
-            cy="10"
-            r="9"
-            fill="none"
-            stroke="var(--color-ok)"
-            strokeWidth="var(--tick-progress-width)"
-            strokeLinecap="round"
-            strokeDasharray={TICK_CIRCUMFERENCE}
-            transform="rotate(-90 10 10)"
-            className="ring-sweep"
+      </svg>
+      {sweep && (
+        <span className="pointer-events-none absolute inset-0" aria-hidden>
+          <span
+            className="nova-wave absolute inset-0 rounded-ui-full ring-2 ring-ok"
+            // The longest-running piece owns the completion callback, so the
+            // sweep state clears exactly once rather than per element.
             onAnimationEnd={onSweepEnd}
           />
-        )}
-      </svg>
+          {NOVA_SHARDS.map((angle) => (
+            <span
+              key={angle}
+              className="nova-shard absolute left-1/2 top-1/2 -ml-px -mt-px h-0.5 w-0.5 rounded-ui-full bg-ok"
+              style={{ '--a': `${angle}deg` } as CSSProperties}
+            />
+          ))}
+        </span>
+      )}
     </span>
   );
 }
@@ -275,21 +297,21 @@ export function ProgressBar({
     <div
       {...props}
       aria-hidden="true"
-      className={`relative mt-1.5 h-3.5 overflow-hidden rounded-ui-sm bg-black/40 ring-1 ring-white/10 ${className}`}
+      className={`relative mt-1.5 h-3.5 overflow-hidden rounded-ui-sm bg-scrim-well ring-1 ring-line-hairline ${className}`}
       style={{
         boxShadow: `inset 0 1px 3px rgba(0,0,0,0.6)${glow ? `, 0 0 12px ${tint(color, 0.45)}` : ''}`,
         ...style,
       }}
     >
       <div
-        className="absolute inset-y-0 left-0 overflow-hidden rounded-r-[3px] transition-[width] duration-700 ease-out motion-reduce:transition-none"
+        className="absolute inset-y-0 left-0 overflow-hidden rounded-r-ui-sm transition-[width] duration-(--dur-slow) ease-out motion-reduce:transition-none"
         style={{
           width: `${progress * 100}%`,
           background: `linear-gradient(180deg, ${tint(color, 0.95)} 0%, ${color} 55%, ${tint(color2 ?? color, 0.72)} 100%)`,
           ...fillStyle,
         }}
       >
-        <span className="absolute inset-x-0 top-0 h-1/2 bg-white/25" />
+        <span className="absolute inset-x-0 top-0 h-1/2 bg-fill-4" />
       </div>
       {segmented && (
         <span
@@ -300,7 +322,7 @@ export function ProgressBar({
           }}
         />
       )}
-      {glow && <span className="pulse-fade pointer-events-none absolute inset-0 bg-white/25 motion-reduce:hidden" />}
+      {glow && <span className="pulse-fade pointer-events-none absolute inset-0 bg-fill-4 motion-reduce:hidden" />}
     </div>
   );
 }
