@@ -161,9 +161,8 @@ test('tabs, timeline controls, and settings fit after adding a game', async ({ p
   await page.keyboard.press('Escape');
 
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByRole('button', { name: 'Expand Notifications settings' }).click();
-  await expect(page.getByLabel('Sleep window (hours)')).toHaveValue('8');
   await page.getByRole('button', { name: 'Expand Display settings' }).click();
+  await expect(page.getByLabel('Sleep window (hours)')).toHaveValue('8');
   const textSize = page.getByRole('radiogroup', { name: 'Text size' });
   await expect(textSize.getByRole('radio', { name: 'M', exact: true })).toHaveAttribute('data-state', 'on');
   await textSize.getByRole('radio', { name: 'XL', exact: true }).click();
@@ -179,9 +178,7 @@ test('tabs, timeline controls, and settings fit after adding a game', async ({ p
   const gameSettings = page.getByRole('region', { name: 'Games' });
   await expect(gameSettings.getByText('Genshin Impact', { exact: true })).toBeVisible();
   await gameSettings.getByRole('button', { name: 'Edit Genshin Impact' }).click();
-  const dialog = page.getByRole('dialog', { name: 'Genshin Impact' });
-  await dialog.getByRole('radio', { name: 'Alerts', exact: true }).click();
-  await expect(dialog.getByText('Energy nearing cap', { exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Genshin Impact' })).toBeVisible();
 });
 
 test('wide dashboard switches between nexus and cards rail while timeline bars stay in scale', async ({

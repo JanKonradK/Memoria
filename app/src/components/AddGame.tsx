@@ -64,7 +64,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
               >
                 <GameBadge short={p.short} color={p.color} color2={p.color2} size="lg" />
                 <span>
-                  <span className="block text-body font-bold text-slate-100">{p.name}</span>
+                  <span className="block text-body font-bold text-fg-soft">{p.name}</span>
                   <span className="block text-label text-muted">{p.resources.map((r) => r.name).join(' + ')}</span>
                 </span>
               </button>
@@ -84,7 +84,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
       ) : (
         <>
           {picked.notes && (
-            <p className="mb-4 rounded-ui-lg bg-warn/10 px-3 py-2 text-xs text-amber-200 ring-1 ring-warn/20">
+            <p className="mb-4 rounded-ui-lg bg-warn/10 px-3 py-2 text-meta text-warn-fg ring-1 ring-warn/20">
               {picked.notes}
             </p>
           )}

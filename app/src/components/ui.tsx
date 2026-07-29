@@ -54,7 +54,7 @@ export function GameBadge({
   const badgeHeights = { sm: 20, md: 24, lg: 32 } as const;
   const strokeWidths = { sm: 1.5, md: 1.75, lg: 2 } as const;
   const textSizes = {
-    sm: 'text-micro tracking-normal',
+    sm: 'text-caption tracking-normal',
     md: 'text-caption tracking-wider',
     lg: 'text-label tracking-wider',
   };
@@ -103,7 +103,7 @@ export function Field({ label, children, className = '' }: { label: string; chil
 }
 
 const inputCls =
-  'min-h-11 w-full rounded-ui-lg bg-white/[0.09] px-3 py-2 text-body text-fg ring-1 ring-white/15 outline-none placeholder:text-dim focus:bg-white/[0.12] transition sm:min-h-9';
+  'min-h-11 w-full rounded-ui-lg bg-fill-2 px-3 py-2 text-body text-fg ring-1 ring-line-edge outline-none placeholder:text-dim focus:bg-fill-3 transition sm:min-h-9';
 
 export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${inputCls} ${props.className ?? ''}`} />;
@@ -174,7 +174,7 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
             width="12"
             height="12"
             viewBox="0 0 20 20"
-            className="shrink-0 text-muted transition duration-200 group-data-[state=open]:rotate-180"
+            className="shrink-0 text-muted transition duration-(--dur-fast) group-data-[state=open]:rotate-180"
             fill="currentColor"
             aria-hidden
           >
@@ -187,7 +187,7 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
           position="popper"
           sideOffset={4}
           collisionPadding={8}
-          className="fade-in z-[80] max-h-60 w-[var(--radix-select-trigger-width)] min-w-max overflow-hidden rounded-ui-lg bg-popover p-1 shadow-2xl ring-1 ring-white/20"
+          className="fade-in z-[80] max-h-60 w-[var(--radix-select-trigger-width)] min-w-max overflow-hidden rounded-ui-lg bg-popover p-1 shadow-float ring-1 ring-line-strong"
         >
           <SelectPrimitive.Viewport className="max-h-60 overflow-y-auto scrollbar-thin">
             {opts.map((option) => (
@@ -196,7 +196,7 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
                 value={toRadixValue(option.value)}
                 disabled={option.disabled}
                 textValue={typeof option.label === 'string' ? option.label : undefined}
-                className="relative flex min-h-11 cursor-default select-none items-center rounded-ui-md px-3 py-2 pr-8 text-body text-fg-soft outline-none transition data-[disabled]:opacity-40 data-[highlighted]:bg-white/10 data-[state=checked]:bg-white/15 data-[state=checked]:font-semibold sm:min-h-9 sm:py-1.5"
+                className="relative flex min-h-11 cursor-default select-none items-center rounded-ui-md px-3 py-2 pr-8 text-body text-fg-soft outline-none transition data-[disabled]:opacity-40 data-[highlighted]:bg-fill-3 data-[state=checked]:bg-fill-4 data-[state=checked]:font-semibold sm:min-h-9 sm:py-1.5"
               >
                 <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
                 <SelectPrimitive.ItemIndicator className="absolute right-2 text-accent">
@@ -212,7 +212,9 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
 }
 
 export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea {...props} className={`${inputCls} min-h-20 resize-y font-mono text-xs ${props.className ?? ''}`} />;
+  return (
+    <textarea {...props} className={`${inputCls} min-h-20 resize-y font-mono text-meta ${props.className ?? ''}`} />
+  );
 }
 
 export function Toggle({
@@ -228,15 +230,15 @@ export function Toggle({
 }) {
   const id = useId();
   return (
-    <label htmlFor={id} className="flex min-h-11 items-center gap-2 text-body text-slate-300 sm:min-h-9">
+    <label htmlFor={id} className="flex min-h-11 items-center gap-2 text-body text-fg-soft sm:min-h-9">
       <SwitchPrimitive.Root
         id={id}
         checked={checked}
         onCheckedChange={onChange}
-        className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-ui-full bg-white/10 transition-colors duration-200 data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-accent data-[state=checked]:to-accent-2"
+        className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-ui-full bg-fill-3 transition-colors duration-(--dur-fast) data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-accent data-[state=checked]:to-accent-2"
         aria-label={ariaLabel ?? label}
       >
-        <SwitchPrimitive.Thumb className="block h-5 w-5 translate-x-0.5 rounded-ui-full bg-white shadow transition-transform duration-200 data-[state=checked]:translate-x-[22px]" />
+        <SwitchPrimitive.Thumb className="block h-5 w-5 translate-x-0.5 rounded-ui-full bg-white shadow transition-transform duration-(--dur-fast) data-[state=checked]:translate-x-[22px]" />
       </SwitchPrimitive.Root>
       {label && <span>{label}</span>}
     </label>
@@ -261,7 +263,7 @@ export function Segmented<T extends string>({
       onValueChange={(next) => {
         if (next) onChange(next as T);
       }}
-      className="inline-flex rounded-ui-lg bg-white/[0.06] p-0.5 ring-1 ring-white/10"
+      className="inline-flex rounded-ui-lg bg-fill-2 p-0.5 ring-1 ring-line-hairline"
       aria-label={ariaLabel}
     >
       {options.map((option) => {
@@ -269,7 +271,7 @@ export function Segmented<T extends string>({
           <ToggleGroupPrimitive.Item
             key={option.value}
             value={option.value}
-            className="h-7 rounded-ui-md px-3 text-xs font-semibold text-muted transition hover:text-fg-soft data-[state=on]:bg-white/15 data-[state=on]:text-white"
+            className="h-7 rounded-ui-md px-3 text-meta font-semibold text-muted transition hover:text-fg-soft data-[state=on]:bg-fill-4 data-[state=on]:text-white"
           >
             {option.label}
           </ToggleGroupPrimitive.Item>
@@ -290,7 +292,7 @@ export function Tooltip({ children, content }: { children: ReactElement; content
         <TooltipPrimitive.Content
           sideOffset={6}
           collisionPadding={8}
-          className="fade-in z-[90] max-w-64 rounded-ui-sm bg-surface-2 px-2 py-1 text-caption text-fg-soft shadow-xl ring-1 ring-line"
+          className="fade-in z-[90] max-w-64 rounded-ui-sm bg-surface-2 px-2 py-1 text-caption text-fg-soft shadow-float ring-1 ring-line"
         >
           {content}
           <TooltipPrimitive.Arrow className="fill-surface-2" />
@@ -316,10 +318,9 @@ export function Btn({
   const base =
     'min-h-11 rounded-ui-lg px-4 py-2 text-body font-semibold transition active:scale-[0.97] disabled:opacity-40 sm:min-h-9';
   const kinds = {
-    primary:
-      'bg-gradient-to-br from-accent to-accent-2 text-white hover:brightness-110 shadow-lg shadow-accent-2/25 ring-1 ring-white/15',
-    ghost: 'bg-white/[0.06] text-fg-soft ring-1 ring-white/10 hover:bg-white/[0.1]',
-    danger: 'bg-danger/15 text-rose-200 ring-1 ring-rose-400/30 hover:bg-danger/25',
+    primary: 'bg-gradient-to-br from-accent to-accent-2 text-white hover:brightness-110 ring-1 ring-line-edge',
+    ghost: 'bg-fill-2 text-fg-soft ring-1 ring-line-hairline hover:bg-fill-3',
+    danger: 'bg-danger/15 text-danger-fg ring-1 ring-danger/30 hover:bg-danger/25',
   };
   return (
     <button type="button" disabled={disabled} onClick={onClick} className={`${base} ${kinds[kind]} ${className}`}>
@@ -329,5 +330,5 @@ export function Btn({
 }
 
 export function SectionTitle({ children }: { children: ReactNode }) {
-  return <h3 className="mb-2 mt-6 text-xs font-bold uppercase tracking-widest text-muted first:mt-0">{children}</h3>;
+  return <h3 className="mb-2 mt-6 text-meta font-bold uppercase tracking-widest text-muted first:mt-0">{children}</h3>;
 }

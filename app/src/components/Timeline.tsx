@@ -141,7 +141,7 @@ const EventRow = memo(function EventRow({
           className="absolute inset-0 z-10 rounded-ui-lg"
           aria-label={`Open ${game.name} event: ${ev.name}`}
         />
-        <div className="absolute inset-0 rounded-ui-lg bg-white/[0.03]" />
+        <div className="absolute inset-0 rounded-ui-lg bg-fill-1" />
         <ProgressBar
           variant="timeline"
           value={displayWidth / 100}
@@ -171,13 +171,13 @@ const EventRow = memo(function EventRow({
           {cycle && <Pill variant={isLightFill(game.color, game.color2) ? 'light' : 'dark'}>cycle</Pill>}
           {maint && <Pill variant="muted">patch</Pill>}
           <span
-            className={`truncate text-xs ${
+            className={`truncate text-meta ${
               maint
                 ? 'font-medium text-muted'
                 : banner
                   ? 'font-medium text-muted'
                   : isLightFill(game.color, game.color2)
-                    ? 'font-bold text-slate-900'
+                    ? 'font-bold text-fg-invert'
                     : 'font-bold text-white'
             }`}
           >
@@ -193,11 +193,11 @@ const EventRow = memo(function EventRow({
             }}
             aria-label={ev.done ? `Restore ${ev.name}` : `Mark ${ev.name} done`}
             className={`pointer-events-auto flex items-center justify-center rounded-ui-full font-black transition ${
-              maint ? 'text-[0.5625rem]' : 'text-xs'
+              maint ? 'text-caption' : 'text-meta'
             } ${
               ev.done
                 ? 'bg-ok/90 text-black'
-                : 'bg-black/70 text-muted opacity-60 hover:text-emerald-300 focus-visible:opacity-100 sm:opacity-0 sm:group-hover/row:opacity-100'
+                : 'bg-scrim-veil text-muted opacity-60 hover:text-ok-fg focus-visible:opacity-100 sm:opacity-0 sm:group-hover/row:opacity-100'
             }`}
             style={{ height: doneButtonSize, width: doneButtonSize }}
           >
@@ -205,7 +205,7 @@ const EventRow = memo(function EventRow({
           </button>
           <Tooltip content="d = days · h = hours · m = minutes">
             <span
-              className={`rounded-ui-sm bg-black/70 px-1.5 py-px text-caption font-bold tabular-nums ${
+              className={`rounded-ui-sm bg-scrim-veil px-1.5 py-px text-caption font-bold tabular-nums ${
                 !ended && !maint && !ev.done && msLeft < DAY ? 'warn-pulse' : ''
               }`}
               style={{ color: ev.done ? 'rgb(52,211,153)' : tone }}
@@ -342,7 +342,7 @@ export function TimelinePage({ now }: { now: number }) {
   return (
     <Page>
       <div className="mb-3 flex flex-wrap items-center gap-3">
-        <h2 className="text-title font-black tracking-tight text-slate-100">Event timeline</h2>
+        <h2 className="text-title font-black tracking-tight text-fg-soft">Event timeline</h2>
         <Segmented
           options={[
             { value: 'lanes', label: 'Lanes' },
@@ -389,7 +389,7 @@ export function TimelinePage({ now }: { now: number }) {
                   key={ev.id}
                   type="button"
                   onClick={() => openSheet({ kind: 'event', eventId: ev.id, gameId: ev.gameId })}
-                  className="glass flex min-h-11 items-center gap-2 rounded-ui-lg px-3 py-2 text-left transition hover:bg-white/[0.06]"
+                  className="glass flex min-h-11 items-center gap-2 rounded-ui-lg px-3 py-2 text-left transition hover:bg-fill-2"
                 >
                   <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" />
                   <div className="min-w-0">
@@ -442,7 +442,7 @@ export function TimelinePage({ now }: { now: number }) {
                   {ticks.map((tick) => (
                     <div
                       key={tick.toMillis()}
-                      className="pointer-events-none absolute inset-y-0 w-px bg-white/[0.04]"
+                      className="pointer-events-none absolute inset-y-0 w-px bg-fill-2"
                       style={{ left: `${((tick.toMillis() - ws) / span) * 100}%` }}
                     />
                   ))}
@@ -450,9 +450,9 @@ export function TimelinePage({ now }: { now: number }) {
                     initial={false}
                     animate={{ left: `${((now - ws) / span) * 100}%` }}
                     transition={{ duration: reducedMotion ? 0 : 0.6, ease: 'linear' }}
-                    className="pointer-events-none absolute inset-y-0 z-10 w-px bg-rose-400/80"
+                    className="pointer-events-none absolute inset-y-0 z-10 w-px bg-danger/80"
                   >
-                    <span className="absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-ui-full bg-rose-400" />
+                    <span className="absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-ui-full bg-danger" />
                   </m.div>
 
                   {games.length === 0 && (
@@ -513,7 +513,7 @@ export function TimelinePage({ now }: { now: number }) {
                         }
                         triggerLabel={`${open ? 'Collapse' : 'Expand'} ${game.name} lane`}
                         className="relative"
-                        triggerClassName="relative z-20 mt-2 rounded-ui-lg px-1 transition hover:bg-white/[0.035]"
+                        triggerClassName="relative z-20 mt-2 rounded-ui-lg px-1 transition hover:bg-fill-1"
                         contentClassName="pb-1"
                       >
                         {evs.length === 0 ? (
@@ -580,7 +580,7 @@ export function TimelinePage({ now }: { now: number }) {
               <button
                 type="button"
                 onClick={() => deleteReminder(r.id)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg text-dim transition hover:bg-rose-400/10 hover:text-rose-400 sm:h-9 sm:w-9"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg text-dim transition hover:bg-danger/10 hover:text-danger sm:h-9 sm:w-9"
                 aria-label="Delete reminder"
               >
                 ✕
@@ -589,7 +589,7 @@ export function TimelinePage({ now }: { now: number }) {
           );
         })}
         {reminders.length === 0 && (
-          <p className="rounded-ui-xl bg-white/[0.025] px-4 py-5 text-body text-dim">
+          <p className="rounded-ui-xl bg-fill-1 px-4 py-5 text-body text-dim">
             No reminders yet. Add one for maintenance, shop resets, or anything that does not fit a recurring task.
           </p>
         )}

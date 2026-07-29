@@ -23,7 +23,7 @@ export function GameCardSheet({ gameId, open }: { gameId: string; open: boolean 
         className="relative -mx-2 overflow-hidden rounded-ui-card p-4"
         style={{
           background: `linear-gradient(155deg, ${tint(game.color, 0.2)} 0%, transparent 46%), linear-gradient(335deg, ${tint(game.color2 ?? game.color, 0.13)} 0%, transparent 42%), #07060c`,
-          boxShadow: `inset 0 0 0 1px ${tint(game.color, 0.32)}, inset 0 1px 0 rgba(255,255,255,0.07), 0 0 56px -22px ${tint(game.color, 0.55)}`,
+          boxShadow: `inset 0 0 0 1px ${tint(game.color, 0.32)}, inset 0 1px 0 var(--color-line-hairline)`,
         }}
       >
         <div

@@ -1,7 +1,17 @@
 @import 'tailwindcss';
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   The Collector's Shelf — see DESIGN.md.
+
+   The shelf is grey so the games can have faces. Chrome is achromatic: black
+   canvas, white at low alpha, a grey text ramp. Saturated colour on screen is
+   one of exactly three things — a game's own identity, an interactive
+   affordance, or a warning.
+
+   Every ladder below is CLOSED. If a value is needed between two steps, one of
+   the two steps is wrong. Components may not name a Tailwind palette colour.
+   ───────────────────────────────────────────────────────────────────────────── */
 @theme {
-  /* OLED Nightline: true black canvas, color lives on the cards. */
   --accent: #7c5cff;
   --accent-2: #d946ef;
   --gold: #e8b45a;
@@ -15,25 +25,63 @@
   --surface-2: #141020;
   --line: rgba(200, 180, 255, 0.12);
 
+  /* Interactive + aggregate registers. */
   --color-accent: var(--accent);
   --color-accent-2: var(--accent-2);
   --color-gold: var(--gold);
+  /* The brand's gold ramp. The infinity mark and the wordmark share these three
+     stops, so they must stay one source — see Logo.tsx. */
+  --color-gold-hi: #f5d68a;
+  --color-gold-lo: #c78a2e;
   --color-rose: var(--rose);
+
+  /* Status trio. Two slots each: the BASE is for fills, rings and strokes; the
+     -fg is for text and icons, because the base values do not clear AA at
+     caption sizes on black. Painting status text in the base colour is the most
+     common contrast failure in this codebase — see the Two-Slot Status Rule. */
   --color-ok: var(--ok);
+  --color-ok-fg: #6ee7b7;
   --color-warn: var(--warn);
+  --color-warn-fg: #fde68a;
   --color-danger: var(--danger);
+  --color-danger-fg: #fda4af;
+  --color-accent-fg: #c4b5fd;
+
+  /* Text ramp, brightest to faintest. */
+  --color-fg: #f8fafc;
+  --color-fg-soft: #e2e8f0;
   --color-muted: var(--muted);
   /* Lightened from slate-500 #64748b (4.41:1) to clear WCAG AA 4.5:1 on the
      near-black canvas for small caption text. */
   --color-dim: #6e7d93;
+  /* Decorative strokes only — never text. */
   --color-faint: #475569;
-  --color-fg: #f8fafc;
-  --color-fg-soft: #e2e8f0;
+  /* Text sitting on a light or accent-filled surface. */
+  --color-fg-invert: #0b0a12;
+
+  /* Opaque tonal steps: the shelf itself. */
   --color-surface-0: var(--surface-0);
   --color-surface-1: var(--surface-1);
   --color-surface-2: var(--surface-2);
   --color-popover: #2b2347;
-  --color-line: var(--line);
+
+  /* Overlay ladder — four steps, no more. On-card surfaces are white at low
+     alpha rather than opaque greys so a game's accent tint reads through them. */
+  --color-fill-1: rgba(255, 255, 255, 0.03); /* zones, alternating rows */
+  --color-fill-2: rgba(255, 255, 255, 0.06); /* resting controls */
+  --color-fill-3: rgba(255, 255, 255, 0.1); /* hover */
+  --color-fill-4: rgba(255, 255, 255, 0.16); /* active, selected, pressed */
+
+  /* Border ladder — three white steps plus the violet card perimeter. */
+  --color-line-hairline: rgba(255, 255, 255, 0.08); /* default 1px rule */
+  --color-line-edge: rgba(255, 255, 255, 0.14); /* emphasised control edge */
+  --color-line-strong: rgba(255, 255, 255, 0.22); /* selected, float surfaces */
+  --color-line: var(--line); /* card perimeter */
+
+  /* Scrims — darkening, as opposed to the lightening fills above. */
+  --color-scrim-well: rgba(0, 0, 0, 0.35); /* inset wells, progress tracks */
+  --color-scrim-veil: rgba(0, 0, 0, 0.6); /* overlay backdrops */
+  --color-scrim-modal: rgba(0, 0, 0, 0.85); /* modal backdrop */
 
   /* Compatibility aliases keep existing one-off uses visually unchanged. */
   --color-ink: var(--surface-0);
@@ -51,16 +99,30 @@
   --lane-row-h: 2.75rem;
   --lane-row-h-maint: 2.75rem;
 
-  --text-micro: 0.5rem;
-  --text-micro--line-height: 0.75rem;
+  /* Type scale — nine steps, caption is the floor. The former 0.5rem `micro`
+     step is retired: 8px uppercase on black is not readable. */
   --text-caption: 0.625rem;
   --text-caption--line-height: 0.875rem;
   --text-label: 0.6875rem;
   --text-label--line-height: 1rem;
+  --text-meta: 0.75rem;
+  --text-meta--line-height: 1.125rem;
   --text-body: 0.875rem;
   --text-body--line-height: 1.25rem;
+  --text-lead: 1rem;
+  --text-lead--line-height: 1.5rem;
   --text-title: 1.125rem;
   --text-title--line-height: 1.75rem;
+  --text-heading: 1.5rem;
+  --text-heading--line-height: 2rem;
+  --text-display: 2.25rem;
+  --text-display--line-height: 2.5rem;
+  --text-hero: 3rem;
+  --text-hero--line-height: 3.25rem;
+
+  /* The only shadow in the system. Modal dialogs, popovers/selects and the
+     floating nav rail — nothing else. See the Shadows Float Only Rule. */
+  --shadow-float: 0 16px 48px -24px rgba(0, 0, 0, 0.9);
 
   --font-body: ui-rounded, 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
@@ -68,8 +130,12 @@
 :root {
   --ui-scale: 1;
   --hex-corner: 3px;
+  /* One easing for everything that is not the Nexus stage. Exponential
+     deceleration from an already-visible default; real objects do not overshoot.
+     The overshoot curve that used to sit here had no consumers — where the
+     product genuinely wants spring physics it uses Motion's spring solver
+     (springs.snappy in motion.ts), not a bounce bezier. */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --dur-fast: 140ms;
   --dur-base: 260ms;
   --dur-slow: 420ms;
@@ -81,11 +147,13 @@
   --focus-ring-color: color-mix(in oklab, var(--accent) 70%, white);
   --focus-ring-width: 2px;
   --focus-ring-offset: 0px;
-  --tick-idle: rgba(255, 255, 255, 0.25);
+  /* The incomplete ring's unfilled arc. Sits at the top border step: an
+     untouched tick has to read as an affordance from across the card. */
+  --tick-idle: var(--color-line-strong);
   --tick-ring-width: 1.5px;
   --tick-progress-width: 2px;
   --tick-spoke-width: 1px;
-  --progress-track: rgba(255, 255, 255, 0.08);
+  --progress-track: var(--color-line-hairline);
 }
 
 @media (width >= 40rem) {
@@ -99,7 +167,7 @@ html,
 body {
   /* Pure black — no ambient washes; greys smear on OLED. */
   background: var(--color-ink);
-  color: #f2eefa;
+  color: var(--color-fg);
   font-family: var(--font-body);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
@@ -110,7 +178,7 @@ html {
 }
 
 ::selection {
-  background: rgba(124, 92, 255, 0.5);
+  background: color-mix(in oklab, var(--accent) 50%, transparent);
 }
 
 input,
@@ -168,33 +236,100 @@ input[type='number'] {
   animation: fadeIn 0.18s ease-out;
 }
 
+/* SVG transforms default to an origin of 0 0 — the top-left of the viewport,
+   not the centre of the shape — so this used to grow in from the corner and
+   read as "fading in from the top". fill-box + center makes it scale about
+   itself. Every animated SVG transform in this file needs both. */
 @keyframes checkPop {
   from {
-    transform: scale(0) rotate(-30deg);
+    transform: scale(0);
   }
 }
 .check-pop {
-  animation: checkPop 0.18s ease-out;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: checkPop 0.18s var(--ease-out);
 }
 
-/* Completion celebration: a green arc sweeps once around the tick circle,
-   then fades out. dasharray 56.55 = circumference of the r=9 circle. */
-@keyframes ringSweep {
+/* The completed face detonating into place: out of nothing, well past the ring,
+   then pulled back down into it while the green burst goes off around it. The
+   overshoot is the whole point — it has to leave the circle to read. */
+@keyframes checkBurst {
   0% {
-    stroke-dashoffset: 56.55;
+    transform: scale(0);
+    opacity: 0;
+  }
+  14% {
     opacity: 1;
   }
-  70% {
-    stroke-dashoffset: 0;
+  38% {
+    transform: scale(2.3);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.check-burst {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: checkBurst 0.62s var(--ease-out) forwards;
+}
+
+/* ── Completion: detonate, then collapse ──────────────────────────────────────
+   Ticking the last thing off a card is the one genuinely good moment in this
+   product, and it used to be a green ring politely tracing itself. The sequence
+   is now three things on one clock: the completed face bursts out past the ring
+   and is pulled back into it, a shell detonates outward, and the ejecta get
+   dragged back into the middle and vanish.
+
+   There is deliberately no bright core. A white disc under the scaling check
+   showed THROUGH it at the top of the overshoot and read as a rendering
+   artefact — the tick itself is the thing that should stretch.
+
+   Only transform and opacity, so the whole thing composites — this fires on the
+   hot path, potentially while the user is still typing into the next card. */
+
+/* The shell blows outward and thins as it goes. */
+@keyframes novaWave {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  18% {
     opacity: 1;
   }
   100% {
-    stroke-dashoffset: 0;
+    transform: scale(3);
     opacity: 0;
   }
 }
-.ring-sweep {
-  animation: ringSweep 0.55s ease-out forwards;
+.nova-wave {
+  animation: novaWave 0.62s var(--ease-out) forwards;
+}
+
+/* Ejecta: thrown out, then dragged back past where they started. --a is the
+   angle each shard leaves on, set per element. */
+@keyframes novaShard {
+  0% {
+    transform: rotate(var(--a)) translateX(1px) scale(0);
+    opacity: 0;
+  }
+  20% {
+    transform: rotate(var(--a)) translateX(4px) scale(1);
+    opacity: 1;
+  }
+  52% {
+    transform: rotate(var(--a)) translateX(13px) scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(var(--a)) translateX(1px) scale(0);
+    opacity: 0;
+  }
+}
+.nova-shard {
+  animation: novaShard 0.62s var(--ease-out) forwards;
 }
 
 @keyframes loaderSpin {
@@ -239,13 +374,16 @@ input[type='number'] {
   outline: none;
 }
 
-/* Near-black panel with a whisper of violet — deep enough for OLED. */
+/* Raised: one tonal step plus a hairline. No drop shadow — on a true-black OLED
+   canvas a soft shadow is invisible where it should be subtle and a grey smear
+   where it is not, and it was costing a full raster of two large blurs per card.
+   Depth here is the top-edge highlight and the inset ring, nothing else.
+   Only Float surfaces (dialog, popover, nav rail) may use --shadow-float. */
 .glass {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01)), var(--color-panel);
+  background: linear-gradient(180deg, var(--color-fill-1), transparent), var(--color-panel);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 0 0 1px rgba(200, 180, 255, 0.09),
-    0 18px 40px -24px rgba(0, 0, 0, 0.9);
+    inset 0 1px 0 var(--color-line-hairline),
+    inset 0 0 0 1px var(--color-line);
 }
 
 .gold-hairline {
@@ -257,13 +395,13 @@ input[type='number'] {
   inset: 0;
   pointer-events: none;
   border: 1px solid transparent;
-  border-top-color: rgba(232, 180, 90, 0.38);
+  border-top-color: color-mix(in oklab, var(--gold) 38%, transparent);
   border-radius: inherit;
 }
 
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: rgba(200, 180, 255, 0.3) transparent;
+  scrollbar-color: var(--color-line-strong) transparent;
 }
 
 /* Focus bays split only when callers opt into two columns. */
@@ -361,7 +499,7 @@ input[type='number'] {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  box-shadow: inset 0 0 0 2px rgba(255, 90, 120, 0.85);
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--danger) 85%, transparent);
   animation: nexusUrgent 2.2s ease-in-out infinite;
 }
 

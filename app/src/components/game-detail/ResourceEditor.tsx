@@ -21,12 +21,12 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
         const showReserveFields = r.reserveCap > 0 || reserveOpen[r.id];
 
         return (
-          <div key={r.id} className="rounded-ui-xl bg-white/[0.03] p-3 ring-1 ring-white/10">
+          <div key={r.id} className="rounded-ui-xl bg-fill-1 p-3 ring-1 ring-line-hairline">
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setIconPickerFor((cur) => (cur === r.id ? null : r.id))}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg bg-white/[0.06] ring-1 ring-white/10 transition hover:bg-white/10 sm:h-9 sm:w-9"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg bg-fill-2 ring-1 ring-line-hairline transition hover:bg-fill-3 sm:h-9 sm:w-9"
                 style={{ boxShadow: iconPickerFor === r.id ? `inset 0 0 0 1.5px ${game.color}` : undefined }}
                 aria-label={`Icon for ${r.name}`}
               >
@@ -53,7 +53,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
               <button
                 type="button"
                 onClick={() => deleteResource(r.id)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg text-title text-dim transition hover:bg-rose-400/10 hover:text-rose-400 sm:h-9 sm:w-9"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg text-title text-dim transition hover:bg-danger/10 hover:text-danger sm:h-9 sm:w-9"
                 aria-label={`Delete ${r.name}`}
               >
                 ✕
@@ -61,7 +61,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
             </div>
 
             {iconPickerFor === r.id && (
-              <div className="mt-2 flex flex-wrap gap-1.5 rounded-ui-xl bg-white/[0.04] p-2 ring-1 ring-white/10">
+              <div className="mt-2 flex flex-wrap gap-1.5 rounded-ui-xl bg-fill-2 p-2 ring-1 ring-line-hairline">
                 {RESOURCE_ICON_KEYS.map((key) => (
                   <button
                     key={key}
@@ -70,7 +70,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                       upsertResource({ id: r.id, gameId: game.id, icon: key });
                       setIconPickerFor(null);
                     }}
-                    className="flex h-11 w-11 items-center justify-center rounded-ui-lg bg-white/[0.06] ring-1 transition hover:bg-white/10 sm:h-9 sm:w-9"
+                    className="flex h-11 w-11 items-center justify-center rounded-ui-lg bg-fill-2 ring-1 transition hover:bg-fill-3 sm:h-9 sm:w-9"
                     style={{
                       boxShadow:
                         r.icon === key ? `inset 0 0 0 1.5px ${game.color}` : 'inset 0 0 0 1px rgba(255,255,255,0.08)',
@@ -112,7 +112,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
               )}
 
               {showReserveFields && (
-                <div className="col-span-full mt-2 grid grid-cols-1 gap-3 border-t border-white/[0.08] pt-2 sm:grid-cols-3">
+                <div className="col-span-full mt-2 grid grid-cols-1 gap-3 border-t border-line-hairline pt-2 sm:grid-cols-3">
                   <Field label="Reserve cap">
                     <NumInput
                       value={String(r.reserveCap)}

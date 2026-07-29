@@ -27,14 +27,14 @@ export class ErrorBoundary extends Component<Props, State> {
     return (
       <main className="flex min-h-dvh items-center justify-center px-5 py-12">
         <section className="glass gold-hairline w-full max-w-lg rounded-ui-card p-6" role="alert">
-          <p className="text-xs font-bold uppercase tracking-widest text-rose-300">Something went wrong</p>
-          <h1 className="mt-2 text-xl font-black text-slate-100">The interface could not finish rendering.</h1>
+          <p className="text-meta font-bold uppercase tracking-widest text-danger-fg">Something went wrong</p>
+          <h1 className="mt-2 text-heading font-black text-fg-soft">The interface could not finish rendering.</h1>
           <p className="mt-2 text-body text-muted">
             Your local data has not been deleted. Reload the app first; if this keeps happening, export a backup from
             Settings after the app recovers.
           </p>
-          <details className="mt-4 rounded-ui-lg bg-black/30 p-3 text-xs text-muted">
-            <summary className="cursor-pointer font-semibold text-slate-300">Technical details</summary>
+          <details className="mt-4 rounded-ui-lg bg-scrim-well p-3 text-meta text-muted">
+            <summary className="cursor-pointer font-semibold text-fg-soft">Technical details</summary>
             <pre className="mt-2 whitespace-pre-wrap break-words">{this.state.error.message}</pre>
           </details>
           <div className="mt-5">

@@ -43,12 +43,12 @@ const LEGAL: Record<string, { title: string; sections: Array<[string, string]> }
         'Account identity is handled by Clerk. Void stores your planner document in Cloudflare D1 and keeps an offline copy in this browser.',
       ],
       [
-        'Integrations',
-        'Notification credentials are encrypted with AES-GCM on the server and excluded from normal sync responses and exports.',
+        'Cloud sync',
+        'Signed-in devices sync planner data through the authenticated Worker API. Void does not collect notification-channel credentials.',
       ],
       [
         'Retention and deletion',
-        'Alert-delivery records expire automatically. Deleting your account removes its document, encrypted credentials and alert records immediately.',
+        'Deleting your account removes its planner document and associated operational records immediately.',
       ],
       [
         'Contact',
@@ -81,14 +81,17 @@ const LEGAL: Record<string, { title: string; sections: Array<[string, string]> }
         'Offline first',
         'Edits are written to IndexedDB first. Signed-in devices send a Clerk session token to the Cloudflare Worker for tenant-scoped synchronization.',
       ],
-      ['Isolation', 'Every D1 document, secret and alert-ledger query is keyed by the authenticated Clerk user ID.'],
       [
-        'Credentials',
-        'Integration credentials are encrypted server-side, never returned after connection, and omitted from standard account exports.',
+        'Isolation',
+        'Every D1 document and tenant-scoped operational query is keyed by the authenticated Clerk user ID.',
+      ],
+      [
+        'Data minimization',
+        'The Worker stores planner data and limited operational records. It has no notification-channel credential store.',
       ],
       [
         'Deletion',
-        'The account screen can remove cloud data, credentials, alert records and the Clerk identity. Local browser data is cleared on successful deletion.',
+        'The account screen can remove cloud data, operational records and the Clerk identity. Local browser data is cleared on successful deletion.',
       ],
     ],
   },
@@ -97,14 +100,14 @@ const LEGAL: Record<string, { title: string; sections: Array<[string, string]> }
 function LegalPage({ document }: { document: (typeof LEGAL)[string] }) {
   return (
     <main className="mx-auto min-h-dvh w-full max-w-3xl px-5 py-14">
-      <a href="/" className="text-body font-semibold text-violet-300">
+      <a href="/" className="text-body font-semibold text-accent-fg">
         ← Void
       </a>
-      <h1 className="mt-6 text-3xl font-black text-fg">{document.title}</h1>
+      <h1 className="mt-6 text-display font-black text-fg">{document.title}</h1>
       <div className="mt-8 space-y-4">
         {document.sections.map(([title, body]) => (
           <section key={title} className="glass gold-hairline rounded-ui-card p-5">
-            <h2 className="font-black text-slate-100">{title}</h2>
+            <h2 className="font-black text-fg-soft">{title}</h2>
             <p className="mt-2 text-body leading-6 text-muted">{body}</p>
           </section>
         ))}
@@ -122,18 +125,14 @@ function StatusPage() {
   }, []);
   return (
     <main className="mx-auto min-h-dvh w-full max-w-2xl px-5 py-14">
-      <a href="/" className="text-body font-semibold text-violet-300">
+      <a href="/" className="text-body font-semibold text-accent-fg">
         ← Void
       </a>
-      <h1 className="mt-6 text-3xl font-black text-fg">Service status</h1>
+      <h1 className="mt-6 text-display font-black text-fg">Service status</h1>
       <section className="glass gold-hairline mt-8 rounded-ui-card p-5" role="status">
         <p
           className={`font-black ${
-            status === 'operational'
-              ? 'text-emerald-300'
-              : status === 'unavailable'
-                ? 'text-rose-300'
-                : 'text-slate-300'
+            status === 'operational' ? 'text-ok-fg' : status === 'unavailable' ? 'text-danger-fg' : 'text-fg-soft'
           }`}
         >
           {status === 'operational'
@@ -180,10 +179,14 @@ function ContinueWithGoogleButton() {
     try {
       // Clerk verifies the resulting session token the same way regardless of the
       // sign-in strategy, so no Worker-side change is needed for Google.
+      // Absolute URLs, not paths: on a development instance the flow is handed
+      // off to Clerk's own accounts.dev origin, and a bare path can resolve
+      // against that origin instead of ours — which lands the user on a Clerk
+      // page rather than back in the app.
       await signIn.authenticateWithRedirect({
         strategy: 'oauth_google',
-        redirectUrl: '/sso-callback',
-        redirectUrlComplete: '/',
+        redirectUrl: `${window.location.origin}/sso-callback`,
+        redirectUrlComplete: `${window.location.origin}/`,
       });
     } catch (error) {
       setBusy(false);
@@ -196,7 +199,7 @@ function ContinueWithGoogleButton() {
       type="button"
       onClick={startGoogleSignIn}
       disabled={!isLoaded || busy}
-      className="inline-flex min-h-11 items-center gap-3 rounded-ui-xl bg-white px-5 py-3 text-body font-bold text-slate-800 ring-1 ring-black/10 disabled:opacity-60"
+      className="inline-flex min-h-11 items-center gap-3 rounded-ui-xl bg-white px-5 py-3 text-body font-bold text-fg-invert ring-1 ring-black/10 disabled:opacity-60"
     >
       <GoogleIcon />
       {busy ? 'Redirecting…' : 'Continue with Google'}
@@ -205,10 +208,24 @@ function ContinueWithGoogleButton() {
 }
 
 function SsoCallback() {
+  const { isLoaded, isSignedIn } = useAuth();
+
+  // Safety net: this screen has no router behind it, so if Clerk finishes the
+  // handshake without navigating away the user is stranded on a dead callback
+  // page with a live session. Once the session is real, leave under our own
+  // steam. replace() keeps the callback URL out of history, so Back does not
+  // re-enter a handshake that has already been consumed.
+  useEffect(() => {
+    if (isLoaded && isSignedIn) window.location.replace('/');
+  }, [isLoaded, isSignedIn]);
+
   return (
     <div className="flex min-h-dvh items-center justify-center text-body text-muted" role="status">
       Completing sign-in…
-      <AuthenticateWithRedirectCallback signInFallbackRedirectUrl="/" signUpFallbackRedirectUrl="/" />
+      <AuthenticateWithRedirectCallback
+        signInFallbackRedirectUrl={`${window.location.origin}/`}
+        signUpFallbackRedirectUrl={`${window.location.origin}/`}
+      />
     </div>
   );
 }
@@ -217,20 +234,20 @@ function PublicLanding() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col justify-center px-5 py-16">
       <div className="max-w-3xl">
-        <p className="text-xs font-black uppercase tracking-[0.3em] text-fuchsia-300">Offline-first gacha planner</p>
-        <h1 className="mt-4 text-4xl font-black tracking-tight text-fg sm:text-6xl">
+        <p className="text-meta font-black uppercase tracking-[0.3em] text-accent-fg">Offline-first gacha planner</p>
+        <h1 className="mt-4 text-display font-black tracking-tight text-fg sm:text-hero">
           Know what resets next. Waste less energy.
         </h1>
-        <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-title">
+        <p className="mt-5 max-w-2xl text-lead leading-7 text-fg-soft sm:text-title">
           Void keeps server resets, energy caps, dailies and events together across your games. Your browser remains
-          usable offline; an account adds encrypted cloud sync and closed-app alerts.
+          usable offline; an account adds authenticated cross-device sync.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <ContinueWithGoogleButton />
           <SignUpButton mode="modal">
             <button
               type="button"
-              className="min-h-11 rounded-ui-xl bg-gradient-to-br from-accent to-accent-2 px-5 py-3 text-body font-bold text-white ring-1 ring-white/20"
+              className="min-h-11 rounded-ui-xl bg-gradient-to-br from-accent to-accent-2 px-5 py-3 text-body font-bold text-white ring-1 ring-line-edge"
             >
               Create free account
             </button>
@@ -238,7 +255,7 @@ function PublicLanding() {
           <SignInButton mode="modal">
             <button
               type="button"
-              className="min-h-11 rounded-ui-xl bg-white/[0.06] px-5 py-3 text-body font-bold text-slate-100 ring-1 ring-white/15"
+              className="min-h-11 rounded-ui-xl bg-fill-2 px-5 py-3 text-body font-bold text-fg-soft ring-1 ring-line-edge"
             >
               Sign in
             </button>
@@ -249,15 +266,15 @@ function PublicLanding() {
         {[
           ['Server-aware', 'Daily, weekly and event windows use each game server’s clock.'],
           ['Works offline', 'Entries stay available in IndexedDB even when the network is unavailable.'],
-          ['Private by design', 'Integration credentials are encrypted server-side and excluded from normal exports.'],
+          ['Private by design', 'Planner documents are tenant-scoped, and account exports contain planner data only.'],
         ].map(([title, body]) => (
           <section key={title} className="glass gold-hairline rounded-ui-card p-5">
-            <h2 className="font-black text-slate-100">{title}</h2>
+            <h2 className="font-black text-fg-soft">{title}</h2>
             <p className="mt-2 text-body leading-6 text-muted">{body}</p>
           </section>
         ))}
       </div>
-      <nav className="mt-8 flex flex-wrap gap-4 text-xs text-dim" aria-label="Legal">
+      <nav className="mt-8 flex flex-wrap gap-4 text-meta text-dim" aria-label="Legal">
         <a href="/privacy">Privacy</a>
         <a href="/terms">Terms</a>
         <a href="/security">Security and data flow</a>

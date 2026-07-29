@@ -9,7 +9,7 @@ function CloseButton() {
     <DialogPrimitive.Close asChild>
       <button
         type="button"
-        className="flex h-11 w-11 items-center justify-center rounded-ui-full bg-white/5 text-muted ring-1 ring-white/10 transition hover:bg-white/10 hover:text-fg-soft sm:h-9 sm:w-9"
+        className="flex h-11 w-11 items-center justify-center rounded-ui-full bg-fill-2 text-muted ring-1 ring-line-hairline transition hover:bg-fill-3 hover:text-fg-soft sm:h-9 sm:w-9"
         aria-label="Close"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -99,7 +99,7 @@ export function Sheet({
             >
               <DialogPrimitive.Overlay forceMount asChild>
                 <m.div
-                  className="pointer-events-auto fixed inset-0 bg-black/60 backdrop-blur-[2px]"
+                  className="pointer-events-auto fixed inset-0 bg-scrim-veil backdrop-blur-[2px]"
                   variants={backdropFade}
                 />
               </DialogPrimitive.Overlay>
@@ -112,7 +112,7 @@ export function Sheet({
                     forceMount
                     ref={dialogRef}
                     aria-describedby={undefined}
-                    className="glass gold-hairline relative flex max-h-[85dvh] w-full flex-col rounded-ui-card shadow-2xl outline-none"
+                    className="glass gold-hairline relative flex max-h-[85dvh] w-full flex-col rounded-ui-card shadow-float outline-none"
                   >
                     <div
                       className={`flex shrink-0 items-center justify-between gap-3 px-6 ${
@@ -135,15 +135,15 @@ export function Sheet({
                     forceMount
                     ref={dialogRef}
                     aria-describedby={undefined}
-                    className="glass gold-hairline relative flex max-h-[90dvh] w-full flex-col rounded-t-ui-card shadow-2xl outline-none"
+                    className="glass gold-hairline relative flex max-h-[90dvh] w-full flex-col rounded-t-ui-card shadow-float outline-none"
                   >
                     <div
                       className="flex shrink-0 cursor-grab touch-none items-center justify-between gap-3 px-5 pb-2 pt-3 active:cursor-grabbing"
                       {...dragHandlers}
                     >
-                      <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-ui-full bg-white/20" />
+                      <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-ui-full bg-fill-4" />
                       <DialogPrimitive.Title asChild>
-                        <h2 className={hideTitle ? 'sr-only' : 'mt-2 text-base font-bold text-fg'}>{title}</h2>
+                        <h2 className={hideTitle ? 'sr-only' : 'mt-2 text-lead font-bold text-fg'}>{title}</h2>
                       </DialogPrimitive.Title>
                       <div className="mt-1">
                         <CloseButton />

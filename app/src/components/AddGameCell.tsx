@@ -17,7 +17,7 @@ export function AddGameButton({ onAdd, size = 46 }: { onAdd: () => void; size?: 
         fill="rgba(255,255,255,0.025)"
         className="transition group-hover:brightness-150"
       >
-        <span className="text-2xl font-light leading-none text-slate-300 transition group-hover:text-white">+</span>
+        <span className="text-heading font-light leading-none text-fg-soft transition group-hover:text-white">+</span>
       </Ring>
     </button>
   );
