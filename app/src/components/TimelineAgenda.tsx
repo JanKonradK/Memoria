@@ -2,7 +2,13 @@ import { memo, useCallback, useState } from 'react';
 import { DateTime } from 'luxon';
 import type { AppState, Game, GameEvent } from '@void/shared';
 import { useApp } from '../store';
-import { agendaCompare, agendaRank, budgetAgenda, groupVersionUpdates, type AgendaRow } from '../timeline-sort';
+import {
+  agendaCompare,
+  agendaRank,
+  groupVersionUpdates,
+  selectDashboardAgendaSections,
+  type AgendaRow,
+} from '../timeline-sort';
 import { TIMELINE_RANGE_DAYS, useUI, type TimelineRange } from '../ui-store';
 import { endTone, fmtDur } from '../util';
 import { Pill } from './primitives';
@@ -16,16 +22,15 @@ export interface AgendaData {
   games: Map<string, Game>;
   live: AgendaRow[];
   upcoming: AgendaRow[];
+  endingSoon: AgendaRow[];
   past: GameEvent[];
 }
 
 /**
- * Shared timeline window/ranking. Dashboard mode drops history; both of its
- * surfaces (the Nexus hub and the Cards event horizon) scroll, so it carries a
- * fortnight and a generous cap rather than the one-screenful it used to.
+ * Upcoming keeps a fortnight of candidates before its hard cap is applied.
+ * Fresh and ending events use their own windows in the pure dashboard selector.
  */
 export const DASHBOARD_AGENDA_DAYS = 14;
-export const DASHBOARD_AGENDA_MAX = 24;
 
 export function selectAgendaData(
   state: AppState,
@@ -37,32 +42,33 @@ export function selectAgendaData(
   const windowEnd =
     mode === 'dashboard' ? now + DASHBOARD_AGENDA_DAYS * DAY : windowStart + TIMELINE_RANGE_DAYS[range] * DAY;
   const games = new Map(state.games.filter((game) => !game.deleted).map((game) => [game.id, game]));
-  const events = state.events
-    .filter(
-      (event) =>
-        !event.deleted &&
-        games.has(event.gameId) &&
-        event.end > windowStart &&
-        event.start < windowEnd &&
-        (mode !== 'dashboard' || event.end <= windowEnd),
-    )
+  const availableEvents = state.events.filter((event) => !event.deleted && games.has(event.gameId));
+
+  if (mode === 'dashboard') {
+    const sections = selectDashboardAgendaSections(
+      availableEvents.filter((event) => event.start < windowEnd),
+      now,
+    );
+    return {
+      games,
+      live: sections.newArrivals.map((event) => ({ kind: 'event', event })),
+      upcoming: groupVersionUpdates(sections.upcoming, games, now),
+      endingSoon: sections.endingSoon.map((event) => ({ kind: 'event', event })),
+      past: [],
+    };
+  }
+
+  const events = availableEvents
+    .filter((event) => event.end > windowStart && event.start < windowEnd)
     .sort((a, b) => agendaCompare(a, b, now));
   const live = events.filter((event) => agendaRank(event, now) === 0);
   const upcoming = events.filter((event) => agendaRank(event, now) === 1);
-
-  if (mode === 'dashboard') {
-    const budgeted = budgetAgenda(
-      live.map((event) => ({ kind: 'event', event })),
-      groupVersionUpdates(upcoming, games, now),
-      DASHBOARD_AGENDA_MAX,
-    );
-    return { games, ...budgeted, past: [] };
-  }
 
   return {
     games,
     live: live.map((event) => ({ kind: 'event', event })),
     upcoming: upcoming.map((event) => ({ kind: 'event', event })),
+    endingSoon: [],
     past: events.filter((event) => agendaRank(event, now) >= 2),
   };
 }
@@ -105,7 +111,7 @@ const AgendaEventRow = memo(function AgendaEventRow({
 
   return (
     <div
-      className={`group/agenda relative flex min-h-11 w-full items-center gap-2 overflow-hidden rounded-ui-lg text-left transition hover:bg-white/[0.04] ${
+      className={`group/agenda relative flex min-h-11 w-full items-center gap-2 overflow-hidden rounded-ui-lg text-left transition hover:bg-fill-2 ${
         mode === 'dashboard' ? 'px-2.5 py-1.5' : 'px-3 py-2'
       }`}
     >
@@ -132,7 +138,7 @@ const AgendaEventRow = memo(function AgendaEventRow({
           <>
             <TypeTags event={event} />
             <span
-              className={`min-w-0 flex-1 truncate text-xs font-medium ${event.done ? 'text-dim line-through' : 'text-fg-soft'}`}
+              className={`min-w-0 flex-1 truncate text-meta font-medium ${event.done ? 'text-dim line-through' : 'text-fg-soft'}`}
             >
               {event.name}
             </span>
@@ -155,7 +161,7 @@ const AgendaEventRow = memo(function AgendaEventRow({
             <div className="contents">
               <TypeTags event={event} />
               <span
-                className={`min-w-24 flex-1 truncate text-xs font-medium ${
+                className={`min-w-24 flex-1 truncate text-meta font-medium ${
                   event.done ? 'text-dim line-through' : 'text-fg-soft'
                 }`}
               >
@@ -189,12 +195,12 @@ const AgendaEventRow = memo(function AgendaEventRow({
           onToggleEvent(event);
         }}
         aria-label={event.done ? `Restore ${event.name}` : `Mark ${event.name} done`}
-        className={`relative z-30 flex shrink-0 items-center justify-center rounded-ui-full text-xs font-black transition ${
+        className={`relative z-30 flex shrink-0 items-center justify-center rounded-ui-full text-meta font-black transition ${
           mode === 'dashboard' ? 'h-8 w-8' : 'h-9 w-9 sm:h-8 sm:w-8'
         } ${
           event.done
             ? 'bg-ok/90 text-black'
-            : 'bg-black/70 text-muted opacity-60 hover:text-emerald-300 focus-visible:opacity-100 sm:opacity-0 sm:group-hover/agenda:opacity-100'
+            : 'bg-scrim-veil text-muted opacity-60 hover:text-ok-fg focus-visible:opacity-100 sm:opacity-0 sm:group-hover/agenda:opacity-100'
         }`}
       >
         ✓
@@ -223,7 +229,7 @@ function AgendaGroupRow({
     >
       <span className="absolute inset-y-2 left-0 w-[3px] rounded-ui-full" style={{ backgroundColor: game.color }} />
       <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" className="w-12" />
-      <span className="min-w-0 flex-1 truncate text-xs font-medium text-amber-100">{row.label}</span>
+      <span className="min-w-0 flex-1 truncate text-meta font-medium text-warn-fg">{row.label}</span>
       <span className="shrink-0 text-caption text-muted">{row.count} items</span>
       <span className="shrink-0 text-caption font-bold tabular-nums text-gold">in {fmtDur(row.at - now)}</span>
     </button>
@@ -240,6 +246,7 @@ function AgendaSection({
   onOpenEvent,
   onToggleEvent,
   onOpenTimeline,
+  scroll = false,
 }: {
   title: string;
   rows: AgendaRow[];
@@ -250,12 +257,13 @@ function AgendaSection({
   onOpenEvent: (event: GameEvent) => void;
   onToggleEvent: (event: GameEvent) => void;
   onOpenTimeline?: () => void;
+  scroll?: boolean;
 }) {
   return (
-    <section>
+    <section className={scroll ? 'flex min-h-0 flex-col' : undefined}>
       <h3 className="mb-1.5 text-caption font-bold uppercase tracking-widest text-dim">{title}</h3>
       {rows.length > 0 ? (
-        <div className="space-y-1">
+        <div className={`space-y-1 ${scroll ? 'scrollbar-thin min-h-0 overflow-y-auto pr-1' : ''}`}>
           {rows.map((row) =>
             row.kind === 'group' ? (
               <AgendaGroupRow
@@ -285,7 +293,7 @@ function AgendaSection({
   );
 }
 
-/** Shared event list. Dashboard mode omits history and uses the capped selector above. */
+/** Shared event list. Dashboard mode presents the three cross-game signals. */
 export function AgendaList({
   data,
   now,
@@ -302,8 +310,53 @@ export function AgendaList({
   onOpenTimeline?: () => void;
 }) {
   const [pastOpen, setPastOpen] = useState(false);
+
+  if (mode === 'dashboard') {
+    return (
+      // Independent overflow tracks keep dense hype and deadline weeks inside
+      // the fixed-height Nexus panel without taking space from the three-row checkpoint.
+      <div className="grid h-full min-h-0 grid-rows-[minmax(0,2fr)_auto_minmax(0,1fr)] gap-3.5">
+        <AgendaSection
+          title="New arrivals"
+          rows={data.live}
+          games={data.games}
+          now={now}
+          mode={mode}
+          emptyLabel="Nothing new in the last 2 days."
+          onOpenEvent={onOpenEvent}
+          onToggleEvent={onToggleEvent}
+          onOpenTimeline={onOpenTimeline}
+          scroll
+        />
+        <AgendaSection
+          title="Upcoming"
+          rows={data.upcoming}
+          games={data.games}
+          now={now}
+          mode={mode}
+          emptyLabel="Nothing upcoming in this window."
+          onOpenEvent={onOpenEvent}
+          onToggleEvent={onToggleEvent}
+          onOpenTimeline={onOpenTimeline}
+        />
+        <AgendaSection
+          title="Ending soon"
+          rows={data.endingSoon}
+          games={data.games}
+          now={now}
+          mode={mode}
+          emptyLabel="Nothing ends in the next 9 days."
+          onOpenEvent={onOpenEvent}
+          onToggleEvent={onToggleEvent}
+          onOpenTimeline={onOpenTimeline}
+          scroll
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className={mode === 'dashboard' ? 'space-y-3.5' : 'space-y-4'}>
+    <div className="space-y-4">
       <AgendaSection
         title="Live now"
         rows={data.live}

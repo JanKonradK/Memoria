@@ -1,9 +1,17 @@
 import type { Game, GameEvent } from '@void/shared';
 import { describe, expect, it } from 'vitest';
-import { agendaCompare, agendaRank, budgetAgenda, groupVersionUpdates, type AgendaRow } from '../src/timeline-sort';
+import {
+  agendaCompare,
+  agendaRank,
+  budgetAgenda,
+  groupVersionUpdates,
+  selectDashboardAgendaSections,
+  type AgendaRow,
+} from '../src/timeline-sort';
 
 const NOW = 1_000;
 const HOUR = 3_600_000;
+const DAY = 24 * HOUR;
 
 const game: Game = {
   id: 'game',
@@ -204,6 +212,113 @@ describe('groupVersionUpdates', () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]?.kind === 'group' && rows[0].events.map((item) => item.id)).not.toContain('other');
     expect(rows[1]).toMatchObject({ kind: 'event', event: { id: 'other' } });
+  });
+});
+
+describe('selectDashboardAgendaSections', () => {
+  it('includes both 2-day arrival boundaries and excludes events outside or no longer running', () => {
+    const sections = selectDashboardAgendaSections(
+      [
+        event({ id: 'old-boundary', start: NOW - 2 * DAY, end: NOW + HOUR }),
+        event({ id: 'before-boundary', start: NOW - 2 * DAY - 1, end: NOW + HOUR }),
+        event({ id: 'now-boundary', start: NOW, end: NOW + HOUR }),
+        event({ id: 'future', start: NOW + 1, end: NOW + HOUR }),
+        event({ id: 'ended-now', start: NOW - HOUR, end: NOW }),
+      ],
+      NOW,
+    );
+
+    expect(sections.newArrivals.map((item) => item.id)).toEqual(['now-boundary', 'old-boundary']);
+  });
+
+  it('puts every banner before other new arrivals', () => {
+    const sections = selectDashboardAgendaSections(
+      [
+        event({ id: 'newer-event', start: NOW - HOUR, end: NOW + HOUR }),
+        event({ id: 'older-banner', type: 'banner', start: NOW - 2 * HOUR, end: NOW + HOUR }),
+        event({ id: 'newer-banner', type: 'banner', start: NOW - HOUR, end: NOW + HOUR }),
+      ],
+      NOW,
+    );
+
+    expect(sections.newArrivals.map((item) => item.id)).toEqual(['newer-banner', 'older-banner', 'newer-event']);
+  });
+
+  it('uses an exclusive-now and inclusive-9-day ending window', () => {
+    const sections = selectDashboardAgendaSections(
+      [
+        // Started well outside the 2-day arrival window, so these exercise the
+        // ending boundary rather than being claimed by New arrivals.
+        event({ id: 'ended-now', start: NOW - 5 * DAY, end: NOW }),
+        event({ id: 'just-inside', start: NOW - 5 * DAY, end: NOW + 1 }),
+        event({ id: 'nine-day-boundary', start: NOW - 5 * DAY, end: NOW + 9 * DAY }),
+        event({ id: 'outside', start: NOW - 5 * DAY, end: NOW + 9 * DAY + 1 }),
+      ],
+      NOW,
+    );
+
+    expect(sections.endingSoon.map((item) => item.id)).toEqual(['just-inside', 'nine-day-boundary']);
+  });
+
+  it('hard-caps upcoming at the next three events', () => {
+    const sections = selectDashboardAgendaSections(
+      Array.from({ length: 5 }, (_, index) =>
+        event({
+          id: `upcoming-${index}`,
+          start: NOW + (index + 1) * HOUR,
+          end: NOW + (index + 2) * HOUR,
+        }),
+      ),
+      NOW,
+    );
+
+    expect(sections.upcoming.map((item) => item.id)).toEqual(['upcoming-0', 'upcoming-1', 'upcoming-2']);
+  });
+
+  it('excludes cycles from new arrivals, upcoming, and ending soon', () => {
+    const sections = selectDashboardAgendaSections(
+      [
+        event({ id: 'new-cycle', type: 'cycle', start: NOW - HOUR, end: NOW + HOUR }),
+        event({ id: 'upcoming-cycle', type: 'cycle', start: NOW + HOUR, end: NOW + 2 * HOUR }),
+        event({ id: 'new-event', start: NOW - HOUR, end: NOW + HOUR }),
+        event({ id: 'upcoming-event', start: NOW + HOUR, end: NOW + 2 * HOUR }),
+        event({ id: 'ending-event', start: NOW - 3 * DAY, end: NOW + 8 * DAY }),
+      ],
+      NOW,
+    );
+
+    expect(sections.newArrivals.map((item) => item.id)).toEqual(['new-event']);
+    expect(sections.upcoming.map((item) => item.id)).toEqual(['upcoming-event']);
+    // 'new-event' is NOT here: new arrivals owns it for its first two days.
+    expect(sections.endingSoon.map((item) => item.id)).toEqual(['ending-event']);
+  });
+
+  it('hands a short event from new arrivals to ending soon once it is no longer new', () => {
+    // The case this rule exists for: a 7-day banner is simultaneously "just
+    // dropped" and "ends within 9 days" the moment it lands. It must appear in
+    // exactly one section at a time, and it must move by itself as it ages.
+    const sevenDayBanner = (startedAgo: number) =>
+      event({ id: 'short-banner', type: 'banner', start: NOW - startedAgo, end: NOW - startedAgo + 7 * DAY });
+
+    const fresh = selectDashboardAgendaSections([sevenDayBanner(HOUR)], NOW);
+    expect(fresh.newArrivals.map((item) => item.id)).toEqual(['short-banner']);
+    expect(fresh.endingSoon).toEqual([]);
+
+    const aged = selectDashboardAgendaSections([sevenDayBanner(3 * DAY)], NOW);
+    expect(aged.newArrivals).toEqual([]);
+    expect(aged.endingSoon.map((item) => item.id)).toEqual(['short-banner']);
+  });
+
+  it('never lists the same event in two sections', () => {
+    const events = [
+      event({ id: 'fresh-short', type: 'banner', start: NOW - HOUR, end: NOW + 3 * DAY }),
+      event({ id: 'fresh-long', start: NOW - HOUR, end: NOW + 40 * DAY }),
+      event({ id: 'aged-ending', start: NOW - 5 * DAY, end: NOW + 2 * DAY }),
+      event({ id: 'later', start: NOW + DAY, end: NOW + 5 * DAY }),
+    ];
+    const sections = selectDashboardAgendaSections(events, NOW);
+    const shown = [...sections.newArrivals, ...sections.upcoming, ...sections.endingSoon].map((item) => item.id);
+    expect(shown.length).toBe(new Set(shown).size);
   });
 });
 
