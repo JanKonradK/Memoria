@@ -19,12 +19,48 @@ describe('game presets', () => {
 
   it('carries a real routine, not a token one, for every title', () => {
     // The point of a preset is that adding a game gives you its actual day.
+    // The weekly floor used to be 3, which quietly rewarded padding: every
+    // preset hit it only by shipping a battle-pass chore that completes itself
+    // as a by-product of playing. Two real weeklies beat three with a filler.
+    // A per-cadence daily floor is the wrong guard now: WuWa's daily loop
+    // really is one task once "spend your waveplates" is gone, and padding it
+    // to satisfy a number is exactly the habit this pass removed. What must
+    // hold is that a preset is substantial overall and has real weekly content;
+    // the daily side is covered by the core-daily test below.
     for (const preset of PRESETS) {
-      const daily = preset.tasks.filter((task) => task.cadence === 'daily');
       const weekly = preset.tasks.filter((task) => task.cadence === 'weekly');
-      expect(daily.length, `${preset.short} dailies`).toBeGreaterThanOrEqual(2);
-      expect(weekly.length, `${preset.short} weeklies`).toBeGreaterThanOrEqual(3);
+      expect(preset.tasks.length, `${preset.short} tasks`).toBeGreaterThanOrEqual(4);
+      expect(weekly.length, `${preset.short} weeklies`).toBeGreaterThanOrEqual(2);
       expect(new Set(preset.tasks.map((task) => task.name)).size).toBe(preset.tasks.length);
+    }
+  });
+
+  it('leads every preset with exactly one core daily', () => {
+    // `core` marks the tasks that pay premium pull currency, and they sort to
+    // the top of the card. Every game has exactly one such daily; more than one
+    // would mean the flag had started drifting toward "important-ish".
+    for (const preset of PRESETS) {
+      const coreDailies = preset.tasks.filter((task) => task.core && task.cadence === 'daily');
+      expect(coreDailies.length, `${preset.short} core dailies`).toBe(1);
+    }
+  });
+
+  it('never ships a task that playing the game completes for you', () => {
+    // "Spend <resource>" duplicated the resource row, which already projects
+    // the cap and fires the alert — and nobody logs in and then forgets to
+    // spend their energy. Endgame windows are owned by seeded Timeline cycle
+    // events, so a tickable copy on the card meant maintaining the fact twice.
+    const banned = [/^spend /i, /battle pass/i, /nameless honor/i];
+    const owned = ['Spiral Abyss', 'Imaginarium Theater', 'Stygian', 'Shiyu', 'Deadly Assault', 'Beyond the Rails'];
+    for (const preset of PRESETS) {
+      for (const task of preset.tasks) {
+        for (const pattern of banned) {
+          expect(task.name, `${preset.short}: "${task.name}"`).not.toMatch(pattern);
+        }
+        for (const window of owned) {
+          expect(task.name.toLowerCase(), `${preset.short}: "${task.name}"`).not.toContain(window.toLowerCase());
+        }
+      }
     }
   });
 });

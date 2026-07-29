@@ -14,7 +14,7 @@ export interface Syncable {
 export interface Game extends Syncable {
   id: string;
   name: string;
-  /** Short label for chips/notifications, e.g. "HSR". */
+  /** Short label for chips and compact UI, e.g. "HSR". */
   short: string;
   /** Accent color (hex). */
   color: string;
@@ -102,6 +102,13 @@ export interface Task extends Syncable {
   timelineLinked?: boolean;
   /** Keyword override for the timeline match (case-insensitive contains); empty = fuzzy name match. */
   timelineMatch?: string;
+  /**
+   * The handful of tasks that actually pay the game's premium pull currency
+   * (Primogems, Stellar Jade, Polychrome, Astrite…). These sort above everything
+   * else on the card and are the ones the completion ring counts, because
+   * missing one costs real pulls while missing a side chore costs nothing.
+   */
+  core?: boolean;
 }
 
 /** Completion state of a task within one period. id = `${taskId}|${periodKey}`. */
@@ -126,9 +133,9 @@ export interface GameEvent extends Syncable {
   end: number;
   /** Requires a daily touch (login/claim) — always shown on the game card's event strip while active. */
   dailyTouch: boolean;
-  /** Include in "event ending soon" alerts. */
+  /** Include the event in time-sensitive in-app next actions. */
   notify: boolean;
-  /** User marked it complete — collapsed on the timeline, no alerts, off the card. */
+  /** User marked it complete — collapsed on the timeline and off the card. */
   done?: boolean;
   notes: string;
   /** Stable id of the imported source (e.g. "genshin:21788") — used to dedupe re-imports. */
@@ -164,30 +171,13 @@ export interface Reminder extends Syncable {
   at: number;
 }
 
-export type IntegrationKind = 'discord' | 'telegram';
-
-export interface IntegrationStatus {
-  kind: IntegrationKind;
-  connected: boolean;
-  maskedLabel: string;
-  updatedAt: number | null;
-  consentedAt: number | null;
-}
-
-/** Accepted only during local migration; these fields must never enter synced AppState JSON. */
-export interface LegacySecretSettings {
-  discordWebhook?: string;
-  telegramToken?: string;
-  telegramChatId?: string;
-}
-
 export type SettingsField = 'quietStart' | 'quietEnd' | 'localTz' | 'sleepHours';
 
 export interface Settings extends Syncable {
-  /** Quiet hours in minutes-from-midnight local time; null = disabled. */
+  /** Reserved notification preference in minutes-from-midnight local time; null = disabled. */
   quietStart: number | null;
   quietEnd: number | null;
-  /** IANA timezone used to format alert messages + quiet hours. */
+  /** IANA timezone reserved for future notification timing. */
   localTz: string;
   /** Hours of sleep used by the "safe to sleep" check. */
   sleepHours: number;
@@ -233,12 +223,3 @@ export function emptyState(): AppState {
     settings: { ...DEFAULT_SETTINGS },
   };
 }
-
-/** Default alert thresholds (minutes) when no AlertRule overrides them. */
-export const DEFAULT_THRESHOLDS: Record<AlertType, number> = {
-  energy_cap: 120,
-  daily_undone: 180,
-  weekly_undone: 24 * 60,
-  monthly_undone: 48 * 60,
-  event_end: 24 * 60,
-};
