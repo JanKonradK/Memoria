@@ -18,7 +18,12 @@ export default [
       '**/playwright-report/**',
       '**/test-results/**',
       '**/worker-env.d.ts',
+      // Vendored AI-harness tooling (impeccable, agent configs). Third-party
+      // source we do not own and must not gate our own lint run on.
       '.claude/**',
+      '.agents/**',
+      '.github/skills/**',
+      '.github/hooks/**',
     ],
   },
   {
