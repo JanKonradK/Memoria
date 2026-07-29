@@ -24,6 +24,8 @@ export interface ChecklistItem {
   timerReady: boolean;
   timerDurationMinutes: number;
   sort: number;
+  /** Pays the game's premium pull currency — see Task.core. */
+  core: boolean;
 }
 
 /** Generic words that would create false timeline matches ("cycle" appears everywhere). */
@@ -176,9 +178,13 @@ export function checklistFor(
       timerReady: timerEndsAt != null && timerEndsAt <= now,
       timerDurationMinutes: effectiveTimerDurationMinutes(t),
       sort: t.sort,
+      core: t.core === true,
     });
   }
-  return out.sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name));
+  // Core tasks first: missing one costs pulls, missing a side chore costs
+  // nothing, and the card should not make you hunt for the difference. Within
+  // each group the user's own order still wins.
+  return out.sort((a, b) => Number(b.core) - Number(a.core) || a.sort - b.sort || a.name.localeCompare(b.name));
 }
 
 export function completionId(taskId: string, periodKey: string): string {

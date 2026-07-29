@@ -35,7 +35,7 @@ export interface SeedEvent {
   start: string;
   end: string;
   dailyTouch?: boolean;
-  /** "Ending soon" alert. Omitted = true; maintenance never notifies. */
+  /** Include in in-app next actions. Omitted = true; maintenance stays informational. */
   notify?: boolean;
   notes?: string;
   /** Stable identity — re-imports update dates instead of duplicating. */

@@ -5,6 +5,32 @@ import type { Cadence, ResourceKind, TaskMode } from './types';
  * is editable in the app, and caps/rates/reset times should be verified
  * in-game after patches. Presets are data, not rules.
  *
+ * ## What earns a place in a task list
+ *
+ * The audience is someone already several gacha deep, not a newcomer being
+ * taught the game. A preset that ships chores they delete on every fresh
+ * install is worse than one that ships too few, because the deleting is manual
+ * and the list is the first thing they see. Three tests, all of which a task
+ * must pass:
+ *
+ * 1. **Would they forget it?** If playing at all completes it, it is noise.
+ *    "Spend <energy>" tasks are the clearest case: you spend the energy because
+ *    you logged in to spend the energy, and the resource row already projects
+ *    the cap and raises the in-app warning. Battle-pass weeklies fall out the same way.
+ * 2. **Does it cost something to miss?** Prefer things with a real deadline and
+ *    a real loss — Condensed Resin banking past the cap, ZZZ's Coffee handing
+ *    you 60 Battery the cap cannot hold, NTE's three Anomaly Pilgrimage runs.
+ * 3. **Does anything else already own it?** Endgame windows (Spiral Abyss,
+ *    Imaginarium Theater, Stygian, MoC/PF/AS/AA, Shiyu/Deadly Assault, Beyond
+ *    the Rails) ship as seeded Timeline cycle events with their true windows.
+ *    Duplicating them as tickable tasks meant maintaining the same fact twice.
+ *    WuWa's ToA/Whimpering Wastes stay as tasks precisely because nothing
+ *    seeds them.
+ *
+ * `core: true` is stricter still — reserved for tasks that pay the game's
+ * premium pull currency, so skipping one costs pulls. Those sort to the top of
+ * the card. Ascension mats and side rewards do not qualify.
+ *
  * Server timezone notes: HoYo + Kuro servers run on FIXED offsets (no DST):
  *   America = UTC-5 → "Etc/GMT+5" (IANA Etc zones have inverted signs)
  *   Europe  = UTC+1 → "Etc/GMT-1"
@@ -33,6 +59,20 @@ export interface PresetTask {
   mode?: TaskMode;
   timerDurationMinutes?: number;
   countTarget?: number;
+  /**
+   * Pays the game's premium pull currency. Sorts to the top of the card.
+   *
+   * The bar is deliberately high: a task is core only if skipping it costs you
+   * pulls. Ascension materials, battle-pass XP and side rewards do not qualify,
+   * however annoying they are to miss.
+   */
+  core?: boolean;
+  /**
+   * Custom-cadence tasks follow the matching Timeline window by default. Set
+   * false for personal cooldowns that start when *you* use them and have no
+   * game-wide window (Parametric Transformer).
+   */
+  timelineLinked?: boolean;
 }
 
 export interface GamePreset {
@@ -125,8 +165,7 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     tasks: [
-      { name: 'Daily Commissions ×4', cadence: 'daily', mode: 'count', countTarget: 4 },
-      { name: 'Spend Resin', cadence: 'daily' },
+      { name: 'Daily Commissions ×4', cadence: 'daily', mode: 'count', countTarget: 4, core: true },
       // Condensed banks 40 Resin at a time and is the only way to carry Resin
       // past the cap without wasting regen — craft before logging off.
       { name: 'Craft Condensed Resin', cadence: 'daily' },
@@ -136,16 +175,21 @@ export const PRESETS: GamePreset[] = [
         mode: 'timer',
         timerDurationMinutes: 20 * 60,
       },
-      // Realm Currency fills its cap in under three days, so this is daily in practice.
-      { name: 'Teapot: currency + gifts', cadence: 'daily' },
+      // Rewards are capped at 10 Random Events a day (10–15 Companionship EXP
+      // each, plus Mora and Fine Enhancement Ore). Nothing announces the cap and
+      // nothing carries over, so it is quietly the largest thing most players
+      // leave on the table. "Friend to Animals" — feeding the puppy — is the
+      // quickest to trigger; it wants Fowl ×1 in your bag.
+      { name: 'Random Events ×10', cadence: 'daily', mode: 'count', countTarget: 10 },
+      // Overworld artifact investigation points respawn on the daily reset and
+      // stop paying out after 30 pickups. Free strongbox fodder and artifact
+      // EXP for a route you can run on autopilot.
+      { name: 'Artifact route (30 pickups)', cadence: 'daily' },
       { name: 'Weekly Bosses ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
       { name: 'Reputation bounties + requests', cadence: 'weekly' },
-      { name: 'Battle Pass weeklies', cadence: 'weekly' },
-      // Both run permanently: Abyss resets the 15th, Theater the 1st (timeline tracks the windows).
-      { name: 'Spiral Abyss + Imaginarium Theater', cadence: 'monthly' },
-      { name: 'Stygian Onslaught cycle', cadence: 'custom', intervalDays: 35 },
-      // 6d22h cooldown from use — anchor drifts, re-anchor after using it.
-      { name: 'Parametric Transformer', cadence: 'custom', intervalDays: 7 },
+      // 6d22h cooldown from use, not a game-wide window — it starts when you
+      // press the button, so it must not chase a Timeline event.
+      { name: 'Parametric Transformer', cadence: 'custom', intervalDays: 7, timelineLinked: false },
     ],
     notes:
       'Europe server (UTC+1). Craft Condensed daily; it counts 60 Dire Prestige in Stygian. Realm Currency rate/cap depend on Trust Rank + Adeptal Energy.',
@@ -178,20 +222,16 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     tasks: [
-      { name: 'Daily Training (500)', cadence: 'daily' },
-      { name: 'Spend Trailblaze Power', cadence: 'daily' },
+      { name: 'Daily Training (500)', cadence: 'daily', core: true },
       {
         name: 'Assignments (collect + resend)',
         cadence: 'daily',
         mode: 'timer',
         timerDurationMinutes: 20 * 60,
       },
-      { name: 'Simulated/Divergent Universe', cadence: 'weekly' },
+      // The largest repeatable Jade block outside the endgame modes.
+      { name: 'Simulated/Divergent Universe', cadence: 'weekly', core: true },
       { name: 'Echo of War ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
-      { name: 'Nameless Honor weeklies', cadence: 'weekly' },
-      // MoC / Pure Fiction / Apocalyptic Shadow / Anomaly Arbitration run
-      // staggered 6-week cycles — a different one refreshes every ~2 weeks.
-      { name: 'Endgame refresh (MoC/PF/AS/AA)', cadence: 'custom', intervalDays: 14 },
     ],
     notes: 'Reserve TB Power stores overflow (up to 2400). Europe server (UTC+1).',
     processNames: ['StarRail'],
@@ -223,19 +263,15 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     tasks: [
-      { name: 'Daily Engagement (400)', cadence: 'daily' },
-      { name: 'Spend Battery Charge', cadence: 'daily' },
-      // Coffee Shop: +60 Battery on top of the 240 cap, once a day — free energy.
+      { name: 'Daily Engagement (400)', cadence: 'daily', core: true },
+      // Coffee Shop: +60 Battery on top of the 240 cap, once a day — free energy
+      // that the cap cannot hold, so it is genuinely lost if you skip it.
       { name: 'Coffee (+60 Battery)', cadence: 'daily' },
-      // Also feeds the Ridu Weekly grid, so it is never just the scratch reward.
-      { name: 'Scratch Card', cadence: 'daily' },
       // 3×3 grid, 1300 points for the full payout — the biggest weekly Polychrome block.
-      { name: 'Ridu Weekly (1300)', cadence: 'weekly' },
+      { name: 'Ridu Weekly (1300)', cadence: 'weekly', core: true },
       { name: 'Notorious Hunt ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
       { name: 'Hollow Zero: bounties + research', cadence: 'weekly' },
       { name: 'Matrix Op / Lost Void', cadence: 'weekly' },
-      // Shiyu Critical and Deadly Assault alternate every two weeks.
-      { name: 'Shiyu Critical / Deadly Assault', cadence: 'custom', intervalDays: 14 },
     ],
     notes: 'Europe server (UTC+1). Matrix Operation weeklies pay ~4.6k Polychrome/month — don’t skip.',
     processNames: ['ZenlessZoneZero'],
@@ -267,11 +303,11 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     tasks: [
-      { name: 'Daily Activity (100)', cadence: 'daily' },
-      { name: 'Spend Waveplates', cadence: 'daily' },
+      { name: 'Daily Activity (100)', cadence: 'daily', core: true },
       { name: 'Weekly Challenges', cadence: 'weekly' },
       { name: 'Weekly Boss ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
-      { name: 'Sim Battle Pass weeklies', cadence: 'weekly' },
+      // Kept as tasks: unlike the HoYo endgame modes, these two have no seeded
+      // Timeline events, so dropping them would lose the rotation entirely.
       { name: 'ToA Hazard Zone cycle', cadence: 'custom', intervalDays: 28 },
       { name: 'Whimpering Wastes cycle', cadence: 'custom', intervalDays: 28 },
     ],
@@ -307,23 +343,17 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     tasks: [
-      { name: 'Spend Character Pixels', cadence: 'daily' },
-      { name: 'Daily quests / 100 Participation', cadence: 'daily' },
+      { name: 'Daily quests / 100 Participation', cadence: 'daily', core: true },
       // "Make a Sincere Wish" every day — the Mhm! Coins path to a free S-Rank Arc.
       { name: "Nacupeda's Pool wish", cadence: 'daily' },
       { name: 'Mews Flash lottery', cadence: 'daily' },
-      { name: 'Café by Origen (collect + restock)', cadence: 'daily' },
       // Capped at three attempts a week and the only Esper upgrade source — the
       // one weekly that actually costs you progress if you skip it.
       { name: 'Anomaly Pilgrimage ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
-      // Every Hobby pays a flat 1000 Fons per City Stamina, so what you play is
-      // taste; leaving stamina unspent before Monday is the only wrong answer.
-      { name: 'Spend City Stamina (Hobbies)', cadence: 'weekly' },
       { name: "Ebisu's Auction", cadence: 'weekly' },
       { name: 'Realm of Greed', cadence: 'weekly' },
       { name: 'Special Commissions', cadence: 'weekly' },
       { name: 'Lost / Warp Exchange + Arc Selection', cadence: 'monthly' },
-      { name: 'Beyond the Rails (per version)', cadence: 'custom', intervalDays: 42 },
     ],
     notes: 'Verify City Stamina cap for your account — it refills fully each Monday.',
     // Best guess — verify in Task Manager while NTE runs and edit if needed.
