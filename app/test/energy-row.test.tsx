@@ -31,6 +31,16 @@ const projection: EnergyProjection = {
   reserve: 320,
 };
 
+function projectionAt(value: number): EnergyProjection {
+  return {
+    ...projection,
+    value,
+    precise: value,
+    isFull: value >= resource.cap,
+    msToFull: value >= resource.cap ? 0 : null,
+  };
+}
+
 function renderRow({
   proj = projection,
   reserve = 320,
@@ -185,5 +195,125 @@ describe('EnergyRow reserve controls', () => {
 
     expect(onCommit).not.toHaveBeenCalled();
     expect(input).toHaveValue('300');
+  });
+});
+
+describe('EnergyRow keyboard shortcuts', () => {
+  it.each([
+    ['a', -10],
+    ['A', -10],
+    ['s', -1],
+    ['S', -1],
+    ['d', 1],
+    ['D', 1],
+    ['f', 10],
+    ['F', 10],
+  ])('applies the %s shortcut as a delta of %i', (key, delta) => {
+    const onCommit = vi.fn();
+    renderRow({ proj: projectionAt(100), onCommit });
+    const input = screen.getByRole('textbox', { name: 'Trailblaze Power current value' });
+
+    fireEvent.focus(input);
+    fireEvent.keyDown(input, { key });
+
+    expect(onCommit).toHaveBeenCalledWith(100 + delta, 320);
+  });
+
+  it('prevents a shortcut character from being inserted', () => {
+    const onCommit = vi.fn();
+    renderRow({ proj: projectionAt(100), onCommit });
+    const input = screen.getByRole('textbox', { name: 'Trailblaze Power current value' });
+
+    fireEvent.focus(input);
+    const wasNotCancelled = fireEvent.keyDown(input, { key: 'f' });
+
+    expect(wasNotCancelled).toBe(false);
+    expect(input).toHaveValue('100');
+    expect(onCommit).toHaveBeenCalledWith(110, 320);
+  });
+
+  it.each([
+    [5, 'a', 0],
+    [295, 'f', 300],
+  ])('clamps a shortcut step from %i with %s to %i', (value, key, expected) => {
+    const onCommit = vi.fn();
+    renderRow({ proj: projectionAt(value), onCommit });
+    const input = screen.getByRole('textbox', { name: 'Trailblaze Power current value' });
+
+    fireEvent.focus(input);
+    fireEvent.keyDown(input, { key });
+
+    expect(onCommit).toHaveBeenCalledWith(expected, 320);
+  });
+
+  it.each(['ctrlKey', 'altKey', 'metaKey'] as const)('ignores %s-modified step shortcuts', (modifier) => {
+    const onCommit = vi.fn();
+    renderRow({ proj: projectionAt(100), onCommit });
+    const input = screen.getByRole('textbox', { name: 'Trailblaze Power current value' });
+
+    fireEvent.focus(input);
+    const wasNotCancelled = fireEvent.keyDown(input, { key: 'f', [modifier]: true });
+
+    expect(wasNotCancelled).toBe(true);
+    expect(onCommit).not.toHaveBeenCalled();
+  });
+
+  it('commits a typed draft and blurs on Enter', () => {
+    const onCommit = vi.fn();
+    renderRow({ proj: projectionAt(100), onCommit });
+    const input = screen.getByRole('textbox', { name: 'Trailblaze Power current value' });
+
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: '123' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(onCommit).toHaveBeenCalledOnce();
+    expect(onCommit).toHaveBeenCalledWith(123, 320);
+    expect(input).not.toHaveFocus();
+  });
+
+  it('uses a typed draft as the base for a shortcut step', () => {
+    const onCommit = vi.fn();
+    renderRow({ proj: projectionAt(100), onCommit });
+    const input = screen.getByRole('textbox', { name: 'Trailblaze Power current value' });
+
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: '120' } });
+    fireEvent.keyDown(input, { key: 'f' });
+
+    expect(onCommit).toHaveBeenCalledWith(130, 320);
+  });
+
+  it('handles each browser auto-repeat event exactly once', () => {
+    const onCommit = vi.fn();
+    renderRow({ proj: projectionAt(100), onCommit });
+    const input = screen.getByRole('textbox', { name: 'Trailblaze Power current value' });
+
+    fireEvent.focus(input);
+    fireEvent.keyDown(input, { key: 'f', repeat: true });
+
+    expect(onCommit).toHaveBeenCalledOnce();
+    expect(onCommit).toHaveBeenCalledWith(110, 320);
+  });
+
+  it('applies the same shortcuts to the reserve editor', () => {
+    const onCommit = vi.fn();
+    renderRow({ onCommit });
+    const input = screen.getByRole('textbox', { name: 'Reserve TB Power for Trailblaze Power' });
+
+    expect(input).toHaveAttribute('aria-keyshortcuts', 'a s d f Enter Escape');
+    fireEvent.focus(input);
+    fireEvent.keyDown(input, { key: 'a' });
+
+    expect(onCommit).toHaveBeenCalledWith(300, 310);
+  });
+
+  it('exposes the shortcuts on the main editor', () => {
+    renderRow();
+
+    expect(screen.getByRole('textbox', { name: 'Trailblaze Power current value' })).toHaveAttribute(
+      'aria-keyshortcuts',
+      'a s d f Enter Escape',
+    );
   });
 });
