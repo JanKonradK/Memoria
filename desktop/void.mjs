@@ -15,7 +15,18 @@
 // opens the hosted (always-synced) app in the same kind of window.
 import { createServer } from 'node:http';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, renameSync, statSync, watch, writeFileSync } from 'node:fs';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  statSync,
+  unlinkSync,
+  watch,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join, normalize, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import os from 'node:os';
@@ -49,9 +60,14 @@ function migrateLegacyDataDirectory() {
 
 migrateLegacyDataDirectory();
 const STATE_FILE = join(DATA_DIR, 'state.json');
+const TOKEN_FILE = join(DATA_DIR, 'launcher-token');
+const LOCK_FILE = join(DATA_DIR, 'launcher.lock');
 
 const PORTS = [17817, 17818, 17819];
 const MARKER = 'x-void';
+const MAX_SYNC_BYTES = 1_000_000;
+const LAUNCH_TICKET_TTL_MS = 30_000;
+const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -95,13 +111,53 @@ function ensureBuilt() {
   spawnSync(npm, ['run', 'build'], { cwd: repo, stdio: 'ignore' });
 }
 
-function serveFile(res, filePath) {
+function protectPrivateFile(filePath) {
+  // The HMAC is only meaningful if another unprivileged account cannot read
+  // its key. APPDATA is already user-scoped on Windows; this also constrains
+  // the file itself on platforms whose chmod bits carry the access decision.
+  chmodSync(filePath, 0o600);
+}
+
+function installSecret() {
+  mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
+  if (!existsSync(TOKEN_FILE)) {
+    try {
+      writeFileSync(TOKEN_FILE, randomBytes(32).toString('base64url'), {
+        encoding: 'utf8',
+        flag: 'wx',
+        mode: 0o600,
+      });
+    } catch (error) {
+      if (error?.code !== 'EEXIST') throw error;
+    }
+  }
+  protectPrivateFile(TOKEN_FILE);
+  const secret = readFileSync(TOKEN_FILE, 'utf8').trim();
+  if (!TOKEN_PATTERN.test(secret)) {
+    throw new Error(`Void's launcher token is missing or invalid: ${TOKEN_FILE}`);
+  }
+  return secret;
+}
+
+function secretEquals(actual, expected) {
+  if (typeof actual !== 'string') return false;
+  const actualBytes = Buffer.from(actual);
+  const expectedBytes = Buffer.from(expected);
+  return actualBytes.length === expectedBytes.length && timingSafeEqual(actualBytes, expectedBytes);
+}
+
+function hmacProof(secret, purpose, port, nonce) {
+  return createHmac('sha256', secret).update(`void-launcher-v1:${purpose}:${port}:${nonce}`).digest('base64url');
+}
+
+function serveFile(res, filePath, extraHeaders = {}) {
   try {
     const body = readFileSync(filePath);
     res.writeHead(200, {
       'content-type': MIME[extname(filePath).toLowerCase()] ?? 'application/octet-stream',
       'cache-control': 'no-cache',
       [MARKER]: '1',
+      ...extraHeaders,
     });
     res.end(body);
     return true;
@@ -110,29 +166,59 @@ function serveFile(res, filePath) {
   }
 }
 
-/** Is a Void instance already serving on this port? */
-async function isVoid(port) {
+/** Prove the listener knows our profile secret without disclosing that secret. */
+async function probeVoid(port, secret) {
+  const nonce = randomBytes(32).toString('base64url');
   try {
-    const res = await fetch(`http://127.0.0.1:${port}/`, { signal: AbortSignal.timeout(1500) });
-    return res.headers.get(MARKER) === '1';
+    const res = await fetch(`http://127.0.0.1:${port}/.void/hello?nonce=${nonce}`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(1500),
+    });
+    const claimsVoid = res.headers.get(MARKER) === '1';
+    if (!res.ok) return { authenticated: false, claimsVoid };
+    let payload;
+    try {
+      payload = await res.json();
+    } catch {
+      return { authenticated: false, claimsVoid };
+    }
+    return {
+      authenticated: secretEquals(payload?.proof, hmacProof(secret, 'hello', port, nonce)),
+      claimsVoid,
+    };
   } catch {
-    return false;
+    return { authenticated: false, claimsVoid: false };
   }
 }
 
-// Merge logic bundled from shared/src/merge.ts by `npm run build:desktop` —
-// the launcher stays zero-dependency, but merging must be the exact same code
-// the app and worker use.
-let mergeCore = null;
-async function loadMergeCore() {
-  if (mergeCore) return mergeCore;
-  const file = join(here, 'dist', 'merge.mjs');
+async function isVoid(port, secret) {
+  return (await probeVoid(port, secret)).authenticated;
+}
+
+// The browser cannot execute the shared package's TypeScript entry directly.
+// Bundle this desktop shim from the public package boundary so both merging and
+// validation remain the exact code used by the app and worker.
+let sharedCore = null;
+async function loadSharedCore() {
+  if (sharedCore) return sharedCore;
+  const entry = join(here, 'shared-core.mjs');
+  const file = join(here, 'dist', 'shared-core.mjs');
   if (!existsSync(file)) {
     const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-    spawnSync(npm, ['run', 'build:desktop'], { cwd: repo, stdio: 'ignore' });
+    mkdirSync(dirname(file), { recursive: true });
+    const built = spawnSync(
+      npm,
+      ['exec', '--no', '--', 'esbuild', entry, '--bundle', '--platform=node', '--format=esm', `--outfile=${file}`],
+      { cwd: repo, encoding: 'utf8' },
+    );
+    if (built.status !== 0 || !existsSync(file)) {
+      throw new Error(
+        `Void could not build its shared desktop core: ${built.error?.message || built.stderr?.trim() || 'unknown error'}`,
+      );
+    }
   }
-  mergeCore = await import(pathToFileURL(file).href);
-  return mergeCore;
+  sharedCore = await import(pathToFileURL(file).href);
+  return sharedCore;
 }
 
 function readStateRaw() {
@@ -164,13 +250,17 @@ function writeState(state) {
 }
 
 function respondJson(res, status, payload) {
-  res.writeHead(status, { 'content-type': 'application/json', [MARKER]: '1' });
+  res.writeHead(status, {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+    [MARKER]: '1',
+  });
   res.end(JSON.stringify(payload));
 }
 
 async function handleGetState(res) {
   try {
-    const { normalizeState } = await loadMergeCore();
+    const { normalizeState } = await loadSharedCore();
     respondJson(res, 200, { state: normalizeState(readStateRaw()) });
   } catch (e) {
     respondJson(res, 500, { error: String(e?.message ?? e) });
@@ -179,19 +269,80 @@ async function handleGetState(res) {
 
 /** Same contract as the worker's POST /api/sync, backed by the shared state file. */
 function handleSync(req, res) {
-  let body = '';
-  req.on('data', (c) => (body += c));
+  const contentTypeHeader = requestHeader(req, 'content-type');
+  const contentType = contentTypeHeader?.split(';', 1)[0].trim().toLowerCase();
+  if (contentType !== 'application/json') {
+    respondJson(res, 415, { error: 'Content-Type must be application/json.' });
+    return;
+  }
+
+  const declaredLength = Number(req.headers['content-length']);
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_SYNC_BYTES) {
+    // Closing after the response keeps a sender from making us drain a body we
+    // have already decided can never become a valid state document.
+    req.pause();
+    res.writeHead(413, {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+      connection: 'close',
+      [MARKER]: '1',
+    });
+    res.end(JSON.stringify({ error: `Request body exceeds ${MAX_SYNC_BYTES} bytes.` }), () => req.destroy());
+    return;
+  }
+
+  const chunks = [];
+  let received = 0;
+  let settled = false;
+  req.on('data', (chunk) => {
+    if (settled) return;
+    received += chunk.length;
+    if (received <= MAX_SYNC_BYTES) {
+      chunks.push(chunk);
+      return;
+    }
+    settled = true;
+    chunks.length = 0;
+    req.pause();
+    res.writeHead(413, {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+      connection: 'close',
+      [MARKER]: '1',
+    });
+    res.end(JSON.stringify({ error: `Request body exceeds ${MAX_SYNC_BYTES} bytes.` }), () => req.destroy());
+  });
   req.on('end', async () => {
+    if (settled) return;
+    settled = true;
     try {
-      const { mergeState, normalizeState } = await loadMergeCore();
-      const client = normalizeState(JSON.parse(body || '{}').state);
+      let payload;
+      try {
+        payload = JSON.parse(Buffer.concat(chunks, received).toString('utf8'));
+      } catch {
+        respondJson(res, 400, { error: 'Request body is not valid JSON.' });
+        return;
+      }
+
+      const { mergeState, normalizeState, safeParseAppState } = await loadSharedCore();
+      const parsedClient = safeParseAppState(payload?.state);
+      if (!parsedClient.success) {
+        respondJson(res, 400, { error: `Invalid app state: ${parsedClient.error}` });
+        return;
+      }
+
       const current = normalizeState(readStateRaw());
-      const merged = mergeState(current, client);
+      const merged = mergeState(current, parsedClient.data);
+      const parsedMerged = safeParseAppState(merged);
+      if (!parsedMerged.success) {
+        respondJson(res, 500, { error: 'The merged state failed validation; state.json was not changed.' });
+        return;
+      }
       // Only write when the merge changed something — otherwise every synced
       // client's pull would bump the file's mtime and re-ping every client
       // through /api/events, ad infinitum.
-      if (JSON.stringify(merged) !== JSON.stringify(current)) writeState(merged);
-      respondJson(res, 200, { state: merged });
+      if (JSON.stringify(parsedMerged.data) !== JSON.stringify(current)) writeState(parsedMerged.data);
+      respondJson(res, 200, { state: parsedMerged.data });
     } catch (e) {
       respondJson(res, 500, { error: String(e?.message ?? e) });
     }
@@ -236,18 +387,183 @@ function handleEvents(req, res) {
   });
 }
 
-function tryListen(port) {
+const launchTickets = new Map();
+const usedTicketNonces = new Map();
+
+function pruneLaunchCredentials() {
+  const now = Date.now();
+  for (const [ticket, expiresAt] of launchTickets) {
+    if (expiresAt <= now) launchTickets.delete(ticket);
+  }
+  for (const [nonce, expiresAt] of usedTicketNonces) {
+    if (expiresAt <= now) usedTicketNonces.delete(nonce);
+  }
+}
+
+function issueLaunchTicket() {
+  pruneLaunchCredentials();
+  const ticket = randomBytes(32).toString('base64url');
+  launchTickets.set(ticket, Date.now() + LAUNCH_TICKET_TTL_MS);
+  return ticket;
+}
+
+function consumeLaunchTicket(ticket) {
+  pruneLaunchCredentials();
+  const expiresAt = launchTickets.get(ticket);
+  launchTickets.delete(ticket);
+  return typeof expiresAt === 'number' && expiresAt > Date.now();
+}
+
+function requestHeader(req, name) {
+  const value = req.headers[name];
+  return typeof value === 'string' ? value : null;
+}
+
+function validHost(req, port) {
+  const host = requestHeader(req, 'host');
+  return host === `127.0.0.1:${port}` || host === `localhost:${port}`;
+}
+
+function cookieToken(req) {
+  const cookie = requestHeader(req, 'cookie');
+  if (!cookie) return null;
+  for (const part of cookie.split(';')) {
+    const [name, ...value] = part.trim().split('=');
+    if (name === 'void_token') return value.join('=');
+  }
+  return null;
+}
+
+function bearerToken(req) {
+  const authorization = requestHeader(req, 'authorization');
+  const match = authorization?.match(/^Bearer ([A-Za-z0-9_-]+)$/);
+  return match?.[1] ?? cookieToken(req);
+}
+
+function unsafeRequestIsSameOrigin(req) {
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method ?? '')) return true;
+  const host = requestHeader(req, 'host');
+  return requestHeader(req, 'origin') === `http://${host}` && requestHeader(req, 'sec-fetch-site') === 'same-origin';
+}
+
+function authorizeApi(req, res, secret) {
+  if (!secretEquals(bearerToken(req), secret)) {
+    res.setHeader('www-authenticate', 'Bearer realm="Void desktop"');
+    respondJson(res, 401, { error: 'A valid Void desktop bearer token is required.' });
+    return false;
+  }
+  if (!unsafeRequestIsSameOrigin(req)) {
+    respondJson(res, 403, { error: 'Unsafe API requests must come from this exact loopback origin.' });
+    return false;
+  }
+  return true;
+}
+
+function serveLaunchHtml(res, secret) {
+  try {
+    const tokenLiteral = JSON.stringify(secret).replaceAll('<', '\\u003c');
+    const bootstrap = `<script>
+      (() => {
+        const token = ${tokenLiteral};
+        try {
+          localStorage.setItem('void-sync-config', JSON.stringify({ url: location.origin, token }));
+        } catch {
+          // The API will remain closed if the browser refuses token storage.
+        }
+        history.replaceState(history.state, '', '/');
+      })();
+    </script>`;
+    const source = readFileSync(join(dist, 'index.html'), 'utf8');
+    if (!source.includes('<head>')) throw new Error("Void's built index.html has no token injection point.");
+    const body = source.replace('<head>', `<head>${bootstrap}`);
+    res.writeHead(200, {
+      'content-type': 'text/html; charset=utf-8',
+      'cache-control': 'no-store',
+      'set-cookie': `void_token=${secret}; HttpOnly; SameSite=Strict; Path=/`,
+      [MARKER]: '1',
+    });
+    res.end(body);
+  } catch (error) {
+    respondJson(res, 500, { error: String(error?.message ?? error) });
+  }
+}
+
+function handleIdentityChallenge(req, res, url, port, secret) {
+  if (req.method !== 'GET') {
+    respondJson(res, 405, { error: 'Method not allowed.' });
+    return;
+  }
+  const nonce = url.searchParams.get('nonce');
+  if (!nonce || !TOKEN_PATTERN.test(nonce)) {
+    respondJson(res, 400, { error: 'A high-entropy challenge nonce is required.' });
+    return;
+  }
+  respondJson(res, 200, { proof: hmacProof(secret, 'hello', port, nonce) });
+}
+
+function handleTicketRequest(req, res, port, secret) {
+  if (req.method !== 'POST') {
+    respondJson(res, 405, { error: 'Method not allowed.' });
+    return;
+  }
+  pruneLaunchCredentials();
+  const nonce = requestHeader(req, 'x-void-nonce');
+  const proof = requestHeader(req, 'x-void-proof');
+  const expected = nonce && TOKEN_PATTERN.test(nonce) ? hmacProof(secret, 'ticket', port, nonce) : null;
+  if (!expected || !secretEquals(proof, expected) || usedTicketNonces.has(nonce)) {
+    respondJson(res, 401, { error: 'The launch-ticket proof was rejected.' });
+    return;
+  }
+  usedTicketNonces.set(nonce, Date.now() + LAUNCH_TICKET_TTL_MS);
+  respondJson(res, 200, { ticket: issueLaunchTicket() });
+}
+
+function tryListen(port, secret) {
   return new Promise((resolve) => {
     const server = createServer((req, res) => {
       lastActivity = Date.now();
-      const urlPath = decodeURIComponent((req.url ?? '/').split('?')[0]);
+      if (!validHost(req, port)) {
+        respondJson(res, 421, { error: `Host must be 127.0.0.1:${port} or localhost:${port}.` });
+        return;
+      }
+
+      let url;
+      let urlPath;
+      try {
+        url = new URL(req.url ?? '/', `http://127.0.0.1:${port}`);
+        urlPath = decodeURIComponent(url.pathname);
+      } catch {
+        respondJson(res, 400, { error: 'Malformed request URL.' });
+        return;
+      }
+
+      if (urlPath === '/.void/hello') return handleIdentityChallenge(req, res, url, port, secret);
+      if (urlPath === '/.void/ticket') return handleTicketRequest(req, res, port, secret);
+
+      const launchMatch = urlPath.match(/^\/api\/launch\/([A-Za-z0-9_-]{43})\/?$/);
+      if (req.method === 'GET' && launchMatch) {
+        if (!consumeLaunchTicket(launchMatch[1])) {
+          respondJson(res, 401, { error: 'This launch ticket is invalid or has expired.' });
+          return;
+        }
+        return serveLaunchHtml(res, secret);
+      }
+
+      if (urlPath === '/api' || urlPath.startsWith('/api/')) {
+        if (!authorizeApi(req, res, secret)) return;
+      }
       if (req.method === 'GET' && urlPath === '/api/events') return handleEvents(req, res);
       if (req.method === 'GET' && urlPath === '/api/state') return void handleGetState(res);
       if (req.method === 'POST' && urlPath === '/api/sync') return handleSync(req, res);
+      if (req.method === 'GET' && urlPath === '/api/ready') return respondJson(res, 200, { ok: true });
       if (req.method === 'POST' && urlPath === '/api/test-alert') {
         return respondJson(res, 400, {
           error: 'Alerts while closed need the deployed Cloudflare worker (see README).',
         });
+      }
+      if (urlPath === '/api' || urlPath.startsWith('/api/')) {
+        respondJson(res, 404, { error: 'API route not found.' });
+        return;
       }
       // Resolve within dist and block path traversal.
       let filePath = normalize(join(dist, urlPath));
@@ -259,22 +575,155 @@ function tryListen(port) {
       // SPA fallback.
       serveFile(res, join(dist, 'index.html'));
     });
-    server.once('error', () => resolve(null));
-    server.listen(port, '127.0.0.1', () => resolve(server));
+    server.once('error', (error) => resolve({ server: null, error }));
+    server.listen(port, '127.0.0.1', () => resolve({ server, error: null }));
   });
+}
+
+let ownedLockId = null;
+
+function releaseOwnedLock() {
+  if (!ownedLockId) return;
+  try {
+    const lock = JSON.parse(readFileSync(LOCK_FILE, 'utf8'));
+    if (lock?.instanceId === ownedLockId) unlinkSync(LOCK_FILE);
+  } catch {
+    // A missing or replaced lock is no longer ours to remove.
+  }
+  ownedLockId = null;
+}
+
+process.on('exit', releaseOwnedLock);
+
+function createInstanceLock() {
+  const instanceId = randomBytes(32).toString('base64url');
+  const body = JSON.stringify({ version: 1, pid: process.pid, instanceId, createdAt: Date.now() });
+  try {
+    writeFileSync(LOCK_FILE, body, { encoding: 'utf8', flag: 'wx', mode: 0o600 });
+    protectPrivateFile(LOCK_FILE);
+    ownedLockId = instanceId;
+    return true;
+  } catch (error) {
+    if (error?.code === 'EEXIST') return false;
+    throw error;
+  }
+}
+
+function readInstanceLock() {
+  const raw = readFileSync(LOCK_FILE, 'utf8');
+  let lock;
+  try {
+    lock = JSON.parse(raw);
+  } catch {
+    throw new Error(`Void's single-instance lock is unreadable: ${LOCK_FILE}`);
+  }
+  if (
+    lock?.version !== 1 ||
+    !Number.isInteger(lock.pid) ||
+    lock.pid <= 0 ||
+    typeof lock.instanceId !== 'string' ||
+    !TOKEN_PATTERN.test(lock.instanceId)
+  ) {
+    throw new Error(`Void's single-instance lock is invalid: ${LOCK_FILE}`);
+  }
+  return { raw, lock };
+}
+
+function processIsAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code === 'EPERM';
+  }
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function findAuthenticatedInstance(secret, attempts = 1) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    for (const port of PORTS) {
+      if (await isVoid(port, secret)) return port;
+    }
+    if (attempt + 1 < attempts) await delay(100);
+  }
+  return null;
+}
+
+async function claimInstance(secret) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (createInstanceLock()) return { owned: true, port: null };
+
+    const { raw, lock } = readInstanceLock();
+    if (processIsAlive(lock.pid)) {
+      // The lock is primary, but startup has a small interval before listen().
+      // Confirmation prevents both a PID reuse and a forged lock from sending
+      // the browser to a process that does not know the profile secret.
+      const port = await findAuthenticatedInstance(secret, 20);
+      if (port) return { owned: false, port };
+      throw new Error(
+        `Void process ${lock.pid} holds ${LOCK_FILE}, but no server on ports ${PORTS.join(', ')} passed its identity challenge.`,
+      );
+    }
+
+    // Delete only the bytes we inspected; another launcher may have replaced a
+    // stale lock between the liveness check and this cleanup.
+    if (readFileSync(LOCK_FILE, 'utf8') === raw) {
+      unlinkSync(LOCK_FILE);
+    }
+  }
+  throw new Error(`Void could not acquire its single-instance lock: ${LOCK_FILE}`);
 }
 
 /**
  * Bind the first free port from PORTS, or detect a Void instance already
  * running on one (second launch) and reuse its URL instead of starting anew.
  */
-async function startOrReuse() {
+async function startOrReuse(secret) {
+  const claim = await claimInstance(secret);
+  if (!claim.owned) return { server: null, port: claim.port };
+
+  const conflicts = [];
   for (const port of PORTS) {
-    const server = await tryListen(port);
+    const { server, error } = await tryListen(port, secret);
     if (server) return { server, port };
-    if (await isVoid(port)) return { server: null, port };
+    const identity = await probeVoid(port, secret);
+    if (identity.authenticated) {
+      releaseOwnedLock();
+      return { server: null, port };
+    }
+    if (identity.claimsVoid) {
+      releaseOwnedLock();
+      throw new Error(
+        `port ${port} is occupied by a listener claiming to be Void, but it failed the authenticated identity challenge; refusing to open a browser.`,
+      );
+    }
+    conflicts.push(`${port}${error?.code ? ` (${error.code})` : ''}`);
+    // Never navigate to an unconfirmed listener. Retaining the historical
+    // fallback still gives users a deterministic origin when another local
+    // program owns an earlier candidate.
+    console.error(`Void: port ${port} is occupied and failed Void's authenticated identity challenge.`);
   }
-  return null;
+  releaseOwnedLock();
+  throw new Error(`ports ${conflicts.join(', ')} are all in use by other programs.`);
+}
+
+async function requestLaunchTicket(port, secret) {
+  const nonce = randomBytes(32).toString('base64url');
+  const response = await fetch(`http://127.0.0.1:${port}/.void/ticket`, {
+    method: 'POST',
+    headers: {
+      'x-void-nonce': nonce,
+      'x-void-proof': hmacProof(secret, 'ticket', port, nonce),
+    },
+    signal: AbortSignal.timeout(1500),
+  });
+  if (!response.ok) throw new Error(`the running Void instance refused a launch ticket (HTTP ${response.status}).`);
+  const payload = await response.json();
+  if (!TOKEN_PATTERN.test(payload?.ticket)) throw new Error('the running Void instance returned an invalid ticket.');
+  return payload.ticket;
 }
 
 /** Chromium-family programs — safe to hand a `--app=` flag. Helium ships as chrome.exe. */
@@ -540,15 +989,12 @@ async function main() {
   }
 
   ensureBuilt();
-  const got = await startOrReuse();
-  if (!got) {
-    // All candidate ports are squatted by foreign apps — bail loudly rather
-    // than fall back to a random port (that would strand the user's data).
-    console.error(`Void: ports ${PORTS.join(', ')} are all in use by other programs.`);
-    process.exit(1);
-  }
+  const secret = installSecret();
+  const got = await startOrReuse(secret);
   const { server, port } = got;
-  const url = `http://127.0.0.1:${port}/`;
+  const baseUrl = `http://127.0.0.1:${port}`;
+  const ticket = server ? issueLaunchTicket() : await requestLaunchTicket(port, secret);
+  const url = `${baseUrl}/api/launch/${ticket}`;
   const shutdown = () => {
     server?.close();
     process.exit(0);
@@ -584,4 +1030,7 @@ async function main() {
   }, 60_000);
 }
 
-main();
+main().catch((error) => {
+  console.error(`Void: ${String(error?.message ?? error)}`);
+  process.exitCode = 1;
+});
