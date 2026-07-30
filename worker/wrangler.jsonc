@@ -20,12 +20,10 @@
   "vars": {
     "APP_ENV": "local",
     "ALLOWED_ORIGINS": "http://localhost:5173,http://127.0.0.1:5173",
-    "ALERT_SWEEP_MAX_USERS": "5",
     "CLERK_FRONTEND_API": "https://clerk.technogg.app",
-    "MASTER_KEY_VERSION": "1",
   },
   "triggers": {
-    // Alert engine heartbeat — every 10 minutes.
+    // The hourly retention gate uses this heartbeat without requiring a second Worker.
     "crons": ["*/10 * * * *"],
   },
   "observability": {
@@ -45,9 +43,7 @@
       "vars": {
         "APP_ENV": "production",
         "ALLOWED_ORIGINS": "https://void.jankonrad-kruszynski.workers.dev",
-        "ALERT_SWEEP_MAX_USERS": "5",
         "CLERK_FRONTEND_API": "https://learning-flea-86.clerk.accounts.dev",
-        "MASTER_KEY_VERSION": "1",
       },
     },
   },

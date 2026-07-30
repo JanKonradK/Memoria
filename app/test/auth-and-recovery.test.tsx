@@ -2,27 +2,11 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthShell, useSession } from '../src/auth';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
-import { migrateLegacySecrets, readLocalSecrets } from '../src/secret-store';
 
 function SessionProbe() {
   const session = useSession();
   return <p>{session.hosted ? 'hosted' : session.displayName}</p>;
 }
-
-describe('local credential migration', () => {
-  it('moves legacy credentials into the device-only store', () => {
-    expect(
-      migrateLegacySecrets({
-        settings: {
-          discordWebhook: 'https://discord.com/api/webhooks/1/secret',
-        },
-      }),
-    ).toBe(true);
-    expect(readLocalSecrets()).toMatchObject({
-      discordWebhook: 'https://discord.com/api/webhooks/1/secret',
-    });
-  });
-});
 
 describe('public and local auth states', () => {
   it('keeps the app usable in explicit local mode without a Clerk key', async () => {
