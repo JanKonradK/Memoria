@@ -4,24 +4,22 @@
 
 - Clerk owns identity and sessions. The Worker validates every hosted API request and restricts the token's authorized
   party to the configured environment origins.
-- Every D1 document, credential, alert ledger, export, deletion, and scheduled job is keyed by the authenticated Clerk
+- Every D1 document, export, deletion, and tenant-scoped operational query is keyed by the authenticated Clerk
   user ID. Browser-supplied user IDs are never accepted.
 - Planner state is validated, size-limited, schema-versioned, and merged with optimistic compare-and-swap retries.
-- Discord webhooks and Telegram credentials are stored only in `user_secrets`, encrypted using
-  AES-256-GCM with a Worker secret. Raw values are not returned by status, sync, export, or log endpoints.
+- The Worker has no notification-channel credential store or channel-management routes.
 
 ## Retention
 
 - Planner documents remain until account deletion.
-- Tombstones are compacted after 90 days; alert delivery deduplication expires after 60 days.
-- Browser error reports and audit records require an operator-defined retention job before public launch.
-- Normal exports contain planner data and masked integration status, never credentials.
+- Tombstones are compacted after 90 days.
+- Browser error reports expire after 30 days and audit records after 180 days.
+- Account exports contain planner data only.
 
 ## Deletion
 
-The authenticated account deletion route removes the tenant document, encrypted credentials, and alert ledger, marks
-the local audit identity deleted, and removes the Clerk user. The browser clears IndexedDB and local integration data
-after the API succeeds.
+The authenticated account deletion route removes the tenant document and tenant-scoped operational records, writes a
+non-identifying deletion marker, and removes the Clerk user. The browser clears IndexedDB after the API succeeds.
 
 ## Reporting vulnerabilities
 

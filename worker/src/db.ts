@@ -125,8 +125,6 @@ export async function deleteUserData(db: D1Database, userId: string, now = Date.
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('')}`;
   await db.batch([
-    db.prepare('DELETE FROM user_alerts_sent WHERE user_id = ?').bind(userId),
-    db.prepare('DELETE FROM user_secrets WHERE user_id = ?').bind(userId),
     db.prepare('DELETE FROM user_docs WHERE user_id = ?').bind(userId),
     db.prepare('DELETE FROM client_errors WHERE user_id = ?').bind(userId),
     db.prepare('DELETE FROM audit_log WHERE user_id = ?').bind(userId),
@@ -135,30 +133,6 @@ export async function deleteUserData(db: D1Database, userId: string, now = Date.
       .prepare('INSERT INTO audit_log (user_id, action, metadata_json, created_at) VALUES (?, ?, ?, ?)')
       .bind(deletedIdentity, 'account.deleted', '{}', now),
   ]);
-}
-
-export async function claimUsersForAlertSweep(db: D1Database, limit: number): Promise<string[]> {
-  const rows = await db
-    .prepare(
-      'SELECT d.user_id FROM user_docs d JOIN users u ON u.user_id = d.user_id ' +
-        'WHERE u.deleted_at IS NULL ORDER BY u.alerts_checked_at ASC LIMIT ?',
-    )
-    .bind(Math.max(1, Math.floor(limit)))
-    .all<{ user_id: string }>();
-  return rows.results.map((row) => row.user_id);
-}
-
-export async function audit(
-  db: D1Database,
-  userId: string,
-  action: string,
-  metadata: Record<string, unknown> = {},
-  now = Date.now(),
-): Promise<void> {
-  await db
-    .prepare('INSERT INTO audit_log (user_id, action, metadata_json, created_at) VALUES (?, ?, ?, ?)')
-    .bind(userId, action, JSON.stringify(metadata), now)
-    .run();
 }
 
 export function shouldRunOperationalRetention(now: number): boolean {

@@ -14,7 +14,6 @@ vi.mock('idb-keyval', () => ({
 }));
 
 import { configureHostedSession } from '../src/auth-session';
-import { readLocalSecrets, updateLocalSecrets } from '../src/secret-store';
 import { flushPersist, useApp } from '../src/store';
 import { ANONYMOUS_IDENTITY, LOCAL_IDENTITY, migrateLegacyStorageKeyForIdentity } from '../src/storage-identity';
 import { getSyncConfig, resetSyncState, setSyncConfig, syncNow } from '../src/sync';
@@ -70,23 +69,18 @@ describe('storage identities', () => {
   it('keeps two signed-in identities isolated when switching between them', async () => {
     await useApp.getState().setIdentity('user:alice');
     useApp.getState().addBlankGame('Alice game');
-    updateLocalSecrets({ discordWebhook: 'alice-secret' });
     await flushPersistence();
 
     await useApp.getState().setIdentity('user:bob');
     expect(useApp.getState().state.games).toHaveLength(0);
-    expect(readLocalSecrets().discordWebhook).toBe('');
     useApp.getState().addBlankGame('Bob game');
-    updateLocalSecrets({ discordWebhook: 'bob-secret' });
     await flushPersistence();
 
     await useApp.getState().setIdentity('user:alice');
     expect(useApp.getState().state.games.map((game) => game.name)).toEqual(['Alice game']);
-    expect(readLocalSecrets().discordWebhook).toBe('alice-secret');
 
     await useApp.getState().setIdentity('user:bob');
     expect(useApp.getState().state.games.map((game) => game.name)).toEqual(['Bob game']);
-    expect(readLocalSecrets().discordWebhook).toBe('bob-secret');
     expect(idb.has('void-state::user:alice')).toBe(true);
     expect(idb.has('void-state::user:bob')).toBe(true);
   });
@@ -94,18 +88,14 @@ describe('storage identities', () => {
   it('keeps local mode on unsuffixed storage keys', async () => {
     await useApp.getState().setIdentity(LOCAL_IDENTITY);
     useApp.getState().addBlankGame('Legacy local game');
-    updateLocalSecrets({ telegramToken: 'legacy-token' });
     await flushPersistence();
 
     expect(idb.has('void-state')).toBe(true);
     expect(idb.has('void-state::local')).toBe(false);
-    expect(localStorage.getItem('void-local-secrets-v1')).toContain('legacy-token');
-    expect(localStorage.getItem('void-local-secrets-v1::local')).toBeNull();
 
     await useApp.getState().setIdentity(ANONYMOUS_IDENTITY);
     await useApp.getState().setIdentity(LOCAL_IDENTITY);
     expect(useApp.getState().state.games.map((game) => game.name)).toEqual(['Legacy local game']);
-    expect(readLocalSecrets().telegramToken).toBe('legacy-token');
   });
 
   it('migrates legacy technogg IndexedDB data to the Void key for the same identity', async () => {

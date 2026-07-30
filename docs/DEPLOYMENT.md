@@ -10,15 +10,9 @@ development configuration and one production environment to stay within the Clou
 3. Create the production Clerk application. Configure the matching origin and account deletion behavior.
 4. Set `CLERK_FRONTEND_API` in `worker/wrangler.jsonc` to the new Clerk custom domain, then update the matching
    `script-src` host in `app/public/_headers`; these values must stay in sync.
-5. Generate a 32-byte encryption key:
-
-   ```sh
-   openssl rand -base64 32
-   ```
-
-6. Store `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `CLERK_JWT_KEY`, and `MASTER_KEY` with
+5. Store `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, and `CLERK_JWT_KEY` with
    `wrangler secret put --env production`. Never put values in GitHub variables or the Wrangler file.
-7. Configure the GitHub environment named `production`:
+6. Configure the GitHub environment named `production`:
    - secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
    - variables: `CLERK_PUBLISHABLE_KEY`, `DEPLOY_ORIGIN`
    - require manual approval.
@@ -35,6 +29,6 @@ npm -w worker run db:migrate:production
 npm run deploy:production
 ```
 
-Verify `/api/health`, `/api/ready`, sign-up, local-data migration, cross-device sync, integration connect/revoke, export,
-account deletion, and scheduled alerts before opening registration. Production deploys only from a `v*` tag or an
-approved manual run.
+Verify `/api/health`, `/api/ready`, sign-up, local-data migration, cross-device sync, export, account deletion, and
+scheduled operational retention before opening registration. Production deploys only from a `v*` tag or an approved
+manual run.

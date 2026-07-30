@@ -2,7 +2,6 @@ import { createClerkClient } from '@clerk/backend';
 import { Hono } from 'hono';
 import { timeout } from 'hono/timeout';
 import { CURRENT_SCHEMA_VERSION, normalizeState, safeParseAppState } from '@void/shared';
-import { sendTestAlert, sweepAlerts } from './alerts';
 import { authenticate, type Variables } from './auth';
 import {
   deleteUserData,
@@ -16,9 +15,7 @@ import {
   shouldRunOperationalRetention,
 } from './db';
 import type { Bindings } from './env';
-import { integrationRoutes } from './integrations';
 import { rateLimit, requireJson, securityHeaders, strictCors, structuredLog } from './middleware';
-import { listIntegrationStatuses } from './secrets';
 
 type AppEnv = { Bindings: Bindings; Variables: Variables };
 const CLIENT_ERROR_PATH = '/api/client-error';
@@ -104,16 +101,11 @@ app.post('/api/sync', async (c) => {
 });
 
 app.get('/api/export', async (c) => {
-  const [document, integrations] = await Promise.all([
-    loadUserDocument(c.env.DB, c.get('userId')),
-    listIntegrationStatuses(c.env.DB, c.get('userId')),
-  ]);
+  const document = await loadUserDocument(c.env.DB, c.get('userId'));
   return c.json({
     exportedAt: new Date().toISOString(),
     schemaVersion: document.state.schemaVersion,
     state: document.state,
-    integrations,
-    secretsIncluded: false,
   });
 });
 
@@ -125,11 +117,6 @@ app.delete('/api/account', async (c) => {
     await clerk.users.deleteUser(userId);
   }
   return c.json({ deleted: true });
-});
-
-app.post('/api/test-alert', async (c) => {
-  const sent = await sendTestAlert(c.env, c.get('userId'));
-  return c.json({ sent });
 });
 
 app.post('/api/client-error', async (c) => {
@@ -146,8 +133,6 @@ app.post('/api/client-error', async (c) => {
   return c.json({ accepted: true }, 202);
 });
 
-app.route('/api', integrationRoutes);
-
 app.all('*', (c) => c.env.ASSETS.fetch(c.req.raw));
 
 app.onError((error, c) => {
@@ -161,11 +146,10 @@ export default {
   async scheduled(event: ScheduledEvent, env: Bindings, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil(
       (async () => {
-        const result = await sweepAlerts(env, { now: event.scheduledTime });
         if (shouldRunOperationalRetention(event.scheduledTime)) {
           await pruneOperationalData(env.DB, event.scheduledTime);
+          console.log(JSON.stringify({ type: 'metric', name: 'cron.retention' }));
         }
-        console.log(JSON.stringify({ type: 'metric', name: 'cron.sweep', ...result }));
       })(),
     );
   },

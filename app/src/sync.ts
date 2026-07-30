@@ -129,24 +129,6 @@ export async function syncNow(): Promise<void> {
   }
 }
 
-/** Ask the worker to send a test notification through the configured channels. */
-export async function sendTestPing(): Promise<string> {
-  const connection = await apiConnection();
-  if (!connection) return 'Sign in or configure the advanced local sync server first.';
-  if (!navigator.onLine) return 'You are offline. Reconnect before sending a test ping.';
-  try {
-    const res = await fetch(`${connection.base}/api/test-alert`, {
-      method: 'POST',
-      headers: connection.headers,
-    });
-    const body = (await res.json().catch(() => ({}))) as { sent?: string[]; error?: string };
-    if (!res.ok) return body.error ?? `HTTP ${res.status}`;
-    return body.sent?.length ? `Sent via: ${body.sent.join(', ')}` : 'No notification channel configured yet.';
-  } catch (e) {
-    return e instanceof Error ? e.message : String(e);
-  }
-}
-
 let initialized = false;
 
 export function initSync(): void {
