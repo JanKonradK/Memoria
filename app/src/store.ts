@@ -23,10 +23,10 @@ import {
   mergeState,
   normalizeState,
   pruneCompletions,
+  safeParseAppState,
   projectEnergy,
   missingPresetTasks,
 } from '@void/shared';
-import { clearLocalSecrets, migrateLegacySecrets, setLocalSecretsIdentity } from './secret-store';
 import { storageKeyForIdentity } from './storage-identity';
 import { uid } from './util';
 
@@ -127,13 +127,32 @@ export async function flushPersist(): Promise<void> {
   persistTimer = undefined;
   const pending = pendingPersist;
   pendingPersist = null;
-  if (pending) await idbSet(pending.key, pending.state);
+  // This is the last boundary shared by every local writer. Keeping the guard
+  // here preserves debounce performance while making an invalid disk write
+  // impossible even if a future mutation forgets its own range check.
+  if (pending) await idbSet(pending.key, normalizeState(pending.state));
 }
 
-function stateForStorage(raw: unknown): { state: AppState; pruned: boolean } {
+function sameJson(left: unknown, right: unknown): boolean {
+  try {
+    return JSON.stringify(left) === JSON.stringify(right);
+  } catch {
+    return false;
+  }
+}
+
+function stateForStorage(raw: unknown): { state: AppState; repaired: boolean } {
   const normalized = normalizeState(raw);
   const state = pruneCompletions(normalized, now() - COMPLETION_RETENTION_MS);
-  return { state, pruned: state.completions.length !== normalized.completions.length };
+  const parsed = safeParseAppState(raw);
+  // Successful transforms matter too: future clocks and inferred legacy fields
+  // are safe in memory only after repair, so leave no poisoned original on disk.
+  const schemaChanged =
+    raw !== undefined && (!parsed.success || !sameJson(parsed.data, raw) || !sameJson(parsed.data, normalized));
+  return {
+    state,
+    repaired: schemaChanged || state.completions.length !== normalized.completions.length,
+  };
 }
 
 async function readStoredState(key: string, legacyKey: string | null): Promise<unknown> {
@@ -157,6 +176,33 @@ async function readStoredState(key: string, legacyKey: string | null): Promise<u
     }
   }
   return migrated;
+}
+
+/**
+ * One-time purge of the retired local secret store.
+ *
+ * Discord and Telegram support is gone, but the credentials that feature kept
+ * were PLAINTEXT in localStorage — a Discord webhook URL and a Telegram bot
+ * token. Deleting the code without deleting the data would leave live,
+ * long-lived credentials sitting on disk indefinitely for every existing user,
+ * which is a worse outcome than the feature existing. Cheap and idempotent, so
+ * it runs on every identity switch rather than needing a migration flag.
+ */
+const RETIRED_SECRET_KEYS = ['void-local-secrets-v1', 'technogg-local-secrets-v1'];
+
+function purgeRetiredSecrets(): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    // Keys are identity-suffixed (`base::user:abc`), so match the prefix too
+    // rather than only the bare key — otherwise signed-in users keep theirs.
+    for (const key of Object.keys(localStorage)) {
+      if (RETIRED_SECRET_KEYS.some((base) => key === base || key.startsWith(`${base}::`))) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch {
+    // Private-mode or quota-locked storage: nothing to purge that we can reach.
+  }
 }
 
 function announceMutation(): void {
@@ -246,7 +292,7 @@ export const useApp = create<AppStore>((set, get) => ({
     activeIdbKey = storageKeyForIdentity(IDB_KEY, identity);
     activeLegacyIdbKey = storageKeyForIdentity(LEGACY_IDB_KEY, identity);
     identityRevision += 1;
-    setLocalSecretsIdentity(identity);
+    purgeRetiredSecrets();
     set({
       identity,
       state: emptyState(),
@@ -268,10 +314,9 @@ export const useApp = create<AppStore>((set, get) => ({
     try {
       const raw = await readStoredState(key, legacyKey);
       if (revision !== identityRevision) return;
-      migrateLegacySecrets(raw, identity);
       const stored = stateForStorage(raw);
       set({ state: stored.state, loaded: true, loadError: '' });
-      if (stored.pruned) persist(stored.state);
+      if (stored.repaired) persist(stored.state);
     } catch (error) {
       if (revision !== identityRevision) return;
       set({
@@ -295,10 +340,9 @@ export const useApp = create<AppStore>((set, get) => ({
     try {
       const raw = await readStoredState(key, legacyKey);
       if (revision !== identityRevision) return;
-      migrateLegacySecrets(raw, identity);
       const stored = stateForStorage(raw);
       set({ state: stored.state, loaded: true, loadError: '' });
-      if (stored.pruned) persist(stored.state);
+      if (stored.repaired) persist(stored.state);
     } catch (error) {
       if (revision !== identityRevision) return;
       set({
@@ -309,7 +353,6 @@ export const useApp = create<AppStore>((set, get) => ({
   },
 
   async clearLocalData() {
-    const identity = activeIdentity;
     const key = activeIdbKey;
     const legacyKey = activeLegacyIdbKey;
     const revision = identityRevision;
@@ -319,7 +362,10 @@ export const useApp = create<AppStore>((set, get) => ({
     try {
       if (key) await idbDel(key);
       if (legacyKey && legacyKey !== key) await idbDel(legacyKey);
-      if (identity) clearLocalSecrets(identity);
+      // "Clear local data" has to mean all of it, including the retired
+      // notification credentials, or the one action a user takes to wipe the
+      // device would leave their bot token behind.
+      purgeRetiredSecrets();
       if (revision !== identityRevision) return;
       set({ state: emptyState(), loaded: true, loadError: '' });
     } catch (error) {
@@ -397,6 +443,8 @@ export const useApp = create<AppStore>((set, get) => ({
         timerDurationMinutes: tk.timerDurationMinutes,
         countTarget: tk.countTarget,
         timerEndsAt: tk.mode === 'timer' ? null : undefined,
+        core: tk.core,
+        timelineLinked: tk.timelineLinked,
         sort: i,
         updatedAt: t,
       }));
@@ -421,7 +469,9 @@ export const useApp = create<AppStore>((set, get) => ({
           id: gameId,
           name,
           short: name.slice(0, 4),
-          color: '#8b5cf6',
+          // Brand accent, so a custom game starts on-system and the user can
+          // change it to whatever that game actually looks like.
+          color: '#7c5cff',
           icon: '',
           platform: 'both',
           tz: 'Etc/UTC',
@@ -659,6 +709,8 @@ export const useApp = create<AppStore>((set, get) => ({
         timerDurationMinutes: task.timerDurationMinutes,
         countTarget: task.countTarget,
         timerEndsAt: task.mode === 'timer' ? null : undefined,
+        core: task.core,
+        timelineLinked: task.timelineLinked,
         sort: sortBase + index,
         updatedAt: t,
       }));
@@ -689,6 +741,8 @@ export const useApp = create<AppStore>((set, get) => ({
           timerDurationMinutes: task.timerDurationMinutes,
           countTarget: task.countTarget,
           timerEndsAt: task.mode === 'timer' ? null : undefined,
+          core: task.core,
+          timelineLinked: task.timelineLinked,
           sort: sortBase + index,
           updatedAt: t,
         });
@@ -785,9 +839,16 @@ export const useApp = create<AppStore>((set, get) => ({
   importJson(text) {
     try {
       const raw = JSON.parse(text) as unknown;
-      migrateLegacySecrets(raw);
-      const incoming = normalizeState(raw);
-      get().mutate((s) => mergeState(s, incoming));
+      // Schema-validate the CANDIDATE, not just the preview. Settings.tsx
+      // already validates what it shows the user, but this used to commit the
+      // original object through `normalizeState`, which only coerces — so a
+      // hand-edited or hostile backup could put values into storage that the
+      // hosted sync would later reject, leaving the device wedged. Refuse the
+      // whole import instead: unlike a load, there is a real user standing here
+      // who can be told the file is bad, and their existing state is intact.
+      const parsed = safeParseAppState(raw);
+      if (!parsed.success) return false;
+      get().mutate((s) => mergeState(s, parsed.data));
       return true;
     } catch {
       return false;
