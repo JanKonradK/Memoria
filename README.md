@@ -1,7 +1,7 @@
 # ⚡ Void — Gacha Daily / Energy / Event Tracker
 
 One dashboard for every gacha you play: live energy projections, dailies/weeklies/monthlies
-that reset on each game's _server_ time, an event timeline, and Discord/Telegram pings before
+that reset on each game's _server_ time, an event timeline, and in-app next actions before
 you waste regen or miss a reset.
 
 Ships with editable presets for **Genshin, HSR, ZZZ, Wuthering Waves and NTE** — every
@@ -12,8 +12,8 @@ changes something.
 
 ```
 app/     React PWA (Vite + Tailwind) — installable on PC and phone
-worker/  Cloudflare Worker — sync API (D1) + cron alert engine (Discord/Telegram)
-shared/  All the math: energy projection, reset periods, urgency, alerts, merge
+worker/  Cloudflare Worker — authenticated sync API (D1) + operational retention
+shared/  All the math: energy projection, reset periods, urgency, merge
 ```
 
 ## Run it locally
@@ -26,7 +26,7 @@ npm run test:e2e   # Playwright responsive, keyboard and accessibility journeys
 ```
 
 The app is completely usable without the worker — data lives in IndexedDB on the device.
-The worker adds two things: **sync between devices** and **alerts while the app is closed**.
+The worker adds **authenticated sync between devices**.
 
 ## Local state file
 
@@ -35,8 +35,7 @@ The desktop launcher keeps the canonical local copy of your data in
 auto-syncs against the launcher whenever it's opened through it (no setup, the
 token field stays empty), and the launcher pushes a `/api/events` ping to open
 app windows whenever the file changes on disk. The hosted Cloudflare product
-uses Clerk sessions and tenant-scoped D1 documents for cross-device sync and
-closed-app alerts.
+uses Clerk sessions and tenant-scoped D1 documents for cross-device sync.
 
 ## Desktop shortcut (Windows)
 
@@ -83,23 +82,18 @@ tab. Precedence is `--browser` → `VOID_BROWSER` → `config.json` → automati
 
 ## Deploy the hosted product
 
-Production uses its own Clerk application, D1 database, and encryption key.
+Production uses its own Clerk application and D1 database.
 Follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md);
 deployments apply numbered migrations and require the CI launch gates.
 
 After signing in:
 
 1. Existing local IndexedDB data is previewed and merged only after confirmation.
-2. **Settings → Notifications**: connect a Discord webhook URL (channel settings → Integrations →
-   Webhooks) and/or a Telegram bot token + chat id (create a bot with @BotFather, message it once,
-   read your chat id from `https://api.telegram.org/bot<TOKEN>/getUpdates`).
-3. Hit **Send test ping**.
-4. Install the PWA: browser menu → _Install app_ (desktop) / _Add to Home Screen_ (phone).
+2. Confirm changes appear on a second signed-in device.
+3. Install the PWA: browser menu → _Install app_ (desktop) / _Add to Home Screen_ (phone).
 
-The worker cron runs every 10 minutes and pings you when: energy will cap within your
-threshold (or is already capped), dailies/weeklies/monthlies are undone close to reset,
-an event is about to end, or a one-off reminder is due. Quiet hours are respected and
-every alert fires exactly once (re-armed each time you enter a new energy snapshot).
+The Worker schedule performs operational data retention only. Urgency, reset warnings,
+the overnight check, event deadlines, and reminders are computed and shown in the app.
 
 ## Getting events in
 
@@ -110,7 +104,7 @@ every alert fires exactly once (re-armed each time you enter a new energy snapsh
   entries. After a new patch, ask Claude to refresh the file
   (it pulls the official announcement feeds + patch notes), `npm run build`, reopen,
   click import. Entries whose exact dates weren't announced yet carry a "TBC —
-  verify in-game" note and don't fire alerts until a refresh confirms them.
+  verify in-game" note and stay out of next actions until a refresh confirms them.
 - **Paste (AI)** (Timeline): for any game — copy the generated
   prompt, hand it to any AI, paste the JSON it returns, review, import.
   Handles code fences and skips malformed rows; times are read in the game's
@@ -124,7 +118,7 @@ every alert fires exactly once (re-armed each time you enter a new energy snapsh
    Enter saves. Click the cap number ("/200") to change it when your max shifts
    (rank-ups, events), or add one-tap spend shortcuts in game ⚙ → Quick spend.
    Tick the dailies.
-3. That's it — projections and alerts recalibrate from your entry.
+3. That's it — projections and next actions recalibrate from your entry.
 
 ## Quality of life
 
@@ -135,8 +129,8 @@ every alert fires exactly once (re-armed each time you enter a new energy snapsh
   editable per game via ⚙ → Tasks, like everything else.
 - **Safe to sleep**: evenings (20:00–05:00) each card shows either "sleep
   safe" or the time it caps within your sleep window (Settings → sleepHours).
-- **Per-game alerts**: Settings keeps global defaults compact, with optional
-  timing overrides for individual games.
+- **In-app next actions**: the dashboard keeps upcoming caps, resets and event
+  deadlines visible while Void is open.
 - **Stable card order**: cards never re-sort themselves while you're entering
   values — when urgency changes, a "↻ Sort by urgency" button appears instead.
 - **Reset warnings**: undone tasks turn amber under 2 hours from their reset
@@ -156,5 +150,5 @@ every alert fires exactly once (re-armed each time you enter a new energy snapsh
   verification.
 - Hosted sync is last-write-wins per row inside an authenticated tenant document,
   with optimistic version retries to prevent concurrent lost updates.
-- Normal exports are secret-free. Security and recovery details live in
+- Account exports contain planner data only. Security and recovery details live in
   [docs/SECURITY.md](docs/SECURITY.md) and [docs/runbooks/INCIDENTS.md](docs/runbooks/INCIDENTS.md).

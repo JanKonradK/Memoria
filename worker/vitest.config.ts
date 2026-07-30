@@ -14,8 +14,6 @@ export default defineConfig(async () => {
             APP_ENV: 'local',
             ALLOWED_ORIGINS: 'http://localhost:5173',
             SYNC_TOKEN: 'test-token',
-            MASTER_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
-            MASTER_KEY_VERSION: '1',
           },
         },
       }),

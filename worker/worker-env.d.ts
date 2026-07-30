@@ -6,9 +6,7 @@ interface __BaseEnv_Env {
 	ASSETS: Fetcher;
 	APP_ENV: "production" | "local";
 	ALLOWED_ORIGINS: "https://app.example.invalid" | "http://localhost:5173,http://127.0.0.1:5173";
-	ALERT_SWEEP_MAX_USERS: "5";
 	CLERK_FRONTEND_API: "https://clerk.technogg.app";
-	MASTER_KEY_VERSION: "1";
 	SYNC_TOKEN: string;
 }
 declare namespace Cloudflare {
@@ -20,9 +18,7 @@ declare namespace Cloudflare {
 		ASSETS: Fetcher;
 		APP_ENV: "production";
 		ALLOWED_ORIGINS: "https://app.example.invalid";
-		ALERT_SWEEP_MAX_USERS: "5";
 		CLERK_FRONTEND_API: "https://clerk.technogg.app";
-		MASTER_KEY_VERSION: "1";
 		SYNC_TOKEN: string;
 	}
 	interface Env extends __BaseEnv_Env {}
@@ -32,7 +28,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "APP_ENV" | "ALLOWED_ORIGINS" | "ALERT_SWEEP_MAX_USERS" | "CLERK_FRONTEND_API" | "MASTER_KEY_VERSION" | "SYNC_TOKEN">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "APP_ENV" | "ALLOWED_ORIGINS" | "CLERK_FRONTEND_API" | "SYNC_TOKEN">> {}
 }
 
 // Begin runtime types

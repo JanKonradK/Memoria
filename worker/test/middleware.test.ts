@@ -61,12 +61,12 @@ describe('rateLimit', () => {
   });
 
   it('shares one bucket across deeper paths under the same prefix', async () => {
-    // `/api/integrations/discord` and `/api/integrations/telegram` both collapse
-    // to `/api/integrations`, which is deliberate — one tenant, one budget.
+    // Deeper paths collapse to their first two segments so one route family
+    // cannot multiply its allowance by varying record identifiers.
     const app = appWith(rateLimit(1));
 
-    expect((await app.fetch(jsonRequest('/api/integrations/discord'), env)).status).toBe(200);
-    expect((await app.fetch(jsonRequest('/api/integrations/telegram'), env)).status).toBe(429);
+    expect((await app.fetch(jsonRequest('/api/items/first'), env)).status).toBe(200);
+    expect((await app.fetch(jsonRequest('/api/items/second'), env)).status).toBe(429);
   });
 
   it('separates tenants — one user exhausting the budget does not block another', async () => {

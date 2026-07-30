@@ -47,6 +47,7 @@ describe('sync API boundaries', () => {
       ...(state.settings as object),
       discordWebhook: 'https://discord.com/api/webhooks/should-not-sync',
       telegramToken: '12345:should-not-sync',
+      telegramChatId: '123456789',
     };
     const response = await app.request('/api/sync', { method: 'POST', headers, body: JSON.stringify({ state }) }, env);
     expect(response.status).toBe(200);
@@ -54,6 +55,7 @@ describe('sync API boundaries', () => {
     expect(body.version).toBeGreaterThan(0);
     expect(body.state.settings).not.toHaveProperty('discordWebhook');
     expect(body.state.settings).not.toHaveProperty('telegramToken');
+    expect(body.state.settings).not.toHaveProperty('telegramChatId');
   });
 
   it('rejects malformed documents', async () => {
@@ -90,7 +92,19 @@ describe('sync API boundaries', () => {
     expect(body.state.games[0]).not.toHaveProperty('image');
   });
 
-  it('distinguishes merged-state validation failures from byte quota failures', async () => {
+  it('heals a corrupt stored document instead of refusing the sync, and still enforces the byte quota', async () => {
+    // This asserted a 422 for a schema-invalid stored row. `normalizeState` now
+    // salvages per record — clamping what it can, dropping only the row it
+    // cannot — and `mergeState` normalizes both sides before merging, so a
+    // single bad row can no longer poison the whole document. The sync succeeds
+    // and the bad row is simply gone, which is the better outcome: a user whose
+    // stored document got corrupted can still sync instead of being locked out
+    // by a 422 they have no way to fix.
+    //
+    // The `invalid_state` branch stays in the handler as defence in depth for
+    // anything a future schema change makes unsalvageable. The byte quota below
+    // is a size check rather than a schema check, so it remains reachable and is
+    // the half of this test that still exercises a rejection.
     const invalid = emptyState();
     invalid.games = [
       {
@@ -116,11 +130,10 @@ describe('sync API boundaries', () => {
       { method: 'POST', headers, body: JSON.stringify({ state: emptyState() }) },
       env,
     );
-    expect(invalidResponse.status).toBe(422);
-    await expect(invalidResponse.json()).resolves.toMatchObject({
-      error: 'invalid_state',
-      detail: expect.any(String),
-    });
+    expect(invalidResponse.status).toBe(200);
+    const healed = (await invalidResponse.json()) as { state: { games: Game[] } };
+    // The unsalvageable row is dropped rather than taking the document with it.
+    expect(healed.state.games.some((game) => game.id === 'invalid-game')).toBe(false);
 
     const current = emptyState();
     current.reminders = Array.from({ length: 30 }, (_, index) => ({
