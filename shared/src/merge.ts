@@ -1,6 +1,7 @@
-import type { AppState, Completion, Resource, Settings, SettingsField, Snapshot, Syncable, Task } from './types';
+import type { AppState, Resource, Settings, SettingsField, Snapshot, Syncable, Task } from './types';
 import { emptyState, MAX_GAME_IMAGE_LENGTH } from './types';
 import { inferLegacyResource, inferLegacyTask } from './tracking';
+import { APP_STATE_COLLECTION_LIMITS, AppStateSchema, FUTURE_CLOCK_SKEW_TOLERANCE_MS } from './validation';
 
 const SNAPSHOTS_KEPT_PER_RESOURCE = 200;
 export const TOMBSTONE_RETENTION_MS = 90 * 86_400_000;
@@ -31,7 +32,7 @@ function mergeById<T extends Syncable & { id: string }>(a: T[], b: T[]): T[] {
       map.set(item.id, item);
     }
   }
-  return [...map.values()];
+  return [...map.values()].sort((left, right) => left.id.localeCompare(right.id));
 }
 
 function mergeSnapshots(a: Snapshot[], b: Snapshot[]): Snapshot[] {
@@ -51,80 +52,261 @@ function mergeSnapshots(a: Snapshot[], b: Snapshot[]): Snapshot[] {
     list.sort((x, y) => y.takenAt - x.takenAt || y.id.localeCompare(x.id));
     out.push(...list.slice(0, SNAPSHOTS_KEPT_PER_RESOURCE));
   }
-  return out;
+  return out.sort(
+    (left, right) =>
+      left.resourceId.localeCompare(right.resourceId) ||
+      right.takenAt - left.takenAt ||
+      left.id.localeCompare(right.id),
+  );
 }
 
-function normalizeResource(raw: Resource): Resource {
-  return inferLegacyResource({
-    ...raw,
-    cap: Number.isFinite(raw.cap) ? raw.cap : 0,
-    regenMinutes: Number.isFinite(raw.regenMinutes) ? raw.regenMinutes : 0,
-    reserveCap: Number.isFinite(raw.reserveCap) ? raw.reserveCap : 0,
-    sort: Number.isFinite(raw.sort) ? raw.sort : 0,
-    updatedAt: typeof raw.updatedAt === 'number' ? raw.updatedAt : 0,
-  });
+function objectRecord(raw: unknown): Record<string, unknown> | null {
+  return raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : null;
 }
 
-function normalizeTask(raw: Task): Task {
-  return inferLegacyTask({
-    ...raw,
-    intervalDays: Number.isFinite(raw.intervalDays) && raw.intervalDays > 0 ? raw.intervalDays : 1,
-    anchorAt: typeof raw.anchorAt === 'number' ? raw.anchorAt : 0,
-    sort: Number.isFinite(raw.sort) ? raw.sort : 0,
-    updatedAt: typeof raw.updatedAt === 'number' ? raw.updatedAt : 0,
-  });
+function finiteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
 }
 
-function normalizeCompletion(raw: Completion): Completion {
-  return {
-    ...raw,
-    done: Boolean(raw.done),
-    countDone: typeof raw.countDone === 'number' ? Math.max(0, raw.countDone) : undefined,
-    updatedAt: typeof raw.updatedAt === 'number' ? raw.updatedAt : 0,
+/**
+ * A "when did this happen" clock, or null when it is implausibly ahead of ours.
+ *
+ * Dropping the record is right HERE, unlike in the schema. This runs on both
+ * sides before the merge compares them, and a device never trips its own bound —
+ * its Date.now() is skewed by the same amount — so the only row this discards is
+ * a poisoned REMOTE one that would otherwise beat sane local data on
+ * last-write-wins. Losing that row is the point; keeping it is the bug.
+ */
+function observedClock(value: unknown): number | null {
+  if (!finiteNumber(value)) return 0;
+  const clock = Math.max(0, Math.round(value));
+  return clock > Date.now() + FUTURE_CLOCK_SKEW_TOLERANCE_MS ? null : clock;
+}
+
+function syncableRecord(raw: unknown): Record<string, unknown> | null {
+  const record = objectRecord(raw);
+  if (!record) return null;
+  const updatedAt = observedClock(record.updatedAt);
+  return updatedAt === null ? null : { ...record, updatedAt };
+}
+
+function clampInt(value: unknown, min: number, max: number, fallback: number): number {
+  const n = typeof value === 'number' && Number.isFinite(value) ? Math.round(value) : fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
+function nonnegative(value: unknown, fallback: number): number {
+  return finiteNumber(value) ? Math.max(0, value) : fallback;
+}
+
+function scheduledTimestamp(value: unknown): unknown {
+  return finiteNumber(value) ? Math.max(0, Math.round(value)) : value;
+}
+
+/**
+ * Reset numbers are safe to clamp because their nearest legal value preserves
+ * the user's intent. Other malformed fields drop only this game; accepting them
+ * would merely defer the same failure to a less defensive consumer.
+ */
+function normalizeGame(raw: unknown): AppState['games'][number] | null {
+  const record = syncableRecord(raw);
+  if (!record) return null;
+  const game: Record<string, unknown> = {
+    ...record,
+    dailyResetHour: clampInt(record.dailyResetHour, 0, 23, 4),
+    weeklyResetDay: clampInt(record.weeklyResetDay, 1, 7, 1),
+    monthlyResetDay: clampInt(record.monthlyResetDay, 1, 28, 1),
+    sort: finiteNumber(record.sort) ? record.sort : 0,
   };
+  if (typeof game.image === 'string' && game.image.length > MAX_GAME_IMAGE_LENGTH) delete game.image;
+  const parsed = AppStateSchema.shape.games.element.safeParse(game);
+  return parsed.success ? (parsed.data as AppState['games'][number]) : null;
 }
 
-function normalizeGame(raw: AppState['games'][number]): AppState['games'][number] {
-  const game = { ...raw };
-  if (typeof game.image === 'string' && game.image.length > MAX_GAME_IMAGE_LENGTH) delete game.image;
-  return game;
+function normalizeResource(raw: unknown): Resource | null {
+  const record = syncableRecord(raw);
+  if (!record) return null;
+  const candidate: Record<string, unknown> = {
+    ...record,
+    cap: nonnegative(record.cap, 0),
+    regenMinutes: nonnegative(record.regenMinutes, 0),
+    reserveCap: nonnegative(record.reserveCap, 0),
+    sort: finiteNumber(record.sort) ? record.sort : 0,
+  };
+  if ('reserveRegenMinutes' in candidate && !finiteNumber(candidate.reserveRegenMinutes)) {
+    delete candidate.reserveRegenMinutes;
+  } else if (finiteNumber(candidate.reserveRegenMinutes) && candidate.reserveRegenMinutes <= 0) {
+    delete candidate.reserveRegenMinutes;
+  }
+  const parsed = AppStateSchema.shape.resources.element.safeParse(candidate);
+  if (!parsed.success) return null;
+  const inferred = inferLegacyResource(parsed.data as Resource);
+  const validated = AppStateSchema.shape.resources.element.safeParse(inferred);
+  return validated.success ? (validated.data as Resource) : null;
+}
+
+function normalizeSnapshot(raw: unknown): Snapshot | null {
+  const record = objectRecord(raw);
+  if (!record || !finiteNumber(record.takenAt) || !finiteNumber(record.value)) return null;
+  const takenAt = observedClock(record.takenAt);
+  if (takenAt === null) return null;
+  const candidate = {
+    ...record,
+    value: Math.max(0, record.value),
+    takenAt,
+  };
+  if ('reserve' in candidate) {
+    if (finiteNumber(candidate.reserve)) candidate.reserve = Math.max(0, candidate.reserve);
+    else delete candidate.reserve;
+  }
+  const parsed = AppStateSchema.shape.snapshots.element.safeParse(candidate);
+  return parsed.success ? (parsed.data as Snapshot) : null;
+}
+
+function normalizeTask(raw: unknown): Task | null {
+  const record = syncableRecord(raw);
+  if (!record) return null;
+  const candidate = {
+    ...record,
+    intervalDays: finiteNumber(record.intervalDays) && record.intervalDays > 0 ? record.intervalDays : 1,
+    anchorAt: finiteNumber(record.anchorAt) ? scheduledTimestamp(record.anchorAt) : 0,
+    sort: finiteNumber(record.sort) ? record.sort : 0,
+  };
+  if ('timerDurationMinutes' in candidate) {
+    if (!finiteNumber(candidate.timerDurationMinutes) || candidate.timerDurationMinutes <= 0)
+      delete candidate.timerDurationMinutes;
+  }
+  if ('timerEndsAt' in candidate && candidate.timerEndsAt !== null) {
+    if (finiteNumber(candidate.timerEndsAt)) candidate.timerEndsAt = scheduledTimestamp(candidate.timerEndsAt);
+    else delete candidate.timerEndsAt;
+  }
+  if ('countTarget' in candidate) {
+    if (finiteNumber(candidate.countTarget)) candidate.countTarget = Math.min(365, Math.max(1, candidate.countTarget));
+    else delete candidate.countTarget;
+  }
+  const parsed = AppStateSchema.shape.tasks.element.safeParse(candidate);
+  if (!parsed.success) return null;
+  const inferred = inferLegacyTask(parsed.data as Task);
+  if (finiteNumber(inferred.countTarget)) inferred.countTarget = Math.min(365, Math.max(1, inferred.countTarget));
+  const validated = AppStateSchema.shape.tasks.element.safeParse(inferred);
+  return validated.success ? (validated.data as Task) : null;
+}
+
+function normalizeCompletion(raw: unknown): AppState['completions'][number] | null {
+  const record = syncableRecord(raw);
+  if (!record) return null;
+  const candidate = {
+    ...record,
+    done: typeof record.done === 'boolean' ? record.done : false,
+  };
+  if ('countDone' in candidate) {
+    if (finiteNumber(candidate.countDone)) candidate.countDone = Math.max(0, candidate.countDone);
+    else delete candidate.countDone;
+  }
+  const parsed = AppStateSchema.shape.completions.element.safeParse(candidate);
+  return parsed.success ? (parsed.data as AppState['completions'][number]) : null;
+}
+
+function normalizeEvent(raw: unknown): AppState['events'][number] | null {
+  const record = syncableRecord(raw);
+  if (!record) return null;
+  const candidate = {
+    ...record,
+    start: scheduledTimestamp(record.start),
+    end: scheduledTimestamp(record.end),
+  };
+  const parsed = AppStateSchema.shape.events.element.safeParse(candidate);
+  return parsed.success ? (parsed.data as AppState['events'][number]) : null;
+}
+
+function normalizeChip(raw: unknown): AppState['chips'][number] | null {
+  const record = syncableRecord(raw);
+  if (!record) return null;
+  const candidate = {
+    ...record,
+    sort: finiteNumber(record.sort) ? record.sort : 0,
+  };
+  const parsed = AppStateSchema.shape.chips.element.safeParse(candidate);
+  return parsed.success ? (parsed.data as AppState['chips'][number]) : null;
+}
+
+function normalizeAlertRule(raw: unknown): AppState['alertRules'][number] | null {
+  const record = syncableRecord(raw);
+  if (!record) return null;
+  const candidate = {
+    ...record,
+    thresholdMinutes: finiteNumber(record.thresholdMinutes)
+      ? Math.max(0, record.thresholdMinutes)
+      : record.thresholdMinutes,
+  };
+  const parsed = AppStateSchema.shape.alertRules.element.safeParse(candidate);
+  return parsed.success ? (parsed.data as AppState['alertRules'][number]) : null;
+}
+
+function normalizeReminder(raw: unknown): AppState['reminders'][number] | null {
+  const record = syncableRecord(raw);
+  if (!record) return null;
+  const candidate = { ...record, at: scheduledTimestamp(record.at) };
+  const parsed = AppStateSchema.shape.reminders.element.safeParse(candidate);
+  return parsed.success ? (parsed.data as AppState['reminders'][number]) : null;
+}
+
+function salvageRows<T>(raw: unknown, limit: number, normalize: (row: unknown) => T | null): T[] {
+  if (!Array.isArray(raw)) return [];
+  const rows: T[] = [];
+  for (const item of raw) {
+    const row = normalize(item);
+    if (row) rows.push(row);
+    if (rows.length === limit) break;
+  }
+  return rows;
 }
 
 /** Row-wise last-write-wins merge of two full states. Commutative and idempotent. */
 export function mergeState(a: AppState, b: AppState): AppState {
-  const base = emptyState();
-  return {
-    schemaVersion: Math.max(a.schemaVersion ?? 1, b.schemaVersion ?? 1, base.schemaVersion),
-    games: mergeById(a.games, b.games).map(normalizeGame),
-    resources: mergeById(a.resources, b.resources).map(normalizeResource),
-    snapshots: mergeSnapshots(a.snapshots, b.snapshots),
-    tasks: mergeById(a.tasks, b.tasks).map(normalizeTask),
-    completions: mergeById(a.completions, b.completions).map(normalizeCompletion),
-    events: mergeById(a.events, b.events),
-    chips: mergeById(a.chips, b.chips),
-    alertRules: mergeById(a.alertRules, b.alertRules),
-    reminders: mergeById(a.reminders, b.reminders),
-    settings: mergeSettings(a.settings, b.settings),
-  };
+  const left = normalizeState(a);
+  const right = normalizeState(b);
+  return normalizeState({
+    schemaVersion: Math.max(left.schemaVersion, right.schemaVersion),
+    games: mergeById(left.games, right.games),
+    resources: mergeById(left.resources, right.resources),
+    snapshots: mergeSnapshots(left.snapshots, right.snapshots),
+    tasks: mergeById(left.tasks, right.tasks),
+    completions: mergeById(left.completions, right.completions),
+    events: mergeById(left.events, right.events),
+    chips: mergeById(left.chips, right.chips),
+    alertRules: mergeById(left.alertRules, right.alertRules),
+    reminders: mergeById(left.reminders, right.reminders),
+    settings: mergeSettings(left.settings, right.settings),
+  });
 }
 
-function normalizeSettings(raw: Partial<Settings> | undefined): Settings {
+function normalizeSettings(raw: unknown): Settings {
   const base = emptyState().settings;
-  return {
-    quietStart: typeof raw?.quietStart === 'number' || raw?.quietStart === null ? raw.quietStart : base.quietStart,
-    quietEnd: typeof raw?.quietEnd === 'number' || raw?.quietEnd === null ? raw.quietEnd : base.quietEnd,
-    localTz: typeof raw?.localTz === 'string' ? raw.localTz : base.localTz,
-    sleepHours: typeof raw?.sleepHours === 'number' ? raw.sleepHours : base.sleepHours,
-    updatedAt: typeof raw?.updatedAt === 'number' ? raw.updatedAt : base.updatedAt,
-    fieldUpdatedAt:
-      raw?.fieldUpdatedAt && typeof raw.fieldUpdatedAt === 'object'
-        ? Object.fromEntries(
-            Object.entries(raw.fieldUpdatedAt).filter(
-              ([, value]) => typeof value === 'number' && Number.isFinite(value),
-            ),
-          )
-        : {},
+  const record = objectRecord(raw) ?? {};
+  const fieldUpdatedAt = objectRecord(record.fieldUpdatedAt);
+  const safeFieldClocks = fieldUpdatedAt
+    ? Object.fromEntries(
+        Object.entries(fieldUpdatedAt).flatMap(([field, value]) => {
+          const clock = observedClock(value);
+          return clock === null ? [] : [[field, clock]];
+        }),
+      )
+    : {};
+  const updatedAt = observedClock(record.updatedAt);
+  const candidate = {
+    quietStart: record.quietStart === null ? null : clampInt(record.quietStart, 0, 1439, base.quietStart ?? 0),
+    quietEnd: record.quietEnd === null ? null : clampInt(record.quietEnd, 0, 1439, base.quietEnd ?? 0),
+    localTz:
+      typeof record.localTz === 'string' && record.localTz.length > 0 && record.localTz.length <= 100
+        ? record.localTz
+        : base.localTz,
+    sleepHours: finiteNumber(record.sleepHours) ? Math.min(24, Math.max(1, record.sleepHours)) : base.sleepHours,
+    updatedAt: updatedAt ?? base.updatedAt,
+    fieldUpdatedAt: safeFieldClocks,
   };
+  const parsed = AppStateSchema.shape.settings.safeParse(candidate);
+  return parsed.success ? (parsed.data as Settings) : base;
 }
 
 const SETTINGS_FIELDS: SettingsField[] = ['quietStart', 'quietEnd', 'localTz', 'sleepHours'];
@@ -144,24 +326,25 @@ function mergeSettings(left: Partial<Settings> | undefined, right: Partial<Setti
   return merged;
 }
 
-/** Coerce unknown JSON into a well-formed AppState (missing collections → empty). */
+/**
+ * Salvage each collection independently so one corrupt row cannot erase the
+ * user's other rows, while every returned value has passed its zod row schema.
+ */
 export function normalizeState(raw: unknown): AppState {
   const base = emptyState();
   if (!raw || typeof raw !== 'object') return base;
-  const r = raw as Partial<AppState>;
+  const r = raw as Record<string, unknown>;
   return {
-    schemaVersion: Math.max(base.schemaVersion, typeof r.schemaVersion === 'number' ? r.schemaVersion : 1),
-    games: Array.isArray(r.games) ? r.games.map((item) => normalizeGame(item as AppState['games'][number])) : [],
-    resources: Array.isArray(r.resources) ? r.resources.map((item) => normalizeResource(item as Resource)) : [],
-    snapshots: Array.isArray(r.snapshots) ? r.snapshots : [],
-    tasks: Array.isArray(r.tasks) ? r.tasks.map((item) => normalizeTask(item as Task)) : [],
-    completions: Array.isArray(r.completions)
-      ? r.completions.map((item) => normalizeCompletion(item as Completion))
-      : [],
-    events: Array.isArray(r.events) ? r.events : [],
-    chips: Array.isArray(r.chips) ? r.chips : [],
-    alertRules: Array.isArray(r.alertRules) ? r.alertRules : [],
-    reminders: Array.isArray(r.reminders) ? r.reminders : [],
+    schemaVersion: base.schemaVersion,
+    games: salvageRows(r.games, APP_STATE_COLLECTION_LIMITS.games, normalizeGame),
+    resources: salvageRows(r.resources, APP_STATE_COLLECTION_LIMITS.resources, normalizeResource),
+    snapshots: salvageRows(r.snapshots, APP_STATE_COLLECTION_LIMITS.snapshots, normalizeSnapshot),
+    tasks: salvageRows(r.tasks, APP_STATE_COLLECTION_LIMITS.tasks, normalizeTask),
+    completions: salvageRows(r.completions, APP_STATE_COLLECTION_LIMITS.completions, normalizeCompletion),
+    events: salvageRows(r.events, APP_STATE_COLLECTION_LIMITS.events, normalizeEvent),
+    chips: salvageRows(r.chips, APP_STATE_COLLECTION_LIMITS.chips, normalizeChip),
+    alertRules: salvageRows(r.alertRules, APP_STATE_COLLECTION_LIMITS.alertRules, normalizeAlertRule),
+    reminders: salvageRows(r.reminders, APP_STATE_COLLECTION_LIMITS.reminders, normalizeReminder),
     settings: normalizeSettings(r.settings),
   };
 }

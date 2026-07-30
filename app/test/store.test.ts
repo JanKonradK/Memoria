@@ -1,4 +1,4 @@
-import { effectiveCountTarget, emptyState, latestSnapshots, projectEnergy } from '@void/shared';
+import { effectiveCountTarget, emptyState, latestSnapshots, projectEnergy, safeParseAppState } from '@void/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const idb = vi.hoisted(() => new Map<string, unknown>());
@@ -13,7 +13,8 @@ vi.mock('idb-keyval', () => ({
   }),
 }));
 
-import { useApp } from '../src/store';
+import { flushPersist, useApp } from '../src/store';
+import { storageKeyForIdentity } from '../src/storage-identity';
 
 let identitySequence = 0;
 
@@ -54,6 +55,35 @@ beforeEach(async () => {
 afterEach(() => {
   vi.clearAllTimers();
   vi.useRealTimers();
+});
+
+describe('local load validation', () => {
+  it('repairs a malformed document row-wise and writes the valid result back', async () => {
+    const source = useApp.getState();
+    const gameId = source.addBlankGame('Stored');
+    const raw = {
+      ...useApp.getState().state,
+      games: [
+        { ...useApp.getState().state.games[0]!, monthlyResetDay: 31 },
+        { ...useApp.getState().state.games[0]!, id: '', name: 'Broken' },
+      ],
+    };
+    const identity = `store-load:${identitySequence++}`;
+    const key = storageKeyForIdentity('void-state', identity)!;
+    idb.set(key, raw);
+
+    await useApp.getState().setIdentity(identity);
+
+    const loaded = useApp.getState().state;
+    expect(loaded.games).toHaveLength(1);
+    expect(loaded.games[0]).toMatchObject({ id: gameId, monthlyResetDay: 28 });
+    expect(loaded.resources.some((resource) => resource.gameId === gameId)).toBe(true);
+
+    await flushPersist();
+    const persisted = idb.get(key);
+    expect(safeParseAppState(persisted).success).toBe(true);
+    expect((persisted as typeof loaded).games[0]!.monthlyResetDay).toBe(28);
+  });
 });
 
 describe('setEnergy', () => {
@@ -266,15 +296,22 @@ describe('importJson', () => {
     expect(useApp.getState().importJson('not json at all')).toBe(false);
   });
 
-  it('is permissive but non-destructive: parseable garbage merges to a no-op', () => {
-    // normalizeState is deliberately garbage-tolerant, so any parseable JSON
-    // yields a (possibly empty) valid state. Because the result is MERGED rather
-    // than replacing, an unrecognised payload must leave existing data intact.
+  it('rejects garbage outright, and leaves existing data intact', () => {
+    // This used to return true and merge an empty state — a silent no-op that
+    // told the user their broken backup had imported fine. Import is the one
+    // place with a human standing there who can be told the file is bad, so it
+    // now schema-validates and refuses. The non-destructive half of the old
+    // contract still holds: their existing games survive.
     useApp.getState().addBlankGame('Keep me');
-    const before = useApp.getState().state.games.filter((g) => !g.deleted).length;
+    const before = useApp.getState().state;
 
-    expect(useApp.getState().importJson(JSON.stringify({ nope: true }))).toBe(true);
-    expect(useApp.getState().state.games.filter((g) => !g.deleted)).toHaveLength(before);
+    expect(useApp.getState().importJson(JSON.stringify({ nope: true }))).toBe(false);
+    expect(useApp.getState().state).toBe(before);
+
+    const invalid = emptyState();
+    invalid.games = [{ ...before.games[0]!, monthlyResetDay: 31 }];
+    expect(useApp.getState().importJson(JSON.stringify(invalid))).toBe(false);
+    expect(useApp.getState().state).toBe(before);
   });
 
   it('imports a BARE state — not an export envelope', () => {
@@ -285,7 +322,9 @@ describe('importJson', () => {
     const source = useApp.getState().state.games.find((g) => g.id === gameId)!;
     incoming.games = [{ ...source, id: 'imported-game', name: 'Imported' }];
 
-    expect(useApp.getState().importJson(JSON.stringify({ state: incoming }))).toBe(true);
+    // An envelope is now an explicit failure rather than a silent no-op, which
+    // is the difference between "nothing happened" and "we told you why".
+    expect(useApp.getState().importJson(JSON.stringify({ state: incoming }))).toBe(false);
     expect(useApp.getState().state.games.some((g) => g.id === 'imported-game')).toBe(false);
 
     expect(useApp.getState().importJson(JSON.stringify(incoming))).toBe(true);
