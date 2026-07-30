@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { compactState, mergeState, normalizeState, pruneCompletions } from '../src/merge';
 import { MAX_GAME_IMAGE_LENGTH } from '../src/types';
-import { makeGame, makeSnapshot, makeState } from './helpers';
+import { FUTURE_CLOCK_SKEW_TOLERANCE_MS, safeParseAppState } from '../src/validation';
+import { makeEvent, makeGame, makeResource, makeSnapshot, makeState, makeTask } from './helpers';
 
 describe('mergeState', () => {
   it('keeps the newer row per id (LWW)', () => {
@@ -63,12 +64,29 @@ describe('mergeState', () => {
     const a = makeState({ games: [makeGame()] });
     const once = mergeState(a, a);
     expect(once.games).toHaveLength(1);
+    expect(mergeState(once, once)).toEqual(once);
   });
 
   it('resolves equal-timestamp conflicts deterministically', () => {
     const left = makeState({ games: [makeGame({ name: 'Alpha', updatedAt: 10 })] });
     const right = makeState({ games: [makeGame({ name: 'Omega', updatedAt: 10 })] });
     expect(mergeState(left, right)).toEqual(mergeState(right, left));
+  });
+
+  it('drops a poisoned future row before LWW instead of letting it beat sane local data', () => {
+    const now = Date.now();
+    const local = makeState({ games: [makeGame({ name: 'Local', updatedAt: now })] });
+    const future = makeState({
+      games: [
+        makeGame({
+          name: 'Future',
+          updatedAt: now + FUTURE_CLOCK_SKEW_TOLERANCE_MS + 60_000,
+        }),
+      ],
+    });
+
+    expect(mergeState(local, future).games[0]!.name).toBe('Local');
+    expect(mergeState(local, future)).toEqual(mergeState(future, local));
   });
 });
 
@@ -86,10 +104,12 @@ describe('normalizeState', () => {
         ...makeState().settings,
         discordWebhook: 'https://discord.com/api/webhooks/secret',
         telegramToken: '12345:secret',
+        telegramChatId: '123456789',
       },
     });
     expect(state.settings).not.toHaveProperty('discordWebhook');
     expect(state.settings).not.toHaveProperty('telegramToken');
+    expect(state.settings).not.toHaveProperty('telegramChatId');
   });
   it('tolerates garbage', () => {
     expect(normalizeState(null).games).toEqual([]);
@@ -134,6 +154,23 @@ describe('normalizeState', () => {
     });
     expect(state.games[0]).not.toHaveProperty('image');
   });
+
+  it('drops one irreparable row without losing its siblings or other collections', () => {
+    const state = normalizeState(
+      makeState({
+        games: [makeGame({ id: '', name: 'Broken identity' }), makeGame({ id: 'good-game', name: 'Keep game' })],
+        resources: [makeResource({ id: 'keep-resource', gameId: 'good-game' })],
+        tasks: [makeTask({ id: 'keep-task', gameId: 'good-game' })],
+        events: [makeEvent({ id: 'keep-event', gameId: 'good-game' })],
+      }),
+    );
+
+    expect(state.games.map((game) => game.id)).toEqual(['good-game']);
+    expect(state.resources.map((resource) => resource.id)).toEqual(['keep-resource']);
+    expect(state.tasks.map((task) => task.id)).toEqual(['keep-task']);
+    expect(state.events.map((event) => event.id)).toEqual(['keep-event']);
+    expect(safeParseAppState(state).success).toBe(true);
+  });
 });
 
 describe('compactState', () => {
@@ -170,5 +207,62 @@ describe('compactState', () => {
 
     expect(mergeState(alreadyPruned, stale).completions.map((completion) => completion.id)).toEqual(['stale']);
     expect(compactState(mergeState(alreadyPruned, stale), 0, cutoff).completions).toEqual([]);
+  });
+});
+
+describe('normalizeState clamps out-of-range game fields', () => {
+  // The offline path (IndexedDB load, JSON import, the launcher's user-editable
+  // state.json) never ran zod — normalizeState was the only gate and it gated
+  // nothing. These are the values that actually broke scheduling.
+  it('pulls reset fields back into their documented ranges', () => {
+    const state = makeState({
+      games: [makeGame({ id: 'g1', dailyResetHour: 25, weeklyResetDay: 0, monthlyResetDay: 31 })],
+      resources: [makeResource({ id: 'r1', gameId: 'g1' })],
+      tasks: [makeTask({ id: 't1', gameId: 'g1' })],
+      events: [makeEvent({ id: 'e1', gameId: 'g1' })],
+    });
+
+    const normalized = normalizeState(state);
+    const game = normalized.games[0]!;
+
+    expect(game.dailyResetHour).toBe(23);
+    expect(game.weeklyResetDay).toBe(1);
+    // 31 used to make monthlyPeriodKey require `day >= 31` while the reset
+    // timestamp clamped to 28, so monthly tasks silently stopped resetting.
+    expect(game.monthlyResetDay).toBe(28);
+    expect(normalized.resources).toHaveLength(1);
+    expect(normalized.tasks).toHaveLength(1);
+    expect(normalized.events).toHaveLength(1);
+    expect(safeParseAppState(normalized).success).toBe(true);
+  });
+
+  it('substitutes a sane default for values that are not numbers at all', () => {
+    const state = makeState({
+      games: [
+        makeGame({
+          id: 'g1',
+          dailyResetHour: Number.NaN,
+          weeklyResetDay: 'monday' as unknown as number,
+          monthlyResetDay: undefined as unknown as number,
+        }),
+      ],
+    });
+
+    const game = normalizeState(state).games[0]!;
+
+    expect(game.dailyResetHour).toBe(4);
+    expect(game.weeklyResetDay).toBe(1);
+    expect(game.monthlyResetDay).toBe(1);
+  });
+
+  it('clamps rather than dropping the game, so its resources keep their owner', () => {
+    // A game row carries the user's resources, tasks and history by id. Dropping
+    // it because one number is out of range would orphan all of that.
+    const state = makeState({ games: [makeGame({ id: 'keep-me', monthlyResetDay: 99 })] });
+
+    const games = normalizeState(state).games;
+
+    expect(games).toHaveLength(1);
+    expect(games[0]!.id).toBe('keep-me');
   });
 });
