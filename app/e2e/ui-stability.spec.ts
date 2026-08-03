@@ -21,6 +21,21 @@ async function expectNoSeriousAccessibilityViolations(page: Page) {
   );
 }
 
+/**
+ * Document structure, which the check above cannot see: `heading-order` is
+ * `moderate` impact so the serious/critical filter drops it, and
+ * `page-has-heading-one` / `landmark-one-main` are best-practice rules that
+ * `withTags(['wcag2a', …])` never runs. Every route missing an h1 was invisible
+ * to this suite.
+ */
+async function expectSoundDocumentStructure(page: Page) {
+  await page.waitForTimeout(500);
+  const results = await new AxeBuilder({ page })
+    .withRules(['page-has-heading-one', 'heading-order', 'landmark-one-main'])
+    .analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+}
+
 async function expectTimelineTicksToFit(page: Page) {
   const scale = page.locator('[data-timeline-scale]');
   const ticks = page.locator('[data-timeline-tick]');
@@ -71,27 +86,30 @@ test('empty app is accessible and fits the viewport', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Games', exact: true })).toHaveAttribute('aria-current', 'page');
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
+  await expectSoundDocumentStructure(page);
 
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Event timeline' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Timeline', exact: true })).toHaveAttribute('aria-current', 'page');
   await expectNoPageOverflow(page);
+  await expectSoundDocumentStructure(page);
 
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   // exact: the accordion section triggers are headings too ("Expand Data settings" etc.)
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Settings', exact: true })).toHaveAttribute('aria-current', 'page');
   await expectNoPageOverflow(page);
+  await expectSoundDocumentStructure(page);
 });
 
-test('public trust pages are readable and accessible', async ({ page }) => {
-  await page.goto('/privacy');
-  await expect(page.getByRole('heading', { name: 'Privacy' })).toBeVisible();
+test('public info pages are readable and accessible', async ({ page }) => {
+  await page.goto('/security');
+  await expect(page.getByRole('heading', { name: 'Security and data flow' })).toBeVisible();
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
 
-  await page.goto('/security');
-  await expect(page.getByRole('heading', { name: 'Security and data flow' })).toBeVisible();
+  await page.goto('/status');
+  await expect(page.getByRole('heading', { name: 'Service status' })).toBeVisible();
   await expectNoPageOverflow(page);
 });
 
@@ -103,9 +121,10 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   const dialog = page.getByRole('dialog', { name: 'Genshin Impact' });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('radio', { name: 'Resources', exact: true }).click();
-  await expect(dialog.getByText('Quick spend')).toBeVisible();
+  // By role: the section heading and the "+ Quick spend" button share text.
+  await expect(dialog.getByRole('heading', { name: 'Quick spend' })).toBeVisible();
   await dialog.getByPlaceholder('Label, e.g. Domain').fill('Domain');
-  await dialog.getByRole('button', { name: '+ Shortcut' }).click();
+  await dialog.getByRole('button', { name: '+ Quick spend' }).click();
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
 

@@ -52,6 +52,18 @@ const activeFillMotion = {
   transition: springs.snappy,
 };
 
+/**
+ * Screen readers announce a live region's CONTENT changing, not its label — so
+ * the ring alone announced nothing and sync silently succeeded or failed. This
+ * text is the announcement.
+ */
+const SYNC_ANNOUNCEMENT = {
+  idle: 'Not synced',
+  syncing: 'Syncing',
+  ok: 'Synced',
+  error: 'Sync failed',
+} as const;
+
 function SyncLogo() {
   const status = useApp((state) => state.syncStatus);
   const color = STATUS_COLOR[status];
@@ -61,8 +73,8 @@ function SyncLogo() {
       className="pointer-events-auto relative flex min-h-11 min-w-11 items-center justify-center"
       role="status"
       aria-live="polite"
-      aria-label={`Sync status: ${status}`}
     >
+      <span className="sr-only">{SYNC_ANNOUNCEMENT[status]}</span>
       {status === 'syncing' && (
         <Ring
           size={52}

@@ -190,7 +190,7 @@ export function NexusHub({
               ))}
             </div>
           ) : (
-            <p className="rounded-ui-lg bg-fill-1 px-3 py-2 text-label text-faint">
+            <p className="rounded-ui-lg bg-fill-1 px-3 py-2 text-label text-muted">
               Nothing resets in the next 7 days.
             </p>
           )}
@@ -250,7 +250,7 @@ export function NexusHub({
               })}
             </div>
           ) : (
-            <p className="rounded-ui-lg bg-fill-1 px-3 py-2 text-label text-faint">
+            <p className="rounded-ui-lg bg-fill-1 px-3 py-2 text-label text-muted">
               No reminders due in the next 7 days.
             </p>
           )}

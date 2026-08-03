@@ -4,7 +4,7 @@ import { tint } from '../util';
 export type PillVariant = 'neutral' | 'muted' | 'warn' | 'paused' | 'dark' | 'light';
 
 const PILL_VARIANTS: Record<PillVariant, string> = {
-  neutral: 'bg-fill-2 text-dim',
+  neutral: 'bg-fill-2 text-muted',
   muted: 'bg-fill-3 text-muted',
   warn: 'bg-warn/10 text-warn-fg',
   paused: 'bg-fill-3 text-muted',

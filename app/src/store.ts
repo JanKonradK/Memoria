@@ -236,7 +236,16 @@ export interface AppStore {
   mutate(fn: (s: AppState) => AppState): void;
   batch(fn: (s: AppState) => AppState): void;
 
-  addGameFromPreset(preset: GamePreset, over: { tz?: string; capOverrides?: Record<number, number> }): string;
+  addGameFromPreset(
+    preset: GamePreset,
+    over: {
+      tz?: string;
+      capOverrides?: Record<number, number>;
+      name?: string;
+      short?: string;
+      accountLabel?: string;
+    },
+  ): string;
   addBlankGame(name: string): string;
   updateGame(id: string, patch: Partial<Game>): void;
   deleteGame(id: string): void;
@@ -401,8 +410,10 @@ export const useApp = create<AppStore>((set, get) => ({
       const maxSort = Math.max(0, ...s.games.map((g) => g.sort + 1));
       const game: Game = {
         id: gameId,
-        name: preset.name,
-        short: preset.short,
+        name: over.name ?? preset.name,
+        presetKey: preset.key,
+        accountLabel: over.accountLabel,
+        short: over.short ?? preset.short,
         color: preset.color,
         color2: preset.color2,
         titleFont: preset.titleFont,

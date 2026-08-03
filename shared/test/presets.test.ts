@@ -68,7 +68,11 @@ describe('game presets', () => {
 describe('catching an existing game up with its preset', () => {
   const genshin = PRESETS.find((preset) => preset.short === 'GI')!;
 
-  it('matches a game to its preset by badge, then by name', () => {
+  it('keeps the preset link after both the badge and name are changed', () => {
+    expect(presetForGame({ name: 'My renamed account', short: 'GI-EU', presetKey: 'genshin' })?.key).toBe('genshin');
+  });
+
+  it('matches a legacy game by badge, then by name', () => {
     expect(presetForGame({ name: 'Whatever I renamed it', short: 'gi' })?.key).toBe('genshin');
     expect(presetForGame({ name: 'Genshin Impact', short: 'ZZ9' })?.key).toBe('genshin');
     expect(presetForGame({ name: 'Some Other Game', short: 'SOG' })).toBeUndefined();

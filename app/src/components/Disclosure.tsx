@@ -15,6 +15,7 @@ export function Disclosure({
   children,
   className = '',
   headingClassName = '',
+  headingLevel = 3,
   triggerClassName = '',
   contentClassName = '',
   fill = false,
@@ -28,6 +29,9 @@ export function Disclosure({
   children: ReactNode;
   className?: string;
   headingClassName?: string;
+  /** h3 by default — correct under a panel heading. A disclosure sitting
+      directly under a page's own h1 must pass 2 or the outline skips a level. */
+  headingLevel?: 2 | 3;
   triggerClassName?: string;
   contentClassName?: string;
   /** Let the open disclosure consume the remaining height of a flex-column accordion. */
@@ -58,10 +62,11 @@ export function Disclosure({
     wasOpen.current = open;
   }, [open]);
   const present = open || mounted;
+  const Heading = headingLevel === 2 ? 'h2' : 'h3';
 
   return (
     <section className={`min-h-0 ${fill ? 'flex flex-col' : ''} ${fill && open ? 'flex-1' : ''} ${className}`}>
-      <h3 className={headingClassName}>
+      <Heading className={headingClassName}>
         <button
           ref={triggerRef}
           id={triggerId}
@@ -89,7 +94,7 @@ export function Disclosure({
             <path d="m5 7.5 5 5 5-5" />
           </svg>
         </button>
-      </h3>
+      </Heading>
       <m.div
         ref={panelRef}
         id={panelId}

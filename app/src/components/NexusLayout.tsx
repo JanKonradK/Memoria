@@ -215,10 +215,30 @@ function NexusNode({
   const nodeRef = useRef<HTMLElement | null>(null);
   const [mounted, setMounted] = useState(expanded);
   const [settled, setSettled] = useState(expanded);
+  const collapsedTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const wasExpanded = useRef(expanded);
   // The control that opened the card is gone once it is open, so hand focus to
   // the card itself — keyboard users land inside it, and Escape has a target.
+  //
+  // Collapsing has the mirror problem: the collapse button sits inside the
+  // controls region, which goes inert and aria-hidden in the same commit, so
+  // focus would drop to <body> and the keyboard user loses their place in the
+  // rail. Hand it to the trigger that replaces it. Guarded on the previous
+  // value so a card that mounts collapsed does not steal focus.
   useEffect(() => {
-    if (expanded) nodeRef.current?.focus({ preventScroll: true });
+    if (expanded) {
+      nodeRef.current?.focus({ preventScroll: true });
+    } else if (wasExpanded.current) {
+      // Only reclaim focus the collapse itself dropped. Opening another card
+      // collapses this one in the SAME commit, and focus then rightly belongs to
+      // that card — grabbing it back leaves the newly opened card unfocused, so
+      // its Escape handler never fires. Same guard as Disclosure.
+      const active = document.activeElement;
+      if (!active || active === document.body || nodeRef.current?.contains(active)) {
+        collapsedTriggerRef.current?.focus({ preventScroll: true });
+      }
+    }
+    wasExpanded.current = expanded;
   }, [expanded]);
   useEffect(() => {
     if (expanded) {
@@ -308,6 +328,7 @@ function NexusNode({
       {!expanded && (
         <button
           type="button"
+          ref={collapsedTriggerRef}
           onClick={onToggle}
           aria-expanded={false}
           aria-controls={controlsId}

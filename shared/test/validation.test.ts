@@ -13,6 +13,27 @@ describe('safeParseAppState', () => {
     }
   });
 
+  it('preserves a game preset key and account label', () => {
+    const result = safeParseAppState(
+      makeState({ games: [makeGame({ presetKey: 'genshin', accountLabel: 'Main EU' })] }),
+    );
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.games[0]).toMatchObject({ presetKey: 'genshin', accountLabel: 'Main EU' });
+    }
+  });
+
+  // accountLabel is prose, not a badge. A short bound here does not truncate — it
+  // fails the parse that gates the worker's sync write, so an ordinary label like
+  // "Ellie's alt account (EU)" would break sync for the whole document.
+  it('accepts an account label longer than the badge bound', () => {
+    const accountLabel = "Ellie's alt account (Europe)";
+    expect(accountLabel.length).toBeGreaterThan(20);
+    const result = safeParseAppState(makeState({ games: [makeGame({ accountLabel })] }));
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.games[0]).toMatchObject({ accountLabel });
+  });
+
   it('rejects malformed collections and oversized strings', () => {
     expect(safeParseAppState({ games: 'not-an-array' }).success).toBe(false);
     expect(safeParseAppState({ games: [makeGame({ name: 'x'.repeat(501) })] }).success).toBe(false);

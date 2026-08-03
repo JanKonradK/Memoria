@@ -18,7 +18,11 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
       const resource = useApp
         .getState()
         .state.resources.find((item) => item.gameId === gameId && !item.deleted && item.regenMinutes > 0);
-      if (resource) setEnergyValue(resource.id, Math.min(resource.cap, Math.max(0, intOr(energy[key] ?? '', 0))));
+      // A blank field is "I don't know yet", not zero. Committing 0 here would let
+      // Void project a confident refill time from a reading the user never gave it.
+      const entered = (energy[key] ?? '').trim();
+      if (resource && entered !== '')
+        setEnergyValue(resource.id, Math.min(resource.cap, Math.max(0, intOr(entered, 0))));
     }
     onComplete();
   };
