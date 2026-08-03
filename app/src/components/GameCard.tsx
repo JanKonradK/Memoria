@@ -178,6 +178,10 @@ function TaskRow({
     <button
       type="button"
       onClick={onToggle}
+      // A check task is a toggle, unlike its restart/advance siblings, so state
+      // rides on aria-pressed. Deliberately no aria-label: it would override the
+      // content and take the urgency countdown out of the accessible name.
+      aria-pressed={item.done}
       className="group flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-1 text-left transition hover:bg-fill-2 sm:min-h-8"
     >
       <CadenceTag cadence={item.cadence} />

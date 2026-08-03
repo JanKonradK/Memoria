@@ -34,46 +34,8 @@ const SessionContext = createContext<SessionContextValue>({
   manageAccount: () => undefined,
 });
 
-const LEGAL: Record<string, { title: string; sections: Array<[string, string]> }> = {
-  '/privacy': {
-    title: 'Privacy',
-    sections: [
-      [
-        'Data we store',
-        'Account identity is handled by Clerk. Void stores your planner document in Cloudflare D1 and keeps an offline copy in this browser.',
-      ],
-      [
-        'Cloud sync',
-        'Signed-in devices sync planner data through the authenticated Worker API. Void does not collect notification-channel credentials.',
-      ],
-      [
-        'Retention and deletion',
-        'Deleting your account removes its planner document and associated operational records immediately.',
-      ],
-      [
-        'Contact',
-        'Before public launch, the operator contact and jurisdiction-specific privacy contact must be added here.',
-      ],
-    ],
-  },
-  '/terms': {
-    title: 'Terms',
-    sections: [
-      [
-        'Service',
-        'Void is a free planning tool provided without guarantees of uninterrupted availability. Fair-use limits protect the shared service.',
-      ],
-      [
-        'Your account',
-        'You are responsible for account security and for ensuring information you enter or connect may lawfully be processed.',
-      ],
-      ['Affiliation', 'Void is not affiliated with HoYoverse or other game publishers.'],
-      [
-        'Launch review',
-        'These terms are operational draft copy and require legal review before registration is opened publicly.',
-      ],
-    ],
-  },
+/** Explainer pages reachable from the signed-out landing page. Not legal documents. */
+const INFO_PAGES: Record<string, { title: string; sections: Array<[string, string]> }> = {
   '/security': {
     title: 'Security and data flow',
     sections: [
@@ -97,7 +59,7 @@ const LEGAL: Record<string, { title: string; sections: Array<[string, string]> }
   },
 };
 
-function LegalPage({ document }: { document: (typeof LEGAL)[string] }) {
+function InfoPage({ document }: { document: (typeof INFO_PAGES)[string] }) {
   return (
     <main className="mx-auto min-h-dvh w-full max-w-3xl px-5 py-14">
       <a href="/" className="text-body font-semibold text-accent-fg">
@@ -274,9 +236,7 @@ function PublicLanding() {
           </section>
         ))}
       </div>
-      <nav className="mt-8 flex flex-wrap gap-4 text-meta text-dim" aria-label="Legal">
-        <a href="/privacy">Privacy</a>
-        <a href="/terms">Terms</a>
+      <nav className="mt-8 flex flex-wrap gap-4 text-meta text-dim" aria-label="About Void">
         <a href="/security">Security and data flow</a>
         <a href="/status">Status</a>
       </nav>
@@ -367,8 +327,8 @@ function LocalIdentityGate({ children }: { children: ReactNode }) {
 
 export function AuthShell({ children }: { children: ReactNode }) {
   if (window.location.pathname === '/status') return <StatusPage />;
-  const legal = LEGAL[window.location.pathname];
-  if (legal) return <LegalPage document={legal} />;
+  const infoPage = INFO_PAGES[window.location.pathname];
+  if (infoPage) return <InfoPage document={infoPage} />;
   const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim();
   if (!publishableKey || DESKTOP_LAUNCHER_ORIGIN.test(window.location.origin)) {
     configureHostedSession({ hosted: false, userId: null });

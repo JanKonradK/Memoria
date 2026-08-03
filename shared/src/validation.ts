@@ -47,6 +47,9 @@ const game = z.object({
   ...syncable,
   id,
   name: shortText,
+  presetKey: z.string().max(20).optional(),
+  /** A human label like "Main EU", not a badge — bounded like `name`, not like `short`. */
+  accountLabel: shortText.optional(),
   short: z.string().max(20),
   color: z.string().max(32),
   color2: z.string().max(32).optional(),

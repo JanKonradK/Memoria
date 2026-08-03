@@ -140,7 +140,7 @@ function EventHorizonCard({
             })}
           </div>
         ) : (
-          <p className="rounded-ui-lg bg-fill-1 px-3 py-2 text-label text-faint">No upcoming reminders.</p>
+          <p className="rounded-ui-lg bg-fill-1 px-3 py-2 text-label text-muted">No upcoming reminders.</p>
         )}
       </section>
 

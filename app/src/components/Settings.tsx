@@ -104,10 +104,11 @@ export function SettingsPage() {
     // where scrolling is the right answer.
     <Page className="min-h-dvh [@media(min-height:700px)]:h-dvh [@media(min-height:700px)]:overflow-hidden">
       <div className="mx-auto flex max-w-[1600px] flex-col [@media(min-height:700px)]:h-full">
-        <h2 className="mb-3 text-title font-black tracking-tight text-fg-soft">Settings</h2>
+        <h1 className="mb-3 text-title font-black tracking-tight text-fg-soft">Settings</h1>
 
         <div className="flex min-h-0 flex-1 flex-col gap-2">
           <Disclosure
+            headingLevel={2}
             {...disclosureProps('games')}
             title="Games"
             regionLabel="Games"
@@ -150,6 +151,7 @@ export function SettingsPage() {
           </Disclosure>
 
           <Disclosure
+            headingLevel={2}
             {...disclosureProps('display')}
             title="Display"
             regionLabel="Display and appearance"
@@ -218,6 +220,7 @@ export function SettingsPage() {
           </Disclosure>
 
           <Disclosure
+            headingLevel={2}
             {...disclosureProps('account')}
             title={session.hosted ? 'Account and sync' : 'Advanced local sync'}
             regionLabel={session.hosted ? 'Account and sync' : 'Advanced local sync'}
@@ -278,6 +281,7 @@ export function SettingsPage() {
           </Disclosure>
 
           <Disclosure
+            headingLevel={2}
             {...disclosureProps('data')}
             title="Data"
             regionLabel="Data"
@@ -287,10 +291,13 @@ export function SettingsPage() {
               <Btn onClick={() => void exportJson().catch(reportError)}>Export backup</Btn>
               <label className="flex min-h-11 cursor-pointer items-center rounded-ui-lg bg-fill-2 px-4 py-2 text-body font-semibold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 sm:min-h-9">
                 Import backup
+                {/* sr-only, never `hidden`: display:none drops the input out of the
+                    tab order and the wrapping label is not focusable, which made
+                    Import backup unreachable by keyboard. */}
                 <input
                   type="file"
                   accept="application/json"
-                  className="hidden"
+                  className="sr-only"
                   onChange={(e) => importJson(e.target.files?.[0])}
                 />
               </label>

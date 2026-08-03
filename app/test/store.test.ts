@@ -1,4 +1,11 @@
-import { effectiveCountTarget, emptyState, latestSnapshots, projectEnergy, safeParseAppState } from '@void/shared';
+import {
+  effectiveCountTarget,
+  emptyState,
+  latestSnapshots,
+  PRESETS,
+  projectEnergy,
+  safeParseAppState,
+} from '@void/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const idb = vi.hoisted(() => new Map<string, unknown>());
@@ -83,6 +90,40 @@ describe('local load validation', () => {
     const persisted = idb.get(key);
     expect(safeParseAppState(persisted).success).toBe(true);
     expect((persisted as typeof loaded).games[0]!.monthlyResetDay).toBe(28);
+  });
+});
+
+describe('addMissingPresetTasksEverywhere', () => {
+  it('catches up two renamed accounts created from the same preset', () => {
+    const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
+    const euId = useApp.getState().addGameFromPreset(genshin, {});
+    const naId = useApp.getState().addGameFromPreset(genshin, {});
+
+    useApp.getState().updateGame(euId, { name: 'Europe account', short: 'GI-EU', accountLabel: 'Main EU' });
+    useApp.getState().updateGame(naId, { name: 'America account', short: 'GI-NA', accountLabel: 'Alt NA' });
+
+    const created = useApp.getState().state;
+    expect(created.games.filter((game) => game.id === euId || game.id === naId)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: euId, presetKey: 'genshin', short: 'GI-EU', accountLabel: 'Main EU' }),
+        expect.objectContaining({ id: naId, presetKey: 'genshin', short: 'GI-NA', accountLabel: 'Alt NA' }),
+      ]),
+    );
+
+    useApp.getState().replaceState({
+      ...created,
+      tasks: created.tasks.filter((task) => task.gameId !== euId && task.gameId !== naId),
+    });
+
+    expect(useApp.getState().addMissingPresetTasksEverywhere()).toBe(genshin.tasks.length * 2);
+    for (const gameId of [euId, naId]) {
+      expect(
+        useApp
+          .getState()
+          .state.tasks.filter((task) => task.gameId === gameId)
+          .map((task) => task.name),
+      ).toEqual(genshin.tasks.map((task) => task.name));
+    }
   });
 });
 

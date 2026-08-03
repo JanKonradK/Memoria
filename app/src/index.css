@@ -365,6 +365,14 @@ input[type='number'] {
   outline-offset: var(--focus-ring-offset);
 }
 
+/* An expanded Nexus card takes focus programmatically (the control that opened
+   it is gone), so it needs the same ring as a real control. It is not in the
+   :where() list above and carries outline-none, which this outranks. */
+.nexus-node:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
 /* Compound editors expose one ring around the pill, never a second one around the input. */
 .focus-ring-group:has(:focus-visible) {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
@@ -530,7 +538,11 @@ input[type='number'] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
+  /* Pseudo-elements need naming explicitly — a bare `*` does not match them, and
+     the urgency pulse lives on .nexus-node::after, so it kept animating here. */
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
   }

@@ -117,6 +117,10 @@ export function DashboardPage({ now }: { now: number }) {
 
   return (
     <Page>
+      {/* The games themselves are the content, so this page has no visible title
+          — but every route still needs an h1 for the heading outline to start at
+          the top. Matches the nav label. */}
+      <h1 className="sr-only">Games</h1>
       {presetGap > 0 && !presetGapDismissed && (
         <section className="glass gold-hairline mb-4 rounded-ui-card p-4" aria-label="New preset routines">
           <div className="flex items-center gap-3">
