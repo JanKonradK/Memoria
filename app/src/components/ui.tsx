@@ -103,7 +103,7 @@ export function Field({ label, children, className = '' }: { label: string; chil
 }
 
 const inputCls =
-  'min-h-11 w-full rounded-ui-lg bg-fill-2 px-3 py-2 text-body text-fg ring-1 ring-line-edge outline-none placeholder:text-dim focus:bg-fill-3 transition sm:min-h-9';
+  'min-h-11 w-full rounded-ui-lg bg-fill-2 px-3 py-2 text-body text-fg ring-1 ring-line-edge outline-none placeholder:text-muted focus:bg-fill-3 transition sm:min-h-9';
 
 export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${inputCls} ${props.className ?? ''}`} />;
@@ -213,7 +213,9 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
 
 export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
-    <textarea {...props} className={`${inputCls} min-h-20 resize-y font-mono text-meta ${props.className ?? ''}`} />
+    // No `font-mono` here: most textareas hold prose. Callers that hold code or
+    // pasted data opt in themselves.
+    <textarea {...props} className={`${inputCls} min-h-20 resize-y text-meta ${props.className ?? ''}`} />
   );
 }
 
@@ -329,6 +331,16 @@ export function Btn({
   );
 }
 
-export function SectionTitle({ children }: { children: ReactNode }) {
-  return <h3 className="mb-2 mt-6 text-meta font-bold uppercase tracking-widest text-muted first:mt-0">{children}</h3>;
+/**
+ * Defaults to h3, which is right inside a sheet (the dialog title is the h2) and
+ * under a panel heading. A section sitting directly under a page's own h1 must
+ * pass level={2}, or the outline skips a level.
+ */
+export function SectionTitle({ children, level = 3 }: { children: ReactNode; level?: 2 | 3 }) {
+  const Heading = level === 2 ? 'h2' : 'h3';
+  return (
+    <Heading className="mb-2 mt-6 text-meta font-bold uppercase tracking-widest text-muted first:mt-0">
+      {children}
+    </Heading>
+  );
 }

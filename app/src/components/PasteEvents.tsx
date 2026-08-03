@@ -163,6 +163,7 @@ export function PasteEventsSheet({ open }: { open: boolean }) {
           <Field label="AI response (JSON)">
             <TextArea
               rows={5}
+              className="font-mono"
               placeholder='[{"name":"…","type":"banner","start":"2026-07-09 04:00","end":"2026-07-30 03:59","dailyTouch":false}]'
               value={text}
               onChange={(e) => {

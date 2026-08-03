@@ -109,14 +109,14 @@ export const SERVER_TZ_OPTIONS: Array<{ label: string; tz: string }> = [
 ];
 
 /**
- * The preset a game was created from, matched after the fact: games do not store
- * a preset key (they are fully editable copies), and renaming one should not
- * break the link, so `short` is the identity that actually survives editing.
+ * The preset a game was created from, matched by its stored key when available.
+ * Legacy games fall back to the original `short`, then `name`, heuristic.
  */
-export function presetForGame(game: { name: string; short: string }): GamePreset | undefined {
+export function presetForGame(game: { name: string; short: string; presetKey?: string }): GamePreset | undefined {
   const short = game.short.trim().toLowerCase();
   const name = game.name.trim().toLowerCase();
   return (
+    PRESETS.find((preset) => preset.key === game.presetKey) ??
     PRESETS.find((preset) => preset.short.toLowerCase() === short) ??
     PRESETS.find((preset) => preset.name.toLowerCase() === name)
   );
@@ -124,7 +124,7 @@ export function presetForGame(game: { name: string; short: string }): GamePreset
 
 /** Preset tasks a game has not got, by name — what a "catch me up" action would add. */
 export function missingPresetTasks(
-  game: { name: string; short: string },
+  game: { name: string; short: string; presetKey?: string },
   existing: Array<{ name: string; deleted?: boolean }>,
 ): PresetTask[] {
   const preset = presetForGame(game);

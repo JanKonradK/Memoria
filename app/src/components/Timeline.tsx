@@ -342,7 +342,7 @@ export function TimelinePage({ now }: { now: number }) {
   return (
     <Page>
       <div className="mb-3 flex flex-wrap items-center gap-3">
-        <h2 className="text-title font-black tracking-tight text-fg-soft">Event timeline</h2>
+        <h1 className="text-title font-black tracking-tight text-fg-soft">Event timeline</h1>
         <Segmented
           options={[
             { value: 'lanes', label: 'Lanes' },
@@ -517,7 +517,7 @@ export function TimelinePage({ now }: { now: number }) {
                         contentClassName="pb-1"
                       >
                         {evs.length === 0 ? (
-                          <p className="py-1 text-label text-faint">Nothing in this window — import or add events.</p>
+                          <p className="py-1 text-label text-muted">Nothing in this window — import or add events.</p>
                         ) : (
                           <div className="space-y-1.5">
                             {shown.map((ev) => (
@@ -536,7 +536,7 @@ export function TimelinePage({ now }: { now: number }) {
                               <button
                                 type="button"
                                 onClick={() => toggleDoneOpen(game.id)}
-                                className="block min-h-11 w-full rounded-ui-md py-0.5 text-left text-caption font-semibold text-faint transition hover:text-muted sm:min-h-8"
+                                className="block min-h-11 w-full rounded-ui-md py-0.5 text-left text-caption font-semibold text-muted transition hover:text-fg-soft sm:min-h-8"
                               >
                                 {doneEventsOpen
                                   ? '− collapse done events'
@@ -555,7 +555,7 @@ export function TimelinePage({ now }: { now: number }) {
         )}
       </AnimatePresence>
 
-      <SectionTitle>One-off reminders</SectionTitle>
+      <SectionTitle level={2}>One-off reminders</SectionTitle>
       <div className="space-y-2">
         {reminders.map((r) => {
           const game = r.gameId ? gameById.get(r.gameId) : undefined;
@@ -589,7 +589,7 @@ export function TimelinePage({ now }: { now: number }) {
           );
         })}
         {reminders.length === 0 && (
-          <p className="rounded-ui-xl bg-fill-1 px-4 py-5 text-body text-dim">
+          <p className="rounded-ui-xl bg-fill-1 px-4 py-5 text-body text-muted">
             No reminders yet. Add one for maintenance, shop resets, or anything that does not fit a recurring task.
           </p>
         )}

@@ -10,23 +10,37 @@ import { Sheet } from './Sheet';
 import { Btn, Field, NumInput, SectionTitle, Segmented, Select, TextArea, TextInput, Toggle } from './ui';
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const CADENCES: Cadence[] = ['daily', 'weekly', 'monthly', 'custom'];
-const TASK_MODES: TaskMode[] = ['check', 'timer', 'count'];
+const CADENCES: { value: Cadence; label: string }[] = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'custom', label: 'Cycle' },
+];
+const TASK_MODES: { value: TaskMode; label: string }[] = [
+  { value: 'check', label: 'Checkbox' },
+  { value: 'timer', label: 'Timer' },
+  { value: 'count', label: 'Counter' },
+];
 
-type GameDetailSection = 'basics' | 'resources' | 'tasks' | 'display' | 'danger';
+type GameDetailSection = 'account' | 'game' | 'resources' | 'tasks' | 'danger';
 
 const SECTIONS: { value: GameDetailSection; label: string }[] = [
-  { value: 'basics', label: 'Basics' },
+  { value: 'account', label: 'Account' },
+  { value: 'game', label: 'Game' },
   { value: 'resources', label: 'Resources' },
   { value: 'tasks', label: 'Tasks' },
-  { value: 'display', label: 'Display' },
   { value: 'danger', label: 'Danger' },
 ];
 
-type GameDraft = Pick<Game, 'name' | 'short'> & { notes: string };
+type GameDraft = Pick<Game, 'name' | 'short'> & { accountLabel: string; notes: string };
 
 function gameDraft(game: Game | undefined): GameDraft {
-  return { name: game?.name ?? '', short: game?.short ?? '', notes: game?.notes ?? '' };
+  return {
+    name: game?.name ?? '',
+    short: game?.short ?? '',
+    accountLabel: game?.accountLabel ?? '',
+    notes: game?.notes ?? '',
+  };
 }
 
 /** Per-game settings. Events remain on the Timeline. */
@@ -41,8 +55,9 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
   const updateTask = useApp((s) => s.updateTask);
   const deleteTask = useApp((s) => s.deleteTask);
   const closeSheet = useUI((s) => s.closeSheet);
-  const [section, setSection] = useState<GameDetailSection>('basics');
+  const [section, setSection] = useState<GameDetailSection>('account');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [imageError, setImageError] = useState('');
   const [newTask, setNewTask] = useState('');
   const [newTaskCadence, setNewTaskCadence] = useState<Cadence>('daily');
   const [newChipLabel, setNewChipLabel] = useState('');
@@ -63,6 +78,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
     const patch: Partial<Game> = {};
     if (pending.name !== current.name) patch.name = pending.name;
     if (pending.short !== current.short) patch.short = pending.short;
+    if (pending.accountLabel !== (current.accountLabel ?? '')) patch.accountLabel = pending.accountLabel;
     if (pending.notes !== (current.notes ?? '')) patch.notes = pending.notes;
     if (Object.keys(patch).length > 0) updateGame(draftGameId, patch);
   }, [updateGame]);
@@ -74,7 +90,10 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
   };
 
   useEffect(() => {
-    if (open) setSection('basics');
+    if (open) {
+      setSection('account');
+      setImageError('');
+    }
   }, [open, gameId]);
 
   useEffect(() => {
@@ -120,14 +139,97 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
   };
 
   return (
-    <Sheet open={open} onClose={close} wide title={game.name}>
+    <Sheet
+      open={open}
+      onClose={close}
+      wide
+      // Two accounts of one game share a name, so the label is what tells the
+      // sheets apart. Only append it when the user has actually set one.
+      title={game.accountLabel?.trim() ? `${game.name} · ${game.accountLabel.trim()}` : game.name}
+    >
       <div className="mb-5 overflow-x-auto pb-1">
         <Segmented options={SECTIONS} value={section} onChange={setSection} ariaLabel="Game settings section" />
       </div>
 
-      {section === 'basics' && (
+      {section === 'account' && (
         <>
-          <SectionTitle>Basics</SectionTitle>
+          <SectionTitle>Account</SectionTitle>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <Field label="Account label">
+                <TextInput
+                  value={draft.accountLabel}
+                  placeholder="e.g. Main EU"
+                  onChange={(event) => changeDraft('accountLabel', event.target.value)}
+                  onBlur={commitDraft}
+                />
+              </Field>
+              <p className="mt-1 text-label text-dim">Only needed if you track more than one account of this game.</p>
+            </div>
+            <Field label="Server timezone" className="sm:col-span-2">
+              <Select value={game.tz} onChange={(e) => updateGame(game.id, { tz: e.target.value })}>
+                {SERVER_TZ_OPTIONS.map((o) => (
+                  <option key={o.tz} value={o.tz}>
+                    {o.label}
+                  </option>
+                ))}
+                {!SERVER_TZ_OPTIONS.some((o) => o.tz === game.tz) && <option value={game.tz}>{game.tz}</option>}
+              </Select>
+            </Field>
+            <div className="pt-3 sm:col-span-2">
+              <SectionTitle>Resets</SectionTitle>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <Field label="Daily reset hour">
+                  <NumInput
+                    value={String(game.dailyResetHour)}
+                    min={0}
+                    max={23}
+                    onChange={(e) =>
+                      updateGame(game.id, { dailyResetHour: Math.min(23, Math.max(0, intOr(e.target.value, 4))) })
+                    }
+                  />
+                </Field>
+                <Field label="Weekly reset day">
+                  <Select
+                    value={String(game.weeklyResetDay)}
+                    onChange={(e) => updateGame(game.id, { weeklyResetDay: intOr(e.target.value, 1) })}
+                  >
+                    {WEEKDAYS.map((d, i) => (
+                      <option key={d} value={String(i + 1)}>
+                        {d}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="Monthly reset day">
+                  <NumInput
+                    value={String(game.monthlyResetDay)}
+                    min={1}
+                    max={28}
+                    onChange={(e) =>
+                      updateGame(game.id, { monthlyResetDay: Math.min(28, Math.max(1, intOr(e.target.value, 1))) })
+                    }
+                  />
+                </Field>
+              </div>
+            </div>
+            <div className="flex items-end pb-1 sm:col-span-2">
+              <Toggle checked={game.paused} onChange={(v) => updateGame(game.id, { paused: v })} label="Paused" />
+            </div>
+            <Field label="Notes" className="sm:col-span-2">
+              <TextArea
+                value={draft.notes}
+                onChange={(event) => changeDraft('notes', event.target.value)}
+                onBlur={commitDraft}
+              />
+            </Field>
+          </div>
+        </>
+      )}
+
+      {section === 'game' && (
+        <>
+          <SectionTitle>Game</SectionTitle>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Name" className="sm:col-span-2">
               <TextInput
@@ -136,19 +238,24 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                 onBlur={commitDraft}
               />
             </Field>
-            <Field label="Short label (shown as the game's badge)">
-              <TextInput
-                value={draft.short}
-                onChange={(event) => changeDraft('short', event.target.value)}
-                onBlur={commitDraft}
-              />
-            </Field>
+            <div className="sm:col-span-2">
+              <Field label="Short label (shown as the game's badge)">
+                <TextInput
+                  value={draft.short}
+                  onChange={(event) => changeDraft('short', event.target.value)}
+                  onBlur={commitDraft}
+                />
+              </Field>
+              <p className="mt-1 text-label text-dim">
+                Two to four characters. Give each account its own badge so you can tell them apart at a glance.
+              </p>
+            </div>
             <Field label="Accent color">
               <input
                 type="color"
                 value={game.color}
                 onChange={(e) => updateGame(game.id, { color: e.target.value })}
-                className="h-9 w-full cursor-pointer rounded-ui-lg bg-fill-2 ring-1 ring-line-hairline"
+                className="min-h-11 w-full cursor-pointer rounded-ui-lg bg-fill-2 ring-1 ring-line-hairline sm:min-h-9"
               />
             </Field>
             <Field label="Accent color 2 (gradient partner)">
@@ -156,7 +263,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                 type="color"
                 value={game.color2 ?? game.color}
                 onChange={(e) => updateGame(game.id, { color2: e.target.value })}
-                className="h-9 w-full cursor-pointer rounded-ui-lg bg-fill-2 ring-1 ring-line-hairline"
+                className="min-h-11 w-full cursor-pointer rounded-ui-lg bg-fill-2 ring-1 ring-line-hairline sm:min-h-9"
               />
             </Field>
             <Field label="Title font">
@@ -175,58 +282,6 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                 )}
               </Select>
             </Field>
-            <div className="flex items-end pb-1">
-              <Toggle checked={game.paused} onChange={(v) => updateGame(game.id, { paused: v })} label="Paused" />
-            </div>
-            <Field label="Server timezone" className="sm:col-span-2">
-              <Select value={game.tz} onChange={(e) => updateGame(game.id, { tz: e.target.value })}>
-                {SERVER_TZ_OPTIONS.map((o) => (
-                  <option key={o.tz} value={o.tz}>
-                    {o.label}
-                  </option>
-                ))}
-                {!SERVER_TZ_OPTIONS.some((o) => o.tz === game.tz) && <option value={game.tz}>{game.tz}</option>}
-              </Select>
-            </Field>
-            <Field label="Daily reset hour">
-              <NumInput
-                value={String(game.dailyResetHour)}
-                min={0}
-                max={23}
-                onChange={(e) =>
-                  updateGame(game.id, { dailyResetHour: Math.min(23, Math.max(0, intOr(e.target.value, 4))) })
-                }
-              />
-            </Field>
-            <Field label="Weekly reset day">
-              <Select
-                value={String(game.weeklyResetDay)}
-                onChange={(e) => updateGame(game.id, { weeklyResetDay: intOr(e.target.value, 1) })}
-              >
-                {WEEKDAYS.map((d, i) => (
-                  <option key={d} value={String(i + 1)}>
-                    {d}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Monthly reset day">
-              <NumInput
-                value={String(game.monthlyResetDay)}
-                min={1}
-                max={28}
-                onChange={(e) =>
-                  updateGame(game.id, { monthlyResetDay: Math.min(28, Math.max(1, intOr(e.target.value, 1))) })
-                }
-              />
-            </Field>
-            <Field label="Notes" className="sm:col-span-2">
-              <TextArea
-                value={draft.notes}
-                onChange={(event) => changeDraft('notes', event.target.value)}
-                onBlur={commitDraft}
-              />
-            </Field>
             <div className="sm:col-span-2">
               <span className="mb-1 block text-label font-semibold uppercase tracking-wider text-muted">
                 Card artwork
@@ -239,23 +294,59 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                     accept="image/*"
                     className="sr-only"
                     onChange={(e) => {
-                      const input = e.currentTarget;
-                      input.setCustomValidity('');
+                      setImageError('');
                       const file = e.target.files?.[0];
                       if (file) {
                         void fileToImageDataUrl(file)
-                          .then((image) => updateGame(game.id, { image }))
+                          .then((image) => {
+                            setImageError('');
+                            updateGame(game.id, { image });
+                          })
                           .catch((error: unknown) => {
-                            input.setCustomValidity(
+                            setImageError(
                               error instanceof Error ? error.message : 'The selected image could not be decoded.',
                             );
-                            input.reportValidity();
                           });
                       }
                     }}
                   />
                 </label>
-                {game.image && <Btn onClick={() => updateGame(game.id, { image: undefined })}>Remove image</Btn>}
+                {game.image && (
+                  <Btn
+                    onClick={() => {
+                      setImageError('');
+                      updateGame(game.id, { image: undefined });
+                    }}
+                  >
+                    Remove image
+                  </Btn>
+                )}
+              </div>
+              {imageError && (
+                <p className="mt-1 text-label text-danger-fg" role="alert">
+                  {imageError}
+                </p>
+              )}
+            </div>
+            <div className="pt-3 sm:col-span-2">
+              <SectionTitle>Card display</SectionTitle>
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-x-6 gap-y-3">
+                  <Toggle
+                    checked={!game.hideProgressRing}
+                    onChange={(v) => updateGame(game.id, { hideProgressRing: !v })}
+                    label="Daily progress ring"
+                  />
+                  <Toggle
+                    checked={!game.hideEventStrip}
+                    onChange={(v) => updateGame(game.id, { hideEventStrip: !v })}
+                    label="Active events strip"
+                  />
+                </div>
+                <p className="text-label text-dim">
+                  Turns whole blocks of the game card on or off. Individual energy bars, quick-spend buttons and tasks
+                  are removed above; individual events are edited on the Timeline.
+                </p>
               </div>
             </div>
           </div>
@@ -315,7 +406,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                   setNewChipLabel('');
                 }}
               >
-                + Shortcut
+                + Quick spend
               </Btn>
             </div>
             <p className="text-label text-dim">
@@ -349,9 +440,9 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                         onChange={(e) => updateTask(t.id, { cadence: e.target.value as Cadence })}
                         aria-label={`Cadence for ${t.name}`}
                       >
-                        {CADENCES.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
+                        {CADENCES.map((cadence) => (
+                          <option key={cadence.value} value={cadence.value}>
+                            {cadence.label}
                           </option>
                         ))}
                       </Select>
@@ -363,8 +454,8 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                         aria-label={`Mode for ${t.name}`}
                       >
                         {TASK_MODES.map((taskMode) => (
-                          <option key={taskMode} value={taskMode}>
-                            {taskMode}
+                          <option key={taskMode.value} value={taskMode.value}>
+                            {taskMode.label}
                           </option>
                         ))}
                       </Select>
@@ -458,9 +549,9 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                   onChange={(e) => setNewTaskCadence(e.target.value as Cadence)}
                   aria-label="New task cadence"
                 >
-                  {CADENCES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
+                  {CADENCES.map((cadence) => (
+                    <option key={cadence.value} value={cadence.value}>
+                      {cadence.label}
                     </option>
                   ))}
                 </Select>
@@ -484,31 +575,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
                 <Btn onClick={() => addMissingPresetTasks(game.id)}>+ Add {presetGap}</Btn>
               </div>
             )}
-            <p className="text-label text-dim">Events → Timeline tab · focus, teams, currency & stats → Stats tab.</p>
-          </div>
-        </>
-      )}
-
-      {section === 'display' && (
-        <>
-          <SectionTitle>Card display</SectionTitle>
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-x-6 gap-y-3">
-              <Toggle
-                checked={!game.hideProgressRing}
-                onChange={(v) => updateGame(game.id, { hideProgressRing: !v })}
-                label="Daily progress ring"
-              />
-              <Toggle
-                checked={!game.hideEventStrip}
-                onChange={(v) => updateGame(game.id, { hideEventStrip: !v })}
-                label="Active events strip"
-              />
-            </div>
-            <p className="text-label text-dim">
-              Turns whole blocks of the game card on or off. Individual energy bars, quick-spend buttons and tasks are
-              removed above; individual events are edited on the Timeline.
-            </p>
+            <p className="text-label text-dim">Events are edited on the Timeline tab.</p>
           </div>
         </>
       )}
@@ -516,23 +583,28 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
       {section === 'danger' && (
         <>
           <SectionTitle>Danger zone</SectionTitle>
-          <div className="flex gap-2 pb-2">
+          <div className="pb-2">
             {!confirmDelete ? (
               <Btn kind="danger" onClick={() => setConfirmDelete(true)}>
                 Delete game…
               </Btn>
             ) : (
               <>
-                <Btn
-                  kind="danger"
-                  onClick={() => {
-                    deleteGame(game.id);
-                    close();
-                  }}
-                >
-                  Really delete {game.short}
-                </Btn>
-                <Btn onClick={() => setConfirmDelete(false)}>Cancel</Btn>
+                <p className="mb-2 text-label text-danger-fg">
+                  This also deletes this game's resources, tasks, quick spends, and events.
+                </p>
+                <div className="flex gap-2">
+                  <Btn
+                    kind="danger"
+                    onClick={() => {
+                      deleteGame(game.id);
+                      close();
+                    }}
+                  >
+                    Really delete {game.short}
+                  </Btn>
+                  <Btn onClick={() => setConfirmDelete(false)}>Cancel</Btn>
+                </div>
               </>
             )}
           </div>

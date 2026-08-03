@@ -14,6 +14,10 @@ export interface Syncable {
 export interface Game extends Syncable {
   id: string;
   name: string;
+  /** Preset this game came from; survives any rename. */
+  presetKey?: string;
+  /** User's label for this account, e.g. "Main EU". */
+  accountLabel?: string;
   /** Short label for chips and compact UI, e.g. "HSR". */
   short: string;
   /** Accent color (hex). */

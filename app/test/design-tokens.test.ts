@@ -92,6 +92,27 @@ describe('the colour palette is closed', () => {
     ).toEqual([]);
   });
 
+  it('never paints text in the decorative-stroke colour', () => {
+    // index.css declares --color-faint "Decorative strokes only — never text",
+    // but a comment is not enforcement: it had drifted into 8 text sites at
+    // 2.47:1 on bg-fill-1, two of them interactive button labels.
+    //
+    // These all resolved to `muted` (7.29:1), NOT `dim`. `dim` is tuned to clear
+    // AA on the pure-black canvas; over bg-fill-1 on a card it measures 4.47:1
+    // and misses the 4.5 gate. There is no step between them — the ramp is
+    // closed — so anything sitting on a fill needs `muted` or brighter.
+    expect(offenders(/\btext-faint\b/g)).toEqual([]);
+  });
+
+  it('never puts dim text on a lightened fill', () => {
+    // `dim` is tuned to clear AA 4.5:1 on the pure-black canvas. Every overlay
+    // step raises the background and eats that margin: measured against a card,
+    // dim is 4.47 on fill-1, 4.18 on fill-2 and 3.74 on fill-3 — so an input
+    // placeholder failed at rest and got WORSE on focus. `muted` clears all
+    // three (6.1–7.3). There is no step in between; the ramp is closed.
+    expect(offenders(/(?:bg-fill-\d[^"'`]*text-dim|text-dim[^"'`]*bg-fill-\d)/g)).toEqual([]);
+  });
+
   it('defines exactly four overlay steps, three border steps and three scrims', () => {
     const count = (prefix: string) => (CSS.match(new RegExp(`--color-${prefix}[\\w-]*:`, 'g')) ?? []).length;
     expect(count('fill-')).toBe(4);

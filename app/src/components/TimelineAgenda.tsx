@@ -287,7 +287,7 @@ function AgendaSection({
           )}
         </div>
       ) : (
-        <p className="px-3 py-1 text-label text-faint">{emptyLabel}</p>
+        <p className="px-3 py-1 text-label text-muted">{emptyLabel}</p>
       )}
     </section>
   );
@@ -386,7 +386,7 @@ export function AgendaList({
             <button
               type="button"
               onClick={() => setPastOpen((open) => !open)}
-              className="block min-h-11 w-full rounded-ui-md py-0.5 text-left text-caption font-semibold text-faint transition hover:text-muted sm:min-h-8"
+              className="block min-h-11 w-full rounded-ui-md py-0.5 text-left text-caption font-semibold text-muted transition hover:text-fg-soft sm:min-h-8"
               aria-expanded={pastOpen}
             >
               {pastOpen
@@ -394,7 +394,7 @@ export function AgendaList({
                 : `+ ${data.past.length} past event${data.past.length === 1 ? '' : 's'}`}
             </button>
           ) : (
-            <p className="px-3 py-1 text-label text-faint">No past events in this window.</p>
+            <p className="px-3 py-1 text-label text-muted">No past events in this window.</p>
           )}
           {pastOpen && (
             <div className="mt-1 space-y-1">
