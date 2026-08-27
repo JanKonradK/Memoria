@@ -1,1 +1,0 @@
-ALTER TABLE user_secrets ADD COLUMN key_version INTEGER NOT NULL DEFAULT 1;

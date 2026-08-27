@@ -14,10 +14,8 @@ export default [
     ignores: [
       '**/dist/**',
       '**/node_modules/**',
-      '**/.wrangler/**',
       '**/playwright-report/**',
       '**/test-results/**',
-      '**/worker-env.d.ts',
       // Vendored AI-harness tooling (impeccable, agent configs). Third-party
       // source we do not own and must not gate our own lint run on.
       '.claude/**',
@@ -52,19 +50,13 @@ export default [
     },
   },
   {
-    files: ['app/e2e/**/*.ts', 'app/*.config.ts', 'shared/test/**/*.ts', 'worker/**/*.ts'],
+    files: ['app/e2e/**/*.ts', 'app/*.config.ts', 'shared/test/**/*.ts'],
     languageOptions: {
       globals: { ...globals.node },
     },
   },
   {
-    files: ['worker/**/*.ts'],
-    languageOptions: {
-      globals: { ...globals.serviceworker },
-    },
-  },
-  {
-    files: ['app/src/**/*.{ts,tsx}', 'worker/src/**/*.ts', 'shared/src/**/*.ts'],
+    files: ['app/src/**/*.{ts,tsx}', 'shared/src/**/*.ts'],
     languageOptions: {
       parserOptions: {
         projectService: true,

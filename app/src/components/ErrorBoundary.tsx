@@ -1,5 +1,4 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { reportClientError } from '../reporting';
 import { Btn } from './ui';
 
 interface Props {
@@ -18,8 +17,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('Void render failed', error, info);
-    void reportClientError(error, info.componentStack ?? 'render');
+    console.error('Memoria render failed', error, info);
   }
 
   render() {

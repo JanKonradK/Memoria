@@ -23,6 +23,7 @@ export interface ChecklistItem {
   timerRunning: boolean;
   timerReady: boolean;
   timerDurationMinutes: number;
+  timerStepMinutes?: number;
   sort: number;
   /** Pays the game's premium pull currency — see Task.core. */
   core: boolean;
@@ -177,6 +178,7 @@ export function checklistFor(
       timerRunning: timerEndsAt != null && timerEndsAt > now,
       timerReady: timerEndsAt != null && timerEndsAt <= now,
       timerDurationMinutes: effectiveTimerDurationMinutes(t),
+      timerStepMinutes: t.timerStepMinutes,
       sort: t.sort,
       core: t.core === true,
     });

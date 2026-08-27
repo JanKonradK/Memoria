@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { del as idbDel, get as idbGet, set as idbSet } from 'idb-keyval';
+import { del as idbDel, get as idbGet, keys as idbKeys, set as idbSet } from 'idb-keyval';
 import type {
   AlertRule,
   AppState,
@@ -13,7 +13,7 @@ import type {
   SettingsField,
   QuickChip,
   Task,
-} from '@void/shared';
+} from '@memoria/shared';
 import {
   completionId,
   COMPLETION_RETENTION_MS,
@@ -24,14 +24,21 @@ import {
   normalizeState,
   pruneCompletions,
   safeParseAppState,
+  seedMissingRegenSnapshots,
   projectEnergy,
   missingPresetTasks,
-} from '@void/shared';
-import { storageKeyForIdentity } from './storage-identity';
+  presetForGame,
+} from '@memoria/shared';
+import { planSeedImport, SEED_UPDATED, type PlannedSeed } from './data/seed-events';
 import { uid } from './util';
 
-const IDB_KEY = 'void-state';
-const LEGACY_IDB_KEY = 'technogg-state';
+const IDB_KEY = 'memoria-state';
+/**
+ * Every key this store has shipped under, newest first. The app has been renamed
+ * twice and this is the user's ONLY copy of their data — a rename that dropped
+ * it would silently look like a first run.
+ */
+const LEGACY_IDB_KEYS = ['void-state', 'technogg-state'] as const;
 /** Matches the merge-side retention. */
 const SNAPSHOTS_KEPT = 200;
 
@@ -93,26 +100,12 @@ function tombstone<T extends { id: string; updatedAt: number; deleted?: boolean 
   return list.map((x) => (match(x) ? { ...x, deleted: true, updatedAt: now() } : x));
 }
 
-let activeIdentity: string | null = null;
-let activeIdbKey: string | null = null;
-let activeLegacyIdbKey: string | null = null;
-let identityRevision = 0;
 let persistTimer: ReturnType<typeof setTimeout> | undefined;
-let pendingPersist: { key: string; state: AppState } | null = null;
-
-export function getActiveIdentity(): string | null {
-  return activeIdentity;
-}
-
-export function getIdentityRevision(): number {
-  return identityRevision;
-}
+let pendingPersist: AppState | null = null;
 
 function persist(state: AppState): void {
-  const key = activeIdbKey;
-  if (!key) return;
   clearTimeout(persistTimer);
-  pendingPersist = { key, state };
+  pendingPersist = state;
   persistTimer = setTimeout(() => {
     void flushPersist().catch(() => undefined);
   }, 120);
@@ -130,7 +123,7 @@ export async function flushPersist(): Promise<void> {
   // This is the last boundary shared by every local writer. Keeping the guard
   // here preserves debounce performance while making an invalid disk write
   // impossible even if a future mutation forgets its own range check.
-  if (pending) await idbSet(pending.key, normalizeState(pending.state));
+  if (pending) await idbSet(IDB_KEY, normalizeState(pending));
 }
 
 function sameJson(left: unknown, right: unknown): boolean {
@@ -141,9 +134,32 @@ function sameJson(left: unknown, right: unknown): boolean {
   }
 }
 
+function migrateGenshinBadge(state: AppState): { state: AppState; repaired: boolean } {
+  let repaired = false;
+  const updatedAt = now();
+  const games = state.games.map((game) => {
+    if (presetForGame(game)?.key !== 'genshin') return game;
+    const legacyBadge = game.short.toLowerCase() === 'gi';
+    const legacyPalette = game.color.toLowerCase() === '#fefef3';
+    if (!legacyBadge && !legacyPalette) return game;
+    repaired = true;
+    return {
+      ...game,
+      ...(legacyBadge ? { short: 'Genshin' } : {}),
+      ...(legacyPalette ? { color: '#f8efdb', color2: '#d8c9b4' } : {}),
+      updatedAt,
+    };
+  });
+  // The cream palette shipped at the current schema version, so the versioned
+  // migration cannot see it. Delete these repairs after the install base turns over.
+  return repaired ? { state: { ...state, games }, repaired } : { state, repaired };
+}
+
 function stateForStorage(raw: unknown): { state: AppState; repaired: boolean } {
-  const normalized = normalizeState(raw);
-  const state = pruneCompletions(normalized, now() - COMPLETION_RETENTION_MS);
+  const normalized = seedMissingRegenSnapshots(normalizeState(raw), now(), uid);
+  const pruned = pruneCompletions(normalized, now() - COMPLETION_RETENTION_MS);
+  const badgeMigrated = migrateGenshinBadge(pruned);
+  const state = badgeMigrated.state;
   const parsed = safeParseAppState(raw);
   // Successful transforms matter too: future clocks and inferred legacy fields
   // are safe in memory only after repair, so leave no poisoned original on disk.
@@ -151,31 +167,122 @@ function stateForStorage(raw: unknown): { state: AppState; repaired: boolean } {
     raw !== undefined && (!parsed.success || !sameJson(parsed.data, raw) || !sameJson(parsed.data, normalized));
   return {
     state,
-    repaired: schemaChanged || state.completions.length !== normalized.completions.length,
+    repaired: schemaChanged || badgeMigrated.repaired || state.completions.length !== normalized.completions.length,
   };
 }
 
-async function readStoredState(key: string, legacyKey: string | null): Promise<unknown> {
-  const existing = await idbGet(key);
-  if (existing !== undefined || !legacyKey || legacyKey === key) return existing;
-
-  const legacy = await idbGet(legacyKey);
-  if (legacy === undefined) return undefined;
-
-  // Re-check immediately before writing so an already-created Void value wins.
-  const current = await idbGet(key);
-  if (current !== undefined) return current;
-
-  await idbSet(key, legacy);
-  const migrated = await idbGet(key);
-  if (migrated !== undefined) {
-    try {
-      await idbDel(legacyKey);
-    } catch {
-      // The new copy is durable; leaving the old copy makes a later cleanup retry safe.
-    }
+function applySeedPlan(state: AppState, plan: PlannedSeed[]): AppState {
+  const byId = new Map(state.events.map((event) => [event.id, event]));
+  for (const item of plan) {
+    applyEventUpsert(byId, {
+      ...(item.eventId ? { id: item.eventId } : {}),
+      gameId: item.gameId,
+      name: item.seed.name,
+      type: item.seed.type,
+      start: item.start,
+      end: item.end,
+      dailyTouch: item.seed.dailyTouch ?? false,
+      notify: item.seed.notify ?? true,
+      notes: item.seed.notes ?? '',
+      sourceKey: item.seed.sourceKey,
+    });
   }
-  return migrated;
+  const events = [...byId.values()];
+  if (state.settings.seedImportedVersion === SEED_UPDATED) return { ...state, events };
+  // Record the stamp so the refresh pass does not re-apply the bundled name and
+  // dates over a user's edit on every subsequent load.
+  return { ...state, events, settings: { ...state.settings, seedImportedVersion: SEED_UPDATED, updatedAt: now() } };
+}
+
+/**
+ * Plan against the full document. The refresh stamp is global, so scoping this
+ * to one new game could mark older accounts refreshed before they get fixes.
+ */
+function seedBundledEvents(state: AppState, at: number): AppState {
+  const plan = planSeedImport(state, at);
+  return plan.length > 0 ? applySeedPlan(state, plan) : state;
+}
+
+/** How many real games a candidate document holds — the tie-breaker below. */
+export function countTrackedGames(document: unknown): number {
+  if (!document || typeof document !== 'object') return 0;
+  const games = (document as { games?: unknown }).games;
+  if (!Array.isArray(games)) return 0;
+  return games.filter((game) => game && typeof game === 'object' && !(game as { deleted?: boolean }).deleted).length;
+}
+
+/**
+ * Legacy documents this build can still adopt, richest first.
+ *
+ * Builds that had accounts stored each identity under a SUFFIXED key —
+ * `void-state::user:<id>` — and left the bare key for local mode only. Accounts
+ * are gone, but a user upgrading from one of those builds may have their only
+ * copy under a suffix, and reading just the bare key would show them an empty
+ * first run while their real data sat one key away. That is silent data loss,
+ * so the suffixes are enumerated rather than assumed absent.
+ */
+async function legacyCandidates(): Promise<Array<{ key: IDBValidKey; value: unknown }>> {
+  // Unscoped keys first, newest name first. The bare key is what LOCAL mode
+  // wrote, and local mode is what this build is — a suffixed key belongs to a
+  // signed-in identity the product no longer has a concept of. Ranking these by
+  // richness instead would let a stale account document outrank the very
+  // document this install has been writing all along.
+  const unscoped: Array<{ key: IDBValidKey; value: unknown }> = [];
+  for (const legacyKey of LEGACY_IDB_KEYS) {
+    const value = await idbGet(legacyKey);
+    if (value !== undefined) unscoped.push({ key: legacyKey, value });
+  }
+
+  let stored: IDBValidKey[] = [];
+  try {
+    stored = await idbKeys();
+  } catch {
+    // Enumeration is best-effort; the bare keys above are still handled.
+    return unscoped;
+  }
+
+  const scoped: Array<{ key: IDBValidKey; value: unknown }> = [];
+  for (const key of stored) {
+    if (typeof key !== 'string') continue;
+    if (!LEGACY_IDB_KEYS.some((legacyKey) => key.startsWith(`${legacyKey}::`))) continue;
+    const value = await idbGet(key);
+    if (value !== undefined) scoped.push({ key, value });
+  }
+
+  // Among identities there is no principled winner, so pick the fullest and
+  // break ties by key — the same device then always resolves the same way.
+  scoped.sort(
+    (a, b) => countTrackedGames(b.value) - countTrackedGames(a.value) || String(a.key).localeCompare(String(b.key)),
+  );
+  return [...unscoped, ...scoped];
+}
+
+async function readStoredState(): Promise<unknown> {
+  const existing = await idbGet(IDB_KEY);
+  if (existing !== undefined) return existing;
+
+  const candidates = await legacyCandidates();
+  for (const candidate of candidates) {
+    // Re-check immediately before writing so an already-created value wins.
+    const current = await idbGet(IDB_KEY);
+    if (current !== undefined) return current;
+
+    await idbSet(IDB_KEY, candidate.value);
+    const migrated = await idbGet(IDB_KEY);
+    if (migrated === undefined) continue;
+
+    // Only the key that was actually adopted is cleared. Any other identity's
+    // document stays exactly where it is: it is not what this build loads, but
+    // deleting someone's only copy of data we chose not to adopt is worse than
+    // leaving a stale key behind.
+    try {
+      await idbDel(candidate.key);
+    } catch {
+      // The new copy is durable; leaving the old one makes a later retry safe.
+    }
+    return migrated;
+  }
+  return undefined;
 }
 
 /**
@@ -186,15 +293,15 @@ async function readStoredState(key: string, legacyKey: string | null): Promise<u
  * token. Deleting the code without deleting the data would leave live,
  * long-lived credentials sitting on disk indefinitely for every existing user,
  * which is a worse outcome than the feature existing. Cheap and idempotent, so
- * it runs on every identity switch rather than needing a migration flag.
+ * it runs on every load rather than needing a migration flag.
  */
 const RETIRED_SECRET_KEYS = ['void-local-secrets-v1', 'technogg-local-secrets-v1'];
 
 function purgeRetiredSecrets(): void {
   if (typeof localStorage === 'undefined') return;
   try {
-    // Keys are identity-suffixed (`base::user:abc`), so match the prefix too
-    // rather than only the bare key — otherwise signed-in users keep theirs.
+    // Accounts are gone, but their identity-suffixed keys (`base::user:abc`)
+    // can still be on disk from an earlier signed-in install — match those too.
     for (const key of Object.keys(localStorage)) {
       if (RETIRED_SECRET_KEYS.some((base) => key === base || key.startsWith(`${base}::`))) {
         localStorage.removeItem(key);
@@ -219,7 +326,6 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
 }
 
 export interface AppStore {
-  identity: string | null;
   state: AppState;
   loaded: boolean;
   loadError: string;
@@ -227,7 +333,6 @@ export interface AppStore {
   syncError: string;
   lastSyncAt: number | null;
 
-  setIdentity(identity: string): Promise<void>;
   load(): Promise<void>;
   clearLocalData(): Promise<void>;
   /** Replace state (sync merge / import) without re-announcing a local mutation. */
@@ -261,6 +366,7 @@ export interface AppStore {
   setTaskDone(taskId: string, periodKey: string, done: boolean): void;
   startTaskTimer(taskId: string, periodKey: string): void;
   restartTaskTimer(taskId: string, periodKey: string): void;
+  advanceTaskTimer(taskId: string, periodKey: string, minutes: number): void;
   setTaskCount(taskId: string, periodKey: string, countDone: number): void;
   addTask(gameId: string, name: string, cadence: Cadence, intervalDays?: number): void;
   /** Add preset tasks this game is missing (presets grow; existing games do not). */
@@ -285,7 +391,6 @@ export interface AppStore {
 }
 
 export const useApp = create<AppStore>((set, get) => ({
-  identity: null,
   state: emptyState(),
   loaded: false,
   loadError: '',
@@ -293,67 +398,16 @@ export const useApp = create<AppStore>((set, get) => ({
   syncError: '',
   lastSyncAt: null,
 
-  async setIdentity(identity) {
-    if (identity === activeIdentity) return;
-
-    await flushPersist();
-    activeIdentity = identity;
-    activeIdbKey = storageKeyForIdentity(IDB_KEY, identity);
-    activeLegacyIdbKey = storageKeyForIdentity(LEGACY_IDB_KEY, identity);
-    identityRevision += 1;
-    purgeRetiredSecrets();
-    set({
-      identity,
-      state: emptyState(),
-      loaded: false,
-      loadError: '',
-      syncStatus: 'idle',
-      syncError: '',
-      lastSyncAt: null,
-    });
-
-    if (!activeIdbKey) {
-      set({ loaded: true });
-      return;
-    }
-
-    const key = activeIdbKey;
-    const legacyKey = activeLegacyIdbKey;
-    const revision = identityRevision;
-    try {
-      const raw = await readStoredState(key, legacyKey);
-      if (revision !== identityRevision) return;
-      const stored = stateForStorage(raw);
-      set({ state: stored.state, loaded: true, loadError: '' });
-      if (stored.repaired) persist(stored.state);
-    } catch (error) {
-      if (revision !== identityRevision) return;
-      set({
-        loaded: false,
-        loadError: error instanceof Error ? error.message : 'Local data could not be opened.',
-      });
-    }
-  },
-
   async load() {
-    const identity = activeIdentity;
-    const key = activeIdbKey;
-    const legacyKey = activeLegacyIdbKey;
-    const revision = identityRevision;
     set({ loadError: '' });
-    if (!identity) return;
-    if (!key) {
-      set({ state: emptyState(), loaded: true });
-      return;
-    }
+    purgeRetiredSecrets();
     try {
-      const raw = await readStoredState(key, legacyKey);
-      if (revision !== identityRevision) return;
-      const stored = stateForStorage(raw);
+      const stored = stateForStorage(await readStoredState());
       set({ state: stored.state, loaded: true, loadError: '' });
       if (stored.repaired) persist(stored.state);
+      const seedPlan = planSeedImport(get().state, now());
+      if (seedPlan.length > 0) get().batch((state) => applySeedPlan(state, seedPlan));
     } catch (error) {
-      if (revision !== identityRevision) return;
       set({
         loaded: false,
         loadError: error instanceof Error ? error.message : 'Local data could not be opened.',
@@ -362,23 +416,21 @@ export const useApp = create<AppStore>((set, get) => ({
   },
 
   async clearLocalData() {
-    const key = activeIdbKey;
-    const legacyKey = activeLegacyIdbKey;
-    const revision = identityRevision;
     clearTimeout(persistTimer);
     persistTimer = undefined;
     pendingPersist = null;
     try {
-      if (key) await idbDel(key);
-      if (legacyKey && legacyKey !== key) await idbDel(legacyKey);
-      // "Clear local data" has to mean all of it, including the retired
-      // notification credentials, or the one action a user takes to wipe the
-      // device would leave their bot token behind.
+      await idbDel(IDB_KEY);
+      // Every legacy document, INCLUDING the identity-suffixed ones the reader
+      // deliberately leaves in place. Adoption is conservative because it must
+      // not destroy data; an explicit wipe is the opposite, and leaving another
+      // identity's copy behind here would make "clear local data" a lie.
+      for (const { key } of await legacyCandidates()) await idbDel(key);
+      // The same applies to the retired notification credentials, or the one
+      // action a user takes to wipe the device leaves their bot token behind.
       purgeRetiredSecrets();
-      if (revision !== identityRevision) return;
       set({ state: emptyState(), loaded: true, loadError: '' });
     } catch (error) {
-      if (revision !== identityRevision) return;
       set({ loadError: error instanceof Error ? error.message : 'Local data could not be cleared.' });
     }
   },
@@ -433,7 +485,6 @@ export const useApp = create<AppStore>((set, get) => ({
         id: uid(),
         gameId,
         name: r.name,
-        icon: r.icon,
         cap: over.capOverrides?.[i] ?? r.cap,
         regenMinutes: r.regenMinutes,
         reserveCap: r.reserveCap,
@@ -452,6 +503,7 @@ export const useApp = create<AppStore>((set, get) => ({
         anchorAt: t,
         mode: tk.mode,
         timerDurationMinutes: tk.timerDurationMinutes,
+        timerStepMinutes: tk.timerStepMinutes,
         countTarget: tk.countTarget,
         timerEndsAt: tk.mode === 'timer' ? null : undefined,
         core: tk.core,
@@ -459,12 +511,17 @@ export const useApp = create<AppStore>((set, get) => ({
         sort: i,
         updatedAt: t,
       }));
-      return {
-        ...s,
-        games: [...s.games, game],
-        resources: [...s.resources, ...resources],
-        tasks: [...s.tasks, ...tasks],
-      };
+      const created = seedMissingRegenSnapshots(
+        {
+          ...s,
+          games: [...s.games, game],
+          resources: [...s.resources, ...resources],
+          tasks: [...s.tasks, ...tasks],
+        },
+        t,
+        uid,
+      );
+      return seedBundledEvents(created, t);
     });
     return gameId;
   },
@@ -472,43 +529,48 @@ export const useApp = create<AppStore>((set, get) => ({
   addBlankGame(name) {
     const gameId = uid();
     const t = now();
-    get().mutate((s) => ({
-      ...s,
-      games: [
-        ...s.games,
+    get().mutate((s) =>
+      seedMissingRegenSnapshots(
         {
-          id: gameId,
-          name,
-          short: name.slice(0, 4),
-          // Brand accent, so a custom game starts on-system and the user can
-          // change it to whatever that game actually looks like.
-          color: '#7c5cff',
-          icon: '',
-          platform: 'both',
-          tz: 'Etc/UTC',
-          dailyResetHour: 4,
-          weeklyResetDay: 1,
-          monthlyResetDay: 1,
-          paused: false,
-          sort: Math.max(0, ...s.games.map((g) => g.sort + 1)),
-          updatedAt: t,
+          ...s,
+          games: [
+            ...s.games,
+            {
+              id: gameId,
+              name,
+              short: name.slice(0, 4),
+              // Brand accent, so a custom game starts on-system and the user can
+              // change it to whatever that game actually looks like.
+              color: '#7c5cff',
+              icon: '',
+              platform: 'both',
+              tz: 'Etc/UTC',
+              dailyResetHour: 4,
+              weeklyResetDay: 1,
+              monthlyResetDay: 1,
+              paused: false,
+              sort: Math.max(0, ...s.games.map((g) => g.sort + 1)),
+              updatedAt: t,
+            },
+          ],
+          resources: [
+            ...s.resources,
+            {
+              id: uid(),
+              gameId,
+              name: 'Energy',
+              cap: 100,
+              regenMinutes: 6,
+              reserveCap: 0,
+              sort: 0,
+              updatedAt: t,
+            },
+          ],
         },
-      ],
-      resources: [
-        ...s.resources,
-        {
-          id: uid(),
-          gameId,
-          name: 'Energy',
-          icon: 'bolt',
-          cap: 100,
-          regenMinutes: 6,
-          reserveCap: 0,
-          sort: 0,
-          updatedAt: t,
-        },
-      ],
-    }));
+        t,
+        uid,
+      ),
+    );
     return gameId;
   },
 
@@ -536,7 +598,6 @@ export const useApp = create<AppStore>((set, get) => ({
         id: res.id ?? uid(),
         gameId: res.gameId,
         name: res.name ?? 'Energy',
-        icon: res.icon ?? 'bolt',
         cap: res.cap ?? 100,
         regenMinutes: res.regenMinutes ?? 6,
         reserveCap: res.reserveCap ?? 0,
@@ -546,7 +607,7 @@ export const useApp = create<AppStore>((set, get) => ({
         sort: res.sort ?? s.resources.filter((r) => r.gameId === res.gameId).length,
         updatedAt: now(),
       };
-      return { ...s, resources: [...s.resources, item] };
+      return seedMissingRegenSnapshots({ ...s, resources: [...s.resources, item] }, item.updatedAt, uid);
     });
   },
 
@@ -582,15 +643,23 @@ export const useApp = create<AppStore>((set, get) => ({
       const clamped = Math.min(res.cap, Math.max(0, Math.round(value)));
       const clampedReserve =
         reserve != null && res.reserveCap > 0 ? Math.min(res.reserveCap, Math.max(0, Math.round(reserve))) : undefined;
+      const mine = s.snapshots.filter((x) => x.resourceId === resourceId);
+      mine.sort((a, b) => b.takenAt - a.takenAt);
+      // A reading the user just gave must WIN, and `latestSnapshots` breaks a
+      // same-millisecond tie by comparing uuids — a coin flip. That was harmless
+      // while snapshots only ever came from typing, and became data loss the
+      // moment resources started seeding themselves at zero: onboarding writes
+      // the seed and the typed value in the same tick, so which one you saw was
+      // random. Stepping one millisecond past the newest existing snapshot makes
+      // the newest write win by timestamp, deterministically.
+      const newest = mine[0]?.takenAt ?? 0;
       const snap = {
         id: uid(),
         resourceId,
         value: clamped,
-        takenAt: now(),
+        takenAt: Math.max(now(), newest + 1),
         ...(clampedReserve != null ? { reserve: clampedReserve } : {}),
       };
-      const mine = s.snapshots.filter((x) => x.resourceId === resourceId);
-      mine.sort((a, b) => b.takenAt - a.takenAt);
       const keep = new Set(mine.slice(0, SNAPSHOTS_KEPT - 1).map((x) => x.id));
       return {
         ...s,
@@ -661,6 +730,29 @@ export const useApp = create<AppStore>((set, get) => ({
     }));
   },
 
+  advanceTaskTimer(taskId, periodKey, minutes) {
+    const t = now();
+    const task = get().state.tasks.find((item) => item.id === taskId);
+    if (!task) return;
+    if (task.timerStepMinutes == null) {
+      get().restartTaskTimer(taskId, periodKey);
+      return;
+    }
+    if (task.timerEndsAt == null || !Number.isFinite(minutes) || minutes <= 0) return;
+    const timerEndsAt = Math.max(t, task.timerEndsAt - minutes * 60_000);
+    get().mutate((s) => ({
+      ...s,
+      tasks: patchIn(s.tasks, taskId, { timerEndsAt }),
+      completions: upsert(s.completions, {
+        id: completionId(taskId, periodKey),
+        taskId,
+        periodKey,
+        done: true,
+        updatedAt: t,
+      }),
+    }));
+  },
+
   setTaskCount(taskId, periodKey, countDone) {
     const task = get().state.tasks.find((item) => item.id === taskId);
     const target = task ? effectiveCountTarget(task) : 1;
@@ -718,6 +810,7 @@ export const useApp = create<AppStore>((set, get) => ({
         anchorAt: t,
         mode: task.mode,
         timerDurationMinutes: task.timerDurationMinutes,
+        timerStepMinutes: task.timerStepMinutes,
         countTarget: task.countTarget,
         timerEndsAt: task.mode === 'timer' ? null : undefined,
         core: task.core,
@@ -750,6 +843,7 @@ export const useApp = create<AppStore>((set, get) => ({
           anchorAt: t,
           mode: task.mode,
           timerDurationMinutes: task.timerDurationMinutes,
+          timerStepMinutes: task.timerStepMinutes,
           countTarget: task.countTarget,
           timerEndsAt: task.mode === 'timer' ? null : undefined,
           core: task.core,
@@ -853,13 +947,16 @@ export const useApp = create<AppStore>((set, get) => ({
       // Schema-validate the CANDIDATE, not just the preview. Settings.tsx
       // already validates what it shows the user, but this used to commit the
       // original object through `normalizeState`, which only coerces — so a
-      // hand-edited or hostile backup could put values into storage that the
-      // hosted sync would later reject, leaving the device wedged. Refuse the
+      // hand-edited or corrupt backup could put values into storage that the
+      // launcher would later reject, leaving the device wedged. Refuse the
       // whole import instead: unlike a load, there is a real user standing here
       // who can be told the file is bad, and their existing state is intact.
       const parsed = safeParseAppState(raw);
       if (!parsed.success) return false;
-      get().mutate((s) => mergeState(s, parsed.data));
+      // Imports do not go through stateForStorage, so apply the shared schema
+      // migrations and the temporary legacy badge repair at this boundary too.
+      const migrated = migrateGenshinBadge(normalizeState(parsed.data)).state;
+      get().mutate((s) => mergeState(s, migrated));
       return true;
     } catch {
       return false;

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { PRESETS } from '@void/shared';
+import { effectiveResourceKind, emptyState, PRESETS } from '@memoria/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const idb = vi.hoisted(() => new Map<string, unknown>());
@@ -15,13 +15,14 @@ vi.mock('idb-keyval', () => ({
 }));
 
 import { AddGameSheet } from '../src/components/AddGame';
-import { useApp } from '../src/store';
+import { flushPersist, useApp } from '../src/store';
 
-let identitySequence = 0;
-
-/** Each test gets its own identity so nothing leaks through the module-level store. */
+/** Drop everything the module-level store holds so nothing leaks between tests. */
 async function freshStore(): Promise<void> {
-  await useApp.getState().setIdentity(`add-account-test:${identitySequence++}`);
+  await flushPersist();
+  idb.clear();
+  useApp.setState({ state: emptyState(), loaded: false, loadError: '' });
+  await useApp.getState().load();
 }
 
 describe('Add another account', () => {
@@ -61,7 +62,17 @@ describe('Add another account', () => {
         }),
       ]),
     );
-    expect(state.snapshots).toHaveLength(0);
+    // Rule changed by owner decision: a regen resource is seeded at 0 so the card
+    // counts from first sight. Two accounts of a preset with two regen resources
+    // therefore hold four seeds, and every one of them reads zero — the seed is a
+    // starting point, never an invented reading.
+    const regenIds = new Set(
+      state.resources
+        .filter((resource) => !resource.deleted && effectiveResourceKind(resource) === 'regen')
+        .map((resource) => resource.id),
+    );
+    expect(state.snapshots).toHaveLength(regenIds.size);
+    expect(state.snapshots.every((snapshot) => snapshot.value === 0)).toBe(true);
 
     const accountIds = accounts.map((game) => game.id);
     useApp.getState().replaceState({

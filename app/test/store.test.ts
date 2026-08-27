@@ -5,7 +5,7 @@ import {
   PRESETS,
   projectEnergy,
   safeParseAppState,
-} from '@void/shared';
+} from '@memoria/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const idb = vi.hoisted(() => new Map<string, unknown>());
@@ -18,16 +18,20 @@ vi.mock('idb-keyval', () => ({
   del: vi.fn(async (key: string) => {
     idb.delete(key);
   }),
+  keys: vi.fn(async () => [...idb.keys()]),
 }));
 
 import { flushPersist, useApp } from '../src/store';
-import { storageKeyForIdentity } from '../src/storage-identity';
+import { SEED_UPDATED } from '../src/data/seed-events';
 
-let identitySequence = 0;
+const IDB_KEY = 'memoria-state';
 
-/** Each test gets its own identity so nothing leaks through the module-level store. */
+/** Drop everything the module-level store holds so nothing leaks between tests. */
 async function freshStore(): Promise<void> {
-  await useApp.getState().setIdentity(`store-test:${identitySequence++}`);
+  await flushPersist();
+  idb.clear();
+  useApp.setState({ state: emptyState(), loaded: false, loadError: '', syncStatus: 'idle', syncError: '' });
+  await useApp.getState().load();
 }
 
 /**
@@ -75,11 +79,9 @@ describe('local load validation', () => {
         { ...useApp.getState().state.games[0]!, id: '', name: 'Broken' },
       ],
     };
-    const identity = `store-load:${identitySequence++}`;
-    const key = storageKeyForIdentity('void-state', identity)!;
-    idb.set(key, raw);
+    idb.set(IDB_KEY, raw);
 
-    await useApp.getState().setIdentity(identity);
+    await useApp.getState().load();
 
     const loaded = useApp.getState().state;
     expect(loaded.games).toHaveLength(1);
@@ -87,9 +89,245 @@ describe('local load validation', () => {
     expect(loaded.resources.some((resource) => resource.gameId === gameId)).toBe(true);
 
     await flushPersist();
-    const persisted = idb.get(key);
+    const persisted = idb.get(IDB_KEY);
     expect(safeParseAppState(persisted).success).toBe(true);
     expect((persisted as typeof loaded).games[0]!.monthlyResetDay).toBe(28);
+  });
+
+  it('seeds a missing regen snapshot when an older document loads', async () => {
+    const gameId = useApp.getState().addBlankGame('Stored without a reading');
+    const resource = useApp.getState().state.resources.find((item) => item.gameId === gameId)!;
+    idb.set(IDB_KEY, { ...useApp.getState().state, snapshots: [] });
+
+    await useApp.getState().load();
+
+    expect(latestSnapshots(useApp.getState().state.snapshots).get(resource.id)).toMatchObject({
+      resourceId: resource.id,
+      value: 0,
+    });
+  });
+
+  it('migrates an old preset Genshin color only once', async () => {
+    const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
+    const gameId = useApp.getState().addGameFromPreset(genshin, {});
+    const state = useApp.getState().state;
+    const originalUpdatedAt = 1_700_000_000_000;
+    idb.set(IDB_KEY, {
+      ...state,
+      games: state.games.map((game) =>
+        game.id === gameId ? { ...game, presetKey: undefined, color: '#fefef3', updatedAt: originalUpdatedAt } : game,
+      ),
+    });
+
+    vi.setSystemTime(originalUpdatedAt + 1_000);
+    await useApp.getState().load();
+    const migrated = useApp.getState().state.games.find((game) => game.id === gameId)!;
+    expect(migrated.color).toBe('#f8efdb');
+    expect(migrated.updatedAt).toBeGreaterThan(originalUpdatedAt);
+
+    const firstUpdatedAt = migrated.updatedAt;
+    await flushPersist();
+    vi.advanceTimersByTime(1_000);
+    await useApp.getState().load();
+    expect(useApp.getState().state.games.find((game) => game.id === gameId)?.updatedAt).toBe(firstUpdatedAt);
+  });
+
+  it('leaves a user-selected Genshin color unchanged', async () => {
+    const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
+    const gameId = useApp.getState().addGameFromPreset(genshin, {});
+    const state = useApp.getState().state;
+    idb.set(IDB_KEY, {
+      ...state,
+      games: state.games.map((game) => (game.id === gameId ? { ...game, color: '#123456' } : game)),
+    });
+
+    await useApp.getState().load();
+
+    expect(useApp.getState().state.games.find((game) => game.id === gameId)?.color).toBe('#123456');
+  });
+
+  it('migrates a stored GI badge once', async () => {
+    const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
+    const gameId = useApp.getState().addGameFromPreset(genshin, {});
+    const state = useApp.getState().state;
+    const originalUpdatedAt = 1_700_000_000_000;
+    idb.set(IDB_KEY, {
+      ...state,
+      games: state.games.map((game) =>
+        game.id === gameId
+          ? { ...game, presetKey: undefined, short: 'GI', updatedAt: originalUpdatedAt }
+          : game,
+      ),
+    });
+
+    vi.setSystemTime(originalUpdatedAt + 1_000);
+    await useApp.getState().load();
+    const migrated = useApp.getState().state.games.find((game) => game.id === gameId)!;
+    expect(migrated.short).toBe('Genshin');
+    expect(migrated.updatedAt).toBeGreaterThan(originalUpdatedAt);
+
+    const firstUpdatedAt = migrated.updatedAt;
+    await flushPersist();
+    vi.advanceTimersByTime(1_000);
+    await useApp.getState().load();
+    expect(useApp.getState().state.games.find((game) => game.id === gameId)?.updatedAt).toBe(firstUpdatedAt);
+  });
+
+  it('leaves a customised GI-EU badge unchanged', async () => {
+    const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
+    const gameId = useApp.getState().addGameFromPreset(genshin, {});
+    const state = useApp.getState().state;
+    idb.set(IDB_KEY, {
+      ...state,
+      games: state.games.map((game) => (game.id === gameId ? { ...game, short: 'GI-EU' } : game)),
+    });
+
+    await useApp.getState().load();
+
+    expect(useApp.getState().state.games.find((game) => game.id === gameId)?.short).toBe('GI-EU');
+  });
+});
+
+describe('automatic seed import', () => {
+  it('seeds a new preset game and a second account without loading', () => {
+    vi.setSystemTime(new Date('2026-08-07T12:00:00Z'));
+    const lads = PRESETS.find((preset) => preset.key === 'lads')!;
+    const firstId = useApp.getState().addGameFromPreset(lads, {});
+    const secondId = useApp.getState().addGameFromPreset(lads, { accountLabel: 'Second' });
+    const state = useApp.getState().state;
+
+    for (const gameId of [firstId, secondId]) {
+      const seeded = state.events.filter((event) => event.gameId === gameId && !event.deleted);
+      expect(seeded.length).toBeGreaterThan(0);
+      expect(seeded.every((event) => event.sourceKey?.startsWith('seed:lads:'))).toBe(true);
+    }
+    expect(state.settings.seedImportedVersion).toBe(SEED_UPDATED);
+  });
+
+  it('does not duplicate immediate seeds when the store reloads', async () => {
+    vi.setSystemTime(new Date('2026-08-07T12:00:00Z'));
+    const lads = PRESETS.find((preset) => preset.key === 'lads')!;
+    const gameId = useApp.getState().addGameFromPreset(lads, {});
+    const before = useApp
+      .getState()
+      .state.events.filter((event) => event.gameId === gameId)
+      .map((event) => event.sourceKey)
+      .sort();
+
+    await flushPersist();
+    await useApp.getState().load();
+
+    const after = useApp
+      .getState()
+      .state.events.filter((event) => event.gameId === gameId)
+      .map((event) => event.sourceKey)
+      .sort();
+    expect(after).toEqual(before);
+    expect(new Set(after).size).toBe(after.length);
+  });
+
+  it('does not resurrect a tombstoned seeded event', async () => {
+    vi.setSystemTime(new Date('2026-07-21T12:00:00Z'));
+    const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
+    useApp.getState().addGameFromPreset(genshin, {});
+    await flushPersist();
+    await useApp.getState().load();
+    const seeded = useApp.getState().state.events.find((event) => event.sourceKey)!;
+
+    useApp.getState().deleteEvent(seeded.id);
+    await flushPersist();
+    await useApp.getState().load();
+
+    const matching = useApp.getState().state.events.filter((event) => event.sourceKey === seeded.sourceKey);
+    expect(matching).toHaveLength(1);
+    expect(matching[0]?.deleted).toBe(true);
+  });
+
+  it('does not refresh a hand-edited seed at an unchanged seed version', async () => {
+    vi.setSystemTime(new Date('2026-07-21T12:00:00Z'));
+    const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
+    useApp.getState().addGameFromPreset(genshin, {});
+    await flushPersist();
+    await useApp.getState().load();
+    expect(useApp.getState().state.settings.seedImportedVersion).toBe(SEED_UPDATED);
+    const seeded = useApp.getState().state.events.find((event) => event.sourceKey)!;
+
+    useApp.getState().upsertEvent({ id: seeded.id, gameId: seeded.gameId, name: 'My custom event name' });
+    useApp.getState().addGameFromPreset(genshin, { accountLabel: 'Second' });
+    expect(useApp.getState().state.events.find((event) => event.id === seeded.id)?.name).toBe('My custom event name');
+    await flushPersist();
+    await useApp.getState().load();
+
+    expect(useApp.getState().state.events.find((event) => event.id === seeded.id)?.name).toBe('My custom event name');
+  });
+});
+
+describe('legacy document adoption', () => {
+  // Builds that had accounts stored each identity under `void-state::user:<id>`
+  // and reserved the bare key for local mode. Reading only the bare key would
+  // show an upgrading user a first run while their real data sat one key away.
+  // Built through the store so the fixture is a genuinely valid document rather
+  // than a hand-written literal that normalizeState might quietly repair.
+  async function doc(names: string[]): Promise<unknown> {
+    await freshStore();
+    for (const name of names) useApp.getState().addBlankGame(name);
+    await flushPersist();
+    const built = idb.get(IDB_KEY);
+    idb.clear();
+    return built;
+  }
+
+  it('adopts an identity-scoped document when no unscoped one exists', async () => {
+    const scoped = await doc(['Scoped only']);
+    await freshStore();
+    idb.set('void-state::user:abc', scoped);
+
+    await useApp.getState().load();
+
+    expect(useApp.getState().state.games.map((game) => game.name)).toEqual(['Scoped only']);
+    // Adopted, then cleared — the document now lives under the current key.
+    expect(idb.has('void-state::user:abc')).toBe(false);
+    expect(idb.has(IDB_KEY)).toBe(true);
+  });
+
+  it('picks the fullest document and never destroys the ones it passes over', async () => {
+    const small = await doc(['One']);
+    const big = await doc(['One', 'Two', 'Three']);
+    await freshStore();
+    idb.set('void-state::user:small', small);
+    idb.set('void-state::user:big', big);
+
+    await useApp.getState().load();
+
+    expect(useApp.getState().state.games).toHaveLength(3);
+    // The unchosen identity keeps its only copy rather than being deleted.
+    expect(idb.has('void-state::user:small')).toBe(true);
+  });
+
+  it('prefers an unscoped document over any scoped one', async () => {
+    const bare = await doc(['Bare']);
+    const big = await doc(['One', 'Two', 'Three', 'Four']);
+    await freshStore();
+    idb.set('void-state', bare);
+    idb.set('void-state::user:big', big);
+
+    await useApp.getState().load();
+
+    expect(useApp.getState().state.games.map((game) => game.name)).toEqual(['Bare']);
+  });
+
+  it('clearing local data removes scoped documents too', async () => {
+    const first = await doc(['Scoped']);
+    const other = await doc(['Another']);
+    await freshStore();
+    idb.set('void-state::user:abc', first);
+    await useApp.getState().load();
+    idb.set('void-state::user:other', other);
+
+    await useApp.getState().clearLocalData();
+
+    expect([...idb.keys()].filter((key) => key.startsWith('void-state'))).toEqual([]);
+    expect(idb.has(IDB_KEY)).toBe(false);
   });
 });
 
@@ -127,6 +365,51 @@ describe('addMissingPresetTasksEverywhere', () => {
   });
 });
 
+describe('regen snapshot seeding', () => {
+  it('creates one zero snapshot for each regen resource in a new preset game', () => {
+    const preset = PRESETS.find((item) => item.key === 'genshin')!;
+    const gameId = useApp.getState().addGameFromPreset(preset, {});
+    const resources = useApp.getState().state.resources.filter((resource) => resource.gameId === gameId);
+    const snapshots = useApp
+      .getState()
+      .state.snapshots.filter((snapshot) => resources.some((resource) => resource.id === snapshot.resourceId));
+    const regenResources = resources.filter((resource) => resource.kind === 'regen');
+
+    expect(snapshots).toHaveLength(regenResources.length);
+    for (const resource of regenResources) {
+      expect(snapshots.filter((snapshot) => snapshot.resourceId === resource.id)).toEqual([
+        expect.objectContaining({ value: 0 }),
+      ]);
+    }
+  });
+
+  it('does not seed counter or weekly resources', () => {
+    const genshin = PRESETS.find((item) => item.key === 'genshin')!;
+    const nte = PRESETS.find((item) => item.key === 'nte')!;
+    const gameIds = [useApp.getState().addGameFromPreset(genshin, {}), useApp.getState().addGameFromPreset(nte, {})];
+    const state = useApp.getState().state;
+    const manualResources = state.resources.filter(
+      (resource) => gameIds.includes(resource.gameId) && (resource.kind === 'counter' || resource.kind === 'weekly'),
+    );
+
+    expect(manualResources.map((resource) => resource.kind)).toEqual(expect.arrayContaining(['counter', 'weekly']));
+    for (const resource of manualResources) {
+      expect(state.snapshots.some((snapshot) => snapshot.resourceId === resource.id)).toBe(false);
+    }
+  });
+
+  it('seeds a regen resource when it is added', () => {
+    const gameId = useApp.getState().addBlankGame('Custom');
+    useApp.getState().upsertResource({ gameId, name: 'Second energy', cap: 50, regenMinutes: 4 });
+    const state = useApp.getState().state;
+    const resource = state.resources.find((item) => item.gameId === gameId && item.name === 'Second energy')!;
+
+    expect(state.snapshots.filter((snapshot) => snapshot.resourceId === resource.id)).toEqual([
+      expect.objectContaining({ value: 0 }),
+    ]);
+  });
+});
+
 describe('setEnergy', () => {
   it('clamps to the resource cap and to zero', () => {
     const { resourceId } = addGameWithResource(100);
@@ -159,8 +442,30 @@ describe('setEnergy', () => {
     for (let index = 0; index < 250; index++) writeEnergy(resourceId, index);
 
     const siblings = useApp.getState().state.snapshots.filter((s) => s.resourceId === other.id);
-    expect(siblings).toHaveLength(1);
-    expect(siblings[0]!.value).toBe(7);
+    expect(siblings).toHaveLength(2);
+    expect(latestSnapshots(siblings).get(other.id)?.value).toBe(7);
+  });
+});
+
+describe('same-millisecond readings', () => {
+  it('keeps the newest reading when two writes land in one millisecond', () => {
+    const source = useApp.getState();
+    source.addBlankGame('Race');
+    const resource = useApp.getState().state.resources[0]!;
+
+    // Date.now has millisecond resolution, so two quick writes — or a seeded zero
+    // followed immediately by a typed value — share a timestamp. latestSnapshots
+    // then breaks the tie on uuid order, which is a coin flip. The newest write
+    // must win every time, not most of the time.
+    const fixed = vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+    try {
+      useApp.getState().setEnergy(resource.id, 10);
+      useApp.getState().setEnergy(resource.id, 84);
+    } finally {
+      fixed.mockRestore();
+    }
+
+    expect(latestSnapshots(useApp.getState().state.snapshots).get(resource.id)?.value).toBe(84);
   });
 });
 
@@ -245,6 +550,49 @@ describe('setTaskCount', () => {
     expect(rows).toHaveLength(2);
     expect(rows.find((r) => r.periodKey === '2026-W30')?.countDone).toBe(1);
     expect(rows.find((r) => r.periodKey === '2026-W31')?.countDone).toBe(3);
+  });
+});
+
+describe('task timers', () => {
+  it('clamps a stepped timer at now', () => {
+    const now = 1_700_000_000_000;
+    vi.setSystemTime(now);
+    const store = useApp.getState();
+    const gameId = store.addBlankGame('Timers');
+    store.addTask(gameId, 'Crystalfly Trap (Crystal Cores)', 'custom', 7);
+    const task = useApp.getState().state.tasks.find((item) => item.gameId === gameId)!;
+    store.updateTask(task.id, {
+      mode: 'timer',
+      timerDurationMinutes: 10_080,
+      timerStepMinutes: 720,
+      timerEndsAt: now + 60 * 60_000,
+    });
+
+    useApp.getState().advanceTaskTimer(task.id, 'cycle', 720);
+
+    expect(useApp.getState().state.tasks.find((item) => item.id === task.id)?.timerEndsAt).toBe(now);
+  });
+
+  it('restarts a running timer without a step', () => {
+    const now = 1_700_000_000_000;
+    vi.setSystemTime(now);
+    const store = useApp.getState();
+    const gameId = store.addBlankGame('Timers');
+    store.addTask(gameId, 'Expedition', 'daily');
+    const task = useApp.getState().state.tasks.find((item) => item.gameId === gameId)!;
+    store.updateTask(task.id, {
+      mode: 'timer',
+      timerDurationMinutes: 120,
+      timerStepMinutes: undefined,
+      timerEndsAt: now + 30 * 60_000,
+    });
+    vi.advanceTimersByTime(10 * 60_000);
+
+    useApp.getState().advanceTaskTimer(task.id, 'day', 15);
+
+    expect(useApp.getState().state.tasks.find((item) => item.id === task.id)?.timerEndsAt).toBe(
+      Date.now() + 120 * 60_000,
+    );
   });
 });
 

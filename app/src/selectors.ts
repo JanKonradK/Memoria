@@ -6,10 +6,10 @@ import type {
   SleepCheck,
   Snapshot,
   UrgencyContext,
-} from '@void/shared';
-import { buildChecklistIndex, checklistFor, latestSnapshots, sleepCheck, urgencyOrder } from '@void/shared';
+} from '@memoria/shared';
+import { buildChecklistIndex, checklistFor, latestSnapshots, sleepCheck, urgencyOrder } from '@memoria/shared';
 import { useApp } from './store';
-import { selectAgendaData, type AgendaData, type AgendaMode } from './components/TimelineAgenda';
+import { selectAgendaData, type AgendaData, type AgendaMode } from './agenda-data';
 
 export interface Derived {
   state: AppState;

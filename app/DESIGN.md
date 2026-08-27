@@ -1,508 +1,543 @@
 ---
-name: Void
-description: A dark shelf that stays out of the way so each game keeps its own face.
+name: Memoria
+description: Jewelry on charcoal — chrome panels that recede so each game's own colour reads as an edge, a title and a tube.
 colors:
-  surface-void: '#000000'
-  surface-shelf: '#0b0a12'
-  surface-riser: '#141020'
-  surface-float: '#2b2347'
-  fg: '#f8fafc'
-  fg-soft: '#e2e8f0'
-  fg-muted: '#94a3b8'
-  fg-dim: '#6e7d93'
-  fg-faint: '#475569'
-  fg-invert: '#0b0a12'
-  accent: '#7c5cff'
-  accent-2: '#d946ef'
-  accent-fg: '#c4b5fd'
-  gold: '#e8b45a'
-  gold-hi: '#f5d68a'
-  gold-lo: '#c78a2e'
-  rose: '#ff6fa5'
-  ok: '#34d399'
-  ok-fg: '#6ee7b7'
-  warn: '#fbbf24'
-  warn-fg: '#fde68a'
-  danger: '#f43f5e'
-  danger-fg: '#fda4af'
-  fill-1: 'rgba(255, 255, 255, 0.03)'
-  fill-2: 'rgba(255, 255, 255, 0.06)'
-  fill-3: 'rgba(255, 255, 255, 0.10)'
-  fill-4: 'rgba(255, 255, 255, 0.16)'
-  line-hairline: 'rgba(255, 255, 255, 0.08)'
-  line-edge: 'rgba(255, 255, 255, 0.14)'
-  line-strong: 'rgba(255, 255, 255, 0.22)'
-  line: 'rgba(200, 180, 255, 0.12)'
-  scrim-well: 'rgba(0, 0, 0, 0.35)'
-  scrim-veil: 'rgba(0, 0, 0, 0.60)'
-  scrim-modal: 'rgba(0, 0, 0, 0.85)'
+  ground: '#000000'
+  surface-hi: '#131316'
+  surface-lo: '#0c0c0e'
+  surface-hover-hi: '#1a1a1e'
+  surface-hover-lo: '#121215'
+  inset: '#08080a'
+  line: '#232329'
+  line-strong: '#34343c'
+  text: '#f4f4f6'
+  text-dim: '#9a9aa4'
+  text-mute: '#63636d'
+  critical: '#ff5a48'
+  critical-bg: '#241009'
+  soon: '#f0a83c'
+  soon-bg: '#231a08'
+  ok: '#46c795'
+  later: '#74747e'
+  tag-event: '#5b8def'
+  tag-banner: '#c084fc'
+  tag-cycle: '#46c795'
+  tag-patch: '#938c7b'
+  tag-maintenance: '#ff5a48'
+  tag-daily: '#f0a83c'
+  tag-weekly: '#80f4ff'
 typography:
-  hero:
-    fontFamily: "var(--game-title-font, ui-rounded, 'Segoe UI', system-ui, sans-serif)"
-    fontSize: '3rem'
-    fontWeight: 900
-    lineHeight: '3.25rem'
-    letterSpacing: '-0.02em'
-  display:
-    fontFamily: "var(--game-title-font, ui-rounded, 'Segoe UI', system-ui, sans-serif)"
-    fontSize: '2.25rem'
-    fontWeight: 900
-    lineHeight: '2.5rem'
-    letterSpacing: '-0.02em'
-  heading:
-    fontFamily: "ui-rounded, 'Segoe UI', system-ui, sans-serif"
-    fontSize: '1.5rem'
-    fontWeight: 900
-    lineHeight: '2rem'
-    letterSpacing: '-0.01em'
   title:
-    fontFamily: "ui-rounded, 'Segoe UI', system-ui, sans-serif"
-    fontSize: '1.125rem'
-    fontWeight: 700
+    fontFamily: "var(--game-title-font, 'DM Sans', system-ui, sans-serif)"
+    fontSize: '1.0625rem'
+    fontWeight: 600
+    lineHeight: '1.5rem'
+    letterSpacing: '-0.01em'
+  heading:
+    fontFamily: "'DM Sans', system-ui, sans-serif"
+    fontSize: '1.25rem'
+    fontWeight: 600
     lineHeight: '1.75rem'
   lead:
-    fontFamily: "ui-rounded, 'Segoe UI', system-ui, sans-serif"
+    fontFamily: "'DM Sans', system-ui, sans-serif"
     fontSize: '1rem'
-    fontWeight: 700
+    fontWeight: 500
     lineHeight: '1.5rem'
   body:
-    fontFamily: "ui-rounded, 'Segoe UI', system-ui, sans-serif"
-    fontSize: '0.875rem'
+    fontFamily: "'DM Sans', system-ui, sans-serif"
+    fontSize: '0.8125rem'
     fontWeight: 400
-    lineHeight: '1.25rem'
+    lineHeight: '1.125rem'
   meta:
-    fontFamily: "ui-rounded, 'Segoe UI', system-ui, sans-serif"
+    fontFamily: "'DM Sans', system-ui, sans-serif"
     fontSize: '0.75rem'
+    fontWeight: 400
+    lineHeight: '1rem'
+  label:
+    fontFamily: "'DM Sans', system-ui, sans-serif"
+    fontSize: '0.625rem'
+    fontWeight: 500
+    lineHeight: '0.875rem'
+    letterSpacing: '0.09em'
+  numeral:
+    fontFamily: "'IBM Plex Mono', ui-monospace, monospace"
+    fontSize: '0.875rem'
     fontWeight: 500
     lineHeight: '1.125rem'
-  label:
-    fontFamily: "ui-rounded, 'Segoe UI', system-ui, sans-serif"
-    fontSize: '0.6875rem'
-    fontWeight: 600
-    lineHeight: '1rem'
-    letterSpacing: '0.06em'
-  caption:
-    fontFamily: "ui-rounded, 'Segoe UI', system-ui, sans-serif"
-    fontSize: '0.625rem'
-    fontWeight: 900
-    lineHeight: '0.875rem'
-    letterSpacing: '0.08em'
+    letterSpacing: '-0.01em'
+  numeral-lead:
+    fontFamily: "'IBM Plex Mono', ui-monospace, monospace"
+    fontSize: '1.75rem'
+    fontWeight: 500
+    lineHeight: '2rem'
+    letterSpacing: '-0.02em'
 rounded:
-  sm: '0.375rem'
-  md: '0.5rem'
-  lg: '0.75rem'
-  xl: '1rem'
-  card: '1.5rem'
-  full: '9999px'
+  xs: '4px'
+  sm: '6px'
+  md: '10px'
+  lg: '14px'
+  game: '22px'
+  pill: '999px'
 spacing:
-  hair: '0.25rem'
-  tight: '0.5rem'
-  snug: '0.75rem'
-  base: '1rem'
-  loose: '1.5rem'
-  section: '2rem'
+  xs: '4px'
+  sm: '8px'
+  md: '12px'
+  lg: '16px'
+  xl: '24px'
+  xxl: '40px'
 components:
-  button-primary:
-    backgroundColor: '{colors.accent}'
-    textColor: '#ffffff'
-    rounded: '{rounded.lg}'
-    padding: '0.5rem 1rem'
-    height: '2.75rem'
-    typography: '{typography.body}'
-  button-primary-hover:
-    backgroundColor: '{colors.accent-2}'
-  button-ghost:
-    backgroundColor: '{colors.fill-2}'
-    textColor: '{colors.fg-soft}'
-    rounded: '{rounded.lg}'
-    padding: '0.5rem 1rem'
-    height: '2.75rem'
-    typography: '{typography.body}'
-  button-ghost-hover:
-    backgroundColor: '{colors.fill-3}'
-  button-danger:
-    backgroundColor: '{colors.fill-2}'
-    textColor: '{colors.danger-fg}'
-    rounded: '{rounded.lg}'
-    padding: '0.5rem 1rem'
-    height: '2.75rem'
-  input:
-    backgroundColor: '{colors.fill-2}'
-    textColor: '{colors.fg}'
-    rounded: '{rounded.lg}'
-    padding: '0.5rem 0.75rem'
-    height: '2.75rem'
-    typography: '{typography.body}'
-  input-focus:
-    backgroundColor: '{colors.fill-3}'
+  panel:
+    backgroundColor: 'linear-gradient(180deg, {colors.surface-hi}, {colors.surface-lo})'
+    textColor: '{colors.text}'
+    rounded: '{rounded.md}'
+    padding: '12px'
   card:
-    backgroundColor: '{colors.surface-shelf}'
-    textColor: '{colors.fg-soft}'
-    rounded: '{rounded.card}'
-    padding: '1rem'
-  row:
-    backgroundColor: '{colors.fill-1}'
-    textColor: '{colors.fg-soft}'
-    rounded: '{rounded.lg}'
-    padding: '0.5rem 0.75rem'
-    height: '2.25rem'
-  pill:
-    backgroundColor: '{colors.fill-2}'
-    textColor: '{colors.fg-dim}'
+    backgroundColor: 'raking gradients from gameRim(trio) over gameWash(primary)'
+    borderColor: 'none — urgency only'
+    boxShadow: 'inset top highlight + neutral cast'
+    rounded: '{rounded.game}'
+    padding: '12px'
+  button-primary:
+    backgroundColor: '{colors.inset}'
+    textColor: '{colors.text}'
+    borderColor: '{colors.line-strong}'
     rounded: '{rounded.sm}'
-    padding: '0 0.25rem'
-    typography: '{typography.caption}'
-  pill-warn:
-    backgroundColor: '{colors.fill-2}'
-    textColor: '{colors.warn-fg}'
-  popover:
-    backgroundColor: '{colors.surface-float}'
-    textColor: '{colors.fg-soft}'
-    rounded: '{rounded.lg}'
-    padding: '0.25rem'
+    padding: '5px 12px'
+  button-ghost:
+    backgroundColor: 'transparent'
+    textColor: '{colors.text-dim}'
+    borderColor: '{colors.line}'
+    rounded: '{rounded.sm}'
+    padding: '5px 12px'
+  input:
+    backgroundColor: '{colors.inset}'
+    textColor: '{colors.text}'
+    borderColor: '{colors.line}'
+    rounded: '{rounded.sm}'
+    padding: '5px 8px'
+    typography: '{typography.numeral}'
+  chip:
+    backgroundColor: 'mix(tag-kind, {colors.inset}, 32%)'
+    textColor: 'mix(tag-kind, #ffffff, 78%)'
+    rounded: '{rounded.xs}'
+    padding: '2px 6px'
+    typography: '{typography.label}'
+  tube:
+    backgroundColor: '{colors.inset}'
+    rounded: '{rounded.pill}'
+    height: '10px'
 ---
 
-# Design System: Void
+# Design System: Memoria
 
 ## Overview
 
-**Creative North Star: "The Collector's Shelf"**
+**Creative North Star: "Jewelry on charcoal"**
 
-Void holds five, ten, fifteen games at once, and each one already has a face —
-its own accent, its own gradient partner, its own title font, its own cover art.
-The system's job is not to have a personality. Its job is to be **the shelf**: a
-dark, even, precisely-built structure that recedes so completely that the eye
-lands on the objects sitting on it. Every design decision is judged by one
-question: does this make the shelf more visible, or the games more visible? The
-shelf always loses.
+Memoria holds five, ten, fifteen games at once. Each one arrives with colours the
+owner chose, and those colours are the only way the eye finds the right card in
+under a second. The chrome's job is to be a machined charcoal housing that
+recedes against an OLED ground, so the identity reads as **an edge, a title, and
+a tube** — saturated and small — rather than as a painted wall.
 
-That produces a specific kind of restraint. The chrome is achromatic — blacks,
-whites at low alpha, and a grey text ramp. Chromatic color on the shelf itself
-is rationed to exactly two jobs: **the accent violet marks what is
-interactive**, and **the status trio marks what is about to go wrong**. Anything
-else colored on screen is a game asserting itself, which is the point. When a
-card glows amber, that is not decoration; the user has ninety minutes before
-something resets.
+That is the whole discipline. A **panel** stays charcoal and lets the identity sit
+on its edge; a **game card** goes further and takes a raking cast from the game's
+own chromatic colour, because a card is a thing you pick out of a rail rather than
+a region of the page. Everything saturated is either a game asserting itself in
+one of three specific roles, or urgency telling the user something is about to be
+lost. Those two systems never occupy the same pixel job, and when
+they collide, **urgency wins**: a critical card takes a red ring even though it is
+otherwise the only thing in the product allowed to go unoutlined.
 
-Density is deliberately high — this is an Operate surface for someone checking
-in at speed, several games deep, often twice a day. Rows are 36px, type runs
-small and tight, and whitespace is spent on separating _games_ from each other
-rather than on padding inside them. The interface should feel like a well-made
-rack, not a poster.
+Density is high and deliberate. This is an Operate surface for someone checking
+in at speed, several games deep, once or twice a day. Numbers are the content, so
+every number in the product is tabular mono, and nothing may animate in a way
+that delays reading one.
 
-**Key Characteristics:**
+**Key characteristics:**
 
-- True black canvas (`#000000`), never a dark grey — the shelf disappears on OLED
-- Achromatic chrome; all saturated color is either a game's identity or a warning
-- Depth by tonal step and 1px hairline, never by drop shadow (except what floats)
-- Small, tight, tabular type; numerals are the content
-- Per-game title fonts and accents are load-bearing, not ornament
-- Nothing re-sorts, reflows, or animates while the user is entering a number
+- OLED ground (`#000000`); chrome panels are a two-stop charcoal gradient with a
+  grain tile, never a flat fill
+- Depth from tone, gradient and grain; cards add a top highlight and a neutral cast
+- Identity is a trio per game: raking cast, title ink, top highlight
+- Two type voices only: DM Sans for language, IBM Plex Mono for every number
+- Per-game display faces are data, not decoration
+- Resources are containment tubes; completion is a ring, never a square
 
 ## Colors
 
-An achromatic shelf carrying a rationed accent, a three-note status language, and
-whatever colors the games themselves bring.
+### Ground and chrome
 
-### Primary
+- **Ground** (`#000000` dark / `#EFEAE0` light): the canvas. On dark this is
+  literal OLED black, which is also why a card's depth has to come from inside
+  it. On light it is cream paper, never white.
+- **Surface** (`#131316 → #0C0C0E` dark / `#F3EEE4 → #EBE4D6` light): every
+  chrome panel, as a two-stop vertical gradient. The gradient is what makes light
+  appear to fall from above; a flat fill at this size bands and reads plastic.
+- **Surface hovered** (`#1A1A1E → #121215`): one step up, gradient preserved.
+- **Inset** (`#08080A` dark / `#E4DDD0` light): flat fill for small parts that
+  should not carry their own light — inputs, tube tracks, chip backgrounds,
+  segmented-control wells.
+- **Line** (`#232329`) and **Line strong** (`#34343C`): the 1px vocabulary.
+  Hairline for resting edges, strong for selected controls and hovered chrome.
 
-- **Signal Violet** (`#7c5cff`): the only color that means "you can act on this".
-  Primary buttons, active nav, focus rings, selected states. Never used as a
-  background wash, never as decoration on a card.
-- **Signal Magenta** (`#d946ef`): the gradient partner and hover destination for
-  Signal Violet. It exists to give the primary action a direction, not to be used
-  alone.
-- **Lilac Ink** (`#c4b5fd`): accent-colored _text_ and iconography on dark, where
-  Signal Violet itself would fail contrast at small sizes.
+### Text ramp
 
-### Secondary
+**Text** (`#F4F4F6`) → **Text dim** (`#9A9AA4`) → **Text mute** (`#63636D`).
+Three steps, and every one of them is used on the card fill directly. The raking
+cast is strongest in the top-left corner and gone by the middle of the card, so
+running text never sits on the saturated part of it.
 
-- **Shelf Gold** (`#e8b45a`): the aggregate/overview register. Reserved for
-  cross-game surfaces — the Event Horizon panel, the nav rail's active hex, the
-  app mark. Gold says "this is about all your games at once".
-- **Signal Rose** (`#ff6fa5`): reserved for the timeline's now-marker and
-  deadline emphasis. Distinct from danger red on purpose.
+### Urgency
 
-### Tertiary
+Urgency owns countdowns, critical edges, and capped tubes.
 
-The status trio. Each carries a **base** (fills, strokes, rings) and an **-fg**
-(text and icons on dark), because the base values do not clear AA at caption
-sizes.
+- **Critical** (`#FF5A48` dark / `#C13A24` light): dying. Under the critical
+  window, or already overflowing.
+- **Soon** (`#F0A83C` dark / `#A2700D` light): capping. Attention, not alarm.
+- **Ok** (`#46C795` dark / `#2C7A57` light): done, healthy, sleep-safe.
+- **Later** (`#74747E` dark / `#8A8478` light): beyond the horizon; present but
+  not asking for anything.
 
-- **Safe Green** (`#34d399` / text `#6ee7b7`): done, sleep-safe, complete.
-- **Reset Amber** (`#fbbf24` / text `#fde68a`): under two hours to a reset;
-  attention, not alarm.
-- **Waste Red** (`#f43f5e` / text `#fda4af`): capped, overflowing, or under
-  twenty minutes. The strongest thing on screen.
+### Game identity
 
-### Neutral
+A game carries up to three owner-supplied colours. They are **never replaced** —
+a pale primary stays pale jewelry rather than being dark-filtered into mud — but
+they are lifted toward a tinted variant of their own hue when the current ground
+would make them illegible. Never toward pure white or black, which bleaches an
+owner's colour into grey.
 
-- **Void** (`#000000`): the page canvas. Pure black, no ambient gradient wash.
-- **Shelf** (`#0b0a12`): cards and panels — a near-black with a whisper of violet.
-- **Riser** (`#141020`): raised regions _inside_ a card, and tooltips.
-- **Float** (`#2b2347`): popovers and select menus only — the one surface that is
-  genuinely above the page.
-- Text ramp: **Bright** (`#f8fafc`) primary → **Soft** (`#e2e8f0`) secondary →
-  **Muted** (`#94a3b8`) tertiary → **Dim** (`#6e7d93`, the AA floor for caption
-  text on black) → **Faint** (`#475569`, decorative strokes only, never text).
-- **Invert** (`#0b0a12`): text sitting on a light or accent-filled surface.
+| Role      | Job                                                                                                            |
+| --------- | -------------------------------------------------------------------------------------------------------------- |
+| Primary   | The base card wash and the timeline bar                                                                        |
+| Secondary | Title ink and the lead tube tone                                                                               |
+| Accent    | Icon rim and small highlights                                                                                  |
+| Rim       | The card's raking cast and its top highlight: accent → secondary → primary, skipping near-white and near-black |
 
-### The Overlay Ladder
+### Tag hues
 
-On-card surfaces are white at low alpha rather than opaque greys, so a game's
-accent tint reads through them. Four steps, and only four:
+Every tag kind has a fixed hue so a chip is recognisable before it is read.
+Event `#5B8DEF`, banner `#C084FC`, cycle `#46C795`, patch `#938C7B`,
+maintenance `#FF5A48`, daily `#F0A83C`, weekly `#80F4FF`. A chip is that hue
+mixed 32% into inset for its fill and 78% toward white for its ink.
 
-- `fill-1` (3%): zone backgrounds, alternating rows
-- `fill-2` (6%): resting controls — inputs, ghost buttons, pills
-- `fill-3` (10%): hover
-- `fill-4` (16%): active, selected, pressed
+### Named rules
 
-Borders are the same idea in three white steps — `line-hairline` (8%) for the
-default 1px rule, `line-edge` (14%) for an emphasised control edge, and
-`line-strong` (22%) for selected controls and Float surfaces — plus one
-chromatic exception, `line` (violet-white 12%), which is the card perimeter and
-nothing else.
+**The Two Systems Rule.** Colour means urgency or it means a game-trio role. It
+never means both on the same pixel job, and urgency outranks identity wherever
+they compete.
 
-### Named Rules
+**The Raking Light Rule.** A game card is lit from a corner, not filled in. Its
+cast comes from two raking gradients over the chrome — the identity colour at 32%
+from the top-left running out by 62%, and the secondary at 16% from the
+bottom-right — above a 7% base wash. One flat vertical tint at the same strength
+reads as a tinted rectangle; the two angles are what make it read as an object
+with light falling across it.
 
-**The Shelf Is Grey Rule.** No chrome element may name a chromatic color. If a
-pixel is saturated, it is a game's identity, an interactive affordance, or a
-warning — and you must be able to say which of the three out loud.
+**The Cast Comes From The Chromatic Member Rule.** The gradients are sourced from
+`gameRim`'s pick, never from the primary. Several games' primaries are near-white
+creams, and tinting charcoal with a cream lightens it without carrying any hue at
+all — which is exactly how two different games ended up looking like the same grey
+card. Whatever colour the card casts, it has to be a colour someone could name.
 
-**The Two-Slot Status Rule.** Never paint status text in the base status color.
-Base values (`ok`, `warn`, `danger`) are for fills, rings and strokes; the `-fg`
-values are for text and icons. Mixing them is the most common contrast failure
-in this codebase.
+**The Lift, Never Bleach Rule.** An illegible game colour walks toward a tinted
+lift of its own hue until it clears 3.2:1, retaining at least ~40% of the source.
+Substituting white, black or grey is a bug.
 
-**The No Raw Palette Rule.** A component may not reference a Tailwind palette
-class — no `text-slate-300`, no `bg-rose-400/10`, no `ring-amber-300/25`. Every
-color arrives through a token. There are no exceptions for "just this one label".
+**The Trio Answers Before The Lift Does Rule.** A lift is the second answer, not
+the first. `gameTitleInk` walks primary → secondary → accent for a member that
+already clears 3:1 against the current ground, and only lifts when none does.
+This is what a two-colour game is _for_: Wuthering Waves ships a pale `#d3dae0`
+and a navy `#27396f`, and each theme simply gets the one that was always right
+for it, unmodified. Lifting the pale one instead produced `#7a7e82` — a grey
+belonging to no game, which is the Bleach failure arriving by a different road.
+Games that supply no dark option still lift, and should.
+
+**The Ground Is An Argument Rule.** Legibility is a relationship, not a property,
+so every colour helper takes the surface it is being painted against. There is
+exactly one source for that hex — `THEME_GROUND` in `theme.ts`, reached through
+`useGround()`. A component that writes `#000000` or `#efeae0` inline has forked
+the stylesheet; `design-tokens.test.ts` asserts the JS mirror against `index.css`
+and against `index.html`'s pre-paint script, which cannot import and so must be
+checked.
+
+**The No Raw Palette Rule.** A component may not name a Tailwind palette class.
+Every colour arrives through a token or through a trio helper.
+
+**The Owner Palette Is Not A Token Rule.** A game's trio is data, not design
+system. Those hexes are sampled from someone else's app icon and logo — Genshin's
+Mora gold, NIKKE's accent red, Endfield's signal yellow — so they cannot be
+expressed as, or snapped to, our semantic scale without becoming a different
+game's colour. That is the whole failure `game-color.ts` exists to prevent.
+
+They live in exactly one place, `shared/src/presets.ts`, and they reach a pixel
+only through a trio helper that takes the ground as an argument. So the rules
+above still bind them: an owner colour is lifted, never bleached, and never
+painted raw.
+
+The design-colour detector is therefore scoped off for that one file in
+`.impeccable/config.json`. Scoped to the file, not waived per value — every game
+added later ships three more hexes, and a per-value list would need extending
+forever to say something the file already says. A raw hex anywhere else,
+including in `game-color.ts` itself, is still a finding.
+
+**The Stroke Weight Belongs To The Theme Rule.** The same 1.75px icon stroke
+reads a full weight heavier as dark-on-cream than as light-on-black, because the
+pale ground eats none of it. Weight comes from `--icon-stroke` via the `.icon`
+class, never from a `strokeWidth` attribute — an SVG presentation attribute
+cannot take a `var()`, only the CSS property can. Icons that looked overblown in
+light mode were never the wrong size.
 
 ## Typography
 
-**UI Font:** `ui-rounded, 'Segoe UI', system-ui, -apple-system, sans-serif` —
-the system's rounded face, which reads warm at small sizes without costing a
-download.
-
-**Game Title Fonts:** five bundled families, chosen per game and stored on
-`Game.titleFont`: Marcellus (fantasy serif), Rajdhani (sci-fi condensed),
-Archivo Black (heavy urban), Michroma (wide tech), Baloo 2 (playful rounded).
-
-**Character:** the shelf speaks in one quiet rounded voice at small sizes and
-heavy weights; the games shout in five different ones. That contrast is the
-typographic idea of the whole product. A game's title is the only place a second
-family is permitted.
+**Language:** DM Sans — 400, 500, 600 only.
+**Numbers:** IBM Plex Mono, tabular, everywhere without exception.
+**Game display faces**, stored on `Game.titleFont` and editable per game:
+Cinzel (fantasy serif), Orbitron (geometric sci-fi), Rajdhani (condensed urban
+tech), Exo 2 (wide modern sans), Space Grotesk (sharp contemporary). These are
+open-licence approximations, never ripped proprietary game faces.
 
 ### Hierarchy
 
-- **Hero** (900, 3rem, −0.02em): the focus-layout game name and the auth
-  landing headline. Two places in the product; if you need a third, you don't.
-- **Display** (900, 2.25rem, −0.02em): game names on a normal card, in that
-  game's own family.
-- **Heading** (900, 1.5rem, −0.01em): page-level `<h1>` — Settings, Event
-  timeline, error and auth screens.
-- **Title** (700, 1.125rem): panel and card headings within a page.
-- **Lead** (700, 1rem): sheet and dialog titles, the primary CTA.
-- **Body** (400, 0.875rem/1.25rem): default running text, inputs, task names.
-- **Meta** (500, 0.75rem/1.125rem): secondary running text — countdowns, hints,
-  helper lines, table cells. The single largest category in the app.
-- **Label** (600, 0.6875rem, 0.06em, uppercase): field labels, section headers.
-- **Caption** (900, 0.625rem, 0.08em, uppercase): pills, badges, unit suffixes.
-  **This is the floor.** Nothing renders smaller.
+- **Title** (600, 1.0625rem): a game's name on its card, set in that game's own
+  face. Its timeline lane uses the same step. The name is deliberately NOT display
+  size: a card has to be scannable at notification density, and a 30px name pushes
+  the reading and the deadline apart until they stop being one glance.
+- **Heading** (600, 1.25rem): page and panel headings.
+- **Lead** (500, 1rem): dialog and sheet titles.
+- **Body** (400, 0.8125rem): running text, task names, ticket names.
+- **Meta** (400, 0.75rem): secondary running text and helper lines.
+- **Label** (500, 0.625rem, 0.09em, uppercase): every field label and section
+  header. One rule, applied everywhere.
+- **Numeral** (mono, 500, 0.875rem) and **Numeral lead** (mono, 500, 1.75rem):
+  readings, caps, clocks, countdowns. The lead size is for the countdown that
+  owns a card's right side.
 
-Numerals in any resource value, countdown, cap or delta are **tabular** without
-exception, so digits do not jitter while a value is being stepped.
+### Named rules
 
-### Named Rules
+**The Mono Is For Measurement Rule.** IBM Plex Mono appears where there is a
+number, a clock or a duration. It is never a costume for "technical" — no mono
+labels, no mono headings, no mono body.
 
-**The Ten-Pixel Floor Rule.** 0.625rem is the smallest type in the product. The
-former 0.5rem `micro` step is retired — 8px uppercase text on black is not
-readable, and every former use folds up into Caption.
-
-**The One Family Per Card Rule.** A card may show exactly two families: the
-game's title font on its name, and the UI font on everything else. Game fonts
-never leak into rows, pills, or numerals.
-
-**The Three Voices Rule.** A game card speaks at exactly three sizes, and you
-must be able to name each one: the game's **name** (Display/Heading), the
-**resource readout** (Title, 900, in the game's accent — the only element at
-that size), and the **list** (Body). Metadata sits below all three. If the
-number the user opened the app to read is the same size as a task name, the
-card has no hierarchy — that is the state this rule exists to prevent.
+**The One Display Face Per Card Rule.** A card shows exactly two families: the
+game's face on its name, DM Sans on everything else. A game face never leaks onto
+rows, chips or numerals.
 
 ## Layout
 
-A single page container — `max-width: 2160px`, `padding-inline: 0.75rem`
-(`1.5rem` from 40rem up) — is shared by every tab so edges align across
-navigation. Bottom padding always reserves the floating nav rail's height
-(`7rem`, `6rem` from 64rem up); content laid out beneath the rail is genuinely
-unclickable.
+**The full window is the canvas.** There is no max-width column and no reserved
+floating-rail clearance — chrome lives at the top edge, so content owns
+everything below it.
 
-**Breakpoints** follow Tailwind's defaults, with `40rem` (sm) as the one that
-matters most: it is where row heights compress from touch (`2.75rem`) to
-pointer (`2.25rem`), and where maintenance rows collapse to `1.5rem`. Controls
-are `min-height: 2.75rem` below `40rem` and `2.25rem` above — a real touch
-target on the phone, a dense one on the desktop the product is authored for.
+**Shell:** a single app bar carrying the wordmark, a live clock, the segmented
+route control, urgency counts, and the theme control. The wordmark cluster has a
+fixed width so it cannot shift between routes.
 
-**The dashboard has two spatial modes.** _Cards_ is a masonry of independent
-game cards. _Nexus_ is a three-column stage — left rail, hub, right rail — whose
-columns redistribute on focus via a `grid-template-columns` transition
-(`0.34s cubic-bezier(0.4, 0, 0.2, 1)`); the focused rail gains space, the hub
+**The dashboard is a three-column stage** — left game rail, hub, right game rail
+— whose columns redistribute on focus via a `grid-template-columns` transition
+(`0.34s cubic-bezier(0.4, 0, 0.2, 1)`). The focused rail gains space, the hub
 compresses, the far rail yields. Expanding a card animates
 `grid-template-rows: minmax(0, 0fr) → minmax(0, 1fr)`, never `height: auto`.
 
-**Rhythm** is a six-step spacing scale — `0.25 / 0.5 / 0.75 / 1 / 1.5 / 2rem`.
-Gaps _between_ game cards use the top of that scale; padding _inside_ them uses
-the bottom. Space separates games from each other, not content from its own
-container.
+**Rhythm** is a six-step scale — `4 / 8 / 12 / 16 / 24 / 40px`. Gaps between
+cards take the top of the scale; padding inside them takes the bottom.
 
-### Named Rules
+### Named rules
 
 **The Stable Order Rule.** Card order never changes as a side effect of data
-changing. When urgency reordering becomes available, it appears as an explicit
-control the user presses. A layout that reflows under the cursor costs a
-keystroke, and entry is the hot path.
+changing. Re-sorting is an explicit control the user presses, because entry is
+the hot path and a layout that reflows under the cursor costs a keystroke.
+
+That control is Refresh. The dashboard used to grow a second "Sort by urgency"
+button whenever its order went stale, which is two buttons for one idea — bring
+what I am looking at up to date. Refresh bumps `orderEpoch` in the UI store and
+the dashboard reseals from an effect, so the two can live on opposite sides of
+the app without knowing about each other.
 
 ## Elevation & Depth
 
-**This system does not use drop shadows for depth.** Depth is a tonal step plus
-a 1px hairline, and nothing else. On a true-black OLED canvas a soft shadow is
-invisible where it should be subtle and a grey smear where it is not; the
-layered-glass treatment the codebase grew was paying full raster cost for an
-effect the panel never actually showed.
+**No drop shadows.** Depth is tone, gradient, grain, and a 1px edge against the
+ground. On a true-black OLED canvas a soft shadow is invisible where it should be
+subtle and a grey smear where it is not.
 
-Three levels, and a card may only ever be one step above what it sits on:
+- **Panel** — the two-stop surface gradient plus grain, no border. Depth comes
+  from the wash sitting against black.
+- **Card** — the same gradient washed with the game's primary, plus a saturated
+  1px rim. The rim is the only reason a card has an outline at all.
+- **Float** — dialogs and popovers get `surface` plus a `line-strong` ring and a
+  real shadow, because they genuinely leave the page.
 
-- **Flush** — `fill-1` over the parent, no border. Zones and alternating rows.
-- **Raised** — `surface-shelf` (or `fill-2` on a card) with a `line-hairline`
-  inset ring and a 6% white top-edge highlight. Cards, panels, controls.
-- **Float** — `surface-float`, `line-strong` ring, _and_ a real shadow, because
-  it genuinely leaves the page. Only three things qualify: modal dialogs,
-  popovers/selects, and the floating nav rail.
+### Named rules
 
-### Shadow Vocabulary
+**The Card Is Lit, Not Outlined Rule.** A game card has NO saturated border. A
+1px ring all the way round reads as a fence — it separates the card from the page
+instead of raising it off it. Depth is: a highlight along the top edge in the
+game's own colour, a body that runs from lit at the top to shaded at the base,
+and a neutral cast shadow. Only urgency may draw a ring, and only critical.
 
-- **Float** (`box-shadow: 0 16px 48px -24px rgba(0,0,0,0.9)`): the only shadow
-  token. Applies solely to the three Float-level surfaces above.
-
-### Named Rules
-
-**The One Step Rule.** A surface may sit exactly one tonal level above its
-parent. A card inside a card inside a panel is a layout mistake, not a depth
-opportunity.
-
-**The Shadows Float Only Rule.** If it does not overlay the page, it gets no
-shadow. Cards, rows, buttons, inputs, and pills are all shadowless.
+**The Shadow Is Neutral And Offset Rule.** Against an OLED ground a cast shadow
+has almost nothing to fall on, so most of the depth happens INSIDE the card. What
+shadow there is must carry a real y-offset and stay neutral. `0 0 Npx <colour>`
+is a halo — decoration wearing depth's clothes — and is banned outright;
+`0 0 0 1px <colour>` is a ring, which is a different thing and is allowed.
 
 ## Shapes
 
-Corners are generous and consistent, on a six-step radius scale: `0.375rem`
-(pills, tooltips), `0.5rem` (menu items, small controls), `0.75rem` (buttons,
-inputs, rows — the workhorse), `1rem` (inner panels), `1.5rem` (game cards, the
-signature radius), and full (badges, ticks, toggles, nav hexes).
+Six radii: `4px` chips and checkboxes, `6px` buttons and hover fills, `10px`
+panels, `14px` bands, `22px` **game cards and nothing else**, and pill for
+**meter tracks only**. A pill on anything that is not a track is a mistake — this
+system's parts should read as parts, not as lozenges.
 
-The recurring silhouette is the **stadium**: a shape with circular caps and flat
-sides that stretches to fit its label. It is used for the game badge, energy
-pills, and the nav rail, and it exists because user-authored short codes vary in
-width — a fixed circle or hexagon clips `WuWa` where a stadium does not.
-
-The second signature form is the **incomplete ring**: a 20px circle with a
-deliberate gap in its stroke, used for task ticks, timer progress, segmented
-counts, and around every game badge. The gap is the language — it reads as
-"not finished yet" even where no progress data exists (default sweep `0.82`).
+The game card's `22px` is deliberately the softest corner in the product. It is
+the one object a user thinks of as a discrete thing rather than as a region of
+the page, and the corner is most of what gives it that.
 
 ## Components
 
-### Buttons
+### Reactor tube (signature)
 
-- **Shape:** workhorse radius (`0.75rem`), `2.75rem` tall on touch, `2.25rem`
-  from `40rem` up.
-- **Primary:** Signal Violet → Signal Magenta gradient, white text, `line-edge`
-  ring. Exactly one per view. No shadow.
-- **Ghost:** `fill-2` background, Soft text, `line-hairline` ring; hover to
-  `fill-3`. The default for everything that is not _the_ action.
-- **Danger:** `fill-2` background with Waste Red _-fg_ text and a danger-tinted
-  ring — destructive actions are named by their text, not by a red slab.
-- **Hover / Active:** brightness and fill step only; `active:scale(0.97)`.
-  Transitions run `140ms` on the standard ease.
+A containment tube, not a progress bar. Progress bars say "a task is advancing";
+this reads as a vessel holding something that accumulates and can overflow, which
+is what energy actually is.
 
-### Cards / Containers
+Layers, bottom to top: a concave track, a shaded liquid with a meniscus at its
+leading edge, a travelling charge highlight, embossed containment ribs, and a
+glass lip. The level **glides** to a new reading over ~520ms rather than
+snapping, so a typed figure reads as the vessel filling to it.
 
-- **Corner:** `1.5rem` — the signature radius; nothing else in the app uses it.
-- **Background:** `surface-shelf`, with the game's accent permitted as a very
-  low-alpha tint so the card reads as belonging to that game.
-- **Border:** 1px `line-edge` inset ring plus a 6% white top highlight.
-- **Shadow:** none.
-- **Padding:** `1rem`; `0.75rem` on the phone.
-- **Urgent state:** a 2px inset `danger` ring animating opacity `0.25 → 1` over
-  `2.2s`. Animated on a pseudo-element, never on the card's own `box-shadow`.
+The highlight runs **only while the resource is still charging**. A full tube goes
+visually still, and that stillness is the signal that it is wasting.
 
-### Inputs / Fields
+### Completion ring (signature)
 
-- **Style:** `fill-2` background, `line-hairline` ring, workhorse radius, Body
-  type, Dim placeholder. Number inputs are tabular and ship without native
-  spinners — the product provides its own steppers.
-- **Focus:** background steps to `fill-3`; the focus ring is a 2px outline in
-  `color-mix(in oklab, accent 70%, white)` that follows the element's own radius.
-- **Compound editors** expose exactly one ring around the whole pill via
-  `.focus-ring-group`, never a second one around the inner input.
+Completion is always a ring, never a square. The ring is segmented — one arc per
+item — with the gap specified in arc **length** rather than as a fraction of the
+sector, so it stays visually constant whether the ring has two segments or twelve.
+Butt caps, because round caps overhang by half the stroke and swallow the gap.
 
-### Pills
+The burst fires **only when the last segment lands**. Ticking three of four is
+progress; ticking the fourth is the moment worth marking.
 
-- **Style:** `fill-2` background, Caption type, uppercase, `0.375rem` radius,
-  `0.25rem` horizontal padding.
-- **Variants:** neutral (Dim text), warn (`warn-fg`), paused (Muted), and a dark
-  variant (`scrim-well` over a light card image).
+### Game card (signature)
 
-### Navigation
+**Notification density: three bands and no more.**
 
-- A floating rail of circular hexes, bottom-left, Float elevation. Active hex is
-  ringed in Shelf Gold with a Caption uppercase label beneath.
-- The rail's background is click-through, but the hexes are not — any content
-  laid out beneath them is unreachable, which is why the page container always
-  reserves rail clearance.
+1. The game's name in its own face, the resource it measures beneath it, and the
+   expand chevron.
+2. The reading (`—/200`, tabular mono) beside the tube.
+3. A footer rule carrying the short-code badge, the next deadline, and its
+   countdown in urgency colour.
 
-### Game Badge (signature)
+Roughly 110px tall. The card must be readable in the half-second it takes to scan
+a rail, which is the whole argument for the density — a taller card with the same
+content reads as a panel, and you stop scanning panels.
 
-The game's short code set in its own accent color, inside a stadium tinted with
-a `accent → accent-2` gradient at 14–22% alpha, wrapped in an incomplete ring
-whose sweep encodes checklist progress (`0.82` when no data is available). Three
-sizes — 20 / 24 / 32px — sized by inline padding rather than an estimated
-per-character width, because estimation undercounts wide glyphs.
+It wears the `22px` corner, the raking cast, a saturated 1px rim, and one more
+thing that does most of the work: a **2px glint along the top edge**, the game's
+two colours running out to nothing at both ends. Without it the card is filled in;
+with it the card is lit.
 
-### Energy Row (signature)
+The badge in the footer is how a user picks the right card out of a rail, so it
+takes the lifted identity colour rather than the raw one — a near-white primary
+drew an invisible badge on the cream ground.
 
-The hot path. A whole-pill click target carrying the resource name, a tabular
-current/cap readout, and stepper controls bound to **A −10 · S −1 · D +1 ·
-F +10** with Enter to save. It may grow a collapsible twin row for reserve
-capacity. Nothing in this component may animate on data change.
+Expanded, the card carries everything for that game — resources, windows, cycles,
+tasks.
+
+**What it does not carry:** no status dot, and no decorative field behind the
+content. Both were tried and both lost — the dot duplicated a countdown that was
+already coloured, and the field cost a per-frame repaint to say nothing.
+
+### Chips
+
+Fixed hue per kind, `4px` radius, uppercase label type. Section names
+(Closing, Arriving) are never chips.
+
+### Timeline
+
+A Gantt with a mono month/week ruler, **dashed** grid rules and a **solid** now-rule
+— the dashes read as scaffolding so the bars own the only continuous lines on the
+surface. Event names ride **inside** their bars.
+
+Lane titles are set in the game's own display face at Title size, in the colour
+that lane was assigned. Bars take that same colour mixed into the track: an event
+at 62%, a banner at 28%, and a **cycle at 34% — the same hue, lighter**, because a
+cycle is the same game's window rather than a different kind of object. A grey
+treatment would have said the wrong thing. Maintenance is the exception and stays
+critical-coloured.
+
+A bar's label ink is chosen from the fill that was **actually painted**, not from
+the game's raw colour: the fill is the ink mixed into the track, so a pale primary
+lands mid-grey and a fixed white label would sit on it at roughly 2:1.
+
+Consecutive instances of the **same** cycle are joined by a soft cubic hand-off
+drawn on an overlay that stretches to the row stack, so a curve's endpoints land
+on the bars it claims to join at any row height. A cycle is one recurring thing,
+and the curve says "this is that again" — which a stack of unrelated bars cannot.
+Nothing else is ever connected.
+
+The range control offers **7d and 30d**. 90d was retired: at that scale every bar
+collapsed to a sliver and the ruler stopped being readable.
+
+**The Distinct Lanes Rule.** Colours are assigned in one pass across all games so
+the timeline and the dashboard agree and no two lanes land in the same region of
+hue and lightness. At the ends of the lightness range hue stops being perceptible,
+so two near-whites are treated as clashing however far apart their hues measure —
+without that, a cream and a blush white draw two identical lanes.
+
+### App bar
+
+Wordmark in tracked DM Sans, live clock in mono, a segmented route control in an
+inset well, **the current route's own actions**, and the theme control at the far
+right. It wraps until it genuinely fits; forcing one row on a landscape phone put
+the right-hand group on top of the actions and made visible, enabled controls
+unclickable.
+
+Routes publish their buttons into the bar through a portal rather than a store
+slice, so a page's controls cannot outlive the page. The bar carries no counts:
+"2 critical, 1 soon" restated what the cards already say in colour, and the space
+was worth more as the one place every action lives.
+
+### Attention rail (the hub)
+
+The stage's centre column is a rail, not a stack of panels. One status line — how
+many dailies are done, and whether the night is safe — then three bands in a
+fixed order: **Closing**, **Just arrived**, **Arriving**. Only the last stretches.
+
+Every row below the status line is the same ticket: badge, name, countdown. The
+eye runs down one column instead of re-learning a layout per section, and a
+quiet evening costs three short bands rather than three collapsible panels each
+stretching to say "Nothing".
+
+## Motion
+
+Focus expand and shrink, tube charge highlight, tube glide on commit, ring
+completion burst, and the commit flash. **Nothing else.** Every one of them is
+either the response to something the user just did or a state that is genuinely
+changing on its own.
+
+`prefers-reduced-motion` is honoured globally and must remain so.
 
 ## Do's and Don'ts
 
-### Do:
+### Do
 
-- **Do** route every color through a token. The palette is closed.
-- **Do** use `-fg` status values for text and base status values for fills.
-- **Do** express depth as one tonal step plus a `line-hairline` ring.
-- **Do** keep numerals tabular anywhere a value can change.
-- **Do** let the game's accent, cover art and title font carry the personality of
-  a card; keep the card's own chrome grey.
-- **Do** reserve Shelf Gold for genuinely cross-game surfaces.
-- **Do** animate `grid-template-rows`, `opacity` and `transform` — properties the
-  compositor can handle — and put pulses on pseudo-elements.
-- **Do** honour `prefers-reduced-motion` on every new animation.
+- **Do** route every colour through a token or a trio helper.
+- **Do** let the rim, title and tube carry a game's identity, and keep the fill
+  charcoal.
+- **Do** set every number in tabular mono.
+- **Do** give urgency the win when it collides with identity.
+- **Do** express depth as tone, gradient, grain and a 1px edge.
+- **Do** lift an illegible game colour toward its own hue, never toward grey.
+- **Do** animate `grid-template-rows`, `opacity` and `transform`.
 
-### Don't:
+### Don't
 
-- **Don't** name a Tailwind palette color in a component. Not once.
+- **Don't** flood a card with a game's colour. Seven percent, then stop.
 - **Don't** put a drop shadow on anything that does not overlay the page.
-- **Don't** render text below `0.625rem`.
-- **Don't** introduce a fifth overlay alpha, a fourth border alpha, or a ninth
-  type step. The ladders are closed; if something needs a value between two
-  steps, one of the two is wrong.
-- **Don't** use a native `title` attribute for tooltips — the browser leaves them
-  on screen after the element is gone. Use the Radix `Tooltip`.
-- **Don't** let a card re-order, reflow or resize itself in response to data
-  arriving while the user may be typing.
-- **Don't** let a game's title font escape onto rows, pills or numerals.
-- **Don't** wash the canvas with an ambient gradient. It is `#000000`.
+- **Don't** use mono for anything that is not a number, a clock or a duration.
+- **Don't** use emoji, celestial motifs, or pure-white light-mode cards.
+- **Don't** let a game's display face escape onto rows, chips or numerals.
+- **Don't** use a pill radius on anything that is not a meter track.
+- **Don't** let a card re-order or reflow itself while the user may be typing.
+- **Don't** name a Tailwind palette colour in a component.

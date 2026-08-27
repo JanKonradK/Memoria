@@ -1,5 +1,6 @@
 import type { AppState, Resource, Settings, SettingsField, Snapshot, Syncable, Task } from './types';
 import { emptyState, MAX_GAME_IMAGE_LENGTH } from './types';
+import { migrateState } from './migrations';
 import { inferLegacyResource, inferLegacyTask } from './tracking';
 import { APP_STATE_COLLECTION_LIMITS, AppStateSchema, FUTURE_CLOCK_SKEW_TOLERANCE_MS } from './validation';
 
@@ -176,6 +177,9 @@ function normalizeTask(raw: unknown): Task | null {
     if (!finiteNumber(candidate.timerDurationMinutes) || candidate.timerDurationMinutes <= 0)
       delete candidate.timerDurationMinutes;
   }
+  if ('timerStepMinutes' in candidate) {
+    if (!finiteNumber(candidate.timerStepMinutes) || candidate.timerStepMinutes <= 0) delete candidate.timerStepMinutes;
+  }
   if ('timerEndsAt' in candidate && candidate.timerEndsAt !== null) {
     if (finiteNumber(candidate.timerEndsAt)) candidate.timerEndsAt = scheduledTimestamp(candidate.timerEndsAt);
     else delete candidate.timerEndsAt;
@@ -302,6 +306,13 @@ function normalizeSettings(raw: unknown): Settings {
         ? record.localTz
         : base.localTz,
     sleepHours: finiteNumber(record.sleepHours) ? Math.min(24, Math.max(1, record.sleepHours)) : base.sleepHours,
+    // Malformed becomes absent rather than rejected: an unreadable stamp means
+    // "never refreshed", which costs one redundant refresh. Letting it through
+    // would fail the parse below and reset every other setting to defaults.
+    seedImportedVersion:
+      typeof record.seedImportedVersion === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(record.seedImportedVersion)
+        ? record.seedImportedVersion
+        : undefined,
     updatedAt: updatedAt ?? base.updatedAt,
     fieldUpdatedAt: safeFieldClocks,
   };
@@ -332,8 +343,9 @@ function mergeSettings(left: Partial<Settings> | undefined, right: Partial<Setti
  */
 export function normalizeState(raw: unknown): AppState {
   const base = emptyState();
-  if (!raw || typeof raw !== 'object') return base;
-  const r = raw as Record<string, unknown>;
+  const migrated = migrateState(raw);
+  if (!migrated || typeof migrated !== 'object') return base;
+  const r = migrated as Record<string, unknown>;
   return {
     schemaVersion: base.schemaVersion,
     games: salvageRows(r.games, APP_STATE_COLLECTION_LIMITS.games, normalizeGame),

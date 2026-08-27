@@ -3,7 +3,11 @@ import * as SelectPrimitive from '@radix-ui/react-select';
 import * as SwitchPrimitive from '@radix-ui/react-switch';
 import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
-import { tint } from '../util';
+import { m } from 'motion/react';
+import { gameRim, gameTitleInk, mix } from '../game-color';
+import { useReducedMotion } from '../hooks';
+import { duration, easing } from '../motion';
+import { useGround } from '../theme';
 import { Ring } from './Ring';
 
 /**
@@ -12,27 +16,29 @@ import { Ring } from './Ring';
  * width and horizontal padding overrides won't win against the defaults reliably.
  */
 export function Page({ children, className = '' }: { children: ReactNode; className?: string }) {
-  // Every breakpoint reserves the floating rail's height. Its background is
-  // click-through, but the nav hexes themselves must stay clickable, so any content
-  // laid out underneath them is genuinely unreachable — that is how Settings' import
-  // control ended up unclickable on a short window. Desktop needs 16px offset +
-  // ~76px rail; pb-24 (96px) covers it.
-  return (
-    <div className={`mx-auto w-full max-w-[2160px] px-3 pb-28 pt-4 sm:px-6 sm:pt-5 lg:pb-24 ${className}`}>
-      {children}
-    </div>
-  );
+  // The full window is the canvas: chrome now lives in the app bar at the top
+  // edge, so there is no floating rail to reserve clearance for and no reason to
+  // cap the width. The bottom padding is ordinary breathing room, not a keep-out
+  // zone for something overlapping the page.
+  return <div className={`w-full px-3 pb-8 pt-3 sm:px-4 ${className}`}>{children}</div>;
 }
 
 /**
  * Game identity mark: the game's short code in its accent color. Replaces the
  * old emoji icons everywhere — reads instantly at a glance and never depends
  * on the user having set an icon.
+ *
+ * The badge reads the ground itself rather than taking it as a prop. Ten call
+ * sites across six files pass nothing but the game, and none of them has any
+ * business knowing what the badge is being painted against — the theme is not
+ * their concern, and threading it through would have made a theme change touch
+ * every one of them.
  */
 export function GameBadge({
   short,
   color,
   color2,
+  color3,
   size = 'md',
   progress,
   className = '',
@@ -40,6 +46,7 @@ export function GameBadge({
   short: string;
   color: string;
   color2?: string;
+  color3?: string;
   size?: 'sm' | 'md' | 'lg';
   /** 0..1 — closes the ring's gap. Pass where checklist data is already to hand. */
   progress?: number;
@@ -51,13 +58,13 @@ export function GameBadge({
   // edges that stretch to the label. Sized to its own content via inline-flex
   // padding rather than an estimated per-character width, because estimating
   // undercounts wide glyphs like W.
-  const badgeHeights = { sm: 20, md: 24, lg: 32 } as const;
+  //
+  // Three steps, one letter-spacing. The sizes used to run 20/24/32 against
+  // three different tracking values chosen per size, which is two scales doing
+  // one job; md moves to 26 so the steps are even.
+  const badgeHeights = { sm: 20, md: 26, lg: 32 } as const;
   const strokeWidths = { sm: 1.5, md: 1.75, lg: 2 } as const;
-  const textSizes = {
-    sm: 'text-caption tracking-normal',
-    md: 'text-caption tracking-wider',
-    lg: 'text-label tracking-wider',
-  };
+  const textSizes = { sm: 'text-caption', md: 'text-caption', lg: 'text-label' };
   const height = badgeHeights[size];
   const strokeWidth = strokeWidths[size];
   const c2 = color2 ?? color;
@@ -65,15 +72,23 @@ export function GameBadge({
   // where no progress data is available.
   const sweep = progress == null ? 0.82 : Math.min(1, Math.max(0, progress));
 
+  // Every surface here used to be `tint()`, which is a white-ish alpha over
+  // whatever is behind it. On charcoal that lifts; on cream it evaporates, and
+  // a pale primary drew a white badge on a white ground. Mixing toward the
+  // actual ground gives the same softening in either direction.
+  const ground = useGround();
+  const ink = gameTitleInk({ color, color2, color3 }, ground);
+  const rim = gameRim({ color, color2, color3 }, ground);
+
   return (
     <span
-      className={`relative inline-flex shrink-0 items-center justify-center align-middle font-black ${textSizes[size]} ${className}`}
+      className={`relative inline-flex shrink-0 items-center justify-center align-middle font-black tracking-wider ${textSizes[size]} ${className}`}
       style={{
         height,
         minWidth: height,
         paddingInline: height * 0.42,
         borderRadius: height / 2,
-        background: `linear-gradient(135deg, ${tint(color, 0.14)}, ${tint(c2, 0.22)})`,
+        background: `linear-gradient(135deg, ${mix(rim, ground, 0.1)}, ${mix(c2, ground, 0.16)})`,
       }}
     >
       <span aria-hidden className="pointer-events-none absolute inset-0">
@@ -82,11 +97,11 @@ export function GameBadge({
           width="fluid"
           strokeWidth={strokeWidth}
           sweep={sweep}
-          stroke={[color, c2]}
-          track={tint(color, 0.18)}
+          stroke={[ink, rim]}
+          track={mix(rim, ground, 0.22)}
         />
       </span>
-      <span className="relative leading-none" style={{ color }}>
+      <span className="relative leading-none" style={{ color: ink }}>
         {short}
       </span>
     </span>
@@ -224,15 +239,17 @@ export function Toggle({
   onChange,
   label,
   ariaLabel,
+  className = '',
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   label?: string;
   ariaLabel?: string;
+  className?: string;
 }) {
   const id = useId();
   return (
-    <label htmlFor={id} className="flex min-h-11 items-center gap-2 text-body text-fg-soft sm:min-h-9">
+    <label htmlFor={id} className={`flex min-h-11 items-center gap-2 text-body text-fg-soft sm:min-h-9 ${className}`}>
       <SwitchPrimitive.Root
         id={id}
         checked={checked}
@@ -240,7 +257,7 @@ export function Toggle({
         className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-ui-full bg-fill-3 transition-colors duration-(--dur-fast) data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-accent data-[state=checked]:to-accent-2"
         aria-label={ariaLabel ?? label}
       >
-        <SwitchPrimitive.Thumb className="block h-5 w-5 translate-x-0.5 rounded-ui-full bg-white shadow transition-transform duration-(--dur-fast) data-[state=checked]:translate-x-[22px]" />
+        <SwitchPrimitive.Thumb className="block h-5 w-5 translate-x-0.5 rounded-ui-full bg-fg shadow transition duration-(--dur-fast) data-[state=checked]:translate-x-[22px] data-[state=checked]:bg-fg-invert" />
       </SwitchPrimitive.Root>
       {label && <span>{label}</span>}
     </label>
@@ -253,11 +270,19 @@ export function Segmented<T extends string>({
   onChange,
   ariaLabel,
 }: {
-  options: { value: T; label: string }[];
+  /**
+   * A disabled option is still rendered, and may still be the selected value.
+   * That is the point: a control that can only express three of the states its
+   * data can hold must show the fourth rather than quietly round it off.
+   */
+  options: { value: T; label: string; disabled?: boolean }[];
   value: T;
   onChange: (value: T) => void;
   ariaLabel: string;
 }) {
+  const indicatorLayoutId = `${useId()}-segmented-indicator`;
+  const reducedMotion = useReducedMotion();
+
   return (
     <ToggleGroupPrimitive.Root
       type="single"
@@ -265,7 +290,7 @@ export function Segmented<T extends string>({
       onValueChange={(next) => {
         if (next) onChange(next as T);
       }}
-      className="inline-flex rounded-ui-lg bg-fill-2 p-0.5 ring-1 ring-line-hairline"
+      className="inline-flex rounded-ui-full border border-line-hairline bg-inset p-[3px]"
       aria-label={ariaLabel}
     >
       {options.map((option) => {
@@ -273,9 +298,19 @@ export function Segmented<T extends string>({
           <ToggleGroupPrimitive.Item
             key={option.value}
             value={option.value}
-            className="h-7 rounded-ui-md px-3 text-meta font-semibold text-muted transition hover:text-fg-soft data-[state=on]:bg-fill-4 data-[state=on]:text-white"
+            disabled={option.disabled}
+            className="relative min-h-8 rounded-ui-full border border-transparent px-3 text-meta font-semibold text-muted transition-colors hover:text-fg-soft disabled:cursor-default disabled:hover:text-muted data-[state=on]:text-fg"
           >
-            {option.label}
+            {option.value === value && (
+              <m.span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-ui-full border border-line-strong bg-surface-2"
+                layoutId={indicatorLayoutId}
+                initial={false}
+                transition={reducedMotion ? { duration: 0 } : { duration: duration.base, ease: easing.out }}
+              />
+            )}
+            <span className="relative z-10">{option.label}</span>
           </ToggleGroupPrimitive.Item>
         );
       })}
@@ -318,9 +353,9 @@ export function Btn({
   disabled?: boolean;
 }) {
   const base =
-    'min-h-11 rounded-ui-lg px-4 py-2 text-body font-semibold transition active:scale-[0.97] disabled:opacity-40 sm:min-h-9';
+    'btn-compact min-h-8 rounded-ui-md px-3 py-1 text-caption font-semibold transition active:scale-[0.97] disabled:opacity-40';
   const kinds = {
-    primary: 'bg-gradient-to-br from-accent to-accent-2 text-white hover:brightness-110 ring-1 ring-line-edge',
+    primary: 'bg-gradient-to-br from-accent to-accent-2 text-fg-invert hover:brightness-110 ring-1 ring-line-edge',
     ghost: 'bg-fill-2 text-fg-soft ring-1 ring-line-hairline hover:bg-fill-3',
     danger: 'bg-danger/15 text-danger-fg ring-1 ring-danger/30 hover:bg-danger/25',
   };

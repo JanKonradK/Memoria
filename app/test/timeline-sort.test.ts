@@ -1,9 +1,11 @@
-import type { Game, GameEvent } from '@void/shared';
+import type { Game, GameEvent } from '@memoria/shared';
 import { describe, expect, it } from 'vitest';
 import {
   agendaCompare,
   agendaRank,
   budgetAgenda,
+  DASHBOARD_UPCOMING_LIMIT,
+  ENDING_SOON_DAYS,
   groupVersionUpdates,
   selectDashboardAgendaSections,
   type AgendaRow,
@@ -244,25 +246,29 @@ describe('selectDashboardAgendaSections', () => {
     expect(sections.newArrivals.map((item) => item.id)).toEqual(['newer-banner', 'older-banner', 'newer-event']);
   });
 
-  it('uses an exclusive-now and inclusive-9-day ending window', () => {
+  // Both windows are asserted against the constants rather than against their
+  // current values: what is being pinned is that `now` is exclusive and the far
+  // edge is inclusive, not how many days the panel happens to look ahead.
+  it('uses an exclusive-now and inclusive far edge on the ending window', () => {
+    const edge = ENDING_SOON_DAYS * DAY;
     const sections = selectDashboardAgendaSections(
       [
         // Started well outside the 2-day arrival window, so these exercise the
         // ending boundary rather than being claimed by New arrivals.
-        event({ id: 'ended-now', start: NOW - 5 * DAY, end: NOW }),
-        event({ id: 'just-inside', start: NOW - 5 * DAY, end: NOW + 1 }),
-        event({ id: 'nine-day-boundary', start: NOW - 5 * DAY, end: NOW + 9 * DAY }),
-        event({ id: 'outside', start: NOW - 5 * DAY, end: NOW + 9 * DAY + 1 }),
+        event({ id: 'ended-now', start: NOW - edge, end: NOW }),
+        event({ id: 'just-inside', start: NOW - edge, end: NOW + 1 }),
+        event({ id: 'far-boundary', start: NOW - edge, end: NOW + edge }),
+        event({ id: 'outside', start: NOW - edge, end: NOW + edge + 1 }),
       ],
       NOW,
     );
 
-    expect(sections.endingSoon.map((item) => item.id)).toEqual(['just-inside', 'nine-day-boundary']);
+    expect(sections.endingSoon.map((item) => item.id)).toEqual(['just-inside', 'far-boundary']);
   });
 
-  it('hard-caps upcoming at the next three events', () => {
+  it('hard-caps upcoming at the dashboard limit', () => {
     const sections = selectDashboardAgendaSections(
-      Array.from({ length: 5 }, (_, index) =>
+      Array.from({ length: DASHBOARD_UPCOMING_LIMIT + 2 }, (_, index) =>
         event({
           id: `upcoming-${index}`,
           start: NOW + (index + 1) * HOUR,
@@ -272,7 +278,9 @@ describe('selectDashboardAgendaSections', () => {
       NOW,
     );
 
-    expect(sections.upcoming.map((item) => item.id)).toEqual(['upcoming-0', 'upcoming-1', 'upcoming-2']);
+    expect(sections.upcoming.map((item) => item.id)).toEqual(
+      Array.from({ length: DASHBOARD_UPCOMING_LIMIT }, (_, index) => `upcoming-${index}`),
+    );
   });
 
   it('excludes cycles from new arrivals, upcoming, and ending soon', () => {
