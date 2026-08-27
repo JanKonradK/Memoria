@@ -1,15 +1,13 @@
 import type { CSSProperties, HTMLAttributes, ReactNode } from 'react';
-import { tint } from '../util';
+import { mix } from '../game-color';
 
-export type PillVariant = 'neutral' | 'muted' | 'warn' | 'paused' | 'dark' | 'light';
+export type PillVariant = 'neutral' | 'muted' | 'warn' | 'paused';
 
 const PILL_VARIANTS: Record<PillVariant, string> = {
   neutral: 'bg-fill-2 text-muted',
   muted: 'bg-fill-3 text-muted',
   warn: 'bg-warn/10 text-warn-fg',
   paused: 'bg-fill-3 text-muted',
-  dark: 'bg-scrim-well text-fg-soft',
-  light: 'bg-scrim-well text-fg-invert',
 };
 
 /**
@@ -213,7 +211,6 @@ export function Tick({
 type ProgressBarProps = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
   value: number;
   color: string;
-  color2?: string;
   variant?: 'linear' | 'ring' | 'timeline';
   start?: number;
   size?: number;
@@ -228,7 +225,6 @@ type ProgressBarProps = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
 export function ProgressBar({
   value,
   color,
-  color2,
   variant = 'linear',
   start = 0,
   size = 40,
@@ -293,36 +289,126 @@ export function ProgressBar({
     );
   }
 
+  // `segmented` used to draw ten hard dividers over a flat bar; the tube's own
+  // ribs are that same idea done as a material, so the flag now only chooses how
+  // many. `color2` is gone: the tube shades a single tone through its own
+  // gradient rather than running a second hue across it.
+  return (
+    <ReactorTube
+      value={progress}
+      tone={color}
+      charging={glow}
+      ribs={segmented ? 10 : RIB_COUNT}
+      className={className}
+      style={style}
+      fillStyle={fillStyle}
+      {...props}
+    />
+  );
+}
+
+/** Containment ribs give the tube a physical length rather than a bare span. */
+const RIB_COUNT = 7;
+
+/**
+ * A containment tube, not a progress bar.
+ *
+ * Progress bars say "a task is advancing". This reads as a vessel holding
+ * something that is accumulating and can overflow, which is what energy actually
+ * is. Layers, bottom to top: a concave track, shaded liquid with a meniscus at
+ * its leading edge, a travelling charge sweep, embossed ribs, and a glass lip.
+ *
+ * The sweep runs ONLY while the resource is still charging, so a full tube goes
+ * visually still — stillness is the signal that it is wasting. The level glides
+ * to a new reading rather than snapping, so a typed figure reads as the vessel
+ * filling to it.
+ */
+export function ReactorTube({
+  value,
+  tone,
+  charging = true,
+  ribs = RIB_COUNT,
+  height = 10,
+  className = '',
+  style,
+  fillStyle,
+  ...props
+}: Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
+  /** Already clamped 0–1. */
+  value: number;
+  /** The fill colour. Urgency decides it; the tube itself has no opinion. */
+  tone: string;
+  charging?: boolean;
+  ribs?: number;
+  height?: number;
+  fillStyle?: CSSProperties;
+}) {
+  const shade = (target: string, amount: number) => mix(tone, target, 1 - amount);
   return (
     <div
       {...props}
       aria-hidden="true"
-      className={`relative mt-1.5 h-3.5 overflow-hidden rounded-ui-sm bg-scrim-well ring-1 ring-line-hairline ${className}`}
-      style={{
-        boxShadow: `inset 0 1px 3px rgba(0,0,0,0.6)${glow ? `, 0 0 12px ${tint(color, 0.45)}` : ''}`,
-        ...style,
-      }}
+      className={`relative mt-1.5 overflow-hidden rounded-ui-full bg-inset ${className}`}
+      style={{ height, ...style }}
     >
-      <div
-        className="absolute inset-y-0 left-0 overflow-hidden rounded-r-ui-sm transition-[width] duration-(--dur-slow) ease-out motion-reduce:transition-none"
+      {/* Concave track: darker at the top lip, lifted at the bottom, so the
+          vessel reads as a channel rather than as a painted stripe. */}
+      <span
+        className="pointer-events-none absolute inset-0"
         style={{
-          width: `${progress * 100}%`,
-          background: `linear-gradient(180deg, ${tint(color, 0.95)} 0%, ${color} 55%, ${tint(color2 ?? color, 0.72)} 100%)`,
+          background: 'var(--tube-floor)',
+        }}
+      />
+
+      <div
+        className="absolute inset-y-0 left-0 overflow-hidden rounded-ui-full transition-[width] duration-(--dur-slow) ease-out motion-reduce:transition-none"
+        style={{
+          width: `${value * 100}%`,
+          background: `linear-gradient(180deg, ${shade('#ffffff', 0.12)} 0%, ${shade('#ffffff', 0.34)} 30%, ${tone} 48%, ${tone} 68%, ${shade('#000000', 0.28)} 100%)`,
           ...fillStyle,
         }}
       >
-        <span className="absolute inset-x-0 top-0 h-1/2 bg-fill-4" />
-      </div>
-      {segmented && (
+        {charging && (
+          // The carrier is full-width so its percentage translate resolves
+          // against the FILL, not against the 24px highlight it carries.
+          <span className="tube-charge pointer-events-none absolute inset-y-0 left-0 w-full motion-reduce:hidden">
+            <span
+              className="absolute inset-y-0 -ml-3 w-6"
+              style={{
+                background: 'var(--tube-sweep)',
+              }}
+            />
+          </span>
+        )}
+        {/* Meniscus: the liquid climbs its own leading edge. */}
         <span
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              'repeating-linear-gradient(90deg, transparent 0, transparent calc(10% - 1px), rgba(10,7,19,0.55) calc(10% - 1px), rgba(10,7,19,0.55) 10%)',
-          }}
+          className="pointer-events-none absolute inset-y-0 right-0 w-0.5"
+          style={{ background: `linear-gradient(180deg, ${shade('#ffffff', 0.5)}, ${shade('#ffffff', 0.18)})` }}
         />
-      )}
-      {glow && <span className="pulse-fade pointer-events-none absolute inset-0 bg-fill-4 motion-reduce:hidden" />}
+      </div>
+
+      {/* Ribs sit above the fill so the tube reads as one vessel, not two bars. */}
+      <span className="pointer-events-none absolute inset-0 flex">
+        {Array.from({ length: ribs }, (_, index) => (
+          <span key={index} className="relative flex-1">
+            {index < ribs - 1 && (
+              <>
+                <span className="absolute inset-y-px right-px w-px" style={{ background: 'var(--tube-rib-dark)' }} />
+                <span className="absolute inset-y-px right-0 w-px" style={{ background: 'var(--tube-rib-light)' }} />
+              </>
+            )}
+          </span>
+        ))}
+      </span>
+
+      {/* Glass lip. */}
+      <span
+        className="pointer-events-none absolute inset-x-px top-0"
+        style={{
+          height: Math.max(2, Math.min(4, height * 0.34)),
+          background: 'var(--tube-lip)',
+        }}
+      />
     </div>
   );
 }

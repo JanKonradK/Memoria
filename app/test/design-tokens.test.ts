@@ -114,11 +114,79 @@ describe('the colour palette is closed', () => {
   });
 
   it('defines exactly four overlay steps, three border steps and three scrims', () => {
-    const count = (prefix: string) => (CSS.match(new RegExp(`--color-${prefix}[\\w-]*:`, 'g')) ?? []).length;
-    expect(count('fill-')).toBe(4);
-    expect(count('scrim-')).toBe(3);
-    // line-hairline, line-edge, line-strong, plus the violet card perimeter.
-    expect(count('line')).toBe(4);
+    // DISTINCT names, not raw occurrences: the light theme re-points every one of
+    // these under :root[data-theme='light'], so counting matches would report each
+    // ladder at double its real length and the check would pass for the wrong
+    // reason. What is closed is the set of STEPS, not the number of declarations.
+    const names = (prefix: string) =>
+      new Set([...CSS.matchAll(new RegExp(`--color-(${prefix}[\\w-]*):`, 'g'))].map((match) => match[1]));
+    expect(names('fill-').size).toBe(4);
+    expect(names('scrim-').size).toBe(3);
+    // line-hairline, line, line-edge, line-strong.
+    expect(names('line').size).toBe(4);
+  });
+});
+
+describe('the ground is written once', () => {
+  it('keeps every copy of the page ground in agreement', () => {
+    // A game colour is legible or not *against something*, and that something is
+    // a hex the JS side cannot read out of CSS at the point it needs it — mix()
+    // takes a colour, not a var(). So the ground is mirrored, and a mirror that
+    // nothing checks drifts: two components and the store each carried their own
+    // copy, and the pre-paint script in index.html carries two more that cannot
+    // import anything at all. This is the check that keeps them one value.
+    const HTML = readFileSync(join(SRC, '..', 'index.html'), 'utf8');
+    const UI_STORE = readFileSync(join(SRC, 'ui-store.ts'), 'utf8');
+    const THEME = readFileSync(join(SRC, 'theme.ts'), 'utf8');
+
+    // --color-surface-0 is declared once in @theme (dark) and once under
+    // :root[data-theme='light'], in that order.
+    const [dark, light] = [...CSS.matchAll(/--color-surface-0:\s*(#[\da-f]{6})/gi)].map((match) =>
+      match[1]!.toLowerCase(),
+    );
+    expect(dark, '--color-surface-0 missing from index.css').toBeDefined();
+    expect(light, 'the light theme never re-points --color-surface-0').toBeDefined();
+
+    // `[^=\n]*` and not `[^=]*`: a declaration is one line, and a looser gap
+    // walks straight past a re-export into whatever is declared next.
+    const jsMap = (source: string, name: string) => {
+      const literal = source.match(new RegExp(`${name}[^=\\n]*=\\s*\\{([^}]*)\\}`))?.[1];
+      if (literal === undefined) return null; // re-exported, not redeclared here
+      const hexes = (theme: string) =>
+        [...literal.matchAll(new RegExp(`${theme}:[^\\]\\n]*?((?:'#[\\da-f]{6}',?\\s*)+)`, 'gi'))]
+          .flatMap((match) => [...match[1]!.matchAll(/#[\da-f]{6}/gi)])
+          .map((hex) => hex[0]!.toLowerCase());
+      return { dark: hexes('dark'), light: hexes('light') };
+    };
+
+    expect(jsMap(UI_STORE, 'THEME_GROUND'), 'THEME_GROUND missing from ui-store.ts').toEqual({
+      dark: [dark],
+      light: [light],
+    });
+    // theme.ts re-exports the ground rather than redeclaring it; if that ever
+    // changes, the copy is checked like any other.
+    expect(jsMap(THEME, 'THEME_GROUND') ?? { dark: [dark], light: [light] }).toEqual({ dark: [dark], light: [light] });
+
+    // The same argument applies to every other surface mirrored into JS.
+    const cssVar = (name: string) =>
+      [...CSS.matchAll(new RegExp(`${name}:\\s*(#[\\da-f]{6})`, 'gi'))].map((match) => match[1]!.toLowerCase());
+    const [insetDark, insetLight] = cssVar('--color-inset');
+    expect(jsMap(THEME, 'THEME_INSET'), 'THEME_INSET missing from theme.ts').toEqual({
+      dark: [insetDark],
+      light: [insetLight],
+    });
+    // Each var is declared dark-first, so the two lists interleave by theme.
+    const [panelHiDark, panelHiLight] = cssVar('--panel-hi');
+    const [panelLoDark, panelLoLight] = cssVar('--panel-lo');
+    expect(jsMap(THEME, 'THEME_PANEL'), 'THEME_PANEL missing from theme.ts').toEqual({
+      dark: [panelHiDark, panelLoDark],
+      light: [panelHiLight, panelLoLight],
+    });
+
+    // index.html hard-codes both: the dark meta tag it ships with, and the light
+    // value the pre-paint script swaps in. It cannot import, so it is checked.
+    expect(HTML.match(/<meta name="theme-color" content="(#[\da-f]{6})"/i)?.[1]?.toLowerCase()).toBe(dark);
+    expect(HTML).toContain(`'${light}'`);
   });
 });
 
@@ -149,9 +217,29 @@ describe('the type scale is closed', () => {
   });
 });
 
+describe('the radius scale is closed', () => {
+  it('never uses a Tailwind radius outside the semantic scale', () => {
+    // Six steps, and every corner in the product names one of them. The lookahead
+    // is what lets `rounded-ui-card` and `rounded-t-ui-card` through: a token
+    // always has more path after `rounded`, so only a class that ENDS at a bare
+    // Tailwind size — or opens an arbitrary bracket — is an offender.
+    //
+    // The side list carries the logical sides (s, e, ss, se, es, ee) as well as
+    // the physical ones, and `none` sits in the size list, because a guard that
+    // misses `rounded-none` or `rounded-s-lg` is a guard someone walks past.
+    expect(
+      offenders(
+        /\brounded(?:-(?:t|r|b|l|tl|tr|br|bl|x|y|s|e|ss|se|es|ee))?(?:-(?:none|sm|md|lg|xl|2xl|3xl|full)|-\[[^\]]+\])?(?=$|[\s"'`])/g,
+      ),
+    ).toEqual([]);
+  });
+});
+
 describe('depth is tonal, not cast', () => {
   it('exposes exactly one shadow token', () => {
-    expect((CSS.match(/--shadow-[\w-]+:/g) ?? []).length).toBe(1);
+    // Distinct names, for the same reason as the ladders above: the light theme
+    // declares its own --shadow-float, which is a re-point, not a second token.
+    expect(new Set([...CSS.matchAll(/--shadow-([\w-]+):/g)].map((match) => match[1])).size).toBe(1);
     expect(CSS).toContain('--shadow-float:');
   });
 
@@ -162,29 +250,57 @@ describe('depth is tonal, not cast', () => {
     expect(offenders(/\bdrop-shadow-\[[^\]]+\]/g)).toEqual([]);
   });
 
-  it('only lets dialogs, popovers and the nav rail float', () => {
+  it('only lets dialogs and popovers float', () => {
+    // The floating nav rail was retired with the redesign — chrome lives in the
+    // app bar at the top edge now, and a sticky bar is part of the page rather
+    // than something overlaying it. Nothing else may cast.
+    //
+    // The list is an ALLOWANCE, not an inventory: it is checked for extras, not
+    // for exact equality, so a file that has not been written yet can be
+    // sanctioned ahead of the code. What matters is that nothing casts without
+    // appearing here — an omission from the list is the failure, not an
+    // unused entry in it.
+    const MAY_FLOAT = new Set([
+      'App.tsx',
+      'components/Sheet.tsx',
+      'components/ui.tsx',
+      // The add menu: a dropdown genuinely overlays the page.
+      'components/AddMenu.tsx',
+    ]);
     const floating = FILES.filter(({ text }) => /\bshadow-float\b/.test(text)).map(({ path }) =>
       path.slice(SRC.length + 1).replace(/\\/g, '/'),
     );
-    expect(new Set(floating)).toEqual(
-      new Set(['App.tsx', 'components/NavRail.tsx', 'components/Sheet.tsx', 'components/ui.tsx']),
-    );
+    expect(floating.filter((file) => !MAY_FLOAT.has(file))).toEqual([]);
   });
 
-  it('never casts an outer shadow from an inline style', () => {
-    // Zero-offset colored halos are decoration, and every card had one. An
-    // inline boxShadow may only draw inset rings.
-    const outer: string[] = [];
+  it('never blurs a glow out of an inline style', () => {
+    // The ban was never on outer shadows as such — it was on the zero-offset
+    // coloured halo every card used to wear, which is decoration pretending to be
+    // depth. Three shapes, and only the last is banned:
+    //
+    //   0 10px 24px -12px rgba(0,0,0,.75)  cast shadow — an object above a ground
+    //   0 0 0 1px var(--color-danger)      ring — spread with no blur, an outline
+    //   0 0 12px <colour>                  halo — blur with nowhere to fall from
+    //
+    // A cast shadow must also stay NEUTRAL: tinting it with a game colour reads
+    // as spill light and makes every card look like it is glowing.
+    const offenders: string[] = [];
     for (const { path, text } of FILES) {
+      const where = path.slice(SRC.length + 1).replace(/\\/g, '/');
       for (const hit of text.matchAll(/boxShadow:\s*(`[^`]*`|'[^']*'|"[^"]*")/g)) {
         for (const layer of splitShadowLayers(hit[1].slice(1, -1))) {
-          if (layer.trim() && !layer.includes('inset') && !layer.includes('${')) {
-            outer.push(`${path.slice(SRC.length + 1).replace(/\\/g, '/')}  ${layer.trim()}`);
-          }
+          const value = layer.trim();
+          if (!value || value.includes('inset')) continue;
+          const [x, y, blur] = value.match(/-?[\d.]+px/g) ?? [];
+          const blurred = blur !== undefined && blur !== '0px';
+          if (!blurred) continue; // a ring, not a shadow
+          if (x === '0px' && y === '0px') offenders.push(`${where}  halo: ${value}`);
+          // Interpolation and colour tokens are how a game colour gets in.
+          if (/\$\{|var\(--color-/.test(value)) offenders.push(`${where}  tinted: ${value}`);
         }
       }
     }
-    expect(outer).toEqual([]);
+    expect(offenders).toEqual([]);
   });
 });
 

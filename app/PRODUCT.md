@@ -16,12 +16,21 @@ closing unnoticed.
 The primary user is a multi-game player on **PC and phone**, checking in one to
 a few times a day around actual play sessions. The confirmed reference roster is
 Genshin Impact, Honkai: Star Rail, Zenless Zone Zero, Wuthering Waves, Neverness
-to Everything, Uma Musume and Dokkan — five of which ship as editable presets.
+to Everness, Love and Deepspace, Umamusume: Pretty Derby, Goddess of Victory:
+NIKKE, Arknights: Endfield and Dokkan — nine of which ship as editable presets.
 
-This is intended as **a real public product**, not a personal tool. Design must
-hold up for someone who has never seen it: first run, empty states, and account
-setup are in scope, and the hosted deployment (Clerk auth, D1 sync, scheduled
-operational cleanup) is a product surface rather than private infrastructure.
+Nine is not five with four appended. It broke assumptions the first five shared:
+that every server runs a HoYo/Kuro offset (Endfield puts Europe on UTC-5 and
+Umamusume runs one UTC+0 global service), that daily reset means 04:00 or 05:00
+(Umamusume resets at 15:00), that every game has a regenerating energy bar
+(NIKKE has none), and that every game has at least two weeklies (Umamusume has
+one). Anything that assumes the HoYo shape is now a bug waiting for the right
+account.
+
+Memoria is **a local tool on the owner's Windows machine**, not a hosted service:
+there are no accounts, no server and no deployment. Design must still hold up
+for someone opening it cold — first run and empty states are in scope — but
+sign-up, tenancy and cloud operations are explicitly out of it.
 
 ## Product Purpose
 
@@ -46,12 +55,12 @@ Three things a neighbouring tracker could not truthfully claim:
   own IANA timezone, daily reset hour, weekly reset weekday and monthly reset
   day; periods and urgency are computed against that.
 - **Useful with no account and no network.** The PWA is fully functional against
-  IndexedDB alone. The worker adds authenticated cross-device sync, and an
-  account is not required to get value.
+  IndexedDB alone. Opened through the desktop launcher it also reads and writes
+  one local `state.json`, so several app windows agree without a server.
 
 ## Operating Context
 
-- **The daily loop**: play → open Void → type what's actually left on each card
+- **The daily loop**: play → open Memoria → type what's actually left on each card
   (direct entry, or keyboard stepping **A −10 · S −1 · D +1 · F +10**, Enter
   saves) → tick dailies → close. Projections and next actions recalibrate from that
   entry. The loop must stay measured in seconds.
@@ -60,7 +69,7 @@ Three things a neighbouring tracker could not truthfully claim:
 - **A Windows desktop launcher** opens the app in its own chromeless window on
   fixed port `17817` and serves the canonical local `state.json`.
 - **Urgency stays in the app** — upcoming caps, resets, event deadlines and
-  reminders appear in dashboard next actions while Void is open.
+  reminders appear in dashboard next actions while Memoria is open.
 - **Evening check ("safe to sleep")**: between 20:00 and 05:00 each card must
   answer whether the resource survives the user's sleep window.
 - **Events arrive in bulk**, either from the bundled seed feed (an "Import N"
@@ -72,9 +81,9 @@ Three things a neighbouring tracker could not truthfully claim:
 kinds, with an overflow _reserve_ twin), Snapshot, Task (check / timer / count
 modes; daily, weekly, monthly or custom cadence; optionally linked to a Timeline
 window), Completion, GameEvent (banner / event / cycle / maintenance / custom),
-QuickChip spend shortcuts, Reminder, Settings. AlertRule remains in the synced
+QuickChip spend shortcuts, Reminder, Settings. AlertRule remains in the stored
 model for compatibility and a possible future delivery channel, but has no
-current UI or worker behavior.
+current UI behavior.
 
 **Confirmed constraints:**
 
@@ -82,7 +91,7 @@ current UI or worker behavior.
   switch, toggle-group and tooltip; Motion for animation; Zustand for state.
 - Offline-first against IndexedDB; last-write-wins merge on `updatedAt`, with
   soft-delete tombstones. Every syncable object is a merge participant.
-- A **PWA size budget** is enforced in CI (`npm run check:pwa`), alongside lint,
+- A **PWA size budget** is enforced by `npm run check:pwa`, alongside lint,
   format, typecheck, unit tests and Playwright e2e including axe accessibility
   checks. Design work must survive `npm run check`.
 - **All domain maths lives in `shared/`** — energy projection, reset periods,
@@ -104,9 +113,9 @@ world are all open.
 
 Current state, recorded as incumbent evidence rather than as commitment:
 
-- The product is named **Void** (renamed from TechnoGG → Techno's Library →
-  Void). The mark is a Möbius band with a gap where it crosses itself, on a
-  gold-on-black icon.
+- The product is named **Memoria** (renamed from TechnoGG → Techno's Library →
+  Void → Memoria). The mark is a Möbius band with a gap where it crosses itself,
+  on a gold-on-black icon.
 - The interface voice is terse, second-person and unceremonious ("what am I
   about to waste"), with lowercase status phrases like "sleep safe".
 - **Per-game identity is a product feature, not decoration**: every game carries
@@ -116,13 +125,12 @@ Current state, recorded as incumbent evidence rather than as commitment:
 
 ## Evidence on Hand
 
-- Real, shipped, working implementation across `app/`, `shared/`, `worker/`,
+- Real, shipped, working implementation across `app/`, `shared/`, `desktop/`,
   with unit, e2e and accessibility tests.
 - A bundled seed event feed at
   [app/src/data/seed-events.ts](src/data/seed-events.ts) carrying current-patch
   events, including entries explicitly flagged "TBC — verify in-game".
 - Five game presets in [shared/src/presets.ts](../shared/src/presets.ts).
-- Deployment, security and incident runbooks under `docs/`.
 
 **No** testimonials, user counts, reviews, press, pricing, benchmarks or
 customer logos exist. Future work must not fabricate any of them.

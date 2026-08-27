@@ -1,12 +1,10 @@
 node_modules
 dist
-.wrangler
 playwright-report
 test-results
 package-lock.json
 app/public
 desktop/dist
-worker/worker-env.d.ts
 # Vendored AI-harness tooling (impeccable, agent configs) — third-party source
 # we do not own, plus the design hook's generated cache.
 .claude

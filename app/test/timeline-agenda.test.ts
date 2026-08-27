@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { Game, GameEvent } from '@void/shared';
-import { emptyState } from '@void/shared';
-import { DASHBOARD_AGENDA_DAYS, selectAgendaData } from '../src/components/TimelineAgenda';
+import type { Game, GameEvent } from '@memoria/shared';
+import { emptyState } from '@memoria/shared';
+import { DASHBOARD_AGENDA_DAYS, selectAgendaData } from '../src/agenda-data';
+import { DASHBOARD_UPCOMING_LIMIT } from '../src/timeline-sort';
 
 const NOW = 1_000_000_000;
 const HOUR = 3_600_000;
@@ -39,18 +40,22 @@ function event(id: string, start: number, end: number): GameEvent {
 }
 
 describe('dashboard agenda selection', () => {
-  it('shows every new arrival and only the next three upcoming events', () => {
+  // The upcoming cap is asserted against DASHBOARD_UPCOMING_LIMIT, not against
+  // its value: what is being pinned is that new arrivals are uncapped while
+  // upcoming is capped, which is the asymmetry the panel depends on. How deep
+  // the cap sits is a tuning decision and has already moved once.
+  it('shows every new arrival and only the next few upcoming events', () => {
     const state = emptyState();
     state.games = [game];
     const DAY = 24 * HOUR;
     state.events = [
       event('past', NOW - 2 * HOUR, NOW - HOUR),
       // Fresh: inside the 2-day arrival window, so New arrivals claims them even
-      // though they also end within nine days.
+      // though they also end within the ending window.
       ...Array.from({ length: 5 }, (_, index) => event(`live-${index}`, NOW - HOUR, NOW + (index + 1) * HOUR)),
       // Aged past the arrival window, so these are the ones Ending soon owns.
       ...Array.from({ length: 2 }, (_, index) => event(`ending-${index}`, NOW - 5 * DAY, NOW + (index + 1) * DAY)),
-      ...Array.from({ length: 8 }, (_, index) =>
+      ...Array.from({ length: DASHBOARD_UPCOMING_LIMIT + 5 }, (_, index) =>
         event(`upcoming-${index}`, NOW + (index + 1) * HOUR, NOW + (index + 2) * HOUR),
       ),
     ];
@@ -58,7 +63,7 @@ describe('dashboard agenda selection', () => {
     const agenda = selectAgendaData(state, NOW, 'dashboard');
 
     expect(agenda.live).toHaveLength(5);
-    expect(agenda.upcoming).toHaveLength(3);
+    expect(agenda.upcoming).toHaveLength(DASHBOARD_UPCOMING_LIMIT);
     expect(agenda.endingSoon).toHaveLength(2);
     expect(agenda.past).toEqual([]);
   });
@@ -88,18 +93,20 @@ describe('dashboard agenda selection', () => {
     expect(fullAgenda.live.flatMap((row) => (row.kind === 'event' ? [row.event.id] : []))).toEqual(['long-running']);
   });
 
-  it('does not cap new arrivals while keeping upcoming at three', () => {
+  it('does not cap new arrivals however long the live list runs', () => {
     const state = emptyState();
     state.games = [game];
     state.events = [
       ...Array.from({ length: 40 }, (_, index) => event(`live-${index}`, NOW - HOUR, NOW + (index + 1) * HOUR)),
-      ...Array.from({ length: 6 }, (_, index) => event(`upcoming-${index}`, NOW + DAY, NOW + DAY + index * HOUR)),
+      ...Array.from({ length: DASHBOARD_UPCOMING_LIMIT + 3 }, (_, index) =>
+        event(`upcoming-${index}`, NOW + DAY, NOW + DAY + index * HOUR),
+      ),
     ];
 
     const agenda = selectAgendaData(state, NOW, 'dashboard');
 
     expect(agenda.live).toHaveLength(40);
-    expect(agenda.upcoming).toHaveLength(3);
+    expect(agenda.upcoming).toHaveLength(DASHBOARD_UPCOMING_LIMIT);
   });
 
   it('keeps the complete timeline window in full mode', () => {

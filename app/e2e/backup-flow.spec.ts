@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 
 test('backup export and merge preview stay within the viewport', async ({ page }) => {
+  // Start past first-run onboarding: this flow is about the dashboard and Settings.
+  await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
@@ -15,14 +17,14 @@ test('backup export and merge preview stay within the viewport', async ({ page }
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export backup' }).click();
   const download = await downloadPromise;
-  expect(download.suggestedFilename()).toMatch(/^void-backup-/);
+  expect(download.suggestedFilename()).toMatch(/^memoria-backup-/);
 
   const backup = await download.createReadStream();
   expect(backup).toBeTruthy();
 
   await page.getByText('Import backup').click();
   await page.locator('input[type="file"]').setInputFiles({
-    name: 'void-backup.json',
+    name: 'memoria-backup.json',
     mimeType: 'application/json',
     buffer: Buffer.from(
       JSON.stringify({

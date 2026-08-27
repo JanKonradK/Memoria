@@ -1,7 +1,9 @@
+import { detectLocalTz } from './timezone';
+
 export type Cadence = 'daily' | 'weekly' | 'monthly' | 'custom';
 export type ResourceKind = 'regen' | 'weekly' | 'counter';
 export type TaskMode = 'check' | 'timer' | 'count';
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 7;
 export const MAX_GAME_IMAGE_LENGTH = 200_000;
 
 /** Everything syncable carries updatedAt (epoch ms) for last-write-wins merge. */
@@ -22,8 +24,14 @@ export interface Game extends Syncable {
   short: string;
   /** Accent color (hex). */
   color: string;
-  /** Secondary accent (hex) — gradients run color → color2 ("pink with hints of blue"). */
+  /** Secondary accent (hex) — the title ink and the lead tube tone. */
   color2?: string;
+  /**
+   * Third accent (hex) — small highlights, and the first candidate for the
+   * card's saturated 1px rim. Optional because a game the user typed in by hand
+   * only has to supply one colour; the rim then falls back down the trio.
+   */
+  color3?: string;
   /** Emoji used as the game icon (fallback when no image is set). */
   icon: string;
   /** Optional character/cover art (data URL or remote URL). Shown on the card. */
@@ -43,9 +51,6 @@ export interface Game extends Syncable {
   notes?: string;
   /** Executable names (no .exe, case-insensitive) the TUI matches against running processes. */
   processNames?: string[];
-  /** Card display toggles — every block on the game card can be switched off. Default: shown. */
-  hideProgressRing?: boolean;
-  hideEventStrip?: boolean;
   /** CSS font-family for the card/hero title — each game keeps its own personality. */
   titleFont?: string;
 }
@@ -54,8 +59,6 @@ export interface Resource extends Syncable {
   id: string;
   gameId: string;
   name: string;
-  /** Key into the built-in resource icon set (e.g. "crystal", "comet"). */
-  icon?: string;
   cap: number;
   /** Minutes to regenerate 1 point. 0 = does not regenerate over time. */
   regenMinutes: number;
@@ -94,6 +97,8 @@ export interface Task extends Syncable {
   mode?: TaskMode;
   /** Timer length in minutes (expeditions / assignments). */
   timerDurationMinutes?: number;
+  /** Minutes removed from a running timer on each click. */
+  timerStepMinutes?: number;
   /** Epoch ms when the active timer ends; null when idle. */
   timerEndsAt?: number | null;
   /** Required completions per period (weekly bosses). */
@@ -185,6 +190,16 @@ export interface Settings extends Syncable {
   localTz: string;
   /** Hours of sleep used by the "safe to sleep" check. */
   sleepHours: number;
+  /**
+   * The `SEED_UPDATED` stamp of the bundled event feed this device has already
+   * taken a refresh from, as `YYYY-MM-DD`.
+   *
+   * The feed import runs on every load, so without this the refresh pass would
+   * re-apply the bundled name and dates to an already-imported event forever —
+   * silently reverting any edit the user made to one. Absent means "never
+   * refreshed", which is the correct state for a device that has only ever added.
+   */
+  seedImportedVersion?: string;
   /** Per-field clocks prevent unrelated settings edits on two devices from overwriting each other. */
   fieldUpdatedAt?: Partial<Record<SettingsField, number>>;
 }
@@ -206,7 +221,7 @@ export interface AppState {
 export const DEFAULT_SETTINGS: Settings = {
   quietStart: 60, // 01:00
   quietEnd: 480, // 08:00
-  localTz: 'Europe/Warsaw',
+  localTz: 'UTC',
   sleepHours: 8,
   fieldUpdatedAt: {},
   updatedAt: 0,
@@ -224,6 +239,10 @@ export function emptyState(): AppState {
     chips: [],
     alertRules: [],
     reminders: [],
-    settings: { ...DEFAULT_SETTINGS },
+    settings: {
+      ...DEFAULT_SETTINGS,
+      localTz: detectLocalTz(),
+      fieldUpdatedAt: { ...DEFAULT_SETTINGS.fieldUpdatedAt },
+    },
   };
 }

@@ -27,10 +27,16 @@ describe('game presets', () => {
     // to satisfy a number is exactly the habit this pass removed. What must
     // hold is that a preset is substantial overall and has real weekly content;
     // the daily side is covered by the core-daily test below.
+    //
+    // The weekly floor is 1, not 2, for the same reason the daily floor went:
+    // Umamusume genuinely has one weekly. Its Club ranking pays monthly, every
+    // shop exchange restocks monthly, and the mission screen has no weekly tab —
+    // so a second weekly could only be invented. The overall floor of 4 tasks
+    // still stops a preset from being a token one.
     for (const preset of PRESETS) {
       const weekly = preset.tasks.filter((task) => task.cadence === 'weekly');
       expect(preset.tasks.length, `${preset.short} tasks`).toBeGreaterThanOrEqual(4);
-      expect(weekly.length, `${preset.short} weeklies`).toBeGreaterThanOrEqual(2);
+      expect(weekly.length, `${preset.short} weeklies`).toBeGreaterThanOrEqual(1);
       expect(new Set(preset.tasks.map((task) => task.name)).size).toBe(preset.tasks.length);
     }
   });
@@ -43,6 +49,20 @@ describe('game presets', () => {
       const coreDailies = preset.tasks.filter((task) => task.core && task.cadence === 'daily');
       expect(coreDailies.length, `${preset.short} core dailies`).toBe(1);
     }
+  });
+
+  it('tracks the Genshin Crystalfly Trap as a personal seven-day cooldown', () => {
+    const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
+
+    expect(genshin.tasks.find((task) => task.name === 'Crystalfly Trap (Crystal Cores)')).toEqual({
+      name: 'Crystalfly Trap (Crystal Cores)',
+      cadence: 'custom',
+      intervalDays: 7,
+      mode: 'timer',
+      timerDurationMinutes: 10_080,
+      timerStepMinutes: 720,
+      timelineLinked: false,
+    });
   });
 
   it('never ships a task that playing the game completes for you', () => {
@@ -66,13 +86,17 @@ describe('game presets', () => {
 });
 
 describe('catching an existing game up with its preset', () => {
-  const genshin = PRESETS.find((preset) => preset.short === 'GI')!;
+  const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
+
+  it('uses the full Genshin badge for new games', () => {
+    expect(genshin.short).toBe('Genshin');
+  });
 
   it('keeps the preset link after both the badge and name are changed', () => {
     expect(presetForGame({ name: 'My renamed account', short: 'GI-EU', presetKey: 'genshin' })?.key).toBe('genshin');
   });
 
-  it('matches a legacy game by badge, then by name', () => {
+  it('matches a legacy game by its old badge, then by name', () => {
     expect(presetForGame({ name: 'Whatever I renamed it', short: 'gi' })?.key).toBe('genshin');
     expect(presetForGame({ name: 'Genshin Impact', short: 'ZZ9' })?.key).toBe('genshin');
     expect(presetForGame({ name: 'Some Other Game', short: 'SOG' })).toBeUndefined();

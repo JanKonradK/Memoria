@@ -1,17 +1,19 @@
 import { useState } from 'react';
-import type { Game, Resource, ResourceKind } from '@void/shared';
-import { effectiveReserveRegenMinutes } from '@void/shared';
+import type { Game, Resource, ResourceKind } from '@memoria/shared';
+import { effectiveReserveRegenMinutes } from '@memoria/shared';
 import { useApp } from '../../store';
 import { intOr } from '../../util';
-import { RESOURCE_ICON_KEYS, ResourceIcon } from '../ResourceIcon';
 import { Btn, Field, NumInput, Select, TextInput } from '../ui';
 
-const RESOURCE_KINDS: ResourceKind[] = ['regen', 'weekly', 'counter'];
+const RESOURCE_KINDS: Array<{ value: ResourceKind; label: string }> = [
+  { value: 'regen', label: 'Regenerates over time' },
+  { value: 'weekly', label: 'Refills at weekly reset' },
+  { value: 'counter', label: 'Manual count (no regen)' },
+];
 
 export function ResourceEditor({ game, resources }: { game: Game; resources: Resource[] }) {
   const upsertResource = useApp((store) => store.upsertResource);
   const deleteResource = useApp((store) => store.deleteResource);
-  const [iconPickerFor, setIconPickerFor] = useState<string | null>(null);
   const [reserveOpen, setReserveOpen] = useState<Record<string, boolean>>({});
 
   return (
@@ -22,76 +24,39 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
 
         return (
           <div key={r.id} className="rounded-ui-xl bg-fill-1 p-3 ring-1 ring-line-hairline">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIconPickerFor((cur) => (cur === r.id ? null : r.id))}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg bg-fill-2 ring-1 ring-line-hairline transition hover:bg-fill-3 sm:h-9 sm:w-9"
-                style={{ boxShadow: iconPickerFor === r.id ? `inset 0 0 0 1.5px ${game.color}` : undefined }}
-                aria-label={`Icon for ${r.name}`}
-              >
-                <ResourceIcon iconKey={r.icon} color={game.color} size={18} />
-              </button>
-              <TextInput
-                className="min-w-32 flex-1"
-                value={r.name}
-                aria-label="Resource name"
-                onChange={(e) => upsertResource({ id: r.id, gameId: game.id, name: e.target.value })}
-              />
-              <Select
-                className="w-32 shrink-0"
-                value={kind}
-                aria-label={`Kind for ${r.name}`}
-                onChange={(e) => upsertResource({ id: r.id, gameId: game.id, kind: e.target.value as ResourceKind })}
-              >
-                {RESOURCE_KINDS.map((resourceKind) => (
-                  <option key={resourceKind} value={resourceKind}>
-                    {resourceKind}
-                  </option>
-                ))}
-              </Select>
-              <button
-                type="button"
-                onClick={() => deleteResource(r.id)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg text-title text-dim transition hover:bg-danger/10 hover:text-danger sm:h-9 sm:w-9"
-                aria-label={`Delete ${r.name}`}
-              >
-                ✕
-              </button>
-            </div>
-
-            {iconPickerFor === r.id && (
-              <div className="mt-2 flex flex-wrap gap-1.5 rounded-ui-xl bg-fill-2 p-2 ring-1 ring-line-hairline">
-                {RESOURCE_ICON_KEYS.map((key) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => {
-                      upsertResource({ id: r.id, gameId: game.id, icon: key });
-                      setIconPickerFor(null);
-                    }}
-                    className="flex h-11 w-11 items-center justify-center rounded-ui-lg bg-fill-2 ring-1 transition hover:bg-fill-3 sm:h-9 sm:w-9"
-                    style={{
-                      boxShadow:
-                        r.icon === key ? `inset 0 0 0 1.5px ${game.color}` : 'inset 0 0 0 1px rgba(255,255,255,0.08)',
-                    }}
-                    aria-label={key}
-                  >
-                    <ResourceIcon iconKey={key} color={game.color} size={18} />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <Field label="Cap">
+            <div className="flex flex-wrap items-end gap-2">
+              <Field label="Name" className="min-w-32 flex-[2_1_10rem]">
+                <TextInput
+                  className="sm:!min-h-8 sm:!py-1"
+                  value={r.name}
+                  aria-label="Resource name"
+                  onChange={(e) => upsertResource({ id: r.id, gameId: game.id, name: e.target.value })}
+                />
+              </Field>
+              <Field label="Kind" className="min-w-52 flex-[2_1_13rem]">
+                <Select
+                  className="sm:!min-h-8 sm:!py-1"
+                  value={kind}
+                  aria-label={`Resource kind for ${r.name}`}
+                  onChange={(e) => upsertResource({ id: r.id, gameId: game.id, kind: e.target.value as ResourceKind })}
+                >
+                  {RESOURCE_KINDS.map((resourceKind) => (
+                    <option key={resourceKind.value} value={resourceKind.value}>
+                      {resourceKind.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Cap" className="w-24 shrink-0">
                 <NumInput
+                  className="sm:!min-h-8 sm:!py-1"
                   value={String(r.cap)}
                   onChange={(e) => upsertResource({ id: r.id, gameId: game.id, cap: intOr(e.target.value, r.cap) })}
                 />
               </Field>
-              <Field label="Min/pt">
+              <Field label="Minutes per point" className="w-40 shrink-0">
                 <NumInput
+                  className="sm:!min-h-8 sm:!py-1"
                   value={String(r.regenMinutes)}
                   disabled={kind !== 'regen'}
                   onChange={(e) =>
@@ -104,60 +69,75 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                 />
               </Field>
               {!showReserveFields && (
-                <div className="flex items-end sm:col-start-3">
-                  <Btn className="w-full" onClick={() => setReserveOpen((cur) => ({ ...cur, [r.id]: true }))}>
-                    + Add reserve
-                  </Btn>
-                </div>
+                <Btn
+                  className="!min-h-11 shrink-0 sm:!min-h-8"
+                  onClick={() => setReserveOpen((cur) => ({ ...cur, [r.id]: true }))}
+                >
+                  + Add reserve
+                </Btn>
               )}
-
-              {showReserveFields && (
-                <div className="col-span-full mt-2 grid grid-cols-1 gap-3 border-t border-line-hairline pt-2 sm:grid-cols-3">
-                  <Field label="Reserve cap">
-                    <NumInput
-                      value={String(r.reserveCap)}
-                      onChange={(e) =>
-                        upsertResource({
-                          id: r.id,
-                          gameId: game.id,
-                          reserveCap: intOr(e.target.value, r.reserveCap),
-                        })
-                      }
-                    />
-                  </Field>
-                  <Field label="Reserve label">
-                    <TextInput
-                      value={r.reserveLabel ?? ''}
-                      onChange={(e) =>
-                        upsertResource({ id: r.id, gameId: game.id, reserveLabel: e.target.value || undefined })
-                      }
-                    />
-                  </Field>
-                  <Field label="Rsv min/pt">
-                    <NumInput
-                      value={r.reserveRegenMinutes == null ? '' : String(r.reserveRegenMinutes)}
-                      placeholder={String(effectiveReserveRegenMinutes(r))}
-                      onChange={(e) => {
-                        const value = e.target.value.trim();
-                        upsertResource({
-                          id: r.id,
-                          gameId: game.id,
-                          reserveRegenMinutes:
-                            value === '' ? undefined : Math.max(1, intOr(value, effectiveReserveRegenMinutes(r))),
-                        });
-                      }}
-                    />
-                  </Field>
-                </div>
-              )}
+              <button
+                type="button"
+                onClick={() => deleteResource(r.id)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg text-title text-dim transition hover:bg-danger/10 hover:text-danger sm:h-8 sm:w-8"
+                aria-label={`Delete ${r.name}`}
+              >
+                ✕
+              </button>
             </div>
+
+            {showReserveFields && (
+              <div className="mt-3 flex flex-wrap items-end gap-2 border-t border-line-hairline pt-2">
+                <Field label="Reserve cap" className="w-28 shrink-0">
+                  <NumInput
+                    className="sm:!min-h-8 sm:!py-1"
+                    value={String(r.reserveCap)}
+                    onChange={(e) =>
+                      upsertResource({
+                        id: r.id,
+                        gameId: game.id,
+                        reserveCap: intOr(e.target.value, r.reserveCap),
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Reserve label" className="min-w-36 flex-1">
+                  <TextInput
+                    className="sm:!min-h-8 sm:!py-1"
+                    value={r.reserveLabel ?? ''}
+                    onChange={(e) =>
+                      upsertResource({ id: r.id, gameId: game.id, reserveLabel: e.target.value || undefined })
+                    }
+                  />
+                </Field>
+                <Field label="Reserve minutes per point" className="w-52 shrink-0">
+                  <NumInput
+                    className="sm:!min-h-8 sm:!py-1"
+                    value={r.reserveRegenMinutes == null ? '' : String(r.reserveRegenMinutes)}
+                    placeholder={String(effectiveReserveRegenMinutes(r))}
+                    onChange={(e) => {
+                      const value = e.target.value.trim();
+                      upsertResource({
+                        id: r.id,
+                        gameId: game.id,
+                        reserveRegenMinutes:
+                          value === '' ? undefined : Math.max(1, intOr(value, effectiveReserveRegenMinutes(r))),
+                      });
+                    }}
+                  />
+                </Field>
+              </div>
+            )}
           </div>
         );
       })}
-      <Btn onClick={() => upsertResource({ gameId: game.id, name: 'Energy' })}>+ Resource</Btn>
+      <Btn className="!min-h-11 sm:!min-h-8" onClick={() => upsertResource({ gameId: game.id, name: 'Energy' })}>
+        + Resource
+      </Btn>
       <p className="text-label text-dim">
-        Min/pt = minutes per point of regen. 0 = doesn't regenerate. Rsv min/pt = minutes per reserve point once the bar
-        is capped (defaults to double Min/pt — reserve fills at half speed).
+        Minutes per point sets the regeneration rate. Use 0 for a resource that does not regenerate. Reserve minutes per
+        point applies after the main resource reaches its cap. If left blank, it uses twice the main rate, so the
+        reserve fills at half speed.
       </p>
     </div>
   );
