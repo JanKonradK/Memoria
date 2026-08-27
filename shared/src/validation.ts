@@ -123,7 +123,7 @@ const event = z.object({
   id,
   gameId: id,
   name: shortText,
-  type: z.enum(['banner', 'event', 'cycle', 'maintenance', 'custom']),
+  type: z.enum(['banner', 'event', 'cycle', 'maintenance', 'livestream', 'custom']),
   start: timestamp,
   end: timestamp,
   dailyTouch: z.boolean(),
@@ -131,6 +131,7 @@ const event = z.object({
   done: z.boolean().optional(),
   notes: longText,
   sourceKey: z.string().max(300).optional(),
+  seedHash: z.string().max(64).optional(),
 });
 
 const chip = z.object({
