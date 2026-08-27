@@ -397,16 +397,21 @@ const EventRow = memo(function EventRow({
   const maint = ev.type === 'maintenance';
   const banner = ev.type === 'banner';
   const cycle = ev.type === 'cycle';
+  const stream = ev.type === 'livestream';
   const tone = endTone(remainingMs);
   const spanLabel = `${DateTime.fromMillis(ev.start, { zone: localTz }).toFormat('dd LLL')} → ${DateTime.fromMillis(ev.end, { zone: localTz }).toFormat('dd LLL')}`;
   // Computed once so the fill and the ink chosen for it can never disagree.
-  const barFill = maint
-    ? mix(ink, inset, 0.22)
-    : cycle
-      ? mix(ink, inset, 0.34)
-      : banner
-        ? mix(ink, inset, 0.28)
-        : mix(ink, inset, 0.46);
+  // A livestream is a one-off marker only a few hours wide, so it carries the
+  // least inset of any row: at that width a pale fill vanishes into the lane.
+  const barFill = stream
+    ? mix(ink, inset, 0.16)
+    : maint
+      ? mix(ink, inset, 0.22)
+      : cycle
+        ? mix(ink, inset, 0.34)
+        : banner
+          ? mix(ink, inset, 0.28)
+          : mix(ink, inset, 0.46);
   const barInk = onColor(barFill);
 
   // Deliberate over-estimates avoid a layout read per row on every clock tick.
@@ -731,7 +736,10 @@ export function TimelinePage({ now }: { now: number }) {
               const open = laneOpen[game.id] ?? evs.length > 0;
               const nextEnd = [...evs]
                 .sort((a, b) => a.end - b.end)
-                .find((e) => e.end > now && !e.done && e.type !== 'maintenance' && e.type !== 'banner');
+                .find(
+                  (e) =>
+                    e.end > now && !e.done && e.type !== 'maintenance' && e.type !== 'banner' && e.type !== 'livestream',
+                );
               const doneEventsOpen = doneOpen.has(game.id);
               const active = evs.filter((event) => !event.done);
               const doneCount = evs.length - active.length;

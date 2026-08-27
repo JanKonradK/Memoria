@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import type { AppState, EventType, Game } from '@memoria/shared';
+import type { AppState, EventType, Game, GameEvent } from '@memoria/shared';
 import { presetForGame } from '@memoria/shared';
 
 /**
@@ -98,9 +98,50 @@ import { presetForGame } from '@memoria/shared';
  *     LADS, Uma, NIKKE and Endfield too. Season-suffixed names never grouped,
  *     so no connector was ever drawn for those four.
  *
+ * Refreshed 2026-08-27 (gpt-5.6-luna, web research) against each publisher's
+ * feed again, and this pass ADDS THE LIVESTREAM ROW. What changed:
+ *   - GENSHIN: the 7.0 phase-1 slate verified clean — Odette, Arlecchino and
+ *     the Epitome rerun all confirmed against the notice. Stygian Onslaught's
+ *     v7.0 rotation actually opens 08-19 10:00, not the 08-17 12:00 carried
+ *     here. Five 7.0 events were missing entirely (Raiment Collection, Event
+ *     Ode, both Miliastra Wonderland phases, Forge Realm's Temper).
+ *   - HSR: the whole 4.5 slate stops being an estimate. v4.5 is a SHORT 33-day
+ *     version, not the usual 42, and the notice shortens Apocalyptic Shadow and
+ *     Pure Fiction to 5 weeks with it: they close 10-05 and 10-19, not 10-12 and
+ *     10-26. Minuscule Great Adventure opens 09-12 12:00, not with the version.
+ *     The 4.6 boundary carried here (09-27 23:00) was already right — a first
+ *     research pass called it wrong by reading a t_gl time as t_lc, which is the
+ *     same seven-hour trap this header has warned about since July.
+ *   - WUWA / NTE: 3.6 and 1.3 both have full official notices now, so almost
+ *     every estimated row in those two blocks became fact.
+ *   - ZZZ: six 3.1 events were missing, and the 3.2 Special Program has an
+ *     official date.
+ *
+ * THE LIVESTREAM ROW. Every one of these games reveals its next version in a
+ * broadcast a week or two before the patch, and that broadcast is the cue to
+ * refresh this file. So each game that HAS one now carries a 'livestream' row.
+ *   - When the date is announced, the row is the broadcast itself.
+ *   - When it is not, the row is the PLAUSIBLE RANGE, derived from where the
+ *     last 4-6 streams sat relative to their releases — start = earliest, end =
+ *     latest. The name says "predicted window" so the bar cannot be mistaken
+ *     for a fixture, and `notes` carries the offsets it was derived from.
+ * This is the one deliberate exception to the notify rule below: a predicted
+ * livestream keeps notify:true even though its date is an estimate, because a
+ * reminder that never fires is the one thing it cannot afford to be. The name
+ * carries the uncertainty instead of the flag.
+ * LADS, Uma and NIKKE have NO recurring patch broadcast — news posts only — so
+ * they get no livestream row rather than an invented one.
+ *
+ * A livestream is a single global moment, like `t_gl` maintenance, and is
+ * stored here as the Europe (UTC+1) wall clock. Per-account tz conversion at
+ * import will shift it for a non-EU server, exactly as it already does for
+ * maintenance; that is a known limit of the one-clock-per-row model, not a
+ * per-row error.
+ *
  * Categories: 'event' (play these), 'cycle' (recurring endgame
  * windows — Abyss/Theater, MoC/PF/AS/AA, Shiyu/DA), 'banner' (pulls),
- * 'maintenance' (patch downtime). Web-only and permanent content is excluded.
+ * 'maintenance' (patch downtime), 'livestream' (the next-version broadcast).
+ * Web-only and permanent content is excluded.
  *
  * `notify: false` is the honesty valve. Anything whose date came from a
  * community estimate rather than an official notice carries it, plus a note
@@ -108,7 +149,7 @@ import { presetForGame } from '@memoria/shared';
  */
 
 /** When the bundled data was last refreshed. */
-export const SEED_UPDATED = '2026-08-18';
+export const SEED_UPDATED = '2026-08-27';
 
 export interface SeedEvent {
   /** Preset key — matched against the stored preset id, with legacy name/short fallbacks. */
@@ -224,9 +265,10 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'genshin',
     name: 'Stygian Onslaught',
     type: 'cycle',
-    start: '2026-08-17 12:00',
+    start: '2026-08-19 10:00',
     end: '2026-09-22 03:59',
-    notes: 'v7.0 rotation: Disturbance-affected Ley Line challenges.',
+    notes:
+      'v7.0 rotation: Disturbance-affected Ley Line challenges. Opens 08-19 10:00 — the 08-17 12:00 carried before was the notice date, not the window.',
     sourceKey: 'genshin:21847',
   },
   // Abyss and Theater BOTH run permanently. Abyss resets the 16th, Theater the 1st.
@@ -438,6 +480,61 @@ export const SEED_EVENTS: SeedEvent[] = [
     notes: 'Dates approximate — verify in-game.',
     sourceKey: 'seed:genshin:7.0-abundance',
   },
+  {
+    game: 'genshin',
+    name: 'Event Ode: Phantasmagoric Discourse',
+    type: 'event',
+    start: '2026-08-12 04:00',
+    end: '2026-09-22 14:59',
+    notes: 'Runs the whole of 7.0.',
+    sourceKey: 'seed:genshin:7.0-event-ode',
+  },
+  {
+    game: 'genshin',
+    name: 'Raiment Collection: Gentle Warmth',
+    type: 'event',
+    start: '2026-08-12 04:00',
+    end: '2026-09-23 05:59',
+    notes: 'Outfit campaign — closes an hour past the version boundary.',
+    sourceKey: 'seed:genshin:7.0-raiment',
+  },
+  {
+    game: 'genshin',
+    name: 'Miliastra Wonderland: Chronicle',
+    type: 'event',
+    start: '2026-08-12 04:00',
+    end: '2026-09-21 03:59',
+    sourceKey: 'seed:genshin:7.0-miliastra-chronicle',
+  },
+  {
+    game: 'genshin',
+    name: 'Miliastra Wonderland: Phantasmagoric Season — Play Phase',
+    type: 'event',
+    start: '2026-08-13 10:00',
+    end: '2026-09-22 03:59',
+    notes: 'Play phase; the showcase phase follows it.',
+    sourceKey: 'seed:genshin:7.0-miliastra-play',
+  },
+  {
+    game: 'genshin',
+    name: "The Forge Realm's Temper: Game of Wits",
+    type: 'event',
+    notify: false,
+    start: '2026-08-12 04:00',
+    end: '2026-09-22 14:59',
+    notes: 'Official notice states it runs during 7.0 but gives no closing time — the version boundary is assumed.',
+    sourceKey: 'seed:genshin:7.0-forge-realm',
+  },
+  {
+    game: 'genshin',
+    name: 'Imaginarium Theater',
+    type: 'cycle',
+    notify: false,
+    start: '2026-09-01 04:00',
+    end: '2026-10-01 03:59',
+    notes: 'Resets the 1st, monthly. September season confirmed open; close is the monthly cadence.',
+    sourceKey: 'seed:genshin:theater-2026-09',
+  },
 
   /* ================================================== HONKAI: STAR RAIL — v4.4 "In Ravages
      Does the Whistle Sound" (Fate collab, Jul 15 – Aug 25), then v4.5 "Nameless Honor" on
@@ -637,18 +734,27 @@ export const SEED_EVENTS: SeedEvent[] = [
       'Start is the officially printed end of 4.5 (t_gl 2026/09/28 06:00). Game8 projects 4.6 opening Sep 29 off a 6-week assumption — the first-party value wins.',
     sourceKey: 'seed:hsr:4.6-maint',
   },
-  /* --- v4.5 "Nameless Honor" (Aug 26 – Sep 27). The version bounds below are first-party;
-     the phase dates are from the Aug 14 livestream and press, so every row stays silent
-     until the update notice publishes. Robin • Summeretto and Aventurine • Waveflair are
-     confirmed by live notices (1361, 1364); their banner phases are not. */
+  /* --- v4.5 "Nameless Honor" (Aug 26 – Sep 27). The update notice has published, so the
+     phase-1 rows below are no longer estimates.
+
+     v4.5 IS A SHORT VERSION — 33 days between maintenance handoffs, not the 42 that 4.4→4.5
+     ran. The notice says so outright: "Due to the duration adjustment of Version 4.5, the
+     duration of Apocalyptic Shadow and Pure Fiction for this period will be shortened to 5
+     weeks." Do not "fix" this back to a 6-week cadence on the next pass.
+
+     The version line is t_gl — "until 2026/09/28 06:00 (UTC+8)" = 09-27 23:00 here. The
+     Apocalyptic Shadow and Pure Fiction lines are t_lc and copy across unshifted, which is
+     why they outlive the version and run on into 4.6. Overdrive's "2026/09/28 03:59 (UTC+8)"
+     is likewise t_gl and lands at 09-27 20:59, NOT 09-28 03:59: reading that one as t_lc is
+     the exact mistake that would push the whole 4.5 slate seven hours late. */
   {
     game: 'hsr',
     name: 'Overdrive: Whirlwind Grand Prix (flagship)',
     type: 'event',
-    notify: false,
     start: '2026-08-26 04:00',
     end: '2026-09-27 20:59',
-    notes: 'Flagship 4.5 event. Dates are the version window — no event notice yet.',
+    notes:
+      'Flagship 4.5 event, on an official notice. Closes 2h01 before maintenance, not at it.',
     sourceKey: 'seed:hsr:4.5-overdrive',
   },
   {
@@ -656,21 +762,19 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: '4.5 Gift of Odyssey — 10 free pulls',
     type: 'event',
     dailyTouch: true,
-    notify: false,
     start: '2026-08-26 04:00',
     end: '2026-09-27 23:00',
-    notes: '7-day login. Confirmed by the livestream; dates are the version window.',
+    notes: '7-day login, on an official notice. Claim all ten pulls well before the version closes.',
     sourceKey: 'seed:hsr:4.5-login',
   },
   {
     game: 'hsr',
     name: 'Minuscule Great Adventure',
     type: 'event',
-    notify: false,
-    start: '2026-08-26 04:00',
+    start: '2026-09-12 12:00',
     end: '2026-09-27 20:59',
     notes:
-      'Confirmed by the livestream, no dates announced — version window assumed. Spelled "Miniscule" on some trackers.',
+      'Opens with phase 2, NOT with the version — the old 08-26 start assumed the version window. Spelled "Miniscule" on some trackers.',
     sourceKey: 'seed:hsr:4.5-minuscule',
   },
   {
@@ -687,20 +791,20 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'hsr',
     name: 'Apocalyptic Shadow',
     type: 'cycle',
-    notify: false,
     start: '2026-08-31 04:00',
-    end: '2026-10-12 03:59',
-    notes: 'Start follows the official close of Vanguard Knight. End is 6-week cadence only; theme unannounced.',
+    end: '2026-10-05 03:59',
+    notes:
+      'Celestial Lupine. Officially SHORTENED to 5 weeks because v4.5 itself is short — the old 10-12 close assumed the usual 6.',
     sourceKey: 'seed:hsr:as-4.5',
   },
   {
     game: 'hsr',
     name: 'Pure Fiction',
     type: 'cycle',
-    notify: false,
     start: '2026-09-14 04:00',
-    end: '2026-10-26 03:59',
-    notes: 'Start follows the official close of Fabricated Business. End is 6-week cadence only; theme unannounced.',
+    end: '2026-10-19 03:59',
+    notes:
+      'Domain Genesis. Officially SHORTENED to 5 weeks alongside Apocalyptic Shadow; both run on into v4.6.',
     sourceKey: 'seed:hsr:pf-4.5',
   },
   // Phase-swap times (11:59 / 12:00) and the 15:00 close copy the 4.4 handoff, which was
@@ -710,20 +814,18 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'hsr',
     name: 'Robin • Summeretto · Hyacine rerun (phase 1)',
     type: 'banner',
-    notify: false,
     start: '2026-08-26 04:00',
     end: '2026-09-12 11:59',
-    notes: 'Livestream/press estimate — no official Warp notice yet.',
+    notes: 'Official 4.5 warp window — the estimated dates it carried turned out correct.',
     sourceKey: 'seed:hsr:4.5-p1-robin',
   },
   {
     game: 'hsr',
     name: 'Rise and Sing · Long May Rainbows Adorn the Sky — phase 1 Light Cone Warps',
     type: 'banner',
-    notify: false,
     start: '2026-08-26 04:00',
     end: '2026-09-12 11:59',
-    notes: 'Livestream/press estimate — no official Warp notice yet.',
+    notes: 'Official 4.5 warp window.',
     sourceKey: 'seed:hsr:4.5-p1-lc',
   },
   {
@@ -894,6 +996,24 @@ export const SEED_EVENTS: SeedEvent[] = [
     notes:
       'Buying the Growth/Premium/Upgrade plans closes 09-07 02:59, an hour before the event; Expansion Tasks and reward claims stay open to the end.',
     sourceKey: 'seed:zzz:3.1-city-fund',
+  },
+  {
+    game: 'zzz',
+    name: 'Filmgoer Thank-You Gift',
+    type: 'event',
+    start: '2026-07-29 04:00',
+    end: '2026-09-08 22:59',
+    notes: 'Version-bound purchase reward.',
+    sourceKey: 'seed:zzz:3.1-filmgoer',
+  },
+  {
+    game: 'zzz',
+    name: 'Return to Ridu: Feathers of Reunion',
+    type: 'event',
+    start: '2026-07-17 13:30',
+    end: '2026-09-08 22:59',
+    notes: 'Returning-player campaign. The notice quotes UTC+8 explicitly, so this one IS shifted.',
+    sourceKey: 'seed:zzz:3.1-return-to-ridu',
   },
   {
     game: 'zzz',
@@ -1178,37 +1298,103 @@ export const SEED_EVENTS: SeedEvent[] = [
     notes: 'Official notice. Compensation Astrite ×300 + Crystal Solvent ×2. Kuro says it may end up to ~2h early.',
     sourceKey: 'seed:wuwa:3.6-maint',
   },
-  /* --- v3.6 "Lamplight in Mirage" (from Aug 20). Only the maintenance and the phase-1
-     convenes are seeded. Kuro named six events in the Aug 7 preview — Gifts of Drifting
-     Mist, Resonance Sim Realm, If Dreams Still Reverberate, Second Coming of Solaris,
-     The Strings Remember, Wuthering Exploration: Fogveil Pagoda — but published NO window
-     for any of them, and in 3.5 several events opened mid-version (Jul 30, Aug 6, Aug 12)
-     rather than at launch. Seeding them against the version span would put at least half
-     of them on wrong start dates, so they are deliberately absent. Re-run this refresh on
-     Aug 20 when the event notices land.
+  /* --- v3.6 "Lamplight in Mirage" (from Aug 20). The Aug 7 preview named six events with
+     no windows, so the 08-18 pass deliberately left them out rather than smear them across
+     the version span. That caution paid: the official notice puts them on FIVE different
+     start dates (Aug 20, Aug 22, Aug 27, Sep 3, Sep 10, Sep 17), so seeding them at launch
+     would have been wrong for five of the six. They are now seeded from the notice.
 
-     Phase 2 (Jingran; Hiyuki and Mornye reruns) is also absent on purpose: sources disagree
-     on the version length by up to two days, and 3.5's own 20/20 split contradicts them. */
+     Phase 2 (Jingran; Hiyuki and Mornye reruns) is still community-only and stays silent. */
   {
     game: 'wuwa',
     name: 'Qingxiao + Denia rerun (phase 1)',
     type: 'banner',
-    notify: false,
     start: '2026-08-20 04:00',
     end: '2026-09-10 09:59',
-    notes:
-      'Start is the official maintenance end (11:00 UTC+8 → 04:00). The close is community-estimated — the 3.6 convene notice is not published yet.',
+    notes: 'Official convene notice — the estimated close it carried turned out correct.',
     sourceKey: 'seed:wuwa:3.6-p1',
   },
   {
     game: 'wuwa',
     name: 'Glint of Clouds + Forged Dwarf Star (phase 1 weapons)',
     type: 'banner',
-    notify: false,
     start: '2026-08-20 04:00',
     end: '2026-09-10 09:59',
-    notes: 'Same caveat as the phase-1 character convene — close is community-estimated.',
+    notes: 'Official convene notice.',
     sourceKey: 'seed:wuwa:3.6-p1-weapons',
+  },
+  // --- v3.6 events, all six from the official Kuro notice. Note the five distinct
+  // start dates: this slate does NOT open with the version.
+  {
+    game: 'wuwa',
+    name: 'Gifts of Drifting Mist (login)',
+    type: 'event',
+    dailyTouch: true,
+    start: '2026-08-20 04:00',
+    end: '2026-09-29 11:59',
+    notes: '7-day login — the window is the whole version, the claims are not.',
+    sourceKey: 'seed:wuwa:3.6-login',
+  },
+  {
+    game: 'wuwa',
+    name: 'Resonance Sim Realm',
+    type: 'event',
+    start: '2026-08-22 10:00',
+    end: '2026-09-29 11:59',
+    sourceKey: 'seed:wuwa:3.6-sim-realm',
+  },
+  {
+    game: 'wuwa',
+    name: 'Second Coming of Solaris: Coded Deception',
+    type: 'event',
+    start: '2026-08-27 04:00',
+    end: '2026-09-14 03:59',
+    sourceKey: 'seed:wuwa:3.6-solaris',
+  },
+  {
+    game: 'wuwa',
+    name: 'The Strings Remember',
+    type: 'event',
+    start: '2026-09-03 04:00',
+    end: '2026-09-21 03:59',
+    sourceKey: 'seed:wuwa:3.6-strings',
+  },
+  {
+    game: 'wuwa',
+    name: 'If Dreams Still Reverberate',
+    type: 'event',
+    start: '2026-09-10 10:00',
+    end: '2026-09-29 03:59',
+    sourceKey: 'seed:wuwa:3.6-dreams',
+  },
+  {
+    game: 'wuwa',
+    name: 'Wuthering Exploration: Fogveil Pagoda',
+    type: 'event',
+    start: '2026-09-17 04:00',
+    end: '2026-09-29 11:59',
+    sourceKey: 'seed:wuwa:3.6-fogveil',
+  },
+  {
+    game: 'wuwa',
+    name: 'Jingran + Hiyuki/Mornye reruns (phase 2)',
+    type: 'banner',
+    notify: false,
+    start: '2026-09-10 10:00',
+    end: '2026-09-29 11:59',
+    notes: 'Community phase-2 calendar — the official convene notice is not published yet.',
+    sourceKey: 'seed:wuwa:3.6-p2',
+  },
+  {
+    game: 'wuwa',
+    name: 'v3.7 update maintenance',
+    type: 'maintenance',
+    notify: false,
+    start: '2026-09-29 21:00',
+    end: '2026-09-30 04:00',
+    notes:
+      'No notice yet. Inferred from the official 3.6 close (09-29 11:59) and the usual Kuro overnight window.',
+    sourceKey: 'seed:wuwa:3.7-maint',
   },
 
   /* ================================================== NEVERNESS TO EVERNESS — v1.2 "999 Nights"
@@ -1326,10 +1512,9 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'nte',
     name: 'Beyond the Rails',
     type: 'cycle',
-    notify: false,
-    start: '2026-08-27 05:00',
-    end: '2026-09-10 04:59',
-    notes: 'Cadence-derived (14 days) from the confirmed Waxing Circle window. Route unannounced.',
+    start: '2026-08-26 22:00',
+    end: '2026-09-09 21:59',
+    notes: 'Official route window — opens 08-26 22:00, a day earlier than the estimate carried here.',
     sourceKey: 'seed:nte:1.3-rails-4',
   },
   // --- banners
@@ -1379,19 +1564,37 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'nte',
     name: 'Alluring Shadows — Zankou (phase 1)',
     type: 'banner',
-    notify: false,
     start: '2026-08-19 04:00',
     end: '2026-09-08 22:59',
+    notes: 'Official v1.3 notice — was an estimate, dates confirmed unchanged.',
     sourceKey: 'seed:nte:1.3-zankou',
   },
   {
     game: 'nte',
     name: 'The Ichi-Daime — Nanally rerun (phase 1)',
     type: 'banner',
-    notify: false,
     start: '2026-08-19 04:00',
     end: '2026-09-08 22:59',
+    notes: 'Official v1.3 notice — was an estimate, dates confirmed unchanged.',
     sourceKey: 'seed:nte:1.3-nanally',
+  },
+  {
+    game: 'nte',
+    name: 'Spellbound Special — Ravenous Blade',
+    type: 'banner',
+    start: '2026-08-19 04:00',
+    end: '2026-09-08 22:59',
+    notes: 'Official v1.3 notice. Weapon-side banner of the phase-1 slate.',
+    sourceKey: 'seed:nte:1.3-ravenous-blade',
+  },
+  {
+    game: 'nte',
+    name: 'Tiger Special — Ready-Ready',
+    type: 'banner',
+    start: '2026-08-19 04:00',
+    end: '2026-09-08 22:59',
+    notes: 'Official v1.3 notice.',
+    sourceKey: 'seed:nte:1.3-ready-ready',
   },
   {
     game: 'nte',
@@ -1426,18 +1629,18 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'nte',
     name: 'Surf Breaker',
     type: 'event',
-    notify: false,
     start: '2026-08-19 04:00',
     end: '2026-09-29 22:59',
+    notes: 'Official v1.3 notice — was an estimate, dates confirmed unchanged.',
     sourceKey: 'seed:nte:1.3-surf-breaker',
   },
   {
     game: 'nte',
     name: 'Shipwreck Salvage',
     type: 'event',
-    notify: false,
     start: '2026-08-28 03:00',
     end: '2026-09-29 22:59',
+    notes: 'Official v1.3 notice — was an estimate, dates confirmed unchanged.',
     sourceKey: 'seed:nte:1.3-shipwreck',
   },
   {
@@ -1464,18 +1667,18 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'nte',
     name: 'Volley Star',
     type: 'event',
-    notify: false,
     start: '2026-08-19 04:00',
     end: '2026-09-29 22:59',
+    notes: 'Official v1.3 notice — was an estimate, dates confirmed unchanged.',
     sourceKey: 'seed:nte:1.3-volley-star',
   },
   {
     game: 'nte',
     name: "Hunter's Crucible",
     type: 'event',
-    notify: false,
     start: '2026-08-19 04:00',
     end: '2026-09-29 22:59',
+    notes: 'Official v1.3 notice — was an estimate, dates confirmed unchanged.',
     sourceKey: 'seed:nte:1.3-hunters-crucible',
   },
   {
@@ -1483,10 +1686,9 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: 'Stamina Recharge ×2',
     type: 'event',
     dailyTouch: true,
-    notify: false,
     start: '2026-08-24 05:00',
     end: '2026-08-31 04:59',
-    notes: 'Double stamina rewards — spend Pixels here. Day-level dates only.',
+    notes: 'Official v1.3 notice — was an estimate, dates confirmed unchanged.',
     sourceKey: 'seed:nte:1.3-stamina',
   },
   {
@@ -1494,9 +1696,9 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: 'Gold Clash — 2× Fons in Pink Paws Heist',
     type: 'event',
     dailyTouch: true,
-    notify: false,
     start: '2026-08-31 05:00',
     end: '2026-09-14 04:59',
+    notes: 'Official v1.3 notice — was an estimate, dates confirmed unchanged.',
     sourceKey: 'seed:nte:1.3-goldclash',
   },
   {
@@ -1526,20 +1728,18 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: '1.3 login — 10 Solid Dice',
     type: 'event',
     dailyTouch: true,
-    notify: false,
     start: '2026-08-19 04:00',
     end: '2026-09-29 22:59',
-    notes: "No window published — mirrors 1.2's login event, which ran the full version.",
+    notes: 'Official v1.3 notice — was an estimate, dates confirmed unchanged.',
     sourceKey: 'seed:nte:1.3-login',
   },
   {
     game: 'nte',
     name: 'Circle Bounty',
     type: 'cycle',
-    notify: false,
     start: '2026-08-19 04:00',
     end: '2026-09-29 16:59',
-    notes: "Mirrors 1.2's Circle Bounty, which closed six hours before the rest of the version. No 1.3 notice yet.",
+    notes: 'Official v1.3 notice — was an estimate, dates confirmed unchanged.',
     sourceKey: 'seed:nte:1.3-circle-bounty',
   },
 
@@ -1592,6 +1792,39 @@ export const SEED_EVENTS: SeedEvent[] = [
     notes:
       'Free reward track inside the Po Zhen Zi cycle. Window assumed identical to Po Zhen Zi — no standalone duration was published.',
     sourceKey: 'seed:lads:skyvault-afar',
+  },
+  {
+    game: 'lads',
+    name: 'Roaming Trails',
+    type: 'event',
+    start: '2026-08-17 05:00',
+    end: '2026-08-31 04:59',
+    sourceKey: 'seed:lads:roaming-trails',
+  },
+  {
+    game: 'lads',
+    name: 'Companion Rehearsal',
+    type: 'event',
+    start: '2026-08-17 05:00',
+    end: '2026-08-31 04:59',
+    sourceKey: 'seed:lads:companion-rehearsal',
+  },
+  {
+    game: 'lads',
+    name: 'Yanzhou Market',
+    type: 'event',
+    start: '2026-08-17 05:00',
+    end: '2026-09-01 04:59',
+    notes: 'Stays open a day past the parent event — spend before it closes, not before Po Zhen Zi does.',
+    sourceKey: 'seed:lads:yanzhou-market',
+  },
+  {
+    game: 'lads',
+    name: 'Sylus — No Defense Zone rerun',
+    type: 'banner',
+    start: '2026-08-24 05:00',
+    end: '2026-08-31 04:59',
+    sourceKey: 'seed:lads:sylus-no-defense-zone',
   },
   // Seasons run 14 days. The old row claimed a 45-day Season 14 ending Aug 27 — that season
   // actually ended Jul 27, so the stored end looks like a Jul→Aug typo. Name is the bare
@@ -1918,9 +2151,11 @@ export const SEED_EVENTS: SeedEvent[] = [
      (Asia says Sept. 2 04:00 UTC+8 = Sept. 1 15:00 UTC-5). The printed AmEu 17:00 is used
      throughout, corroborated by the wiki's dual tables.
 
-     v1.5 has NO official date as of this refresh — no announcement, no livestream notice, no
-     maintenance notice. Community trackers spread across Aug 28 – Sep 2. No 1.5 row exists
-     here on purpose; the next real boundary is 2026-09-01 17:00. */
+     v1.5 DOES have a date now. The developer preview aired 2026-08-21 and GRYPHLINE has
+     announced v1.5 "Dreamscape of Wind and Snow" for September 2 — which is the Asia-column
+     date. On this block's UTC-5 clock that is the evening of Sept 1, immediately after the
+     1.4 boundary, so the maintenance row below reads 09-01 17:00 → 23:00. The hour is the
+     1.4 window's shape, not a published one, so the row stays silent. */
   {
     game: 'endfield',
     name: 'Monumental Etching: Beastly Howl',
@@ -1989,6 +2224,20 @@ export const SEED_EVENTS: SeedEvent[] = [
       'Daily missions pay Sanity Usage Permits and Emergency Sanity Boosters. This is the row that pins the 1.4 boundary.',
     sourceKey: 'seed:endfield:1.4-sanity-2',
   },
+  {
+    game: 'endfield',
+    name: 'v1.5 "Dreamscape of Wind and Snow" update maintenance',
+    type: 'maintenance',
+    notify: false,
+    // Announced for "September 2" — the Asia column. This block runs on the ONE
+    // combined AmEu server at UTC-5, where that is the evening of Sept 1, landing
+    // exactly on the 1.4 boundary. The 6h length copies the 1.4 window; GRYPHLINE
+    // has not published this one.
+    start: '2026-09-01 17:00',
+    end: '2026-09-01 23:00',
+    notes: 'Date announced, window not — the 6h length is copied from the v1.4 maintenance.',
+    sourceKey: 'seed:endfield:1.5-maint',
+  },
   // Echoes of War is now fully sourced, not community-derived: Recalling I/II/III ran
   // 7/7/10 days and Delirating I/II/III run 7/7/10, the third of each season stretching to
   // the version boundary. Instances share the bare name so the connectors group.
@@ -2010,16 +2259,161 @@ export const SEED_EVENTS: SeedEvent[] = [
     notes: 'Season of Delirating — Cycle III. Runs 10 days, to the 1.4 end.',
     sourceKey: 'seed:endfield:eow-delirating-3',
   },
+
+  /* ================================================== NEXT PATCH LIVESTREAMS
+     The broadcast that reveals the next version, and therefore the cue to refresh
+     this whole file. An announced stream is stored as the broadcast itself; an
+     unannounced one is stored as the plausible RANGE its history implies, with
+     the offsets it came from in `notes` so the next refresh can re-derive it
+     instead of trusting this row. All times are the Europe (UTC+1) wall clock.
+
+     Offsets observed on 2026-08-27: Genshin 12-13 days before release, Fridays
+     13:00. HSR 6-12 (one outlier at 6), Fridays 12:30. WuWa 6-14, Fridays 12:00.
+     NTE exactly 11 every time, Saturdays 12:30.
+
+     LADS, Uma and NIKKE are absent on purpose: none of the three runs a
+     recurring patch broadcast, only news posts. Endfield's 1.5 preview already
+     aired on 2026-08-21 and there is not enough 1.6 history to predict one. */
+  {
+    game: 'zzz',
+    name: 'ZZZ 3.2 Special Program',
+    type: 'livestream',
+    start: '2026-08-28 12:30',
+    end: '2026-08-28 14:30',
+    notes:
+      'Officially announced: 19:30 UTC+8. Reveals the v3.2 slate — refresh this file after it airs.',
+    sourceKey: 'seed:zzz:3.2-livestream',
+  },
+  {
+    game: 'genshin',
+    name: 'Genshin 7.1 Special Program — predicted window',
+    type: 'livestream',
+    start: '2026-09-09 13:00',
+    end: '2026-09-13 15:00',
+    notes:
+      'Not announced. Last five programs ran 12-13 days before release, Fridays 13:00; 7.1 is expected 09-23, so 09-11 is the single most likely date.',
+    sourceKey: 'seed:genshin:7.1-livestream',
+  },
+  {
+    game: 'hsr',
+    name: 'HSR 4.6 Special Program — predicted window',
+    type: 'livestream',
+    start: '2026-09-16 12:30',
+    end: '2026-09-18 14:30',
+    notes:
+      'Not announced. v4.6 goes live 09-28 04:00, and the usual offset is 10-12 days on a Friday 12:30 — which lands on 09-18 almost exactly.',
+    sourceKey: 'seed:hsr:4.6-livestream',
+  },
+  {
+    game: 'wuwa',
+    name: 'WuWa 3.7 livestream — predicted window',
+    type: 'livestream',
+    start: '2026-09-16 12:00',
+    end: '2026-09-24 14:00',
+    notes:
+      'Not announced. Recent offsets cluster at 10-14 days, Fridays 12:00, against an expected 09-30 release. Most likely 09-18.',
+    sourceKey: 'seed:wuwa:3.7-livestream',
+  },
+  {
+    game: 'nte',
+    name: 'NTE 1.4 Preview Special Program — predicted window',
+    type: 'livestream',
+    start: '2026-09-16 12:30',
+    end: '2026-09-22 14:30',
+    notes:
+      'Not announced. Every preview so far landed exactly 11 days before release, Saturdays 12:30 — the tightest pattern of the nine. Most likely 09-19.',
+    sourceKey: 'seed:nte:1.4-livestream',
+  },
 ];
 
 export interface PlannedSeed {
-  kind: 'add' | 'update';
-  /** Set for updates — the id of the already-imported event to patch. */
+  /** 'stamp' records the fingerprint on an existing row WITHOUT rewriting it. */
+  kind: 'add' | 'update' | 'stamp' | 'remove';
+  /** Set for updates and removals — the id of the already-imported event. */
   eventId?: string;
   gameId: string;
-  seed: SeedEvent;
+  /** Absent on removals: the row is gone from the bundle, so there is no seed. */
+  seed?: SeedEvent;
+  start?: number;
+  end?: number;
+  /** The fingerprint to stamp on the event — set for adds and updates. */
+  hash?: string;
+}
+
+/**
+ * A short, stable digest of exactly the fields the bundle owns.
+ *
+ * This is the whole mechanism behind "refresh my dates, keep my edits". The
+ * importer stamps this on every row it writes; on the next refresh it hashes
+ * the row again and compares. Equal means untouched since the feed wrote it, so
+ * a correction is safe. Unequal means a human edited the row, and the feed
+ * stops touching it — permanently, and for every field, because it cannot tell
+ * WHICH field you meant to own.
+ *
+ * `done` is deliberately excluded: ticking something off is not an edit to the
+ * event, and a done row should still get a corrected end date.
+ */
+function fingerprint(fields: {
+  name: string;
+  type: EventType;
   start: number;
   end: number;
+  dailyTouch: boolean;
+  notify: boolean;
+  notes: string;
+}): string {
+  const payload = [
+    fields.name,
+    fields.type,
+    String(fields.start),
+    String(fields.end),
+    fields.dailyTouch ? '1' : '0',
+    fields.notify ? '1' : '0',
+    fields.notes,
+  ].join('\u0000');
+  // FNV-1a. Not cryptographic and does not need to be: it guards against
+  // accidental collision between two versions of the same row, not an attacker.
+  let h = 0x811c9dc5;
+  for (let i = 0; i < payload.length; i++) {
+    h ^= payload.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(36);
+}
+
+/** What the bundle says this row should be. */
+function seedFingerprint(seed: SeedEvent, start: number, end: number): string {
+  return fingerprint({
+    name: seed.name,
+    type: seed.type,
+    start,
+    end,
+    dailyTouch: seed.dailyTouch ?? false,
+    notify: seed.notify ?? true,
+    notes: seed.notes ?? '',
+  });
+}
+
+/**
+ * What the stored row actually is right now, edits included. Exported because it
+ * IS the contract: a row whose `seedHash` still equals this is the bundle's to
+ * correct, and a row where it does not is yours.
+ */
+export function eventFingerprint(event: GameEvent): string {
+  return fingerprint({
+    name: event.name,
+    type: event.type,
+    start: event.start,
+    end: event.end,
+    dailyTouch: event.dailyTouch,
+    notify: event.notify,
+    notes: event.notes,
+  });
+}
+
+/** True when nobody has edited the row since the bundle stamped it. */
+function isPristine(event: GameEvent): boolean {
+  return event.seedHash !== undefined && event.seedHash === eventFingerprint(event);
 }
 
 function parseServerTime(s: string, tz: string): number | null {
@@ -2059,19 +2453,42 @@ export function planSeedImport(state: AppState, now: number): PlannedSeed[] {
       .map((event) => [sourceIdentity(event.gameId, event.sourceKey!), event]),
   );
   const refreshSeeds = state.settings.seedImportedVersion !== SEED_UPDATED;
+  // Ids the current bundle still accounts for; anything stamped and missing from
+  // this set has been dropped upstream.
+  const seenKeys = new Set<string>();
   for (const seed of SEED_EVENTS) {
     for (const game of gamesForPreset(state.games, seed.game)) {
       const start = parseServerTime(seed.start, game.tz);
       const end = parseServerTime(seed.end, game.tz);
       if (start == null || end == null || end <= start) continue;
+      const hash = seedFingerprint(seed, start, end);
       const existing = byKey.get(sourceIdentity(game.id, seed.sourceKey));
       if (existing) {
-        if (
-          refreshSeeds &&
-          !existing.deleted &&
-          (existing.start !== start || existing.end !== end || existing.name !== seed.name)
-        ) {
-          out.push({ kind: 'update', eventId: existing.id, gameId: game.id, seed, start, end });
+        seenKeys.add(existing.id);
+        if (!refreshSeeds || existing.deleted) continue;
+        if (existing.seedHash === undefined) {
+          // Imported before fingerprints existed, so there is no baseline to
+          // compare against and no way to tell an edit from an older bundle.
+          // Apply the rule that was in force when the row was written — dates and
+          // name only, the objective facts — and stamp it either way, so this is
+          // the LAST refresh that has to guess about this row.
+          if (existing.start !== start || existing.end !== end || existing.name !== seed.name) {
+            out.push({ kind: 'update', eventId: existing.id, gameId: game.id, seed, start, end, hash });
+          } else {
+            // Values already agree, so record the baseline without touching the
+            // row: any note or muted alert the user added here survives, and is
+            // what marks the row as theirs from the next refresh on.
+            out.push({ kind: 'stamp', eventId: existing.id, gameId: game.id, hash });
+          }
+          continue;
+        }
+        // Dates and name are not all a refresh corrects: a row promoted from
+        // community estimate to official notice keeps its window and changes only
+        // `notify`. So the comparison is the whole fingerprint — but it is gated
+        // on the row being untouched, or that same breadth would overwrite the
+        // edits it is meant to protect.
+        if (existing.seedHash !== hash && isPristine(existing)) {
+          out.push({ kind: 'update', eventId: existing.id, gameId: game.id, seed, start, end, hash });
         }
         continue;
       }
@@ -2085,7 +2502,27 @@ export function planSeedImport(state: AppState, now: number): PlannedSeed[] {
           start <= event.end,
       );
       if (twin) continue;
-      out.push({ kind: 'add', gameId: game.id, seed, start, end });
+      out.push({ kind: 'add', gameId: game.id, seed, start, end, hash });
+    }
+  }
+
+  // Rows the bundle used to carry and no longer does — a cancelled event, or one
+  // that was simply wrong. Left alone they would sit on the timeline forever,
+  // because nothing else ever deletes them.
+  //
+  // Only rows the bundle demonstrably wrote (they carry a stamp) and that nobody
+  // has since edited or ticked off are withdrawn. A ⤓ HoYoLAB import has no
+  // stamp and is never touched; neither is anything you changed.
+  //
+  // One-cycle warm-up: a row already orphaned BEFORE fingerprints shipped never
+  // gets stamped, so it can never be withdrawn here. Everything still in the
+  // bundle today is stamped by the pass above, so from the next bundle onward
+  // withdrawal is complete. The gap is bounded and shrinks to nothing.
+  if (refreshSeeds) {
+    for (const event of state.events) {
+      if (event.deleted || event.done || seenKeys.has(event.id)) continue;
+      if (!isPristine(event)) continue;
+      out.push({ kind: 'remove', eventId: event.id, gameId: event.gameId });
     }
   }
   return out;

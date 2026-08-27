@@ -82,6 +82,9 @@ function applyEventUpsert(byId: Map<string, GameEvent>, ev: EventUpsert): void {
     notify: ev.notify ?? true,
     notes: ev.notes ?? '',
     sourceKey: ev.sourceKey,
+    // Only the bundled feed sets this. A hand-made event stays unstamped, which
+    // is what keeps the refresh from ever considering it its own to rewrite.
+    ...(ev.seedHash === undefined ? {} : { seedHash: ev.seedHash }),
     updatedAt: t,
   };
   byId.set(item.id, item);
@@ -174,17 +177,36 @@ function stateForStorage(raw: unknown): { state: AppState; repaired: boolean } {
 function applySeedPlan(state: AppState, plan: PlannedSeed[]): AppState {
   const byId = new Map(state.events.map((event) => [event.id, event]));
   for (const item of plan) {
+    // A row the bundle has withdrawn. Tombstoned rather than dropped, so the
+    // withdrawal survives a merge instead of the row reappearing from a peer.
+    if (item.kind === 'remove') {
+      const existing = item.eventId ? byId.get(item.eventId) : undefined;
+      if (existing) byId.set(existing.id, { ...existing, deleted: true, updatedAt: now() });
+      continue;
+    }
+    // Baseline-only: record what the bundle believes without rewriting the row,
+    // so an existing note or muted alert is not the price of getting stamped.
+    if (item.kind === 'stamp') {
+      const existing = item.eventId ? byId.get(item.eventId) : undefined;
+      if (existing) byId.set(existing.id, { ...existing, seedHash: item.hash, updatedAt: now() });
+      continue;
+    }
+    const seed = item.seed;
+    if (!seed || item.start === undefined || item.end === undefined) continue;
     applyEventUpsert(byId, {
       ...(item.eventId ? { id: item.eventId } : {}),
       gameId: item.gameId,
-      name: item.seed.name,
-      type: item.seed.type,
+      name: seed.name,
+      type: seed.type,
       start: item.start,
       end: item.end,
-      dailyTouch: item.seed.dailyTouch ?? false,
-      notify: item.seed.notify ?? true,
-      notes: item.seed.notes ?? '',
-      sourceKey: item.seed.sourceKey,
+      dailyTouch: seed.dailyTouch ?? false,
+      notify: seed.notify ?? true,
+      notes: seed.notes ?? '',
+      sourceKey: seed.sourceKey,
+      // Records what the bundle wrote, so the next refresh can recognise an
+      // untouched row and, just as importantly, recognise an edited one.
+      seedHash: item.hash,
     });
   }
   const events = [...byId.values()];
@@ -198,7 +220,7 @@ function applySeedPlan(state: AppState, plan: PlannedSeed[]): AppState {
  * Plan against the full document. The refresh stamp is global, so scoping this
  * to one new game could mark older accounts refreshed before they get fixes.
  */
-function seedBundledEvents(state: AppState, at: number): AppState {
+export function seedBundledEvents(state: AppState, at: number): AppState {
   const plan = planSeedImport(state, at);
   return plan.length > 0 ? applySeedPlan(state, plan) : state;
 }
