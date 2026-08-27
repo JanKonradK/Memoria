@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { emptyState, type Game } from '@void/shared';
+import { emptyState, SERVER_TZ_OPTIONS, type Game } from '@memoria/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameDetailSheet } from '../src/components/GameDetail';
 import { useApp } from '../src/store';
@@ -24,21 +24,23 @@ const game: Game = {
 };
 
 const originalUpdateGame = useApp.getState().updateGame;
+const serverTz = (utcOffset: number) =>
+  SERVER_TZ_OPTIONS.find((option) => {
+    const match = /^Etc\/GMT([+-])(\d+)$/.exec(option.tz);
+    if (!match) return false;
+    const hours = Number(match[2]);
+    return (match[1] === '-' ? hours : -hours) === utcOffset;
+  })?.tz;
 
-function renderDetail() {
+function renderDetail(currentGame: Game = game) {
   const updateGame = vi.fn(originalUpdateGame);
   useApp.setState({
-    state: { ...emptyState(), games: [game] },
+    state: { ...emptyState(), games: [currentGame] },
     updateGame,
   });
-  useUI.setState({ sheet: { kind: 'game', gameId: game.id } });
-  render(<GameDetailSheet gameId={game.id} open />);
+  useUI.setState({ sheet: { kind: 'game', gameId: currentGame.id } });
+  render(<GameDetailSheet gameId={currentGame.id} open />);
   return updateGame;
-}
-
-/** Segmented is a Radix ToggleGroup, so its sections are radios, not buttons. */
-function openGameSection() {
-  fireEvent.click(screen.getByRole('radio', { name: 'Game' }));
 }
 
 beforeEach(() => {
@@ -58,39 +60,14 @@ afterEach(() => {
   useUI.setState({ sheet: null });
 });
 
-describe('GameDetail text drafts', () => {
-  it('commits an edited field on blur', () => {
-    const updateGame = renderDetail();
-    openGameSection();
-    const name = screen.getByLabelText('Name');
-
-    fireEvent.change(name, { target: { value: 'Blurred name' } });
-    fireEvent.blur(name);
-
-    expect(updateGame).toHaveBeenCalledWith(game.id, { name: 'Blurred name' });
-  });
-
-  it('commits the latest draft after the 300ms debounce', () => {
+describe('GameDetail drafts and server', () => {
+  it('commits the nickname through the 300ms debounce', () => {
     vi.useFakeTimers();
     const updateGame = renderDetail();
-    openGameSection();
-    const short = screen.getByLabelText("Short label (shown as the game's badge)");
+    const nickname = screen.getByLabelText('Nickname');
 
-    fireEvent.change(short, { target: { value: 'NEW' } });
-    act(() => vi.advanceTimersByTime(299));
-    expect(updateGame).not.toHaveBeenCalled();
-
-    act(() => vi.advanceTimersByTime(1));
-    expect(updateGame).toHaveBeenCalledWith(game.id, { short: 'NEW' });
-  });
-
-  it('commits the account label through the 300ms debounce', () => {
-    vi.useFakeTimers();
-    const updateGame = renderDetail();
-    const accountLabel = screen.getByLabelText('Account label');
-
-    expect(accountLabel).toHaveValue('Original account');
-    fireEvent.change(accountLabel, { target: { value: 'Main EU' } });
+    expect(nickname).toHaveValue('Original account');
+    fireEvent.change(nickname, { target: { value: 'Main EU' } });
     act(() => vi.advanceTimersByTime(299));
     expect(updateGame).not.toHaveBeenCalled();
 
@@ -98,29 +75,26 @@ describe('GameDetail text drafts', () => {
     expect(updateGame).toHaveBeenCalledWith(game.id, { accountLabel: 'Main EU' });
   });
 
-  it('flushes a pending tail when the sheet closes after an earlier debounce', () => {
-    vi.useFakeTimers();
+  it('writes the preset timezone for each server', () => {
     const updateGame = renderDetail();
-    const notes = screen.getByLabelText('Notes');
 
-    fireEvent.change(notes, { target: { value: 'Debounced notes' } });
-    act(() => vi.advanceTimersByTime(300));
-    expect(updateGame).toHaveBeenCalledWith(game.id, { notes: 'Debounced notes' });
+    fireEvent.click(screen.getByRole('radio', { name: 'EU' }));
+    expect(updateGame).toHaveBeenLastCalledWith(game.id, { tz: serverTz(1) });
 
-    fireEvent.change(notes, { target: { value: 'Debounced notes plus tail' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'NA' }));
+    expect(updateGame).toHaveBeenLastCalledWith(game.id, { tz: serverTz(-5) });
 
-    expect(updateGame).toHaveBeenLastCalledWith(game.id, { notes: 'Debounced notes plus tail' });
+    fireEvent.click(screen.getByRole('radio', { name: 'Asia' }));
+    expect(updateGame).toHaveBeenLastCalledWith(game.id, { tz: serverTz(8) });
   });
 
-  it('does not lose text typed immediately before closing', () => {
-    const updateGame = renderDetail();
-    openGameSection();
-    const name = screen.getByLabelText('Name');
+  it('shows an uncommon timezone as a disabled selected option', () => {
+    const updateGame = renderDetail({ ...game, tz: 'Pacific/Auckland' });
+    const uncommonServer = screen.getByRole('radio', { name: /UTC/ });
 
-    fireEvent.change(name, { target: { value: 'Immediate close name' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-
-    expect(updateGame).toHaveBeenCalledWith(game.id, { name: 'Immediate close name' });
+    expect(uncommonServer).toBeChecked();
+    expect(uncommonServer).toBeDisabled();
+    fireEvent.click(uncommonServer);
+    expect(updateGame).not.toHaveBeenCalled();
   });
 });

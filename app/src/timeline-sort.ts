@@ -1,10 +1,20 @@
-import type { Game, GameEvent } from '@void/shared';
+import type { Game, GameEvent } from '@memoria/shared';
 
 const DAY = 86_400_000;
 
 export const NEW_ARRIVAL_DAYS = 2;
-export const ENDING_SOON_DAYS = 9;
-export const DASHBOARD_UPCOMING_LIMIT = 3;
+/**
+ * How far ahead the Tonight panel looks, and how much of it it shows.
+ *
+ * These were tuned when the panel was one of three collapsible sections
+ * competing for a short column. It is now a full-height scrolling rail, so the
+ * limit was truncating a list that had room — three upcoming items out of a
+ * fortnight is a preview of an agenda, not the agenda. The panel's own
+ * `overflow-y-auto` absorbs the rest, so raising these costs page height
+ * nothing.
+ */
+export const ENDING_SOON_DAYS = 14;
+export const DASHBOARD_UPCOMING_LIMIT = 8;
 
 /** Playable events first, followed by cycles, banners, then maintenance. */
 export const TYPE_RANK = { event: 0, custom: 0, cycle: 1, banner: 2, maintenance: 3 } as const;

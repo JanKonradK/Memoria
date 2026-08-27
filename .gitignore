@@ -1,13 +1,11 @@
 node_modules/
 dist/
-# Per-machine launcher settings: which browser to open, and the deployed URL.
+dist-single/
+# Per-machine launcher setting: which browser to open the app window in.
 desktop/config.json
-.wrangler/
 *.local
 .env*
 !.env.example
-.dev.vars*
-!.dev.vars.example
 .DS_Store
 test-results/
 playwright-report/

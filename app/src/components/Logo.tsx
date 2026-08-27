@@ -45,7 +45,7 @@ export function Logo({ wordmark, className = '' }: { wordmark?: string; classNam
         // them and cost contrast at small sizes.
         <span className="text-gold">{wordmark}</span>
       ) : (
-        <span className="sr-only">Void</span>
+        <span className="sr-only">Memoria</span>
       )}
     </span>
   );

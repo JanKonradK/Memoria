@@ -1,28 +1,38 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { DateTime } from 'luxon';
-import type { Game, GameEvent } from '@void/shared';
-import { AnimatePresence, useReducedMotionConfig } from 'motion/react';
+import type { Game, GameEvent } from '@memoria/shared';
+import { useReducedMotionConfig } from 'motion/react';
 import { m } from 'motion/react';
 import { useApp } from '../store';
 import { TYPE_RANK } from '../timeline-sort';
-import { TIMELINE_RANGE_DAYS, useUI, type TimelineRange } from '../ui-store';
-import { duration, easing, slideIn } from '../motion';
-import { endTone, fmtDur, luminance, tint } from '../util';
-import { planSeedImport, SEED_UPDATED } from '../data/seed-events';
+import { useUI } from '../ui-store';
+import { slideIn } from '../motion';
+import { endTone, fmtDur } from '../util';
 import { Disclosure } from './Disclosure';
-import { TimelineAgenda } from './TimelineAgenda';
-import { Pill, ProgressBar } from './primitives';
-import { Btn, GameBadge, Page, SectionTitle, Segmented, Tooltip } from './ui';
+import { ProgressBar } from './primitives';
+import { GameBadge, Page, Tooltip } from './ui';
+import { serverRegionLabel } from './NexusLayout';
+import { titleFont } from '../fonts';
+import { assignGameInks, gameRim, gameTitleInk, mix, onColor, resolveGameIdentityColors } from '../game-color';
+import { useGround, useInset } from '../theme';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
 const MIN_TICK_GAP_PX = 64;
+const TICK_SLOT_PX = 26;
+const COUNTDOWN_PX = 96;
+const SPAN_PX = 116;
+const MIN_BAR_PX = 18;
+const BAR_TEXT_INSET_PX = 8;
+export const MIN_LABEL_PX = 40;
 
-const viewFade = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: duration.fast, ease: easing.out } },
-  exit: { opacity: 0, transition: { duration: duration.fast, ease: easing.out } },
-};
+/**
+ * The window the ruler shows, in days. This was a 7d/40d control in the app bar;
+ * the short window only ever meant "zoom in on this week", which the ruler's own
+ * playhead and the Tonight panel both already answer. FULL_AGENDA_DAYS in
+ * agenda-data.ts mirrors this value.
+ */
+const RANGE_DAYS = 40;
 
 function useElementWidth() {
   const observerRef = useRef<ResizeObserver | null>(null);
@@ -48,92 +58,412 @@ function useElementWidth() {
   return [setElement, width] as const;
 }
 
-function buildGridTicks(rangeStart: number, rangeEnd: number, range: TimelineRange, width: number): DateTime[] {
+function buildGridTicks(rangeStart: number, rangeEnd: number, width: number, localTz: string): DateTime[] {
   const rangeSpan = rangeEnd - rangeStart;
+  // Four-day ticks unless the lane is too narrow to keep them apart, then eight.
+  const wideTickGapPx = rangeSpan > 0 ? (4 * DAY * width) / rangeSpan : Number.POSITIVE_INFINITY;
+  const stepDays = width > 0 && wideTickGapPx < MIN_TICK_GAP_PX ? 8 : 4;
+  const step = { days: stepDays } as const;
+  let boundary = DateTime.fromMillis(rangeStart, { zone: localTz }).startOf('day');
+  if (boundary.toMillis() < rangeStart) boundary = boundary.plus(step);
 
-  if (range === '90d') {
-    const tickMillis = [rangeStart];
-    let lastPosition = 0;
-    let boundary = DateTime.fromMillis(rangeStart).startOf('month').plus({ months: 1 });
-
-    while (boundary.toMillis() < rangeEnd) {
-      const boundaryMillis = boundary.toMillis();
-      const position = width > 0 ? ((boundaryMillis - rangeStart) / rangeSpan) * width : 0;
-      if (width > 0 && position - lastPosition >= MIN_TICK_GAP_PX && width - position >= MIN_TICK_GAP_PX) {
-        tickMillis.push(boundaryMillis);
-        lastPosition = position;
-      }
-      boundary = boundary.plus({ months: 1 });
-    }
-
-    tickMillis.push(rangeEnd);
-    return tickMillis.map((millis) => DateTime.fromMillis(millis));
+  const boundaries: DateTime[] = [];
+  while (boundary.toMillis() <= rangeEnd) {
+    boundaries.push(boundary);
+    boundary = boundary.plus(step);
   }
-
-  const maxIntervals = range === '7d' ? 7 : 10;
-  const intervalCount = Math.max(1, Math.min(maxIntervals, Math.floor(width / MIN_TICK_GAP_PX)));
-  return Array.from({ length: intervalCount + 1 }, (_, index) =>
-    DateTime.fromMillis(rangeStart + (rangeSpan / intervalCount) * index),
-  );
-}
-
-function tickLabelFormat(range: TimelineRange): string {
-  if (range === '7d') return 'ccc d';
-  if (range === '90d') return 'LLL';
-  return 'dd LLL';
+  return boundaries;
 }
 
 /**
- * Readable text on a strong two-tone fill: judge the WHOLE gradient (bars run
- * color → color2 at ~0.5 alpha over black), so only pairings that stay light
- * end-to-end (GI's cream→tan) get dark text.
+ * Where a bar sits in its lane, as percentages of the lane width.
+ *
+ * Shared by the bar and by the cycle connectors that hand off between bars — if
+ * these two ever computed it separately, a curve would start a few pixels off the
+ * bar it is supposed to leave, which is exactly the kind of drift nobody notices
+ * in review and everybody notices on screen.
  */
-function isLightFill(color: string, color2?: string): boolean {
-  const primary = luminance(color) ?? 0;
-  const secondary = luminance(color2 ?? color) ?? primary;
-  // WCAG weighting lifts NTE's teal→yellow pair just above the old 200/255
-  // boundary; 210/255 keeps GI's cream→tan dark-text treatment without flips.
-  return (primary + secondary) / 2 > 210 / 255;
+export function barGeometry(ev: { start: number; end: number }, ws: number, we: number) {
+  // A degenerate window would divide by zero and put NaN straight into an SVG
+  // path, which fails silently — the browser drops the path and the curve just
+  // is not there. Collapse to the left edge instead.
+  const span = we - ws;
+  const floor = 0.125;
+  if (!(span > 0)) return { displayLeft: 0, displayWidth: floor, displayRight: floor };
+  const left = (Math.max(ev.start, ws) - ws) / span;
+  const width = (Math.min(ev.end, we) - Math.max(ev.start, ws)) / span;
+  // 0.125% is about 1px on an 800px lane and less than two hours in a 40d
+  // window. It keeps a zero-length mark visible without falsifying short spans;
+  // the full-width row button owns the reachable hit area.
+  const displayWidth = Math.min(100, Math.max(width * 100, floor));
+  const displayLeft = Math.max(0, Math.min(left * 100, 100 - displayWidth));
+  return { displayLeft, displayWidth, displayRight: displayLeft + displayWidth };
+}
+
+/**
+ * Keeps the row controls and the bar label in separate pixel budgets.
+ *
+ * A bar that ran beyond the scope used to fill the lane and paint its name below
+ * the right-anchored countdown. The same estimates now decide whether the tick
+ * can float and where bar text must stop, so those two choices cannot drift.
+ */
+interface TimelineRowLayoutBase {
+  barTextMaxWidth: number;
+  trailingClusterPx: number;
+  barEndPct: number;
+}
+
+export type TimelineRowLayout =
+  | (TimelineRowLayoutBase & {
+      tier: 'roomy';
+      tickFloats: true;
+      showSpan: true;
+      labelPlacement: 'inside';
+    })
+  | (TimelineRowLayoutBase & {
+      tier: 'snug';
+      tickFloats: true;
+      showSpan: false;
+      labelPlacement: 'inside';
+    })
+  | (TimelineRowLayoutBase & {
+      tier: 'tight';
+      tickFloats: false;
+      showSpan: false;
+      labelPlacement: 'inside';
+    })
+  | (TimelineRowLayoutBase & {
+      tier: 'minimal';
+      tickFloats: false;
+      showSpan: false;
+      labelPlacement: 'after' | 'before' | 'none';
+    });
+
+export function timelineRowLayout(
+  displayLeft: number,
+  displayWidth: number,
+  laneWidth: number,
+): TimelineRowLayout {
+  const safeLaneWidth = Number.isFinite(laneWidth) ? Math.max(0, laneWidth) : 0;
+  const safeDisplayLeft = Number.isFinite(displayLeft) ? Math.max(0, Math.min(displayLeft, 100)) : 0;
+  const safeDisplayWidth = Number.isFinite(displayWidth)
+    ? Math.max(0, Math.min(displayWidth, 100 - safeDisplayLeft))
+    : 0;
+  const barEndPct = safeDisplayLeft + safeDisplayWidth;
+  // The bar carries px-2 and a 1px border, so it cannot paint narrower than its
+  // own padding however short the event is. A brief update is exactly that case:
+  // its percentage width is near zero while the bar still occupies 18px, and a
+  // tick placed by percentage alone landed back on top of it.
+  const barLeftPx = (safeDisplayLeft / 100) * safeLaneWidth;
+  const proportionalBarEndPx = (barEndPct / 100) * safeLaneWidth;
+  const barEndPx =
+    safeLaneWidth > 0 ? Math.min(safeLaneWidth, Math.max(proportionalBarEndPx, barLeftPx + MIN_BAR_PX)) : 0;
+  const barInnerPx = Math.max(0, barEndPx - barLeftPx - BAR_TEXT_INSET_PX);
+
+  // Preserve room for the optional span before the tick is allowed to float.
+  // This keeps long bars from pushing the tick into the countdown.
+  const tickFloats =
+    safeLaneWidth > 0 &&
+    barEndPx + TICK_SLOT_PX <= safeLaneWidth - COUNTDOWN_PX - SPAN_PX;
+  const trailingClusterPx = COUNTDOWN_PX + (tickFloats ? 0 : TICK_SLOT_PX);
+  const clusterStartPx = Math.max(0, safeLaneWidth - trailingClusterPx);
+  const textRightPx = Math.min(barEndPx, clusterStartPx);
+  const insideLabelPx = Math.max(0, textRightPx - barLeftPx - BAR_TEXT_INSET_PX);
+
+  if (insideLabelPx >= MIN_LABEL_PX) {
+    if (tickFloats && barInnerPx >= SPAN_PX) {
+      return {
+        tier: 'roomy',
+        tickFloats: true,
+        showSpan: true,
+        labelPlacement: 'inside',
+        barTextMaxWidth: insideLabelPx,
+        trailingClusterPx,
+        barEndPct,
+      };
+    }
+
+    if (tickFloats) {
+      return {
+        tier: 'snug',
+        tickFloats: true,
+        showSpan: false,
+        labelPlacement: 'inside',
+        barTextMaxWidth: insideLabelPx,
+        trailingClusterPx,
+        barEndPct,
+      };
+    }
+
+    return {
+      tier: 'tight',
+      tickFloats: false,
+      showSpan: false,
+      labelPlacement: 'inside',
+      barTextMaxWidth: insideLabelPx,
+      trailingClusterPx,
+      barEndPct,
+    };
+  }
+
+  // An outside label and a floating tick would compete for the same gap. Keep
+  // the mandatory tick with the countdown, then give the label the remaining
+  // lane space on either side of the bar.
+  const minimalTrailingClusterPx = COUNTDOWN_PX + TICK_SLOT_PX;
+  const minimalClusterStartPx = Math.max(0, safeLaneWidth - minimalTrailingClusterPx);
+  const afterLabelPx = Math.max(0, minimalClusterStartPx - barEndPx);
+  const beforeLabelPx = Math.max(0, barLeftPx);
+  const labelPlacement =
+    afterLabelPx >= MIN_LABEL_PX ? 'after' : beforeLabelPx >= MIN_LABEL_PX ? 'before' : 'none';
+  const barTextMaxWidth =
+    labelPlacement === 'after' ? afterLabelPx : labelPlacement === 'before' ? beforeLabelPx : 0;
+
+  return {
+    tier: 'minimal',
+    tickFloats: false,
+    showSpan: false,
+    labelPlacement,
+    barTextMaxWidth,
+    trailingClusterPx: minimalTrailingClusterPx,
+    barEndPct,
+  };
+}
+
+export function timelineCountdown(
+  event: Pick<GameEvent, 'done' | 'start' | 'end'>,
+  now: number,
+): { ended: boolean; upcoming: boolean; remainingMs: number; label: string } {
+  const ended = event.end <= now;
+  const upcoming = event.start > now;
+  const remainingMs = upcoming ? event.start - now : event.end - now;
+  const label = event.done ? 'done' : ended ? 'ended' : `${upcoming ? 'arrives' : 'ends'} ${fmtDur(remainingMs)}`;
+  return { ended, upcoming, remainingMs, label };
+}
+
+/**
+ * Soft hand-offs between consecutive instances of the SAME cycle, and nothing
+ * else. A cycle is one recurring thing — Spiral Abyss, Imaginarium Theater — so
+ * the curve says "this is that again", which a stack of unrelated bars cannot.
+ *
+ * The overlay measures the rendered row stack. This keeps each endpoint on the
+ * true row centre as the responsive row height changes.
+ */
+export function buildCycleConnectorPaths(
+  events: GameEvent[],
+  ws: number,
+  we: number,
+  rowCenters: ReadonlyMap<string, number>,
+): string[] {
+  const byCycle = new Map<string, GameEvent[]>();
+  events.forEach((ev) => {
+    if (ev.type !== 'cycle') return;
+    const key = ev.name.trim().toLowerCase();
+    const list = byCycle.get(key) ?? [];
+    list.push(ev);
+    byCycle.set(key, list);
+  });
+
+  const paths: string[] = [];
+  for (const instances of byCycle.values()) {
+    if (instances.length < 2) continue;
+    const ordered = [...instances].sort((a, b) => a.start - b.start);
+    for (let i = 0; i < ordered.length - 1; i += 1) {
+      const from = ordered[i]!;
+      const to = ordered[i + 1]!;
+      const x1 = barGeometry(from, ws, we).displayRight * 10;
+      const x2 = barGeometry(to, ws, we).displayLeft * 10;
+      const y1 = rowCenters.get(from.id);
+      const y2 = rowCenters.get(to.id);
+      if (y1 === undefined || y2 === undefined) continue;
+      // Control points pull horizontally out of one bar and into the next, so the
+      // hand-off leaves and arrives along the timeline rather than cutting across it.
+      const reach = Math.max(40, Math.abs(x2 - x1) * 0.45);
+      paths.push(
+        `M ${x1.toFixed(1)} ${y1} C ${(x1 + reach).toFixed(1)} ${y1}, ${(x2 - reach).toFixed(1)} ${y2}, ${x2.toFixed(1)} ${y2}`,
+      );
+    }
+  }
+  return paths;
+}
+
+interface ConnectorLayout {
+  height: number;
+  rowCenters: Map<string, number>;
+}
+
+export function CycleConnectors({ events, ws, we, ink }: { events: GameEvent[]; ws: number; we: number; ink: string }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [layout, setLayout] = useState<ConnectorLayout>({ height: 0, rowCenters: new Map() });
+  const hasConnections = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const event of events) {
+      if (event.type !== 'cycle') continue;
+      const key = event.name.trim().toLowerCase();
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return [...counts.values()].some((count) => count > 1);
+  }, [events]);
+
+  useLayoutEffect(() => {
+    const stack = svgRef.current?.parentElement;
+    if (!stack) return;
+
+    const rows = [...stack.querySelectorAll<HTMLElement>('[data-timeline-event-row]')];
+    const measure = () => {
+      const rowCenters = new Map<string, number>();
+      for (const row of rows) {
+        const eventId = row.dataset.eventId;
+        const bar = row.querySelector<HTMLElement>('[data-event-bar]');
+        if (eventId) {
+          rowCenters.set(eventId, row.offsetTop + (bar?.offsetTop ?? 0) + (bar?.offsetHeight ?? row.offsetHeight) / 2);
+        }
+      }
+      const height = stack.clientHeight;
+      setLayout((current) => {
+        const unchanged =
+          current.height === height &&
+          current.rowCenters.size === rowCenters.size &&
+          [...rowCenters].every(([id, center]) => current.rowCenters.get(id) === center);
+        return unchanged ? current : { height, rowCenters };
+      });
+    };
+
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(stack);
+    rows.forEach((row) => observer.observe(row));
+    return () => observer.disconnect();
+  }, [events]);
+
+  const paths = buildCycleConnectorPaths(events, ws, we, layout.rowCenters);
+  if (!hasConnections) return null;
+
+  return (
+    <svg
+      ref={svgRef}
+      aria-hidden
+      className="pointer-events-none absolute inset-0 h-full w-full"
+      viewBox={`0 0 1000 ${Math.max(layout.height, 1)}`}
+      preserveAspectRatio="none"
+      fill="none"
+    >
+      {paths.map((d) => (
+        <path
+          key={d}
+          d={d}
+          stroke={ink}
+          strokeOpacity="0.45"
+          strokeWidth="1"
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+        />
+      ))}
+    </svg>
+  );
 }
 
 const EventRow = memo(function EventRow({
   ev,
   game,
+  ink,
+  inset,
   now,
   ws,
   we,
   onOpenEvent,
   onToggleEvent,
+  laneWidth,
+  localTz,
 }: {
   ev: GameEvent;
   game: Game;
+  /** The lane's assigned colour, so bars and lane title agree. */
+  ink: string;
+  /** The track colour bars are mixed against. Hex, because mix() parses hex. */
+  inset: string;
   now: number;
   ws: number;
   we: number;
   onOpenEvent: (event: GameEvent) => void;
   onToggleEvent: (event: GameEvent) => void;
+  /** Measured lane width in px, so the trailing furniture can be laid out. */
+  laneWidth: number;
+  localTz: string;
 }) {
-  const span = we - ws;
-  const left = (Math.max(ev.start, ws) - ws) / span;
-  const width = (Math.min(ev.end, we) - Math.max(ev.start, ws)) / span;
-  const displayWidth = Math.min(100, Math.max(width * 100, 8));
-  const displayLeft = Math.max(0, Math.min(left * 100, 100 - displayWidth));
-  const msLeft = ev.end - now;
-  const ended = msLeft <= 0;
+  const { displayLeft, displayWidth } = barGeometry(ev, ws, we);
+  const countdown = timelineCountdown(ev, now);
+  const { ended, remainingMs } = countdown;
   const maint = ev.type === 'maintenance';
   const banner = ev.type === 'banner';
   const cycle = ev.type === 'cycle';
-  const tone = maint ? 'rgba(148,163,184,0.6)' : endTone(msLeft);
-  const doneButtonSize = maint
-    ? 'min(var(--lane-row-h-maint), 2.25rem)'
-    : 'min(calc(var(--lane-row-h) - 0.25rem), 2.25rem)';
+  const tone = endTone(remainingMs);
+  const spanLabel = `${DateTime.fromMillis(ev.start, { zone: localTz }).toFormat('dd LLL')} → ${DateTime.fromMillis(ev.end, { zone: localTz }).toFormat('dd LLL')}`;
+  // Computed once so the fill and the ink chosen for it can never disagree.
+  const barFill = maint
+    ? mix(ink, inset, 0.22)
+    : cycle
+      ? mix(ink, inset, 0.34)
+      : banner
+        ? mix(ink, inset, 0.28)
+        : mix(ink, inset, 0.46);
+  const barInk = onColor(barFill);
+
+  // Deliberate over-estimates avoid a layout read per row on every clock tick.
+  // The only cost of guessing high is an earlier truncation near the controls.
+  const { barEndPct, tickFloats, showSpan, labelPlacement, barTextMaxWidth } = timelineRowLayout(
+    displayLeft,
+    displayWidth,
+    laneWidth,
+  );
+
+  const tick = (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggleEvent(ev);
+      }}
+      aria-label={ev.done ? `Restore ${ev.name}` : `Mark ${ev.name} done`}
+      className={`pointer-events-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-ui-full transition-opacity duration-(--dur-fast) motion-reduce:transition-none ${
+        tickFloats ? 'absolute z-30 -translate-y-1/2' : ''
+      } ${
+        ev.done
+          ? ''
+          : 'opacity-60 hover:opacity-100 focus-visible:opacity-100 sm:opacity-0 sm:group-hover/row:opacity-100 sm:group-focus-within/row:opacity-100'
+      }`}
+      style={
+        tickFloats
+          ? {
+              left: `calc(max(${barEndPct}%, ${displayLeft}% + ${MIN_BAR_PX}px) + 0.375rem)`,
+              top: 'calc(var(--lane-bar-h) / 2)',
+            }
+          : undefined
+      }
+    >
+      {/* The tick wears the bar's own skin — same fill, same ink border — so it
+          reads as the end cap of that bar rather than a control borrowed from
+          somewhere else in the app. */}
+      <span
+        aria-hidden
+        className="flex h-full w-full items-center justify-center rounded-ui-full border text-caption font-black"
+        style={{
+          backgroundColor: ev.done ? 'var(--color-ok)' : barFill,
+          borderColor: ink,
+          color: ev.done ? 'var(--color-fg-invert)' : barInk,
+        }}
+      >
+        ✓
+      </span>
+    </button>
+  );
 
   return (
-    <m.div variants={slideIn} initial="hidden" animate="visible">
+    <m.div variants={slideIn} initial="hidden" animate="visible" data-timeline-event-row data-event-id={ev.id}>
       <div
-        className={`group/row relative block w-full rounded-ui-lg text-left ${
-          maint ? 'h-[var(--lane-row-h-maint)]' : 'h-[var(--lane-row-h)]'
-        } ${ev.done ? 'opacity-40' : ''}`}
+        className={`group/row relative block h-[var(--lane-row-h)] w-full rounded-ui-lg text-left ${
+          ev.done ? 'opacity-40' : ''
+        }`}
       >
         <button
           type="button"
@@ -141,82 +471,75 @@ const EventRow = memo(function EventRow({
           className="absolute inset-0 z-10 rounded-ui-lg"
           aria-label={`Open ${game.name} event: ${ev.name}`}
         />
-        <div className="absolute inset-0 rounded-ui-lg bg-fill-1" />
+        <div className="absolute inset-x-0 top-0 h-[var(--lane-bar-h)] rounded-ui-lg border border-line-hairline bg-fill-2" />
         <ProgressBar
           variant="timeline"
           value={displayWidth / 100}
           start={displayLeft / 100}
-          color={game.color}
+          color={ink}
           data-event-bar
-          className={`absolute inset-y-0 flex items-center gap-1.5 overflow-hidden rounded-ui-lg px-2 ${
-            maint ? 'border border-dashed border-dim/50' : ''
-          }`}
+          className="absolute top-0 flex h-[var(--lane-bar-h)] items-center overflow-hidden rounded-ui-lg border px-2"
           style={{
-            // Events are the loud ones — banners you've already made your mind up about.
-            // Two-tone: color → color2 carries each game's real icon palette.
-            background: maint
-              ? 'rgba(148,163,184,0.08)'
-              : banner
-                ? `linear-gradient(90deg, ${tint(game.color, 0.08)}, ${tint(game.color2 ?? game.color, 0.16)})`
-                : `linear-gradient(90deg, ${tint(game.color, 0.5)}, ${tint(game.color2 ?? game.color, 0.62)})`,
-            boxShadow: maint ? undefined : `inset 0 0 0 1px ${tint(game.color, banner ? 0.3 : 0.85)}`,
+            backgroundColor: barFill,
+            borderColor: ink,
             opacity: ended ? 0.35 : 1,
           }}
         >
-          {banner && (
-            <span className="text-caption" style={{ color: 'rgba(232,180,90,0.45)' }}>
-              ★
+          {labelPlacement === 'inside' && (
+            <span
+              className={`min-w-0 flex-1 truncate text-meta ${maint || banner ? 'font-normal' : 'font-medium'}`}
+              style={{ color: barInk, maxWidth: barTextMaxWidth }}
+            >
+              {ev.name}
             </span>
           )}
-          {cycle && <Pill variant={isLightFill(game.color, game.color2) ? 'light' : 'dark'}>cycle</Pill>}
-          {maint && <Pill variant="muted">patch</Pill>}
+          {/* An uncrowded row keeps the range where it reads best: inside the bar
+              it belongs to, revealed on hover. */}
+          {showSpan && (
+            <span
+              className="numeral pointer-events-none absolute inset-y-0 right-2 z-30 flex items-center whitespace-nowrap pl-2 text-caption uppercase opacity-0 transition-opacity duration-(--dur-fast) group-hover/row:opacity-100 group-focus-within/row:opacity-100 motion-reduce:transition-none"
+              style={{ backgroundColor: barFill, color: barInk }}
+            >
+              {spanLabel}
+            </span>
+          )}
+        </ProgressBar>
+
+        {labelPlacement !== 'inside' && labelPlacement !== 'none' && (
           <span
-            className={`truncate text-meta ${
-              maint
-                ? 'font-medium text-muted'
-                : banner
-                  ? 'font-medium text-muted'
-                  : isLightFill(game.color, game.color2)
-                    ? 'font-bold text-fg-invert'
-                    : 'font-bold text-white'
-            }`}
+            className={`pointer-events-none absolute top-0 z-20 flex h-[var(--lane-bar-h)] items-center truncate text-meta text-fg-soft ${
+              maint || banner ? 'font-normal' : 'font-medium'
+            } ${labelPlacement === 'before' ? 'justify-end text-right' : ''}`}
+            style={
+              labelPlacement === 'after'
+                ? {
+                    left: `max(${barEndPct}%, calc(${displayLeft}% + ${MIN_BAR_PX}px))`,
+                    width: barTextMaxWidth,
+                  }
+                : {
+                    left: 0,
+                    width: barTextMaxWidth,
+                  }
+            }
           >
             {ev.name}
           </span>
-        </ProgressBar>
-        <span className="pointer-events-none absolute inset-y-0 right-1 z-20 my-auto flex h-fit items-center gap-1">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleEvent(ev);
-            }}
-            aria-label={ev.done ? `Restore ${ev.name}` : `Mark ${ev.name} done`}
-            className={`pointer-events-auto flex items-center justify-center rounded-ui-full font-black transition ${
-              maint ? 'text-caption' : 'text-meta'
-            } ${
-              ev.done
-                ? 'bg-ok/90 text-black'
-                : 'bg-scrim-veil text-muted opacity-60 hover:text-ok-fg focus-visible:opacity-100 sm:opacity-0 sm:group-hover/row:opacity-100'
-            }`}
-            style={{ height: doneButtonSize, width: doneButtonSize }}
-          >
-            ✓
-          </button>
+        )}
+
+        {tickFloats && tick}
+
+        {/* One right-anchored cluster keeps the mandatory tick and countdown from
+            stacking. The tick only joins it when the measured lane needs the gap. */}
+        <span className="pointer-events-none absolute right-1 top-0 z-30 flex h-[var(--lane-bar-h)] items-center gap-1.5">
+          {!tickFloats && tick}
           <Tooltip content="d = days · h = hours · m = minutes">
             <span
               className={`rounded-ui-sm bg-scrim-veil px-1.5 py-px text-caption font-bold tabular-nums ${
-                !ended && !maint && !ev.done && msLeft < DAY ? 'warn-pulse' : ''
+                !ended && !ev.done && remainingMs < DAY ? 'warn-pulse' : ''
               }`}
-              style={{ color: ev.done ? 'rgb(52,211,153)' : tone }}
+              style={{ color: ev.done ? 'var(--color-ok)' : tone }}
             >
-              {ev.done
-                ? 'done'
-                : ended
-                  ? 'ended'
-                  : maint
-                    ? DateTime.fromMillis(ev.start).toFormat('dd LLL HH:mm')
-                    : `ends ${fmtDur(msLeft)}`}
+              {countdown.label}
             </span>
           </Tooltip>
         </span>
@@ -227,14 +550,10 @@ const EventRow = memo(function EventRow({
 
 export function TimelinePage({ now }: { now: number }) {
   const state = useApp((s) => s.state);
-  const deleteReminder = useApp((s) => s.deleteReminder);
   const upsertEvent = useApp((s) => s.upsertEvent);
-  const upsertEvents = useApp((s) => s.upsertEvents);
   const openSheet = useUI((s) => s.openSheet);
-  const timelineView = useUI((s) => s.timelineView);
-  const setTimelineView = useUI((s) => s.setTimelineView);
-  const timelineRange = useUI((s) => s.timelineRange);
-  const setTimelineRange = useUI((s) => s.setTimelineRange);
+  const ground = useGround();
+  const laneInset = useInset();
   const reducedMotion = useReducedMotionConfig();
   const [timelineScaleRef, timelineWidth] = useElementWidth();
   const openEvent = useCallback(
@@ -246,43 +565,14 @@ export function TimelinePage({ now }: { now: number }) {
     [upsertEvent],
   );
 
+  // Lane membership and the ruler only change on the hour; the playhead below
+  // animates against raw `now`. Without this the whole grid rebuilt every tick.
   const hourBucket = Math.floor(now / HOUR);
-  // Seed expiry only needs to invalidate once per hour; state changes still
-  // recompute against the current raw clock value.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const seedPlan = useMemo(() => planSeedImport(state, now), [hourBucket, state]);
-  const importSeed = () => {
-    upsertEvents(
-      seedPlan.map((p) => {
-        if (p.kind === 'add') {
-          return {
-            gameId: p.gameId,
-            name: p.seed.name,
-            type: p.seed.type,
-            start: p.start,
-            end: p.end,
-            dailyTouch: p.seed.dailyTouch ?? false,
-            notify: p.seed.type === 'maintenance' ? false : (p.seed.notify ?? true),
-            notes: p.seed.notes ?? '',
-            sourceKey: p.seed.sourceKey,
-          };
-        }
-        // Refresh pass: correct previously imported dates/names (TBC → confirmed).
-        return {
-          id: p.eventId,
-          gameId: p.gameId,
-          name: p.seed.name,
-          start: p.start,
-          end: p.end,
-        };
-      }),
-    );
-  };
-
   const { games, eventsByGame, gameById, endingSoon, ticks, ws, we, span } = useMemo(() => {
     const rangeNow = now;
-    const rangeStart = rangeNow - 2 * DAY;
-    const rangeEnd = rangeStart + TIMELINE_RANGE_DAYS[timelineRange] * DAY;
+    const rangeDays = RANGE_DAYS;
+    const rangeStart = rangeNow - (rangeDays * DAY) / 3;
+    const rangeEnd = rangeStart + rangeDays * DAY;
     const rangeSpan = rangeEnd - rangeStart;
     const live = state.events.filter((event) => !event.deleted);
     const activeGames = state.games.filter((game) => !game.deleted);
@@ -311,7 +601,7 @@ export function TimelinePage({ now }: { now: number }) {
       )
       .sort((a, b) => a.end - b.end)
       .slice(0, 5);
-    const gridTicks = buildGridTicks(rangeStart, rangeEnd, timelineRange, timelineWidth);
+    const gridTicks = buildGridTicks(rangeStart, rangeEnd, timelineWidth, state.settings.localTz);
 
     return {
       games: activeGames,
@@ -326,9 +616,14 @@ export function TimelinePage({ now }: { now: number }) {
     // Timeline membership and grid construction intentionally invalidate on
     // the hour bucket; the red playhead below continues to use raw `now`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hourBucket, state.events, state.games, timelineRange, timelineWidth]);
+  }, [hourBucket, state.events, state.games, state.settings.localTz, timelineWidth]);
 
-  const reminders = state.reminders.filter((r) => !r.deleted).sort((a, b) => a.at - b.at);
+  // One pass assigns every lane a colour, so the timeline and the dashboard agree
+  // and no two lanes land in the same region of hue and lightness. Without it,
+  // three of the five reference games resolve to near-identical greys.
+  const laneInk = useMemo(() => assignGameInks(games, ground), [games, ground]);
+  const identityColors = useMemo(() => resolveGameIdentityColors(games), [games]);
+
   const [doneOpen, setDoneOpen] = useState<Set<string>>(new Set());
   const [laneOpen, setLaneOpen] = useState<Record<string, boolean>>({});
   const toggleDoneOpen = (gameId: string) =>
@@ -341,68 +636,39 @@ export function TimelinePage({ now }: { now: number }) {
 
   return (
     <Page>
-      <div className="mb-3 flex flex-wrap items-center gap-3">
-        <h1 className="text-title font-black tracking-tight text-fg-soft">Event timeline</h1>
-        <Segmented
-          options={[
-            { value: 'lanes', label: 'Lanes' },
-            { value: 'agenda', label: 'Agenda' },
-          ]}
-          value={timelineView}
-          onChange={setTimelineView}
-          ariaLabel="Timeline view"
-        />
-        <Segmented
-          options={[
-            { value: '7d', label: '7d' },
-            { value: '30d', label: '30d' },
-            { value: '90d', label: '90d' },
-          ]}
-          value={timelineRange}
-          onChange={setTimelineRange}
-          ariaLabel="Timeline range"
-        />
-        <div className="ml-auto grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
-          {seedPlan.length > 0 && (
-            <Tooltip content={`Bundled with the app (updated ${SEED_UPDATED}) — adds new events, fixes changed dates`}>
-              {/* Btn takes a fixed prop set, so the trigger props land on a box-less wrapper. */}
-              <span className="contents">
-                <Btn onClick={importSeed}>Import {seedPlan.length}</Btn>
-              </span>
-            </Tooltip>
-          )}
-          <Btn onClick={() => openSheet({ kind: 'pasteEvents' })}>Paste (AI)</Btn>
-          <Btn kind="primary" onClick={() => openSheet({ kind: 'event' })}>
-            + Event
-          </Btn>
-        </div>
-      </div>
+      {/* The lanes are the page, so the title only has to exist for the heading
+          outline and the landmark audit — a visible one spent a band of vertical
+          space restating the tab you already pressed. */}
+      <h1 className="sr-only">Event timeline</h1>
 
       {endingSoon.length > 0 && (
         <div className="mb-4">
-          <div className="mb-1.5 text-caption font-bold uppercase tracking-widest text-dim">Ending soonest</div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="mb-1.5 text-label font-bold uppercase tracking-widest text-dim">Ending soonest</div>
+          {/* Badge, name and countdown on ONE line. Stacking the countdown under
+              the name made every card two rows tall to hold six characters, and
+              five of those across a phone left no room for either. Wider cards,
+              fewer columns. */}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {endingSoon.map((ev) => {
               const game = gameById.get(ev.gameId)!;
+              const colors = identityColors[game.id] ?? game;
               return (
                 <button
                   key={ev.id}
                   type="button"
                   onClick={() => openSheet({ kind: 'event', eventId: ev.id, gameId: ev.gameId })}
-                  className="glass flex min-h-11 items-center gap-2 rounded-ui-lg px-3 py-2 text-left transition hover:bg-fill-2"
+                  className="glass flex min-h-9 items-center gap-2 rounded-ui-lg px-3 py-1.5 text-left transition hover:bg-fill-2"
                 >
-                  <GameBadge short={game.short} color={game.color} color2={game.color2} size="sm" />
-                  <div className="min-w-0">
-                    <div className="truncate text-label font-semibold text-fg-soft">{ev.name}</div>
-                    <Tooltip content="d = days · h = hours · m = minutes">
-                      <div
-                        className={`text-caption font-bold tabular-nums ${ev.end - now < DAY ? 'warn-pulse' : ''}`}
-                        style={{ color: endTone(ev.end - now) }}
-                      >
-                        {fmtDur(ev.end - now)}
-                      </div>
-                    </Tooltip>
-                  </div>
+                  <GameBadge short={game.short} {...colors} size="sm" />
+                  <span className="min-w-0 flex-1 truncate text-body font-semibold text-fg-soft">{ev.name}</span>
+                  <Tooltip content="d = days · h = hours · m = minutes">
+                    <span
+                      className={`numeral shrink-0 text-meta font-bold ${ev.end - now < DAY ? 'warn-pulse' : ''}`}
+                      style={{ color: endTone(ev.end - now) }}
+                    >
+                      {fmtDur(ev.end - now)}
+                    </span>
+                  </Tooltip>
                 </button>
               );
             })}
@@ -410,190 +676,164 @@ export function TimelinePage({ now }: { now: number }) {
         </div>
       )}
 
-      <AnimatePresence mode="wait" initial={false}>
-        {timelineView === 'agenda' ? (
-          <m.div key="agenda" variants={viewFade} initial="hidden" animate="visible" exit="exit">
-            <TimelineAgenda now={now} range={timelineRange} />
-          </m.div>
-        ) : (
-          <m.div key="lanes" variants={viewFade} initial="hidden" animate="visible" exit="exit">
-            <div className="glass gold-hairline relative rounded-ui-card p-4">
-              <div ref={timelineScaleRef} data-timeline-scale>
-                <div className="relative mb-2 ml-0 h-4 text-caption text-dim">
-                  {ticks.map((tick, index) => {
-                    const first = index === 0;
-                    const last = index === ticks.length - 1;
-                    return (
-                      <span
-                        key={tick.toMillis()}
-                        data-timeline-tick
-                        className={`absolute tabular-nums ${
-                          first ? 'translate-x-0' : last ? '-translate-x-full' : '-translate-x-1/2'
-                        }`}
-                        style={{ left: `${((tick.toMillis() - ws) / span) * 100}%` }}
-                      >
-                        {tick.toFormat(tickLabelFormat(timelineRange))}
-                      </span>
-                    );
-                  })}
-                </div>
+      <div className="glass gold-hairline relative rounded-ui-card p-4">
+        <div ref={timelineScaleRef} data-timeline-scale>
+          <div className="relative h-9 text-caption text-muted">
+            {ticks.map((tick, index) => {
+              const first = index === 0;
+              const last = index === ticks.length - 1;
+              const previous = ticks[index - 1];
+              const showMonth = first || previous?.month !== tick.month;
+              return (
+                <span
+                  key={tick.toMillis()}
+                  data-timeline-tick
+                  className={`absolute top-0 flex h-8 flex-col justify-between ${
+                    first ? 'translate-x-0' : last ? '-translate-x-full' : '-translate-x-1/2'
+                  }`}
+                  style={{ left: `${((tick.toMillis() - ws) / span) * 100}%` }}
+                >
+                  <span className="numeral h-3 text-caption uppercase text-dim">
+                    {showMonth ? tick.toFormat('LLL') : ''}
+                  </span>
+                  <span className="numeral text-caption text-muted">{tick.toFormat('d')}</span>
+                </span>
+              );
+            })}
+          </div>
 
-                <div className="relative py-1">
-                  {ticks.map((tick) => (
-                    <div
-                      key={tick.toMillis()}
-                      className="pointer-events-none absolute inset-y-0 w-px bg-fill-2"
-                      style={{ left: `${((tick.toMillis() - ws) / span) * 100}%` }}
-                    />
-                  ))}
-                  <m.div
-                    initial={false}
-                    animate={{ left: `${((now - ws) / span) * 100}%` }}
-                    transition={{ duration: reducedMotion ? 0 : 0.6, ease: 'linear' }}
-                    className="pointer-events-none absolute inset-y-0 z-10 w-px bg-danger/80"
-                  >
-                    <span className="absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-ui-full bg-danger" />
-                  </m.div>
-
-                  {games.length === 0 && (
-                    <p className="py-8 text-center text-body text-dim">
-                      No events yet — add banners and events so nothing ends without you noticing.
-                    </p>
-                  )}
-
-                  {games.map((game) => {
-                    const evs = eventsByGame.get(game.id) ?? [];
-                    const open = laneOpen[game.id] ?? evs.length > 0;
-                    const nextEnd = [...evs]
-                      .sort((a, b) => a.end - b.end)
-                      .find((e) => e.end > now && !e.done && e.type !== 'maintenance' && e.type !== 'banner');
-                    const doneEventsOpen = doneOpen.has(game.id);
-                    const active = evs.filter((event) => !event.done);
-                    const doneCount = evs.length - active.length;
-                    const shown = doneEventsOpen ? evs : active;
-                    return (
-                      <Disclosure
-                        key={game.id}
-                        open={open}
-                        onOpenChange={(nextOpen) => setLaneOpen((current) => ({ ...current, [game.id]: nextOpen }))}
-                        title={
-                          <span className="flex min-w-0 items-center gap-2">
-                            <GameBadge short={game.short} color={game.color} color2={game.color2} />
-                            <span
-                              className="truncate text-label font-black uppercase tracking-wider"
-                              style={{ color: game.color }}
-                            >
-                              {game.name}
-                            </span>
-                            <span
-                              className="h-px flex-1"
-                              style={{
-                                background: `linear-gradient(90deg, ${tint(game.color, 0.3)}, ${tint(game.color2 ?? game.color, 0.12)})`,
-                              }}
-                            />
-                          </span>
-                        }
-                        summary={
-                          !open ? (
-                            <span className="flex flex-col text-caption font-semibold tabular-nums text-muted">
-                              <span>
-                                {evs.length} {evs.length === 1 ? 'event' : 'events'}
-                              </span>
-                              <span>
-                                {nextEnd ? (
-                                  <span style={{ color: endTone(nextEnd.end - now) }}>
-                                    next ends {fmtDur(nextEnd.end - now)}
-                                  </span>
-                                ) : (
-                                  'no upcoming deadline'
-                                )}
-                              </span>
-                            </span>
-                          ) : undefined
-                        }
-                        triggerLabel={`${open ? 'Collapse' : 'Expand'} ${game.name} lane`}
-                        className="relative"
-                        triggerClassName="relative z-20 mt-2 rounded-ui-lg px-1 transition hover:bg-fill-1"
-                        contentClassName="pb-1"
-                      >
-                        {evs.length === 0 ? (
-                          <p className="py-1 text-label text-muted">Nothing in this window — import or add events.</p>
-                        ) : (
-                          <div className="space-y-1.5">
-                            {shown.map((ev) => (
-                              <EventRow
-                                key={ev.id}
-                                ev={ev}
-                                game={game}
-                                now={now}
-                                ws={ws}
-                                we={we}
-                                onOpenEvent={openEvent}
-                                onToggleEvent={toggleEvent}
-                              />
-                            ))}
-                            {doneCount > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => toggleDoneOpen(game.id)}
-                                className="block min-h-11 w-full rounded-ui-md py-0.5 text-left text-caption font-semibold text-muted transition hover:text-fg-soft sm:min-h-8"
-                              >
-                                {doneEventsOpen
-                                  ? '− collapse done events'
-                                  : `+ ${doneCount} done event${doneCount > 1 ? 's' : ''}`}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </Disclosure>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </m.div>
-        )}
-      </AnimatePresence>
-
-      <SectionTitle level={2}>One-off reminders</SectionTitle>
-      <div className="space-y-2">
-        {reminders.map((r) => {
-          const game = r.gameId ? gameById.get(r.gameId) : undefined;
-          const due = r.at <= now;
-          return (
-            <div
-              key={r.id}
-              className={`glass flex items-center gap-3 rounded-ui-xl px-4 py-3 ${due ? 'opacity-60' : ''}`}
+          <div className="relative pt-1">
+            {ticks.map((tick) => (
+              <div
+                key={tick.toMillis()}
+                className="timeline-grid-dotted pointer-events-none absolute inset-y-0 w-px"
+                style={{ left: `${((tick.toMillis() - ws) / span) * 100}%` }}
+              />
+            ))}
+            <m.div
+              initial={false}
+              animate={{ left: `${((now - ws) / span) * 100}%` }}
+              transition={{ duration: reducedMotion ? 0 : 0.6, ease: 'linear' }}
+              className="pointer-events-none absolute inset-y-0 z-10 w-px bg-danger"
             >
-              {game ? (
-                <GameBadge short={game.short} color={game.color} color2={game.color2} />
-              ) : (
-                <span className="h-2 w-2 shrink-0 rounded-ui-full bg-dim" />
-              )}
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-body text-fg-soft">{r.message}</div>
-                <div className="text-label tabular-nums text-dim">
-                  {DateTime.fromMillis(r.at).toFormat('ccc dd LLL HH:mm')}{' '}
-                  {due ? '· sent/due' : `· in ${fmtDur(r.at - now)}`}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => deleteReminder(r.id)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg text-dim transition hover:bg-danger/10 hover:text-danger sm:h-9 sm:w-9"
-                aria-label="Delete reminder"
-              >
-                ✕
-              </button>
-            </div>
-          );
-        })}
-        {reminders.length === 0 && (
-          <p className="rounded-ui-xl bg-fill-1 px-4 py-5 text-body text-muted">
-            No reminders yet. Add one for maintenance, shop resets, or anything that does not fit a recurring task.
-          </p>
-        )}
-        <Btn onClick={() => openSheet({ kind: 'reminder' })}>+ Reminder</Btn>
+              <span className="absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-ui-full bg-danger" />
+            </m.div>
+
+            {games.length === 0 && (
+              <p className="py-8 text-center text-body text-dim">
+                No events yet — add banners and events so nothing ends without you noticing.
+              </p>
+            )}
+
+            {games.map((game) => {
+              const colors = identityColors[game.id] ?? game;
+              const evs = eventsByGame.get(game.id) ?? [];
+              const open = laneOpen[game.id] ?? evs.length > 0;
+              const nextEnd = [...evs]
+                .sort((a, b) => a.end - b.end)
+                .find((e) => e.end > now && !e.done && e.type !== 'maintenance' && e.type !== 'banner');
+              const doneEventsOpen = doneOpen.has(game.id);
+              const active = evs.filter((event) => !event.done);
+              const doneCount = evs.length - active.length;
+              const shown = doneEventsOpen ? evs : active;
+              const serverLabel = serverRegionLabel(game.tz, now);
+              const accountLabel = game.accountLabel?.trim();
+              return (
+                <Disclosure
+                  key={game.id}
+                  open={open}
+                  onOpenChange={(nextOpen) => setLaneOpen((current) => ({ ...current, [game.id]: nextOpen }))}
+                  title={
+                    <span className="flex min-w-0 items-center gap-2">
+                      <GameBadge short={game.short} {...colors} />
+                      <span
+                        className="min-w-0 truncate text-title font-semibold"
+                        style={{ fontFamily: titleFont(game.titleFont), color: gameTitleInk(colors, ground) }}
+                      >
+                        {game.name}
+                      </span>
+                      <span
+                        className={`shrink-0 rounded-ui-sm border border-line-edge bg-inset px-1.5 py-0.5 text-caption font-semibold text-fg-soft ${serverLabel.startsWith('UTC') && serverLabel !== 'UTC' ? 'numeral' : ''}`}
+                      >
+                        {serverLabel}
+                      </span>
+                      {accountLabel && (
+                        <span className="min-w-0 max-w-[35%] shrink-0 truncate text-body font-semibold text-fg-soft">
+                          {accountLabel}
+                        </span>
+                      )}
+                      <span
+                        className="h-px flex-1"
+                        style={{
+                          background: `linear-gradient(90deg, ${mix(gameRim(colors, ground), ground, 0.3)}, ${mix(gameRim(colors, ground), ground, 0.08)})`,
+                        }}
+                      />
+                    </span>
+                  }
+                  summary={
+                    !open ? (
+                      <span className="numeral flex flex-col text-caption text-muted">
+                        <span>
+                          {evs.length} {evs.length === 1 ? 'event' : 'events'}
+                        </span>
+                        <span>
+                          {nextEnd ? (
+                            <span style={{ color: endTone(nextEnd.end - now) }}>
+                              next ends {fmtDur(nextEnd.end - now)}
+                            </span>
+                          ) : (
+                            'no upcoming deadline'
+                          )}
+                        </span>
+                      </span>
+                    ) : undefined
+                  }
+                  triggerLabel={`${open ? 'Collapse' : 'Expand'} ${game.name}, ${serverLabel}${accountLabel ? `, ${accountLabel}` : ''} lane`}
+                  className="relative"
+                  triggerClassName="relative z-20 mt-2 rounded-ui-lg px-1 transition hover:bg-fill-1"
+                  contentClassName="pb-1"
+                >
+                  {evs.length === 0 ? (
+                    <p className="py-1 text-label text-muted">Nothing in this window — import or add events.</p>
+                  ) : (
+                    <div>
+                      <div className="relative flex flex-col gap-1.5">
+                        <CycleConnectors events={shown} ws={ws} we={we} ink={laneInk[game.id] ?? colors.color} />
+                        {shown.map((ev) => (
+                          <EventRow
+                            key={ev.id}
+                            ev={ev}
+                            game={game}
+                            ink={laneInk[game.id] ?? colors.color}
+                            inset={laneInset}
+                            now={now}
+                            ws={ws}
+                            we={we}
+                            onOpenEvent={openEvent}
+                            onToggleEvent={toggleEvent}
+                            laneWidth={timelineWidth}
+                            localTz={state.settings.localTz}
+                          />
+                        ))}
+                      </div>
+                      {doneCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => toggleDoneOpen(game.id)}
+                          className="mt-1 block min-h-11 w-full rounded-ui-md py-0.5 text-left text-caption font-semibold text-muted transition hover:text-fg-soft sm:min-h-8"
+                        >
+                          {doneEventsOpen
+                            ? '− collapse done events'
+                            : `+ ${doneCount} done event${doneCount > 1 ? 's' : ''}`}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </Disclosure>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </Page>
   );

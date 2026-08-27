@@ -1,7 +1,8 @@
-import { emptyState } from '@void/shared';
+import { emptyState } from '@memoria/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const idb = vi.hoisted(() => new Map<string, unknown>());
+const launcher = vi.hoisted(() => ({ serving: true }));
 
 vi.mock('idb-keyval', () => ({
   get: vi.fn(async (key: string) => idb.get(key)),
@@ -13,19 +14,12 @@ vi.mock('idb-keyval', () => ({
   }),
 }));
 
-import { configureHostedSession } from '../src/auth-session';
+vi.mock('../src/launcher', () => ({ servedByLauncher: () => launcher.serving }));
+
 import { useApp } from '../src/store';
-import { ANONYMOUS_IDENTITY } from '../src/storage-identity';
 import { resetSyncState, syncNow } from '../src/sync';
 
-let sequence = 0;
-
-async function hostedIdentity(name: string): Promise<void> {
-  await useApp.getState().setIdentity(`user:${name}-${sequence++}`);
-  configureHostedSession({ hosted: true, userId: name, getToken: async () => 'test-token' });
-}
-
-/** A fetch mock whose response is released manually, so a switch can race it. */
+/** A fetch mock whose response is released manually, so two calls can race. */
 function deferredFetch() {
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
@@ -38,48 +32,46 @@ function deferredFetch() {
   return { mock, release };
 }
 
-beforeEach(async () => {
+beforeEach(() => {
   idb.clear();
   localStorage.clear();
+  launcher.serving = true;
+  useApp.setState({ state: emptyState(), loaded: true });
   resetSyncState();
-  Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
-  await useApp.getState().setIdentity(ANONYMOUS_IDENTITY);
 });
 
-afterEach(async () => {
+afterEach(() => {
   resetSyncState();
-  configureHostedSession({ hosted: false, userId: null });
-  await useApp.getState().setIdentity(ANONYMOUS_IDENTITY);
   vi.unstubAllGlobals();
 });
 
 describe('syncNow preconditions', () => {
-  it('never contacts the network for the anonymous identity', async () => {
+  it('never contacts the network when the launcher is not serving the page', async () => {
+    launcher.serving = false;
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 
     await syncNow();
 
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(useApp.getState().syncStatus).not.toBe('error');
   });
 
-  it('short-circuits while offline instead of failing the sync', async () => {
-    await hostedIdentity('offline');
+  it('syncs while the machine has no internet, because the launcher is loopback', async () => {
     Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
-    const fetchMock = vi.fn();
+    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ state: emptyState() }) }));
     vi.stubGlobal('fetch', fetchMock);
 
     await syncNow();
 
-    expect(fetchMock).not.toHaveBeenCalled();
-    // Offline is a normal state, not an error the user must act on.
-    expect(useApp.getState().syncStatus).not.toBe('error');
+    expect(fetchMock).toHaveBeenCalled();
+    expect(useApp.getState().syncStatus).toBe('ok');
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
   });
 });
 
 describe('re-entrancy', () => {
   it('does not double-post when a second sync starts while one is in flight', async () => {
-    await hostedIdentity('reentrant');
     const { mock, release } = deferredFetch();
     vi.stubGlobal('fetch', mock);
 
@@ -93,53 +85,28 @@ describe('re-entrancy', () => {
   });
 });
 
-describe('identity guards', () => {
-  it('abandons an in-flight sync when the identity changes mid-request', async () => {
-    // The failure this pins is cross-account corruption: the response belongs to
-    // the OLD user, so it must never be merged into the NEW identity's state.
-    await hostedIdentity('racer');
-    const { mock, release } = deferredFetch();
-    vi.stubGlobal('fetch', mock);
-
-    const inFlight = syncNow();
-    await useApp.getState().setIdentity('user:someone-else');
-    release();
-    await inFlight;
-
-    // The late response was discarded, so the new identity is untouched and the
-    // status was not stamped 'ok' on its behalf.
-    expect(useApp.getState().identity).toBe('user:someone-else');
-    expect(useApp.getState().state.games.filter((game) => !game.deleted)).toHaveLength(0);
-    expect(useApp.getState().syncStatus).not.toBe('ok');
-  });
-
-  it('does not report an error against an identity the user has already left', async () => {
-    await hostedIdentity('errored');
-    let release!: () => void;
-    const gate = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    const fetchMock = vi.fn(async () => {
-      await gate;
-      throw new Error('network died');
+describe('conflict handling', () => {
+  it('pulls, merges and retries when another window wrote first', async () => {
+    let conflicted = false;
+    const fetchMock = vi.fn(async (url: string) => {
+      if (String(url).endsWith('/api/sync')) {
+        if (conflicted) return { ok: true, status: 200, json: async () => ({ state: emptyState(), version: 3 }) };
+        conflicted = true;
+        return { ok: false, status: 409, json: async () => ({ error: 'sync_conflict_retry' }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ state: emptyState(), version: 2 }) };
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    const inFlight = syncNow();
-    await useApp.getState().setIdentity('user:moved-on');
-    release();
-    await inFlight;
+    await syncNow();
 
-    expect(useApp.getState().syncError).toBe('');
-    expect(useApp.getState().syncStatus).not.toBe('error');
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/api/state'))).toHaveLength(1);
+    expect(useApp.getState().syncStatus).toBe('ok');
   });
-});
 
-describe('conflict retry ceiling', () => {
   it('gives up after three conflicted attempts rather than looping forever', async () => {
-    await hostedIdentity('stubborn');
     const fetchMock = vi.fn(async (url: string) =>
-      url.endsWith('/api/sync')
+      String(url).endsWith('/api/sync')
         ? { ok: false, status: 409, json: async () => ({ error: 'sync_conflict_retry' }) }
         : { ok: true, status: 200, json: async () => ({ state: emptyState(), version: 1 }) },
     );
@@ -152,6 +119,24 @@ describe('conflict retry ceiling', () => {
     expect(useApp.getState()).toMatchObject({
       syncStatus: 'error',
       syncError: 'Sync remained conflicted after three attempts.',
+    });
+  });
+});
+
+describe('launcher errors', () => {
+  it('surfaces the launcher JSON error instead of only the status code', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      status: 400,
+      json: async () => ({ error: 'Invalid app state: schema version is too new' }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await syncNow();
+
+    expect(useApp.getState()).toMatchObject({
+      syncStatus: 'error',
+      syncError: 'Invalid app state: schema version is too new',
     });
   });
 });

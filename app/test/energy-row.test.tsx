@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import type { EnergyProjection, Resource } from '@void/shared';
+import type { EnergyProjection, Resource } from '@memoria/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EnergyRow } from '../src/components/EnergyRow';
 import { useUI } from '../src/ui-store';
@@ -10,7 +10,6 @@ const resource: Resource = {
   id: 'trailblaze',
   gameId: 'hsr',
   name: 'Trailblaze Power',
-  icon: 'comet',
   cap: 300,
   regenMinutes: 6,
   reserveCap: 2400,
@@ -58,6 +57,7 @@ function renderRow({
       proj={proj}
       reserve={reserve}
       now={now}
+      localTz="Pacific/Kiritimati"
       onCommit={onCommit}
     />,
   );

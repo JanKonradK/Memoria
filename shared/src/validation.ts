@@ -53,6 +53,7 @@ const game = z.object({
   short: z.string().max(20),
   color: z.string().max(32),
   color2: z.string().max(32).optional(),
+  color3: z.string().max(32).optional(),
   icon: z.string().max(64),
   image: z.string().max(MAX_GAME_IMAGE_LENGTH).optional(),
   platform: z.enum(['pc', 'mobile', 'both']),
@@ -64,8 +65,6 @@ const game = z.object({
   sort: finite,
   notes: longText.optional(),
   processNames: z.array(z.string().max(160)).max(20).optional(),
-  hideProgressRing: z.boolean().optional(),
-  hideEventStrip: z.boolean().optional(),
   titleFont: z.string().max(120).optional(),
 });
 
@@ -74,7 +73,6 @@ const resource = z.object({
   id,
   gameId: id,
   name: shortText,
-  icon: z.string().max(64).optional(),
   cap: finite.nonnegative(),
   regenMinutes: finite.nonnegative(),
   reserveCap: finite.nonnegative(),
@@ -103,6 +101,7 @@ const task = z.object({
   sort: finite,
   mode: z.enum(['check', 'timer', 'count']).optional(),
   timerDurationMinutes: finite.positive().optional(),
+  timerStepMinutes: finite.positive().optional(),
   timerEndsAt: timestamp.nullable().optional(),
   countTarget: finite.positive().max(365).optional(),
   timelineLinked: z.boolean().optional(),
@@ -166,6 +165,11 @@ const settings = z.object({
   quietEnd: z.number().int().min(0).max(1439).nullable(),
   localTz: z.string().min(1).max(100),
   sleepHours: finite.min(1).max(24),
+  /** A SEED_UPDATED stamp: YYYY-MM-DD, or absent. */
+  seedImportedVersion: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   fieldUpdatedAt: z.record(z.string(), syncClock).optional(),
 });
 

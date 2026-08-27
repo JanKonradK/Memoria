@@ -2,17 +2,17 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "void-app",
+      "name": "memoria-app",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 5183
     },
     {
-      "name": "void-launcher",
+      "name": "memoria-launcher",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["desktop/void.mjs"],
+      "runtimeArgs": ["desktop/memoria.mjs"],
       "port": 17817,
-      "env": { "VOID_NO_BROWSER": "1" }
+      "env": { "MEMORIA_NO_BROWSER": "1" }
     }
   ]
 }

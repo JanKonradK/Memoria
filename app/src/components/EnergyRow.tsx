@@ -1,10 +1,9 @@
 import { memo, useEffect, useRef, useState } from 'react';
-import type { EnergyProjection, Resource } from '@void/shared';
-import { effectiveReserveRegenMinutes, effectiveResourceKind } from '@void/shared';
+import type { EnergyProjection, Resource } from '@memoria/shared';
+import { effectiveReserveRegenMinutes, effectiveResourceKind } from '@memoria/shared';
 import { useUI } from '../ui-store';
-import { clamp, fmtClock, fmtDur, intOr, luminance } from '../util';
+import { clamp, fmtClock, fmtDur, intOr } from '../util';
 import { ProgressBar } from './primitives';
-import { ResourceIcon } from './ResourceIcon';
 
 const ENERGY_STEP_KEYS: Readonly<Record<string, number>> = {
   a: -10,
@@ -12,14 +11,6 @@ const ENERGY_STEP_KEYS: Readonly<Record<string, number>> = {
   d: 1,
   f: 10,
 };
-
-/** Dark secondary card accents disappear on the reserve rail; fall back to the primary accent. */
-function visibleReserveAccent(primary: string, secondary?: string): string {
-  if (!secondary) return primary;
-  const secondaryLuminance = luminance(secondary);
-  if (secondaryLuminance == null) return secondary;
-  return secondaryLuminance >= 0.28 ? secondary : primary;
-}
 
 /** Hold-to-repeat: starts at 180ms, accelerates down to 40ms. */
 function useHoldStep(onStep: (delta: number) => void) {
@@ -96,6 +87,7 @@ export const EnergyRow = memo(function EnergyRow({
   proj,
   reserve,
   now,
+  localTz,
   onCommit,
 }: {
   res: Resource;
@@ -104,6 +96,7 @@ export const EnergyRow = memo(function EnergyRow({
   proj: EnergyProjection;
   reserve?: number;
   now: number;
+  localTz: string;
   onCommit: (value: number, reserve?: number) => void;
 }) {
   const kind = effectiveResourceKind(res);
@@ -162,7 +155,7 @@ export const EnergyRow = memo(function EnergyRow({
   const pct = res.cap > 0 ? Math.min(100, (proj.precise / res.cap) * 100) : 0;
   const reserveValue = reserve ?? 0;
   const reservePct = res.reserveCap > 0 ? Math.min(100, (reserveValue / res.reserveCap) * 100) : 0;
-  const reserveAccent = visibleReserveAccent(color, reserveColor);
+  const reserveAccent = reserveColor ?? color;
   const reserveLabel = res.reserveLabel ?? 'Reserve';
   const autoOpen = res.reserveCap > 0 && (proj.isFull || reserveValue > 0);
   const reserveIsOpen = pinnedReserveOpen ?? autoOpen;
@@ -181,14 +174,14 @@ export const EnergyRow = memo(function EnergyRow({
   let subtitle = '';
   if (compact) {
     if (kind === 'weekly' && proj.weeklyResetAt != null) {
-      subtitle = `refills ${fmtClock(proj.weeklyResetAt)}`;
-      if (!proj.hasSnapshot) subtitle += ' · enter the current value →';
-    } else if (!proj.hasSnapshot) subtitle = 'enter the current value →';
-  } else if (!proj.hasSnapshot) subtitle = 'enter the current value →';
+      subtitle = `refills ${fmtClock(proj.weeklyResetAt, localTz)}`;
+      if (!proj.hasSnapshot) subtitle += ' · enter the current value';
+    } else if (!proj.hasSnapshot) subtitle = 'enter the current value';
+  } else if (!proj.hasSnapshot) subtitle = 'enter the current value';
   else if (proj.isFull && res.reserveCap > 0) subtitle = 'FULL';
   else if (proj.isFull) subtitle = `FULL${proj.overflow > 0 ? ` — ${proj.overflow} wasted` : ''}`;
   else if (proj.fullAt != null && proj.msToFull != null)
-    subtitle = `full ${fmtClock(proj.fullAt)} · in ${fmtDur(proj.msToFull)}`;
+    subtitle = `full ${fmtClock(proj.fullAt, localTz)} · in ${fmtDur(proj.msToFull)}`;
   else subtitle = 'does not regenerate';
 
   let reserveSubtitle = '';
@@ -197,15 +190,14 @@ export const EnergyRow = memo(function EnergyRow({
     else if (proj.isFull) {
       const reserveRegenMinutes = effectiveReserveRegenMinutes(res);
       const reserveFullAt = now + (res.reserveCap - reserveValue) * reserveRegenMinutes * 60_000;
-      reserveSubtitle = `+1 / ${reserveRegenMinutes}m · full ${fmtClock(reserveFullAt)} · in ${fmtDur(reserveFullAt - now)}`;
+      reserveSubtitle = `+1 / ${reserveRegenMinutes}m · full ${fmtClock(reserveFullAt, localTz)} · in ${fmtDur(reserveFullAt - now)}`;
     } else reserveSubtitle = `fills while ${res.name} is capped`;
   }
 
   return (
     <div className="group/row">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-        <span className="flex min-w-0 items-center gap-1.5">
-          <ResourceIcon iconKey={res.icon} color={color} size={13} className="shrink-0" />
+        <span className="flex min-w-0 items-center">
           <span className="truncate text-label font-semibold uppercase tracking-wider text-muted">{res.name}</span>
         </span>
 
@@ -293,9 +285,20 @@ export const EnergyRow = memo(function EnergyRow({
                 type="button"
                 aria-expanded={reserveIsOpen}
                 onClick={() => setReserveOpen(res.id, !reserveIsOpen)}
-                className="mt-1 w-full text-left text-caption font-semibold tabular-nums text-dim transition hover:text-fg-soft"
+                className="mt-1 flex w-full items-center gap-1 text-left text-caption font-semibold tabular-nums text-dim transition hover:text-fg-soft"
               >
-                {reserveIsOpen ? '▾' : '▸'} {reserveLabel} {reserveValue}/{res.reserveCap}
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  className={`icon h-3 w-3 shrink-0 transition-transform ${reserveIsOpen ? 'rotate-90' : ''}`}
+                  aria-hidden
+                >
+                  <path d="m7 5 5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>
+                  {reserveLabel} {reserveValue}/{res.reserveCap}
+                </span>
               </button>
 
               {reserveIsOpen && (

@@ -37,9 +37,9 @@ export function ReminderSheet({ open }: { open: boolean }) {
           <Field label="When">
             <TextInput
               type="datetime-local"
-              value={fmtDateTimeLocalInput(at)}
+              value={fmtDateTimeLocalInput(at, state.settings.localTz)}
               onChange={(e) => {
-                const t = parseDateTimeLocalInput(e.target.value);
+                const t = parseDateTimeLocalInput(e.target.value, state.settings.localTz);
                 if (t != null) setAt(t);
               }}
             />

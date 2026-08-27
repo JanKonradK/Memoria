@@ -1,18 +1,20 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { AppState, ChecklistItem, Game, GameUrgency, Snapshot } from '@void/shared';
-import { effectiveResourceKind, projectEnergy } from '@void/shared';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { AppState, ChecklistItem, Game, GameUrgency, Snapshot } from '@memoria/shared';
+import { effectiveResourceKind, projectEnergy } from '@memoria/shared';
 import { m } from 'motion/react';
 import { useDerived } from '../selectors';
 import { useApp, type AppStore } from '../store';
 import { useUI } from '../ui-store';
 import { useMediaQuery, useReducedMotion } from '../hooks';
 import { cardEnter } from '../motion';
+import { gameAccent, gameInk, gameRim, gameSupport, gameTitleInk, mix, resolveGameIdentityColors } from '../game-color';
+import { gameShellVars, useGround, useTheme } from '../theme';
 
-import { endTone, fmtDur, tint } from '../util';
+import { endTone, fmtDur, localResetLabel, tint } from '../util';
 import { EnergyRow } from './EnergyRow';
-import { ProgressRing } from './ProgressRing';
-import { Pill, Tick } from './primitives';
+import { Pill, ProgressBar, Tick } from './primitives';
 import { Tooltip } from './ui';
+import { serverRegionLabel } from './NexusLayout';
 
 const CADENCE_RANK = { daily: 0, custom: 1, weekly: 2, monthly: 3 } as const;
 
@@ -86,24 +88,31 @@ function TimerTaskRow({
   now,
   onStart,
   onRestart,
+  onAdvance,
 }: {
   item: ChecklistItem;
   color: string;
   now: number;
   onStart: () => void;
   onRestart: () => void;
+  onAdvance: () => void;
 }) {
   const left = item.timerEndsAt != null ? item.timerEndsAt - now : 0;
   const durationMs = item.timerDurationMinutes * 60_000;
   const running = item.timerRunning;
   const ready = item.timerReady && !running;
+  const stepped = running && item.timerStepMinutes != null;
+  const stepLabel =
+    item.timerStepMinutes != null && item.timerStepMinutes % 60 === 0
+      ? `${item.timerStepMinutes / 60} hours`
+      : `${item.timerStepMinutes} minutes`;
   const fraction = running && durationMs > 0 ? Math.min(1, Math.max(0, 1 - left / durationMs)) : 0;
   return (
     <button
       type="button"
-      onClick={running || ready ? onRestart : onStart}
+      onClick={stepped ? onAdvance : running || ready ? onRestart : onStart}
       className="group flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-1 text-left transition hover:bg-fill-2 sm:min-h-8"
-      aria-label={`${item.name}: ${running ? 'restart timer' : ready ? 'timer ready — restart' : 'start timer'}`}
+      aria-label={`${item.name}: ${stepped ? `subtract ${stepLabel} from timer` : running ? 'restart timer' : ready ? 'timer ready — restart' : 'start timer'}`}
     >
       <CadenceTag cadence={item.cadence} />
       <span className={`min-w-0 flex-1 truncate text-body ${ready ? 'text-dim line-through' : 'text-fg-soft'}`}>
@@ -249,13 +258,13 @@ export function EventStrip({
   const events = [...shown, ...next];
   if (events.length === 0) return null;
   return (
-    <div className="mt-3 space-y-0.5">
+    <div className="mt-4 space-y-1">
       {events.map((ev) => (
         <button
           key={ev.id}
           type="button"
           onClick={() => onOpenEvent(ev.id, game.id)}
-          className="flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-0.5 text-left text-label transition hover:bg-fill-2 sm:min-h-8"
+          className="flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-0.5 text-left text-body transition hover:bg-fill-2 sm:min-h-8"
         >
           <Pill>{ev.type === 'cycle' ? 'cycle' : ev.type === 'banner' ? 'banner' : 'event'}</Pill>
           {ev.dailyTouch && <Pill variant="warn">daily</Pill>}
@@ -283,7 +292,13 @@ export function EventStrip({
 
 export type GameControlActions = Pick<
   AppStore,
-  'setTaskDone' | 'startTaskTimer' | 'restartTaskTimer' | 'setTaskCount' | 'setEnergy' | 'adjustEnergy'
+  | 'setTaskDone'
+  | 'startTaskTimer'
+  | 'restartTaskTimer'
+  | 'advanceTaskTimer'
+  | 'setTaskCount'
+  | 'setEnergy'
+  | 'adjustEnergy'
 >;
 
 function EnergyControlRow({
@@ -291,14 +306,17 @@ function EnergyControlRow({
   res,
   snap,
   now,
+  localTz,
   setEnergy,
 }: {
   game: Game;
   res: AppState['resources'][number];
   snap: Snapshot | undefined;
   now: number;
+  localTz: string;
   setEnergy: GameControlActions['setEnergy'];
 }) {
+  const ground = useGround();
   const projection = useMemo(() => projectEnergy(res, snap, now, game), [game, now, res, snap]);
   const commit = useCallback(
     (value: number, reserve?: number) => setEnergy(res.id, value, reserve),
@@ -307,11 +325,12 @@ function EnergyControlRow({
   return (
     <EnergyRow
       res={res}
-      color={game.color}
-      reserveColor={game.color2}
+      color={gameInk(game, ground)}
+      reserveColor={gameSupport(game, ground)}
       proj={projection}
       reserve={projection.reserve ?? snap?.reserve}
       now={now}
+      localTz={localTz}
       onCommit={commit}
     />
   );
@@ -349,6 +368,7 @@ function ResourceControls({
                 res={res}
                 snap={snaps.get(res.id)}
                 now={now}
+                localTz={state.settings.localTz}
                 setEnergy={actions.setEnergy}
               />
             );
@@ -362,7 +382,7 @@ function ResourceControls({
               <button
                 type="button"
                 onClick={() => actions.adjustEnergy(primaryEnergy.id, chip.delta)}
-                className="min-h-11 rounded-ui-lg bg-fill-2 px-3 py-2 text-meta font-semibold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 hover:text-white sm:min-h-8 sm:py-1"
+                className="min-h-11 rounded-ui-lg bg-fill-2 px-3 py-2 text-meta font-semibold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 hover:text-fg sm:min-h-8 sm:py-1"
               >
                 {chip.label}{' '}
                 <span className="tabular-nums text-dim">{chip.delta > 0 ? `+${chip.delta}` : chip.delta}</span>
@@ -386,6 +406,8 @@ function ChecklistControls({
   now: number;
   actions: GameControlActions;
 }) {
+  const ground = useGround();
+  const tickColor = gameInk(game, ground);
   if (game.paused || checklist.length === 0) return null;
   return (
     <div className="mt-3 space-y-0.5">
@@ -394,16 +416,17 @@ function ChecklistControls({
           <TimerTaskRow
             key={`${item.taskId}|${item.periodKey}`}
             item={item}
-            color={game.color}
+            color={tickColor}
             now={now}
             onStart={() => actions.startTaskTimer(item.taskId, item.periodKey)}
             onRestart={() => actions.restartTaskTimer(item.taskId, item.periodKey)}
+            onAdvance={() => actions.advanceTaskTimer(item.taskId, item.periodKey, item.timerStepMinutes ?? 0)}
           />
         ) : item.mode === 'count' ? (
           <CountTaskRow
             key={`${item.taskId}|${item.periodKey}`}
             item={item}
-            color={game.color}
+            color={tickColor}
             onAdvance={() =>
               actions.setTaskCount(
                 item.taskId,
@@ -416,7 +439,7 @@ function ChecklistControls({
           <TaskRow
             key={`${item.taskId}|${item.periodKey}`}
             item={item}
-            color={game.color}
+            color={tickColor}
             now={now}
             onToggle={() => actions.setTaskDone(item.taskId, item.periodKey, !item.done)}
           />
@@ -429,38 +452,57 @@ function ChecklistControls({
 function GameControlsHeader({
   game,
   dailies,
+  now,
+  localTz,
   onEdit,
   layout = 'card',
-  trailing,
 }: {
   game: Game;
   dailies: ChecklistItem[];
+  now: number;
+  localTz: string;
   onEdit: () => void;
   layout?: 'card' | 'focus';
-  /** Owner-supplied control for the header's right edge (the Nexus collapse). */
-  trailing?: ReactNode;
 }) {
+  const ground = useGround();
   const completed = dailies.filter((daily) => daily.done).length;
+  const accountLabel = game.accountLabel?.trim();
+  const resetLabel = localResetLabel(game, localTz, now);
+  const regionLabel = serverRegionLabel(game.tz, now);
   return (
     <div className="relative z-10 flex items-center gap-3">
       <button
         type="button"
         onClick={onEdit}
         className="group/title -ml-1 min-w-0 flex-1 cursor-pointer rounded-ui-md px-1 py-0.5 text-left transition hover:bg-fill-2"
-        aria-label={`Edit ${game.name}`}
+        aria-label={`Edit ${game.name}${accountLabel ? `, ${accountLabel}` : ''}`}
       >
-        <div className="flex items-center gap-2.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <span
+            className={`max-w-20 shrink-0 truncate rounded-ui-sm border border-line-edge bg-inset px-1.5 py-0.5 text-caption font-semibold text-fg-soft ${regionLabel.startsWith('UTC') && regionLabel !== 'UTC' ? 'numeral' : ''}`}
+          >
+            {regionLabel}
+          </span>
           <h2
-            className={`truncate ${layout === 'focus' ? 'text-display min-[1500px]:text-hero' : 'text-heading'} font-black tracking-tight text-fg transition group-hover/title:text-white`}
+            className={`min-w-0 flex-1 truncate ${layout === 'focus' ? 'text-display min-[1500px]:text-hero' : 'text-heading'} font-black tracking-tight text-fg transition group-hover/title:text-fg`}
             style={{
               fontFamily: game.titleFont,
+              color: gameTitleInk(game, ground),
               // A 1px offset for legibility over the card's own gradient — not
               // the coloured halo that used to sit behind it.
-              textShadow: '0 1px 0 rgba(0, 0, 0, 0.4)',
+              textShadow: 'var(--title-shadow)',
             }}
           >
             {game.name}
           </h2>
+          {accountLabel && (
+            <>
+              <span aria-hidden className="h-3 w-px shrink-0 bg-line-edge" />
+              <span className="min-w-0 max-w-[40%] shrink-0 truncate text-body font-semibold text-fg-soft">
+                {accountLabel}
+              </span>
+            </>
+          )}
           {game.paused && (
             <Pill variant="paused" size="md">
               paused
@@ -468,16 +510,15 @@ function GameControlsHeader({
           )}
         </div>
         <div className="mt-0.5 flex items-center gap-1.5 text-label text-dim">
-          <span className="h-[3px] w-8 rounded-ui-full" style={{ background: game.color }} />
-          reset {String(game.dailyResetHour).padStart(2, '0')}:00 server
+          <span className="h-[3px] w-8 rounded-ui-full" style={{ background: gameRim(game, ground) }} />
+          reset {resetLabel}
         </div>
       </button>
-      {!game.paused && !game.hideProgressRing && dailies.length > 0 && (
-        <ProgressRing fraction={completed / dailies.length} color={game.color}>
+      {!game.paused && dailies.length > 0 && (
+        <ProgressBar variant="ring" value={completed / dailies.length} color={gameInk(game, ground)}>
           {completed}/{dailies.length}
-        </ProgressRing>
+        </ProgressBar>
       )}
-      {trailing}
     </div>
   );
 }
@@ -490,7 +531,6 @@ export function GameControlsView({
   now,
   layout = 'card',
   columns = 1,
-  headerTrailing,
   onEditGame,
   onOpenEvent,
 }: {
@@ -500,30 +540,34 @@ export function GameControlsView({
   now: number;
   layout?: 'card' | 'focus';
   columns?: 1 | 2;
-  headerTrailing?: ReactNode;
   onEditGame: (gameId: string) => void;
   onOpenEvent: (eventId: string, gameId: string) => void;
 }) {
   const { game } = entry;
   const derived = useDerived(now);
+  const identityColors = resolveGameIdentityColors(state.games.filter((candidate) => !candidate.deleted));
+  const visualGame = { ...game, ...(identityColors[game.id] ?? {}) };
   const checklist = [...(derived.checklistByGame.get(game.id) ?? [])].sort(
     (a, b) => CADENCE_RANK[a.cadence] - CADENCE_RANK[b.cadence] || a.sort - b.sort,
   );
   const dailies = checklist.filter((item) => item.cadence === 'daily');
-  const resources = <ResourceControls game={game} state={state} snaps={derived.snaps} now={now} actions={actions} />;
-  const tasks = <ChecklistControls game={game} checklist={checklist} now={now} actions={actions} />;
-  const events = !game.paused && !game.hideEventStrip && (
-    <EventStrip game={game} events={state.events} now={now} onOpenEvent={onOpenEvent} />
+  const resources = (
+    <ResourceControls game={visualGame} state={state} snaps={derived.snaps} now={now} actions={actions} />
+  );
+  const tasks = <ChecklistControls game={visualGame} checklist={checklist} now={now} actions={actions} />;
+  const events = !game.paused && (
+    <EventStrip game={visualGame} events={state.events} now={now} onOpenEvent={onOpenEvent} />
   );
 
   return (
     <>
       <GameControlsHeader
-        game={game}
+        game={visualGame}
         dailies={dailies}
+        now={now}
+        localTz={state.settings.localTz}
         onEdit={() => onEditGame(game.id)}
         layout={layout}
-        trailing={headerTrailing}
       />
       <div className={`relative z-10 flex flex-1 flex-col ${game.paused ? 'opacity-50' : ''}`}>
         {layout === 'focus' ? (
@@ -560,17 +604,20 @@ export function GameControls({
   const setTaskDone = useApp((s) => s.setTaskDone);
   const startTaskTimer = useApp((s) => s.startTaskTimer);
   const restartTaskTimer = useApp((s) => s.restartTaskTimer);
+  const advanceTaskTimer = useApp((s) => s.advanceTaskTimer);
   const setTaskCount = useApp((s) => s.setTaskCount);
   const setEnergy = useApp((s) => s.setEnergy);
   const adjustEnergy = useApp((s) => s.adjustEnergy);
   const actions = useMemo(
-    () => ({ setTaskDone, startTaskTimer, restartTaskTimer, setTaskCount, setEnergy, adjustEnergy }),
-    [adjustEnergy, restartTaskTimer, setEnergy, setTaskCount, setTaskDone, startTaskTimer],
+    () => ({ setTaskDone, startTaskTimer, restartTaskTimer, advanceTaskTimer, setTaskCount, setEnergy, adjustEnergy }),
+    [adjustEnergy, advanceTaskTimer, restartTaskTimer, setEnergy, setTaskCount, setTaskDone, startTaskTimer],
   );
   const openSheet = useUI((store) => store.openSheet);
-  const focusColumns = useUI((store) => store.focusColumns);
+  // Derived from the width the card actually has, rather than from a setting.
+  // The manual override existed to correct a layout that could not measure
+  // itself; it can, so the knob was answering a question nobody asked.
   const wideEnough = useMediaQuery('(min-width: 1500px)');
-  const columns = focusColumns === 'auto' ? (wideEnough ? 2 : 1) : focusColumns === 'two' ? 2 : 1;
+  const columns = wideEnough ? 2 : 1;
   return (
     <GameControlsView
       entry={entry}
@@ -587,16 +634,20 @@ export function GameControls({
 
 export const GameCard = memo(function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
   const { game, next } = entry;
+  const games = useApp((store) => store.state.games);
+  const ground = useGround();
+  const theme = useTheme();
   const reduced = useReducedMotion();
   const urgent = !game.paused && next != null && next.at - now < 60 * 60_000;
   const pulseUrgent = urgent && !reduced;
   // Depth is the game's own inset ring plus the top-edge highlight — nothing
   // outside the box. See the Shadows Float Only Rule in DESIGN.md: a card does
   // not overlay the page, so it casts nothing.
-  const cardShadows = [
-    !pulseUrgent && `inset 0 0 0 1px ${tint(game.color, 0.3)}`,
-    'inset 0 1px 0 var(--color-line-hairline)',
-  ]
+  const identityColors = resolveGameIdentityColors(games.filter((candidate) => !candidate.deleted));
+  const visualColors = identityColors[game.id] ?? game;
+  const rim = gameRim(visualColors, ground);
+  const accent = gameAccent(visualColors, ground);
+  const cardShadows = [!pulseUrgent && `inset 0 0 0 1px ${tint(rim, 0.3)}`, 'inset 0 1px 0 var(--color-line-hairline)']
     .filter(Boolean)
     .join(', ');
 
@@ -606,19 +657,19 @@ export const GameCard = memo(function GameCard({ entry, now }: { entry: GameUrge
       // No h-full: in the narrow grid the cell already stretches the card, and in
       // the Cards columns it made a lone card grow to the height of the tallest
       // column — the empty-card problem in a new place.
-      className="group relative flex flex-col overflow-hidden rounded-ui-card p-4"
+      className="card-shell group relative flex flex-col overflow-hidden rounded-ui-card px-4 pb-6 pt-4"
       variants={cardEnter}
       initial="hidden"
       animate="visible"
       style={{
-        background: `linear-gradient(155deg, ${tint(game.color, 0.2)} 0%, transparent 46%), linear-gradient(335deg, ${tint(game.color2 ?? game.color, 0.13)} 0%, transparent 42%), #07060c`,
+        ...gameShellVars(game, theme, visualColors),
         boxShadow: cardShadows,
       }}
     >
       <div
         className="absolute inset-x-4 top-0 h-[3px] rounded-ui-full"
         style={{
-          background: `linear-gradient(90deg, transparent, ${game.color}, ${game.color2 ?? game.color}, transparent)`,
+          background: `linear-gradient(90deg, transparent, ${rim}, ${accent}, transparent)`,
         }}
       />
       {game.image && (
@@ -633,9 +684,9 @@ export const GameCard = memo(function GameCard({ entry, now }: { entry: GameUrge
             }}
           />
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 rounded-r-ui-card"
             style={{
-              background: `linear-gradient(90deg, rgba(5,4,10,0.95) 6%, transparent 60%), linear-gradient(0deg, ${tint(game.color, 0.14)}, transparent 70%)`,
+              background: `linear-gradient(90deg, ${mix(ground, rim, 0.05)} 6%, transparent 60%), linear-gradient(0deg, ${tint(rim, 0.14)}, transparent 70%)`,
             }}
           />
         </div>
@@ -643,7 +694,7 @@ export const GameCard = memo(function GameCard({ entry, now }: { entry: GameUrge
       {pulseUrgent && (
         <div
           className="pulse-fade pointer-events-none absolute inset-0 rounded-ui-card"
-          style={{ boxShadow: `inset 0 0 0 1px ${tint(game.color, 0.8)}, inset 0 0 24px ${tint(game.color, 0.12)}` }}
+          style={{ boxShadow: `inset 0 0 0 1px ${tint(rim, 0.8)}, inset 0 0 24px ${tint(rim, 0.12)}` }}
         />
       )}
       <GameControls entry={entry} now={now} />

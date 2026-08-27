@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import type { Game, GamePreset } from '@void/shared';
-import { PRESETS, presetForGame, SERVER_TZ_OPTIONS } from '@void/shared';
+import type { Game, GamePreset } from '@memoria/shared';
+import { PRESETS, presetForGame, SERVER_TZ_OPTIONS } from '@memoria/shared';
+import { resolveGameIdentityColors } from '../game-color';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { intOr, tint } from '../util';
@@ -25,6 +26,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
   const [short, setShort] = useState('');
   const [energy, setEnergyInput] = useState('');
 
+  const identityColors = resolveGameIdentityColors(games.filter((game) => !game.deleted));
   const trackedPresetGames = games.flatMap((game) => {
     if (game.deleted) return [];
     const preset = presetForGame(game);
@@ -96,27 +98,30 @@ export function AddGameSheet({ open }: { open: boolean }) {
             <>
               <SectionTitle>Add another account</SectionTitle>
               <div className="space-y-2">
-                {trackedPresetGames.map(({ game, preset }) => (
-                  <button
-                    key={game.id}
-                    type="button"
-                    onClick={() => {
-                      setSourceGame(game);
-                      setSourcePreset(preset);
-                      setTz(game.tz);
-                      setShort(game.short);
-                    }}
-                    className="flex min-h-11 w-full items-center gap-3 rounded-ui-lg bg-fill-1 px-3 py-2 text-left ring-1 ring-line-hairline transition hover:bg-fill-3 active:scale-95 sm:min-h-9"
-                  >
-                    <GameBadge short={game.short} color={game.color} color2={game.color2} />
-                    <span className="min-w-0">
-                      <span className="block truncate text-body font-bold text-fg-soft">{game.name}</span>
-                      {game.accountLabel && (
-                        <span className="block truncate text-meta text-muted">{game.accountLabel}</span>
-                      )}
-                    </span>
-                  </button>
-                ))}
+                {trackedPresetGames.map(({ game, preset }) => {
+                  const colors = identityColors[game.id] ?? game;
+                  return (
+                    <button
+                      key={game.id}
+                      type="button"
+                      onClick={() => {
+                        setSourceGame(game);
+                        setSourcePreset(preset);
+                        setTz(game.tz);
+                        setShort(game.short);
+                      }}
+                      className="flex min-h-11 w-full items-center gap-3 rounded-ui-lg bg-fill-1 px-3 py-2 text-left ring-1 ring-line-hairline transition hover:bg-fill-3 active:scale-95 sm:min-h-9"
+                    >
+                      <GameBadge short={game.short} {...colors} />
+                      <span className="min-w-0">
+                        <span className="block truncate text-body font-bold text-fg-soft">{game.name}</span>
+                        {game.accountLabel && (
+                          <span className="block truncate text-meta text-muted">{game.accountLabel}</span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
               <SectionTitle>Add a new game</SectionTitle>
             </>
@@ -133,7 +138,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
                 className="flex items-center gap-3 rounded-ui-xl p-3 text-left ring-1 transition hover:brightness-125 active:scale-95"
                 style={{ background: tint(p.color, 0.08), boxShadow: `inset 0 0 0 1px ${tint(p.color, 0.25)}` }}
               >
-                <GameBadge short={p.short} color={p.color} color2={p.color2} size="lg" />
+                <GameBadge short={p.short} color={p.color} color2={p.color2} color3={p.color3} size="lg" />
                 <span>
                   <span className="block text-body font-bold text-fg-soft">{p.name}</span>
                   <span className="block text-label text-muted">{p.resources.map((r) => r.name).join(' + ')}</span>
@@ -202,7 +207,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
             >
               ← Back
             </Btn>
-            <Btn kind="primary" className="flex-1" onClick={confirmAccount}>
+            <Btn kind="primary" onClick={confirmAccount}>
               Add account
             </Btn>
           </div>
@@ -240,7 +245,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
           </div>
           <div className="mt-5 flex gap-2">
             <Btn onClick={() => setPicked(null)}>← Back</Btn>
-            <Btn kind="primary" className="flex-1" onClick={confirm}>
+            <Btn kind="primary" onClick={confirm}>
               Add {picked.short}
             </Btn>
           </div>
