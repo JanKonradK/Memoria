@@ -130,8 +130,14 @@ export interface Completion extends Syncable {
   countDone?: number;
 }
 
-/** 'cycle' = recurring endgame windows (Abyss/Theater, MoC/PF/AS/AA, Shiyu/DA…). */
-export type EventType = 'banner' | 'event' | 'cycle' | 'maintenance' | 'custom';
+/**
+ * 'cycle' = recurring endgame windows (Abyss/Theater, MoC/PF/AS/AA, Shiyu/DA…).
+ * 'livestream' = the patch preview broadcast (HoYo "Special Program", Kuro
+ * version livestream, and the equivalents) that reveals the next version. It is
+ * the cue to refresh the bundled feed, so a predicted one is stored as the
+ * plausible date RANGE rather than as a single guessed moment.
+ */
+export type EventType = 'banner' | 'event' | 'cycle' | 'maintenance' | 'livestream' | 'custom';
 
 export interface GameEvent extends Syncable {
   id: string;
@@ -149,6 +155,17 @@ export interface GameEvent extends Syncable {
   notes: string;
   /** Stable id of the imported source (e.g. "genshin:21788") — used to dedupe re-imports. */
   sourceKey?: string;
+  /**
+   * Fingerprint of the values the bundled feed last wrote here, so a refresh can
+   * tell ITS OWN drift from YOUR edits. Present only on rows the feed wrote.
+   *
+   * If the event still hashes to this, nobody has touched it and the feed may
+   * correct it. If it does not, you changed something and the feed leaves the
+   * whole row alone from then on — a corrected date is worth less than a note
+   * you wrote. Absent on hand-made events and on ⤓ HoYoLAB imports, neither of
+   * which the feed owns.
+   */
+  seedHash?: string;
 }
 
 /** One-tap spend button on a game card, e.g. { label: "Domain", delta: -20 }. */

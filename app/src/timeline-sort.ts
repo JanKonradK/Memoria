@@ -17,7 +17,7 @@ export const ENDING_SOON_DAYS = 14;
 export const DASHBOARD_UPCOMING_LIMIT = 8;
 
 /** Playable events first, followed by cycles, banners, then maintenance. */
-export const TYPE_RANK = { event: 0, custom: 0, cycle: 1, banner: 2, maintenance: 3 } as const;
+export const TYPE_RANK = { event: 0, custom: 0, cycle: 1, banner: 2, maintenance: 3, livestream: 4 } as const;
 
 export function agendaRank(event: GameEvent, now: number): 0 | 1 | 2 | 3 {
   if (event.done) return 3;
