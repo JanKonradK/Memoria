@@ -151,6 +151,21 @@ import { presetForGame } from '@memoria/shared';
 /** When the bundled data was last refreshed. */
 export const SEED_UPDATED = '2026-08-27';
 
+/**
+ * How long a finished event is worth keeping. Two months.
+ *
+ * This is one rule with two halves that have to agree. The bundle above ships no
+ * row that ended longer ago than this (there is a test), and the importer drops
+ * imported rows once they pass it, so a document cannot accumulate years of dead
+ * banners. The timeline only draws about thirteen days of history anyway
+ * (RANGE_DAYS / 3), so everything this removes has been invisible for weeks.
+ *
+ * Only rows the feed created are swept: they carry a `seedHash`. Anything you
+ * wrote yourself, and anything pulled in through ⤓ HoYoLAB, is never touched by
+ * age — those are your records, and their lifetime is your call.
+ */
+export const SEED_RETENTION_MS = 60 * 86_400_000;
+
 export interface SeedEvent {
   /** Preset key — matched against the stored preset id, with legacy name/short fallbacks. */
   game: string;
@@ -2438,6 +2453,18 @@ function sourceIdentity(gameId: string, sourceKey: string): string {
  * dates get corrected on a refresh). Already-ended events and name twins
  * (e.g. the same banner imported via ⤓ HoYoLAB under another key) are skipped.
  */
+/**
+ * Forget bundled events that finished more than SEED_RETENTION_MS ago.
+ *
+ * Deleted outright rather than tombstoned. A tombstone would defeat the point —
+ * it is the same row count — and resurrection is not a risk here, because the
+ * add branch of planSeedImport already refuses anything that has already ended.
+ */
+export function pruneRetiredSeedEvents(state: AppState, before: number): AppState {
+  const kept = state.events.filter((event) => event.seedHash === undefined || event.end >= before);
+  return kept.length === state.events.length ? state : { ...state, events: kept };
+}
+
 export function planSeedImport(state: AppState, now: number): PlannedSeed[] {
   const out: PlannedSeed[] = [];
   const live = state.events.filter((e) => !e.deleted);
