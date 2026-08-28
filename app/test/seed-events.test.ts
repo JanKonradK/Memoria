@@ -1,6 +1,13 @@
 import { emptyState, PRESETS, type Game, type GameEvent } from '@memoria/shared';
 import { describe, expect, it } from 'vitest';
-import { eventFingerprint, planSeedImport, SEED_EVENTS, SEED_UPDATED } from '../src/data/seed-events';
+import {
+  eventFingerprint,
+  planSeedImport,
+  pruneRetiredSeedEvents,
+  SEED_EVENTS,
+  SEED_RETENTION_MS,
+  SEED_UPDATED,
+} from '../src/data/seed-events';
 
 const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
 const maintenance = SEED_EVENTS.find((seed) => seed.sourceKey === 'seed:genshin:6.8-maint')!;
@@ -215,5 +222,65 @@ describe('refreshing over a live document', () => {
 
     expect(planFor(handMade)).toHaveLength(0);
     expect(planFor(hoyolab)).toHaveLength(0);
+  });
+});
+
+describe('two-month retention', () => {
+  const DAY = 86_400_000;
+  const cutoff = Date.parse('2026-08-27T00:00:00Z') - SEED_RETENTION_MS;
+
+  function event(over: Partial<GameEvent>): GameEvent {
+    return {
+      id: 'e',
+      gameId: 'g',
+      name: 'old banner',
+      type: 'banner',
+      start: cutoff - 30 * DAY,
+      end: cutoff - 10 * DAY,
+      dailyTouch: false,
+      notify: true,
+      notes: '',
+      seedHash: 'stamped',
+      updatedAt: 1,
+      ...over,
+    };
+  }
+
+  it('sweeps bundled events that finished before the cutoff', () => {
+    const state = { ...emptyState(), events: [event({})] };
+    expect(pruneRetiredSeedEvents(state, cutoff).events).toEqual([]);
+  });
+
+  it('keeps anything still inside the window, to the minute', () => {
+    const state = { ...emptyState(), events: [event({ id: 'edge', end: cutoff })] };
+    expect(pruneRetiredSeedEvents(state, cutoff).events).toHaveLength(1);
+  });
+
+  it('never sweeps an event the feed did not create', () => {
+    // Hand-made and ⤓ HoYoLAB rows carry no stamp. How long they live is the
+    // user's call, not the bundle's, however old they get.
+    const handMade = event({ id: 'mine', seedHash: undefined, sourceKey: undefined });
+    const hoyolab = event({ id: 'feed', seedHash: undefined, sourceKey: 'genshin:12345' });
+    const state = { ...emptyState(), events: [handMade, hoyolab] };
+
+    expect(pruneRetiredSeedEvents(state, cutoff).events).toHaveLength(2);
+  });
+
+  it('returns the same object when there is nothing to sweep', () => {
+    // Identity matters: a fresh object every load would mark the document dirty
+    // and rewrite it forever.
+    const state = { ...emptyState(), events: [event({ end: cutoff + DAY })] };
+    expect(pruneRetiredSeedEvents(state, cutoff)).toBe(state);
+  });
+
+  it('ships no row that already fell outside the window', () => {
+    // The bundle and the sweep have to agree, or the importer would add rows on
+    // one load that the sweep deletes on the next.
+    const oldest = SEED_EVENTS.reduce((worst, seed) => (seed.end < worst ? seed.end : worst), '9999-12-31 23:59');
+    const earliestAllowed = new Date(Date.parse(`${SEED_UPDATED}T00:00:00Z`) - SEED_RETENTION_MS)
+      .toISOString()
+      .slice(0, 10);
+
+    expect(oldest.slice(0, 10) >= earliestAllowed).toBe(true);
   });
 });

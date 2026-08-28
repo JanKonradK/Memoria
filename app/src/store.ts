@@ -29,7 +29,13 @@ import {
   missingPresetTasks,
   presetForGame,
 } from '@memoria/shared';
-import { planSeedImport, SEED_UPDATED, type PlannedSeed } from './data/seed-events';
+import {
+  planSeedImport,
+  pruneRetiredSeedEvents,
+  SEED_RETENTION_MS,
+  SEED_UPDATED,
+  type PlannedSeed,
+} from './data/seed-events';
 import { uid } from './util';
 
 const IDB_KEY = 'memoria-state';
@@ -161,7 +167,8 @@ function migrateGenshinBadge(state: AppState): { state: AppState; repaired: bool
 function stateForStorage(raw: unknown): { state: AppState; repaired: boolean } {
   const normalized = seedMissingRegenSnapshots(normalizeState(raw), now(), uid);
   const pruned = pruneCompletions(normalized, now() - COMPLETION_RETENTION_MS);
-  const badgeMigrated = migrateGenshinBadge(pruned);
+  const swept = pruneRetiredSeedEvents(pruned, now() - SEED_RETENTION_MS);
+  const badgeMigrated = migrateGenshinBadge(swept);
   const state = badgeMigrated.state;
   const parsed = safeParseAppState(raw);
   // Successful transforms matter too: future clocks and inferred legacy fields
@@ -170,7 +177,12 @@ function stateForStorage(raw: unknown): { state: AppState; repaired: boolean } {
     raw !== undefined && (!parsed.success || !sameJson(parsed.data, raw) || !sameJson(parsed.data, normalized));
   return {
     state,
-    repaired: schemaChanged || badgeMigrated.repaired || state.completions.length !== normalized.completions.length,
+    repaired:
+      schemaChanged ||
+      badgeMigrated.repaired ||
+      state.completions.length !== normalized.completions.length ||
+      // A sweep that is not written back runs again on every single load.
+      state.events.length !== normalized.events.length,
   };
 }
 
