@@ -629,10 +629,13 @@ export function TimelinePage({ now }: { now: number }) {
   const laneInk = useMemo(() => assignGameInks(games, ground), [games, ground]);
   const identityColors = useMemo(() => resolveGameIdentityColors(games), [games]);
 
-  const [doneOpen, setDoneOpen] = useState<Set<string>>(new Set());
+  // Lanes whose finished pile has been opened. Finished means ticked off OR
+  // simply over: once an event ends there is nothing left to act on, so it stops
+  // competing for the eye with the things that are still running.
+  const [finishedOpen, setFinishedOpen] = useState<Set<string>>(new Set());
   const [laneOpen, setLaneOpen] = useState<Record<string, boolean>>({});
-  const toggleDoneOpen = (gameId: string) =>
-    setDoneOpen((s) => {
+  const toggleFinishedOpen = (gameId: string) =>
+    setFinishedOpen((s) => {
       const next = new Set(s);
       if (next.has(gameId)) next.delete(gameId);
       else next.add(gameId);
@@ -740,10 +743,12 @@ export function TimelinePage({ now }: { now: number }) {
                   (e) =>
                     e.end > now && !e.done && e.type !== 'maintenance' && e.type !== 'banner' && e.type !== 'livestream',
                 );
-              const doneEventsOpen = doneOpen.has(game.id);
-              const active = evs.filter((event) => !event.done);
-              const doneCount = evs.length - active.length;
-              const shown = doneEventsOpen ? evs : active;
+              const finishedShown = finishedOpen.has(game.id);
+              // `now` ticks, so a row leaves the lane the moment it ends without
+              // anyone having to press anything.
+              const running = evs.filter((event) => !event.done && event.end > now);
+              const finishedCount = evs.length - running.length;
+              const shown = finishedShown ? evs : running;
               const serverLabel = serverRegionLabel(game.tz, now);
               const accountLabel = game.accountLabel?.trim();
               return (
@@ -782,7 +787,7 @@ export function TimelinePage({ now }: { now: number }) {
                     !open ? (
                       <span className="numeral flex flex-col text-caption text-muted">
                         <span>
-                          {evs.length} {evs.length === 1 ? 'event' : 'events'}
+                          {running.length} {running.length === 1 ? 'event' : 'events'}
                         </span>
                         <span>
                           {nextEnd ? (
@@ -803,6 +808,10 @@ export function TimelinePage({ now }: { now: number }) {
                 >
                   {evs.length === 0 ? (
                     <p className="py-1 text-label text-muted">Nothing in this window — import or add events.</p>
+                  ) : shown.length === 0 ? (
+                    <p className="py-1 text-label text-muted">
+                      Nothing running — {finishedCount} finished {finishedCount === 1 ? 'event' : 'events'} below.
+                    </p>
                   ) : (
                     <div>
                       <div className="relative flex flex-col gap-1.5">
@@ -824,15 +833,15 @@ export function TimelinePage({ now }: { now: number }) {
                           />
                         ))}
                       </div>
-                      {doneCount > 0 && (
+                      {finishedCount > 0 && (
                         <button
                           type="button"
-                          onClick={() => toggleDoneOpen(game.id)}
+                          onClick={() => toggleFinishedOpen(game.id)}
                           className="mt-1 block min-h-11 w-full rounded-ui-md py-0.5 text-left text-caption font-semibold text-muted transition hover:text-fg-soft sm:min-h-8"
                         >
-                          {doneEventsOpen
-                            ? '− collapse done events'
-                            : `+ ${doneCount} done event${doneCount > 1 ? 's' : ''}`}
+                          {finishedShown
+                            ? '− collapse finished events'
+                            : `+ ${finishedCount} finished event${finishedCount > 1 ? 's' : ''}`}
                         </button>
                       )}
                     </div>
