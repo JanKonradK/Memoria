@@ -10,6 +10,36 @@ time is data you can change in the app in seconds when a patch changes something
 
 Memoria runs entirely on your own machine. No account, no server, no deployment.
 
+## Download
+
+**[Get the latest release →](https://github.com/JanKonradK/Memoria/releases/latest)**
+
+| Download              | What it is                                                                                                                                      |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Memoria-win-x64.zip` | The Windows app. Unpack anywhere, run **Start Memoria.cmd**. Bundles its own Node, so there is nothing to install. **Keeps itself up to date.** |
+| `Memoria.html`        | The whole app as one file. Double-click, opens in any browser. Does **not** update itself.                                                      |
+
+Then run **Add Memoria to Start Menu.cmd** once for a Desktop and Start Menu icon.
+
+Your data lives in `%APPDATA%\memoria`, never inside the app folder, so moving,
+replacing or deleting the folder cannot touch it.
+
+### How updating works
+
+The app asks GitHub for a newer release in the background, at most once every six
+hours. If it finds one, it downloads it, checks it against the SHA-256 digest
+published with the release, and stages it. The new version is swapped in the next
+time you start Memoria — you will see nothing except a newer app.
+
+```sh
+node\node.exe desktop\memoria.mjs --check-update   # check right now
+set MEMORIA_NO_UPDATE=1                            # turn updates off
+```
+
+The single-file `Memoria.html` has no updater by design: it is one file with no
+launcher behind it. Download a newer one whenever you want it — in Chrome and
+Edge your data carries over, because every `file://` page shares one origin.
+
 ## Layout
 
 ```
@@ -29,6 +59,38 @@ npm run test:e2e   # Playwright responsive, keyboard and accessibility journeys
 
 Data lives in IndexedDB in the browser you open it with. Backups are JSON files
 you export and import from Settings → Data.
+
+## Cutting a release
+
+```sh
+npm version patch          # or minor / major — this is the version users compare against
+git push --follow-tags
+```
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`, which re-runs the full
+check, builds the zip and the single-file HTML, publishes both with a
+`SHA256SUMS.txt`, and writes the release notes. The workflow **fails the build if
+the tag and `package.json` disagree**, because `release.json` inside the zip is
+written from `package.json` — shipping them out of step would make a new build
+look older than the one it replaces, and no installed copy would ever take it.
+
+To assemble the download locally without publishing:
+
+```sh
+npm run build && npm run package    # dist/release/Memoria-win-x64.zip
+```
+
+Packaging is also run on every CI build, so a break in it surfaces on the pull
+request that causes it rather than at tag time.
+
+### What the zip is
+
+A tree the launcher can run with no npm and no source: prebuilt `app/dist`, the
+prebuilt `desktop/dist/shared-core.mjs`, the launcher scripts, the icon, a pinned
+`node/node.exe` verified against nodejs.org's `SHASUMS256.txt`, and a
+`release.json`. That last file is the **only** signal the launcher uses to tell a
+packaged install from a checkout — a clone has none, which is what stops a
+developer's working tree from ever being overwritten by a download.
 
 ## Send it to a friend (one file)
 
@@ -73,6 +135,9 @@ one) and no launcher sync. Everything else is the same app; see
 
 ## Desktop shortcut (Windows)
 
+From a source checkout — the packaged download does this with
+**Add Memoria to Start Menu.cmd** instead, and needs no build:
+
 ```sh
 npm run build              # the launcher serves app/dist
 npm run install:desktop    # puts a Memoria shortcut on the Desktop
@@ -83,7 +148,7 @@ The shortcut opens the app in its own window and serves it on the **fixed port
 origin `http://127.0.0.1:17817`. Launching twice reuses the running instance.
 After a `npm run build`, just reopen the window to pick up the new version.
 
-Opened this way, the app also reads and writes `%APPDATA%\void\state.json` over
+Opened this way, the app also reads and writes `%APPDATA%\memoria\state.json` over
 `/api/state` + `/api/sync`, and the launcher pushes an `/api/events` ping when the
 file changes on disk. That is how two open windows stay in agreement — and it
 gives you one real file to back up. The server listens on loopback only and exits
@@ -96,8 +161,8 @@ windows (Chromium-based), otherwise in the first one it finds installed. To pin
 a specific one:
 
 ```sh
-node desktop/void.mjs --list-browsers     # what's installed and what would open
-node desktop/void.mjs --browser zen       # this launch only
+node desktop/memoria.mjs --list-browsers     # what's installed and what would open
+node desktop/memoria.mjs --browser zen       # this launch only
 ```
 
 Persist the choice with `"browser"` in `desktop/config.json`, an environment
