@@ -1,28 +1,49 @@
 import { useState } from 'react';
-import type { GamePreset } from '@technogg/shared';
-import { PRESETS, SERVER_TZ_OPTIONS } from '@technogg/shared';
+import type { Game, GamePreset } from '@memoria/shared';
+import { PRESETS, presetForGame, SERVER_TZ_OPTIONS } from '@memoria/shared';
+import { resolveGameIdentityColors } from '../game-color';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { intOr, tint } from '../util';
 import { Sheet } from './Sheet';
-import { Btn, Field, GameBadge, NumInput, Select, TextInput } from './ui';
+import { Btn, Field, GameBadge, NumInput, SectionTitle, Select, TextInput } from './ui';
 
 export function AddGameSheet({ open }: { open: boolean }) {
+  const games = useApp((s) => s.state.games);
   const addGameFromPreset = useApp((s) => s.addGameFromPreset);
   const addBlankGame = useApp((s) => s.addBlankGame);
+  const setEnergy = useApp((s) => s.setEnergy);
   const closeSheet = useUI((s) => s.closeSheet);
   const openSheet = useUI((s) => s.openSheet);
 
   const [picked, setPicked] = useState<GamePreset | null>(null);
+  const [sourceGame, setSourceGame] = useState<Game | null>(null);
+  const [sourcePreset, setSourcePreset] = useState<GamePreset | null>(null);
   const [tz, setTz] = useState('');
   const [caps, setCaps] = useState<Record<number, string>>({});
   const [customName, setCustomName] = useState('');
+  const [accountLabel, setAccountLabel] = useState('');
+  const [short, setShort] = useState('');
+  const [energy, setEnergyInput] = useState('');
+
+  const identityColors = resolveGameIdentityColors(games.filter((game) => !game.deleted));
+  const trackedPresetGames = games.flatMap((game) => {
+    if (game.deleted) return [];
+    const preset = presetForGame(game);
+    return preset ? [{ game, preset }] : [];
+  });
+  const sourceEnergyResource = sourcePreset?.resources.find((resource) => resource.regenMinutes > 0);
 
   const reset = () => {
     setPicked(null);
+    setSourceGame(null);
+    setSourcePreset(null);
     setTz('');
     setCaps({});
     setCustomName('');
+    setAccountLabel('');
+    setShort('');
+    setEnergyInput('');
   };
   const close = () => {
     reset();
@@ -40,6 +61,24 @@ export function AddGameSheet({ open }: { open: boolean }) {
     close();
   };
 
+  const confirmAccount = () => {
+    if (!sourceGame || !sourcePreset) return;
+    const gameId = addGameFromPreset(sourcePreset, {
+      tz: tz || sourceGame.tz,
+      accountLabel: accountLabel.trim() || undefined,
+      short: short.trim() || sourceGame.short,
+      name: sourceGame.name,
+    });
+    const entered = energy.trim();
+    if (entered !== '') {
+      const resource = useApp
+        .getState()
+        .state.resources.find((item) => item.gameId === gameId && !item.deleted && item.regenMinutes > 0);
+      if (resource) setEnergy(resource.id, Math.min(resource.cap, Math.max(0, intOr(entered, 0))));
+    }
+    close();
+  };
+
   const createCustom = () => {
     const id = addBlankGame(customName.trim() || 'New game');
     reset();
@@ -47,9 +86,46 @@ export function AddGameSheet({ open }: { open: boolean }) {
   };
 
   return (
-    <Sheet open={open} onClose={close} wide title={picked ? `Add ${picked.name}` : 'Add a game'}>
-      {!picked ? (
+    <Sheet
+      open={open}
+      onClose={close}
+      wide
+      title={sourceGame ? `Add ${sourceGame.name} account` : picked ? `Add ${picked.name}` : 'Add a game'}
+    >
+      {!picked && !sourceGame ? (
         <>
+          {trackedPresetGames.length > 0 && (
+            <>
+              <SectionTitle>Add another account</SectionTitle>
+              <div className="space-y-2">
+                {trackedPresetGames.map(({ game, preset }) => {
+                  const colors = identityColors[game.id] ?? game;
+                  return (
+                    <button
+                      key={game.id}
+                      type="button"
+                      onClick={() => {
+                        setSourceGame(game);
+                        setSourcePreset(preset);
+                        setTz(game.tz);
+                        setShort(game.short);
+                      }}
+                      className="flex min-h-11 w-full items-center gap-3 rounded-ui-lg bg-fill-1 px-3 py-2 text-left ring-1 ring-line-hairline transition hover:bg-fill-3 active:scale-95 sm:min-h-9"
+                    >
+                      <GameBadge short={game.short} {...colors} />
+                      <span className="min-w-0">
+                        <span className="block truncate text-body font-bold text-fg-soft">{game.name}</span>
+                        {game.accountLabel && (
+                          <span className="block truncate text-meta text-muted">{game.accountLabel}</span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <SectionTitle>Add a new game</SectionTitle>
+            </>
+          )}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {PRESETS.map((p) => (
               <button
@@ -59,13 +135,13 @@ export function AddGameSheet({ open }: { open: boolean }) {
                   setPicked(p);
                   setTz(p.tz);
                 }}
-                className="flex items-center gap-3 rounded-2xl p-3 text-left ring-1 transition hover:brightness-125 active:scale-95"
+                className="flex items-center gap-3 rounded-ui-xl p-3 text-left ring-1 transition hover:brightness-125 active:scale-95"
                 style={{ background: tint(p.color, 0.08), boxShadow: `inset 0 0 0 1px ${tint(p.color, 0.25)}` }}
               >
-                <GameBadge short={p.short} color={p.color} color2={p.color2} size="lg" />
+                <GameBadge short={p.short} color={p.color} color2={p.color2} color3={p.color3} size="lg" />
                 <span>
-                  <span className="block text-sm font-bold text-slate-100">{p.name}</span>
-                  <span className="block text-2xs text-slate-400">{p.resources.map((r) => r.name).join(' + ')}</span>
+                  <span className="block text-body font-bold text-fg-soft">{p.name}</span>
+                  <span className="block text-label text-muted">{p.resources.map((r) => r.name).join(' + ')}</span>
                 </span>
               </button>
             ))}
@@ -81,10 +157,65 @@ export function AddGameSheet({ open }: { open: boolean }) {
             </Btn>
           </div>
         </>
-      ) : (
+      ) : sourceGame && sourcePreset ? (
+        <>
+          <div className="space-y-3">
+            <Field label="Account label">
+              <TextInput
+                placeholder="e.g. Alt NA"
+                value={accountLabel}
+                onChange={(event) => setAccountLabel(event.target.value)}
+              />
+              <span className="mt-1 block text-meta text-dim">
+                Shown next to the game name so you can tell your accounts apart.
+              </span>
+            </Field>
+            <Field label="Badge">
+              <TextInput maxLength={4} value={short} onChange={(event) => setShort(event.target.value)} />
+              <span className="mt-1 block text-meta text-dim">
+                Two to four characters. Give this account its own badge.
+              </span>
+            </Field>
+            <Field label="Server timezone">
+              <Select value={tz} onChange={(event) => setTz(event.target.value)}>
+                {SERVER_TZ_OPTIONS.map((option) => (
+                  <option key={option.tz} value={option.tz}>
+                    {option.label}
+                  </option>
+                ))}
+                {!SERVER_TZ_OPTIONS.some((option) => option.tz === sourceGame.tz) && (
+                  <option value={sourceGame.tz}>{sourceGame.tz}</option>
+                )}
+              </Select>
+            </Field>
+            {sourceEnergyResource && (
+              <Field label={`Current ${sourceEnergyResource.name}`}>
+                <NumInput min={0} value={energy} onChange={(event) => setEnergyInput(event.target.value)} />
+              </Field>
+            )}
+          </div>
+          <div className="mt-5 flex gap-2">
+            <Btn
+              onClick={() => {
+                setSourceGame(null);
+                setSourcePreset(null);
+                setTz('');
+                setAccountLabel('');
+                setShort('');
+                setEnergyInput('');
+              }}
+            >
+              ← Back
+            </Btn>
+            <Btn kind="primary" onClick={confirmAccount}>
+              Add account
+            </Btn>
+          </div>
+        </>
+      ) : picked ? (
         <>
           {picked.notes && (
-            <p className="mb-4 rounded-xl bg-amber-400/10 px-3 py-2 text-xs text-amber-200 ring-1 ring-amber-400/20">
+            <p className="mb-4 rounded-ui-lg bg-warn/10 px-3 py-2 text-meta text-warn-fg ring-1 ring-warn/20">
               {picked.notes}
             </p>
           )}
@@ -107,19 +238,19 @@ export function AddGameSheet({ open }: { open: boolean }) {
                 />
               </Field>
             ))}
-            <p className="text-2xs text-slate-500">
+            <p className="text-label text-dim">
               Reset: {String(picked.dailyResetHour).padStart(2, '0')}:00 server · everything is editable later in the
               game editor.
             </p>
           </div>
           <div className="mt-5 flex gap-2">
             <Btn onClick={() => setPicked(null)}>← Back</Btn>
-            <Btn kind="primary" className="flex-1" onClick={confirm}>
+            <Btn kind="primary" onClick={confirm}>
               Add {picked.short}
             </Btn>
           </div>
         </>
-      )}
+      ) : null}
     </Sheet>
   );
 }

@@ -1,180 +1,240 @@
-import { useState } from 'react';
-import { urgencyOrder } from '@technogg/shared';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { GameEvent } from '@memoria/shared';
+import { detectLocalTz, missingPresetTasks } from '@memoria/shared';
+import { useMediaQuery } from '../hooks';
+import { useDerived } from '../selectors';
 import { useApp } from '../store';
+import { utcOffsetLabel } from '../timezone';
 import { useUI } from '../ui-store';
-import { fmtClock, fmtDur, tint } from '../util';
-import { titleFontFor, titleFontScale } from '../fonts';
 import { GameCard } from './GameCard';
-import { GameBadge, Page } from './ui';
-import { useSession } from '../auth';
+import { NexusLayout } from './NexusLayout';
+import { Btn, Page } from './ui';
+
+const PRESET_GAP_KEY = 'memoria-preset-gap-dismissed';
+/** The key this counter shipped under before the rename. */
+const LEGACY_PRESET_GAP_KEY = 'void-preset-gap-dismissed';
+const LEGACY_HOME_TZ_KEY = 'memoria-legacy-home-timezone-dismissed';
+
+function readDismissedGap(): number {
+  return Number(localStorage.getItem(PRESET_GAP_KEY) ?? localStorage.getItem(LEGACY_PRESET_GAP_KEY) ?? '0');
+}
+
+function readLegacyHomeTzDismissed(): boolean {
+  return localStorage.getItem(LEGACY_HOME_TZ_KEY) === '1';
+}
 
 export function DashboardPage({ now }: { now: number }) {
-  const session = useSession();
-  const state = useApp((s) => s.state);
+  const derived = useDerived(now);
+  const { state, order, entryById } = derived;
+  // Individual selectors (zustand action refs are stable). Grouped into one
+  // object for passing down to the stage's game-control views.
+  const upsertEvent = useApp((s) => s.upsertEvent);
+  const setTaskDone = useApp((s) => s.setTaskDone);
+  const startTaskTimer = useApp((s) => s.startTaskTimer);
+  const restartTaskTimer = useApp((s) => s.restartTaskTimer);
+  const advanceTaskTimer = useApp((s) => s.advanceTaskTimer);
+  const setTaskCount = useApp((s) => s.setTaskCount);
+  const setEnergy = useApp((s) => s.setEnergy);
+  const adjustEnergy = useApp((s) => s.adjustEnergy);
+  const addMissingPresetTasksEverywhere = useApp((s) => s.addMissingPresetTasksEverywhere);
+  const updateSettings = useApp((s) => s.updateSettings);
+  const dashboardStore = useMemo(
+    () => ({
+      state,
+      upsertEvent,
+      setTaskDone,
+      startTaskTimer,
+      restartTaskTimer,
+      advanceTaskTimer,
+      setTaskCount,
+      setEnergy,
+      adjustEnergy,
+    }),
+    [
+      adjustEnergy,
+      advanceTaskTimer,
+      restartTaskTimer,
+      setEnergy,
+      setTaskCount,
+      setTaskDone,
+      startTaskTimer,
+      state,
+      upsertEvent,
+    ],
+  );
   const openSheet = useUI((s) => s.openSheet);
   const setTab = useUI((s) => s.setTab);
-  const [setupDismissed, setSetupDismissed] = useState(() => localStorage.getItem('technogg-setup-dismissed') === '1');
-  const order = urgencyOrder(state, now);
-  const hero = order.find((o) => o.next)?.next ?? null;
-  const heroGame = hero ? state.games.find((g) => g.id === hero.gameId) : undefined;
+  const editGame = useCallback((gameId: string) => openSheet({ kind: 'game', gameId }), [openSheet]);
+  const openGameEvent = useCallback(
+    (eventId: string, gameId: string) => openSheet({ kind: 'event', eventId, gameId }),
+    [openSheet],
+  );
+  const openEvent = useCallback(
+    (event: GameEvent) => openSheet({ kind: 'event', gameId: event.gameId, eventId: event.id }),
+    [openSheet],
+  );
+  const toggleEvent = useCallback(
+    (event: GameEvent) => upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done }),
+    [upsertEvent],
+  );
+  const openTimeline = useCallback(() => setTab('timeline'), [setTab]);
+  const wide = useMediaQuery('(min-width: 1280px)');
 
-  // Card ORDER is frozen while you're on this page — live re-sorting made
-  // cards jump away mid-entry. Values/timers stay live; position changes only
-  // via the explicit re-sort button (or when the page is re-entered).
+  // Card ORDER is frozen while you're on this page — live re-sorting made cards
+  // jump away mid-entry. Values and timers stay live; position changes only when
+  // re-sorting is asked for, or when the page is re-entered.
   const liveIds = order.map((o) => o.game.id);
   const [sortedIds, setSortedIds] = useState<string[]>(liveIds);
   const displayIds = [
     ...sortedIds.filter((id) => liveIds.includes(id)),
     ...liveIds.filter((id) => !sortedIds.includes(id)),
   ];
-  const entryById = new Map(order.map((o) => [o.game.id, o]));
-  const orderStale = displayIds.join('|') !== liveIds.join('|');
+
+  // Asking for it is Refresh. The dashboard used to grow its own "Sort by
+  // urgency" button whenever the order went stale, which meant two buttons for
+  // one idea: bring what I am looking at up to date. Refresh bumps this counter
+  // from the app bar and the order reseals here.
+  const orderEpoch = useUI((s) => s.orderEpoch);
+  useEffect(() => {
+    setSortedIds(order.map((o) => o.game.id));
+    // Deliberately keyed on the epoch alone: this fires when a reseal is
+    // requested, not whenever the live order happens to change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderEpoch]);
+
+  // Presets only apply when a game is ADDED, so a preset that grows later is
+  // invisible to everyone already tracking that game — which is exactly the case
+  // where the new routines matter. The banner is dismissed against the COUNT, so
+  // it comes back when a later update adds more.
+  const presetShortfalls = state.games
+    .filter((game) => !game.deleted)
+    .map(
+      (game) =>
+        missingPresetTasks(
+          game,
+          state.tasks.filter((task) => task.gameId === game.id),
+        ).length,
+    );
+  const presetGap = presetShortfalls.reduce((sum, count) => sum + count, 0);
+  const presetGamesBehind = presetShortfalls.filter((count) => count > 0).length;
+  const [dismissedGap, setDismissedGap] = useState(readDismissedGap);
+  const presetGapDismissed = dismissedGap >= presetGap;
+  const detectedTz = detectLocalTz();
+  const [legacyHomeTzDismissed, setLegacyHomeTzDismissed] = useState(readLegacyHomeTzDismissed);
+  const showLegacyHomeTz =
+    !legacyHomeTzDismissed && state.settings.localTz === 'Europe/Warsaw' && detectedTz !== 'Europe/Warsaw';
 
   return (
-    <Page className="pb-28 pt-4 sm:pt-5 lg:pb-8">
-      {session.hosted && !setupDismissed && order.length > 0 && (
-        <section className="glass gold-hairline mb-4 rounded-3xl p-4" aria-label="Account setup checklist">
-          <div className="flex items-start gap-3">
+    <Page>
+      {/* The games themselves are the content, so this page has no visible title
+          — but every route still needs an h1 for the heading outline to start at
+          the top. Matches the nav label. */}
+      <h1 className="sr-only">Dashboard</h1>
+
+      {/* Adding a game is one of three things you can add, so it lives in the app
+          bar's single "+" alongside the other two rather than in a per-route
+          toolbar of its own. The empty state below still offers it directly —
+          a dashboard with nothing on it should say what to do next. */}
+
+      {showLegacyHomeTz && (
+        <section className="panel grain mb-3 rounded-ui-card p-3" aria-label="Home timezone correction">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-black text-slate-100">Finish account setup</p>
-              <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                <span className="rounded-lg bg-emerald-400/10 px-2 py-1 text-emerald-200">✓ Game added</span>
-                <span
-                  className={`rounded-lg px-2 py-1 ${
-                    state.snapshots.length > 0 ? 'bg-emerald-400/10 text-emerald-200' : 'bg-white/5 text-slate-400'
-                  }`}
-                >
-                  {state.snapshots.length > 0 ? '✓' : '○'} Enter energy
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setTab('settings')}
-                  className="rounded-lg bg-white/5 px-2 py-1 text-slate-300"
-                >
-                  ○ Optional alert channels
-                </button>
-              </div>
+              <p className="text-body font-medium text-fg">Check your home timezone</p>
+              <p className="mt-0.5 text-meta text-muted">
+                Memoria is set to Europe/Warsaw ({utcOffsetLabel('Europe/Warsaw', now)}). This system reports{' '}
+                {detectedTz} ({utcOffsetLabel(detectedTz, now)}).
+              </p>
             </div>
             <button
               type="button"
+              onClick={() => updateSettings({ localTz: detectedTz })}
+              className="min-h-8 shrink-0 rounded-ui-md border border-line-strong bg-inset px-3 py-1 text-meta font-medium text-fg transition-colors hover:border-line-strong hover:bg-surface-2"
+            >
+              Switch to {detectedTz}
+            </button>
+            <button
+              type="button"
               onClick={() => {
-                localStorage.setItem('technogg-setup-dismissed', '1');
-                setSetupDismissed(true);
+                localStorage.setItem(LEGACY_HOME_TZ_KEY, '1');
+                setLegacyHomeTzDismissed(true);
               }}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400"
-              aria-label="Dismiss setup checklist"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-ui-md text-muted transition-colors hover:text-fg"
+              aria-label="Dismiss home timezone correction"
             >
               ✕
             </button>
           </div>
         </section>
       )}
-      {hero && heroGame && (
-        <div className="fade-down mb-4 flex items-stretch gap-3">
-          <button
-            type="button"
-            onClick={() => openSheet({ kind: 'game', gameId: heroGame.id })}
-            className="gold-hairline gold-hairline-live relative block min-w-0 flex-1 overflow-hidden rounded-3xl p-4 text-left 3xl:p-6"
-            style={{
-              background: `linear-gradient(120deg, ${tint(heroGame.color, 0.3)}, ${tint(heroGame.color2 ?? heroGame.color, 0.12)} 38%, rgba(0,0,0,0.92) 62%)`,
-              boxShadow: `inset 0 0 0 1px ${tint(heroGame.color, 0.35)}, 0 0 44px -16px ${tint(heroGame.color, 0.5)}`,
-            }}
-          >
-            <div
-              className="pointer-events-none absolute inset-0"
-              style={{
-                background: `radial-gradient(400px 120px at 15% 0%, ${tint(heroGame.color, 0.25)}, transparent 70%)`,
-                animation: 'pulseFade 3.6s ease-in-out infinite',
-              }}
-            />
-            <div className="relative flex items-center gap-3">
-              <GameBadge short={heroGame.short} color={heroGame.color} color2={heroGame.color2} size="lg" />
-              <div className="min-w-0 flex-1">
-                <div className="text-2xs font-bold uppercase tracking-widest text-slate-400">Up next</div>
-                <div
-                  className="truncate text-xl font-black text-slate-50"
-                  style={{
-                    fontFamily: titleFontFor(heroGame),
-                    fontSize: `calc(var(--text-xl) * ${titleFontScale(titleFontFor(heroGame))})`,
-                  }}
-                >
-                  {heroGame.short}: {hero.label}
-                </div>
-              </div>
-              <div className="shrink-0 text-right">
-                <div className="text-2xl font-black tabular-nums" style={{ color: heroGame.color }}>
-                  {hero.at <= now ? 'NOW' : fmtDur(hero.at - now)}
-                </div>
-                {hero.at > now && <div className="text-2xs tabular-nums text-slate-500">{fmtClock(hero.at)}</div>}
-              </div>
+
+      {presetGap > 0 && !presetGapDismissed && (
+        <section className="panel grain mb-3 rounded-ui-card p-3" aria-label="New preset routines">
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-body font-medium text-fg">
+                {presetGap} new {presetGap === 1 ? 'routine' : 'routines'} for {presetGamesBehind}{' '}
+                {presetGamesBehind === 1 ? 'game' : 'games'}
+              </p>
+              <p className="mt-0.5 text-meta text-muted">
+                Presets gained dailies and weeklies since these games were added. Nothing you deleted comes back.
+              </p>
             </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => openSheet({ kind: 'addGame' })}
-            className="flex w-14 shrink-0 items-center justify-center rounded-3xl bg-white/[0.06] text-3xl font-light leading-none text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white active:scale-95 sm:w-16"
-            aria-label="Add game"
-            title="Add game"
-          >
-            +
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => addMissingPresetTasksEverywhere()}
+              className="min-h-8 shrink-0 rounded-ui-md border border-line-strong bg-inset px-3 py-1 text-meta font-medium text-fg transition-colors hover:border-line-strong hover:bg-surface-2"
+            >
+              Add them
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem(PRESET_GAP_KEY, String(presetGap));
+                setDismissedGap(presetGap);
+              }}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-ui-md text-muted transition-colors hover:text-fg"
+              aria-label="Dismiss new routines"
+            >
+              ✕
+            </button>
+          </div>
+        </section>
       )}
 
       {order.length === 0 ? (
-        <div className="fade-in mt-16 flex flex-col items-center gap-4 text-center">
-          <div
-            className="h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-amber-300"
-            style={{ boxShadow: '0 0 40px rgba(124,92,255,0.5)' }}
-          />
-          <h2 className="text-xl font-black text-slate-100">Track every gacha, waste no energy</h2>
-          <p className="max-w-sm text-sm text-slate-300">
-            Add your games, punch in your current energy after each session, and Techno's Library tells you exactly when
-            to log in next.
+        <div className="fade-in mx-auto mt-20 flex max-w-md flex-col items-start gap-3">
+          <h2 className="text-heading font-semibold text-fg">Nothing is being tracked yet</h2>
+          <p className="text-body text-muted">
+            Add the games you actually play, then type in whatever energy each one is sitting on. Memoria projects it
+            forward and tells you when it caps.
           </p>
-          <button
-            type="button"
-            onClick={() => openSheet({ kind: 'addGame' })}
-            className="rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 px-6 py-3 text-base font-bold text-white shadow-lg shadow-fuchsia-500/30 ring-1 ring-white/15 transition hover:brightness-110 active:scale-95"
-          >
-            + Add your first game
-          </button>
+          <Btn kind="ghost" onClick={() => openSheet({ kind: 'addGame' })} className="mt-1">
+            Add your first game
+          </Btn>
         </div>
       ) : (
         <>
-          <div
-            className={`mb-3 flex items-center justify-end gap-2 ${
-              orderStale || !(hero && heroGame) ? 'min-h-11' : ''
-            }`}
-          >
-            {orderStale && (
-              <button
-                type="button"
-                onClick={() => setSortedIds(liveIds)}
-                className="fade-in flex min-h-11 items-center gap-1.5 rounded-xl bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white"
-                title="Urgency changed — click to re-order the cards"
-              >
-                <span aria-hidden>↻</span> Sort by urgency
-              </button>
-            )}
-            {/* The main add button lives beside the "Up next" hero; keep one here only when there is no hero. */}
-            {!(hero && heroGame) && (
-              <button
-                type="button"
-                onClick={() => openSheet({ kind: 'addGame' })}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.06] text-2xl font-light leading-none text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white active:scale-90"
-                aria-label="Add game"
-                title="Add game"
-              >
-                +
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:gap-7">
-            {displayIds.map((id) => (
-              <GameCard key={id} entry={entryById.get(id)!} now={now} />
-            ))}
-          </div>
+          {wide ? (
+            <NexusLayout
+              state={state}
+              entries={order}
+              displayIds={displayIds}
+              now={now}
+              gameControlActions={dashboardStore}
+              onEditGame={editGame}
+              onOpenGameEvent={openGameEvent}
+              onOpenEvent={openEvent}
+              onToggleEvent={toggleEvent}
+              onOpenTimeline={openTimeline}
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {displayIds.map((id) => (
+                <GameCard key={id} entry={entryById.get(id)!} now={now} />
+              ))}
+            </div>
+          )}
         </>
       )}
     </Page>

@@ -1,77 +1,367 @@
 @import 'tailwindcss';
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Jewelry on charcoal — see DESIGN.md.
+
+   The chrome is a machined charcoal housing that recedes against an OLED
+   ground, so a game's own colours read as an edge, a title and a tube. A game's
+   primary colour only whispers into a card fill (~7% on dark); everything else
+   saturated is either a trio role or urgency.
+
+   Two systems, never the same pixel job: colour means URGENCY or it means a
+   GAME TRIO ROLE. Urgency wins where they collide.
+
+   Every ladder below is CLOSED. If a value is needed between two steps, one of
+   the two steps is wrong. Components may not name a Tailwind palette colour.
+   ───────────────────────────────────────────────────────────────────────────── */
 @theme {
-  /* OLED Nightline: true black canvas, color lives on the cards. */
-  --color-ink: #000000;
-  --color-panel: #0c0a15;
-  --color-panel2: #161126;
-  --color-line: rgba(205, 185, 255, 0.14);
-  --color-gold: #eebc63;
-  --color-rose: #ff6fa5;
-  --color-astral: #8b6dff;
+  /* ── Chrome ────────────────────────────────────────────────────────────────
+     Panels are a two-stop vertical gradient, never a flat fill: at panel size a
+     flat dark fill bands and reads plastic. --panel-hi/--panel-lo are the stops;
+     --color-surface-1 is the flat mid for the few places that cannot take a
+     gradient. */
+  --panel-hi: #131316;
+  --panel-lo: #0c0c0e;
+  --panel-hover-hi: #1a1a1e;
+  --panel-hover-lo: #121215;
 
-  /* 2560×1440 fullscreen gets the 3xl: treatment. */
-  --breakpoint-3xl: 120rem;
+  --color-surface-0: #000000; /* the OLED ground */
+  --color-surface-1: #101013; /* flat charcoal mid */
+  --color-surface-2: #1a1a1e; /* hovered / raised chrome */
+  --color-inset: #08080a; /* inputs, tube tracks, chip fills, wells */
+  --color-popover: #17171b; /* the one genuinely floating surface */
 
-  /* Fluid type scale: minimums hold at 320px, maximums land ~2560px viewport.
-     Overriding the --text-* tokens rescales every text-* utility app-wide;
-     2xs/3xs are new tokens replacing the old text-[8px]..text-[11px] micro-labels. */
-  --text-3xs: clamp(0.625rem, 0.55rem + 0.18vw, 0.72rem);
-  --text-3xs--line-height: 1.35;
-  --text-2xs: clamp(0.72rem, 0.64rem + 0.2vw, 0.84rem);
-  --text-2xs--line-height: 1.35;
-  --text-xs: clamp(0.78rem, 0.7rem + 0.2vw, 0.95rem);
-  --text-xs--line-height: 1.4;
-  --text-sm: clamp(0.9rem, 0.82rem + 0.22vw, 1.1rem);
-  --text-sm--line-height: 1.45;
-  --text-base: clamp(1rem, 0.92rem + 0.24vw, 1.2rem);
-  --text-base--line-height: 1.5;
-  --text-lg: clamp(1.125rem, 1.02rem + 0.3vw, 1.4rem);
-  --text-lg--line-height: 1.45;
-  --text-xl: clamp(1.25rem, 1.12rem + 0.36vw, 1.6rem);
-  --text-xl--line-height: 1.35;
-  --text-2xl: clamp(1.5rem, 1.32rem + 0.5vw, 2.05rem);
-  --text-2xl--line-height: 1.25;
-  --text-3xl: clamp(1.875rem, 1.6rem + 0.7vw, 2.6rem);
-  --text-3xl--line-height: 1.2;
+  /* ── Text ramp ─────────────────────────────────────────────────────────────
+     Three steps carry language; `faint` is decorative stroke only. `dim` is
+     lifted from the reference's #63636D (3.2:1 on charcoal) to clear AA 4.5:1
+     for small text — the axe gate in e2e is not negotiable, and a 10px uppercase
+     label at 3.2:1 is the exact failure this ramp exists to prevent. */
+  --color-fg: #f4f4f6;
+  --color-fg-soft: #dcdce2;
+  --color-muted: #9a9aa4;
+  --color-dim: #83838d;
+  --color-faint: #63636d; /* decorative strokes only — never text */
+  --color-fg-invert: #0a0a0b; /* text on a light or filled surface */
+
+  /* ── Urgency ───────────────────────────────────────────────────────────────
+     Countdowns, critical edges, capped tubes. All four clear AA on the charcoal
+     panel, so the base value and its -fg alias are the same colour: the reference
+     palette was tuned for text in the first place. The aliases are kept because
+     ~200 call sites name them. */
+  --color-ok: #46c795;
+  --color-ok-fg: var(--color-ok);
+  --color-warn: #f0a83c;
+  --color-warn-fg: var(--color-warn);
+  --color-danger: #ff5a48;
+  --color-danger-fg: var(--color-danger);
+  --color-later: #74747e; /* present, not asking for anything */
+  --color-danger-bg: #241009;
+  --color-warn-bg: #231a08;
+
+  /* ── Interaction ───────────────────────────────────────────────────────────
+     This system has no brand accent. Interactivity is carried by the inset well,
+     the 1px edge ladder and the text ramp — the saturated colour on screen
+     belongs to the games. `accent` therefore resolves to the bright text step so
+     focus rings and selected states read as chrome, not as a second identity. */
+  --color-accent: var(--color-fg);
+  --color-accent-2: var(--color-fg-soft);
+  --color-accent-fg: var(--color-fg);
+  --color-gold: #d9b871; /* the app mark's own metal, and nothing else */
+  --color-rose: #ff6fa5; /* the timeline's now-marker */
+
+  /* ── Tag hues ──────────────────────────────────────────────────────────────
+     Fixed per kind so a chip is recognisable before it is read. Never
+     grey-on-grey. */
+  --color-tag-event: #5b8def;
+  --color-tag-banner: #c084fc;
+  --color-tag-cycle: #46c795;
+  --color-tag-patch: #938c7b;
+  --color-tag-maintenance: #ff5a48;
+  --color-tag-daily: #f0a83c;
+  --color-tag-weekly: #80f4ff;
+
+  /* ── Overlay ladder ────────────────────────────────────────────────────────
+     Four steps, no more. White at low alpha rather than opaque greys, so a
+     game's wash reads through them. */
+  --color-fill-1: rgba(255, 255, 255, 0.03); /* zones, alternating rows */
+  --color-fill-2: rgba(255, 255, 255, 0.06); /* resting controls */
+  --color-fill-3: rgba(255, 255, 255, 0.1); /* hover */
+  --color-fill-4: rgba(255, 255, 255, 0.16); /* active, selected, pressed */
+
+  /* ── Border ladder ─────────────────────────────────────────────────────────
+     Opaque hairlines rather than white alphas: against the OLED ground an alpha
+     edge disappears, and the 1px edge is the only thing giving a panel a shape. */
+  --color-line-hairline: #1c1c21; /* default rule inside chrome */
+  --color-line: #232329; /* panel perimeter */
+  --color-line-edge: #2b2b32; /* emphasised control edge */
+  --color-line-strong: #34343c; /* selected controls, float surfaces */
+
+  /* ── Scrims ────────────────────────────────────────────────────────────────
+     Darkening, as opposed to the lightening fills above. */
+  --color-scrim-well: rgba(0, 0, 0, 0.35);
+  --color-scrim-veil: rgba(0, 0, 0, 0.6);
+  --color-scrim-modal: rgba(0, 0, 0, 0.85);
+
+  /* Compatibility aliases keep existing one-off uses resolving. */
+  --color-ink: var(--color-surface-0);
+  --color-panel: var(--color-surface-1);
+  --color-panel2: var(--color-surface-2);
+
+  /* ── Radius ────────────────────────────────────────────────────────────────
+     Six steps. Controls use the pill step; cards and panels use fixed corners. */
+  --radius-ui-sm: 8px;
+  --radius-ui-md: 999px;
+  --radius-ui-lg: 14px;
+  --radius-ui-xl: 18px;
+  --radius-ui-card: 22px;
+  --radius-ui-full: 999px;
+
+  --lane-bar-h: 2.25rem;
+  --lane-row-h: 3.25rem;
+
+  /* ── Type scale ────────────────────────────────────────────────────────────
+     Language in DM Sans, numbers in IBM Plex Mono. Caption is the floor at 10px;
+     nothing renders smaller.
+
+     The scale is closed, but four of its steps sit within 3px of each other
+     (caption 10, label 11, meta 12, body 13), which is how eight different jobs
+     ended up spread arbitrarily across them. One role per step:
+
+       display  expanded stage card title (hero above 1500px)
+       heading  card and panel headings
+       title    the primary numeric readout, with .numeral
+       body     row labels — a task, an event, a ticket name
+       meta     countdowns, dates, server chips, status lines
+       label    uppercase eyebrows and section labels
+       caption  small numeric annotation only — ruler digits, a badge short
+
+     Reach for the role, not for the size that happens to look right. */
+  --text-caption: 0.625rem;
+  --text-caption--line-height: 0.875rem;
+  --text-label: 0.6875rem;
+  --text-label--line-height: 1rem;
+  --text-meta: 0.75rem;
+  --text-meta--line-height: 1rem;
+  --text-body: 0.8125rem;
+  --text-body--line-height: 1.125rem;
+  --text-lead: 0.9375rem;
+  --text-lead--line-height: 1.375rem;
+  --text-title: 1.0625rem;
+  --text-title--line-height: 1.5rem;
+  --text-heading: 1.25rem;
+  --text-heading--line-height: 1.75rem;
+  --text-numeral: 1.75rem;
+  --text-numeral--line-height: 2rem;
+  --text-display: 1.875rem;
+  --text-display--line-height: 2.125rem;
+  --text-hero: 2.25rem;
+  --text-hero--line-height: 2.5rem;
+
+  /* The only shadow in the system. Dialogs and popovers — nothing else.
+     See the Shadows Float Only Rule. */
+  --shadow-float: 0 18px 44px -22px rgba(0, 0, 0, 0.92);
+
+  --font-body: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', monospace;
 }
 
-/* Display voice for the wordmark and big headings — arcane-library serif. */
-@utility font-display {
-  font-family: 'Marcellus', serif;
+:root {
+  color-scheme: dark;
+
+  /* One easing for everything that is not the stage. Exponential deceleration
+     from an already-visible default; real objects do not overshoot. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 140ms;
+  --dur-base: 260ms;
+  --dur-slow: 420ms;
+  --stagger: 40ms;
+  /* Stage motion intentionally sits between --dur-base and --dur-slow.
+     NEXUS_DUR_MS in NexusLayout.tsx mirrors this exact 340ms value. */
+  --nexus-dur: 0.34s;
+  --nexus-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --nexus-card-h: 7rem;
+  /* The stage fills what the app bar leaves, minus the page's own padding
+     (0.75rem top + 2rem bottom).
+     --app-bar-h is MEASURED and written by AppBar, never guessed. A guess was
+     wrong twice: the route control changed the measured height, and the bar
+     wraps to two rows below the lg breakpoint, where no single constant holds.
+     The fallback only has to be sane for the first paint before the measure lands. */
+  --app-bar-h: 3rem;
+  --stage-h: calc(100dvh - var(--app-bar-h) - 2.75rem);
+
+  /* A ring, not a glow: on charcoal the bright text step is the only thing that
+     reads at 2px against both the panel and the OLED ground. */
+  --focus-ring-color: var(--color-fg);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 1px;
+
+  --tick-idle: var(--color-line-strong);
+  --tick-ring-width: 1.5px;
+  --tick-progress-width: 2px;
+  --tick-spoke-width: 1px;
+  --progress-track: var(--color-inset);
+
+  /* ── Machined surfaces ─────────────────────────────────────────────────────
+     The reactor tube and the card shell are lit objects, not flat fills: they
+     read as machined because a highlight runs along one edge and a shadow along
+     the other. Those two lights were written as literal black and white alphas,
+     which is correct on charcoal and wrong on cream — a 45% black floor under a
+     paper-coloured tube is a smear, and a 42% white lip is nothing at all.
+     Light does not invert them; it warms and rebalances them. */
+  --tube-floor: rgba(0, 0, 0, 0.45);
+  --tube-lip: rgba(255, 255, 255, 0.42);
+  --tube-rib-dark: rgba(0, 0, 0, 0.24);
+  --tube-rib-light: rgba(255, 255, 255, 0.18);
+  --tube-sweep: rgba(255, 255, 255, 0.76);
+  --card-cast-near: rgba(0, 0, 0, 0.45);
+  --card-cast-far: rgba(0, 0, 0, 0.75);
+  /* A 1px offset for legibility over a card's own gradient. The offset direction
+     is fixed; only which way it reads changes. */
+  --title-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+
+  /* ── Icons ─────────────────────────────────────────────────────────────────
+     A stroke weight is not a constant. The same 1.75px line reads a full weight
+     heavier as dark-on-cream than as light-on-black, because the light ground
+     eats none of it — which is why the icons looked overblown in light mode
+     while being the same size in both. Size is not the problem; weight is. */
+  --icon-stroke: 1.75;
+  --icon-sm: 14px;
+  --icon-md: 16px;
+  --icon-lg: 20px;
+
+  /* How strongly the grain tile reads. Flat dark fills band and look plastic
+     over large areas; a little noise gives them a material to be made of. */
+  --grain-opacity: 0.05;
+  /* Generated rather than shipped: a 128px PNG tile costs ~17KB against the PWA
+     budget, and feTurbulence is the same texture for ~250 bytes. */
+  --grain-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Cream paper ground; chrome surfaces stay warm, never pure white. The whole
+   theme is a token re-point — every component already speaks in semantic
+   classes, so nothing below the token layer knows a theme exists. */
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --panel-hi: #f3eee4;
+  --panel-lo: #ebe4d6;
+  --panel-hover-hi: #f7f2e8;
+  --panel-hover-lo: #f0e9db;
+
+  --color-surface-0: #efeae0;
+  --color-surface-1: #efe9dd;
+  --color-surface-2: #f7f2e8;
+  --color-inset: #e4ddd0;
+  --color-popover: #f3eee4;
+
+  --color-fg: #191713;
+  --color-fg-soft: #35312a;
+  --color-muted: #5c564b;
+  --color-dim: #6b6558;
+  --color-faint: #938c7b;
+  --color-fg-invert: #f4f4f6;
+
+  --color-ok: #2c7a57;
+  --color-warn: #8a5e0a;
+  --color-danger: #b8341f;
+  --color-later: #7c7669;
+  --color-danger-bg: #f6e6e1;
+  --color-warn-bg: #f6edd9;
+
+  --color-accent: var(--color-fg);
+  --color-accent-2: var(--color-fg-soft);
+  --color-accent-fg: var(--color-fg);
+  --color-gold: #8a6a24;
+  --color-rose: #b03566;
+
+  --color-tag-event: #2f5bb0;
+  --color-tag-banner: #7b3fb5;
+  --color-tag-cycle: #2c7a57;
+  --color-tag-patch: #6a6455;
+  --color-tag-maintenance: #b8341f;
+  --color-tag-daily: #8a5e0a;
+  --color-tag-weekly: #1c6b78;
+
+  /* The overlay ladder inverts: on cream, "lift" is a darkening. */
+  --color-fill-1: rgba(25, 23, 19, 0.03);
+  --color-fill-2: rgba(25, 23, 19, 0.06);
+  --color-fill-3: rgba(25, 23, 19, 0.1);
+  --color-fill-4: rgba(25, 23, 19, 0.16);
+
+  --color-line-hairline: #ded7c9;
+  --color-line: #d6cfc0;
+  --color-line-edge: #cbc3b2;
+  --color-line-strong: #c0b7a4;
+
+  --color-scrim-well: rgba(25, 23, 19, 0.08);
+  --color-scrim-veil: rgba(25, 23, 19, 0.35);
+  --color-scrim-modal: rgba(25, 23, 19, 0.55);
+
+  --grain-opacity: 0.035;
+  --shadow-float: 0 18px 44px -22px rgba(60, 50, 30, 0.35);
+
+  /* Warm and rebalanced, not inverted: the floor lightens so it shades rather
+     than smears, and the highlights strengthen so they still read as light. */
+  --tube-floor: rgba(60, 50, 30, 0.16);
+  --tube-lip: rgba(255, 255, 255, 0.7);
+  --tube-rib-dark: rgba(60, 50, 30, 0.14);
+  --tube-rib-light: rgba(255, 255, 255, 0.55);
+  --tube-sweep: rgba(255, 255, 255, 0.85);
+  --card-cast-near: rgba(60, 50, 30, 0.14);
+  --card-cast-far: rgba(60, 50, 30, 0.22);
+  --title-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+
+  --icon-stroke: 1.5;
+}
+
+@media (width >= 40rem) {
+  :root {
+    --lane-bar-h: 1.75rem;
+    --lane-row-h: 2.75rem;
+  }
+}
+
+@media (pointer: coarse) {
+  .btn-compact {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
 }
 
 html,
 body {
-  /* Pure black — no ambient washes; greys smear on OLED. */
-  background: var(--color-ink);
-  color: #f2eefa;
-  font-family:
-    'Sora Variable',
-    ui-rounded,
-    'Segoe UI',
-    system-ui,
-    -apple-system,
-    sans-serif;
+  background: var(--color-surface-0);
+  color: var(--color-fg);
+  font-family: var(--font-body);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
 }
 
 ::selection {
-  background: rgba(124, 92, 255, 0.5);
+  background: color-mix(in oklab, var(--color-fg) 26%, transparent);
 }
 
-input,
-select,
-textarea {
-  color-scheme: dark;
+/* Every number in the product is tabular, so digits never shift width as they
+   tick. The Mono Is For Measurement Rule: this class marks a measurement, and
+   is never used to make prose look technical. */
+.numeral {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
-/* Native dropdown lists: Windows renders them white unless told otherwise. */
-select option,
-select optgroup {
-  background-color: var(--color-panel2);
-  color: #f2eefa;
+/* One date tick on the timeline ruler: a 1px-wide dotted vertical line, drawn at
+   each grid boundary. Not a background field — the element is a single hairline
+   column, and the dots are what keep it from reading as a hard rule through the
+   event bars it crosses.
+
+   The dashed variant that used to sit here belonged to the 7-day range. The
+   ruler is fixed at 40 days now, so nothing selects between the two. */
+.timeline-grid-dotted {
+  background-image: radial-gradient(circle, var(--color-line) 0.75px, transparent 1px);
+  background-position: top center;
+  background-repeat: repeat-y;
+  background-size: 1px 8px;
 }
 
 /* Hide number input spinners — we provide our own steppers. */
@@ -84,6 +374,145 @@ input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* ── Surfaces ────────────────────────────────────────────────────────────────
+   Depth is tone, gradient, grain and a 1px edge against the ground. No drop
+   shadows: on a true-black OLED canvas a soft shadow is invisible where it
+   should be subtle and a grey smear where it is not. */
+
+.panel {
+  position: relative;
+  background: linear-gradient(180deg, var(--panel-hi), var(--panel-lo));
+  border: 1px solid var(--color-line);
+}
+.panel-hover:hover {
+  background: linear-gradient(180deg, var(--panel-hover-hi), var(--panel-hover-lo));
+}
+
+/* One neutral material for the attention hub and every game card. Game identity
+   is layered separately, so the shell stays reusable and colour-neutral.
+
+   --card-shell-hi / --card-shell-lo are the game's wash, set by gameShellVars in
+   theme.ts. The fallbacks are the neutral panel, so a surface that has not opted
+   in — the attention hub — is plain chrome. */
+.card-shell {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(180deg, var(--card-shell-hi, var(--panel-hi)), var(--card-shell-lo, var(--panel-lo)));
+  box-shadow:
+    inset 0 1px 0 var(--color-line-hairline),
+    0 1px 2px var(--card-cast-near),
+    0 10px 24px -12px var(--card-cast-far);
+}
+
+/* Stroke weight belongs to the theme, not to the drawing. Icons opt in with a
+   class rather than a strokeWidth attribute, because an SVG presentation
+   attribute cannot take a var() — only the CSS property can. */
+.icon {
+  stroke-width: var(--icon-stroke);
+}
+
+/* The page arriving when you change tab. Same 260ms and curve as the app bar's
+   sliding pill, so the label and the page settle together.
+
+   Note there is no animation-fill-mode: the keyframes run FROM the offset, and
+   the element's resting state is the plain, visible one. That is deliberate —
+   an entrance whose failure mode is "no animation" rather than "no page". */
+@keyframes pageEnterForward {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+@keyframes pageEnterBack {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+}
+.page-enter[data-direction='1'] {
+  animation: pageEnterForward var(--dur-base) var(--ease-out);
+}
+.page-enter[data-direction='-1'] {
+  animation: pageEnterBack var(--dur-base) var(--ease-out);
+}
+
+/* The grain sits on a pseudo-element so it composites once and never intercepts
+   a pointer event. isolation keeps it from bleeding into a parent's blend. */
+.grain::before,
+.card-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: var(--grain-opacity);
+  background-image: var(--grain-tile);
+  background-repeat: repeat;
+}
+
+/* Retained name, new material: every former `.glass` call site is a chrome
+   panel, so it now resolves to the panel gradient rather than a blur. */
+.glass {
+  position: relative;
+  background: linear-gradient(180deg, var(--panel-hi), var(--panel-lo));
+  border: 1px solid var(--color-line);
+}
+
+.gold-hairline {
+  position: relative;
+}
+.gold-hairline::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 1px solid transparent;
+  border-top-color: color-mix(in oklab, var(--color-gold) 34%, transparent);
+  border-radius: inherit;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+
+/* ── Focus ───────────────────────────────────────────────────────────────── */
+
+:where(
+  button,
+  a[href],
+  input,
+  select,
+  textarea,
+  [role='button'],
+  [role='combobox'],
+  [role='option'],
+  [role='tab']
+):focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* An expanded card takes focus programmatically (the control that opened it is
+   gone), so it needs the same ring as a real control. */
+.nexus-node:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Compound editors expose one ring around the pill, never a second around the input. */
+.focus-ring-group:has(:focus-visible) {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.focus-ring-group :focus-visible {
+  outline: none;
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────────────
+   Focus expand and shrink, tube charge, tube glide, ring burst, commit flash.
+   Nothing else. */
 
 /* Gentle attention pulse for warning TEXT — never dips below readable. */
 @keyframes warnPulse {
@@ -113,7 +542,6 @@ input[type='number'] {
   animation: pulseFade 2.4s ease-in-out infinite;
 }
 
-/* Enter animations (framer-motion replacement) — reduced motion kills them globally below. */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -123,193 +551,306 @@ input[type='number'] {
   animation: fadeIn 0.18s ease-out;
 }
 
-@keyframes fadeDown {
-  from {
-    opacity: 0;
-    transform: translateY(-12px);
-  }
-}
-.fade-down {
-  animation: fadeDown 0.2s ease-out;
-}
-
-@keyframes pageEnter {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-}
-.page-enter {
-  animation: pageEnter 0.14s ease-out;
-}
-
-@keyframes cardEnter {
-  from {
-    opacity: 0;
-    transform: translateY(18px) scale(0.98);
-  }
-}
-.card-enter {
-  animation: cardEnter 0.25s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-12px);
-  }
-}
-.slide-in {
-  animation: slideIn 0.2s ease-out;
-}
-
-@keyframes dialogEnter {
-  from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.96);
-  }
-}
-.dialog-enter {
-  animation: dialogEnter 0.18s ease-out;
-}
-
-@keyframes sheetEnter {
-  from {
-    transform: translateY(100%);
-  }
-}
-.sheet-enter {
-  animation: sheetEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
+/* SVG transforms default to an origin of 0 0 — the top-left of the viewport,
+   not the centre of the shape — so this used to grow in from the corner and
+   read as "fading in from the top". fill-box + center makes it scale about
+   itself. Every animated SVG transform in this file needs both. */
 @keyframes checkPop {
   from {
-    transform: scale(0) rotate(-30deg);
+    transform: scale(0);
   }
 }
 .check-pop {
-  animation: checkPop 0.18s ease-out;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: checkPop 0.18s var(--ease-out);
 }
 
-/* Completion celebration: a green arc sweeps once around the tick circle,
-   then fades out. dasharray 56.55 = circumference of the r=9 circle. */
-@keyframes ringSweep {
+/* The completion burst fires only when the LAST segment lands. Ticking three of
+   four is progress; ticking the fourth is the moment worth marking. */
+@keyframes checkBurst {
   0% {
-    stroke-dashoffset: 56.55;
+    transform: scale(0);
+    opacity: 0;
+  }
+  14% {
     opacity: 1;
   }
-  70% {
-    stroke-dashoffset: 0;
+  38% {
+    transform: scale(2.3);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.check-burst {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: checkBurst 0.62s var(--ease-out) forwards;
+}
+
+/* The shell blows outward and thins as it goes. */
+@keyframes novaWave {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  18% {
     opacity: 1;
   }
   100% {
-    stroke-dashoffset: 0;
+    transform: scale(3);
     opacity: 0;
   }
 }
-.ring-sweep {
-  animation: ringSweep 0.55s ease-out forwards;
+.nova-wave {
+  animation: novaWave 0.62s var(--ease-out) forwards;
+}
+
+/* Ejecta: thrown out, then dragged back past where they started. --a is the
+   angle each shard leaves on, set per element. */
+@keyframes novaShard {
+  0% {
+    transform: rotate(var(--a)) translateX(1px) scale(0);
+    opacity: 0;
+  }
+  20% {
+    transform: rotate(var(--a)) translateX(4px) scale(1);
+    opacity: 1;
+  }
+  52% {
+    transform: rotate(var(--a)) translateX(13px) scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(var(--a)) translateX(1px) scale(0);
+    opacity: 0;
+  }
+}
+.nova-shard {
+  animation: novaShard 0.62s var(--ease-out) forwards;
 }
 
 @keyframes loaderSpin {
   0% {
     transform: rotate(0deg);
-    border-radius: 30%;
-  }
-  50% {
-    border-radius: 45%;
   }
   100% {
     transform: rotate(360deg);
-    border-radius: 30%;
   }
 }
 .loader-spin {
-  animation: loaderSpin 1.6s ease-in-out infinite;
+  animation: loaderSpin 1.6s linear infinite;
 }
 
-/* Keyboard-only focus ring (mouse clicks stay clean). */
-:focus-visible {
-  outline: 2px solid rgba(168, 132, 255, 0.75);
-  outline-offset: 2px;
+/* ── The reactor tube ────────────────────────────────────────────────────────
+   A containment tube, not a progress bar. The travelling charge highlight runs
+   only while the resource is still charging — a full tube goes visually still,
+   and that stillness is the signal that it is wasting.
+
+   The sweep rides a full-width carrier so a percentage translate resolves
+   against the FILL's width rather than the highlight's own 24px — which is what
+   keeps this on the compositor instead of animating `left` and relaying out
+   every card, twice a second, forever. */
+@keyframes tubeCharge {
+  0% {
+    transform: translateX(0%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
 }
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: none; /* inputs already have their own focus ring */
+.tube-charge {
+  animation: tubeCharge 2.6s ease-in-out infinite;
 }
 
-/* Near-black panel with a whisper of violet — deep enough for OLED. */
-.glass {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01)), var(--color-panel);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 0 0 1px rgba(205, 185, 255, 0.12),
-    0 18px 40px -24px rgba(0, 0, 0, 0.9);
+/* ── The stage ───────────────────────────────────────────────────────────────
+   Three equal columns at rest. The selected rail gains 30%; the other two each
+   yield 15%. Each game rail scrolls inside the stage instead of growing the page.
+   The focused rail is already against the outer edge, so every column's share
+   moves inward at once — the open card grows toward the middle of the screen
+   while the hub and the far rail give way. */
+.nexus-stage {
+  height: var(--stage-h);
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  transition: grid-template-columns var(--nexus-dur) var(--nexus-ease);
+}
+.nexus-stage[data-focus='left'] {
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.85fr) minmax(0, 0.85fr);
+}
+.nexus-stage[data-focus='right'] {
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 0.85fr) minmax(0, 1.3fr);
+}
+.nexus-stage > aside {
+  height: var(--stage-h);
 }
 
-.gold-hairline {
-  position: relative;
+/* Auto margins divide free space into one equal share above every card and one
+   below the last. The fixed sibling margin survives when overflow makes every
+   auto share zero, so cards never collapse onto each other. The zero-size lead
+   item keeps the first card reachable at scrollTop 0. */
+.nexus-rail::before {
+  content: '';
+  flex: 0 0 0;
+  margin-block-start: auto;
 }
-.gold-hairline::before {
+.nexus-rail > .nexus-node {
+  margin-block-end: auto;
+}
+.nexus-rail > .nexus-node + .nexus-node {
+  margin-block-start: 0.5rem;
+}
+
+/* Resting cards keep one compact notification height; free rail space becomes
+   gaps rather than stretching a card into a panel. */
+.nexus-rail > .nexus-node:not([data-expanded='true']) {
+  flex: 0 0 var(--nexus-card-h);
+}
+.nexus-rail > .nexus-node[data-expanded='true'] {
+  flex: 1 1 auto;
+}
+
+/* Layout containment only. `paint` would also be welcome here — it stops a card
+   growing mid-animation from invalidating paint across the whole stage — but it
+   clips to the border box, which silently swallows the card's cast shadow. The
+   shadow is the depth cue; the containment was an optimisation. */
+.nexus-node {
+  contain: layout;
+  min-height: var(--nexus-card-h);
+}
+.nexus-node-body {
+  display: grid;
+  /* minmax(0, Xfr), never a bare Xfr: a bare fr track keeps an `auto` minimum,
+     and the scroll child's own padding is a floor that minimum cannot go below,
+     which left a visible drop at the end of every close. */
+  grid-template-rows: minmax(0, 0fr);
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  /* The fade is deliberately shorter than the height change. Fading a subtree
+     repaints all of it every frame, so it finishes early and leaves the rest of
+     the animation to the cheaper height alone. */
+  transition:
+    grid-template-rows var(--nexus-dur) var(--nexus-ease),
+    opacity calc(var(--nexus-dur) * 0.45) var(--nexus-ease),
+    visibility 0s linear var(--nexus-dur);
+}
+.nexus-node[data-expanded='true'] .nexus-node-body {
+  grid-template-rows: minmax(0, 1fr);
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  transition-delay: 0s;
+}
+.nexus-node-body > * {
+  min-height: 0;
+  overflow: hidden;
+}
+/* Only once the growing has stopped — see the note on data-settled in NexusLayout. */
+.nexus-node[data-expanded='true'][data-settled='true'] .nexus-node-body > * {
+  overflow-y: auto;
+}
+
+/* The card that is about to waste something breathes. Opacity on a pseudo
+   element, never the card's own box-shadow: animating that would re-rasterise a
+   large blur every frame of an expansion that is already moving the grid. */
+.nexus-node[data-urgent='true']::after {
   content: '';
   position: absolute;
-  inset: 0 0 auto 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(238, 188, 99, 0.55), transparent);
-}
-
-/* Animated hairline: a gold shimmer drifts along the top edge. Frozen to a
-   static gradient under reduced motion by the global kill switch below. */
-@keyframes hairlineSlide {
-  to {
-    background-position: 200% 0;
-  }
-}
-.gold-hairline-live::before {
-  background: linear-gradient(90deg, transparent 20%, rgba(238, 188, 99, 0.75) 50%, transparent 80%);
-  background-size: 200% 100%;
-  animation: hairlineSlide 6s ease-in-out infinite;
-}
-
-/* Moving backlight: an oversized conic gradient slowly rotating behind card
-   content. Must sit inside an overflow-hidden rounded shell. Transform-only,
-   so it stays on the compositor; tint colors come from --aurora-c1/c2. */
-@keyframes auroraSpin {
-  to {
-    transform: rotate(1turn);
-  }
-}
-.card-aurora {
-  position: absolute;
-  inset: -45%;
+  inset: 0;
+  border-radius: inherit;
   pointer-events: none;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0%,
-    var(--aurora-c1) 10%,
-    transparent 28%,
-    transparent 50%,
-    var(--aurora-c2) 62%,
-    transparent 80%
-  );
-  opacity: 0.16;
-  animation: auroraSpin 22s linear infinite;
-  will-change: transform;
+  box-shadow: inset 0 0 0 1px var(--color-danger);
+  animation: nexusUrgent 2.2s ease-in-out infinite;
 }
 
-.scrollbar-thin {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(200, 180, 255, 0.3) transparent;
+/* The route pill. Transform and width only — both are cheap, and the pill sits
+   under the labels rather than reflowing them. */
+.nav-slider {
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    width var(--dur-base) var(--ease-out);
+}
+
+/* Route controls grow in from nothing when the tab changes. Scale, not width:
+   width would relayout the whole bar every frame, and the bar publishes its own
+   height to the stage — so a width tween would shiver the stage underneath it. */
+.header-actions-enter > * {
+  animation: headerActionIn var(--dur-base) var(--ease-out) both;
+  transform-origin: left center;
+}
+.header-actions-enter > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+.header-actions-enter > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+.header-actions-enter > *:nth-child(n + 4) {
+  animation-delay: 120ms;
+}
+
+@keyframes headerActionIn {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A card pushed to the opposite rail arrives from below rather than cutting in.
+   Only relocated cards carry this: the whole rail animating on every open would
+   read as the stage twitching, not as one card moving. */
+.nexus-node[data-relocated='true'] {
+  animation: nexusRelocate var(--nexus-dur) var(--nexus-ease) both;
+}
+
+@keyframes nexusRelocate {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes nexusUrgent {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* Pseudo-elements must be listed explicitly — bare * does not match them,
-     which would leave the ::before hairline shimmer running. */
+  /* Pseudo-elements need naming explicitly — a bare `*` does not match them, and
+     the urgency pulse lives on .nexus-node::after. */
   *,
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
+  }
+  .nexus-stage,
+  .nexus-node-body,
+  .nav-slider {
+    transition-duration: 0.001ms !important;
+  }
+  .tube-charge {
+    animation: none !important;
   }
 }
