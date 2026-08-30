@@ -768,8 +768,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     type: 'event',
     start: '2026-08-26 04:00',
     end: '2026-09-27 20:59',
-    notes:
-      'Flagship 4.5 event, on an official notice. Closes 2h01 before maintenance, not at it.',
+    notes: 'Flagship 4.5 event, on an official notice. Closes 2h01 before maintenance, not at it.',
     sourceKey: 'seed:hsr:4.5-overdrive',
   },
   {
@@ -818,8 +817,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     type: 'cycle',
     start: '2026-09-14 04:00',
     end: '2026-10-19 03:59',
-    notes:
-      'Domain Genesis. Officially SHORTENED to 5 weeks alongside Apocalyptic Shadow; both run on into v4.6.',
+    notes: 'Domain Genesis. Officially SHORTENED to 5 weeks alongside Apocalyptic Shadow; both run on into v4.6.',
     sourceKey: 'seed:hsr:pf-4.5',
   },
   // Phase-swap times (11:59 / 12:00) and the 15:00 close copy the 4.4 handoff, which was
@@ -1407,8 +1405,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     notify: false,
     start: '2026-09-29 21:00',
     end: '2026-09-30 04:00',
-    notes:
-      'No notice yet. Inferred from the official 3.6 close (09-29 11:59) and the usual Kuro overnight window.',
+    notes: 'No notice yet. Inferred from the official 3.6 close (09-29 11:59) and the usual Kuro overnight window.',
     sourceKey: 'seed:wuwa:3.7-maint',
   },
 
@@ -2295,8 +2292,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     type: 'livestream',
     start: '2026-08-28 12:30',
     end: '2026-08-28 14:30',
-    notes:
-      'Officially announced: 19:30 UTC+8. Reveals the v3.2 slate — refresh this file after it airs.',
+    notes: 'Officially announced: 19:30 UTC+8. Reveals the v3.2 slate — refresh this file after it airs.',
     sourceKey: 'seed:zzz:3.2-livestream',
   },
   {

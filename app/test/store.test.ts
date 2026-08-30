@@ -154,9 +154,7 @@ describe('local load validation', () => {
     idb.set(IDB_KEY, {
       ...state,
       games: state.games.map((game) =>
-        game.id === gameId
-          ? { ...game, presetKey: undefined, short: 'GI', updatedAt: originalUpdatedAt }
-          : game,
+        game.id === gameId ? { ...game, presetKey: undefined, short: 'GI', updatedAt: originalUpdatedAt } : game,
       ),
     });
 

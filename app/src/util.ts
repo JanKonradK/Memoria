@@ -38,18 +38,12 @@ export function fmtClock(at: number, zone: string): string {
  * lands at a different wall-clock time for every server region. Shared by the
  * game card and the settings list so the two can never disagree.
  */
-export function localResetLabel(
-  game: { tz: string; dailyResetHour: number },
-  zone: string,
-  now: number,
-): string {
+export function localResetLabel(game: { tz: string; dailyResetHour: number }, zone: string, now: number): string {
   const serverNow = DateTime.fromMillis(now, { zone: game.tz });
   let nextReset = serverNow.set({ hour: game.dailyResetHour, minute: 0, second: 0, millisecond: 0 });
   if (nextReset.toMillis() <= serverNow.toMillis()) nextReset = nextReset.plus({ days: 1 });
   const localReset = nextReset.setZone(zone);
-  return localReset.isValid
-    ? localReset.toFormat('HH:mm')
-    : String(game.dailyResetHour).padStart(2, '0') + ':00';
+  return localReset.isValid ? localReset.toFormat('HH:mm') : String(game.dailyResetHour).padStart(2, '0') + ':00';
 }
 
 export function fmtDateTimeLocalInput(at: number, zone: string): string {
