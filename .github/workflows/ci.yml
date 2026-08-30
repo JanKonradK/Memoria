@@ -19,9 +19,9 @@ jobs:
     # Windows-specific, so the checks that matter run where users run them.
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 24.14.0
           cache: npm
@@ -36,7 +36,7 @@ jobs:
       # time. The zip is not published from here.
       - run: npm run package
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: memoria-win-x64-${{ github.sha }}
           path: dist/release/Memoria-win-x64.zip
