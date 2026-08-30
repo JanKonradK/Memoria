@@ -55,11 +55,7 @@ export function useInset(): string {
  * background declaration, in CSS, with the neutral panel gradient as its
  * fallback: a card that has not opted in is unchanged.
  */
-export function gameShellVars(
-  game: GameColors,
-  theme: Theme,
-  resolvedIdentity: GameColors = game,
-): CSSProperties {
+export function gameShellVars(game: GameColors, theme: Theme, resolvedIdentity: GameColors = game): CSSProperties {
   const [hi, lo] = gameWash(resolvedIdentity, THEME_PANEL[theme], theme);
   return { '--card-shell-hi': hi, '--card-shell-lo': lo } as CSSProperties;
 }

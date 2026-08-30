@@ -139,11 +139,7 @@ export type TimelineRowLayout =
       labelPlacement: 'after' | 'before' | 'none';
     });
 
-export function timelineRowLayout(
-  displayLeft: number,
-  displayWidth: number,
-  laneWidth: number,
-): TimelineRowLayout {
+export function timelineRowLayout(displayLeft: number, displayWidth: number, laneWidth: number): TimelineRowLayout {
   const safeLaneWidth = Number.isFinite(laneWidth) ? Math.max(0, laneWidth) : 0;
   const safeDisplayLeft = Number.isFinite(displayLeft) ? Math.max(0, Math.min(displayLeft, 100)) : 0;
   const safeDisplayWidth = Number.isFinite(displayWidth)
@@ -162,9 +158,7 @@ export function timelineRowLayout(
 
   // Preserve room for the optional span before the tick is allowed to float.
   // This keeps long bars from pushing the tick into the countdown.
-  const tickFloats =
-    safeLaneWidth > 0 &&
-    barEndPx + TICK_SLOT_PX <= safeLaneWidth - COUNTDOWN_PX - SPAN_PX;
+  const tickFloats = safeLaneWidth > 0 && barEndPx + TICK_SLOT_PX <= safeLaneWidth - COUNTDOWN_PX - SPAN_PX;
   const trailingClusterPx = COUNTDOWN_PX + (tickFloats ? 0 : TICK_SLOT_PX);
   const clusterStartPx = Math.max(0, safeLaneWidth - trailingClusterPx);
   const textRightPx = Math.min(barEndPx, clusterStartPx);
@@ -213,10 +207,8 @@ export function timelineRowLayout(
   const minimalClusterStartPx = Math.max(0, safeLaneWidth - minimalTrailingClusterPx);
   const afterLabelPx = Math.max(0, minimalClusterStartPx - barEndPx);
   const beforeLabelPx = Math.max(0, barLeftPx);
-  const labelPlacement =
-    afterLabelPx >= MIN_LABEL_PX ? 'after' : beforeLabelPx >= MIN_LABEL_PX ? 'before' : 'none';
-  const barTextMaxWidth =
-    labelPlacement === 'after' ? afterLabelPx : labelPlacement === 'before' ? beforeLabelPx : 0;
+  const labelPlacement = afterLabelPx >= MIN_LABEL_PX ? 'after' : beforeLabelPx >= MIN_LABEL_PX ? 'before' : 'none';
+  const barTextMaxWidth = labelPlacement === 'after' ? afterLabelPx : labelPlacement === 'before' ? beforeLabelPx : 0;
 
   return {
     tier: 'minimal',
@@ -741,7 +733,11 @@ export function TimelinePage({ now }: { now: number }) {
                 .sort((a, b) => a.end - b.end)
                 .find(
                   (e) =>
-                    e.end > now && !e.done && e.type !== 'maintenance' && e.type !== 'banner' && e.type !== 'livestream',
+                    e.end > now &&
+                    !e.done &&
+                    e.type !== 'maintenance' &&
+                    e.type !== 'banner' &&
+                    e.type !== 'livestream',
                 );
               const finishedShown = finishedOpen.has(game.id);
               // `now` ticks, so a row leaves the lane the moment it ends without
