@@ -1,4 +1,4 @@
-import type { AppState, Cadence, Game, GameEvent, Task, TaskMode } from './types';
+import type { AppState, Cadence, Completion, Game, GameEvent, Task, TaskMode } from './types';
 import { taskNextReset, taskPeriodKey } from './periods';
 import { effectiveCountTarget, effectiveTaskMode, effectiveTimerDurationMinutes } from './tracking';
 
@@ -23,7 +23,10 @@ export interface ChecklistItem {
   timerRunning: boolean;
   timerReady: boolean;
   timerDurationMinutes: number;
+  timerStepMinutes?: number;
   sort: number;
+  /** Pays the game's premium pull currency — see Task.core. */
+  core: boolean;
 }
 
 /** Generic words that would create false timeline matches ("cycle" appears everywhere). */
@@ -69,13 +72,48 @@ function isLive(x: { deleted?: boolean }): boolean {
   return !x.deleted;
 }
 
+export interface ChecklistIndex {
+  /** Live completion rows keyed by `${taskId}|${periodKey}`. */
+  completions: Map<string, Completion>;
+  tasksByGame: Map<string, Task[]>;
+  /** Live, unfinished events grouped by game. */
+  eventsByGame: Map<string, GameEvent[]>;
+}
+
+export function buildChecklistIndex(state: AppState): ChecklistIndex {
+  const completions = new Map<string, Completion>();
+  for (const completion of state.completions) {
+    // `find` returned the first live row if malformed input contained duplicate
+    // ids, so preserve that ordering instead of letting Map#set choose the last.
+    if (isLive(completion) && !completions.has(completion.id)) completions.set(completion.id, completion);
+  }
+
+  const tasksByGame = new Map<string, Task[]>();
+  for (const task of state.tasks) {
+    if (!isLive(task)) continue;
+    const tasks = tasksByGame.get(task.gameId);
+    if (tasks) tasks.push(task);
+    else tasksByGame.set(task.gameId, [task]);
+  }
+
+  const eventsByGame = new Map<string, GameEvent[]>();
+  for (const event of state.events) {
+    if (!isLive(event) || event.done) continue;
+    const events = eventsByGame.get(event.gameId);
+    if (events) events.push(event);
+    else eventsByGame.set(event.gameId, [event]);
+  }
+
+  return { completions, tasksByGame, eventsByGame };
+}
+
 function completionProgress(
-  state: AppState,
+  completions: Map<string, Completion>,
   task: Task,
   periodKey: string,
   now: number,
 ): { done: boolean; countDone: number; countTarget: number; timerEndsAt: number | null } {
-  const row = state.completions.find((item) => item.id === `${task.id}|${periodKey}` && isLive(item));
+  const row = completions.get(`${task.id}|${periodKey}`);
   const mode = effectiveTaskMode(task);
   const countTarget = effectiveCountTarget(task);
   const countDone = row?.countDone ?? 0;
@@ -93,9 +131,14 @@ function completionProgress(
 }
 
 /** All checklist items for a game right now. */
-export function checklistFor(state: AppState, game: Game, now: number): ChecklistItem[] {
-  const tasks: Task[] = state.tasks.filter((t) => t.gameId === game.id && isLive(t));
-  const liveEvents = state.events.filter((e) => e.gameId === game.id && isLive(e) && !e.done);
+export function checklistFor(
+  state: AppState,
+  game: Game,
+  now: number,
+  index: ChecklistIndex = buildChecklistIndex(state),
+): ChecklistItem[] {
+  const tasks = index.tasksByGame.get(game.id) ?? [];
+  const liveEvents = index.eventsByGame.get(game.id) ?? [];
   const out: ChecklistItem[] = [];
   for (const t of tasks) {
     let periodKey: string;
@@ -118,7 +161,7 @@ export function checklistFor(state: AppState, game: Game, now: number): Checklis
       resetAt = taskNextReset(game, t, now);
     }
     const mode = effectiveTaskMode(t);
-    const progress = completionProgress(state, t, periodKey, now);
+    const progress = completionProgress(index.completions, t, periodKey, now);
     const timerEndsAt = progress.timerEndsAt;
     out.push({
       taskId: t.id,
@@ -135,10 +178,15 @@ export function checklistFor(state: AppState, game: Game, now: number): Checklis
       timerRunning: timerEndsAt != null && timerEndsAt > now,
       timerReady: timerEndsAt != null && timerEndsAt <= now,
       timerDurationMinutes: effectiveTimerDurationMinutes(t),
+      timerStepMinutes: t.timerStepMinutes,
       sort: t.sort,
+      core: t.core === true,
     });
   }
-  return out.sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name));
+  // Core tasks first: missing one costs pulls, missing a side chore costs
+  // nothing, and the card should not make you hunt for the difference. Within
+  // each group the user's own order still wins.
+  return out.sort((a, b) => Number(b.core) - Number(a.core) || a.sort - b.sort || a.name.localeCompare(b.name));
 }
 
 export function completionId(taskId: string, periodKey: string): string {

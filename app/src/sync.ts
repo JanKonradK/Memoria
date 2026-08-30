@@ -1,82 +1,68 @@
-import { mergeState, normalizeState } from '@technogg/shared';
-import { authHeaders, isHostedSession } from './auth-session';
+import { mergeState, normalizeState } from '@memoria/shared';
+import { servedByLauncher } from './launcher';
 import { useApp } from './store';
 
-const CFG_KEY = 'technogg-sync-config';
-
-export interface SyncConfig {
-  url: string;
-  token: string;
-}
-
-/** Desktop-launcher origins (fixed ports — see desktop/technogg.mjs). */
-const LAUNCHER_ORIGIN = /^http:\/\/(127\.0\.0\.1|localhost):1781[789]$/;
-
-export function getSyncConfig(): SyncConfig {
-  try {
-    const raw = JSON.parse(localStorage.getItem(CFG_KEY) ?? '{}') as Partial<SyncConfig>;
-    if (raw.url) return { url: raw.url, token: raw.token ?? '' };
-  } catch {
-    /* fall through to defaults */
-  }
-  // Served by the desktop launcher: sync against it automatically, no setup.
-  // It's backed by %APPDATA%\technogg\state.json; the token is unused
-  // locally (the server only listens on 127.0.0.1) but must be non-empty.
-  if (LAUNCHER_ORIGIN.test(window.location.origin)) {
-    return { url: window.location.origin, token: 'local' };
-  }
-  return { url: '', token: '' };
-}
-
-export function setSyncConfig(cfg: SyncConfig): void {
-  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
-}
-
-function apiBase(url: string): string {
-  return url.trim().replace(/\/+$/, '');
-}
+/** The launcher refuses a larger document; warn before the write fails. */
+const SYNC_WARNING_BYTES = 900_000;
 
 let syncing = false;
 let serverVersion: number | null = null;
+let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-async function apiConnection(): Promise<{ base: string; headers: Record<string, string> } | null> {
-  if (isHostedSession()) return { base: '', headers: await authHeaders() };
-  const { url, token } = getSyncConfig();
-  if (!url || !token) return null;
-  return { base: apiBase(url), headers: { authorization: `Bearer ${token}` } };
+export function resetSyncState(): void {
+  serverVersion = null;
+  clearTimeout(debounceTimer);
+  debounceTimer = undefined;
+  useApp.getState().setSyncStatus('idle');
 }
 
-/** Push local state, receive the server-merged state, merge it back in. */
+/** Push local state to the launcher, receive the merged document, merge it back in. */
 export async function syncNow(): Promise<void> {
-  const connection = await apiConnection();
-  if (!connection || syncing || !navigator.onLine) return;
+  if (!servedByLauncher() || syncing) return;
   const store = useApp.getState();
+  const stateBytes = new TextEncoder().encode(JSON.stringify(store.state)).byteLength;
+  if (stateBytes > SYNC_WARNING_BYTES) {
+    store.setSyncStatus(
+      'error',
+      `Local data is ${stateBytes.toLocaleString()} bytes and is nearing the 1 MB launcher limit. Export a backup and reduce large images or old data.`,
+    );
+    return;
+  }
   syncing = true;
   store.setSyncStatus('syncing');
   try {
     for (let attempt = 0; attempt < 3; attempt++) {
-      const res = await fetch(`${connection.base}/api/sync`, {
+      const res = await fetch('/api/sync', {
         method: 'POST',
-        headers: { 'content-type': 'application/json', ...connection.headers },
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ state: useApp.getState().state, version: serverVersion }),
       });
-      if (res.status === 409 && attempt < 2) {
-        const latest = await fetch(`${connection.base}/api/state`, { headers: connection.headers });
+      if (res.status === 409) {
+        // Another app window wrote first. Pull its document, merge, retry.
+        if (attempt >= 2) throw new Error('Sync remained conflicted after three attempts.');
+        const latest = await fetch('/api/state');
         if (!latest.ok) throw new Error(`HTTP ${latest.status}`);
         const body = (await latest.json()) as { state: unknown; version?: number };
         serverVersion = typeof body.version === 'number' ? body.version : serverVersion;
         useApp.getState().replaceState(mergeState(useApp.getState().state, normalizeState(body.state)));
         continue;
       }
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        let message = `HTTP ${res.status}`;
+        try {
+          const body = (await res.json()) as { error?: unknown };
+          if (typeof body.error === 'string') message = body.error;
+        } catch {
+          // The status remains useful when the launcher did not return JSON.
+        }
+        throw new Error(message);
+      }
       const data = (await res.json()) as { state: unknown; version?: number };
       serverVersion = typeof data.version === 'number' ? data.version : serverVersion;
-      const merged = mergeState(useApp.getState().state, normalizeState(data.state));
-      useApp.getState().replaceState(merged);
+      useApp.getState().replaceState(mergeState(useApp.getState().state, normalizeState(data.state)));
       useApp.getState().setSyncStatus('ok');
       return;
     }
-    throw new Error('Sync remained conflicted after three attempts.');
   } catch (e) {
     useApp.getState().setSyncStatus('error', e instanceof Error ? e.message : String(e));
   } finally {
@@ -84,47 +70,26 @@ export async function syncNow(): Promise<void> {
   }
 }
 
-/** Ask the worker to send a test notification through the configured channels. */
-export async function sendTestPing(): Promise<string> {
-  const connection = await apiConnection();
-  if (!connection) return 'Sign in or configure the advanced local sync server first.';
-  if (!navigator.onLine) return 'You are offline. Reconnect before sending a test ping.';
-  try {
-    const res = await fetch(`${connection.base}/api/test-alert`, {
-      method: 'POST',
-      headers: connection.headers,
-    });
-    const body = (await res.json().catch(() => ({}))) as { sent?: string[]; error?: string };
-    if (!res.ok) return body.error ?? `HTTP ${res.status}`;
-    return body.sent?.length ? `Sent via: ${body.sent.join(', ')}` : 'No notification channel configured yet.';
-  } catch (e) {
-    return e instanceof Error ? e.message : String(e);
-  }
-}
-
-let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 let initialized = false;
 
 export function initSync(): void {
-  if (initialized) return;
+  if (!servedByLauncher() || initialized) return;
   initialized = true;
+
   document.addEventListener('tg-mutated', () => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => void syncNow(), 4000);
   });
-  // On the desktop launcher, it pushes a ping whenever the shared state file
-  // changes on disk — pull right away instead of waiting for the poll.
-  if (LAUNCHER_ORIGIN.test(window.location.origin)) {
-    const events = new EventSource('/api/events');
-    events.onmessage = () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => void syncNow(), 300);
-    };
-  }
+  // The launcher pushes a ping whenever state.json changes on disk (another app
+  // window saved), so a poll timer would only add redundant loopback traffic.
+  const events = new EventSource('/api/events');
+  events.onmessage = () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => void syncNow(), 300);
+  };
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) void syncNow();
   });
-  window.addEventListener('online', () => void syncNow());
-  setInterval(() => void syncNow(), 5 * 60_000);
+
   void syncNow();
 }

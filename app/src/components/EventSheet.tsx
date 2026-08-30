@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { EventType } from '@technogg/shared';
+import type { EventType } from '@memoria/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fmtDateTimeLocalInput, parseDateTimeLocalInput } from '../util';
@@ -7,7 +7,7 @@ import { Sheet } from './Sheet';
 import { Btn, Field, Select, TextInput, Toggle } from './ui';
 
 const DAY = 86_400_000;
-const TYPES: EventType[] = ['banner', 'event', 'cycle', 'maintenance', 'custom'];
+const TYPES: EventType[] = ['banner', 'event', 'cycle', 'maintenance', 'livestream', 'custom'];
 
 /** Add/edit an event from anywhere (Timeline, dashboard). */
 export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?: string; gameId?: string }) {
@@ -94,9 +94,9 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
           <Field label="Starts">
             <TextInput
               type="datetime-local"
-              value={fmtDateTimeLocalInput(draft.start)}
+              value={fmtDateTimeLocalInput(draft.start, state.settings.localTz)}
               onChange={(e) => {
-                const t = parseDateTimeLocalInput(e.target.value);
+                const t = parseDateTimeLocalInput(e.target.value, state.settings.localTz);
                 if (t != null) setDraft({ ...draft, start: t });
               }}
             />
@@ -104,9 +104,9 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
           <Field label="Ends">
             <TextInput
               type="datetime-local"
-              value={fmtDateTimeLocalInput(draft.end)}
+              value={fmtDateTimeLocalInput(draft.end, state.settings.localTz)}
               onChange={(e) => {
-                const t = parseDateTimeLocalInput(e.target.value);
+                const t = parseDateTimeLocalInput(e.target.value, state.settings.localTz);
                 if (t != null) setDraft({ ...draft, end: t });
               }}
             />
@@ -118,13 +118,18 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
             onChange={(v) => setDraft({ ...draft, dailyTouch: v })}
             label="Needs daily touch (pinned on card)"
           />
-          <Toggle checked={draft.notify} onChange={(v) => setDraft({ ...draft, notify: v })} label="Alert before end" />
+          <Toggle
+            checked={draft.notify}
+            onChange={(v) => setDraft({ ...draft, notify: v })}
+            label="Include in next actions"
+          />
           <Toggle checked={draft.done} onChange={(v) => setDraft({ ...draft, done: v })} label="Done (hide + mute)" />
         </div>
-        <div className="flex gap-2 pt-2">
+        <div className="flex items-center justify-end gap-2 pt-2">
           {existing && (
             <Btn
               kind="danger"
+              className="mr-auto"
               onClick={() => {
                 deleteEvent(existing.id);
                 closeSheet();
@@ -133,7 +138,7 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
               Delete
             </Btn>
           )}
-          <Btn kind="primary" className="flex-1" onClick={save} disabled={!draft.name.trim() || !draft.gameId}>
+          <Btn kind="primary" onClick={save} disabled={!draft.name.trim() || !draft.gameId}>
             {existing ? 'Save' : 'Add event'}
           </Btn>
         </div>

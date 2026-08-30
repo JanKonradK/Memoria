@@ -1,33 +1,28 @@
 {
-  "name": "techno-gg",
+  "name": "memoria",
   "private": true,
   "version": "0.1.0",
   "workspaces": [
     "shared",
-    "app",
-    "worker"
+    "app"
   ],
   "scripts": {
     "dev": "npm -w app run dev",
     "build": "npm -w app run build && npm run build:desktop",
-    "build:desktop": "esbuild shared/src/merge.ts --bundle --platform=node --format=esm --outfile=desktop/dist/merge.mjs",
-    "test": "npm -w shared run test && npm -w app run test && npm -w worker run test",
+    "build:desktop": "esbuild desktop/shared-core.mjs --bundle --platform=node --format=esm --outfile=desktop/dist/shared-core.mjs",
+    "test": "npm -w shared run test && npm -w app run test",
     "test:e2e": "npm -w app run test:e2e",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:pwa": "node scripts/check-pwa.mjs",
-    "launch:gates": "node scripts/launch-gates.mjs",
     "check": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run build && npm run check:pwa",
-    "typecheck": "npm -w shared run typecheck && npm -w app run typecheck && npm -w worker run typecheck",
-    "deploy": "npm -w app run build && npm -w worker run deploy",
-    "deploy:staging": "npm -w app run build && npm -w worker run deploy:staging",
-    "deploy:production": "npm -w app run build && npm -w worker run deploy:production",
-    "cf:types": "npm -w worker run cf:types",
-    "audit": "npm audit --audit-level=high",
-    "icons": "node app/scripts/gen-icons.mjs",
+    "typecheck": "npm -w shared run typecheck && npm -w app run typecheck",
+    "audit": "npm audit --audit-level=high --omit=dev",
+    "icons": "node app/scripts/gen-mark.mjs && node app/scripts/gen-icons.mjs && node app/scripts/gen-ico.mjs",
     "ico": "node app/scripts/gen-ico.mjs",
-    "install:desktop": "powershell -ExecutionPolicy Bypass -File desktop/Install-Shortcut.ps1"
+    "install:desktop": "powershell -ExecutionPolicy Bypass -File desktop/Install-Shortcut.ps1",
+    "build:single": "npm -w app run build:single"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

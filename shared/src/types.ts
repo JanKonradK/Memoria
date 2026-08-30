@@ -1,7 +1,10 @@
+import { detectLocalTz } from './timezone';
+
 export type Cadence = 'daily' | 'weekly' | 'monthly' | 'custom';
 export type ResourceKind = 'regen' | 'weekly' | 'counter';
 export type TaskMode = 'check' | 'timer' | 'count';
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 7;
+export const MAX_GAME_IMAGE_LENGTH = 200_000;
 
 /** Everything syncable carries updatedAt (epoch ms) for last-write-wins merge. */
 export interface Syncable {
@@ -13,12 +16,22 @@ export interface Syncable {
 export interface Game extends Syncable {
   id: string;
   name: string;
-  /** Short label for chips/notifications, e.g. "HSR". */
+  /** Preset this game came from; survives any rename. */
+  presetKey?: string;
+  /** User's label for this account, e.g. "Main EU". */
+  accountLabel?: string;
+  /** Short label for chips and compact UI, e.g. "HSR". */
   short: string;
   /** Accent color (hex). */
   color: string;
-  /** Secondary accent (hex) — gradients run color → color2 ("pink with hints of blue"). */
+  /** Secondary accent (hex) — the title ink and the lead tube tone. */
   color2?: string;
+  /**
+   * Third accent (hex) — small highlights, and the first candidate for the
+   * card's saturated 1px rim. Optional because a game the user typed in by hand
+   * only has to supply one colour; the rim then falls back down the trio.
+   */
+  color3?: string;
   /** Emoji used as the game icon (fallback when no image is set). */
   icon: string;
   /** Optional character/cover art (data URL or remote URL). Shown on the card. */
@@ -38,10 +51,6 @@ export interface Game extends Syncable {
   notes?: string;
   /** Executable names (no .exe, case-insensitive) the TUI matches against running processes. */
   processNames?: string[];
-  /** Card display toggles — every block on the game card can be switched off. Default: shown. */
-  hideProgressRing?: boolean;
-  hideEventStrip?: boolean;
-  hideSleepChip?: boolean;
   /** CSS font-family for the card/hero title — each game keeps its own personality. */
   titleFont?: string;
 }
@@ -50,8 +59,6 @@ export interface Resource extends Syncable {
   id: string;
   gameId: string;
   name: string;
-  /** Key into the built-in resource icon set (e.g. "crystal", "comet"). */
-  icon?: string;
   cap: number;
   /** Minutes to regenerate 1 point. 0 = does not regenerate over time. */
   regenMinutes: number;
@@ -90,6 +97,8 @@ export interface Task extends Syncable {
   mode?: TaskMode;
   /** Timer length in minutes (expeditions / assignments). */
   timerDurationMinutes?: number;
+  /** Minutes removed from a running timer on each click. */
+  timerStepMinutes?: number;
   /** Epoch ms when the active timer ends; null when idle. */
   timerEndsAt?: number | null;
   /** Required completions per period (weekly bosses). */
@@ -102,6 +111,13 @@ export interface Task extends Syncable {
   timelineLinked?: boolean;
   /** Keyword override for the timeline match (case-insensitive contains); empty = fuzzy name match. */
   timelineMatch?: string;
+  /**
+   * The handful of tasks that actually pay the game's premium pull currency
+   * (Primogems, Stellar Jade, Polychrome, Astrite…). These sort above everything
+   * else on the card and are the ones the completion ring counts, because
+   * missing one costs real pulls while missing a side chore costs nothing.
+   */
+  core?: boolean;
 }
 
 /** Completion state of a task within one period. id = `${taskId}|${periodKey}`. */
@@ -114,8 +130,14 @@ export interface Completion extends Syncable {
   countDone?: number;
 }
 
-/** 'cycle' = recurring endgame windows (Abyss/Theater, MoC/PF/AS/AA, Shiyu/DA…). */
-export type EventType = 'banner' | 'event' | 'cycle' | 'maintenance' | 'custom';
+/**
+ * 'cycle' = recurring endgame windows (Abyss/Theater, MoC/PF/AS/AA, Shiyu/DA…).
+ * 'livestream' = the patch preview broadcast (HoYo "Special Program", Kuro
+ * version livestream, and the equivalents) that reveals the next version. It is
+ * the cue to refresh the bundled feed, so a predicted one is stored as the
+ * plausible date RANGE rather than as a single guessed moment.
+ */
+export type EventType = 'banner' | 'event' | 'cycle' | 'maintenance' | 'livestream' | 'custom';
 
 export interface GameEvent extends Syncable {
   id: string;
@@ -126,13 +148,24 @@ export interface GameEvent extends Syncable {
   end: number;
   /** Requires a daily touch (login/claim) — always shown on the game card's event strip while active. */
   dailyTouch: boolean;
-  /** Include in "event ending soon" alerts. */
+  /** Include the event in time-sensitive in-app next actions. */
   notify: boolean;
-  /** User marked it complete — collapsed on the timeline, no alerts, off the card. */
+  /** User marked it complete — collapsed on the timeline and off the card. */
   done?: boolean;
   notes: string;
   /** Stable id of the imported source (e.g. "genshin:21788") — used to dedupe re-imports. */
   sourceKey?: string;
+  /**
+   * Fingerprint of the values the bundled feed last wrote here, so a refresh can
+   * tell ITS OWN drift from YOUR edits. Present only on rows the feed wrote.
+   *
+   * If the event still hashes to this, nobody has touched it and the feed may
+   * correct it. If it does not, you changed something and the feed leaves the
+   * whole row alone from then on — a corrected date is worth less than a note
+   * you wrote. Absent on hand-made events and on ⤓ HoYoLAB imports, neither of
+   * which the feed owns.
+   */
+  seedHash?: string;
 }
 
 /** One-tap spend button on a game card, e.g. { label: "Domain", delta: -20 }. */
@@ -164,33 +197,26 @@ export interface Reminder extends Syncable {
   at: number;
 }
 
-export type IntegrationKind = 'discord' | 'telegram';
-
-export interface IntegrationStatus {
-  kind: IntegrationKind;
-  connected: boolean;
-  maskedLabel: string;
-  updatedAt: number | null;
-  consentedAt: number | null;
-}
-
-/** Accepted only during local migration; these fields must never enter synced AppState JSON. */
-export interface LegacySecretSettings {
-  discordWebhook?: string;
-  telegramToken?: string;
-  telegramChatId?: string;
-}
-
 export type SettingsField = 'quietStart' | 'quietEnd' | 'localTz' | 'sleepHours';
 
 export interface Settings extends Syncable {
-  /** Quiet hours in minutes-from-midnight local time; null = disabled. */
+  /** Reserved notification preference in minutes-from-midnight local time; null = disabled. */
   quietStart: number | null;
   quietEnd: number | null;
-  /** IANA timezone used to format alert messages + quiet hours. */
+  /** IANA timezone reserved for future notification timing. */
   localTz: string;
   /** Hours of sleep used by the "safe to sleep" check. */
   sleepHours: number;
+  /**
+   * The `SEED_UPDATED` stamp of the bundled event feed this device has already
+   * taken a refresh from, as `YYYY-MM-DD`.
+   *
+   * The feed import runs on every load, so without this the refresh pass would
+   * re-apply the bundled name and dates to an already-imported event forever —
+   * silently reverting any edit the user made to one. Absent means "never
+   * refreshed", which is the correct state for a device that has only ever added.
+   */
+  seedImportedVersion?: string;
   /** Per-field clocks prevent unrelated settings edits on two devices from overwriting each other. */
   fieldUpdatedAt?: Partial<Record<SettingsField, number>>;
 }
@@ -212,7 +238,7 @@ export interface AppState {
 export const DEFAULT_SETTINGS: Settings = {
   quietStart: 60, // 01:00
   quietEnd: 480, // 08:00
-  localTz: 'Europe/Warsaw',
+  localTz: 'UTC',
   sleepHours: 8,
   fieldUpdatedAt: {},
   updatedAt: 0,
@@ -230,15 +256,10 @@ export function emptyState(): AppState {
     chips: [],
     alertRules: [],
     reminders: [],
-    settings: { ...DEFAULT_SETTINGS },
+    settings: {
+      ...DEFAULT_SETTINGS,
+      localTz: detectLocalTz(),
+      fieldUpdatedAt: { ...DEFAULT_SETTINGS.fieldUpdatedAt },
+    },
   };
 }
-
-/** Default alert thresholds (minutes) when no AlertRule overrides them. */
-export const DEFAULT_THRESHOLDS: Record<AlertType, number> = {
-  energy_cap: 120,
-  daily_undone: 180,
-  weekly_undone: 24 * 60,
-  monthly_undone: 48 * 60,
-  event_end: 24 * 60,
-};
