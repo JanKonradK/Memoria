@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { MARK_HEIGHT, MARK_PATH, MARK_WIDTH } from './mark-path';
 
 /**
- * The Void mark: an INFINITY SIGN with a piece missing where it crosses itself.
+ * The Memoria mark: an INFINITY SIGN with a piece missing where it crosses itself.
  *
  * A lemniscate of Bernoulli, stroke-modulated the way a broad-nib pen draws it
  * — heavy through the outer curves, light at the crossing. At the crossing one

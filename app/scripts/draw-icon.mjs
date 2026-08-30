@@ -1,5 +1,5 @@
 // Shared, zero-dependency icon drawing used by both the PWA PNG generator and
-// the Windows .ico generator. Renders the Void app icon: the infinity mark (see
+// the Windows .ico generator. Renders the Memoria app icon: the infinity mark (see
 // mobius.mjs) in white-into-gold on a pure black squircle.
 //
 // Everything is drawn from a signed distance field rather than sampled shapes,
