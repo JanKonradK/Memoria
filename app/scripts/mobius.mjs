@@ -1,4 +1,4 @@
-// The Void mark: an infinity sign with a beginning and an end.
+// The Memoria mark: an infinity sign with a beginning and an end.
 //
 // The centreline is a lemniscate of Bernoulli — the actual ∞ curve, with round
 // lobes meeting at a right angle. The stroke is modulated symmetrically, heavy
