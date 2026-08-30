@@ -26,8 +26,7 @@ function migrateGenshinPalette(raw: unknown): unknown {
     // Both earlier Genshin palettes: the Mora gold this migration replaces, and
     // the near-white it replaced before that — a legacy document can still be
     // sitting on either, and all three accounts have to end up on one pair.
-    const oldPalette =
-      typeof game.color === 'string' && ['#8d6f26', '#fefef3'].includes(game.color.toLowerCase());
+    const oldPalette = typeof game.color === 'string' && ['#8d6f26', '#fefef3'].includes(game.color.toLowerCase());
     const missingTitleFont = typeof game.titleFont !== 'string' || game.titleFont.trim() === '';
     if (!oldPalette && !missingTitleFont) return item;
     changed = true;

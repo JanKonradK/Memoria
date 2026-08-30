@@ -6,9 +6,7 @@
       {
         "rule": "design-system-color",
         "value": "*",
-        "files": [
-          "shared/src/presets.ts"
-        ],
+        "files": ["shared/src/presets.ts"],
         "createdAt": "2026-08-08T00:08:10.308Z"
       }
     ]
