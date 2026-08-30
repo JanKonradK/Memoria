@@ -1,0 +1,10 @@
+# Git stores text as LF and checks it out as LF on every platform. Without this
+# the repo depends on each contributor's core.autocrlf, and a Windows clone gets
+# CRLF working files that `prettier --check` (endOfLine: lf) rejects wholesale.
+* text=auto eol=lf
+
+# Binaries git must never touch.
+*.png binary
+*.ico binary
+*.woff binary
+*.woff2 binary
