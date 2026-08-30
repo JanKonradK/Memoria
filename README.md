@@ -177,7 +177,7 @@ Known names: `helium`, `chrome`, `edge`, `brave`, `vivaldi`, `opera`, `firefox`,
 `system` to hand the URL to whatever the machine has registered for `https`
 (the escape hatch for anything not on the list). Chromium-based browsers get a
 chromeless app window; Firefox-based ones get a plain window; `system` gets a
-tab. Precedence is `--browser` → `VOID_BROWSER` → `config.json` → automatic.
+tab. Precedence is `--browser` → `MEMORIA_BROWSER` → `config.json` → automatic.
 
 ## Getting events in
 

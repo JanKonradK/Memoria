@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-08-08T00:11:30.334Z",
-  "title": "Design System: Void",
+  "title": "Design System: Memoria",
   "extensions": {
     "colorMeta": {
       "accent": {
@@ -231,7 +231,7 @@
   ],
   "narrative": {
     "northStar": "The Collector's Shelf",
-    "overview": "Void holds five, ten, fifteen games at once, and each one already has a face — its own accent, its own gradient partner, its own title font, its own cover art. The system's job is not to have a personality. Its job is to be the shelf: a dark, even, precisely-built structure that recedes so completely that the eye lands on the objects sitting on it. Every design decision is judged by one question: does this make the shelf more visible, or the games more visible? The shelf always loses.\n\nThat produces a specific kind of restraint. The chrome is achromatic — blacks, whites at low alpha, and a grey text ramp. Chromatic color on the shelf itself is rationed to exactly two jobs: the accent violet marks what is interactive, and the status trio marks what is about to go wrong. Anything else colored on screen is a game asserting itself, which is the point. When a card glows amber, that is not decoration; the user has ninety minutes before something resets.\n\nDensity is deliberately high — this is an Operate surface for someone checking in at speed, several games deep, often twice a day. Rows are 36px, type runs small and tight, and whitespace is spent on separating games from each other rather than on padding inside them. The interface should feel like a well-made rack, not a poster.",
+    "overview": "Memoria holds five, ten, fifteen games at once, and each one already has a face — its own accent, its own gradient partner, its own title font, its own cover art. The system's job is not to have a personality. Its job is to be the shelf: a dark, even, precisely-built structure that recedes so completely that the eye lands on the objects sitting on it. Every design decision is judged by one question: does this make the shelf more visible, or the games more visible? The shelf always loses.\n\nThat produces a specific kind of restraint. The chrome is achromatic — blacks, whites at low alpha, and a grey text ramp. Chromatic color on the shelf itself is rationed to exactly two jobs: the accent violet marks what is interactive, and the status trio marks what is about to go wrong. Anything else colored on screen is a game asserting itself, which is the point. When a card glows amber, that is not decoration; the user has ninety minutes before something resets.\n\nDensity is deliberately high — this is an Operate surface for someone checking in at speed, several games deep, often twice a day. Rows are 36px, type runs small and tight, and whitespace is spent on separating games from each other rather than on padding inside them. The interface should feel like a well-made rack, not a poster.",
     "keyCharacteristics": [
       "True black canvas (#000000), never a dark grey — the shelf disappears on OLED",
       "Achromatic chrome; all saturated color is either a game's identity or a warning",

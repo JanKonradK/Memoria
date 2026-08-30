@@ -48,6 +48,6 @@ export function sweepDasharray(sweep: number): string {
   return `${Number((clamped * RING_PATH_LENGTH).toFixed(3))} ${RING_PATH_LENGTH}`;
 }
 
-// The Void mark used to be built from two open arcs here. It is now an infinity
+// The Memoria mark used to be built from two open arcs here. It is now an infinity
 // band with a break at its crossing — geometry in app/scripts/mobius.mjs,
 // generated outline in app/src/components/mark-path.ts.

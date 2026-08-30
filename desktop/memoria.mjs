@@ -83,7 +83,25 @@ const PORTS = [17817, 17818, 17819];
  * short of leaving a dead lock in place across reboots.
  */
 const STALE_LOCK_GRACE_MS = 30_000;
-const MARKER = 'x-void';
+
+/**
+ * The vocabulary two launcher processes use to recognise each other: a response
+ * header, an HMAC domain string, the loopback endpoints and the session cookie.
+ *
+ * Every name here also exists in a pre-rename form, and BOTH are spoken. During
+ * an update the copy already serving port 17817 is the previous build, and a new
+ * launcher that could not identify it would conclude the port belonged to some
+ * unrelated program and fall through to 17818 — a different origin, which makes
+ * the app's IndexedDB look empty. The legacy half of each pair can be deleted
+ * once no pre-0.2.0 install is still in use.
+ */
+const MARKER = 'x-memoria';
+const LEGACY_MARKER = 'x-void';
+const HMAC_DOMAIN = 'memoria-launcher-v1';
+const LEGACY_HMAC_DOMAIN = 'void-launcher-v1';
+const COOKIE_NAME = 'memoria_token';
+const LEGACY_COOKIE_NAME = 'void_token';
+
 const MAX_SYNC_BYTES = 1_000_000;
 const LAUNCH_TICKET_TTL_MS = 30_000;
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
@@ -168,8 +186,8 @@ function secretEquals(actual, expected) {
   return actualBytes.length === expectedBytes.length && timingSafeEqual(actualBytes, expectedBytes);
 }
 
-function hmacProof(secret, purpose, port, nonce) {
-  return createHmac('sha256', secret).update(`void-launcher-v1:${purpose}:${port}:${nonce}`).digest('base64url');
+function hmacProof(secret, purpose, port, nonce, domain = HMAC_DOMAIN) {
+  return createHmac('sha256', secret).update(`${domain}:${purpose}:${port}:${nonce}`).digest('base64url');
 }
 
 function serveFile(res, filePath, extraHeaders = {}) {
@@ -179,6 +197,7 @@ function serveFile(res, filePath, extraHeaders = {}) {
       'content-type': MIME[extname(filePath).toLowerCase()] ?? 'application/octet-stream',
       'cache-control': 'no-cache',
       [MARKER]: '1',
+      [LEGACY_MARKER]: '1',
       ...extraHeaders,
     });
     res.end(body);
@@ -188,33 +207,56 @@ function serveFile(res, filePath, extraHeaders = {}) {
   }
 }
 
-/** Prove the listener knows our profile secret without disclosing that secret. */
-async function probeVoid(port, secret) {
+/**
+ * Prove the listener knows our profile secret without disclosing that secret,
+ * over one of the two protocol dialects.
+ *
+ * An old server has no `/.memoria/hello` route, so the request falls through to
+ * its SPA handler and comes back as 200 with HTML — which is why a bad JSON
+ * body counts as "not this dialect" rather than as an error.
+ */
+async function probeDialect(port, secret, { path, marker, domain }) {
   const nonce = randomBytes(32).toString('base64url');
   try {
-    const res = await fetch(`http://127.0.0.1:${port}/.void/hello?nonce=${nonce}`, {
+    const res = await fetch(`http://127.0.0.1:${port}${path}?nonce=${nonce}`, {
       cache: 'no-store',
       signal: AbortSignal.timeout(1500),
     });
-    const claimsVoid = res.headers.get(MARKER) === '1';
-    if (!res.ok) return { authenticated: false, claimsVoid };
+    const claimsMemoria = res.headers.get(marker) === '1';
+    if (!res.ok) return { authenticated: false, claimsMemoria };
     let payload;
     try {
       payload = await res.json();
     } catch {
-      return { authenticated: false, claimsVoid };
+      return { authenticated: false, claimsMemoria };
     }
     return {
-      authenticated: secretEquals(payload?.proof, hmacProof(secret, 'hello', port, nonce)),
-      claimsVoid,
+      authenticated: secretEquals(payload?.proof, hmacProof(secret, 'hello', port, nonce, domain)),
+      claimsMemoria,
     };
   } catch {
-    return { authenticated: false, claimsVoid: false };
+    return { authenticated: false, claimsMemoria: false };
   }
 }
 
-async function isVoid(port, secret) {
-  return (await probeVoid(port, secret)).authenticated;
+const DIALECTS = [
+  { protocol: 'memoria', path: '/.memoria/hello', marker: MARKER, domain: HMAC_DOMAIN },
+  { protocol: 'void', path: '/.void/hello', marker: LEGACY_MARKER, domain: LEGACY_HMAC_DOMAIN },
+];
+
+/**
+ * Identify whatever is on this port. Tries the current dialect first and falls
+ * back to the pre-rename one, so a launcher mid-update still recognises the
+ * previous build holding the port it must not abandon.
+ */
+async function probeInstance(port, secret) {
+  let claimsMemoria = false;
+  for (const dialect of DIALECTS) {
+    const result = await probeDialect(port, secret, dialect);
+    claimsMemoria = claimsMemoria || result.claimsMemoria;
+    if (result.authenticated) return { authenticated: true, claimsMemoria: true, protocol: dialect.protocol };
+  }
+  return { authenticated: false, claimsMemoria, protocol: null };
 }
 
 // The browser cannot execute the shared package's TypeScript entry directly.
@@ -294,6 +336,7 @@ function respondJson(res, status, payload) {
     'content-type': 'application/json; charset=utf-8',
     'cache-control': 'no-store',
     [MARKER]: '1',
+    [LEGACY_MARKER]: '1',
   });
   res.end(JSON.stringify(payload));
 }
@@ -326,6 +369,7 @@ function handleSync(req, res) {
       'cache-control': 'no-store',
       connection: 'close',
       [MARKER]: '1',
+      [LEGACY_MARKER]: '1',
     });
     res.end(JSON.stringify({ error: `Request body exceeds ${MAX_SYNC_BYTES} bytes.` }), () => req.destroy());
     return;
@@ -349,6 +393,7 @@ function handleSync(req, res) {
       'cache-control': 'no-store',
       connection: 'close',
       [MARKER]: '1',
+      [LEGACY_MARKER]: '1',
     });
     res.end(JSON.stringify({ error: `Request body exceeds ${MAX_SYNC_BYTES} bytes.` }), () => req.destroy());
   });
@@ -418,6 +463,7 @@ function handleEvents(req, res) {
     'cache-control': 'no-cache',
     connection: 'keep-alive',
     [MARKER]: '1',
+    [LEGACY_MARKER]: '1',
   });
   res.write('retry: 2000\n\n');
   sseClients.add(res);
@@ -469,7 +515,8 @@ function cookieToken(req) {
   if (!cookie) return null;
   for (const part of cookie.split(';')) {
     const [name, ...value] = part.trim().split('=');
-    if (name === 'void_token') return value.join('=');
+    // A window opened by the previous build still carries the old cookie.
+    if (name === COOKIE_NAME || name === LEGACY_COOKIE_NAME) return value.join('=');
   }
   return null;
 }
@@ -519,8 +566,9 @@ function serveLaunchHtml(res, secret) {
     res.writeHead(200, {
       'content-type': 'text/html; charset=utf-8',
       'cache-control': 'no-store',
-      'set-cookie': `void_token=${secret}; HttpOnly; SameSite=Strict; Path=/`,
+      'set-cookie': `${COOKIE_NAME}=${secret}; HttpOnly; SameSite=Strict; Path=/`,
       [MARKER]: '1',
+      [LEGACY_MARKER]: '1',
     });
     res.end(body);
   } catch (error) {
@@ -528,7 +576,11 @@ function serveLaunchHtml(res, secret) {
   }
 }
 
-function handleIdentityChallenge(req, res, url, port, secret) {
+/**
+ * The caller's dialect is whichever endpoint it chose, so the proof goes back
+ * in the domain that caller will check it against.
+ */
+function handleIdentityChallenge(req, res, url, port, secret, domain) {
   if (req.method !== 'GET') {
     respondJson(res, 405, { error: 'Method not allowed.' });
     return;
@@ -538,18 +590,18 @@ function handleIdentityChallenge(req, res, url, port, secret) {
     respondJson(res, 400, { error: 'A high-entropy challenge nonce is required.' });
     return;
   }
-  respondJson(res, 200, { proof: hmacProof(secret, 'hello', port, nonce) });
+  respondJson(res, 200, { proof: hmacProof(secret, 'hello', port, nonce, domain) });
 }
 
-function handleTicketRequest(req, res, port, secret) {
+function handleTicketRequest(req, res, port, secret, domain, headerPrefix) {
   if (req.method !== 'POST') {
     respondJson(res, 405, { error: 'Method not allowed.' });
     return;
   }
   pruneLaunchCredentials();
-  const nonce = requestHeader(req, 'x-void-nonce');
-  const proof = requestHeader(req, 'x-void-proof');
-  const expected = nonce && TOKEN_PATTERN.test(nonce) ? hmacProof(secret, 'ticket', port, nonce) : null;
+  const nonce = requestHeader(req, `${headerPrefix}-nonce`);
+  const proof = requestHeader(req, `${headerPrefix}-proof`);
+  const expected = nonce && TOKEN_PATTERN.test(nonce) ? hmacProof(secret, 'ticket', port, nonce, domain) : null;
   if (!expected || !secretEquals(proof, expected) || usedTicketNonces.has(nonce)) {
     respondJson(res, 401, { error: 'The launch-ticket proof was rejected.' });
     return;
@@ -577,8 +629,16 @@ function tryListen(port, secret) {
         return;
       }
 
-      if (urlPath === '/.void/hello') return handleIdentityChallenge(req, res, url, port, secret);
-      if (urlPath === '/.void/ticket') return handleTicketRequest(req, res, port, secret);
+      // Both dialects are served so that a launcher of either vintage can
+      // identify this instance and reuse it rather than taking another port.
+      if (urlPath === '/.memoria/hello') return handleIdentityChallenge(req, res, url, port, secret, HMAC_DOMAIN);
+      if (urlPath === '/.void/hello') {
+        return handleIdentityChallenge(req, res, url, port, secret, LEGACY_HMAC_DOMAIN);
+      }
+      if (urlPath === '/.memoria/ticket') return handleTicketRequest(req, res, port, secret, HMAC_DOMAIN, MARKER);
+      if (urlPath === '/.void/ticket') {
+        return handleTicketRequest(req, res, port, secret, LEGACY_HMAC_DOMAIN, LEGACY_MARKER);
+      }
 
       const launchMatch = urlPath.match(/^\/api\/launch\/([A-Za-z0-9_-]{43})\/?$/);
       if (req.method === 'GET' && launchMatch) {
@@ -679,10 +739,12 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** The port a live instance answers on, and which protocol dialect it spoke. */
 async function findAuthenticatedInstance(secret, attempts = 1) {
   for (let attempt = 0; attempt < attempts; attempt++) {
     for (const port of PORTS) {
-      if (await isVoid(port, secret)) return port;
+      const identity = await probeInstance(port, secret);
+      if (identity.authenticated) return { port, protocol: identity.protocol };
     }
     if (attempt + 1 < attempts) await delay(100);
   }
@@ -709,8 +771,8 @@ async function claimInstance(secret) {
       // The lock is primary, but startup has a small interval before listen().
       // Confirmation prevents both a PID reuse and a forged lock from sending
       // the browser to a process that does not know the profile secret.
-      const port = await findAuthenticatedInstance(secret, 20);
-      if (port) return { owned: false, port };
+      const found = await findAuthenticatedInstance(secret, 20);
+      if (found) return { owned: false, port: found.port, protocol: found.protocol };
       throw new Error(
         `Memoria process ${lock.pid} holds ${LOCK_FILE}, but no server on ports ${PORTS.join(', ')} passed its identity challenge.`,
       );
@@ -726,26 +788,26 @@ async function claimInstance(secret) {
 }
 
 /**
- * Bind the first free port from PORTS, or detect a Void instance already
+ * Bind the first free port from PORTS, or detect a Memoria instance already
  * running on one (second launch) and reuse its URL instead of starting anew.
  */
 async function startOrReuse(secret) {
   const claim = await claimInstance(secret);
-  if (!claim.owned) return { server: null, port: claim.port };
+  if (!claim.owned) return { server: null, port: claim.port, protocol: claim.protocol };
 
   const conflicts = [];
   for (const port of PORTS) {
     const { server, error } = await tryListen(port, secret);
     if (server) return { server, port };
-    const identity = await probeVoid(port, secret);
+    const identity = await probeInstance(port, secret);
     if (identity.authenticated) {
       releaseOwnedLock();
-      return { server: null, port };
+      return { server: null, port, protocol: identity.protocol };
     }
-    if (identity.claimsVoid) {
+    if (identity.claimsMemoria) {
       releaseOwnedLock();
       throw new Error(
-        `port ${port} is occupied by a listener claiming to be Void, but it failed the authenticated identity challenge; refusing to open a browser.`,
+        `port ${port} is occupied by a listener claiming to be Memoria, but it failed the authenticated identity challenge; refusing to open a browser.`,
       );
     }
     conflicts.push(`${port}${error?.code ? ` (${error.code})` : ''}`);
@@ -758,19 +820,30 @@ async function startOrReuse(secret) {
   throw new Error(`ports ${conflicts.join(', ')} are all in use by other programs.`);
 }
 
-async function requestLaunchTicket(port, secret) {
+/**
+ * Ask the instance that owns the port for a one-shot launch ticket, in the
+ * dialect the identity probe already established it speaks. Falling back to the
+ * pre-rename endpoint matters during an update, when the process holding the
+ * port is still the previous build.
+ */
+async function requestLaunchTicket(port, secret, protocol = 'memoria') {
+  const legacy = protocol === 'void';
+  const path = legacy ? '/.void/ticket' : '/.memoria/ticket';
+  const headerPrefix = legacy ? LEGACY_MARKER : MARKER;
+  const domain = legacy ? LEGACY_HMAC_DOMAIN : HMAC_DOMAIN;
+
   const nonce = randomBytes(32).toString('base64url');
-  const response = await fetch(`http://127.0.0.1:${port}/.void/ticket`, {
+  const response = await fetch(`http://127.0.0.1:${port}${path}`, {
     method: 'POST',
     headers: {
-      'x-void-nonce': nonce,
-      'x-void-proof': hmacProof(secret, 'ticket', port, nonce),
+      [`${headerPrefix}-nonce`]: nonce,
+      [`${headerPrefix}-proof`]: hmacProof(secret, 'ticket', port, nonce, domain),
     },
     signal: AbortSignal.timeout(1500),
   });
-  if (!response.ok) throw new Error(`the running Void instance refused a launch ticket (HTTP ${response.status}).`);
+  if (!response.ok) throw new Error(`the running Memoria instance refused a launch ticket (HTTP ${response.status}).`);
   const payload = await response.json();
-  if (!TOKEN_PATTERN.test(payload?.ticket)) throw new Error('the running Void instance returned an invalid ticket.');
+  if (!TOKEN_PATTERN.test(payload?.ticket)) throw new Error('the running Memoria instance returned an invalid ticket.');
   return payload.ticket;
 }
 
@@ -785,8 +858,8 @@ function appName(exe) {
 }
 
 /**
- * Browsers Void knows how to find by name. `void.mjs --browser <key>`, the
- * VOID_BROWSER environment variable, or `"browser": "<key>"` in config.json all
+ * Browsers Memoria knows how to find by name. `memoria.mjs --browser <key>`, the
+ * MEMORIA_BROWSER environment variable, or `"browser": "<key>"` in config.json all
  * accept these keys — as well as `system` (hand the URL to whatever the OS has
  * registered) or a full path to any executable you like.
  */
@@ -926,7 +999,7 @@ function findBrowser() {
 
 /**
  * Which browser to open, most specific source first:
- *   --browser <name|path>  →  VOID_BROWSER  →  config.json "browser"  →  auto
+ *   --browser <name|path>  →  MEMORIA_BROWSER  →  config.json "browser"  →  auto
  * `system` (or `default`) hands the URL to whatever the OS has registered, which
  * is the escape hatch for anything not in KNOWN_BROWSERS.
  */
@@ -936,8 +1009,12 @@ function browserPreference() {
   if (flag) return { value: flag.slice('--browser='.length).trim(), source: '--browser' };
   const bare = args.indexOf('--browser');
   if (bare >= 0 && args[bare + 1]) return { value: args[bare + 1].trim(), source: '--browser' };
-  const fromEnv = process.env['VOID_BROWSER']?.trim();
-  if (fromEnv) return { value: fromEnv, source: 'VOID_BROWSER' };
+  const fromEnv = process.env['MEMORIA_BROWSER']?.trim();
+  if (fromEnv) return { value: fromEnv, source: 'MEMORIA_BROWSER' };
+  // Anyone who set the pre-rename variable keeps working; it is reported under
+  // its own name so `--list-browsers` explains where the choice came from.
+  const fromLegacyEnv = process.env['VOID_BROWSER']?.trim();
+  if (fromLegacyEnv) return { value: fromLegacyEnv, source: 'VOID_BROWSER (deprecated, use MEMORIA_BROWSER)' };
   const fromConfig = readConfig().browser;
   if (typeof fromConfig === 'string' && fromConfig.trim()) {
     return { value: fromConfig.trim(), source: 'desktop/config.json' };
@@ -964,7 +1041,7 @@ function resolveBrowser() {
   }
   // Silently opening a different browser than the one that was asked for is
   // worse than saying so — but not opening the app at all is worse still.
-  console.error(`Void: browser "${value}" (from ${preference.source}) was not found; using the system default.`);
+  console.error(`Memoria: browser "${value}" (from ${preference.source}) was not found; using the system default.`);
   return { kind: 'system' };
 }
 
@@ -1013,10 +1090,10 @@ function listBrowsers() {
   }
   console.log(`\n  ${'system'.padEnd(10)} (whatever this machine has registered for https)`);
   console.log(
-    `\nVoid will open: ${choice.kind === 'system' ? 'the system default browser' : choice.exe}` +
+    `\nMemoria will open: ${choice.kind === 'system' ? 'the system default browser' : choice.exe}` +
       (preference ? ` — from ${preference.source}` : ' — no preference set'),
   );
-  console.log('Set one with --browser <name|path>, VOID_BROWSER, or "browser" in desktop/config.json.');
+  console.log('Set one with --browser <name|path>, MEMORIA_BROWSER, or "browser" in desktop/config.json.');
 }
 
 async function main() {
@@ -1051,9 +1128,9 @@ async function main() {
   ensureBuilt();
   const secret = installSecret();
   const got = await startOrReuse(secret);
-  const { server, port } = got;
+  const { server, port, protocol } = got;
   const baseUrl = `http://127.0.0.1:${port}`;
-  const ticket = server ? issueLaunchTicket() : await requestLaunchTicket(port, secret);
+  const ticket = server ? issueLaunchTicket() : await requestLaunchTicket(port, secret, protocol);
   const url = `${baseUrl}/api/launch/${ticket}`;
   const shutdown = () => {
     server?.close();
@@ -1070,7 +1147,7 @@ async function main() {
     return;
   }
 
-  // Reuse case: another Void instance owns the server; just open a window on it.
+  // Reuse case: another Memoria instance owns the server; just open a window on it.
   // Our process can exit immediately — the other instance manages lifetime.
   if (!server) {
     openAppWindow(url);
@@ -1098,6 +1175,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(`Void: ${String(error?.message ?? error)}`);
+  console.error(`Memoria: ${String(error?.message ?? error)}`);
   process.exitCode = 1;
 });
