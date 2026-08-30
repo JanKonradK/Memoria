@@ -27,10 +27,19 @@ import {
 import { dirname, join, normalize, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import os from 'node:os';
+import { applyPendingUpdate, checkForUpdate, isPackagedInstall, updateStatus } from './update.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, '..');
 const dist = join(repo, 'app', 'dist');
+
+/**
+ * A packaged install ships prebuilt `app/dist` and `desktop/dist` and carries
+ * no source tree, so the two build-on-demand paths below must not fire: there
+ * is no npm, no `shared/src` to stat, and nothing to compile. A checkout keeps
+ * the old behaviour of rebuilding whatever has gone stale.
+ */
+const packaged = isPackagedInstall(repo);
 
 // The one local state document — served over /api/sync to app windows.
 const APP_DATA_ROOT = process.env['APPDATA'] ?? join(os.homedir(), '.config');
@@ -110,6 +119,15 @@ function readConfig() {
 
 function ensureBuilt() {
   if (existsSync(join(dist, 'index.html'))) return;
+  if (packaged) {
+    // Nothing to fall back on: a release with no app/dist is a broken download,
+    // and silently starting a server that can only 404 would look like the app
+    // hanging. Say what is wrong and where to get an intact copy.
+    throw new Error(
+      'this install is missing app/dist. Re-download Memoria from ' +
+        'https://github.com/JanKonradK/Memoria/releases/latest and unpack it again.',
+    );
+  }
   // First run (or after cleaning): build the app. npm.cmd on Windows.
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   spawnSync(npm, ['run', 'build'], { cwd: repo, stdio: 'ignore' });
@@ -216,6 +234,14 @@ async function loadSharedCore() {
   if (sharedCore) return sharedCore;
   const entry = join(here, 'shared-core.mjs');
   const file = join(here, 'dist', 'shared-core.mjs');
+  if (packaged) {
+    // The bundle was built by the release pipeline against the exact sources
+    // this build shipped. There is no shared/src here to compare it against,
+    // and stat'ing the missing directory is what would throw.
+    if (!existsSync(file)) throw new Error('this install is missing desktop/dist/shared-core.mjs.');
+    sharedCore = await import(pathToFileURL(file).href);
+    return sharedCore;
+  }
   const newestSourceMtime = Math.max(statSync(entry).mtimeMs, newestMtimeUnder(join(repo, 'shared', 'src')));
   if (!existsSync(file) || statSync(file).mtimeMs < newestSourceMtime) {
     const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
@@ -569,6 +595,9 @@ function tryListen(port, secret) {
       if (req.method === 'GET' && urlPath === '/api/events') return handleEvents(req, res);
       if (req.method === 'GET' && urlPath === '/api/state') return void handleGetState(res);
       if (req.method === 'POST' && urlPath === '/api/sync') return handleSync(req, res);
+      // Lets an app window tell the user a newer build is already downloaded and
+      // will be in place the next time they open Memoria.
+      if (req.method === 'GET' && urlPath === '/api/update') return respondJson(res, 200, updateStatus(repo));
       if (urlPath === '/api' || urlPath.startsWith('/api/')) {
         respondJson(res, 404, { error: 'API route not found.' });
         return;
@@ -996,6 +1025,29 @@ async function main() {
     return;
   }
 
+  // `--check-update` is the manual path: check, download and stage right now,
+  // then report. Useful for support ("run this and tell me what it says") and
+  // for anyone who does not want to wait out the six-hour interval.
+  if (process.argv.includes('--check-update')) {
+    const before = updateStatus(repo);
+    if (!before.packaged) {
+      console.log('This is a source checkout, not a packaged install — nothing to update.');
+      return;
+    }
+    console.log(`Installed: ${before.version}`);
+    const result = await checkForUpdate(repo, { force: true });
+    if (result.status === 'staged')
+      console.log(`Downloaded ${result.version}. It applies the next time Memoria starts.`);
+    else if (result.status === 'current') console.log('Already up to date.');
+    else console.log(`No update applied (${result.reason ?? result.status}).`);
+    return;
+  }
+
+  // Before anything opens a handle on the install directory: swap in whatever a
+  // previous run downloaded. This is the moment the update actually lands.
+  const update = applyPendingUpdate(repo);
+  if (update.applied) console.log(`Memoria updated to ${update.version}.`);
+
   ensureBuilt();
   const secret = installSecret();
   const got = await startOrReuse(secret);
@@ -1028,6 +1080,13 @@ async function main() {
   openAppWindow(url);
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
+
+  // Only the instance that owns the server checks, so opening a second window
+  // cannot start a second download. Deliberately not awaited: the window is
+  // already up, and a slow or dead network must not hold the process open.
+  void checkForUpdate(repo).then((result) => {
+    if (result.status === 'staged') console.log(`Memoria ${result.version} downloaded; it applies on the next launch.`);
+  });
 
   // The app window lives inside the user's own browser, so there is no child
   // process to watch. Open windows hold an SSE connection (/api/events);
