@@ -8,14 +8,21 @@ $repo = Split-Path -Parent $here
 $vbs = Join-Path $here 'Memoria.vbs'
 $ico = Join-Path $here 'memoria.ico'
 
+# A packaged download ships the icon and a built app/dist already, and has no
+# source tree or npm to build from. Only a source checkout needs either step.
+$packaged = Test-Path (Join-Path $repo 'release.json')
+
 # Ensure the icon exists (generate it if missing).
-if (-not (Test-Path $ico)) {
+if (-not (Test-Path $ico) -and -not $packaged) {
   Write-Host 'Generating icon...'
   & node (Join-Path $repo 'app\scripts\gen-ico.mjs')
 }
 
 # Ensure the app is built so the first click opens instantly.
 if (-not (Test-Path (Join-Path $repo 'app\dist\index.html'))) {
+  if ($packaged) {
+    throw 'This copy of Memoria is missing app\dist. Download it again from https://github.com/JanKonradK/Memoria/releases/latest'
+  }
   Write-Host 'Building the app (first-time setup, ~30s)...'
   Push-Location $repo
   & npm run build

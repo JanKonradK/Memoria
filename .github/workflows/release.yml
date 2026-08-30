@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build and publish (e.g. v0.2.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24.14.0
+          cache: npm
+
+      - run: npm ci
+
+      # A tag never ships without passing everything main has to pass.
+      - run: npm run check
+
+      - name: Refuse a tag that disagrees with package.json
+        shell: bash
+        run: |
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          declared="v$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$declared" ]; then
+            echo "Tag $tag does not match package.json ($declared)."
+            echo "The updater compares the tag to release.json, which is written from package.json;"
+            echo "shipping them out of step would make the new build look older than it is."
+            exit 1
+          fi
+
+      # The downloadable zip, plus the single-file HTML for anyone who just
+      # wants to try it without unpacking anything.
+      - run: npm run package
+      - run: npm run build:single
+
+      - name: Add the single-file build to the checksums
+        shell: bash
+        run: |
+          cp app/dist-single/Memoria.html dist/release/Memoria.html
+          cd dist/release
+          sha256sum Memoria.html >> SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: Memoria ${{ github.event.inputs.tag || github.ref_name }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          files: |
+            dist/release/Memoria-win-x64.zip
+            dist/release/Memoria.html
+            dist/release/SHA256SUMS.txt
+          body: |
+            ## Download
+
+            | | |
+            |---|---|
+            | **[Memoria-win-x64.zip](https://github.com/JanKonradK/Memoria/releases/download/${{ github.event.inputs.tag || github.ref_name }}/Memoria-win-x64.zip)** | Windows app. Unpack anywhere, run `Start Memoria.cmd`. Includes its own Node — nothing to install. **Updates itself.** |
+            | [Memoria.html](https://github.com/JanKonradK/Memoria/releases/download/${{ github.event.inputs.tag || github.ref_name }}/Memoria.html) | The whole app in one file. Double-click to open in any browser. Does **not** update itself — download a newer one when you want it. |
+
+            Your data stays in `%APPDATA%\memoria` and is never touched by an update.
+
+            Verify a download against `SHA256SUMS.txt` if you like:
+            `Get-FileHash .\Memoria-win-x64.zip -Algorithm SHA256`

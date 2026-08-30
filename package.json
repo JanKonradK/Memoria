@@ -10,7 +10,8 @@
     "dev": "npm -w app run dev",
     "build": "npm -w app run build && npm run build:desktop",
     "build:desktop": "esbuild desktop/shared-core.mjs --bundle --platform=node --format=esm --outfile=desktop/dist/shared-core.mjs",
-    "test": "npm -w shared run test && npm -w app run test",
+    "test": "npm -w shared run test && npm -w app run test && npm run test:desktop",
+    "test:desktop": "vitest run --config vitest.desktop.config.mjs",
     "test:e2e": "npm -w app run test:e2e",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
@@ -22,7 +23,8 @@
     "icons": "node app/scripts/gen-mark.mjs && node app/scripts/gen-icons.mjs && node app/scripts/gen-ico.mjs",
     "ico": "node app/scripts/gen-ico.mjs",
     "install:desktop": "powershell -ExecutionPolicy Bypass -File desktop/Install-Shortcut.ps1",
-    "build:single": "npm -w app run build:single"
+    "build:single": "npm -w app run build:single",
+    "package": "node scripts/package-release.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
@@ -34,6 +36,7 @@
     "globals": "^17.7.0",
     "prettier": "^3.9.5",
     "prettier-plugin-tailwindcss": "^0.8.0",
-    "typescript-eslint": "^8.63.0"
+    "typescript-eslint": "^8.63.0",
+    "vitest": "^3.2.6"
   }
 }
