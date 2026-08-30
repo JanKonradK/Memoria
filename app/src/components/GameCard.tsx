@@ -1,14 +1,20 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { ChecklistItem, Game, GameEvent, GameUrgency } from '@technogg/shared';
-import { checklistFor, effectiveResourceKind, latestSnapshots, projectEnergy, sleepCheck } from '@technogg/shared';
-import { useApp } from '../store';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { AppState, ChecklistItem, Game, GameUrgency, Snapshot } from '@memoria/shared';
+import { effectiveResourceKind, projectEnergy } from '@memoria/shared';
+import { m } from 'motion/react';
+import { useDerived } from '../selectors';
+import { useApp, type AppStore } from '../store';
 import { useUI } from '../ui-store';
-import { useReducedMotion } from '../hooks';
-import { titleFontFor, titleFontScale } from '../fonts';
+import { useMediaQuery, useReducedMotion } from '../hooks';
+import { cardEnter } from '../motion';
+import { gameAccent, gameInk, gameRim, gameSupport, gameTitleInk, mix, resolveGameIdentityColors } from '../game-color';
+import { gameShellVars, useGround, useTheme } from '../theme';
 
-import { endTone, fmtClock, fmtDur, tint } from '../util';
+import { endTone, fmtDur, localResetLabel, tint } from '../util';
 import { EnergyRow } from './EnergyRow';
-import { ProgressRing } from './ProgressRing';
+import { Pill, ProgressBar, Tick } from './primitives';
+import { Tooltip } from './ui';
+import { serverRegionLabel } from './NexusLayout';
 
 const CADENCE_RANK = { daily: 0, custom: 1, weekly: 2, monthly: 3 } as const;
 
@@ -16,232 +22,109 @@ const CADENCE_RANK = { daily: 0, custom: 1, weekly: 2, monthly: 3 } as const;
 const TASK_DANGER_MS = 20 * 60_000;
 const TASK_WARN_MS = 120 * 60_000;
 
-/** Circumference of the r=9 circle every 20×20 control is built on. */
-const RING_C = 56.549;
-
-/** Fixed-width left-edge tags keep every task/event label on a shared column. */
-function TagChip({ children, amber = false }: { children: string; amber?: boolean }) {
-  return (
-    <span
-      className={`inline-flex w-[3.4rem] shrink-0 justify-center rounded px-1 text-3xs font-black uppercase tracking-wider ${
-        amber ? 'bg-amber-400/10 text-amber-300/90' : 'bg-white/5 text-slate-500'
-      }`}
-    >
-      {children}
-    </span>
-  );
-}
-
+/** Left-edge cadence tag — same shape the event strip uses, so rows share one language. */
 function CadenceTag({ cadence }: { cadence: ChecklistItem['cadence'] }) {
-  const label = cadence === 'custom' ? 'cycle' : cadence;
-  return <TagChip amber={cadence === 'daily'}>{label}</TagChip>;
+  if (cadence === 'daily') return null;
+  return <Pill>{cadence === 'custom' ? 'cycle' : cadence}</Pill>;
 }
 
-/** A one-line title that starts at its optically-normalized display size and fits down to 15px. */
-function AutoFitTitle({ game }: { game: Game }) {
-  const boxRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const fontFamily = titleFontFor(game);
-  const scale = titleFontScale(fontFamily);
-  const baseSize = `calc(var(--text-2xl) * ${scale})`;
+/** Duration of the completion burst in index.css, plus headroom for the fallback. */
+const SWEEP_TIMEOUT_MS = 1200;
 
-  useLayoutEffect(() => {
-    const fit = () => {
-      const title = titleRef.current;
-      if (!title || title.clientWidth <= 0) return;
-      title.style.fontSize = baseSize;
-      let size = Number.parseFloat(window.getComputedStyle(title).fontSize);
-      while (title.scrollWidth > title.clientWidth && size > 15) {
-        size = Math.max(15, size - 0.5);
-        title.style.fontSize = `${size}px`;
-      }
-    };
-
-    fit();
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(fit);
-    if (boxRef.current) observer?.observe(boxRef.current);
-    let cancelled = false;
-    void document.fonts?.ready.then(() => {
-      if (!cancelled) fit();
-    });
-    return () => {
-      cancelled = true;
-      observer?.disconnect();
-    };
-  }, [baseSize, fontFamily, game.name]);
-
-  return (
-    <div ref={boxRef} className="min-w-0 flex-1">
-      <h2
-        ref={titleRef}
-        className="w-full whitespace-nowrap text-2xl font-black tracking-tight text-slate-50"
-        style={{
-          fontFamily,
-          fontSize: baseSize,
-          textShadow: `0 0 24px ${tint(game.color, 0.55)}, 0 1px 0 rgba(0,0,0,0.4)`,
-        }}
-      >
-        {game.name}
-      </h2>
-    </div>
-  );
-}
-
-function TaskLabel({
-  item,
-  cycleEvent,
-  className,
-  now,
-}: {
-  item: ChecklistItem;
-  cycleEvent?: GameEvent;
-  className: string;
-  now: number;
-}) {
-  const showCycleHint = item.cadence === 'custom' && item.name.includes('/') && cycleEvent;
-  return (
-    <span className="block min-w-0 flex-1">
-      <span className={`block truncate ${className}`}>{item.name}</span>
-      {showCycleHint && (
-        <span className="mt-0.5 flex min-w-0 items-baseline gap-1 text-2xs text-slate-500 no-underline">
-          <span aria-hidden>→</span>
-          <span className="truncate">{cycleEvent.name}</span>
-          <span aria-hidden>·</span>
-          <span className="shrink-0">ends</span>
-          <span className="shrink-0 font-semibold tabular-nums" style={{ color: endTone(cycleEvent.end - now) }}>
-            {fmtDur(cycleEvent.end - now)}
-          </span>
-        </span>
-      )}
-    </span>
-  );
-}
-
-/** One green celebratory sweep when `done` flips true; skipped under reduced motion. */
-function useCompletionSweep(done: boolean): { sweep: boolean; end: () => void } {
+/** One completion burst when `done` flips true; skipped when reduced motion is preferred. */
+function useCompletionSweep(done: boolean): {
+  sweep: boolean;
+  checkEnter: 'burst' | 'pop' | 'none';
+  end: () => void;
+} {
   const reduced = useReducedMotion();
   const [sweep, setSweep] = useState(false);
+  // Whether the CURRENT completed state already celebrated. Without this the
+  // check re-ran its entrance the moment the burst finished — the tick appeared
+  // with the explosion, then animated in a second time straight after.
+  const [burst, setBurst] = useState(false);
   const prev = useRef(done);
   useEffect(() => {
-    if (done && !prev.current && !reduced) setSweep(true);
-    if (!done) setSweep(false);
+    if (done && !prev.current && !reduced) {
+      setSweep(true);
+      setBurst(true);
+    }
+    if (!done) {
+      setSweep(false);
+      setBurst(false);
+    }
     prev.current = done;
   }, [done, reduced]);
-  return { sweep, end: () => setSweep(false) };
-}
 
-function SweepRing({ onEnd }: { onEnd: () => void }) {
-  return (
-    <svg aria-hidden className="pointer-events-none absolute inset-0" width="20" height="20" viewBox="0 0 20 20">
-      <circle
-        cx="10"
-        cy="10"
-        r="9"
-        fill="none"
-        stroke="#34d399"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeDasharray={RING_C}
-        transform="rotate(-90 10 10)"
-        className="ring-sweep"
-        onAnimationEnd={onEnd}
-      />
-    </svg>
-  );
+  // The burst normally clears itself from `animationend`. That event never
+  // arrives if the document is hidden when it mounts — CSS animations do not
+  // advance in a background tab — so ticking something off and switching away
+  // left the overlay frozen over the tick until the next toggle. Tick something
+  // off, alt-tab, come back: it was still sitting there. Always arm a fallback.
+  useEffect(() => {
+    if (!sweep) return undefined;
+    const timer = setTimeout(() => setSweep(false), SWEEP_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [sweep]);
+
+  return {
+    sweep,
+    // Mid-burst it is the burst; after one it is already there; otherwise (a
+    // reload, reduced motion, a row scrolling in already done) it just pops.
+    checkEnter: sweep ? 'burst' : burst ? 'none' : 'pop',
+    end: useCallback(() => setSweep(false), []),
+  };
 }
 
 /** Circular tick box at the right edge of a row: sweep plays, then the tick pops. */
-function CheckCircle({ done, color }: { done: boolean; color: string }) {
-  const { sweep, end } = useCompletionSweep(done);
-  return (
-    <span
-      className="relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition group-active:scale-75"
-      style={{
-        background: done ? color : 'transparent',
-        boxShadow: `inset 0 0 0 1.5px ${done ? color : 'rgba(255,255,255,0.25)'}`,
-      }}
-    >
-      {done && !sweep && (
-        <svg className="check-pop" width="11" height="11" viewBox="0 0 12 12" fill="none">
-          <path
-            d="M2 6.5L4.8 9.2 10 3"
-            stroke="#0b0f1a"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      )}
-      {sweep && <SweepRing onEnd={end} />}
-    </span>
-  );
-}
-
-/** Progress ring for a running timer — fills clockwise as the timer completes. */
-function TimerRing({ fraction, color }: { fraction: number; color: string }) {
-  return (
-    <svg aria-hidden width="20" height="20" viewBox="0 0 20 20" className="shrink-0">
-      <circle cx="10" cy="10" r="9" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
-      <circle
-        cx="10"
-        cy="10"
-        r="9"
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeDasharray={RING_C}
-        strokeDashoffset={RING_C * (1 - fraction)}
-        transform="rotate(-90 10 10)"
-      />
-    </svg>
-  );
+function CompletionTick({ done, color }: { done: boolean; color: string }) {
+  const { sweep, checkEnter, end } = useCompletionSweep(done);
+  return <Tick checked={done} color={color} sweep={sweep} checkEnter={checkEnter} onSweepEnd={end} />;
 }
 
 function TimerTaskRow({
   item,
   color,
-  cycleEvent,
   now,
   onStart,
   onRestart,
+  onAdvance,
 }: {
   item: ChecklistItem;
   color: string;
-  cycleEvent?: GameEvent;
   now: number;
   onStart: () => void;
   onRestart: () => void;
+  onAdvance: () => void;
 }) {
   const left = item.timerEndsAt != null ? item.timerEndsAt - now : 0;
   const durationMs = item.timerDurationMinutes * 60_000;
   const running = item.timerRunning;
   const ready = item.timerReady && !running;
+  const stepped = running && item.timerStepMinutes != null;
+  const stepLabel =
+    item.timerStepMinutes != null && item.timerStepMinutes % 60 === 0
+      ? `${item.timerStepMinutes / 60} hours`
+      : `${item.timerStepMinutes} minutes`;
   const fraction = running && durationMs > 0 ? Math.min(1, Math.max(0, 1 - left / durationMs)) : 0;
   return (
     <button
       type="button"
-      onClick={running || ready ? onRestart : onStart}
-      className="group flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/5 lg:min-h-9 lg:py-0.5"
-      aria-label={`${item.name}: ${running ? 'restart timer' : ready ? 'timer ready — restart' : 'start timer'}`}
-      title={running || ready ? 'Click to restart the timer' : 'Click to start the timer'}
+      onClick={stepped ? onAdvance : running || ready ? onRestart : onStart}
+      className="group flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-1 text-left transition hover:bg-fill-2 sm:min-h-8"
+      aria-label={`${item.name}: ${stepped ? `subtract ${stepLabel} from timer` : running ? 'restart timer' : ready ? 'timer ready — restart' : 'start timer'}`}
     >
       <CadenceTag cadence={item.cadence} />
-      <TaskLabel
-        item={item}
-        cycleEvent={cycleEvent}
-        now={now}
-        className={`text-sm ${ready ? 'text-slate-500 line-through' : 'text-slate-200'}`}
-      />
-      {running && <span className="shrink-0 text-xs font-bold tabular-nums text-amber-200">{fmtDur(left)}</span>}
-      {ready && <span className="shrink-0 text-xs font-bold text-emerald-300">Ready</span>}
-      {running ? (
-        <span className="relative flex h-5 w-5 shrink-0 items-center justify-center transition group-active:scale-75">
-          <TimerRing fraction={fraction} color={color} />
-        </span>
-      ) : (
-        <CheckCircle done={ready} color={color} />
+      <span className={`min-w-0 flex-1 truncate text-body ${ready ? 'text-dim line-through' : 'text-fg-soft'}`}>
+        {item.name}
+      </span>
+      {running && (
+        <Tooltip content="d = days · h = hours · m = minutes">
+          <span className="shrink-0 text-meta font-bold tabular-nums text-warn-fg">{fmtDur(left)}</span>
+        </Tooltip>
       )}
+      {ready && <span className="shrink-0 text-meta font-bold text-ok-fg">Ready</span>}
+      {running ? <Tick fraction={fraction} color={color} /> : <CompletionTick done={ready} color={color} />}
     </button>
   );
 }
@@ -251,113 +134,37 @@ function TimerTaskRow({
  * from the center like a Mercedes badge (3) or BMW roundel (4). Each click
  * fills one sector clockwise from the top; a click on the full circle clears it.
  */
-function SegmentedCircle({
-  countDone,
-  countTarget,
-  done,
-  color,
-}: Pick<ChecklistItem, 'countDone' | 'countTarget' | 'done'> & { color: string }) {
-  const c = 10;
-  const r = 9;
-  // Beyond ~12 sectors the pie is unreadable (and unbounded targets would mean
-  // unbounded SVG elements) — degrade to a single progress arc.
-  if (countTarget > 12) {
-    const fraction = Math.min(1, countDone / countTarget);
-    return (
-      <svg aria-hidden width="20" height="20" viewBox="0 0 20 20" className="absolute inset-0">
-        <circle cx={c} cy={c} r={r} fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="1.5" />
-        <circle
-          cx={c}
-          cy={c}
-          r={r}
-          fill="none"
-          stroke={color}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeDasharray={RING_C}
-          strokeDashoffset={RING_C * (1 - fraction)}
-          transform="rotate(-90 10 10)"
-        />
-      </svg>
-    );
-  }
-  const seg = 360 / countTarget;
-  const pt = (deg: number): [number, number] => {
-    const rad = (deg * Math.PI) / 180;
-    return [c + r * Math.cos(rad), c + r * Math.sin(rad)];
-  };
-  const sector = (index: number): string => {
-    const [x0, y0] = pt(-90 + index * seg);
-    const [x1, y1] = pt(-90 + (index + 1) * seg);
-    return `M ${c} ${c} L ${x0.toFixed(3)} ${y0.toFixed(3)} A ${r} ${r} 0 0 1 ${x1.toFixed(3)} ${y1.toFixed(3)} Z`;
-  };
-  return (
-    <svg aria-hidden width="20" height="20" viewBox="0 0 20 20" className="absolute inset-0">
-      {countTarget > 1 &&
-        Array.from({ length: countTarget }, (_, index) => {
-          const [x, y] = pt(-90 + index * seg);
-          return (
-            <line
-              key={index}
-              x1={c}
-              y1={c}
-              x2={x.toFixed(3)}
-              y2={y.toFixed(3)}
-              stroke="rgba(255,255,255,0.28)"
-              strokeWidth="1"
-            />
-          );
-        })}
-      {countTarget > 1
-        ? Array.from({ length: countTarget }, (_, index) =>
-            index < countDone ? (
-              <path key={index} d={sector(index)} fill={color} stroke="#0b0f1a" strokeWidth="1" />
-            ) : null,
-          )
-        : countDone > 0 && <circle cx={c} cy={c} r={r} fill={color} />}
-      <circle cx={c} cy={c} r={r} fill="none" stroke={done ? color : 'rgba(255,255,255,0.28)'} strokeWidth="1.5" />
-    </svg>
-  );
-}
-
-function CountTaskRow({
-  item,
-  color,
-  cycleEvent,
-  now,
-  onAdvance,
-}: {
-  item: ChecklistItem;
-  color: string;
-  cycleEvent?: GameEvent;
-  now: number;
-  onAdvance: () => void;
-}) {
-  const { sweep, end } = useCompletionSweep(item.done);
+function CountTaskRow({ item, color, onAdvance }: { item: ChecklistItem; color: string; onAdvance: () => void }) {
+  const { sweep, checkEnter, end } = useCompletionSweep(item.done);
   return (
     <button
       type="button"
       onClick={onAdvance}
-      className="group flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/5 lg:min-h-9 lg:py-0.5"
+      className="group flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-1 text-left transition hover:bg-fill-2 sm:min-h-8"
       aria-label={`${item.name}: ${item.countDone} of ${item.countTarget} done${item.done ? ', complete — click to reset' : ', click to mark one more'}`}
     >
       <CadenceTag cadence={item.cadence} />
-      <TaskLabel
-        item={item}
-        cycleEvent={cycleEvent}
-        now={now}
-        className={`text-sm transition ${item.done ? 'text-slate-500 line-through' : 'text-slate-200'}`}
-      />
+      <span
+        className={`min-w-0 flex-1 truncate text-body transition ${item.done ? 'text-dim line-through' : 'text-fg-soft'}`}
+      >
+        {item.name}
+      </span>
       {!item.done && item.countDone > 0 && (
-        <span className="shrink-0 text-2xs font-bold tabular-nums text-slate-400">
+        <span className="shrink-0 text-caption font-bold tabular-nums text-muted">
           {item.countDone}/{item.countTarget}
         </span>
       )}
-      {/* No checkmark on the pie — fully filled sectors ARE the done state. */}
-      <span className="relative flex h-5 w-5 shrink-0 items-center justify-center transition group-active:scale-75">
-        <SegmentedCircle countDone={item.countDone} countTarget={item.countTarget} done={item.done} color={color} />
-        {sweep && <SweepRing onEnd={end} />}
-      </span>
+      {/* Filling the last sector of a multi-step task earns the same burst and
+          the same tick as a single one — it is the bigger achievement of the
+          two, and it used to be the only one that got nothing. */}
+      <Tick
+        checked={item.done}
+        segments={{ current: item.countDone, total: item.countTarget }}
+        color={color}
+        sweep={sweep}
+        checkEnter={checkEnter}
+        onSweepEnd={end}
+      />
     </button>
   );
 }
@@ -365,13 +172,11 @@ function CountTaskRow({
 function TaskRow({
   item,
   color,
-  cycleEvent,
   now,
   onToggle,
 }: {
   item: ChecklistItem;
   color: string;
-  cycleEvent?: GameEvent;
   now: number;
   onToggle: () => void;
 }) {
@@ -382,32 +187,38 @@ function TaskRow({
     <button
       type="button"
       onClick={onToggle}
-      className="group flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/5 lg:min-h-9 lg:py-0.5"
+      // A check task is a toggle, unlike its restart/advance siblings, so state
+      // rides on aria-pressed. Deliberately no aria-label: it would override the
+      // content and take the urgency countdown out of the accessible name.
+      aria-pressed={item.done}
+      className="group flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-1 text-left transition hover:bg-fill-2 sm:min-h-8"
     >
       <CadenceTag cadence={item.cadence} />
-      <TaskLabel
-        item={item}
-        cycleEvent={cycleEvent}
-        now={now}
-        className={`text-sm transition ${
+      <span
+        className={`min-w-0 flex-1 truncate text-body transition ${
           item.done
-            ? 'text-slate-500 line-through'
+            ? 'text-dim line-through'
             : danger
-              ? 'warn-pulse font-bold text-rose-300'
+              ? 'warn-pulse font-bold text-danger-fg'
               : warn
-                ? 'text-amber-200'
-                : 'text-slate-200'
+                ? 'text-warn-fg'
+                : // Core tasks pay the game's premium currency, so they get the
+                  // brightest step and the heavier weight — a second tier inside
+                  // Body rather than a fourth type size (see the Three Voices
+                  // Rule). Everything else recedes to the soft step.
+                  item.core
+                  ? 'font-bold text-fg'
+                  : 'text-fg-soft'
         }`}
-      />
+      >
+        {item.name}
+      </span>
       {(danger || warn) && (
-        <span
-          className={`shrink-0 text-2xs font-bold tabular-nums ${danger ? 'text-rose-300' : 'text-amber-300'}`}
-          title={`Resets in ${fmtDur(left)}`}
-        >
+        <span className={`shrink-0 text-caption font-bold tabular-nums ${danger ? 'text-danger-fg' : 'text-warn-fg'}`}>
           {fmtDur(left)}
         </span>
       )}
-      <CheckCircle done={item.done} color={color} />
+      <CompletionTick done={item.done} color={color} />
     </button>
   );
 }
@@ -418,292 +229,475 @@ function TaskRow({
  * always show while active; other notify-flagged events fill up to 3 extra
  * rows. Quiet version-long filler stays on the Timeline.
  */
-function EventStrip({ game, now }: { game: Game; now: number }) {
-  const state = useApp((s) => s.state);
-  const openSheet = useUI((s) => s.openSheet);
-  const active = state.events
-    .filter((e) => !e.deleted && !e.done && e.gameId === game.id && e.start <= now && e.end > now)
-    .sort((a, b) => a.end - b.end);
-  const events = [
-    ...active.filter((e) => e.dailyTouch),
-    ...active
-      .filter((e) => !e.dailyTouch && e.notify && (e.type === 'event' || e.type === 'custom' || e.type === 'cycle'))
-      .slice(0, 3),
-  ].sort((a, b) => a.end - b.end);
+export function EventStrip({
+  game,
+  events: allEvents,
+  now,
+  onOpenEvent,
+}: {
+  game: Game;
+  events: AppState['events'];
+  now: number;
+  onOpenEvent: (eventId: string, gameId: string) => void;
+}) {
+  const mine = allEvents.filter((e) => !e.deleted && !e.done && e.gameId === game.id);
+  // `notify` used to gate this list, which meant an event omitted from next
+  // actions vanished from its own card — a ZZZ card could sit there showing
+  // nothing while two of its events were live. Card visibility is independent.
+  const active = mine.filter((e) => e.start <= now && e.end > now).sort((a, b) => a.end - b.end);
+  // Banners count: which banner is running is exactly the kind of thing you open
+  // the card to check.
+  const shown = [...active.filter((e) => e.dailyTouch), ...active.filter((e) => !e.dailyTouch).slice(0, 4)].sort(
+    (a, b) => a.end - b.end,
+  );
+  // The next thing to start (a patch, usually) is worth a row of its own.
+  const next = mine
+    .filter((e) => e.start > now)
+    .sort((a, b) => a.start - b.start)
+    .slice(0, 1);
+  const events = [...shown, ...next];
   if (events.length === 0) return null;
   return (
-    <div className="mt-3 space-y-0.5">
+    <div className="mt-4 space-y-1">
       {events.map((ev) => (
         <button
           key={ev.id}
           type="button"
-          onClick={() => openSheet({ kind: 'event', eventId: ev.id, gameId: game.id })}
-          className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1.5 py-0.5 text-left text-2xs transition hover:bg-white/5"
-          title={ev.notes || ev.name}
+          onClick={() => onOpenEvent(ev.id, game.id)}
+          className="flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-0.5 text-left text-body transition hover:bg-fill-2 sm:min-h-8"
         >
-          <TagChip>{ev.type === 'cycle' ? 'cycle' : ev.type === 'banner' ? 'banner' : 'event'}</TagChip>
-          {ev.dailyTouch && (
-            <span title="Needs a daily login/claim">
-              <TagChip amber>daily</TagChip>
-            </span>
-          )}
-          <span className="truncate text-slate-300">{ev.name}</span>
-          <span className="ml-auto shrink-0 font-bold tabular-nums" style={{ color: endTone(ev.end - now) }}>
-            {fmtDur(ev.end - now)}
-          </span>
+          <Pill>{ev.type === 'cycle' || ev.type === 'banner' || ev.type === 'livestream' ? ev.type : 'event'}</Pill>
+          {ev.dailyTouch && <Pill variant="warn">daily</Pill>}
+          <span className="truncate text-fg-soft">{ev.name}</span>
+          <Tooltip content="d = days · h = hours · m = minutes">
+            {ev.start > now ? (
+              <span className="ml-auto shrink-0 font-bold tabular-nums text-muted">in {fmtDur(ev.start - now)}</span>
+            ) : (
+              <span className="ml-auto shrink-0 font-bold tabular-nums" style={{ color: endTone(ev.end - now) }}>
+                {fmtDur(ev.end - now)}
+              </span>
+            )}
+          </Tooltip>
         </button>
       ))}
     </div>
   );
 }
 
-/** Passive advance-notice banner: the evening safe-to-sleep verdict, big, at the bottom of the card. */
-function StatusStrip({ game, now }: { game: Game; now: number }) {
-  const state = useApp((s) => s.state);
-  const hour = new Date(now).getHours();
-  const night = hour >= 20 || hour < 5;
-  const sleep = night ? sleepCheck(state, game, state.settings.sleepHours, now) : null;
-  if (!sleep) return null;
+// Cards used to end in a full-width "sleep safe" / "caps 03:40" banner after
+// 20:00. It only existed for part of the day, so every card silently changed
+// height in the evening — mid-session, and inside the Nexus card that animates
+// its own height. The same verdict is on the hub as one line across all games,
+// which is where a once-a-night check belongs.
 
-  // mt-auto pins the banner to the card's bottom edge — every card in a grid
-  // row shares its height, so all banners sit at the same distance.
+export type GameControlActions = Pick<
+  AppStore,
+  | 'setTaskDone'
+  | 'startTaskTimer'
+  | 'restartTaskTimer'
+  | 'advanceTaskTimer'
+  | 'setTaskCount'
+  | 'setEnergy'
+  | 'adjustEnergy'
+>;
+
+function EnergyControlRow({
+  game,
+  res,
+  snap,
+  now,
+  localTz,
+  setEnergy,
+}: {
+  game: Game;
+  res: AppState['resources'][number];
+  snap: Snapshot | undefined;
+  now: number;
+  localTz: string;
+  setEnergy: GameControlActions['setEnergy'];
+}) {
+  const ground = useGround();
+  const projection = useMemo(() => projectEnergy(res, snap, now, game), [game, now, res, snap]);
+  const commit = useCallback(
+    (value: number, reserve?: number) => setEnergy(res.id, value, reserve),
+    [res.id, setEnergy],
+  );
   return (
-    <div className="mt-auto pt-3">
-      {sleep.caps ? (
-        <div
-          className="flex min-h-12 flex-wrap items-baseline justify-center gap-x-2 gap-y-0 rounded-2xl bg-amber-400/10 px-3 py-2.5 ring-1 ring-amber-300/25 3xl:py-3.5"
-          title="Energy will cap while you sleep — spend before bed"
-        >
-          <span className="text-lg font-black uppercase tracking-wider text-amber-200 tabular-nums">
-            caps {fmtClock(sleep.fullAt!)}
-          </span>
-          <span className="text-xs font-semibold text-amber-200/70">spend before bed</span>
-        </div>
-      ) : (
-        <div
-          className="flex min-h-12 flex-wrap items-baseline justify-center gap-x-2 gap-y-0 rounded-2xl bg-emerald-400/10 px-3 py-2.5 ring-1 ring-emerald-300/25 3xl:py-3.5"
-          title={`Nothing caps in the next ${state.settings.sleepHours}h`}
-        >
-          <span className="text-lg font-black uppercase tracking-wider text-emerald-200">sleep safe</span>
-          <span className="text-xs font-semibold text-emerald-200/70">
-            nothing caps in {state.settings.sleepHours}h
-          </span>
-        </div>
-      )}
-    </div>
+    <EnergyRow
+      res={res}
+      color={gameInk(game, ground)}
+      reserveColor={gameSupport(game, ground)}
+      proj={projection}
+      reserve={projection.reserve ?? snap?.reserve}
+      now={now}
+      localTz={localTz}
+      onCommit={commit}
+    />
   );
 }
 
-export function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
-  const { game, next } = entry;
-  const reduced = useReducedMotion();
-  const state = useApp((s) => s.state);
-  const setTaskDone = useApp((s) => s.setTaskDone);
-  const startTaskTimer = useApp((s) => s.startTaskTimer);
-  const restartTaskTimer = useApp((s) => s.restartTaskTimer);
-  const setTaskCount = useApp((s) => s.setTaskCount);
-  const setEnergy = useApp((s) => s.setEnergy);
-  const adjustEnergy = useApp((s) => s.adjustEnergy);
-  const openSheet = useUI((s) => s.openSheet);
-
+function ResourceControls({
+  game,
+  state,
+  snaps,
+  now,
+  actions,
+}: {
+  game: Game;
+  state: AppState;
+  snaps: Map<string, Snapshot>;
+  now: number;
+  actions: GameControlActions;
+}) {
   const resources = state.resources.filter((r) => r.gameId === game.id && !r.deleted).sort((a, b) => a.sort - b.sort);
   const cardResources = resources.filter((res) => effectiveResourceKind(res) === 'regen');
   const primaryEnergy = cardResources[0];
   const quickChips = state.chips
     .filter((chip) => chip.gameId === game.id && !chip.deleted)
     .sort((a, b) => a.sort - b.sort);
-  const snaps = latestSnapshots(state.snapshots);
-  const checklist = [...checklistFor(state, game, now)].sort(
-    (a, b) => CADENCE_RANK[a.cadence] - CADENCE_RANK[b.cadence] || a.sort - b.sort,
-  );
-  const dailies = checklist.filter((c) => c.cadence === 'daily');
-  const activeCycleEvent = state.events
-    .filter(
-      (event) =>
-        !event.deleted &&
-        !event.done &&
-        event.gameId === game.id &&
-        event.type === 'cycle' &&
-        event.start <= now &&
-        event.end > now,
-    )
-    .sort((a, b) => a.end - b.end)[0];
-
-  const urgent = !game.paused && next != null && next.at - now < 60 * 60_000;
 
   return (
-    <div
-      className="card-enter group relative flex h-full flex-col overflow-hidden rounded-3xl p-4 3xl:p-6"
+    <>
+      {cardResources.length > 0 && (
+        <div className="mt-3.5 space-y-3">
+          {cardResources.map((res) => {
+            return (
+              <EnergyControlRow
+                key={res.id}
+                game={game}
+                res={res}
+                snap={snaps.get(res.id)}
+                now={now}
+                localTz={state.settings.localTz}
+                setEnergy={actions.setEnergy}
+              />
+            );
+          })}
+        </div>
+      )}
+      {!game.paused && primaryEnergy && quickChips.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5" aria-label={`${game.name} quick energy adjustments`}>
+          {quickChips.map((chip) => (
+            <Tooltip key={chip.id} content={`${chip.delta > 0 ? '+' : ''}${chip.delta} ${primaryEnergy.name}`}>
+              <button
+                type="button"
+                onClick={() => actions.adjustEnergy(primaryEnergy.id, chip.delta)}
+                className="min-h-11 rounded-ui-lg bg-fill-2 px-3 py-2 text-meta font-semibold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 hover:text-fg sm:min-h-8 sm:py-1"
+              >
+                {chip.label}{' '}
+                <span className="tabular-nums text-dim">{chip.delta > 0 ? `+${chip.delta}` : chip.delta}</span>
+              </button>
+            </Tooltip>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function ChecklistControls({
+  game,
+  checklist,
+  now,
+  actions,
+}: {
+  game: Game;
+  checklist: ChecklistItem[];
+  now: number;
+  actions: GameControlActions;
+}) {
+  const ground = useGround();
+  const tickColor = gameInk(game, ground);
+  if (game.paused || checklist.length === 0) return null;
+  return (
+    <div className="mt-3 space-y-0.5">
+      {checklist.map((item) =>
+        item.mode === 'timer' ? (
+          <TimerTaskRow
+            key={`${item.taskId}|${item.periodKey}`}
+            item={item}
+            color={tickColor}
+            now={now}
+            onStart={() => actions.startTaskTimer(item.taskId, item.periodKey)}
+            onRestart={() => actions.restartTaskTimer(item.taskId, item.periodKey)}
+            onAdvance={() => actions.advanceTaskTimer(item.taskId, item.periodKey, item.timerStepMinutes ?? 0)}
+          />
+        ) : item.mode === 'count' ? (
+          <CountTaskRow
+            key={`${item.taskId}|${item.periodKey}`}
+            item={item}
+            color={tickColor}
+            onAdvance={() =>
+              actions.setTaskCount(
+                item.taskId,
+                item.periodKey,
+                item.done ? 0 : Math.min(item.countTarget, item.countDone + 1),
+              )
+            }
+          />
+        ) : (
+          <TaskRow
+            key={`${item.taskId}|${item.periodKey}`}
+            item={item}
+            color={tickColor}
+            now={now}
+            onToggle={() => actions.setTaskDone(item.taskId, item.periodKey, !item.done)}
+          />
+        ),
+      )}
+    </div>
+  );
+}
+
+function GameControlsHeader({
+  game,
+  dailies,
+  now,
+  localTz,
+  onEdit,
+  layout = 'card',
+}: {
+  game: Game;
+  dailies: ChecklistItem[];
+  now: number;
+  localTz: string;
+  onEdit: () => void;
+  layout?: 'card' | 'focus';
+}) {
+  const ground = useGround();
+  const completed = dailies.filter((daily) => daily.done).length;
+  const accountLabel = game.accountLabel?.trim();
+  const resetLabel = localResetLabel(game, localTz, now);
+  const regionLabel = serverRegionLabel(game.tz, now);
+  return (
+    <div className="relative z-10 flex items-center gap-3">
+      <button
+        type="button"
+        onClick={onEdit}
+        className="group/title -ml-1 min-w-0 flex-1 cursor-pointer rounded-ui-md px-1 py-0.5 text-left transition hover:bg-fill-2"
+        aria-label={`Edit ${game.name}${accountLabel ? `, ${accountLabel}` : ''}`}
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          <span
+            className={`max-w-20 shrink-0 truncate rounded-ui-sm border border-line-edge bg-inset px-1.5 py-0.5 text-caption font-semibold text-fg-soft ${regionLabel.startsWith('UTC') && regionLabel !== 'UTC' ? 'numeral' : ''}`}
+          >
+            {regionLabel}
+          </span>
+          <h2
+            className={`min-w-0 flex-1 truncate ${layout === 'focus' ? 'text-display min-[1500px]:text-hero' : 'text-heading'} font-black tracking-tight text-fg transition group-hover/title:text-fg`}
+            style={{
+              fontFamily: game.titleFont,
+              color: gameTitleInk(game, ground),
+              // A 1px offset for legibility over the card's own gradient — not
+              // the coloured halo that used to sit behind it.
+              textShadow: 'var(--title-shadow)',
+            }}
+          >
+            {game.name}
+          </h2>
+          {accountLabel && (
+            <>
+              <span aria-hidden className="h-3 w-px shrink-0 bg-line-edge" />
+              <span className="min-w-0 max-w-[40%] shrink-0 truncate text-body font-semibold text-fg-soft">
+                {accountLabel}
+              </span>
+            </>
+          )}
+          {game.paused && (
+            <Pill variant="paused" size="md">
+              paused
+            </Pill>
+          )}
+        </div>
+        <div className="mt-0.5 flex items-center gap-1.5 text-label text-dim">
+          <span className="h-[3px] w-8 rounded-ui-full" style={{ background: gameRim(game, ground) }} />
+          reset {resetLabel}
+        </div>
+      </button>
+      {!game.paused && dailies.length > 0 && (
+        <ProgressBar variant="ring" value={completed / dailies.length} color={gameInk(game, ground)}>
+          {completed}/{dailies.length}
+        </ProgressBar>
+      )}
+    </div>
+  );
+}
+
+/** Pure control surface shared by the regular card and the desktop focus bay. */
+export function GameControlsView({
+  entry,
+  state,
+  actions,
+  now,
+  layout = 'card',
+  columns = 1,
+  onEditGame,
+  onOpenEvent,
+}: {
+  entry: GameUrgency;
+  state: AppState;
+  actions: GameControlActions;
+  now: number;
+  layout?: 'card' | 'focus';
+  columns?: 1 | 2;
+  onEditGame: (gameId: string) => void;
+  onOpenEvent: (eventId: string, gameId: string) => void;
+}) {
+  const { game } = entry;
+  const derived = useDerived(now);
+  const identityColors = resolveGameIdentityColors(state.games.filter((candidate) => !candidate.deleted));
+  const visualGame = { ...game, ...(identityColors[game.id] ?? {}) };
+  const checklist = [...(derived.checklistByGame.get(game.id) ?? [])].sort(
+    (a, b) => CADENCE_RANK[a.cadence] - CADENCE_RANK[b.cadence] || a.sort - b.sort,
+  );
+  const dailies = checklist.filter((item) => item.cadence === 'daily');
+  const resources = (
+    <ResourceControls game={visualGame} state={state} snaps={derived.snaps} now={now} actions={actions} />
+  );
+  const tasks = <ChecklistControls game={visualGame} checklist={checklist} now={now} actions={actions} />;
+  const events = !game.paused && (
+    <EventStrip game={visualGame} events={state.events} now={now} onOpenEvent={onOpenEvent} />
+  );
+
+  return (
+    <>
+      <GameControlsHeader
+        game={visualGame}
+        dailies={dailies}
+        now={now}
+        localTz={state.settings.localTz}
+        onEdit={() => onEditGame(game.id)}
+        layout={layout}
+      />
+      <div className={`relative z-10 flex flex-1 flex-col ${game.paused ? 'opacity-50' : ''}`}>
+        {layout === 'focus' ? (
+          <div className="focus-bay-grid grid gap-x-6 gap-y-1" data-cols={columns}>
+            <div className="min-w-0">{resources}</div>
+            <div className="min-w-0">
+              {tasks}
+              {events}
+            </div>
+          </div>
+        ) : (
+          <>
+            {resources}
+            {tasks}
+            {events}
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
+/** Store-connected adapter used by ordinary cards. */
+export function GameControls({
+  entry,
+  now,
+  layout = 'card',
+}: {
+  entry: GameUrgency;
+  now: number;
+  layout?: 'card' | 'focus';
+}) {
+  const state = useApp((s) => s.state);
+  const setTaskDone = useApp((s) => s.setTaskDone);
+  const startTaskTimer = useApp((s) => s.startTaskTimer);
+  const restartTaskTimer = useApp((s) => s.restartTaskTimer);
+  const advanceTaskTimer = useApp((s) => s.advanceTaskTimer);
+  const setTaskCount = useApp((s) => s.setTaskCount);
+  const setEnergy = useApp((s) => s.setEnergy);
+  const adjustEnergy = useApp((s) => s.adjustEnergy);
+  const actions = useMemo(
+    () => ({ setTaskDone, startTaskTimer, restartTaskTimer, advanceTaskTimer, setTaskCount, setEnergy, adjustEnergy }),
+    [adjustEnergy, advanceTaskTimer, restartTaskTimer, setEnergy, setTaskCount, setTaskDone, startTaskTimer],
+  );
+  const openSheet = useUI((store) => store.openSheet);
+  // Derived from the width the card actually has, rather than from a setting.
+  // The manual override existed to correct a layout that could not measure
+  // itself; it can, so the knob was answering a question nobody asked.
+  const wideEnough = useMediaQuery('(min-width: 1500px)');
+  const columns = wideEnough ? 2 : 1;
+  return (
+    <GameControlsView
+      entry={entry}
+      state={state}
+      actions={actions}
+      now={now}
+      layout={layout}
+      columns={columns}
+      onEditGame={(gameId) => openSheet({ kind: 'game', gameId })}
+      onOpenEvent={(eventId, gameId) => openSheet({ kind: 'event', eventId, gameId })}
+    />
+  );
+}
+
+export const GameCard = memo(function GameCard({ entry, now }: { entry: GameUrgency; now: number }) {
+  const { game, next } = entry;
+  const games = useApp((store) => store.state.games);
+  const ground = useGround();
+  const theme = useTheme();
+  const reduced = useReducedMotion();
+  const urgent = !game.paused && next != null && next.at - now < 60 * 60_000;
+  const pulseUrgent = urgent && !reduced;
+  // Depth is the game's own inset ring plus the top-edge highlight — nothing
+  // outside the box. See the Shadows Float Only Rule in DESIGN.md: a card does
+  // not overlay the page, so it casts nothing.
+  const identityColors = resolveGameIdentityColors(games.filter((candidate) => !candidate.deleted));
+  const visualColors = identityColors[game.id] ?? game;
+  const rim = gameRim(visualColors, ground);
+  const accent = gameAccent(visualColors, ground);
+  const cardShadows = [!pulseUrgent && `inset 0 0 0 1px ${tint(rim, 0.3)}`, 'inset 0 1px 0 var(--color-line-hairline)']
+    .filter(Boolean)
+    .join(', ');
+
+  return (
+    <m.div
+      data-game-card={game.id}
+      // No h-full: in the narrow grid the cell already stretches the card, and in
+      // the Cards columns it made a lone card grow to the height of the tallest
+      // column — the empty-card problem in a new place.
+      className="card-shell group relative flex flex-col overflow-hidden rounded-ui-card px-4 pb-6 pt-4"
+      variants={cardEnter}
+      initial="hidden"
+      animate="visible"
       style={{
-        // Each card carries its game's color: tinted corners over a near-black
-        // core, hairline ring and a soft outer glow in the same hue (OLED-safe).
-        background: `linear-gradient(155deg, ${tint(game.color, 0.2)} 0%, transparent 46%), linear-gradient(335deg, ${tint(game.color2 ?? game.color, 0.13)} 0%, transparent 42%), #07060c`,
-        boxShadow: `inset 0 0 0 1px ${tint(game.color, 0.3)}, inset 0 1px 0 rgba(255,255,255,0.07), 0 0 72px -24px ${tint(game.color, 0.6)}`,
+        ...gameShellVars(game, theme, visualColors),
+        boxShadow: cardShadows,
       }}
     >
-      {/* Moving backlight: slow conic sweep in the game's hues, staggered per
-          card so the five cards never rotate in sync. */}
       <div
-        aria-hidden
-        className="card-aurora"
-        style={
-          {
-            '--aurora-c1': tint(game.color, 0.55),
-            '--aurora-c2': tint(game.color2 ?? game.color, 0.45),
-            animationDelay: `${-((game.sort % 7) * 3)}s`,
-          } as React.CSSProperties
-        }
-      />
-      <div
-        className="absolute inset-x-0 top-0 h-[3px]"
+        className="absolute inset-x-4 top-0 h-[3px] rounded-ui-full"
         style={{
-          background: `linear-gradient(90deg, transparent, ${game.color}, ${game.color2 ?? game.color}, transparent)`,
+          background: `linear-gradient(90deg, transparent, ${rim}, ${accent}, transparent)`,
         }}
       />
-      {/* Character art wash: the chosen image fades in from the right edge. */}
       {game.image && (
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-2/3 overflow-hidden rounded-r-3xl">
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-2/3 overflow-hidden rounded-r-ui-card">
           <img
             src={game.image}
             alt=""
-            className="absolute right-0 top-1/2 h-[135%] max-w-none -translate-y-1/2 object-cover opacity-40 saturate-125 transition duration-500 group-hover:opacity-55"
+            className="absolute right-0 top-1/2 h-[135%] max-w-none -translate-y-1/2 object-cover opacity-40 saturate-125 transition duration-(--dur-slow) group-hover:opacity-55"
             style={{
               WebkitMaskImage: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.55) 55%, #000 100%)',
               maskImage: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.55) 55%, #000 100%)',
             }}
           />
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 rounded-r-ui-card"
             style={{
-              background: `linear-gradient(90deg, rgba(5,4,10,0.95) 6%, transparent 60%), linear-gradient(0deg, ${tint(game.color, 0.14)}, transparent 70%)`,
+              background: `linear-gradient(90deg, ${mix(ground, rim, 0.05)} 6%, transparent 60%), linear-gradient(0deg, ${tint(rim, 0.14)}, transparent 70%)`,
             }}
           />
         </div>
       )}
-      {urgent && !reduced && (
+      {pulseUrgent && (
         <div
-          className="pulse-fade pointer-events-none absolute inset-0 rounded-3xl"
-          style={{ boxShadow: `inset 0 0 0 1.5px ${tint(game.color, 0.8)}, inset 0 0 24px ${tint(game.color, 0.12)}` }}
+          className="pulse-fade pointer-events-none absolute inset-0 rounded-ui-card"
+          style={{ boxShadow: `inset 0 0 0 1px ${tint(rim, 0.8)}, inset 0 0 24px ${tint(rim, 0.12)}` }}
         />
       )}
-
-      <div className="relative z-10 flex items-center gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2.5">
-            <AutoFitTitle game={game} />
-            {game.paused && (
-              <span className="rounded-full bg-white/10 px-2 py-0.5 text-2xs font-bold uppercase tracking-wider text-slate-400">
-                paused
-              </span>
-            )}
-          </div>
-          <div className="mt-0.5 flex items-center gap-1.5 text-2xs text-slate-500">
-            <span className="h-[3px] w-8 rounded-full" style={{ background: game.color }} />
-            reset {String(game.dailyResetHour).padStart(2, '0')}:00 server
-          </div>
-        </div>
-        {!game.paused && !game.hideProgressRing && dailies.length > 0 && (
-          <ProgressRing fraction={dailies.filter((d) => d.done).length / dailies.length} color={game.color}>
-            {dailies.filter((d) => d.done).length}/{dailies.length}
-          </ProgressRing>
-        )}
-        <button
-          type="button"
-          onClick={() => openSheet({ kind: 'game', gameId: game.id })}
-          className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/5 text-slate-400 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-slate-200"
-          aria-label={`Edit ${game.name}`}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
-          </svg>
-        </button>
-      </div>
-
-      <div className={`relative z-10 flex flex-1 flex-col ${game.paused ? 'opacity-50' : ''}`}>
-        {cardResources.length > 0 && (
-          <div className="mt-3.5 space-y-3">
-            {cardResources.map((res) => {
-              const proj = projectEnergy(res, snaps.get(res.id), now, game);
-              return (
-                <EnergyRow
-                  key={res.id}
-                  res={res}
-                  color={game.color}
-                  reserveColor={game.color2}
-                  proj={proj}
-                  reserve={proj.reserve ?? snaps.get(res.id)?.reserve}
-                  now={now}
-                  onCommit={(value, reserve) => setEnergy(res.id, value, reserve)}
-                />
-              );
-            })}
-          </div>
-        )}
-
-        {!game.paused && primaryEnergy && quickChips.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5" aria-label={`${game.name} quick energy adjustments`}>
-            {quickChips.map((chip) => (
-              <button
-                key={chip.id}
-                type="button"
-                onClick={() => adjustEnergy(primaryEnergy.id, chip.delta)}
-                className="min-h-11 rounded-xl bg-white/[0.055] px-3 py-2 text-xs font-semibold text-slate-300 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white"
-                title={`${chip.delta > 0 ? '+' : ''}${chip.delta} ${primaryEnergy.name}`}
-              >
-                {chip.label}{' '}
-                <span className="tabular-nums text-slate-500">{chip.delta > 0 ? `+${chip.delta}` : chip.delta}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {!game.paused && checklist.length > 0 && (
-          <div className="mt-3 space-y-0.5 3xl:space-y-1.5">
-            {checklist.map((item) =>
-              item.mode === 'timer' ? (
-                <TimerTaskRow
-                  key={`${item.taskId}|${item.periodKey}`}
-                  item={item}
-                  color={game.color}
-                  cycleEvent={activeCycleEvent}
-                  now={now}
-                  onStart={() => startTaskTimer(item.taskId, item.periodKey)}
-                  onRestart={() => restartTaskTimer(item.taskId, item.periodKey)}
-                />
-              ) : item.mode === 'count' ? (
-                <CountTaskRow
-                  key={`${item.taskId}|${item.periodKey}`}
-                  item={item}
-                  color={game.color}
-                  cycleEvent={activeCycleEvent}
-                  now={now}
-                  onAdvance={() =>
-                    setTaskCount(
-                      item.taskId,
-                      item.periodKey,
-                      item.done ? 0 : Math.min(item.countTarget, item.countDone + 1),
-                    )
-                  }
-                />
-              ) : (
-                <TaskRow
-                  key={`${item.taskId}|${item.periodKey}`}
-                  item={item}
-                  color={game.color}
-                  cycleEvent={activeCycleEvent}
-                  now={now}
-                  onToggle={() => setTaskDone(item.taskId, item.periodKey, !item.done)}
-                />
-              ),
-            )}
-          </div>
-        )}
-
-        {!game.paused && !game.hideEventStrip && <EventStrip game={game} now={now} />}
-
-        {!game.paused && !game.hideSleepChip && <StatusStrip game={game} now={now} />}
-      </div>
-    </div>
+      <GameControls entry={entry} now={now} />
+    </m.div>
   );
-}
+});

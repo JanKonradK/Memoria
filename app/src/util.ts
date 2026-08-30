@@ -25,18 +25,39 @@ export function fmtDur(ms: number): string {
 }
 
 /** Local wall-clock for a deadline: "14:30" today, otherwise "Thu 14:30". */
-export function fmtClock(at: number): string {
-  const dt = DateTime.fromMillis(at);
-  const today = DateTime.now();
+export function fmtClock(at: number, zone: string): string {
+  const dt = DateTime.fromMillis(at, { zone });
+  const today = DateTime.fromMillis(Date.now(), { zone });
   return dt.hasSame(today, 'day') ? dt.toFormat('HH:mm') : dt.toFormat('ccc HH:mm');
 }
 
-export function fmtDateTimeLocalInput(at: number): string {
-  return DateTime.fromMillis(at).toFormat("yyyy-LL-dd'T'HH:mm");
+/**
+ * The next daily reset, in the user's own clock.
+ *
+ * A game's reset hour is stated in ITS server's zone, so the same stored `4`
+ * lands at a different wall-clock time for every server region. Shared by the
+ * game card and the settings list so the two can never disagree.
+ */
+export function localResetLabel(
+  game: { tz: string; dailyResetHour: number },
+  zone: string,
+  now: number,
+): string {
+  const serverNow = DateTime.fromMillis(now, { zone: game.tz });
+  let nextReset = serverNow.set({ hour: game.dailyResetHour, minute: 0, second: 0, millisecond: 0 });
+  if (nextReset.toMillis() <= serverNow.toMillis()) nextReset = nextReset.plus({ days: 1 });
+  const localReset = nextReset.setZone(zone);
+  return localReset.isValid
+    ? localReset.toFormat('HH:mm')
+    : String(game.dailyResetHour).padStart(2, '0') + ':00';
 }
 
-export function parseDateTimeLocalInput(v: string): number | null {
-  const dt = DateTime.fromISO(v);
+export function fmtDateTimeLocalInput(at: number, zone: string): string {
+  return DateTime.fromMillis(at, { zone }).toFormat("yyyy-LL-dd'T'HH:mm");
+}
+
+export function parseDateTimeLocalInput(v: string, zone: string): number | null {
+  const dt = DateTime.fromISO(v, { zone });
   return dt.isValid ? dt.toMillis() : null;
 }
 
@@ -80,12 +101,19 @@ export function fileToImageDataUrl(file: File, maxDim = 640): Promise<string> {
 
 const DAY = 86_400_000;
 
-/** Countdown urgency: rose <24h, gold <72h, muted beyond that / after the end. */
+/**
+ * Countdown urgency: rose <24h, gold <72h, muted beyond that / after the end.
+ *
+ * The two muted steps were a literal slate, which is a colour chosen against an
+ * OLED ground and never re-checked: on the cream theme it measured 2.2:1, so the
+ * countdown on anything more than three days out was the least readable text on
+ * the card. `later` is the themed step that already means exactly this.
+ */
 export function endTone(msLeft: number): string {
-  if (msLeft <= 0) return 'rgba(148,163,184,0.6)';
+  if (msLeft <= 0) return 'color-mix(in oklab, var(--color-later) 60%, transparent)';
   if (msLeft < DAY) return 'var(--color-rose)';
   if (msLeft < 3 * DAY) return 'var(--color-gold)';
-  return 'rgb(148,163,184)';
+  return 'var(--color-later)';
 }
 
 /** Hex accent → translucent rgba for glows/backgrounds. */
@@ -94,4 +122,15 @@ export function tint(hex: string, alpha: number): string {
   if (!m) return `rgba(148,163,184,${alpha})`;
   const n = parseInt(m[1]!, 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+}
+
+/** WCAG-weighted sRGB luminance on a normalized 0–1 scale. */
+export function luminance(hex: string): number | null {
+  const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!match) return null;
+  const rgb = parseInt(match[1]!, 16);
+  const red = (rgb >> 16) & 255;
+  const green = (rgb >> 8) & 255;
+  const blue = rgb & 255;
+  return (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
 }

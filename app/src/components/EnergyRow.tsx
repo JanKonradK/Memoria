@@ -1,23 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
-import type { EnergyProjection, Resource } from '@technogg/shared';
-import { effectiveReserveRegenMinutes, effectiveResourceKind } from '@technogg/shared';
-import { useReducedMotion } from '../hooks';
+import { memo, useEffect, useRef, useState } from 'react';
+import type { EnergyProjection, Resource } from '@memoria/shared';
+import { effectiveReserveRegenMinutes, effectiveResourceKind } from '@memoria/shared';
 import { useUI } from '../ui-store';
-import { clamp, fmtClock, fmtDur, intOr, tint } from '../util';
-import { ResourceIcon } from './ResourceIcon';
+import { clamp, fmtClock, fmtDur, intOr } from '../util';
+import { ProgressBar } from './primitives';
 
-/** Dark secondary card accents disappear on the reserve rail; fall back to the primary accent. */
-function visibleReserveAccent(primary: string, secondary?: string): string {
-  if (!secondary) return primary;
-  const match = /^#?([0-9a-f]{6})$/i.exec(secondary.trim());
-  if (!match) return secondary;
-  const rgb = parseInt(match[1]!, 16);
-  const red = (rgb >> 16) & 255;
-  const green = (rgb >> 8) & 255;
-  const blue = rgb & 255;
-  const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
-  return luminance >= 0.28 ? secondary : primary;
-}
+const ENERGY_STEP_KEYS: Readonly<Record<string, number>> = {
+  a: -10,
+  s: -1,
+  d: 1,
+  f: 10,
+};
 
 /** Hold-to-repeat: starts at 180ms, accelerates down to 40ms. */
 function useHoldStep(onStep: (delta: number) => void) {
@@ -26,7 +19,9 @@ function useHoldStep(onStep: (delta: number) => void) {
   // Repeat ticks must see the handler from the latest render, not the one
   // captured when the press started, or steps after the first reuse stale drafts.
   const stepRef = useRef(onStep);
-  stepRef.current = onStep;
+  useEffect(() => {
+    stepRef.current = onStep;
+  }, [onStep]);
 
   const clear = () => {
     active.current = false;
@@ -73,7 +68,7 @@ function StepBtn({ delta, onStep, label }: { delta: number; onStep: (d: number) 
       onClick={(e) => {
         if (e.detail === 0) onStep(delta);
       }}
-      className="flex h-9 min-w-8 items-center justify-center rounded-lg bg-white/[0.06] px-1.5 text-xs font-bold text-slate-200 ring-1 ring-white/10 transition hover:bg-white/[0.12] active:scale-90 lg:hidden"
+      className="flex h-9 min-w-8 items-center justify-center rounded-ui-md bg-fill-2 px-1.5 text-meta font-bold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 active:scale-90 sm:h-7 sm:min-w-7"
       aria-label={`${delta > 0 ? 'Increase' : 'Decrease'} ${label}`}
     >
       {delta > 0 ? `+${delta}` : delta}
@@ -81,47 +76,18 @@ function StepBtn({ delta, onStep, label }: { delta: number; onStep: (d: number) 
   );
 }
 
-function RegenBar({ pct, color, glow, reduced }: { pct: number; color: string; glow: boolean; reduced: boolean }) {
-  return (
-    <div
-      aria-hidden
-      className="relative mt-1.5 h-3.5 overflow-hidden rounded-md bg-black/40 ring-1 ring-white/10"
-      style={{
-        boxShadow: `inset 0 1px 3px rgba(0,0,0,0.6)${glow ? `, 0 0 12px ${tint(color, 0.45)}` : ''}`,
-      }}
-    >
-      <div
-        className="absolute inset-y-0 left-0 overflow-hidden rounded-r-[3px] transition-[width] duration-700 ease-out motion-reduce:transition-none"
-        style={{
-          width: `${pct}%`,
-          background: `linear-gradient(180deg, ${tint(color, 0.95)} 0%, ${color} 55%, ${tint(color, 0.72)} 100%)`,
-        }}
-      >
-        <span className="absolute inset-x-0 top-0 h-1/2 bg-white/25" />
-      </div>
-      <span
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(90deg, transparent 0, transparent calc(10% - 1px), rgba(10,7,19,0.55) calc(10% - 1px), rgba(10,7,19,0.55) 10%)',
-        }}
-      />
-      {glow && !reduced && <span className="pulse-fade pointer-events-none absolute inset-0 bg-white/25" />}
-    </div>
-  );
-}
-
 /**
  * Resource row: regenerating energy shows a bar; counters and weekly refills use
  * the same controls without a fake regeneration bar.
  */
-export function EnergyRow({
+export const EnergyRow = memo(function EnergyRow({
   res,
   color,
   reserveColor,
   proj,
   reserve,
   now,
+  localTz,
   onCommit,
 }: {
   res: Resource;
@@ -130,9 +96,9 @@ export function EnergyRow({
   proj: EnergyProjection;
   reserve?: number;
   now: number;
+  localTz: string;
   onCommit: (value: number, reserve?: number) => void;
 }) {
-  const reduced = useReducedMotion();
   const kind = effectiveResourceKind(res);
   const compact = kind === 'counter' || kind === 'weekly';
   const inputRef = useRef<HTMLInputElement>(null);
@@ -189,7 +155,7 @@ export function EnergyRow({
   const pct = res.cap > 0 ? Math.min(100, (proj.precise / res.cap) * 100) : 0;
   const reserveValue = reserve ?? 0;
   const reservePct = res.reserveCap > 0 ? Math.min(100, (reserveValue / res.reserveCap) * 100) : 0;
-  const reserveAccent = visibleReserveAccent(color, reserveColor);
+  const reserveAccent = reserveColor ?? color;
   const reserveLabel = res.reserveLabel ?? 'Reserve';
   const autoOpen = res.reserveCap > 0 && (proj.isFull || reserveValue > 0);
   const reserveIsOpen = pinnedReserveOpen ?? autoOpen;
@@ -208,14 +174,14 @@ export function EnergyRow({
   let subtitle = '';
   if (compact) {
     if (kind === 'weekly' && proj.weeklyResetAt != null) {
-      subtitle = `refills ${fmtClock(proj.weeklyResetAt)}`;
-      if (!proj.hasSnapshot) subtitle += ' · enter the current value →';
-    } else if (!proj.hasSnapshot) subtitle = 'enter the current value →';
-  } else if (!proj.hasSnapshot) subtitle = 'enter the current value →';
+      subtitle = `refills ${fmtClock(proj.weeklyResetAt, localTz)}`;
+      if (!proj.hasSnapshot) subtitle += ' · enter the current value';
+    } else if (!proj.hasSnapshot) subtitle = 'enter the current value';
+  } else if (!proj.hasSnapshot) subtitle = 'enter the current value';
   else if (proj.isFull && res.reserveCap > 0) subtitle = 'FULL';
   else if (proj.isFull) subtitle = `FULL${proj.overflow > 0 ? ` — ${proj.overflow} wasted` : ''}`;
   else if (proj.fullAt != null && proj.msToFull != null)
-    subtitle = `full ${fmtClock(proj.fullAt)} · in ${fmtDur(proj.msToFull)}`;
+    subtitle = `full ${fmtClock(proj.fullAt, localTz)} · in ${fmtDur(proj.msToFull)}`;
   else subtitle = 'does not regenerate';
 
   let reserveSubtitle = '';
@@ -224,23 +190,22 @@ export function EnergyRow({
     else if (proj.isFull) {
       const reserveRegenMinutes = effectiveReserveRegenMinutes(res);
       const reserveFullAt = now + (res.reserveCap - reserveValue) * reserveRegenMinutes * 60_000;
-      reserveSubtitle = `+1 / ${reserveRegenMinutes}m · full ${fmtClock(reserveFullAt)} · in ${fmtDur(reserveFullAt - now)}`;
+      reserveSubtitle = `+1 / ${reserveRegenMinutes}m · full ${fmtClock(reserveFullAt, localTz)} · in ${fmtDur(reserveFullAt - now)}`;
     } else reserveSubtitle = `fills while ${res.name} is capped`;
   }
 
   return (
     <div className="group/row">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-        <span className="flex min-w-0 items-center gap-1.5">
-          <ResourceIcon iconKey={res.icon} color={color} size={13} className="shrink-0" />
-          <span className="truncate text-2xs font-semibold uppercase tracking-wider text-slate-400">{res.name}</span>
+        <span className="flex min-w-0 items-center">
+          <span className="truncate text-label font-semibold uppercase tracking-wider text-muted">{res.name}</span>
         </span>
 
         <span className="ml-auto flex w-full items-center justify-end gap-1 sm:w-auto">
           <StepBtn delta={-1} onStep={step} label={res.name} />
           {/* One pill: editable value + "/ cap" together inside the same box. */}
           <span
-            className="flex h-9 cursor-text items-center rounded-lg bg-white/[0.07] px-2 ring-1 ring-white/10 transition focus-within:bg-white/[0.1] focus-within:ring-2"
+            className="focus-ring-group flex h-9 cursor-text items-center rounded-ui-md bg-fill-2 px-2 ring-1 ring-line-hairline transition focus-within:bg-fill-3 sm:h-7"
             onMouseDown={(e) => {
               if (e.target !== inputRef.current) {
                 e.preventDefault();
@@ -263,6 +228,14 @@ export function EnergyRow({
                 setDraft(e.target.value.replace(/[^\d]/g, ''));
               }}
               onKeyDown={(e) => {
+                const delta = ENERGY_STEP_KEYS[e.key.toLowerCase()];
+                if (delta !== undefined && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                  // Browser repeat already supplies one event per tick; a second
+                  // timer here would make a held key accelerate unpredictably.
+                  e.preventDefault();
+                  step(delta);
+                  return;
+                }
                 if (e.key === 'Enter') {
                   commit(intOr(shown, liveValue ?? 0));
                   inputRef.current?.blur();
@@ -286,11 +259,17 @@ export function EnergyRow({
                 } else setDraft(null);
                 mainEdit.current = { dirty: false, cancelled: false };
               }}
-              className="bg-transparent text-right text-sm font-bold tabular-nums outline-none"
+              // The readout is the content. It used to sit at text-body, the
+              // same size as every task name on the card, which left the number
+              // the user opened the app to read tied for smallest-thing-on-
+              // screen. Title size makes it the clear second voice after the
+              // game's own name. leading-none keeps it inside the 28px pill.
+              className="bg-transparent text-right text-title font-black leading-none tabular-nums outline-none"
               style={{ color, width: `${Math.max(2, shown.length || 1) + 0.5}ch` }}
               aria-label={`${res.name} current value`}
+              aria-keyshortcuts="a s d f Enter Escape"
             />
-            <span className="pl-1 text-2xs tabular-nums text-slate-500">/ {res.cap}</span>
+            <span className="pl-1 text-label tabular-nums text-dim">/ {res.cap}</span>
           </span>
           <StepBtn delta={1} onStep={step} label={res.name} />
         </span>
@@ -298,7 +277,7 @@ export function EnergyRow({
 
       {!compact && (
         <>
-          <RegenBar pct={pct} color={color} glow={glow} reduced={reduced} />
+          <ProgressBar value={pct / 100} color={color} glow={glow} segmented />
 
           {res.reserveCap > 0 && (
             <>
@@ -306,16 +285,27 @@ export function EnergyRow({
                 type="button"
                 aria-expanded={reserveIsOpen}
                 onClick={() => setReserveOpen(res.id, !reserveIsOpen)}
-                className="mt-1 w-full text-left text-2xs font-semibold tabular-nums text-slate-500 transition hover:text-slate-300"
+                className="mt-1 flex w-full items-center gap-1 text-left text-caption font-semibold tabular-nums text-dim transition hover:text-fg-soft"
               >
-                {reserveIsOpen ? '▾' : '▸'} {reserveLabel} {reserveValue}/{res.reserveCap}
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  className={`icon h-3 w-3 shrink-0 transition-transform ${reserveIsOpen ? 'rotate-90' : ''}`}
+                  aria-hidden
+                >
+                  <path d="m7 5 5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>
+                  {reserveLabel} {reserveValue}/{res.reserveCap}
+                </span>
               </button>
 
               {reserveIsOpen && (
-                <div className="mt-1.5 border-t border-white/[0.08] pt-2">
+                <div className="mt-1.5 border-t border-line-hairline pt-2">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
                     <span
-                      className="min-w-0 flex-1 truncate text-2xs font-semibold uppercase tracking-wider"
+                      className="min-w-0 flex-1 truncate text-label font-semibold uppercase tracking-wider"
                       style={{ color: reserveAccent }}
                     >
                       {reserveLabel}
@@ -323,7 +313,7 @@ export function EnergyRow({
                     <span className="ml-auto flex w-full items-center justify-end gap-1 sm:w-auto">
                       <StepBtn delta={-1} onStep={reserveStep} label={reserveLabel} />
                       <span
-                        className="flex h-9 cursor-text items-center rounded-lg bg-white/[0.07] px-2 ring-1 ring-white/10 transition focus-within:bg-white/[0.1] focus-within:ring-2"
+                        className="focus-ring-group flex h-9 cursor-text items-center rounded-ui-md bg-fill-2 px-2 ring-1 ring-line-hairline transition focus-within:bg-fill-3 sm:h-7"
                         onMouseDown={(e) => {
                           if (e.target !== reserveInputRef.current) {
                             e.preventDefault();
@@ -345,6 +335,12 @@ export function EnergyRow({
                             setReserveDraft(e.target.value.replace(/[^\d]/g, ''));
                           }}
                           onKeyDown={(e) => {
+                            const delta = ENERGY_STEP_KEYS[e.key.toLowerCase()];
+                            if (delta !== undefined && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                              e.preventDefault();
+                              reserveStep(delta);
+                              return;
+                            }
                             if (e.key === 'Enter') e.currentTarget.blur();
                             if (e.key === 'Escape') {
                               reserveEdit.current.cancelled = true;
@@ -361,31 +357,32 @@ export function EnergyRow({
                             setReserveDraft(null);
                             reserveEdit.current = { dirty: false, cancelled: false };
                           }}
-                          className="bg-transparent text-right text-sm font-bold tabular-nums outline-none"
+                          className="bg-transparent text-right text-body font-bold tabular-nums outline-none"
                           style={{
                             color: reserveAccent,
                             width: `${Math.max(2, (reserveDraft ?? String(reserveValue)).length) + 0.5}ch`,
                           }}
                           aria-label={`${reserveLabel} for ${res.name}`}
+                          aria-keyshortcuts="a s d f Enter Escape"
                         />
-                        <span className="pl-1 text-2xs tabular-nums text-slate-500">/ {res.reserveCap}</span>
+                        <span className="pl-1 text-label tabular-nums text-dim">/ {res.reserveCap}</span>
                       </span>
                       <StepBtn delta={1} onStep={reserveStep} label={reserveLabel} />
                     </span>
                   </div>
-                  <RegenBar
-                    pct={reservePct}
+                  <ProgressBar
+                    value={reservePct / 100}
                     color={reserveAccent}
                     glow={reserveValue >= res.reserveCap}
-                    reduced={reduced}
+                    segmented
                   />
                   <div
-                    className={`mt-1 text-xs tabular-nums ${
+                    className={`mt-1 text-meta tabular-nums ${
                       reserveValue >= res.reserveCap
-                        ? 'font-bold text-rose-300'
+                        ? 'font-bold text-danger-fg'
                         : proj.isFull
-                          ? 'text-emerald-300/90'
-                          : 'text-slate-500'
+                          ? 'text-ok-fg'
+                          : 'text-dim'
                     }`}
                   >
                     {reserveSubtitle}
@@ -396,16 +393,16 @@ export function EnergyRow({
           )}
 
           <div
-            className={`mt-1 text-xs tabular-nums ${
+            className={`mt-1 text-meta tabular-nums ${
               proj.isFull
-                ? 'font-bold text-rose-300'
+                ? 'font-bold text-danger-fg'
                 : urgency === 'danger'
-                  ? 'text-rose-300'
+                  ? 'text-danger-fg'
                   : urgency === 'warn'
-                    ? 'text-amber-300'
+                    ? 'text-warn-fg'
                     : urgency === 'ok'
-                      ? 'text-emerald-300/90'
-                      : 'text-slate-300'
+                      ? 'text-ok-fg'
+                      : 'text-fg-soft'
             }`}
           >
             {subtitle}
@@ -413,7 +410,7 @@ export function EnergyRow({
         </>
       )}
 
-      {compact && subtitle && <div className="mt-1 text-xs tabular-nums text-slate-300">{subtitle}</div>}
+      {compact && subtitle && <div className="mt-1 text-meta tabular-nums text-fg-soft">{subtitle}</div>}
     </div>
   );
-}
+});

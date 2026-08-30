@@ -37,9 +37,9 @@ export function ReminderSheet({ open }: { open: boolean }) {
           <Field label="When">
             <TextInput
               type="datetime-local"
-              value={fmtDateTimeLocalInput(at)}
+              value={fmtDateTimeLocalInput(at, state.settings.localTz)}
               onChange={(e) => {
-                const t = parseDateTimeLocalInput(e.target.value);
+                const t = parseDateTimeLocalInput(e.target.value, state.settings.localTz);
                 if (t != null) setAt(t);
               }}
             />
@@ -66,9 +66,7 @@ export function ReminderSheet({ open }: { open: boolean }) {
         >
           Add reminder
         </Btn>
-        <p className="text-2xs text-slate-500">
-          Delivered through your Discord/Telegram alerts at the chosen time (needs the sync server).
-        </p>
+        <p className="text-label text-dim">Shown in the in-app reminder lists until you delete it.</p>
       </div>
     </Sheet>
   );
