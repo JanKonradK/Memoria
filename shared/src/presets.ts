@@ -17,6 +17,10 @@ import type { Cadence, ResourceKind, TaskMode } from './types';
  *    "Spend <energy>" tasks are the clearest case: you spend the energy because
  *    you logged in to spend the energy, and the resource row already projects
  *    the cap and raises the in-app warning. Battle-pass weeklies fall out the same way.
+ *    The exception is a pool that EXPIRES rather than caps: NTE's City Stamina
+ *    is wiped and refilled every Monday, so the loss is the whole remainder and
+ *    the deadline, not the level, is the thing worth a tick. Do not read this
+ *    as licence to re-add "Spend Resin".
  * 2. **Does it cost something to miss?** Prefer things with a real deadline and
  *    a real loss — Condensed Resin banking past the cap, ZZZ's Coffee handing
  *    you 60 Battery the cap cannot hold, NTE's three Anomaly Pilgrimage runs.
@@ -60,6 +64,17 @@ export interface PresetResource {
 }
 
 export interface PresetTask {
+  /**
+   * Stable slug for this routine, unique within its preset and never edited.
+   *
+   * It is the identity of the ROUTINE, not of its wording. A preset row gets
+   * renamed every time a publisher renames a mode or the wording is sharpened,
+   * and matching on the name alone meant every one of those renames showed up
+   * as "1 new routine" and then added a second copy of something the user
+   * already had. Change the name freely; changing the key is what forks a
+   * routine into a new one.
+   */
+  key: string;
   name: string;
   cadence: Cadence;
   /** For cadence "custom": rotation length in days (endgame cycles). */
@@ -148,17 +163,26 @@ export function presetForGame(game: { name: string; short: string; presetKey?: s
   );
 }
 
-/** Preset tasks a game has not got, by name — what a "catch me up" action would add. */
+/**
+ * Preset routines a game has not got — what a "catch me up" action would add.
+ *
+ * Matched by `presetTaskKey` first and by name only as a fallback, which is
+ * what stops a rename from duplicating a routine. Games created before keys
+ * existed carry no key at all, so the name path has to stay: it is how those
+ * tasks are still recognised, and it is why the key is written on every task
+ * created from here on.
+ */
 export function missingPresetTasks(
   game: { name: string; short: string; presetKey?: string },
-  existing: Array<{ name: string; deleted?: boolean }>,
+  existing: Array<{ name: string; deleted?: boolean; presetTaskKey?: string }>,
 ): PresetTask[] {
   const preset = presetForGame(game);
   if (!preset) return [];
   // Deleted tasks count as present: the user removed them on purpose, and an
   // update that quietly resurrects them is worse than one that misses a few.
-  const have = new Set(existing.map((task) => task.name.trim().toLowerCase()));
-  return preset.tasks.filter((task) => !have.has(task.name.trim().toLowerCase()));
+  const haveKeys = new Set(existing.map((task) => task.presetTaskKey).filter(Boolean));
+  const haveNames = new Set(existing.map((task) => task.name.trim().toLowerCase()));
+  return preset.tasks.filter((task) => !haveKeys.has(task.key) && !haveNames.has(task.name.trim().toLowerCase()));
 }
 
 export const PRESETS: GamePreset[] = [
@@ -195,11 +219,19 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     tasks: [
-      { name: 'Daily Commissions ×4', cadence: 'daily', mode: 'count', countTarget: 4, core: true },
+      {
+        key: 'genshin-commissions',
+        name: 'Daily Commissions ×4',
+        cadence: 'daily',
+        mode: 'count',
+        countTarget: 4,
+        core: true,
+      },
       // Condensed banks 40 Resin at a time and is the only way to carry Resin
       // past the cap without wasting regen — craft before logging off.
-      { name: 'Craft Condensed Resin', cadence: 'daily' },
+      { key: 'genshin-condensed', name: 'Craft Condensed Resin', cadence: 'daily' },
       {
+        key: 'genshin-expeditions',
         name: 'Expeditions (collect + resend)',
         cadence: 'daily',
         mode: 'timer',
@@ -210,18 +242,30 @@ export const PRESETS: GamePreset[] = [
       // nothing carries over, so it is quietly the largest thing most players
       // leave on the table. "Friend to Animals" — feeding the puppy — is the
       // quickest to trigger; it wants Fowl ×1 in your bag.
-      { name: 'Random Events ×10', cadence: 'daily', mode: 'count', countTarget: 10 },
+      { key: 'genshin-random-events', name: 'Random Events ×10', cadence: 'daily', mode: 'count', countTarget: 10 },
       // Overworld artifact investigation points respawn on the daily reset and
       // stop paying out after 30 pickups. Free strongbox fodder and artifact
       // EXP for a route you can run on autopilot.
-      { name: 'Artifact route (30 pickups)', cadence: 'daily' },
-      { name: 'Weekly Bosses ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
-      { name: 'Reputation bounties + requests', cadence: 'weekly' },
+      { key: 'genshin-artifact-route', name: 'Artifact route (30 pickups)', cadence: 'daily' },
+      // The one free reward a client-only routine can never surface: the
+      // check-in lives on the HoYoLAB site/app, not in the game, and pays about
+      // 60 Primogems plus mats a month on a 28-day streak. It also resets on the
+      // 1st, so a missed day near the end of a month costs the streak too.
+      { key: 'genshin-hoyolab', name: 'HoYoLAB daily check-in', cadence: 'daily' },
+      { key: 'genshin-weekly-bosses', name: 'Weekly Bosses ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
+      { key: 'genshin-reputation', name: 'Reputation bounties + requests', cadence: 'weekly' },
       // 6d22h cooldown from use, not a game-wide window — it starts when you
       // press the button, so it must not chase a Timeline event.
-      { name: 'Parametric Transformer', cadence: 'custom', intervalDays: 7, timelineLinked: false },
+      {
+        key: 'genshin-parametric',
+        name: 'Parametric Transformer',
+        cadence: 'custom',
+        intervalDays: 7,
+        timelineLinked: false,
+      },
       // Produces 15 Crystal Cores per 7-day cycle; the cooldown starts on harvest, not on the weekly reset.
       {
+        key: 'genshin-crystalfly',
         name: 'Crystalfly Trap (Crystal Cores)',
         cadence: 'custom',
         intervalDays: 7,
@@ -266,16 +310,20 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     tasks: [
-      { name: 'Daily Training (500)', cadence: 'daily', core: true },
+      { key: 'hsr-daily-training', name: 'Daily Training (500)', cadence: 'daily', core: true },
       {
+        key: 'hsr-assignments',
         name: 'Assignments (collect + resend)',
         cadence: 'daily',
         mode: 'timer',
         timerDurationMinutes: 20 * 60,
       },
+      // Off-client and therefore invisible to every in-game reminder: the
+      // HoYoLAB check-in pays Stellar Jade and mats daily and resets on the 1st.
+      { key: 'hsr-hoyolab', name: 'HoYoLAB daily check-in', cadence: 'daily' },
       // The largest repeatable Jade block outside the endgame modes.
-      { name: 'Simulated/Divergent Universe', cadence: 'weekly', core: true },
-      { name: 'Echo of War ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
+      { key: 'hsr-universe', name: 'Simulated/Divergent Universe', cadence: 'weekly', core: true },
+      { key: 'hsr-echo-of-war', name: 'Echo of War ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
     ],
     notes: 'Reserve TB Power stores overflow (up to 2400). Europe server (UTC+1).',
     processNames: ['StarRail'],
@@ -310,16 +358,24 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     tasks: [
-      { name: 'Daily Engagement (400)', cadence: 'daily', core: true },
+      { key: 'zzz-engagement', name: 'Daily Engagement (400)', cadence: 'daily', core: true },
       // Coffee Shop: +60 Battery on top of the 240 cap, once a day — free energy
       // that the cap cannot hold, so it is genuinely lost if you skip it.
-      { name: 'Coffee (+60 Battery)', cadence: 'daily' },
+      { key: 'zzz-coffee', name: 'Coffee (+60 Battery)', cadence: 'daily' },
+      // Same off-client claim as the other two HoYo games — Polychrome and mats
+      // from the HoYoLAB site, on a streak that resets on the 1st.
+      { key: 'zzz-hoyolab', name: 'HoYoLAB daily check-in', cadence: 'daily' },
       // The track runs to 2100 points since v2.5, but all four Polychrome tiers
       // are paid by 800 — past that you are farming Denny, not pulls.
-      { name: 'Ridu Weekly (800 for all Polychrome)', cadence: 'weekly', core: true },
-      { name: 'Notorious Hunt ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
-      { name: 'Hollow Zero: bounties + research', cadence: 'weekly' },
-      { name: 'Matrix Op / Lost Void', cadence: 'weekly' },
+      { key: 'zzz-ridu', name: 'Ridu Weekly (800 for all Polychrome)', cadence: 'weekly', core: true },
+      { key: 'zzz-notorious-hunt', name: 'Notorious Hunt ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
+      // These two are ONE row each because they are one mode each. They used to
+      // read "Hollow Zero: bounties + research" and "Matrix Op / Lost Void",
+      // which put Lost Void — the Hollow Zero run itself — on both of them. A
+      // list that names the same activity twice is a list you stop trusting,
+      // because you can never be sure which row you already did.
+      { key: 'zzz-hollow-zero', name: 'Hollow Zero: bounties + Lost Void run', cadence: 'weekly' },
+      { key: 'zzz-matrix-op', name: 'Matrix Operation weeklies', cadence: 'weekly' },
     ],
     notes: 'Europe server (UTC+1). Matrix Operation weeklies pay ~4.6k Polychrome/month — don’t skip.',
     processNames: ['ZenlessZoneZero'],
@@ -351,13 +407,26 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     tasks: [
-      { name: 'Daily Activity (100)', cadence: 'daily', core: true },
-      { name: 'Weekly Challenges', cadence: 'weekly' },
-      { name: 'Weekly Boss ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
+      { key: 'wuwa-daily-activity', name: 'Daily Activity (100)', cadence: 'daily', core: true },
+      // Named for the track, not for "the weekly things": this row sat directly
+      // above Weekly Boss ×3 and the roguelike slot, so a bare "Weekly
+      // Challenges" read as the heading for both of them rather than as a
+      // routine of its own.
+      { key: 'wuwa-weekly-challenges', name: 'Weekly Challenge activity points', cadence: 'weekly' },
+      { key: 'wuwa-weekly-boss', name: 'Weekly Boss ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
+      // One permanent weekly roguelike slot, alternating between the two modes.
+      // Whichever is open pays 160 Astrite — a full Convene — across its point
+      // tiers, and the points reset on Monday whether you ran it or not.
+      {
+        key: 'wuwa-roguelike',
+        name: 'Thousand Gateways / Phantasma Dreamland (160 Astrite)',
+        cadence: 'weekly',
+        core: true,
+      },
       // Kept as tasks: unlike the HoYo endgame modes, these two have no seeded
       // Timeline events, so dropping them would lose the rotation entirely.
-      { name: 'ToA Hazard Zone cycle', cadence: 'custom', intervalDays: 28 },
-      { name: 'Whimpering Wastes cycle', cadence: 'custom', intervalDays: 28 },
+      { key: 'wuwa-toa', name: 'ToA Hazard Zone cycle', cadence: 'custom', intervalDays: 28 },
+      { key: 'wuwa-whimpering-wastes', name: 'Whimpering Wastes cycle', cadence: 'custom', intervalDays: 28 },
     ],
     notes: 'Europe server (UTC+1). Hazard Zone and WhiWa each rotate every 28 days (offset).',
     // Kuro ships a generic UE executable name; both spellings seen across installs.
@@ -391,19 +460,48 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     tasks: [
-      { name: 'Daily quests / 100 Participation', cadence: 'daily', core: true },
+      { key: 'nte-daily-quests', name: 'Daily quests / 100 Participation', cadence: 'daily', core: true },
       // "Make a Sincere Wish" every day — the Mhm! Coins path to a free S-Rank Arc.
-      { name: "Nacupeda's Pool wish", cadence: 'daily' },
-      { name: 'Mews Flash lottery', cadence: 'daily' },
+      { key: 'nte-nacupeda', name: "Nacupeda's Pool wish", cadence: 'daily' },
+      { key: 'nte-mews-flash', name: 'Mews Flash lottery', cadence: 'daily' },
       // Capped at three attempts a week and the only Esper upgrade source — the
       // one weekly that actually costs you progress if you skip it.
-      { name: 'Anomaly Pilgrimage ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
-      { name: "Ebisu's Auction", cadence: 'weekly' },
-      { name: 'Realm of Greed', cadence: 'weekly' },
-      { name: 'Special Commissions', cadence: 'weekly' },
-      { name: 'Lost / Warp Exchange + Arc Selection', cadence: 'monthly' },
+      {
+        key: 'nte-anomaly-pilgrimage',
+        name: 'Anomaly Pilgrimage ×3',
+        cadence: 'weekly',
+        mode: 'count',
+        countTarget: 3,
+      },
+      { key: 'nte-ebisu', name: "Ebisu's Auction", cadence: 'weekly' },
+      { key: 'nte-realm-of-greed', name: 'Realm of Greed', cadence: 'weekly' },
+      { key: 'nte-special-commissions', name: 'Special Commissions', cadence: 'weekly' },
+      // The admitted exception to "no spend-your-energy tasks" above. City
+      // Stamina does not regenerate and does not carry: Monday's 05:00 refill
+      // overwrites the pool, so whatever is left is gone at 1,000 Fons a point.
+      // The resource row shows the level, but a level is not a deadline, and
+      // this is the one allowance the game never nags you about.
+      { key: 'nte-city-stamina', name: 'Empty City Stamina before Monday', cadence: 'weekly' },
+      // Tycoon Incentive Fund — 1,000,000 Fons per 14-day period. v1.3 turned
+      // what was Pink Paws Heist's own payout into one shared pool: Pink Paws
+      // Heist, Volley Star's Weekly Match and the Going, Going, Gone! display
+      // cases all draw from the same million, and it stops paying once they
+      // total it. Permanent, so it is not seeded in the Timeline, and its
+      // period runs on a game-wide clock this app cannot read — the interval
+      // counts from the day the task is added, so anchor it once against the
+      // in-game timer. timelineLinked is off for the same reason: with it on,
+      // the token match would chase any event with "Fons" in the name.
+      {
+        key: 'nte-tycoon-fund',
+        name: 'Tycoon Incentive Fund (1M Fons)',
+        cadence: 'custom',
+        intervalDays: 14,
+        timelineLinked: false,
+      },
+      { key: 'nte-warp-exchange', name: 'Lost / Warp Exchange + Arc Selection', cadence: 'monthly' },
     ],
-    notes: 'Verify City Stamina cap for your account — it refills fully each Monday.',
+    notes:
+      'Verify City Stamina cap for your account — it refills fully each Monday. The Tycoon Incentive Fund runs its own 14-day period; anchor that task to the in-game timer once.',
     // Best guess — verify in Task Manager while NTE runs and edit if needed.
     processNames: ['NTE'],
   },
@@ -435,16 +533,41 @@ export const PRESETS: GamePreset[] = [
       { name: 'Vitality', cap: 480, regenMinutes: 6, reserveCap: 0, kind: 'regen', promptCap: true },
     ],
     tasks: [
-      { name: 'Daily Agenda (100)', cadence: 'daily', core: true },
+      { key: 'lads-daily-agenda', name: 'Daily Agenda (100)', cadence: 'daily', core: true },
       // 30 Stamina at noon and 60 at night, in two fixed windows (10:00–14:00
       // and 16:00–20:00 server time). Miss the window and the Stamina is gone —
       // this is the clearest "costs you something" daily in the game.
-      { name: 'Supply claims (noon + night)', cadence: 'daily', mode: 'count', countTarget: 2 },
-      { name: 'Friend Stamina (send + claim)', cadence: 'daily' },
-      { name: 'Galaxy Explorer (collect + resend)', cadence: 'daily' },
-      { name: 'Weekly Agenda (all tiers)', cadence: 'weekly', core: true },
-      { name: 'Home weekly tasks', cadence: 'weekly' },
-      { name: 'Playtime free attempts', cadence: 'weekly' },
+      {
+        key: 'lads-supply-claims',
+        name: 'Supply claims (noon + night)',
+        cadence: 'daily',
+        mode: 'count',
+        countTarget: 2,
+      },
+      { key: 'lads-friend-stamina', name: 'Friend Stamina (send + claim)', cadence: 'daily' },
+      { key: 'lads-galaxy-explorer', name: 'Galaxy Explorer (collect + resend)', cadence: 'daily' },
+      // Two free claims that sit outside the Agenda, so finishing the Agenda
+      // does not finish them: the Check-In calendar (its page resets monthly,
+      // and the 25-day mark is where the Diamonds are) and the shop's one free
+      // pack a day, which can roll wish tickets.
+      { key: 'lads-check-in-calendar', name: 'Check-In calendar claim', cadence: 'daily' },
+      { key: 'lads-shop-pack', name: 'Free daily shop pack', cadence: 'daily' },
+      { key: 'lads-weekly-agenda', name: 'Weekly Agenda (all tiers)', cadence: 'weekly', core: true },
+      { key: 'lads-home-weekly', name: 'Home weekly tasks', cadence: 'weekly' },
+      { key: 'lads-playtime', name: 'Playtime free attempts', cadence: 'weekly' },
+      // LADS' answer to NTE's Tycoon fund: a permanent operation (v4.0) on
+      // two-week cycles, capped at 2,000 Commission points and 20 Gold rewards
+      // per cycle and paying Diamonds along the track. Nothing carries over
+      // when the featured companion rotates. Unseeded, so the interval runs
+      // from the day it is added — anchor it once, as with NTE's fund.
+      {
+        key: 'lads-unicorns',
+        name: 'UNICORNS Operation cycle',
+        cadence: 'custom',
+        intervalDays: 14,
+        core: true,
+        timelineLinked: false,
+      },
     ],
     notes:
       'Europe server (UTC+2); America runs UTC-7. Both Stamina caps rise with Aurum Pass — set your own. Deepspace Trials Directional Orbits open on fixed weekdays.',
@@ -474,20 +597,20 @@ export const PRESETS: GamePreset[] = [
       { name: 'RP', cap: 5, regenMinutes: 120, reserveCap: 0, kind: 'regen' },
     ],
     tasks: [
-      { name: 'Daily Missions (full set)', cadence: 'daily', core: true },
-      { name: 'Daily Race tickets ×3', cadence: 'daily', mode: 'count', countTarget: 3 },
+      { key: 'uma-daily-missions', name: 'Daily Missions (full set)', cadence: 'daily', core: true },
+      { key: 'uma-daily-race', name: 'Daily Race tickets ×3', cadence: 'daily', mode: 'count', countTarget: 3 },
       // Five borrows a day, and they do not carry over — the quietest loss in
       // the daily loop.
-      { name: 'Guest Legacies ×5', cadence: 'daily', mode: 'count', countTarget: 5 },
+      { key: 'uma-guest-legacies', name: 'Guest Legacies ×5', cadence: 'daily', mode: 'count', countTarget: 5 },
       // One ticket a day, capped at one: an unused ticket is simply gone.
-      { name: 'Daily Legend Race', cadence: 'daily' },
-      { name: 'Club: request an item', cadence: 'daily' },
+      { key: 'uma-legend-race', name: 'Daily Legend Race', cadence: 'daily' },
+      { key: 'uma-club-request', name: 'Club: request an item', cadence: 'daily' },
       // Team Trials tallies once a week and pays the class reward off your best
       // score, so a week with no score entered is a week with no Carats. It is
       // also the ONLY weekly this game has — the Club ranking and every shop
       // exchange run monthly, and the mission list has no weekly tab at all.
-      { name: 'Team Trials score before the tally', cadence: 'weekly', core: true },
-      { name: 'Club Ranking Rewards', cadence: 'monthly' },
+      { key: 'uma-team-trials', name: 'Team Trials score before the tally', cadence: 'weekly', core: true },
+      { key: 'uma-club-ranking', name: 'Club Ranking Rewards', cadence: 'monthly' },
     ],
     notes:
       'Global service, UTC+0. Daily missions refresh 15:00; new banners and events open 22:00. Champions Meeting runs as its own limited window — see the Timeline.',
@@ -526,16 +649,16 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     tasks: [
-      { name: 'Daily Missions (100 points)', cadence: 'daily', core: true },
-      { name: 'Outpost Defense claim', cadence: 'daily' },
+      { key: 'nikke-daily-missions', name: 'Daily Missions (100 points)', cadence: 'daily', core: true },
+      { key: 'nikke-outpost-defense', name: 'Outpost Defense claim', cadence: 'daily' },
       // Which manufacturer towers are open changes by weekday, and three floors
       // per open tower expire at reset.
-      { name: 'Tribe Tower floors ×3', cadence: 'daily', mode: 'count', countTarget: 3 },
-      { name: 'Interception ×3', cadence: 'daily', mode: 'count', countTarget: 3 },
-      { name: 'Social Points (send + claim)', cadence: 'daily' },
-      { name: 'Bulletin Board dispatch', cadence: 'daily' },
-      { name: 'Weekly Missions (100 points)', cadence: 'weekly', core: true },
-      { name: 'Recycling Shop: Gems for Broken Cores', cadence: 'weekly' },
+      { key: 'nikke-tribe-tower', name: 'Tribe Tower floors ×3', cadence: 'daily', mode: 'count', countTarget: 3 },
+      { key: 'nikke-interception', name: 'Interception ×3', cadence: 'daily', mode: 'count', countTarget: 3 },
+      { key: 'nikke-social-points', name: 'Social Points (send + claim)', cadence: 'daily' },
+      { key: 'nikke-bulletin-board', name: 'Bulletin Board dispatch', cadence: 'daily' },
+      { key: 'nikke-weekly-missions', name: 'Weekly Missions (100 points)', cadence: 'weekly', core: true },
+      { key: 'nikke-recycling-shop', name: 'Recycling Shop: Gems for Broken Cores', cadence: 'weekly' },
     ],
     notes:
       'All regions run on UTC+9. Tribe Tower rotates by weekday: Mon all, Tue Elysion, Wed Missilis + Pilgrim, Thu Tetra, Fri Elysion, Sat Missilis, Sun Tetra.',
@@ -567,15 +690,29 @@ export const PRESETS: GamePreset[] = [
       { name: 'Sanity', cap: 360, regenMinutes: 7.2, reserveCap: 0, kind: 'regen', promptCap: true },
     ],
     tasks: [
-      { name: 'Daily Activity (100)', cadence: 'daily', core: true },
+      { key: 'endfield-daily-activity', name: 'Daily Activity (100)', cadence: 'daily', core: true },
       // The factory is the game's real daily: full stores and stalled queues
       // stop producing, and nothing tells you they have.
-      { name: 'Dijiang cabins (collect + restock)', cadence: 'daily' },
-      { name: 'Reception Room clue', cadence: 'daily' },
-      { name: 'Outpost trade before Stock Bills cap', cadence: 'daily' },
-      { name: 'Weekly Routine (10 points)', cadence: 'weekly', core: true },
-      { name: 'Etchspace Salvage focus commissions ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
-      { name: 'Stock Redistribution weekly goods', cadence: 'weekly' },
+      { key: 'endfield-dijiang', name: 'Dijiang cabins (collect + restock)', cadence: 'daily' },
+      { key: 'endfield-reception-room', name: 'Reception Room clue', cadence: 'daily' },
+      { key: 'endfield-outpost-trade', name: 'Outpost trade before Stock Bills cap', cadence: 'daily' },
+      // GRYPHLINE's equivalent of the HoYoLAB check-in: the SKPORT community
+      // sign-in pays Oroberyl, T-Creds and Combat Records for a click on a site
+      // the game never mentions.
+      { key: 'endfield-skport', name: 'SKPORT community sign-in', cadence: 'daily' },
+      // Three Rewarded Trials a day in the Trial of Swordmancy arena (permanent
+      // since 2026-06-12). They pay Wuling Stock Bills, they do not stack, and
+      // the mode sits far enough off the daily route to be missed for weeks.
+      { key: 'endfield-swordmancy', name: 'Trial of Swordmancy ×3', cadence: 'daily', mode: 'count', countTarget: 3 },
+      { key: 'endfield-weekly-routine', name: 'Weekly Routine (10 points)', cadence: 'weekly', core: true },
+      {
+        key: 'endfield-etchspace',
+        name: 'Etchspace Salvage focus commissions ×3',
+        cadence: 'weekly',
+        mode: 'count',
+        countTarget: 3,
+      },
+      { key: 'endfield-stock-redistribution', name: 'Stock Redistribution weekly goods', cadence: 'weekly' },
     ],
     notes:
       'Americas and Europe share one UTC-5 server. Sanity cap depends on Authority Level (125 at 1, 360 at 60) — set your own. Echoes of War seasons run in the Timeline.',

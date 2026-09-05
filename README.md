@@ -58,7 +58,8 @@ npm run test:e2e   # Playwright responsive, keyboard and accessibility journeys
 ```
 
 Data lives in IndexedDB in the browser you open it with. Backups are JSON files
-you export and import from Settings → Data.
+you export and import from Settings → Data, and **Settings → Data → Sync across
+devices** keeps several machines in step through a folder you already sync.
 
 ## Cutting a release
 
@@ -92,6 +93,39 @@ prebuilt `desktop/dist/shared-core.mjs`, the launcher scripts, the icon, a pinne
 packaged install from a checkout — a clone has none, which is what stops a
 developer's working tree from ever being overwritten by a download.
 
+## Sync across devices
+
+Memoria can keep one JSON file in a folder something else already syncs — Google
+Drive, OneDrive, Proton Drive, Dropbox, iCloud Drive, Syncthing, a network share.
+Every device pointed at that file converges on the same document.
+
+**Settings → Data → Sync across devices.**
+
+- On the first device, **Create sync file…** and save `memoria-sync.json` inside
+  the synced folder.
+- On every device after that, **Use existing file…** and pick the file the first
+  one made.
+
+That is the whole setup. There is no account and no Memoria server: the app only
+reads and writes a file, and your provider's own client moves it. It works with a
+provider this app has never heard of, for exactly that reason.
+
+Merging is the same rule as everywhere else — last write wins **per row** on
+`updatedAt`, with soft-delete tombstones. Two devices that were both offline and
+edited different games both land. Two that edited the same value keep the later
+one. Each device reads the file before it writes, so a write can only ever add.
+
+- **Chrome or Edge**, including from a downloaded `Memoria.html` on `file://`.
+  Firefox and Safari have no writable file picker; there, use Export and Import.
+- **The launcher can use it too.** `%APPDATA%\memoria\state.json` keeps the
+  windows on _one_ machine in agreement; this is how a second machine sees the
+  same document. Both run at once quite happily.
+- **Pick the file, not a folder Memoria has never seen.** Anything that is not
+  already a Memoria document is refused rather than overwritten.
+- **If your provider ever leaves a `memoria-sync (1).json`**, two devices wrote
+  before it reconciled them. Nothing is lost — import the extra copy from
+  Settings → Data and the same merge absorbs it.
+
 ## Send it to a friend (one file)
 
 ```sh
@@ -111,7 +145,8 @@ Tell them three things:
 - **Keep the file where it is.** Renaming it is fine; a browser that keys storage
   to the file path would treat a moved copy as a fresh start.
 - **Export a backup now and then** from Settings → Data. It is the only copy that
-  survives clearing browser data.
+  survives clearing browser data. If they use more than one machine, point them at
+  Sync across devices above instead — it is the same file, kept current.
 
 ### Sending them an update
 

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { AnimatePresence, m } from 'motion/react';
 import { useApp } from './store';
+import { initCloudSync } from './cloud-sync';
 import { initSync } from './sync';
 import { useUI, type Tab } from './ui-store';
 import { useNow, useOnline } from './hooks';
@@ -93,7 +94,12 @@ export default function App() {
   }, [load]);
 
   useEffect(() => {
-    if (loaded) initSync();
+    if (!loaded) return;
+    initSync();
+    // Both, deliberately. They write to different places and both land through
+    // mergeState, so a launcher window can also keep a copy in a synced folder
+    // — which is the only way a second machine ever sees this document.
+    initCloudSync();
   }, [loaded]);
 
   useEffect(() => {

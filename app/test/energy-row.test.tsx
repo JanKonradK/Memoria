@@ -63,6 +63,14 @@ function renderRow({
   );
 }
 
+/**
+ * The reserve is opt-in — nothing on this row opens it but a click. Most cases
+ * below are about the editor inside it, so they open it first.
+ */
+function openReserve() {
+  fireEvent.click(screen.getByRole('button', { name: /Reserve TB Power/ }));
+}
+
 beforeEach(() => {
   vi.stubGlobal(
     'matchMedia',
@@ -76,8 +84,23 @@ beforeEach(() => {
 });
 
 describe('EnergyRow reserve controls', () => {
-  it('auto-expands a non-empty reserve when the main resource is full', () => {
+  it('stays collapsed even when the main resource is full and the reserve is filling', () => {
+    // Capped is the NORMAL state for a game with a reserve, so opening on it
+    // meant the second stepper, tube and subtitle were always there. The
+    // summary line carries the whole reading instead.
     const { container } = renderRow();
+
+    expect(screen.queryByRole('textbox', { name: 'Reserve TB Power for Trailblaze Power' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Reserve TB Power 320\/2400/ })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    expect(container.querySelectorAll('div[aria-hidden="true"]')).toHaveLength(1);
+  });
+
+  it('shows the reserve projection once opened', () => {
+    const { container } = renderRow();
+    openReserve();
 
     expect(screen.getByRole('textbox', { name: 'Reserve TB Power for Trailblaze Power' })).toBeInTheDocument();
     expect(screen.getByText(/\+1 \/ 12m · full/)).toBeInTheDocument();
@@ -85,9 +108,23 @@ describe('EnergyRow reserve controls', () => {
     expect(screen.queryByText(/charging/i)).not.toBeInTheDocument();
   });
 
+  it('reads out its own resource verdict above the reserve, not below it', () => {
+    // "full Sat 10:10" belongs to Trailblaze Power. Printed after the reserve
+    // block it read as the reserve's own line, directly under "fills while
+    // Trailblaze Power is capped".
+    renderRow();
+    openReserve();
+
+    const verdict = screen.getByText('FULL');
+    const summary = screen.getByRole('button', { name: 'Reserve TB Power' });
+    // DOCUMENT_POSITION_FOLLOWING: the summary comes after the verdict.
+    expect(verdict.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('commits an edited reserve value on blur', () => {
     const onCommit = vi.fn();
     renderRow({ onCommit });
+    openReserve();
 
     const input = screen.getByRole('textbox', { name: 'Reserve TB Power for Trailblaze Power' });
     fireEvent.focus(input);
@@ -97,7 +134,7 @@ describe('EnergyRow reserve controls', () => {
     expect(onCommit).toHaveBeenCalledWith(300, 400);
   });
 
-  it('starts collapsed when the main resource is not full and reserve is empty', () => {
+  it('opens and closes from its summary line', () => {
     renderRow({
       proj: {
         ...projection,
@@ -136,6 +173,7 @@ describe('EnergyRow reserve controls', () => {
   it('increments reserve from its step button', () => {
     const onCommit = vi.fn();
     renderRow({ onCommit });
+    openReserve();
     const reserveIncrement = screen.getByRole('button', { name: 'Increase Reserve TB Power' });
 
     fireEvent.mouseDown(reserveIncrement);
@@ -147,6 +185,7 @@ describe('EnergyRow reserve controls', () => {
   it('steps via keyboard activation of the step button', () => {
     const onCommit = vi.fn();
     renderRow({ onCommit });
+    openReserve();
 
     // Keyboard activation surfaces as a click with detail 0.
     fireEvent.click(screen.getByRole('button', { name: 'Decrease Reserve TB Power' }), { detail: 0 });
@@ -157,6 +196,7 @@ describe('EnergyRow reserve controls', () => {
   it('does not commit when focus passes through without an edit', () => {
     const onCommit = vi.fn();
     renderRow({ onCommit });
+    openReserve();
 
     const main = screen.getByRole('textbox', { name: 'Trailblaze Power current value' });
     fireEvent.focus(main);
@@ -172,6 +212,7 @@ describe('EnergyRow reserve controls', () => {
   it('cancels an edited reserve value with Escape', () => {
     const onCommit = vi.fn();
     renderRow({ onCommit });
+    openReserve();
 
     const input = screen.getByRole('textbox', { name: 'Reserve TB Power for Trailblaze Power' });
     fireEvent.focus(input);
@@ -299,6 +340,7 @@ describe('EnergyRow keyboard shortcuts', () => {
   it('applies the same shortcuts to the reserve editor', () => {
     const onCommit = vi.fn();
     renderRow({ onCommit });
+    openReserve();
     const input = screen.getByRole('textbox', { name: 'Reserve TB Power for Trailblaze Power' });
 
     expect(input).toHaveAttribute('aria-keyshortcuts', 'a s d f Enter Escape');

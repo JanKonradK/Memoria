@@ -117,6 +117,38 @@ import { presetForGame } from '@memoria/shared';
  *   - ZZZ: six 3.1 events were missing, and the 3.2 Special Program has an
  *     official date.
  *
+ * Refreshed 2026-09-02, mid-patch for six of the nine games and across a version
+ * boundary for three. What changed:
+ *   - ENDFIELD had NO v1.5 content at all — the version went live on 09-01 23:00
+ *     (Americas clock) the day before this pass and the block still ended at the
+ *     1.4 maintenance. Twelve rows added. Its close is genuinely unpublished, so
+ *     every row that depends on it says so.
+ *   - UMA ran dry on 09-02 and NIKKE on 09-10. Both blocks now reach into
+ *     October.
+ *   - ZZZ's 3.2 Special Program aired on 08-28 as scheduled, so the 3.2 banner
+ *     slate exists — as press rows, because the in-game notices do not publish
+ *     until the 09-09 update. The 3.1 block was re-checked against the feed
+ *     line by line and needed nothing: all twenty-two rows already matched.
+ *   - GENSHIN gained the four 7.0 rows the feed carries and this file did not
+ *     (TCG Heated Battle, Spooky Summer Adventures, the timed Archon Quest
+ *     reward, and the 09-16 Spiral Abyss), and the phase-2 banner guess became
+ *     three real ann rows — 21805 / 21806 / 21808, opening 09-01 18:00 exactly
+ *     as predicted. The 7.0 notice also states the Abyss dates outright
+ *     ("Phase 1 ... on August 16", "Phase 2 ... on September 16"), which settles
+ *     the once-a-month-on-the-16th reading for good.
+ *   - HSR needed almost nothing: the 4.5 slate this file shipped on 08-27 from
+ *     the update notice is still exactly what the feed says. Phase 1's warp
+ *     notice (ann 1330) has since published and confirms the estimated
+ *     boundaries, and Anomaly Arbitration's 4.5 theme is now named.
+ *   - LADS remains the one game with no reachable feed. It gets the two rows
+ *     that could be sourced and nothing else.
+ *
+ * SOURCE KEYS ARE NOT UPGRADED IN PLACE. Several rows now have an ann_id that
+ * they did not have when they were written under a `seed:` key. Rewriting the
+ * key would withdraw the installed row and re-add it as a new one, losing its
+ * tick mark for no gain, so an ann_id is used only for a row this file has never
+ * shipped. The id goes in `notes` instead when it is worth recording.
+ *
  * THE LIVESTREAM ROW. Every one of these games reveals its next version in a
  * broadcast a week or two before the patch, and that broadcast is the cue to
  * refresh this file. So each game that HAS one now carries a 'livestream' row.
@@ -149,7 +181,7 @@ import { presetForGame } from '@memoria/shared';
  */
 
 /** When the bundled data was last refreshed. */
-export const SEED_UPDATED = '2026-08-27';
+export const SEED_UPDATED = '2026-09-02';
 
 /**
  * How long a finished event is worth keeping. Two months.
@@ -436,15 +468,32 @@ export const SEED_EVENTS: SeedEvent[] = [
     end: '2026-09-01 17:59',
     sourceKey: 'genshin:21807',
   },
+  /* Phase 2 published on 08-27 and the estimate this file carried was right to
+     the minute: 09-01 18:00 - 09-22 14:59, both t_lc. The single combined guess
+     is retired in favour of the three rows the feed actually ships. */
   {
     game: 'genshin',
-    name: 'Flins & Ineffa (phase 2)',
+    name: 'Flins — The Lone Light Knocks at Night (phase 2)',
     type: 'banner',
-    notify: false,
     start: '2026-09-01 18:00',
     end: '2026-09-22 14:59',
-    notes: 'Phase 2 is not in the feed yet — line-up and times unconfirmed.',
-    sourceKey: 'seed:genshin:7.0-p2',
+    sourceKey: 'genshin:21805',
+  },
+  {
+    game: 'genshin',
+    name: 'Ineffa — Astral Actuation (phase 2)',
+    type: 'banner',
+    start: '2026-09-01 18:00',
+    end: '2026-09-22 14:59',
+    sourceKey: 'genshin:21806',
+  },
+  {
+    game: 'genshin',
+    name: 'Epitome Invocation — Bloodsoaked Ruins / Fractured Halo (phase 2)',
+    type: 'banner',
+    start: '2026-09-01 18:00',
+    end: '2026-09-22 14:59',
+    sourceKey: 'genshin:21808',
   },
   {
     game: 'genshin',
@@ -478,10 +527,10 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'genshin',
     name: 'Great Expeditionist Challenge — free Diona',
     type: 'event',
-    notify: false,
     start: '2026-08-28 10:00',
     end: '2026-09-14 03:59',
-    notes: 'Dates approximate — verify in-game.',
+    notes:
+      'Official now (ann 21813) — the estimated dates were right. Four minigames; rank high enough to invite Diona. Phases II and III unlock 08-30 and 09-01 at 04:00.',
     sourceKey: 'seed:genshin:7.0-expeditionist',
   },
   {
@@ -549,6 +598,65 @@ export const SEED_EVENTS: SeedEvent[] = [
     end: '2026-10-01 03:59',
     notes: 'Resets the 1st, monthly. September season confirmed open; close is the monthly cadence.',
     sourceKey: 'seed:genshin:theater-2026-09',
+  },
+  {
+    game: 'genshin',
+    name: 'Imaginarium Theater',
+    type: 'cycle',
+    notify: false,
+    start: '2026-10-01 04:00',
+    end: '2026-11-01 03:59',
+    notes: 'Resets the 1st, monthly. Cadence, not a notice — the October season has not been announced.',
+    sourceKey: 'seed:genshin:theater-2026-10',
+  },
+  {
+    game: 'genshin',
+    name: 'Spiral Abyss',
+    type: 'cycle',
+    start: '2026-09-16 04:00',
+    end: '2026-10-16 03:59',
+    notes:
+      'The 7.0 notice states this one outright: "Phase 2 of the Spiral Abyss will be updated on September 16." Resets the 16th, once a month.',
+    sourceKey: 'seed:genshin:abyss-2026-09',
+  },
+  /* --- 7.0 rows the feed carries that this file did not, found on the 09-02 pass.
+     All three are t_lc and copy across unshifted. */
+  {
+    game: 'genshin',
+    name: 'Genius Invokation TCG: Tactical Formation',
+    type: 'event',
+    start: '2026-08-29 10:00',
+    end: '2026-09-14 03:59',
+    notes: 'Heated Battle Mode. Deck-building rules change for the run — worth a look before it closes.',
+    sourceKey: 'genshin:20748',
+  },
+  {
+    game: 'genshin',
+    name: 'Spooky Summer Adventures — Spooky Boo Hat',
+    type: 'event',
+    start: '2026-08-17 12:00',
+    end: '2026-09-04 03:59',
+    notes: 'Miliastra Wonderland cosmetic. The QUESTS close first, on 08-31 03:59; only the claim runs to 09-04.',
+    sourceKey: 'genshin:21829',
+  },
+  {
+    game: 'genshin',
+    name: 'Archon Quest "Everwinter Without Mercy" — timed reward',
+    type: 'event',
+    start: '2026-08-12 04:00',
+    end: '2026-09-22 14:59',
+    notes: 'Extra Primogems and ascension materials for finishing Chapter VII within 7.0. Closes with the version.',
+    sourceKey: 'genshin:21809',
+  },
+  {
+    game: 'genshin',
+    name: 'v7.1 update maintenance',
+    type: 'maintenance',
+    start: '2026-09-22 23:00',
+    end: '2026-09-23 04:00',
+    notes:
+      'Derived the same way 7.0 was and from the same feed: every 7.0 notice expires 2026-09-22 23:00 on the Europe clock, and HoYo prints "estimated to take 5 hours" for every version update. The 7.1 notice itself is not out.',
+    sourceKey: 'seed:genshin:7.1-maint',
   },
 
   /* ================================================== HONKAI: STAR RAIL — v4.4 "In Ravages
@@ -798,7 +906,8 @@ export const SEED_EVENTS: SeedEvent[] = [
     notify: false,
     start: '2026-08-26 04:00',
     end: '2026-09-27 23:00',
-    notes: 'Version-aligned. 4.5 rotation theme not yet announced.',
+    notes:
+      'Version-aligned. This period’s theme is "Return of the Legion" — named in the 4.5 notice, which as always prints no boundaries for it.',
     sourceKey: 'seed:hsr:aa-4.5',
   },
   {
@@ -829,7 +938,8 @@ export const SEED_EVENTS: SeedEvent[] = [
     type: 'banner',
     start: '2026-08-26 04:00',
     end: '2026-09-12 11:59',
-    notes: 'Official 4.5 warp window — the estimated dates it carried turned out correct.',
+    notes:
+      'Warps "Summer Chorus" and "A Rainbow onto Twilight". The phase-1 notice (ann 1330) has published and gives t_lc 09-12 11:59, exactly the estimate this row already carried.',
     sourceKey: 'seed:hsr:4.5-p1-robin',
   },
   {
@@ -838,7 +948,8 @@ export const SEED_EVENTS: SeedEvent[] = [
     type: 'banner',
     start: '2026-08-26 04:00',
     end: '2026-09-12 11:59',
-    notes: 'Official 4.5 warp window.',
+    notes:
+      'Warps "Brilliant Fixation: Rise and Sing" and "Bygone Reminiscence: Long May Rainbows Adorn the Sky", both closing t_lc 09-12 11:59 per ann 1330.',
     sourceKey: 'seed:hsr:4.5-p1-lc',
   },
   {
@@ -848,7 +959,8 @@ export const SEED_EVENTS: SeedEvent[] = [
     notify: false,
     start: '2026-09-12 12:00',
     end: '2026-09-27 15:00',
-    notes: 'Livestream/press estimate — no official Warp notice yet.',
+    notes:
+      'Still an estimate on 09-02: only the phase-1 warp notice has published. The 15:00 close copies the 4.4 handoff and is a convention, not a printed time.',
     sourceKey: 'seed:hsr:4.5-p2-aventurine',
   },
   {
@@ -1178,6 +1290,104 @@ export const SEED_EVENTS: SeedEvent[] = [
     end: '2026-09-09 04:00',
     notes: 'The 3.1 notice sets the 23:00 boundary; the reopen time is the usual five hours.',
     sourceKey: 'seed:zzz:3.2-maint',
+  },
+  /* --- v3.2 "Their Secret Histories" (Sep 9 onward). Revealed in the 3.2 Special
+     Program on 08-28; the in-game notices do not publish until the update itself,
+     so every row here is press-sourced and silent. The phase boundary follows the
+     3.1 handoff exactly — phase 1 shuts 11:59, phase 2 opens 12:00, and the last
+     banner of the version closes 14:59 rather than at maintenance. */
+  {
+    game: 'zzz',
+    name: 'Claret — Bloodmoon Rising (phase 1)',
+    type: 'banner',
+    notify: false,
+    start: '2026-09-09 04:00',
+    end: '2026-09-30 11:59',
+    notes: 'From the 3.2 Special Program. Dates and the 11:59 close are the 3.1 pattern, not a notice.',
+    sourceKey: 'seed:zzz:3.2-claret',
+  },
+  {
+    game: 'zzz',
+    name: 'Nangong Yu — Axiom of Captivation rerun (phase 1)',
+    type: 'banner',
+    notify: false,
+    start: '2026-09-09 04:00',
+    end: '2026-09-30 11:59',
+    notes: 'First rerun. From the 3.2 Special Program — no notice yet.',
+    sourceKey: 'seed:zzz:3.2-nangong-yu',
+  },
+  {
+    game: 'zzz',
+    name: 'Crimson Thirst / Neon Fantasies — W-Engines (phase 1)',
+    type: 'banner',
+    notify: false,
+    start: '2026-09-09 04:00',
+    end: '2026-09-30 11:59',
+    notes: 'From the 3.2 Special Program — no notice yet.',
+    sourceKey: 'seed:zzz:3.2-p1-engines',
+  },
+  {
+    game: 'zzz',
+    name: 'Roxy — Cindernight Respite (phase 2)',
+    type: 'banner',
+    notify: false,
+    start: '2026-09-30 12:00',
+    end: '2026-10-20 14:59',
+    notes: 'From the 3.2 Special Program — no notice yet.',
+    sourceKey: 'seed:zzz:3.2-roxy',
+  },
+  {
+    game: 'zzz',
+    name: 'Promeia — Cold Rain Wanes in the Night rerun (phase 2)',
+    type: 'banner',
+    notify: false,
+    start: '2026-09-30 12:00',
+    end: '2026-10-20 14:59',
+    notes: 'First rerun. From the 3.2 Special Program — no notice yet.',
+    sourceKey: 'seed:zzz:3.2-promeia',
+  },
+  {
+    game: 'zzz',
+    name: 'Crimson Moon Casket / Frostfall Sickle — W-Engines (phase 2)',
+    type: 'banner',
+    notify: false,
+    start: '2026-09-30 12:00',
+    end: '2026-10-20 14:59',
+    notes: 'From the 3.2 Special Program — no notice yet.',
+    sourceKey: 'seed:zzz:3.2-p2-engines',
+  },
+  /* --- endgame windows past the 3.1 boundary. Fourteen days each, unbroken since
+     the 08-14 realignment to Fridays. Cadence only: ZZZ never announces these, and
+     the 09-08 version update can cut one short exactly as 3.1's did. */
+  {
+    game: 'zzz',
+    name: 'Shiyu Defense: Critical',
+    type: 'cycle',
+    notify: false,
+    start: '2026-09-04 04:00',
+    end: '2026-09-18 03:59',
+    notes: 'Cadence, not a notice. Provisional; verify in-game.',
+    sourceKey: 'seed:zzz:shiyu-2026-09-04',
+  },
+  {
+    game: 'zzz',
+    name: 'Deadly Assault',
+    type: 'cycle',
+    notify: false,
+    start: '2026-09-11 04:00',
+    end: '2026-09-25 03:59',
+    notes: 'Cadence, not a notice. Opens two days after the 3.2 update. Provisional; verify in-game.',
+    sourceKey: 'seed:zzz:da-2026-09-11',
+  },
+  {
+    game: 'zzz',
+    name: 'Shiyu Defense: Critical',
+    type: 'cycle',
+    notify: false,
+    start: '2026-09-18 04:00',
+    end: '2026-10-02 03:59',
+    notes: 'Cadence, not a notice. Provisional; verify in-game.',
+    sourceKey: 'seed:zzz:shiyu-2026-09-18',
   },
 
   /* ================================================== WUTHERING WAVES — v3.5 "Blade of Past
@@ -1862,6 +2072,27 @@ export const SEED_EVENTS: SeedEvent[] = [
     notes: '2026 Season 17. Same caveat — wiki season list, times assumed.',
     sourceKey: 'seed:lads:hunter-contest-2026-s17',
   },
+  {
+    game: 'lads',
+    name: 'Senior Hunter Contest',
+    type: 'cycle',
+    notify: false,
+    start: '2026-09-07 05:00',
+    end: '2026-09-21 04:59',
+    notes: '2026 Season 18. Same caveat again — 14-day cadence, times assumed, nothing published.',
+    sourceKey: 'seed:lads:hunter-contest-2026-s18',
+  },
+  {
+    game: 'lads',
+    name: "Zayne's Birthday Event",
+    type: 'event',
+    notify: false,
+    start: '2026-08-31 05:00',
+    end: '2026-09-07 04:59',
+    notes:
+      'Announced on the official account: 05:00 08-31 to 04:59 09-07 server time, with a birthday-limited 5-star Memory and a login gift of 10 limited wishes. Reported title "When Embers Rise" — the dates are firmer than the name.',
+    sourceKey: 'seed:lads:zayne-birthday-2026',
+  },
 
   /* ================================================== UMAMUSUME: PRETTY DERBY — Global.
      Cygames ships named campaigns, not numbered versions, so there is no maintenance row
@@ -1941,6 +2172,107 @@ export const SEED_EVENTS: SeedEvent[] = [
     end: '2026-09-02 21:59',
     notes: 'Libra Cup — 1600m Mile, Hanshin Racecourse.',
     sourceKey: 'seed:uma:cm-libra-2026-08',
+  },
+  /* --- September. Uma publishes DATES and not times, so every row below uses the
+     block's established 22:00 open / 21:59 close (and 14:59 for Legend Races), the
+     same convention the August rows were verified against. The dates are the
+     game's own schedule; the clock is inference, which is why these stay silent. */
+  {
+    game: 'uma',
+    name: 'Spotlight Scout — Yamanin Zephyr (+ Symboli Kris S, Tsurumaru Tsuyoshi supports)',
+    type: 'banner',
+    notify: false,
+    start: '2026-09-01 22:00',
+    end: '2026-09-10 21:59',
+    sourceKey: 'seed:uma:scout-2026-09-01',
+  },
+  {
+    game: 'uma',
+    name: "Let's Go! Uma Outing!",
+    type: 'event',
+    notify: false,
+    dailyTouch: true,
+    start: '2026-09-01 22:00',
+    end: '2026-09-10 21:59',
+    sourceKey: 'seed:uma:outing-2026-09',
+  },
+  {
+    game: 'uma',
+    name: 'Legend Races — Shuka Sho',
+    type: 'event',
+    notify: false,
+    dailyTouch: true,
+    start: '2026-09-03 22:00',
+    end: '2026-09-09 14:59',
+    notes: 'Kawakami Princess and Fine Motion. The 14:59 close copies the Sprinters Stakes run, which was verified.',
+    sourceKey: 'seed:uma:legend-races-2026-09',
+  },
+  {
+    game: 'uma',
+    name: 'Hark Back Run Forward (Autumn Festival story event)',
+    type: 'event',
+    notify: false,
+    start: '2026-09-07 22:00',
+    end: '2026-09-19 21:59',
+    notes: 'Tamamo Cross, Inari One, Yaeno Muteki, Oguri Cap and Mejiro Ardan. Runs with the scout below.',
+    sourceKey: 'seed:uma:story-event-19',
+  },
+  {
+    game: 'uma',
+    name: 'Spotlight Scout — Tamamo Cross / Inari One (+ Yaeno Muteki, Oguri Cap supports)',
+    type: 'banner',
+    notify: false,
+    start: '2026-09-07 22:00',
+    end: '2026-09-19 21:59',
+    sourceKey: 'seed:uma:scout-2026-09-07',
+  },
+  {
+    game: 'uma',
+    name: 'Spotlight Scout — Nakayama Festa (+ Super Creek, Mr. C.B. support reruns)',
+    type: 'banner',
+    notify: false,
+    start: '2026-09-15 22:00',
+    end: '2026-09-23 21:59',
+    sourceKey: 'seed:uma:scout-2026-09-15',
+  },
+  {
+    game: 'uma',
+    name: 'Champions Meeting',
+    type: 'cycle',
+    notify: false,
+    start: '2026-09-15 22:00',
+    end: '2026-09-25 21:59',
+    notes:
+      'Scorpio Cup (CM19) — 2200m Medium, Kyoto Racecourse. Sign-ups open 09-15 and the first round runs 09-19; only the window is modelled here.',
+    sourceKey: 'seed:uma:cm-scorpio-2026-09',
+  },
+  {
+    game: 'uma',
+    name: 'Spotlight Scout — Wonder Acute (+ Eishin Flash, Narita Top Road supports)',
+    type: 'banner',
+    notify: false,
+    start: '2026-09-23 22:00',
+    end: '2026-10-04 21:59',
+    sourceKey: 'seed:uma:scout-2026-09-23',
+  },
+  {
+    game: 'uma',
+    name: 'Spotlight Scout — Christmas Vodka / Daiwa Scarlet (+ Air Groove, Narita Brian supports)',
+    type: 'banner',
+    notify: false,
+    start: '2026-09-28 22:00',
+    end: '2026-10-12 21:59',
+    sourceKey: 'seed:uma:scout-2026-09-28',
+  },
+  {
+    game: 'uma',
+    name: 'Illuminate the Heart (story event)',
+    type: 'event',
+    notify: false,
+    start: '2026-09-28 22:00',
+    end: '2026-10-12 21:59',
+    notes: 'Holiday Celebration Part 1 opens alongside it; that campaign has no published close.',
+    sourceKey: 'seed:uma:story-event-20',
   },
 
   /* ================================================== GODDESS OF VICTORY: NIKKE — the
@@ -2141,6 +2473,60 @@ export const SEED_EVENTS: SeedEvent[] = [
     notes: 'Final Season 9 cycle; closes on the published season end. Same derivation caveat.',
     sourceKey: 'seed:nikke:overclock-2026-09-08',
   },
+  /* --- the September 3 update, from the patch notes. NIKKE prints real UTC+9
+     clock times for everything, so these are exact, not derived — the one game in
+     this file where "after maintenance" is the only soft edge. Maintenance itself
+     is not modelled: NIKKE has never published its length in advance, and the
+     04:00 open below is where every event in the notes starts counting. */
+  {
+    game: 'nikke',
+    name: 'GREAT VILLAIN UNION',
+    type: 'event',
+    start: '2026-09-03 07:00',
+    end: '2026-09-17 04:59',
+    notes:
+      'Drake founds the New Villain Union. Collect Memory Films to unlock the Archives stories. The notes say "after maintenance" and print only the close, so the 07:00 open copies the 08-13 update day, which was verified.',
+    sourceKey: 'seed:nikke:great-villain-union',
+  },
+  {
+    game: 'nikke',
+    name: 'Drake: Great Villain Pick Up',
+    type: 'banner',
+    start: '2026-09-03 07:00',
+    end: '2026-09-17 04:59',
+    notes: 'Limited SSR — Wind Code Defender, Missilis, shotgun. Same window as the event.',
+    sourceKey: 'seed:nikke:drake-great-villain-pickup',
+  },
+  {
+    game: 'nikke',
+    name: 'DAILY EVIL DEED — 7-day login',
+    type: 'event',
+    dailyTouch: true,
+    start: '2026-09-03 07:00',
+    end: '2026-09-17 04:59',
+    notes: 'Recruit Vouchers and development materials across seven check-ins. Two weeks to collect seven days.',
+    sourceKey: 'seed:nikke:daily-evil-deed',
+  },
+  {
+    game: 'nikke',
+    name: 'Union Raid',
+    type: 'cycle',
+    start: '2026-09-04 05:00',
+    end: '2026-09-10 04:59',
+    notes: 'Printed in the 09-03 patch notes to the second.',
+    sourceKey: 'seed:nikke:union-raid-2026-09',
+  },
+  {
+    game: 'nikke',
+    name: 'October Mission Pass',
+    type: 'event',
+    notify: false,
+    dailyTouch: true,
+    start: '2026-10-01 00:00',
+    end: '2026-10-31 23:59',
+    notes: 'Calendar month, like every pass before it. Not separately announced.',
+    sourceKey: 'seed:nikke:mission-pass-oct',
+  },
 
   /* ================================================== ARKNIGHTS: ENDFIELD — v1.4 "Homecoming"
      (from Jul 15/16). GRYPHLINE runs ONE combined Americas/Europe server on UTC-5, so these
@@ -2240,14 +2626,14 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'endfield',
     name: 'v1.5 "Dreamscape of Wind and Snow" update maintenance',
     type: 'maintenance',
-    notify: false,
     // Announced for "September 2" — the Asia column. This block runs on the ONE
     // combined AmEu server at UTC-5, where that is the evening of Sept 1, landing
-    // exactly on the 1.4 boundary. The 6h length copies the 1.4 window; GRYPHLINE
-    // has not published this one.
+    // exactly on the 1.4 boundary. Confirmed after the fact on 09-02: the wiki
+    // records the AmEu version opening at 2026/09/01 23:00, which is the end below.
     start: '2026-09-01 17:00',
     end: '2026-09-01 23:00',
-    notes: 'Date announced, window not — the 6h length is copied from the v1.4 maintenance.',
+    notes:
+      'It ran. The 23:00 reopen is the recorded AmEu version start; the 17:00 close is the 1.4 boundary every 1.4 row ends on.',
     sourceKey: 'seed:endfield:1.5-maint',
   },
   // Echoes of War is now fully sourced, not community-derived: Recalling I/II/III ran
@@ -2271,6 +2657,185 @@ export const SEED_EVENTS: SeedEvent[] = [
     notes: 'Season of Delirating — Cycle III. Runs 10 days, to the 1.4 end.',
     sourceKey: 'seed:endfield:eow-delirating-3',
   },
+  /* --- v1.5 "Dreamscape of Wind and Snow", live since 2026-09-01 23:00 on this
+     (Americas, UTC-5) clock. Two things make this block different from every
+     other one in the file:
+
+     ENDFIELD SPLITS A TIME INSIDE ONE LINE, and it does it again here. The
+     version OPENS on the local clock — 09-02 11:00 in Asia is 09-01 23:00 here,
+     which is what "released after the 09-02 maintenance" means for a UTC-5
+     account — while the Winter Hunt CLOSE is quoted globally, "11:59 on
+     2026/09/30 (UTC+8)", and lands 13 hours earlier at 09-29 22:59. Only the
+     close needed shifting.
+
+     THE VERSION HAS NO PUBLISHED END. Hypergryph has not printed one, and the
+     Winter Hunt close is the last first-party date that exists. Nothing here
+     invents a 1.6 boundary: rows that plainly outlive phase 1 are cut at the
+     phase-2 open or at Winter Hunt's close, and say so. Refresh once the 1.6
+     preview airs — 1.5's aired 08-21, twelve days ahead of release. */
+  {
+    game: 'endfield',
+    name: 'Winter Hunt — Typhoeus',
+    type: 'banner',
+    start: '2026-09-01 23:00',
+    end: '2026-09-29 22:59',
+    notes:
+      'Chartered Headhunting. The only first-party date in 1.5: "until 11:59 of 2026/09/30" quoted in UTC+8, which is 09-29 22:59 here.',
+    sourceKey: 'seed:endfield:1.5-typhoeus',
+  },
+  {
+    game: 'endfield',
+    name: 'Deep Cold Issue — Umbra of Frigid Eventide',
+    type: 'banner',
+    notify: false,
+    start: '2026-09-01 23:00',
+    end: '2026-09-29 22:59',
+    notes: "Typhoeus' weapon banner. Assumed to share the Winter Hunt window, as every weapon issue has.",
+    sourceKey: 'seed:endfield:1.5-deep-cold-issue',
+  },
+  {
+    game: 'endfield',
+    name: 'Combat Drills: Typhoeus',
+    type: 'event',
+    notify: false,
+    start: '2026-09-01 23:00',
+    end: '2026-09-29 22:59',
+    notes: 'Free trial stages, running with the banner. Window assumed from the banner, not published.',
+    sourceKey: 'seed:endfield:1.5-drills-typhoeus',
+  },
+  {
+    game: 'endfield',
+    name: 'Fletched Irontip — sign-in',
+    type: 'event',
+    notify: false,
+    dailyTouch: true,
+    start: '2026-09-01 23:00',
+    end: '2026-09-29 22:59',
+    notes: 'Version sign-in. Start is the version open; the close is not published and is shown at Winter Hunt’s.',
+    sourceKey: 'seed:endfield:1.5-fletched-irontip',
+  },
+  {
+    game: 'endfield',
+    name: 'Snow Over Deep Woods',
+    type: 'event',
+    notify: false,
+    start: '2026-09-01 23:00',
+    end: '2026-09-29 22:59',
+    notes: 'Guide event, opens with the version. No published close.',
+    sourceKey: 'seed:endfield:1.5-snow-over-deep-woods',
+  },
+  {
+    game: 'endfield',
+    name: 'Trial of the Bow',
+    type: 'event',
+    notify: false,
+    start: '2026-09-08 23:00',
+    end: '2026-09-29 22:59',
+    notes: 'Challenge event, week two. Start is dated (09-09 UTC+8); the close is not published.',
+    sourceKey: 'seed:endfield:1.5-trial-of-the-bow',
+  },
+  {
+    game: 'endfield',
+    name: 'AIC Support: Chubby Lung Attacks',
+    type: 'event',
+    notify: false,
+    start: '2026-09-15 23:00',
+    end: '2026-09-29 22:59',
+    notes: 'AIC production event, week three. Start is dated (09-16 UTC+8); the close is not published.',
+    sourceKey: 'seed:endfield:1.5-aic-chubby-lung',
+  },
+  {
+    game: 'endfield',
+    name: 'Sanity Supply (first window)',
+    type: 'event',
+    notify: false,
+    start: '2026-09-16 23:00',
+    end: '2026-09-23 22:59',
+    notes: 'Free stamina. Start is dated (09-17 UTC+8); the seven-day length copies the 1.4 windows.',
+    sourceKey: 'seed:endfield:1.5-sanity-1',
+  },
+  {
+    game: 'endfield',
+    name: 'Resplendent Spectrum — Yvonne rerun (phase 2)',
+    type: 'banner',
+    notify: false,
+    start: '2026-09-23 23:00',
+    end: '2026-09-29 22:59',
+    notes:
+      'RE-Factor rerun. Opens 09-24 UTC+8; the close is unpublished and is cut at Winter Hunt’s rather than invented — it will almost certainly run past it.',
+    sourceKey: 'seed:endfield:1.5-yvonne',
+  },
+  {
+    game: 'endfield',
+    name: 'Tag Artist Issue — Artzy Tyrannical rerun (phase 2)',
+    type: 'banner',
+    notify: false,
+    start: '2026-09-23 23:00',
+    end: '2026-09-29 22:59',
+    notes: 'Weapon rerun beside Yvonne. Same unpublished close.',
+    sourceKey: 'seed:endfield:1.5-tag-artist',
+  },
+  {
+    game: 'endfield',
+    name: 'Purrchena Tribute — free Operator',
+    type: 'event',
+    notify: false,
+    start: '2026-09-23 23:00',
+    end: '2026-09-29 22:59',
+    notes:
+      'Recruits Purrchena for free — do not let this one pass. Opens with phase 2 on 09-24 UTC+8; the close is not published.',
+    sourceKey: 'seed:endfield:1.5-purrchena',
+  },
+  {
+    game: 'endfield',
+    name: 'Echoing Bell of an Old City',
+    type: 'event',
+    notify: false,
+    start: '2026-09-23 23:00',
+    end: '2026-09-29 22:59',
+    notes: 'Guide event for the Suiming map, which runs on a 15-minute time loop. No published close.',
+    sourceKey: 'seed:endfield:1.5-echoing-bell',
+  },
+  {
+    game: 'endfield',
+    name: 'Echoes of War',
+    type: 'cycle',
+    notify: false,
+    start: '2026-09-02 04:00',
+    end: '2026-09-09 03:59',
+    notes: 'First cycle of 1.5. Season name not announced. 7-day cadence, not a notice.',
+    sourceKey: 'seed:endfield:eow-1.5-1',
+  },
+  {
+    game: 'endfield',
+    name: 'Echoes of War',
+    type: 'cycle',
+    notify: false,
+    start: '2026-09-09 04:00',
+    end: '2026-09-16 03:59',
+    notes: '7-day cadence, not a notice.',
+    sourceKey: 'seed:endfield:eow-1.5-2',
+  },
+  {
+    game: 'endfield',
+    name: 'Echoes of War',
+    type: 'cycle',
+    notify: false,
+    start: '2026-09-16 04:00',
+    end: '2026-09-23 03:59',
+    notes: '7-day cadence, not a notice.',
+    sourceKey: 'seed:endfield:eow-1.5-3',
+  },
+  {
+    game: 'endfield',
+    name: 'Echoes of War',
+    type: 'cycle',
+    notify: false,
+    start: '2026-09-23 04:00',
+    end: '2026-09-30 03:59',
+    notes: '7-day cadence, not a notice.',
+    sourceKey: 'seed:endfield:eow-1.5-4',
+  },
 
   /* ================================================== NEXT PATCH LIVESTREAMS
      The broadcast that reveals the next version, and therefore the cue to refresh
@@ -2279,21 +2844,32 @@ export const SEED_EVENTS: SeedEvent[] = [
      the offsets it came from in `notes` so the next refresh can re-derive it
      instead of trusting this row. All times are the Europe (UTC+1) wall clock.
 
-     Offsets observed on 2026-08-27: Genshin 12-13 days before release, Fridays
-     13:00. HSR 6-12 (one outlier at 6), Fridays 12:30. WuWa 6-14, Fridays 12:00.
-     NTE exactly 11 every time, Saturdays 12:30.
+     Offsets observed on 2026-08-27 and unchanged on 09-02: Genshin 12-13 days
+     before release, Fridays 13:00. HSR 6-12 (one outlier at 6), Fridays 12:30.
+     WuWa 6-14, Fridays 12:00 — the 3.6 broadcast on 08-07 sat 13 days out and
+     fits. NTE exactly 11 every time, Saturdays 12:30. ZZZ 12, Fridays 12:30.
+
+     A broadcast is also the one free-reward deadline this file can carry: each
+     one gives away three redemption codes worth roughly 300 of the game's pull
+     currency, and they expire within a day or two, so the codes are named in
+     `notes` for the four games whose practice is documented. NTE's row says
+     nothing about codes because Perfect World's has not been confirmed — an
+     unverified promise of free pulls is worse than none.
 
      LADS, Uma and NIKKE are absent on purpose: none of the three runs a
-     recurring patch broadcast, only news posts. Endfield's 1.5 preview already
-     aired on 2026-08-21 and there is not enough 1.6 history to predict one. */
+     recurring patch broadcast, only news posts. Endfield stays absent too, but
+     for a different reason and not for much longer: its 1.5 preview aired
+     2026-08-21, twelve days before release, which is now TWO datapoints. One
+     more and it earns a predicted row like the rest. */
   {
     game: 'zzz',
-    name: 'ZZZ 3.2 Special Program',
+    name: 'ZZZ 3.3 Special Program — predicted window',
     type: 'livestream',
-    start: '2026-08-28 12:30',
-    end: '2026-08-28 14:30',
-    notes: 'Officially announced: 19:30 UTC+8. Reveals the v3.2 slate — refresh this file after it airs.',
-    sourceKey: 'seed:zzz:3.2-livestream',
+    start: '2026-10-07 12:30',
+    end: '2026-10-11 14:30',
+    notes:
+      'Not announced. The 3.2 program landed twelve days before its release, as the last several have; 3.3 follows a 09-30 phase 2, so a 10-21 release puts the broadcast around 10-09. Three redemption codes drop during the broadcast, ~100 Polychrome each, and expire within 24-48 hours.',
+    sourceKey: 'seed:zzz:3.3-livestream',
   },
   {
     game: 'genshin',
@@ -2302,7 +2878,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     start: '2026-09-09 13:00',
     end: '2026-09-13 15:00',
     notes:
-      'Not announced. Last five programs ran 12-13 days before release, Fridays 13:00; 7.1 is expected 09-23, so 09-11 is the single most likely date.',
+      'Not announced. Last five programs ran 12-13 days before release, Fridays 13:00; 7.1 is expected 09-23, so 09-11 is the single most likely date. Three redemption codes drop during the broadcast, ~100 Primogems each, and expire within 24-48 hours.',
     sourceKey: 'seed:genshin:7.1-livestream',
   },
   {
@@ -2312,7 +2888,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     start: '2026-09-16 12:30',
     end: '2026-09-18 14:30',
     notes:
-      'Not announced. v4.6 goes live 09-28 04:00, and the usual offset is 10-12 days on a Friday 12:30 — which lands on 09-18 almost exactly.',
+      'Not announced. v4.6 goes live 09-28 04:00, and the usual offset is 10-12 days on a Friday 12:30 — which lands on 09-18 almost exactly. Three redemption codes drop during the broadcast, ~100 Stellar Jade each, and expire within 24-48 hours.',
     sourceKey: 'seed:hsr:4.6-livestream',
   },
   {
@@ -2322,7 +2898,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     start: '2026-09-16 12:00',
     end: '2026-09-24 14:00',
     notes:
-      'Not announced. Recent offsets cluster at 10-14 days, Fridays 12:00, against an expected 09-30 release. Most likely 09-18.',
+      'Not announced. Recent offsets cluster at 10-14 days, Fridays 12:00, against an expected 09-30 release. Most likely 09-18. Three redemption codes drop during the broadcast, 100 Astrite each, and expire within 24-48 hours — redeem them in Other Settings, there is no code site.',
     sourceKey: 'seed:wuwa:3.7-livestream',
   },
   {

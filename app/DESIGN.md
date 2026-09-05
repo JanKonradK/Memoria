@@ -394,6 +394,21 @@ the page, and the corner is most of what gives it that.
 
 ## Components
 
+### Reserve counters
+
+An overflow reserve (HSR's Reserve TB Power, ZZZ's Backup Battery) is **one
+quiet summary line** — `Reserve TB Power 287/2400` — and opens only when the
+user opens it. That choice then persists.
+
+It used to unfold itself whenever the main bar capped or the reserve was
+non-empty, which for the games that have a reserve is most of the time: the card
+silently grew a second stepper, a second tube and a second subtitle nobody asked
+for. A disclosure that is open by default is not a disclosure.
+
+A resource's own verdict (`full Sat 10:10 · in 1d 3h`) sits directly under its
+own tube, above the reserve line. Printed after the reserve block it read as the
+reserve's line — two sentences about two different vessels, stacked as one.
+
 ### Reactor tube (signature)
 
 A containment tube, not a progress bar. Progress bars say "a task is advancing";
@@ -441,8 +456,41 @@ The badge in the footer is how a user picks the right card out of a rail, so it
 takes the lifted identity colour rather than the raw one — a near-white primary
 drew an invisible badge on the cream ground.
 
-Expanded, the card carries everything for that game — resources, windows, cycles,
-tasks.
+Expanded, the card carries everything for that game — resources, windows,
+cycles, tasks — in **bands**, each opened by a rule: a small-caps name, a
+hairline, and that band's own summary. `Daily 2/3 · 21h 15m`, `Weekly 0/2 · 2d
+21h`, `Cycle`, `Monthly`, then `Windows`.
+
+The rule is the same shape the hub uses for Closing / Just arrived / Arriving,
+so the card and the hub section themselves the same way.
+
+**The Band Owns The Shared Deadline Rule.** Every daily on a card resets at the
+same moment, so the countdown belongs to the band, not to each row. Stamping a
+`WEEKLY` chip and a countdown onto every weekly row said one thing seven times,
+pushed every task name right by the width of the longest tag, and — worse —
+made a reset every task shares look like one task's private timer. Cycles are
+the exception and keep per-row countdowns, because each cycle closes with its
+own Timeline window.
+
+### Task rows
+
+A row carries at most three things: the name, one piece of state, and the tick.
+
+**The Tick Means The Period Rule.** The tick answers exactly one question —
+_have I done this in the current period?_ — and it answers it the same way for
+checkboxes, counters and dispatches. Nothing else may claim that shape.
+
+Dispatch rows (expeditions, assignments, the Crystalfly trap) hold two facts
+that are not the same fact, and the row keeps them apart: the **tick** says
+whether you collected and resent this period; the **meta text** says when the
+current run comes back. They were once fused, and both were inverted — a
+returned dispatch rendered struck through with a filled tick, i.e. finished, at
+the one moment there was genuinely something to go and do, while a run still out
+rendered as an unfinished ring with an amber countdown, i.e. urgent, when there
+was nothing to do but wait. So the task was never seen complete and its number
+read as a lockout. Now: out → the name recedes and the meta reads `back 6h`;
+back → the name stays lit and the meta reads `Collect` in ok; collected → the
+tick fills like any other row.
 
 **What it does not carry:** no status dot, and no decorative field behind the
 content. Both were tried and both lost — the dot duplicated a countdown that was
@@ -511,10 +559,24 @@ stretching to say "Nothing".
 
 ## Motion
 
-Focus expand and shrink, tube charge highlight, tube glide on commit, ring
-completion burst, and the commit flash. **Nothing else.** Every one of them is
-either the response to something the user just did or a state that is genuinely
-changing on its own.
+Card entrance, focus expand and shrink, tube charge highlight, tube glide on
+commit, ring completion burst, the strike-through draw, and the commit flash.
+**Nothing else.** Every one of them is either the response to something the user
+just did or a state that is genuinely changing on its own.
+
+**The Entrance Is Laid Out, Not Blinked Rule.** Cards arrive down the rail on a
+40ms stagger, capped at eight steps. Without it every card in a nine-game
+dashboard began and ended on the same frame, which reads as one block of content
+appearing rather than as a set of objects being placed. The cap is the other
+half: someone tracking fifteen games would otherwise wait six tenths of a second
+for the last card, and a stagger that outlives the glance it decorates has
+stopped being motion and become latency.
+
+**The Completion Is One Gesture Rule.** `text-decoration: line-through` cannot
+be animated, so a finished task used to change in two unrelated ways on the same
+frame: the tick played its 180ms pop while the rule across the name simply
+appeared. The strike is drawn as a background instead, which gives it a width to
+animate, and the two now travel together.
 
 `prefers-reduced-motion` is honoured globally and must remain so.
 
