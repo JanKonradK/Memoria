@@ -112,6 +112,16 @@ export interface Task extends Syncable {
   /** Keyword override for the timeline match (case-insensitive contains); empty = fuzzy name match. */
   timelineMatch?: string;
   /**
+   * The preset row this task was created from, as a slug that never changes.
+   *
+   * Names do change — a preset gets sharpened, a mode is renamed by its
+   * publisher, a user edits the row to suit themselves. `missingPresetTasks`
+   * used to compare names alone, so any of those turned one routine into two:
+   * the preset no longer recognised the task the user already had, offered it
+   * as missing, and "Add them" duplicated it. The key survives all three.
+   */
+  presetTaskKey?: string;
+  /**
    * The handful of tasks that actually pay the game's premium pull currency
    * (Primogems, Stellar Jade, Polychrome, Astrite…). These sort above everything
    * else on the card and are the ones the completion ring counts, because

@@ -1,10 +1,20 @@
-import { createElement } from 'react';
+import { createElement, type ReactElement } from 'react';
 import { render, screen } from '@testing-library/react';
 import { emptyState, type Game, type GameUrgency } from '@memoria/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 import { GameControlsView, type GameControlActions } from '../src/components/GameCard';
+import { TooltipProvider } from '../src/components/ui';
 import { formatCardTimeLeft, NexusLayout, serverRegionLabel } from '../src/components/NexusLayout';
 import { useApp } from '../src/store';
+
+/**
+ * Radix tooltips need their provider, which the app mounts once at the root in
+ * main.tsx. Rendering a card fragment straight into jsdom skips it, so every
+ * render in this file goes through the same wrapper the real tree has.
+ */
+function renderCard(element: ReactElement) {
+  return render(createElement(TooltipProvider, null, element));
+}
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -31,7 +41,6 @@ function controls(): GameControlActions {
   const store = useApp.getState();
   return {
     setTaskDone: store.setTaskDone,
-    startTaskTimer: store.startTaskTimer,
     restartTaskTimer: store.restartTaskTimer,
     advanceTaskTimer: store.advanceTaskTimer,
     setTaskCount: store.setTaskCount,
@@ -112,7 +121,7 @@ describe('game card account labels', () => {
     const entry: GameUrgency = { game, next: null, actions: [] };
     useApp.setState({ state });
 
-    const nexus = render(
+    const nexus = renderCard(
       createElement(NexusLayout, {
         state,
         entries: [entry],
@@ -130,7 +139,7 @@ describe('game card account labels', () => {
     expect(screen.getByText(game.name).parentElement?.querySelector('.bg-line-edge')).toBeNull();
     nexus.unmount();
 
-    render(
+    renderCard(
       createElement(GameControlsView, {
         entry,
         state,
@@ -150,7 +159,7 @@ describe('game card account labels', () => {
     const entry: GameUrgency = { game: labelledGame, next: null, actions: [] };
     useApp.setState({ state });
 
-    render(
+    renderCard(
       createElement(GameControlsView, {
         entry,
         state,
@@ -178,7 +187,7 @@ describe('game card reset labels', () => {
 
     const dublinState = stateFor('Europe/Dublin');
     useApp.setState({ state: dublinState });
-    const dublin = render(
+    const dublin = renderCard(
       createElement(GameControlsView, {
         entry,
         state: dublinState,
@@ -193,7 +202,7 @@ describe('game card reset labels', () => {
 
     const warsawState = stateFor('Europe/Warsaw');
     useApp.setState({ state: warsawState });
-    render(
+    renderCard(
       createElement(GameControlsView, {
         entry,
         state: warsawState,
@@ -220,7 +229,7 @@ describe('game card reset labels', () => {
     const entry: GameUrgency = { game: serverGame, next: null, actions: [] };
     useApp.setState({ state });
 
-    const view = render(
+    const view = renderCard(
       createElement(GameControlsView, {
         entry,
         state,

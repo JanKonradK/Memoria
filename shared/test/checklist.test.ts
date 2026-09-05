@@ -141,8 +141,29 @@ describe('checklistFor', () => {
     const running = checklistFor(makeState({ games: [game], tasks: [task] }), game, now)[0]!;
     expect(running).toMatchObject({ timerRunning: true, timerReady: false, done: false, mode: 'timer' });
 
+    // A returned dispatch is work owed, not work done: the rewards are still
+    // sitting in the game waiting to be collected and resent.
     const readyTask = { ...task, timerEndsAt: now - 1_000 };
     const ready = checklistFor(makeState({ games: [game], tasks: [readyTask] }), game, now)[0]!;
-    expect(ready).toMatchObject({ timerRunning: false, timerReady: true, done: true });
+    expect(ready).toMatchObject({ timerRunning: false, timerReady: true, done: false });
+
+    const collected = checklistFor(
+      makeState({
+        games: [game],
+        tasks: [readyTask],
+        completions: [
+          {
+            id: `exp|${ready.periodKey}`,
+            taskId: 'exp',
+            periodKey: ready.periodKey,
+            done: true,
+            updatedAt: now,
+          },
+        ],
+      }),
+      game,
+      now,
+    )[0]!;
+    expect(collected).toMatchObject({ timerReady: true, done: true });
   });
 });

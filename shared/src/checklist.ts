@@ -111,7 +111,6 @@ function completionProgress(
   completions: Map<string, Completion>,
   task: Task,
   periodKey: string,
-  now: number,
 ): { done: boolean; countDone: number; countTarget: number; timerEndsAt: number | null } {
   const row = completions.get(`${task.id}|${periodKey}`);
   const mode = effectiveTaskMode(task);
@@ -122,11 +121,14 @@ function completionProgress(
     const done = countDone >= countTarget || Boolean(row?.done);
     return { done, countDone, countTarget, timerEndsAt };
   }
-  if (mode === 'timer') {
-    const ready = timerEndsAt != null && timerEndsAt <= now;
-    const done = Boolean(row?.done) || ready;
-    return { done, countDone, countTarget, timerEndsAt };
-  }
+  // Timer tasks fall through to the same rule as checkboxes, and that is the
+  // whole point. `done` used to be `row.done || timerReady`, so a dispatch was
+  // marked complete for the period the moment it came BACK — a fresh day opened
+  // with the expedition already ticked and struck through, before the user had
+  // touched it, at exactly the moment there was something to go and collect.
+  // Completion belongs to the period's own row, written when the user actually
+  // collects and resends; `timerReady` is reported separately and the card shows
+  // it as work owed.
   return { done: Boolean(row?.done), countDone, countTarget, timerEndsAt };
 }
 
@@ -161,7 +163,7 @@ export function checklistFor(
       resetAt = taskNextReset(game, t, now);
     }
     const mode = effectiveTaskMode(t);
-    const progress = completionProgress(index.completions, t, periodKey, now);
+    const progress = completionProgress(index.completions, t, periodKey);
     const timerEndsAt = progress.timerEndsAt;
     out.push({
       taskId: t.id,

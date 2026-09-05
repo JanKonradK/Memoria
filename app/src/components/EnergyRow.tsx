@@ -157,8 +157,12 @@ export const EnergyRow = memo(function EnergyRow({
   const reservePct = res.reserveCap > 0 ? Math.min(100, (reserveValue / res.reserveCap) * 100) : 0;
   const reserveAccent = reserveColor ?? color;
   const reserveLabel = res.reserveLabel ?? 'Reserve';
-  const autoOpen = res.reserveCap > 0 && (proj.isFull || reserveValue > 0);
-  const reserveIsOpen = pinnedReserveOpen ?? autoOpen;
+  // Opt-in, and only opt-in. The reserve used to unfold itself the moment the
+  // bar capped or the overflow was non-zero, which is most of the time for the
+  // games that have one — so the card silently grew a second stepper, a second
+  // tube and a second subtitle that nobody asked for. The summary line below
+  // carries the whole reading; opening it is the user's decision and it sticks.
+  const reserveIsOpen = pinnedReserveOpen ?? false;
   // Urgency is TIME based, not %: red when capping within 2h (or already full),
   // amber within 8h, green otherwise.
   const urgency =
@@ -279,37 +283,55 @@ export const EnergyRow = memo(function EnergyRow({
         <>
           <ProgressBar value={pct / 100} color={color} glow={glow} segmented />
 
+          {/* The resource's own verdict, directly under its own tube. It used to
+              be printed after the whole reserve block, so an open reserve read
+              "fills while Trailblaze Power is capped / full Sat 10:10" — two
+              lines about two different vessels, stacked as if they were one. */}
+          <div
+            className={`mt-1 text-meta tabular-nums ${
+              proj.isFull
+                ? 'font-bold text-danger-fg'
+                : urgency === 'danger'
+                  ? 'text-danger-fg'
+                  : urgency === 'warn'
+                    ? 'text-warn-fg'
+                    : urgency === 'ok'
+                      ? 'text-ok-fg'
+                      : 'text-fg-soft'
+            }`}
+          >
+            {subtitle}
+          </div>
+
           {res.reserveCap > 0 && (
             <>
               <button
                 type="button"
                 aria-expanded={reserveIsOpen}
                 onClick={() => setReserveOpen(res.id, !reserveIsOpen)}
-                className="mt-1 flex w-full items-center gap-1 text-left text-caption font-semibold tabular-nums text-dim transition hover:text-fg-soft"
+                className="mt-1.5 flex min-h-8 w-full items-center gap-1 rounded-ui-md text-left text-caption font-semibold tabular-nums text-dim transition hover:text-fg-soft sm:min-h-6"
               >
                 <svg
                   viewBox="0 0 20 20"
                   fill="none"
                   stroke="currentColor"
-                  className={`icon h-3 w-3 shrink-0 transition-transform ${reserveIsOpen ? 'rotate-90' : ''}`}
+                  className={`icon h-3 w-3 shrink-0 transition-transform duration-(--dur-fast) ${reserveIsOpen ? 'rotate-90' : ''}`}
                   aria-hidden
                 >
                   <path d="m7 5 5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
+                {/* Closed, this line IS the reserve reading — that is what earns
+                    it the right to stay closed. Open, the stepper below owns the
+                    number and repeating it here would be the third copy. */}
                 <span>
-                  {reserveLabel} {reserveValue}/{res.reserveCap}
+                  {reserveLabel}
+                  {reserveIsOpen ? '' : ` ${reserveValue}/${res.reserveCap}`}
                 </span>
               </button>
 
               {reserveIsOpen && (
-                <div className="mt-1.5 border-t border-line-hairline pt-2">
+                <div className="disclosure-open mt-1 border-t border-line-hairline pt-2">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                    <span
-                      className="min-w-0 flex-1 truncate text-label font-semibold uppercase tracking-wider"
-                      style={{ color: reserveAccent }}
-                    >
-                      {reserveLabel}
-                    </span>
                     <span className="ml-auto flex w-full items-center justify-end gap-1 sm:w-auto">
                       <StepBtn delta={-1} onStep={reserveStep} label={reserveLabel} />
                       <span
@@ -391,22 +413,6 @@ export const EnergyRow = memo(function EnergyRow({
               )}
             </>
           )}
-
-          <div
-            className={`mt-1 text-meta tabular-nums ${
-              proj.isFull
-                ? 'font-bold text-danger-fg'
-                : urgency === 'danger'
-                  ? 'text-danger-fg'
-                  : urgency === 'warn'
-                    ? 'text-warn-fg'
-                    : urgency === 'ok'
-                      ? 'text-ok-fg'
-                      : 'text-fg-soft'
-            }`}
-          >
-            {subtitle}
-          </div>
         </>
       )}
 

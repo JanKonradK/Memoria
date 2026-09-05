@@ -3,6 +3,7 @@ import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { serverRegionLabel } from './NexusLayout';
 import { useGameDraft } from './game-detail/useGameDraft';
+import { GameEditor } from './settings/GameEditor';
 import { Sheet } from './Sheet';
 import { Btn, Field, SectionTitle, Segmented, TextInput } from './ui';
 
@@ -24,7 +25,17 @@ const SERVER_OPTIONS = [
   { value: 'Etc/GMT-8', label: 'Asia' },
 ];
 
-/** Fast per-game actions reached from a dashboard card. */
+/**
+ * Everything about one game, in one place, reached from the card's own Edit
+ * button and from Settings.
+ *
+ * There used to be two editors. This sheet held the nickname, the server and
+ * the delete button; the real one — resources, quick spends, the whole task
+ * list — was an inline panel behind an "Expand" button on the Settings page,
+ * sitting next to an "Edit" button that opened this sheet instead. So the card
+ * offered no way at all to change a task, and Settings offered two buttons that
+ * both said they edited the game and did different things. One surface now.
+ */
 export function GameDetailSheet({ gameId, open }: { gameId: string | null; open: boolean }) {
   const state = useApp((store) => store.state);
   const updateGame = useApp((store) => store.updateGame);
@@ -63,6 +74,7 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
     <Sheet
       open={open}
       onClose={close}
+      wide
       title={game.accountLabel?.trim() ? `${game.name} · ${game.accountLabel.trim()}` : game.name}
     >
       <div className="space-y-6">
@@ -93,7 +105,9 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
           />
         </div>
 
-        <div>
+        <GameEditor game={game} />
+
+        <div className="border-t border-line-hairline pt-5">
           <SectionTitle>Delete game</SectionTitle>
           {!confirmDelete ? (
             <Btn kind="danger" onClick={() => setConfirmDelete(true)}>

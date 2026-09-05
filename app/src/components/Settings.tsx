@@ -5,16 +5,28 @@ import { useUI } from '../ui-store';
 import { servedByLauncher } from '../launcher';
 import { resolveGameIdentityColors } from '../game-color';
 import { syncNow } from '../sync';
+import {
+  CLOUD_FILE_SUGGESTED_NAME,
+  cloudSyncNow,
+  cloudSyncSupported,
+  connectExistingCloudFile,
+  connectNewCloudFile,
+  disconnectCloudFile,
+  reconnectCloudFile,
+} from '../cloud-sync';
 import { homeTimeZoneOptions, resolveHomeTimeZone, SYSTEM_TIMEZONE_VALUE, utcOffsetLabel } from '../timezone';
 import { fmtClock, intOr, localResetLabel } from '../util';
 import { Pill } from './primitives';
-import { GameEditor } from './settings/GameEditor';
 import { Btn, GameBadge, NumInput, Page, Select } from './ui';
 
 export function SettingsPage() {
   const state = useApp((store) => store.state);
   const syncStatus = useApp((store) => store.syncStatus);
   const syncError = useApp((store) => store.syncError);
+  const cloudStatus = useApp((store) => store.cloudStatus);
+  const cloudError = useApp((store) => store.cloudError);
+  const cloudFileName = useApp((store) => store.cloudFileName);
+  const lastCloudSyncAt = useApp((store) => store.lastCloudSyncAt);
   const lastSyncAt = useApp((store) => store.lastSyncAt);
   const updateSettings = useApp((store) => store.updateSettings);
   const importStateJson = useApp((store) => store.importJson);
@@ -28,7 +40,8 @@ export function SettingsPage() {
   const identityColors = resolveGameIdentityColors(games);
   const [statusMessage, setStatusMessage] = useState('');
   const [importDraft, setImportDraft] = useState<{ text: string; games: number; events: number } | null>(null);
-  const [expandedGameId, setExpandedGameId] = useState<string | null>(null);
+  const cloudSupported = cloudSyncSupported();
+  const cloudConnected = cloudFileName !== '' && cloudStatus !== 'off' && cloudStatus !== 'unsupported';
   const reportError = (error: unknown) => setStatusMessage(error instanceof Error ? error.message : String(error));
   const syncSizeWarning = syncStatus === 'error' && syncError.startsWith('Local data is ');
 
@@ -139,40 +152,30 @@ export function SettingsPage() {
                 {games.map((game) => {
                   const colors = identityColors[game.id] ?? game;
                   return (
-                    <div
+                    // One button, one destination. This row used to carry both
+                    // "Expand" (the real editor, inline) and "Edit" (a sheet
+                    // holding three fields) — two controls claiming the same job.
+                    <button
                       key={game.id}
-                      className={expandedGameId === game.id ? 'sm:col-span-2 xl:col-span-3' : undefined}
+                      type="button"
+                      onClick={() => openSheet({ kind: 'game', gameId: game.id })}
+                      className="flex min-h-14 w-full items-center gap-3 rounded-ui-xl bg-fill-1 px-3 py-2 text-left ring-1 ring-line-hairline transition duration-(--dur-fast) hover:bg-fill-2 hover:ring-line-strong"
                     >
-                      <div className="flex min-h-14 items-center gap-3 rounded-ui-xl bg-fill-1 px-3 py-2 ring-1 ring-line-hairline">
-                        <GameBadge short={game.short} {...colors} size="lg" />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate text-body font-bold text-fg-soft">{game.name}</span>
-                            {game.paused && <Pill variant="paused">paused</Pill>}
-                          </div>
-                          <span className="text-label text-dim">
-                            reset {localResetLabel(game, settings.localTz, Date.now())}
-                          </span>
+                      <GameBadge short={game.short} {...colors} size="lg" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-body font-bold text-fg-soft">{game.name}</span>
+                          {game.paused && <Pill variant="paused">paused</Pill>}
                         </div>
-                        <Btn
-                          kind="ghost"
-                          onClick={() => setExpandedGameId((current) => (current === game.id ? null : game.id))}
-                          className="!min-h-11 shrink-0 sm:!min-h-8"
-                        >
-                          {expandedGameId === game.id ? 'Collapse' : 'Expand'}
-                          <span className="sr-only"> {game.name} settings</span>
-                        </Btn>
-                        <Btn
-                          kind="ghost"
-                          onClick={() => openSheet({ kind: 'game', gameId: game.id })}
-                          className="!min-h-11 shrink-0 sm:!min-h-8"
-                        >
-                          <span aria-hidden="true">Edit</span>
-                          <span className="sr-only">Edit {game.name}</span>
-                        </Btn>
+                        <span className="text-label text-dim">
+                          reset {localResetLabel(game, settings.localTz, Date.now())}
+                        </span>
                       </div>
-                      {expandedGameId === game.id && <GameEditor game={game} />}
-                    </div>
+                      <span className="shrink-0 text-meta font-semibold text-dim" aria-hidden="true">
+                        Edit
+                      </span>
+                      <span className="sr-only">Edit {game.name}</span>
+                    </button>
                   );
                 })}
               </div>
@@ -206,6 +209,7 @@ export function SettingsPage() {
                   </Btn>
                   <span className="text-meta text-muted">
                     {syncStatus === 'syncing' && 'Saving…'}
+
                     {syncStatus === 'ok' && lastSyncAt && `✓ Saved ${fmtClock(lastSyncAt, settings.localTz)}`}
                     {syncStatus === 'error' && !syncSizeWarning && <span className="text-danger-fg">{syncError}</span>}
                   </span>
@@ -217,6 +221,109 @@ export function SettingsPage() {
                 )}
               </div>
             )}
+
+            {/* Sync across devices through a folder something else already syncs.
+                Shown in every build: a launcher window is one machine, and this
+                is how a second machine — or a phone-side browser — sees the same
+                document. See cloud-sync.ts for why this is a file and not an
+                account. */}
+            <div className="space-y-3 border-b border-line-hairline py-4">
+              <div>
+                <p className="text-meta font-semibold text-fg-soft">Sync across devices</p>
+                <p className="text-label text-dim">
+                  Keep one file in a folder your computer already syncs — Google Drive, OneDrive, Proton Drive, Dropbox,
+                  iCloud Drive. Point every device at that same file and they stay in agreement. Memoria never contacts
+                  the provider; it only reads and writes the file, and their app moves it.
+                </p>
+              </div>
+
+              {!cloudSupported && (
+                <p className="text-meta text-muted">
+                  This browser cannot open a file for writing. Chrome and Edge can, including from a downloaded{' '}
+                  <code className="text-fg-soft">Memoria.html</code>. Elsewhere, use Export and Import below.
+                </p>
+              )}
+
+              {cloudSupported && !cloudConnected && (
+                <>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Btn
+                      kind="primary"
+                      className="!min-h-11 sm:!min-h-8"
+                      onClick={() => {
+                        setStatusMessage('');
+                        void connectNewCloudFile()
+                          .then((ok) => ok && setStatusMessage('Syncing to the file you chose.'))
+                          .catch(reportError);
+                      }}
+                    >
+                      Create sync file…
+                    </Btn>
+                    <Btn
+                      className="!min-h-11 sm:!min-h-8"
+                      onClick={() => {
+                        setStatusMessage('');
+                        void connectExistingCloudFile()
+                          .then((ok) => ok && setStatusMessage('Joined the existing sync file.'))
+                          .catch(reportError);
+                      }}
+                    >
+                      Use existing file…
+                    </Btn>
+                  </div>
+                  <p className="text-label text-dim">
+                    First device: create <code className="text-fg-soft">{CLOUD_FILE_SUGGESTED_NAME}</code> inside the
+                    synced folder. Every device after that: pick the file the first one made.
+                  </p>
+                </>
+              )}
+
+              {cloudSupported && cloudConnected && (
+                <>
+                  <div className="flex flex-wrap items-center gap-3">
+                    {cloudStatus === 'needs-permission' ? (
+                      <Btn
+                        kind="primary"
+                        className="!min-h-11 sm:!min-h-8"
+                        onClick={() => void reconnectCloudFile().catch(reportError)}
+                      >
+                        Reconnect
+                      </Btn>
+                    ) : (
+                      <Btn
+                        kind="primary"
+                        className="!min-h-11 sm:!min-h-8"
+                        onClick={() => void cloudSyncNow().catch(reportError)}
+                      >
+                        Sync now
+                      </Btn>
+                    )}
+                    <Btn
+                      className="!min-h-11 sm:!min-h-8"
+                      onClick={() => {
+                        void disconnectCloudFile()
+                          .then(() => setStatusMessage('Stopped syncing on this device. The file was left alone.'))
+                          .catch(reportError);
+                      }}
+                    >
+                      Stop syncing
+                    </Btn>
+                    <span className="text-meta text-muted">
+                      <span className="text-fg-soft">{cloudFileName}</span>
+                      {cloudStatus === 'syncing' && ' · syncing…'}
+                      {cloudStatus === 'ok' &&
+                        lastCloudSyncAt !== null &&
+                        ` · ✓ ${fmtClock(lastCloudSyncAt, settings.localTz)}`}
+                    </span>
+                  </div>
+                  {(cloudStatus === 'error' || cloudStatus === 'needs-permission') && cloudError && (
+                    <p className="rounded-ui-lg bg-warn/10 p-3 text-meta text-warn-fg" role="status">
+                      {cloudError}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
 
             <div className="pt-4">
               <div className="flex flex-wrap items-center gap-2 pb-1">
