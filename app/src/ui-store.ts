@@ -115,7 +115,10 @@ export const useUI = create<UIStore>()(
     {
       // Device-only display preferences are intentionally shared by every identity in this browser.
       name: UI_STORAGE_KEY,
-      partialize: (state) => ({ theme: state.theme }),
+      // The reserve disclosure is now opt-in rather than self-opening, which
+      // only works if the opt-in survives a reload — otherwise every visit
+      // re-hides a counter the user just said they wanted to watch.
+      partialize: (state) => ({ theme: state.theme, reserveOpen: state.reserveOpen }),
       merge: (persisted, current) => {
         // Rebuilt from a whitelist rather than spread over the defaults. This
         // store has retired several knobs (text size, focus columns, the Cards
@@ -123,9 +126,14 @@ export const useUI = create<UIStore>()(
         // of them forward as inert junk on the devices that still have them
         // persisted. Only what is named here survives a reload.
         const stored = (persisted ?? {}) as Partial<UIStore>;
+        const reserveOpen =
+          stored.reserveOpen && typeof stored.reserveOpen === 'object'
+            ? Object.fromEntries(Object.entries(stored.reserveOpen).filter(([, open]) => typeof open === 'boolean'))
+            : current.reserveOpen;
         return {
           ...current,
           theme: stored.theme === 'dark' || stored.theme === 'light' ? stored.theme : current.theme,
+          reserveOpen,
         };
       },
     },

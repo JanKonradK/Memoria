@@ -49,6 +49,13 @@ const LEGACY_IDB_KEYS = ['void-state', 'technogg-state'] as const;
 const SNAPSHOTS_KEPT = 200;
 
 type SyncStatus = 'idle' | 'syncing' | 'ok' | 'error';
+/**
+ * Cloud-folder sync (cloud-sync.ts) reports separately from the launcher sync
+ * above. The two are independent — a launcher window may also be syncing a file
+ * in Drive — and collapsing them into one status would make either one's error
+ * look like the other's.
+ */
+type CloudSyncStatus = 'unsupported' | 'off' | 'needs-permission' | 'idle' | 'syncing' | 'ok' | 'error';
 
 function now(): number {
   return Date.now();
@@ -366,12 +373,18 @@ export interface AppStore {
   syncStatus: SyncStatus;
   syncError: string;
   lastSyncAt: number | null;
+  cloudStatus: CloudSyncStatus;
+  cloudError: string;
+  cloudFileName: string;
+  lastCloudSyncAt: number | null;
 
   load(): Promise<void>;
   clearLocalData(): Promise<void>;
   /** Replace state (sync merge / import) without re-announcing a local mutation. */
   replaceState(next: AppState): void;
   setSyncStatus(status: SyncStatus, error?: string): void;
+  setCloudStatus(status: CloudSyncStatus, error?: string): void;
+  setCloudFileName(name: string): void;
   mutate(fn: (s: AppState) => AppState): void;
   batch(fn: (s: AppState) => AppState): void;
 
@@ -398,7 +411,6 @@ export interface AppStore {
   adjustEnergy(resourceId: string, delta: number): void;
 
   setTaskDone(taskId: string, periodKey: string, done: boolean): void;
-  startTaskTimer(taskId: string, periodKey: string): void;
   restartTaskTimer(taskId: string, periodKey: string): void;
   advanceTaskTimer(taskId: string, periodKey: string, minutes: number): void;
   setTaskCount(taskId: string, periodKey: string, countDone: number): void;
@@ -431,6 +443,10 @@ export const useApp = create<AppStore>((set, get) => ({
   syncStatus: 'idle',
   syncError: '',
   lastSyncAt: null,
+  cloudStatus: 'off',
+  cloudError: '',
+  cloudFileName: '',
+  lastCloudSyncAt: null,
 
   async load() {
     set({ loadError: '' });
@@ -476,6 +492,14 @@ export const useApp = create<AppStore>((set, get) => ({
 
   setSyncStatus(status, error = '') {
     set({ syncStatus: status, syncError: error, ...(status === 'ok' ? { lastSyncAt: now() } : {}) });
+  },
+
+  setCloudStatus(status, error = '') {
+    set({ cloudStatus: status, cloudError: error, ...(status === 'ok' ? { lastCloudSyncAt: now() } : {}) });
+  },
+
+  setCloudFileName(name) {
+    set({ cloudFileName: name });
   },
 
   mutate(fn) {
@@ -542,6 +566,7 @@ export const useApp = create<AppStore>((set, get) => ({
         timerEndsAt: tk.mode === 'timer' ? null : undefined,
         core: tk.core,
         timelineLinked: tk.timelineLinked,
+        presetTaskKey: tk.key,
         sort: i,
         updatedAt: t,
       }));
@@ -728,24 +753,15 @@ export const useApp = create<AppStore>((set, get) => ({
     }));
   },
 
-  startTaskTimer(taskId, periodKey) {
-    const t = now();
-    const task = get().state.tasks.find((item) => item.id === taskId);
-    if (!task) return;
-    const duration = (task.timerDurationMinutes ?? 20 * 60) * 60_000;
-    get().mutate((s) => ({
-      ...s,
-      tasks: patchIn(s.tasks, taskId, { timerEndsAt: t + duration }),
-      completions: upsert(s.completions, {
-        id: completionId(taskId, periodKey),
-        taskId,
-        periodKey,
-        done: true,
-        updatedAt: t,
-      }),
-    }));
-  },
-
+  /**
+   * One press means one thing: "I have just collected this dispatch and sent it
+   * out again". It records the period as done and restarts the return timer.
+   *
+   * There used to be a separate `startTaskTimer` with a byte-identical body,
+   * chosen by whether a timer happened to be running. The card no longer asks
+   * that question — start, restart and collect are the same user act — so the
+   * twin is gone.
+   */
   restartTaskTimer(taskId, periodKey) {
     const t = now();
     const task = get().state.tasks.find((item) => item.id === taskId);
@@ -849,6 +865,7 @@ export const useApp = create<AppStore>((set, get) => ({
         timerEndsAt: task.mode === 'timer' ? null : undefined,
         core: task.core,
         timelineLinked: task.timelineLinked,
+        presetTaskKey: task.key,
         sort: sortBase + index,
         updatedAt: t,
       }));
@@ -882,6 +899,7 @@ export const useApp = create<AppStore>((set, get) => ({
           timerEndsAt: task.mode === 'timer' ? null : undefined,
           core: task.core,
           timelineLinked: task.timelineLinked,
+          presetTaskKey: task.key,
           sort: sortBase + index,
           updatedAt: t,
         });

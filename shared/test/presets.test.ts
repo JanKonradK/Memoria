@@ -54,7 +54,8 @@ describe('game presets', () => {
   it('tracks the Genshin Crystalfly Trap as a personal seven-day cooldown', () => {
     const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
 
-    expect(genshin.tasks.find((task) => task.name === 'Crystalfly Trap (Crystal Cores)')).toEqual({
+    expect(genshin.tasks.find((task) => task.key === 'genshin-crystalfly')).toEqual({
+      key: 'genshin-crystalfly',
       name: 'Crystalfly Trap (Crystal Cores)',
       cadence: 'custom',
       intervalDays: 7,
@@ -63,6 +64,76 @@ describe('game presets', () => {
       timerStepMinutes: 720,
       timelineLinked: false,
     });
+  });
+
+  it('gives every routine a stable key, unique within its preset', () => {
+    // The key is what stops a rename from becoming a duplicate. Two rows
+    // sharing one would make them the same routine to `missingPresetTasks`, so
+    // only one of the pair would ever be offered.
+    const seen = new Set<string>();
+    for (const preset of PRESETS) {
+      const keys = preset.tasks.map((task) => task.key);
+      expect(new Set(keys).size, `${preset.short} task keys`).toBe(keys.length);
+      for (const key of keys) {
+        expect(key, `${preset.short}: "${key}"`).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+        expect(seen.has(key), `duplicate key across presets: ${key}`).toBe(false);
+        seen.add(key);
+      }
+    }
+  });
+
+  it('never names the same activity on two rows of one preset', () => {
+    // ZZZ shipped "Hollow Zero: bounties + research" next to "Matrix Op / Lost
+    // Void", and Lost Void IS the Hollow Zero run — so the card listed one
+    // activity twice and you could never tell which row you had already done.
+    // A distinctive term may name at most one routine per game.
+    const distinctive = /[A-Z][A-Za-z]{3,}/g;
+    const generic = new Set([
+      'Daily',
+      'Weekly',
+      'Monthly',
+      'Free',
+      'Full',
+      'Home',
+      'Club',
+      'Shop',
+      'Team',
+      'Stock',
+      'Outpost',
+      'Trial',
+      'Trials',
+      'Points',
+      'Missions',
+      'Mission',
+      'Boss',
+      'Bosses',
+      'Challenge',
+      'Challenges',
+      'Commissions',
+      'Agenda',
+      'Activity',
+      'Training',
+      'Race',
+      'Operation',
+      'Exchange',
+      'Selection',
+      'Room',
+      'Board',
+      'Power',
+      'Reserve',
+      'Cores',
+    ]);
+    for (const preset of PRESETS) {
+      const owner = new Map<string, string>();
+      for (const task of preset.tasks) {
+        for (const term of new Set(task.name.match(distinctive) ?? [])) {
+          if (generic.has(term)) continue;
+          const first = owner.get(term);
+          expect(first, `${preset.short}: "${term}" names both "${first}" and "${task.name}"`).toBeUndefined();
+          owner.set(term, task.name);
+        }
+      }
+    }
   });
 
   it('never ships a task that playing the game completes for you', () => {
@@ -114,6 +185,18 @@ describe('catching an existing game up with its preset', () => {
     const game = { name: 'Genshin Impact', short: 'GI' };
     const deletedOne = [{ name: genshin.tasks[0]!.name, deleted: true }];
     expect(missingPresetTasks(game, deletedOne).map((task) => task.name)).not.toContain(genshin.tasks[0]!.name);
+  });
+
+  it('does not offer a routine again after the preset renames it', () => {
+    // The whole reason a key exists. Before it, sharpening a preset's wording
+    // made every existing game report "1 new routine" and then grow a second
+    // copy of something it already had.
+    const game = { name: 'Genshin Impact', short: 'GI' };
+    const renamed = genshin.tasks.map((task) => ({
+      name: `${task.name} (my own wording)`,
+      presetTaskKey: task.key,
+    }));
+    expect(missingPresetTasks(game, renamed)).toEqual([]);
   });
 
   it('has nothing to add once a game is up to date', () => {

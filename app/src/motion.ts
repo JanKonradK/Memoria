@@ -1,4 +1,4 @@
-import type { Transition, Variants } from 'motion/react';
+import type { Variants } from 'motion/react';
 
 type CubicBezier = [number, number, number, number];
 
@@ -15,21 +15,34 @@ export const easing = {
   out: [0.22, 1, 0.36, 1] as CubicBezier,
 } as const;
 
-export const springs = {
-  snappy: { type: 'spring', stiffness: 520, damping: 34, mass: 0.7 } satisfies Transition,
-  gentle: { type: 'spring', stiffness: 300, damping: 28, mass: 0.9 } satisfies Transition,
-} as const;
-
-export const stagger = (index: number): number => Math.max(0, index) * duration.stagger;
+/**
+ * Entrance delay for the nth item in a list, in seconds.
+ *
+ * Capped at eight steps. Someone tracking fifteen games would otherwise wait
+ * six tenths of a second for the last card, and a stagger that outlives the
+ * glance it decorates has stopped being motion and started being latency.
+ */
+export const stagger = (index: number): number => Math.min(Math.max(0, index), 8) * duration.stagger;
 
 export const pageEnter: Variants = {
   hidden: { opacity: 0, y: 6 },
   visible: { opacity: 1, y: 0, transition: { duration: duration.fast, ease: easing.out } },
 };
 
+/**
+ * Cards arrive down the rail rather than all at once. `custom` carries the
+ * card's position; without it every card in a nine-game dashboard began and
+ * ended on the same frame, which reads as one block of content appearing rather
+ * than as a set of objects being laid out.
+ */
 export const cardEnter: Variants = {
-  hidden: { opacity: 0, y: 18, scale: 0.98 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: duration.base, ease: easing.out } },
+  hidden: { opacity: 0, y: 14, scale: 0.985 },
+  visible: (index: number = 0) => ({
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: duration.base, ease: easing.out, delay: stagger(index) },
+  }),
 };
 
 export const fadeDown: Variants = {

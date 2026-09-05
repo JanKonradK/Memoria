@@ -106,6 +106,7 @@ const task = z.object({
   countTarget: finite.positive().max(365).optional(),
   timelineLinked: z.boolean().optional(),
   timelineMatch: z.string().max(120).optional(),
+  presetTaskKey: z.string().max(80).optional(),
   core: z.boolean().optional(),
 });
 

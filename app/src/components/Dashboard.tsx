@@ -30,7 +30,6 @@ export function DashboardPage({ now }: { now: number }) {
   // object for passing down to the stage's game-control views.
   const upsertEvent = useApp((s) => s.upsertEvent);
   const setTaskDone = useApp((s) => s.setTaskDone);
-  const startTaskTimer = useApp((s) => s.startTaskTimer);
   const restartTaskTimer = useApp((s) => s.restartTaskTimer);
   const advanceTaskTimer = useApp((s) => s.advanceTaskTimer);
   const setTaskCount = useApp((s) => s.setTaskCount);
@@ -43,24 +42,13 @@ export function DashboardPage({ now }: { now: number }) {
       state,
       upsertEvent,
       setTaskDone,
-      startTaskTimer,
       restartTaskTimer,
       advanceTaskTimer,
       setTaskCount,
       setEnergy,
       adjustEnergy,
     }),
-    [
-      adjustEnergy,
-      advanceTaskTimer,
-      restartTaskTimer,
-      setEnergy,
-      setTaskCount,
-      setTaskDone,
-      startTaskTimer,
-      state,
-      upsertEvent,
-    ],
+    [adjustEnergy, advanceTaskTimer, restartTaskTimer, setEnergy, setTaskCount, setTaskDone, state, upsertEvent],
   );
   const openSheet = useUI((s) => s.openSheet);
   const setTab = useUI((s) => s.setTab);
@@ -230,8 +218,8 @@ export function DashboardPage({ now }: { now: number }) {
             />
           ) : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {displayIds.map((id) => (
-                <GameCard key={id} entry={entryById.get(id)!} now={now} />
+              {displayIds.map((id, index) => (
+                <GameCard key={id} entry={entryById.get(id)!} now={now} index={index} />
               ))}
             </div>
           )}

@@ -551,6 +551,29 @@ input[type='number'] {
   animation: fadeIn 0.18s ease-out;
 }
 
+/* A task name being struck through.
+   `text-decoration: line-through` cannot be animated — it is simply there on
+   the next frame — so a completed task used to change in two unrelated ways at
+   once: the tick played its 180ms pop while the rule across the name appeared
+   instantly. The line is drawn as a background instead, which gives it a width
+   to animate, so the rule travels across the word in step with the tick.
+   The span shrink-wraps its text, so 100% is the text's own width. */
+.task-strike {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 58%;
+  background-size: 0 1px;
+  transition: background-size var(--dur-base) var(--ease-out);
+}
+.task-strike[data-done='true'] {
+  background-size: 100% 1px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .task-strike {
+    transition-duration: 0.001ms !important;
+  }
+}
+
 /* SVG transforms default to an origin of 0 0 — the top-left of the viewport,
    not the centre of the shape — so this used to grow in from the corner and
    read as "fading in from the top". fill-box + center makes it scale about
