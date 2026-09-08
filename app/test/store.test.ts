@@ -381,7 +381,7 @@ describe('regen snapshot seeding', () => {
     }
   });
 
-  it('does not seed counter or weekly resources', () => {
+  it('starts weekly stock full while leaving counters unmeasured', () => {
     const genshin = PRESETS.find((item) => item.key === 'genshin')!;
     const nte = PRESETS.find((item) => item.key === 'nte')!;
     const gameIds = [useApp.getState().addGameFromPreset(genshin, {}), useApp.getState().addGameFromPreset(nte, {})];
@@ -392,8 +392,23 @@ describe('regen snapshot seeding', () => {
 
     expect(manualResources.map((resource) => resource.kind)).toEqual(expect.arrayContaining(['counter', 'weekly']));
     for (const resource of manualResources) {
-      expect(state.snapshots.some((snapshot) => snapshot.resourceId === resource.id)).toBe(false);
+      const snapshot = state.snapshots.find((snapshot) => snapshot.resourceId === resource.id);
+      if (resource.kind === 'weekly') expect(snapshot?.value).toBe(resource.cap);
+      else expect(snapshot).toBeUndefined();
     }
+  });
+
+  it('preserves a reduced City Stamina reading after a reload', async () => {
+    const gameId = useApp.getState().addGameFromPreset(
+      PRESETS.find((preset) => preset.key === 'nte')!,
+      {},
+    );
+    const resource = useApp.getState().state.resources.find((res) => res.gameId === gameId && res.kind === 'weekly')!;
+    useApp.getState().setEnergy(resource.id, 27);
+    await flushPersist();
+    await useApp.getState().load();
+    const snapshot = latestSnapshots(useApp.getState().state.snapshots).get(resource.id);
+    expect(snapshot?.value).toBe(27);
   });
 
   it('seeds a regen resource when it is added', () => {

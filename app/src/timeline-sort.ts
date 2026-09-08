@@ -13,11 +13,42 @@ export const NEW_ARRIVAL_DAYS = 2;
  * `overflow-y-auto` absorbs the rest, so raising these costs page height
  * nothing.
  */
-export const ENDING_SOON_DAYS = 14;
+export const ENDING_SOON_DAYS = 10;
 export const DASHBOARD_UPCOMING_LIMIT = 8;
 
 /** Playable events first, followed by cycles, banners, then maintenance. */
 export const TYPE_RANK = { event: 0, custom: 0, cycle: 1, banner: 2, maintenance: 3, livestream: 4 } as const;
+
+export function cycleKey(event: GameEvent): string | null {
+  return event.type === 'cycle' ? JSON.stringify([event.gameId, event.name.trim().toLowerCase()]) : null;
+}
+
+/** Keep each recurring activity together, with its instances in time order. */
+export function sortTimelineEvents(events: GameEvent[]): GameEvent[] {
+  const ordered = [...events].sort(
+    (a, b) =>
+      Number(!!a.done) - Number(!!b.done) ||
+      TYPE_RANK[a.type] - TYPE_RANK[b.type] ||
+      a.end - b.end ||
+      a.start - b.start ||
+      a.id.localeCompare(b.id),
+  );
+  const groups = new Map<string, GameEvent[]>();
+  for (const event of ordered) {
+    const key = cycleKey(event);
+    if (key === null) continue;
+    const group = groups.get(key) ?? [];
+    group.push(event);
+    groups.set(key, group);
+  }
+  return ordered.flatMap((event) => {
+    const key = cycleKey(event);
+    if (key === null) return [event];
+    const group = groups.get(key) ?? [];
+    groups.delete(key);
+    return group.sort((a, b) => a.start - b.start || a.end - b.end || a.id.localeCompare(b.id));
+  });
+}
 
 export function agendaRank(event: GameEvent, now: number): 0 | 1 | 2 | 3 {
   if (event.done) return 3;

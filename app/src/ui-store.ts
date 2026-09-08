@@ -31,6 +31,7 @@ migrateLegacyUiStorage();
 
 export type Tab = 'home' | 'timeline' | 'settings';
 export type Theme = 'dark' | 'light';
+export type TonightPosition = 'left' | 'middle' | 'right';
 
 /**
  * The theme is a token re-point on the root element — see index.css. Nothing
@@ -61,6 +62,7 @@ export type SheetRoute =
   | { kind: 'addGame' }
   | { kind: 'event'; gameId?: string; eventId?: string }
   | { kind: 'reminder' }
+  | { kind: 'guide' }
   | null;
 
 interface UIStore {
@@ -68,6 +70,12 @@ interface UIStore {
   sheet: SheetRoute;
   reserveOpen: Record<string, boolean>;
   theme: Theme;
+  tonightPosition: TonightPosition;
+  focusedGameId: string | null;
+  tourSeenVersion: number;
+  finishTour(): void;
+  setTonightPosition(position: TonightPosition): void;
+  setFocusedGameId(gameId: string | null): void;
   /**
    * Bumped whenever the dashboard is asked to reseal its card order. Card order
    * is frozen while you are looking at it — live re-sorting made cards jump away
@@ -94,6 +102,12 @@ export const useUI = create<UIStore>()(
       sheet: null,
       reserveOpen: {},
       theme: 'dark',
+      tonightPosition: 'right',
+      focusedGameId: null,
+      tourSeenVersion: 0,
+      finishTour: () => set({ tourSeenVersion: 1, sheet: null }),
+      setTonightPosition: (tonightPosition) => set({ tonightPosition }),
+      setFocusedGameId: (focusedGameId) => set({ focusedGameId }),
       orderEpoch: 0,
       setTab: (tab) => set({ tab }),
       bumpOrderEpoch: () => set((state) => ({ orderEpoch: state.orderEpoch + 1 })),
@@ -118,7 +132,12 @@ export const useUI = create<UIStore>()(
       // The reserve disclosure is now opt-in rather than self-opening, which
       // only works if the opt-in survives a reload — otherwise every visit
       // re-hides a counter the user just said they wanted to watch.
-      partialize: (state) => ({ theme: state.theme, reserveOpen: state.reserveOpen }),
+      partialize: (state) => ({
+        theme: state.theme,
+        reserveOpen: state.reserveOpen,
+        tonightPosition: state.tonightPosition,
+        tourSeenVersion: state.tourSeenVersion,
+      }),
       merge: (persisted, current) => {
         // Rebuilt from a whitelist rather than spread over the defaults. This
         // store has retired several knobs (text size, focus columns, the Cards
@@ -133,7 +152,11 @@ export const useUI = create<UIStore>()(
         return {
           ...current,
           theme: stored.theme === 'dark' || stored.theme === 'light' ? stored.theme : current.theme,
+          tonightPosition: ['left', 'middle', 'right'].includes(stored.tonightPosition ?? '')
+            ? stored.tonightPosition!
+            : 'right',
           reserveOpen,
+          tourSeenVersion: typeof stored.tourSeenVersion === 'number' ? stored.tourSeenVersion : 0,
         };
       },
     },

@@ -202,7 +202,7 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
           position="popper"
           sideOffset={4}
           collisionPadding={8}
-          className="fade-in z-[80] max-h-60 w-[var(--radix-select-trigger-width)] min-w-max overflow-hidden rounded-ui-lg bg-popover p-1 shadow-float ring-1 ring-line-strong"
+          className="popover-motion z-[80] max-h-60 w-[var(--radix-select-trigger-width)] min-w-max overflow-hidden rounded-ui-lg bg-popover p-1 shadow-float ring-1 ring-line-strong"
         >
           <SelectPrimitive.Viewport className="max-h-60 overflow-y-auto scrollbar-thin">
             {opts.map((option) => (
@@ -345,13 +345,14 @@ export function Btn({
   kind = 'ghost',
   className = '',
   disabled,
+  ...props
 }: {
   children: ReactNode;
   onClick?: () => void;
   kind?: 'primary' | 'ghost' | 'danger';
   className?: string;
   disabled?: boolean;
-}) {
+} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const base =
     'btn-compact min-h-8 rounded-ui-md px-3 py-1 text-caption font-semibold transition active:scale-[0.97] disabled:opacity-40';
   const kinds = {
@@ -360,7 +361,13 @@ export function Btn({
     danger: 'bg-danger/15 text-danger-fg ring-1 ring-danger/30 hover:bg-danger/25',
   };
   return (
-    <button type="button" disabled={disabled} onClick={onClick} className={`${base} ${kinds[kind]} ${className}`}>
+    <button
+      {...props}
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`${base} ${kinds[kind]} ${className}`}
+    >
       {children}
     </button>
   );

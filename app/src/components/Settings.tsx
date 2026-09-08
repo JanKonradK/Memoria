@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { detectLocalTz, normalizeState, safeParseAppState } from '@memoria/shared';
 import { useApp } from '../store';
-import { useUI } from '../ui-store';
+import { useUI, type TonightPosition } from '../ui-store';
 import { servedByLauncher } from '../launcher';
 import { resolveGameIdentityColors } from '../game-color';
 import { syncNow } from '../sync';
@@ -17,7 +17,7 @@ import {
 import { homeTimeZoneOptions, resolveHomeTimeZone, SYSTEM_TIMEZONE_VALUE, utcOffsetLabel } from '../timezone';
 import { fmtClock, intOr, localResetLabel } from '../util';
 import { Pill } from './primitives';
-import { Btn, GameBadge, NumInput, Page, Select } from './ui';
+import { Btn, GameBadge, NumInput, Page, Select, Segmented } from './ui';
 
 export function SettingsPage() {
   const state = useApp((store) => store.state);
@@ -34,6 +34,9 @@ export function SettingsPage() {
   const openSheet = useUI((state) => state.openSheet);
   const launcher = servedByLauncher();
   const settings = state.settings;
+  const tonightPosition = useUI((s) => s.tonightPosition);
+  const setTonightPosition = useUI((s) => s.setTonightPosition);
+  const focusedGameId = useUI((s) => s.focusedGameId);
   const detectedTz = detectLocalTz();
   const timeZoneOptions = homeTimeZoneOptions(settings.localTz);
   const games = state.games.filter((game) => !game.deleted).sort((a, b) => a.sort - b.sort);
@@ -89,11 +92,29 @@ export function SettingsPage() {
 
   return (
     <Page>
-      <div className="mx-auto max-w-[1600px]">
-        <h1 className="mb-6 text-title font-black tracking-tight text-fg-soft">Settings</h1>
+      <div data-tour="settings" className="mx-auto max-w-[1600px]">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-title font-black tracking-tight text-fg-soft">Settings</h1>
+          <Btn onClick={() => openSheet({ kind: 'guide' })}>User guide</Btn>
+        </div>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-line-hairline pb-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-meta text-muted">Tonight position</span>
+            <Segmented
+              ariaLabel="Tonight position"
+              value={tonightPosition}
+              onChange={(value) => setTonightPosition(value as TonightPosition)}
+              options={[
+                { value: 'left', label: 'Left' },
+                { value: 'middle', label: 'Middle' },
+                { value: 'right', label: 'Right' },
+              ]}
+            />
+          </div>
+        </div>
 
-        <div className="space-y-10">
-          <section aria-labelledby="settings-games-heading">
+        <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+          <section className="min-w-0" aria-labelledby="settings-games-heading">
             <div className="flex items-center justify-between gap-3 border-b border-line-hairline pb-2">
               <h2 id="settings-games-heading" className="text-heading font-semibold text-fg-soft">
                 Games
@@ -148,43 +169,50 @@ export function SettingsPage() {
             </div>
 
             {games.length > 0 ? (
-              <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                {games.map((game) => {
-                  const colors = identityColors[game.id] ?? game;
-                  return (
-                    // One button, one destination. This row used to carry both
-                    // "Expand" (the real editor, inline) and "Edit" (a sheet
-                    // holding three fields) — two controls claiming the same job.
-                    <button
-                      key={game.id}
-                      type="button"
-                      onClick={() => openSheet({ kind: 'game', gameId: game.id })}
-                      className="flex min-h-14 w-full items-center gap-3 rounded-ui-xl bg-fill-1 px-3 py-2 text-left ring-1 ring-line-hairline transition duration-(--dur-fast) hover:bg-fill-2 hover:ring-line-strong"
-                    >
-                      <GameBadge short={game.short} {...colors} size="lg" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="truncate text-body font-bold text-fg-soft">{game.name}</span>
-                          {game.paused && <Pill variant="paused">paused</Pill>}
+              <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                {games
+                  .filter((game) => !games.some((g) => g.id === focusedGameId) || game.id === focusedGameId)
+                  .map((game) => {
+                    const colors = identityColors[game.id] ?? game;
+                    return (
+                      // One button, one destination. This row used to carry both
+                      // "Expand" (the real editor, inline) and "Edit" (a sheet
+                      // holding three fields) — two controls claiming the same job.
+                      <button
+                        key={game.id}
+                        type="button"
+                        onClick={() => openSheet({ kind: 'game', gameId: game.id })}
+                        className="flex min-h-14 w-full items-center gap-3 rounded-ui-xl bg-fill-1 px-3 py-2 text-left ring-1 ring-line-hairline transition duration-(--dur-fast) hover:bg-fill-2 hover:ring-line-strong"
+                      >
+                        <GameBadge short={game.short} {...colors} size="lg" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate text-body font-bold text-fg-soft">{game.name}</span>
+                            {game.paused && <Pill variant="paused">paused</Pill>}
+                          </div>
+                          <span className="text-label text-dim">
+                            {game.accountLabel ? `${game.accountLabel} · ` : ''}reset{' '}
+                            {localResetLabel(game, settings.localTz, Date.now())}
+                          </span>
+                          <p className="text-label text-dim">
+                            {state.resources.filter((r) => r.gameId === game.id && !r.deleted).length} resources ·{' '}
+                            {state.tasks.filter((t) => t.gameId === game.id && !t.deleted).length} tasks
+                          </p>
                         </div>
-                        <span className="text-label text-dim">
-                          reset {localResetLabel(game, settings.localTz, Date.now())}
+                        <span className="shrink-0 text-meta font-semibold text-dim" aria-hidden="true">
+                          Edit
                         </span>
-                      </div>
-                      <span className="shrink-0 text-meta font-semibold text-dim" aria-hidden="true">
-                        Edit
-                      </span>
-                      <span className="sr-only">Edit {game.name}</span>
-                    </button>
-                  );
-                })}
+                        <span className="sr-only">Edit {game.name}</span>
+                      </button>
+                    );
+                  })}
               </div>
             ) : (
               <p className="mt-4 text-body text-dim">No games yet. Add one to start tracking resources and tasks.</p>
             )}
           </section>
 
-          <section aria-labelledby="settings-data-heading">
+          <section className="min-w-0" aria-labelledby="settings-data-heading">
             <h2
               id="settings-data-heading"
               className="border-b border-line-hairline pb-2 text-heading font-semibold text-fg-soft"

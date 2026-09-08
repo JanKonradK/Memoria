@@ -137,14 +137,15 @@ describe('migrateState', () => {
       timerStepMinutes: 720,
       timerEndsAt: null,
     });
-    expect(migrated.tasks.find((task) => task.id === 'custom-check')?.mode).toBe('check');
+    // Previously-normalized defaults carry an explicit check mode too.
+    expect(migrated.tasks.find((task) => task.id === 'custom-check')?.mode).toBe('timer');
     expect(migrated.tasks.find((task) => task.id === 'custom-count')?.mode).toBe('count');
     expect(migrated.tasks.find((task) => task.id === 'other-game')?.mode).toBeUndefined();
   });
 });
 
 describe('seedMissingRegenSnapshots', () => {
-  it('seeds only missing regen resources and is idempotent', () => {
+  it('seeds missing energy clocks and full weekly stock, and is idempotent', () => {
     const seenAt = 10_000;
     const realSnapshot = makeSnapshot({ id: 'real', resourceId: 'has-reading', value: 42, takenAt: 5_000 });
     const normalized = normalizeState(
@@ -166,10 +167,11 @@ describe('seedMissingRegenSnapshots', () => {
     expect(once.snapshots).toEqual([
       realSnapshot,
       { id: 'seed-1', resourceId: 'missing-reading', value: 0, takenAt: seenAt },
+      { id: 'seed-2', resourceId: 'weekly', value: 200, takenAt: seenAt },
     ]);
     expect(once.snapshots[0]).toBe(normalized.snapshots[0]);
     expect(twice).toBe(once);
-    expect(idCalls).toBe(1);
+    expect(idCalls).toBe(2);
   });
 
   it('makes a zero-seeded resource project upward over time', () => {

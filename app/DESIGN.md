@@ -333,11 +333,24 @@ everything below it.
 route control, urgency counts, and the theme control. The wordmark cluster has a
 fixed width so it cannot shift between routes.
 
-**The dashboard is a three-column stage** — left game rail, hub, right game rail
-— whose columns redistribute on focus via a `grid-template-columns` transition
-(`0.34s cubic-bezier(0.4, 0, 0.2, 1)`). The focused rail gains space, the hub
-compresses, the far rail yields. Expanding a card animates
-`grid-template-rows: minmax(0, 0fr) → minmax(0, 1fr)`, never `height: auto`.
+**The desktop dashboard has three equal columns.** Tonight can sit on the left,
+middle or right. The device saves this choice in Settings. An expanded game fills
+one column. Its side stays fixed when another game opens. Cards keep their DOM
+nodes during these moves. Position and height change over 300ms with ease-out.
+The summary fades out before the controls fade in. Page tabs use a quiet 140ms
+fade with no lateral movement. Tonight stays in its chosen column.
+
+**Focus game** stays in the app bar on Dashboard, Timeline and Settings. The dashboard shows
+resources and tasks in two columns where space permits. Timeline has search and
+a compact list with full event names, dates, and explicit Edit controls. The event
+editor shows the home timezone, duration, notes, and invalid-date errors. Settings
+shows account summaries and section links inside the game editor.
+
+New users see a guide on first use. Each step has a dialogue box and an outline
+around the applicable control. Next changes the step after the control loads.
+Back returns to the previous step. “Let me cook” closes the guide.
+The device saves completion and skip choices. Settings can open the guide again.
+The guide restores the previous page and game focus when it closes.
 
 **Rhythm** is a six-step scale — `4 / 8 / 12 / 16 / 24 / 40px`. Gaps between
 cards take the top of the scale; padding inside them takes the bottom.
@@ -507,7 +520,7 @@ A Gantt with a mono month/week ruler, **dashed** grid rules and a **solid** now-
 — the dashes read as scaffolding so the bars own the only continuous lines on the
 surface. Event names ride **inside** their bars.
 
-Lane titles are set in the game's own display face at Title size, in the colour
+Lane titles use the game's display face at Body size, in the colour
 that lane was assigned. Bars take that same colour mixed into the track: an event
 at 62%, a banner at 28%, and a **cycle at 34% — the same hue, lighter**, because a
 cycle is the same game's window rather than a different kind of object. A grey
@@ -518,14 +531,28 @@ A bar's label ink is chosen from the fill that was **actually painted**, not fro
 the game's raw colour: the fill is the ink mixed into the track, so a pale primary
 lands mid-grey and a fixed white label would sit on it at roughly 2:1.
 
-Consecutive instances of the **same** cycle are joined by a soft cubic hand-off
-drawn on an overlay that stretches to the row stack, so a curve's endpoints land
-on the bars it claims to join at any row height. A cycle is one recurring thing,
-and the curve says "this is that again" — which a stack of unrelated bars cannot.
-Nothing else is ever connected.
+Consecutive instances of the **same** cycle use a filled connector in the bar
+colour. It starts inside each rounded cap and tapers to a narrow middle. Its
+geometry follows measured row positions and bar heights. Only cycles connect.
 
-The range control offers **7d and 30d**. 90d was retired: at that scale every bar
-collapsed to a sliver and the ruler stopped being readable.
+The timeline shows a 40-day window. Desktop rows are 26px high, with 22px bars
+and a 4px space between bars. A single game with 24 events fits at 1365 × 768 CSS pixels.
+Longer timelines scroll inside the board. The date ruler stays visible.
+Phones retain larger rows for touch input.
+
+Each recurring activity has consecutive rows in time order. Connectors stay
+between their time boundaries. Titles remain inside suitable bars, including
+future bars that extend past the window. Their countdown can use the empty space
+before the bar. Special programs and maintenance keep external titles.
+
+The app bar contains game focus, Timeline/List, event search, and the history
+button. Search opens a small dialog. The history button shows finished events.
+Add → Event is the single entry point for a new event.
+
+List view is a compact agenda with Active now, Upcoming, and optional Finished
+sections. Active events sort by close; upcoming events sort by opening. Each row
+shows its game, account, server, dates, countdown, completion control, and Edit.
+Phone rows wrap into two columns with touch targets.
 
 **The Distinct Lanes Rule.** Colours are assigned in one pass across all games so
 the timeline and the dashboard agree and no two lanes land in the same region of
@@ -535,11 +562,17 @@ without that, a cream and a blush white draw two identical lanes.
 
 ### App bar
 
-Wordmark in tracked DM Sans, live clock in mono, a segmented route control in an
-inset well, **the current route's own actions**, and the theme control at the far
-right. It wraps until it genuinely fits; forcing one row on a landscape phone put
-the right-hand group on top of the actions and made visible, enabled controls
-unclickable.
+The app bar contains the wordmark, clock, route control, route actions, and utility
+controls. The clock shows hours and minutes. It updates at 30-second intervals.
+
+On phones, the wordmark and utility controls occupy the first row. The route
+control occupies the second row. Utility controls have 44px touch targets.
+Refresh and theme controls use icons with accessible names. Larger screens also
+show their text labels and the clock.
+
+Route actions have a separate horizontal scroll area below these controls until
+the viewport is at least 1280px wide. At that width, all groups occupy one row.
+The app bar measures its height and supplies that value to the dashboard.
 
 Routes publish their buttons into the bar through a portal rather than a store
 slice, so a page's controls cannot outlive the page. The bar carries no counts:
@@ -548,7 +581,7 @@ was worth more as the one place every action lives.
 
 ### Attention rail (the hub)
 
-The stage's centre column is a rail, not a stack of panels. One status line — how
+The stage's right column is a rail, not a stack of panels. One status line — how
 many dailies are done, and whether the night is safe — then three bands in a
 fixed order: **Closing**, **Just arrived**, **Arriving**. Only the last stretches.
 
@@ -559,10 +592,19 @@ stretching to say "Nothing".
 
 ## Motion
 
-Card entrance, focus expand and shrink, tube charge highlight, tube glide on
-commit, ring completion burst, the strike-through draw, and the commit flash.
-**Nothing else.** Every one of them is either the response to something the user
-just did or a state that is genuinely changing on its own.
+Motion shows navigation, control feedback, or a change in state. Card expansion,
+resource updates, task completion, and page transitions retain their existing
+animations.
+
+Menus and selects open and close with a 140ms animation. The Add menu transfers
+focus to a dialog after its exit ends. Dialogs finish their exit on save and dismiss.
+Reserve controls expand and collapse with a height transition and a fade.
+The theme icon turns when the theme changes. The Add icon turns when its menu opens.
+These animations use the existing duration and easing tokens.
+
+Reduced-motion mode removes CSS animation delays and transitions, including those
+on pseudo-elements. Urgent cards retain a static red edge. Both dashboard layouts
+use the same urgency threshold: less than two hours before the next deadline.
 
 **The Entrance Is Laid Out, Not Blinked Rule.** Cards arrive down the rail on a
 40ms stagger, capped at eight steps. Without it every card in a nine-game
@@ -579,6 +621,12 @@ appeared. The strike is drawn as a background instead, which gives it a width to
 animate, and the two now travel together.
 
 `prefers-reduced-motion` is honoured globally and must remain so.
+
+### One-game dashboard
+
+With one game, its controls open on entry. Tonight uses the saved column position.
+The third column is available for more games. The user can
+close and open the controls. Column widths stay the same as games are added.
 
 ## Do's and Don'ts
 
@@ -603,3 +651,5 @@ animate, and the two now travel together.
 - **Don't** use a pill radius on anything that is not a meter track.
 - **Don't** let a card re-order or reflow itself while the user may be typing.
 - **Don't** name a Tailwind palette colour in a component.
+
+Tonight marks character and weapon banners with an inline Banner tag. All rows keep their time order within each status band. Closing includes only the next 10 days; upcoming keeps its two-week preview.

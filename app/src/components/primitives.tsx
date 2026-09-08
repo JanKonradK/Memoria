@@ -64,6 +64,7 @@ function sectorPath(index: number, total: number): string {
  */
 export function Tick({
   color,
+  danger = false,
   checked = false,
   fraction,
   segments,
@@ -73,6 +74,7 @@ export function Tick({
   className = '',
 }: {
   color: string;
+  danger?: boolean;
   checked?: boolean;
   fraction?: number;
   segments?: { current: number; total: number };
@@ -155,7 +157,7 @@ export function Tick({
             cy="10"
             r="9"
             fill="none"
-            stroke={checked ? color : 'var(--tick-idle)'}
+            stroke={checked ? color : danger ? 'var(--color-danger)' : 'var(--tick-idle)'}
             strokeWidth="var(--tick-ring-width)"
           />
         )}
@@ -165,7 +167,7 @@ export function Tick({
             cy="10"
             r="9"
             fill="none"
-            stroke={checked ? color : 'var(--tick-idle)'}
+            stroke={checked ? color : danger ? 'var(--color-danger)' : 'var(--tick-idle)'}
             strokeWidth="var(--tick-ring-width)"
           />
         )}

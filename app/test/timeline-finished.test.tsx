@@ -45,6 +45,7 @@ function show(events: GameEvent[]) {
   // Event rows carry countdown tooltips, which the real app supplies at the root.
   return render(
     <TooltipProvider>
+      <div id="app-bar-actions" />
       <TimelinePage now={NOW} />
     </TooltipProvider>,
   );
@@ -75,14 +76,16 @@ describe('finished events leave the lane', () => {
     expect(screen.queryByRole('button', row('Yesterdays banner'))).not.toBeInTheDocument();
   });
 
-  it('counts ended and ticked-off events in the same pile', () => {
+  it('shows ended and ticked-off events with the history control', () => {
     show([
       event({ id: 'over', name: 'Ended', start: NOW - 9 * DAY, end: NOW - DAY }),
       event({ id: 'ticked', name: 'Ticked', done: true }),
       event({ id: 'live', name: 'Still running' }),
     ]);
 
-    expect(screen.getByRole('button', { name: '+ 2 finished events' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Show finished events' }));
+    expect(screen.getByRole('button', row('Ended'))).toBeInTheDocument();
+    expect(screen.getByRole('button', row('Ticked'))).toBeInTheDocument();
   });
 
   it('brings them back on request rather than losing them', () => {
@@ -91,10 +94,12 @@ describe('finished events leave the lane', () => {
       event({ id: 'live', name: 'Still running' }),
     ]);
 
-    fireEvent.click(screen.getByRole('button', { name: '+ 1 finished event' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show finished events' }));
 
     expect(screen.getByRole('button', row('Yesterdays banner'))).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '− collapse finished events' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show finished events' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Show finished events' }));
+    expect(screen.queryByRole('button', row('Yesterdays banner'))).not.toBeInTheDocument();
   });
 
   it('says so plainly when a lane has nothing running left', () => {

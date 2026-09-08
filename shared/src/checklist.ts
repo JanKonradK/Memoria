@@ -111,12 +111,17 @@ function completionProgress(
   completions: Map<string, Completion>,
   task: Task,
   periodKey: string,
+  now: number,
 ): { done: boolean; countDone: number; countTarget: number; timerEndsAt: number | null } {
   const row = completions.get(`${task.id}|${periodKey}`);
   const mode = effectiveTaskMode(task);
   const countTarget = effectiveCountTarget(task);
   const countDone = row?.countDone ?? 0;
   const timerEndsAt = task.timerEndsAt ?? null;
+  // A personal cooldown follows its timer, even within the same calendar period.
+  if (mode === 'timer' && task.cadence === 'custom') {
+    return { done: timerEndsAt != null && timerEndsAt > now, countDone, countTarget, timerEndsAt };
+  }
   if (mode === 'count') {
     const done = countDone >= countTarget || Boolean(row?.done);
     return { done, countDone, countTarget, timerEndsAt };
@@ -163,7 +168,7 @@ export function checklistFor(
       resetAt = taskNextReset(game, t, now);
     }
     const mode = effectiveTaskMode(t);
-    const progress = completionProgress(index.completions, t, periodKey);
+    const progress = completionProgress(index.completions, t, periodKey, now);
     const timerEndsAt = progress.timerEndsAt;
     out.push({
       taskId: t.id,

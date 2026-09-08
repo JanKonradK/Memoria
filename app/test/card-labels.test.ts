@@ -2,7 +2,7 @@ import { createElement, type ReactElement } from 'react';
 import { render, screen } from '@testing-library/react';
 import { emptyState, type Game, type GameUrgency } from '@memoria/shared';
 import { afterEach, describe, expect, it } from 'vitest';
-import { GameControlsView, type GameControlActions } from '../src/components/GameCard';
+import { GameCard, GameControlsView, type GameControlActions } from '../src/components/GameCard';
 import { TooltipProvider } from '../src/components/ui';
 import { formatCardTimeLeft, NexusLayout, serverRegionLabel } from '../src/components/NexusLayout';
 import { useApp } from '../src/store';
@@ -135,8 +135,10 @@ describe('game card account labels', () => {
         onOpenTimeline: () => {},
       }),
     );
+    expect(screen.getAllByRole('complementary')).toHaveLength(1);
+    expect(screen.getByRole('region', { name: 'Genshin Impact controls' })).toBeVisible();
     expect(screen.queryByText('+ label')).not.toBeInTheDocument();
-    expect(screen.getByText(game.name).parentElement?.querySelector('.bg-line-edge')).toBeNull();
+    expect(screen.getByRole('heading', { name: game.name }).parentElement?.querySelector('.bg-line-edge')).toBeNull();
     nexus.unmount();
 
     renderCard(
@@ -172,6 +174,31 @@ describe('game card account labels', () => {
 
     expect(screen.getByText('Main EU')).toBeInTheDocument();
     expect(screen.getByText(game.name).parentElement?.querySelector('.bg-line-edge')).not.toBeNull();
+  });
+});
+
+describe('reduced-motion card urgency', () => {
+  it.each([
+    [90, false, true],
+    [120, false, false],
+    [30, true, false],
+  ])('preserves the danger edge at %i minutes (paused: %s)', (minutes, paused, urgent) => {
+    const now = Date.UTC(2026, 7, 5, 12);
+    const trackedGame = { ...game, paused };
+    useApp.setState({ state: { ...emptyState(), games: [trackedGame] } });
+    const entry: GameUrgency = {
+      game: trackedGame,
+      next: { kind: 'daily', gameId: game.id, at: now + minutes * MINUTE, label: 'Daily reset' },
+      actions: [],
+    };
+    const view = renderCard(createElement(GameCard, { entry, now }));
+    const ring = view.container.querySelector('[data-urgency-ring]');
+    if (urgent) {
+      expect(ring).toHaveStyle({ boxShadow: 'inset 0 0 0 1px var(--color-danger)' });
+      expect(ring).not.toHaveClass('pulse-fade');
+    } else {
+      expect(ring).toBeNull();
+    }
   });
 });
 

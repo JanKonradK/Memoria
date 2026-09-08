@@ -77,8 +77,8 @@ function StepBtn({ delta, onStep, label }: { delta: number; onStep: (d: number) 
 }
 
 /**
- * Resource row: regenerating energy shows a bar; counters and weekly refills use
- * the same controls without a fake regeneration bar.
+ * Resource row: energy and weekly stock show a bar. Only energy regenerates;
+ * weekly stock shows its refill deadline. Counters use compact controls.
  */
 export const EnergyRow = memo(function EnergyRow({
   res,
@@ -100,7 +100,7 @@ export const EnergyRow = memo(function EnergyRow({
   onCommit: (value: number, reserve?: number) => void;
 }) {
   const kind = effectiveResourceKind(res);
-  const compact = kind === 'counter' || kind === 'weekly';
+  const compact = kind === 'counter';
   const inputRef = useRef<HTMLInputElement>(null);
   const reserveInputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<string | null>(null);
@@ -173,10 +173,10 @@ export const EnergyRow = memo(function EnergyRow({
           ? 'warn'
           : 'ok'
       : null;
-  const glow = proj.isFull || urgency === 'danger';
+  const glow = kind === 'regen' && (proj.isFull || urgency === 'danger');
 
   let subtitle = '';
-  if (compact) {
+  if (compact || kind === 'weekly') {
     if (kind === 'weekly' && proj.weeklyResetAt != null) {
       subtitle = `refills ${fmtClock(proj.weeklyResetAt, localTz)}`;
       if (!proj.hasSnapshot) subtitle += ' · enter the current value';
@@ -329,88 +329,95 @@ export const EnergyRow = memo(function EnergyRow({
                 </span>
               </button>
 
-              {reserveIsOpen && (
-                <div className="disclosure-open mt-1 border-t border-line-hairline pt-2">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                    <span className="ml-auto flex w-full items-center justify-end gap-1 sm:w-auto">
-                      <StepBtn delta={-1} onStep={reserveStep} label={reserveLabel} />
-                      <span
-                        className="focus-ring-group flex h-9 cursor-text items-center rounded-ui-md bg-fill-2 px-2 ring-1 ring-line-hairline transition focus-within:bg-fill-3 sm:h-7"
-                        onMouseDown={(e) => {
-                          if (e.target !== reserveInputRef.current) {
-                            e.preventDefault();
-                            reserveInputRef.current?.focus();
-                          }
-                        }}
-                      >
-                        <input
-                          ref={reserveInputRef}
-                          value={reserveDraft ?? String(reserveValue)}
-                          inputMode="numeric"
-                          onFocus={(e) => {
-                            reserveEdit.current = { dirty: false, cancelled: false };
-                            setReserveDraft(String(reserveValue));
-                            e.target.select();
-                          }}
-                          onChange={(e) => {
-                            reserveEdit.current.dirty = true;
-                            setReserveDraft(e.target.value.replace(/[^\d]/g, ''));
-                          }}
-                          onKeyDown={(e) => {
-                            const delta = ENERGY_STEP_KEYS[e.key.toLowerCase()];
-                            if (delta !== undefined && !e.ctrlKey && !e.altKey && !e.metaKey) {
+              <div
+                aria-hidden={!reserveIsOpen}
+                inert={!reserveIsOpen}
+                className="grid transition-[grid-template-rows,opacity] duration-(--dur-base) ease-(--ease-out)"
+                style={{ gridTemplateRows: reserveIsOpen ? '1fr' : '0fr', opacity: reserveIsOpen ? 1 : 0 }}
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <div className="mt-1 border-t border-line-hairline pt-2">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                      <span className="ml-auto flex w-full items-center justify-end gap-1 sm:w-auto">
+                        <StepBtn delta={-1} onStep={reserveStep} label={reserveLabel} />
+                        <span
+                          className="focus-ring-group flex h-9 cursor-text items-center rounded-ui-md bg-fill-2 px-2 ring-1 ring-line-hairline transition focus-within:bg-fill-3 sm:h-7"
+                          onMouseDown={(e) => {
+                            if (e.target !== reserveInputRef.current) {
                               e.preventDefault();
-                              reserveStep(delta);
-                              return;
+                              reserveInputRef.current?.focus();
                             }
-                            if (e.key === 'Enter') e.currentTarget.blur();
-                            if (e.key === 'Escape') {
-                              reserveEdit.current.cancelled = true;
+                          }}
+                        >
+                          <input
+                            ref={reserveInputRef}
+                            value={reserveDraft ?? String(reserveValue)}
+                            inputMode="numeric"
+                            onFocus={(e) => {
+                              reserveEdit.current = { dirty: false, cancelled: false };
+                              setReserveDraft(String(reserveValue));
+                              e.target.select();
+                            }}
+                            onChange={(e) => {
+                              reserveEdit.current.dirty = true;
+                              setReserveDraft(e.target.value.replace(/[^\d]/g, ''));
+                            }}
+                            onKeyDown={(e) => {
+                              const delta = ENERGY_STEP_KEYS[e.key.toLowerCase()];
+                              if (delta !== undefined && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                                e.preventDefault();
+                                reserveStep(delta);
+                                return;
+                              }
+                              if (e.key === 'Enter') e.currentTarget.blur();
+                              if (e.key === 'Escape') {
+                                reserveEdit.current.cancelled = true;
+                                setReserveDraft(null);
+                                e.currentTarget.blur();
+                              }
+                            }}
+                            onBlur={() => {
+                              const edit = reserveEdit.current;
+                              if (!edit.cancelled && edit.dirty && reserveDraft != null && reserveDraft !== '') {
+                                const next = clamp(intOr(reserveDraft, reserveValue), 0, res.reserveCap);
+                                if (next !== liveRef.current.reserve) onCommit(liveRef.current.value, next);
+                              }
                               setReserveDraft(null);
-                              e.currentTarget.blur();
-                            }
-                          }}
-                          onBlur={() => {
-                            const edit = reserveEdit.current;
-                            if (!edit.cancelled && edit.dirty && reserveDraft != null && reserveDraft !== '') {
-                              const next = clamp(intOr(reserveDraft, reserveValue), 0, res.reserveCap);
-                              if (next !== liveRef.current.reserve) onCommit(liveRef.current.value, next);
-                            }
-                            setReserveDraft(null);
-                            reserveEdit.current = { dirty: false, cancelled: false };
-                          }}
-                          className="bg-transparent text-right text-body font-bold tabular-nums outline-none"
-                          style={{
-                            color: reserveAccent,
-                            width: `${Math.max(2, (reserveDraft ?? String(reserveValue)).length) + 0.5}ch`,
-                          }}
-                          aria-label={`${reserveLabel} for ${res.name}`}
-                          aria-keyshortcuts="a s d f Enter Escape"
-                        />
-                        <span className="pl-1 text-label tabular-nums text-dim">/ {res.reserveCap}</span>
+                              reserveEdit.current = { dirty: false, cancelled: false };
+                            }}
+                            className="bg-transparent text-right text-body font-bold tabular-nums outline-none"
+                            style={{
+                              color: reserveAccent,
+                              width: `${Math.max(2, (reserveDraft ?? String(reserveValue)).length) + 0.5}ch`,
+                            }}
+                            aria-label={`${reserveLabel} for ${res.name}`}
+                            aria-keyshortcuts="a s d f Enter Escape"
+                          />
+                          <span className="pl-1 text-label tabular-nums text-dim">/ {res.reserveCap}</span>
+                        </span>
+                        <StepBtn delta={1} onStep={reserveStep} label={reserveLabel} />
                       </span>
-                      <StepBtn delta={1} onStep={reserveStep} label={reserveLabel} />
-                    </span>
-                  </div>
-                  <ProgressBar
-                    value={reservePct / 100}
-                    color={reserveAccent}
-                    glow={reserveValue >= res.reserveCap}
-                    segmented
-                  />
-                  <div
-                    className={`mt-1 text-meta tabular-nums ${
-                      reserveValue >= res.reserveCap
-                        ? 'font-bold text-danger-fg'
-                        : proj.isFull
-                          ? 'text-ok-fg'
-                          : 'text-dim'
-                    }`}
-                  >
-                    {reserveSubtitle}
+                    </div>
+                    <ProgressBar
+                      value={reservePct / 100}
+                      color={reserveAccent}
+                      glow={reserveValue >= res.reserveCap}
+                      segmented
+                    />
+                    <div
+                      className={`mt-1 text-meta tabular-nums ${
+                        reserveValue >= res.reserveCap
+                          ? 'font-bold text-danger-fg'
+                          : proj.isFull
+                            ? 'text-ok-fg'
+                            : 'text-dim'
+                      }`}
+                    >
+                      {reserveSubtitle}
+                    </div>
                   </div>
                 </div>
-              )}
+              </div>
             </>
           )}
         </>

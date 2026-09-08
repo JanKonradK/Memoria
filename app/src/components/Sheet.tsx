@@ -1,6 +1,6 @@
-import { useCallback, useRef, useState, type ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { AnimatePresence, m } from 'motion/react';
+import { AnimatePresence, m, usePresence } from 'motion/react';
 import { useMediaQuery } from '../hooks';
 import { backdropFade, dialogEnter, sheetEnter } from '../motion';
 
@@ -79,17 +79,19 @@ export function Sheet({
 }) {
   const desktop = useMediaQuery('(min-width: 640px)');
   const dialogRef = useRef<HTMLDivElement>(null);
-  const [closing, setClosing] = useState(false);
-  const requestClose = useCallback(() => setClosing(true), []);
-  const dragHandlers = useDragDismiss(dialogRef, requestClose);
+  // Every close updates the route first. Retain its portal until the inner
+  // exit finishes, then release App's waiting presence boundary.
+  const [present, safeToRemove] = usePresence();
+  const dragHandlers = useDragDismiss(dialogRef, onClose);
 
   return (
-    <DialogPrimitive.Root open={open && !closing} onOpenChange={(next) => !next && requestClose()}>
+    <DialogPrimitive.Root open={open && present} onOpenChange={(next) => !next && onClose()}>
       <DialogPrimitive.Portal forceMount>
-        <AnimatePresence onExitComplete={() => closing && onClose()}>
-          {open && !closing && (
+        <AnimatePresence onExitComplete={safeToRemove ?? undefined}>
+          {open && present && (
             <m.div
               key={desktop ? 'dialog' : 'sheet'}
+              data-layer="sheet"
               className={`pointer-events-none fixed inset-0 z-50 flex justify-center ${
                 desktop ? 'items-center p-6' : 'items-end'
               }`}

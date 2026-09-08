@@ -181,7 +181,7 @@ import { presetForGame } from '@memoria/shared';
  */
 
 /** When the bundled data was last refreshed. */
-export const SEED_UPDATED = '2026-09-02';
+export const SEED_UPDATED = '2026-09-08';
 
 /**
  * How long a finished event is worth keeping. Two months.
@@ -206,6 +206,10 @@ export interface SeedEvent {
   /** 'yyyy-MM-dd HH:mm' in the game's server timezone. */
   start: string;
   end: string;
+  /** A global broadcast uses one instant across every server. */
+  timezone?: string;
+  /** A global maintenance finish can open an event whose close is server-local. */
+  startTimezone?: string;
   dailyTouch?: boolean;
   /** Include in in-app next actions. Omitted = true; maintenance stays informational. */
   notify?: boolean;
@@ -660,7 +664,7 @@ export const SEED_EVENTS: SeedEvent[] = [
   },
 
   /* ================================================== HONKAI: STAR RAIL — v4.4 "In Ravages
-     Does the Whistle Sound" (Fate collab, Jul 15 – Aug 25), then v4.5 "Nameless Honor" on
+     Does the Whistle Sound" (Fate collab, Jul 15 – Aug 25), then v4.5 "To Roll the Stars in Astropolis" on
      Aug 26. The old note here claimed HSR's public feed is empty and fell back to game8.
      That is wrong: the announcement API works, and the 08-17 pass sourced this block from
      it directly. Two structural traps:
@@ -857,7 +861,7 @@ export const SEED_EVENTS: SeedEvent[] = [
       'Start is the officially printed end of 4.5 (t_gl 2026/09/28 06:00). Game8 projects 4.6 opening Sep 29 off a 6-week assumption — the first-party value wins.',
     sourceKey: 'seed:hsr:4.6-maint',
   },
-  /* --- v4.5 "Nameless Honor" (Aug 26 – Sep 27). The update notice has published, so the
+  /* --- v4.5 "To Roll the Stars in Astropolis" (Aug 26 – Sep 27). The update notice has published, so the
      phase-1 rows below are no longer estimates.
 
      v4.5 IS A SHORT VERSION — 33 days between maintenance handoffs, not the 42 that 4.4→4.5
@@ -1286,44 +1290,47 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'zzz',
     name: 'v3.2 update maintenance',
     type: 'maintenance',
-    start: '2026-09-08 23:00',
-    end: '2026-09-09 04:00',
-    notes: 'The 3.1 notice sets the 23:00 boundary; the reopen time is the usual five hours.',
+    start: '2026-09-08 22:00',
+    end: '2026-09-09 03:00',
+    timezone: 'UTC',
+    notes:
+      'Publisher pre-download notice: maintenance starts Sep 9 at 06:00 UTC+8 and is estimated to last five hours. Reopen is planned, not a confirmed actual finish. https://www.hoyolab.com/accountcenter/postlist?id=219270333',
     sourceKey: 'seed:zzz:3.2-maint',
   },
-  /* --- v3.2 "Their Secret Histories" (Sep 9 onward). Revealed in the 3.2 Special
-     Program on 08-28; the in-game notices do not publish until the update itself,
-     so every row here is press-sourced and silent. The phase boundary follows the
-     3.1 handoff exactly — phase 1 shuts 11:59, phase 2 opens 12:00, and the last
-     banner of the version closes 14:59 rather than at maintenance. */
+  /* --- v3.2 "Their Secret Histories". Sep 7–8 publisher notices confirm phase 1
+     and the dated events below. After-update openings use the scheduled global
+     maintenance finish; phase 2 remains provisional until its own notice. */
   {
     game: 'zzz',
     name: 'Claret — Bloodmoon Rising (phase 1)',
     type: 'banner',
-    notify: false,
-    start: '2026-09-09 04:00',
+    start: '2026-09-09 03:00',
+    startTimezone: 'UTC',
     end: '2026-09-30 11:59',
-    notes: 'From the 3.2 Special Program. Dates and the 11:59 close are the 3.1 pattern, not a notice.',
+    notes:
+      'Official Sep 7 phase-1 notice. Opens after the update (scheduled maintenance finish shown); closes Sep 30 at 11:59 server time. https://zenless.hoyoverse.com/m/en-us/news/165979',
     sourceKey: 'seed:zzz:3.2-claret',
   },
   {
     game: 'zzz',
     name: 'Nangong Yu — Axiom of Captivation rerun (phase 1)',
     type: 'banner',
-    notify: false,
-    start: '2026-09-09 04:00',
+    start: '2026-09-09 03:00',
+    startTimezone: 'UTC',
     end: '2026-09-30 11:59',
-    notes: 'First rerun. From the 3.2 Special Program — no notice yet.',
+    notes:
+      'Official Sep 7 phase-1 notice. Opens after the update (scheduled maintenance finish shown); closes Sep 30 at 11:59 server time. https://zenless.hoyoverse.com/m/en-us/news/165979',
     sourceKey: 'seed:zzz:3.2-nangong-yu',
   },
   {
     game: 'zzz',
     name: 'Crimson Thirst / Neon Fantasies — W-Engines (phase 1)',
     type: 'banner',
-    notify: false,
-    start: '2026-09-09 04:00',
+    start: '2026-09-09 03:00',
+    startTimezone: 'UTC',
     end: '2026-09-30 11:59',
-    notes: 'From the 3.2 Special Program — no notice yet.',
+    notes:
+      'Official Sep 7 phase-1 notice. Opens after the update (scheduled maintenance finish shown); closes Sep 30 at 11:59 server time. https://zenless.hoyoverse.com/m/en-us/news/165979',
     sourceKey: 'seed:zzz:3.2-p1-engines',
   },
   {
@@ -2193,7 +2200,10 @@ export const SEED_EVENTS: SeedEvent[] = [
     notify: false,
     dailyTouch: true,
     start: '2026-09-01 22:00',
-    end: '2026-09-10 21:59',
+    end: '2026-09-10 14:59',
+    timezone: 'UTC',
+    notes:
+      'Close corrected from the Cygames notice transcription: https://umamusume.gg/lets-go-uma-outing-now-available/',
     sourceKey: 'seed:uma:outing-2026-09',
   },
   {
@@ -2494,7 +2504,8 @@ export const SEED_EVENTS: SeedEvent[] = [
     type: 'banner',
     start: '2026-09-03 07:00',
     end: '2026-09-17 04:59',
-    notes: 'Limited SSR — Wind Code Defender, Missilis, shotgun. Same window as the event.',
+    notes:
+      'SSR — Wind Code Defender, Missilis, shotgun. Joins Ordinary Recruit, Social Point Recruit and molds in a later update. Publisher notice transcription: https://nikke.gg/september-3-patch-notes/',
     sourceKey: 'seed:nikke:drake-great-villain-pickup',
   },
   {
@@ -2873,12 +2884,13 @@ export const SEED_EVENTS: SeedEvent[] = [
   },
   {
     game: 'genshin',
-    name: 'Genshin 7.1 Special Program — predicted window',
+    name: 'Genshin 7.1 Special Program',
     type: 'livestream',
-    start: '2026-09-09 13:00',
-    end: '2026-09-13 15:00',
+    start: '2026-09-12 12:00',
+    end: '2026-09-12 13:00',
+    timezone: 'UTC',
     notes:
-      'Not announced. Last five programs ran 12-13 days before release, Fridays 13:00; 7.1 is expected 09-23, so 09-11 is the single most likely date. Three redemption codes drop during the broadcast, ~100 Primogems each, and expire within 24-48 hours.',
+      'Official premiere: September 12 at 08:00 UTC-4 (12:00 UTC / 13:00 UK). The one-hour display window is an estimate; the end time was not announced. Source: https://www.reddit.com/r/Genshin_Impact/comments/1w9hdpk/genshin_impact_version_71_special_program_preview/',
     sourceKey: 'seed:genshin:7.1-livestream',
   },
   {
@@ -2910,6 +2922,116 @@ export const SEED_EVENTS: SeedEvent[] = [
     notes:
       'Not announced. Every preview so far landed exactly 11 days before release, Saturdays 12:30 — the tightest pattern of the nine. Most likely 09-19.',
     sourceKey: 'seed:nte:1.4-livestream',
+  },
+  // Dated Sep 7–8 notices; research and fetch gaps are recorded in docs/event-feed-2026-09-08.md.
+  {
+    game: 'zzz',
+    name: 'All-New Program — 7-day login',
+    type: 'event',
+    start: '2026-09-09 03:00',
+    end: '2026-10-20 03:59',
+    startTimezone: 'UTC',
+    dailyTouch: true,
+    notes:
+      'Opens after the update; scheduled global maintenance finish shown. Close is server-local. Publisher notice: https://zenless.hoyoverse.com/m/en-us/news/165997',
+    sourceKey: 'seed:zzz:3.2-all-new-program',
+  },
+  {
+    game: 'zzz',
+    name: 'Clink, Clank, Pinball Knight!',
+    type: 'event',
+    start: '2026-09-10 10:00',
+    end: '2026-10-19 03:59',
+    notes: 'Publisher notice: https://www.hoyolab.com/accountcenter/postlist?id=219270333',
+    sourceKey: 'seed:zzz:3.2-pinball-knight',
+  },
+  {
+    game: 'zzz',
+    name: 'Angels Support Operation',
+    type: 'event',
+    start: '2026-09-09 03:00',
+    end: '2026-11-30 03:59',
+    startTimezone: 'UTC',
+    notes:
+      'Opens after the update; scheduled global maintenance finish shown. Close is server-local. Publisher notice: https://www.hoyolab.com/accountcenter/postlist?id=219270333',
+    sourceKey: 'seed:zzz:3.2-angels-support',
+  },
+  {
+    game: 'zzz',
+    name: 'New Eridu City Fund',
+    type: 'event',
+    start: '2026-09-09 03:00',
+    end: '2026-10-19 03:59',
+    startTimezone: 'UTC',
+    dailyTouch: true,
+    notes:
+      'Opens after the update; scheduled global maintenance finish shown. Close is server-local. Publisher notice: https://www.hoyolab.com/accountcenter/postlist?id=219270333',
+    sourceKey: 'seed:zzz:3.2-city-fund',
+  },
+  {
+    game: 'zzz',
+    name: 'Final Callback — phase 1 auditions',
+    type: 'event',
+    start: '2026-09-09 03:00',
+    end: '2026-09-30 11:59',
+    startTimezone: 'UTC',
+    notes:
+      'Opens after the update; scheduled global maintenance finish shown. Close is server-local. Publisher phase-1 notice: https://zenless.hoyoverse.com/m/en-us/news/165979',
+    sourceKey: 'seed:zzz:3.2-final-callback',
+  },
+  {
+    game: 'lads',
+    name: 'Shared Bloom',
+    type: 'event',
+    start: '2026-09-08 05:00',
+    end: '2026-09-17 04:59',
+    dailyTouch: true,
+    notes:
+      'Dated publisher repost; original social post could not be fetched: https://www.reddit.com/r/CalebMains/comments/1w9hpg9/love_and_deepspace_shared_bloom/',
+    sourceKey: 'seed:lads:shared-bloom-2026-09',
+  },
+  {
+    game: 'lads',
+    name: 'Where Silverwings Rest — Sylus rerun',
+    type: 'banner',
+    start: '2026-09-08 05:00',
+    end: '2026-09-15 04:59',
+    notes:
+      'Publisher update repost; original social post could not be fetched: https://www.reddit.com/r/LADS_OG/comments/1w9zfkr/love_and_deepspace_update_on_sept_7/',
+    sourceKey: 'seed:lads:where-silverwings-rest-2026-09',
+  },
+  {
+    game: 'uma',
+    name: 'Bonus Daily Race Entry Tickets',
+    type: 'event',
+    start: '2026-09-03 15:00',
+    end: '2026-09-17 14:59',
+    timezone: 'UTC',
+    dailyTouch: true,
+    notes: 'Cygames notice transcription: https://umamusume.gg/increased-daily-race-tickets-event-coming-soon/',
+    sourceKey: 'seed:uma:daily-race-tickets-2026-09',
+  },
+  {
+    game: 'uma',
+    name: 'Bonus Star Pieces — Kikuka Sho',
+    type: 'event',
+    start: '2026-09-06 15:00',
+    end: '2026-09-08 14:59',
+    timezone: 'UTC',
+    notes: 'Cygames notice transcription: https://umamusume.gg/bonus-star-piece-rewards-in-career-4/',
+    sourceKey: 'seed:uma:kikuka-star-pieces-2026-09',
+  },
+  {
+    game: 'nikke',
+    name: 'Coordinated Operation: Storm Bringer',
+    type: 'event',
+    start: '2026-09-11 12:00',
+    end: '2026-09-13 23:59',
+    timezone: 'UTC+9',
+    dailyTouch: true,
+    notes:
+      'Publisher patch-note transcription, section 5 (notice body takes precedence over editorial summary): https://nikke.gg/september-3-patch-notes/',
+    sourceKey: 'seed:nikke:coop-storm-bringer-2026-09',
   },
 ];
 
@@ -3057,8 +3179,8 @@ export function planSeedImport(state: AppState, now: number): PlannedSeed[] {
   const seenKeys = new Set<string>();
   for (const seed of SEED_EVENTS) {
     for (const game of gamesForPreset(state.games, seed.game)) {
-      const start = parseServerTime(seed.start, game.tz);
-      const end = parseServerTime(seed.end, game.tz);
+      const start = parseServerTime(seed.start, seed.startTimezone ?? seed.timezone ?? game.tz);
+      const end = parseServerTime(seed.end, seed.timezone ?? game.tz);
       if (start == null || end == null || end <= start) continue;
       const hash = seedFingerprint(seed, start, end);
       const existing = byKey.get(sourceIdentity(game.id, seed.sourceKey));

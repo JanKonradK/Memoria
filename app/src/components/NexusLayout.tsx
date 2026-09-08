@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { m } from 'motion/react';
 import type { AppState, EnergyProjection, GameEvent, GameUrgency, Resource } from '@memoria/shared';
 import { effectiveResourceKind, projectEnergy } from '@memoria/shared';
 import { DateTime } from 'luxon';
 import { titleFont } from '../fonts';
 import { gameAccent, gameRim, gameTitleInk, resolveGameIdentityColors, type GameColors } from '../game-color';
-import { useMediaQuery, useReducedMotion } from '../hooks';
+import { useReducedMotion } from '../hooks';
+import { easing } from '../motion';
+import { useUI, type TonightPosition } from '../ui-store';
 import { useDerived } from '../selectors';
 import { gameShellVars, useGround, useTheme } from '../theme';
 import { tint } from '../util';
@@ -13,7 +16,7 @@ import { ReactorTube } from './primitives';
 import { NexusHub } from './nexus/NexusHub';
 
 /** Mirrors --nexus-dur in app/src/index.css. */
-const NEXUS_DUR_MS = 340;
+const NEXUS_DUR_MS = 300;
 const HOUR = 3_600_000;
 
 type UrgencyTier = 'low' | 'med' | 'high';
@@ -86,7 +89,7 @@ const INTERACTIVE_SELECTOR = 'button, a, input, textarea, select, label, [role="
  * pull the rug out from under whatever the user just opened.
  */
 const LAYER_SELECTOR =
-  '[role="dialog"], [role="listbox"], [role="tooltip"], [role="menu"], [data-radix-popper-content-wrapper]';
+  '[data-layer], [role="dialog"], [role="listbox"], [role="tooltip"], [role="menu"], [data-radix-popper-content-wrapper]';
 
 type SharedNexusProps = {
   state: AppState;
@@ -115,8 +118,10 @@ function NexusNode({
   onToggle,
   onEditGame,
   onOpenGameEvent,
-  relocated,
-  railIndex,
+  column,
+  row,
+  rows,
+  tonightPosition,
 }: {
   entry: GameUrgency;
   state: AppState;
@@ -131,10 +136,10 @@ function NexusNode({
   onToggle: () => void;
   onEditGame: (gameId: string) => void;
   onOpenGameEvent: (eventId: string, gameId: string) => void;
-  /** This card was pushed aside by another card opening — see nexusRelocate. */
-  relocated: boolean;
-  /** Position in its rail, so the displaced cards arrive in sequence. */
-  railIndex: number;
+  column: 1 | 2;
+  row: number;
+  rows: number;
+  tonightPosition: TonightPosition;
 }) {
   const { game, next } = entry;
   const theme = useTheme();
@@ -161,10 +166,16 @@ function NexusNode({
       // collapses this one in the SAME commit, and focus then rightly belongs to
       // that card — grabbing it back leaves the newly opened card unfocused, so
       // its Escape handler never fires. Same guard as Disclosure.
-      const active = document.activeElement;
-      if (!active || active === document.body || nodeRef.current?.contains(active)) {
-        collapsedTriggerRef.current?.focus({ preventScroll: true });
-      }
+      // Wait for visibility to take effect, including the reduced-motion 1µs
+      // CSS transition. Focus on a still-hidden trigger is silently ignored.
+      const frame = requestAnimationFrame(() => {
+        const active = document.activeElement;
+        if (!active || active === document.body || nodeRef.current?.contains(active)) {
+          collapsedTriggerRef.current?.focus({ preventScroll: true });
+        }
+      });
+      wasExpanded.current = expanded;
+      return () => cancelAnimationFrame(frame);
     }
     wasExpanded.current = expanded;
   }, [expanded]);
@@ -182,14 +193,17 @@ function NexusNode({
       const timer = setTimeout(() => setSettled(true), NEXUS_DUR_MS);
       return () => clearTimeout(timer);
     }
-    setSettled(false);
     if (reducedMotion) {
+      setSettled(false);
       setMounted(false);
       return;
     }
     // Unmounting the controls is a layout and paint spike. It is invisible by
     // now (opacity 0, hidden, inert), so it waits until well clear of the motion.
-    const timer = setTimeout(() => setMounted(false), NEXUS_DUR_MS + 220);
+    const timer = setTimeout(() => {
+      setMounted(false);
+      setSettled(false);
+    }, NEXUS_DUR_MS + 220);
     return () => clearTimeout(timer);
   }, [expanded, reducedMotion]);
   const fraction = primary && projection ? projection.precise / Math.max(1, primary.cap) : 0;
@@ -210,19 +224,24 @@ function NexusNode({
   const serverLabel = serverRegionLabel(game.tz, now);
 
   return (
-    <article
+    <m.article
       ref={nodeRef}
+      layout="position"
+      initial={false}
+      transition={{ layout: { duration: reducedMotion ? 0 : NEXUS_DUR_MS / 1000, ease: easing.out } }}
       className="card-shell nexus-node relative overflow-hidden rounded-ui-card outline-none"
       // Only a card that is genuinely out of time pulses, and only while it is
       // closed: a breathing card you are typing into is a distraction, and if
       // everything pulses, nothing does.
       data-urgent={!expanded && tier === 'high' ? 'true' : undefined}
       data-expanded={expanded || undefined}
-      data-settled={(expanded && settled) || undefined}
-      data-relocated={relocated && !reducedMotion ? 'true' : undefined}
+      data-settled={settled || undefined}
+      data-game-id={game.id}
+      data-column={column}
       style={{
         ...gameShellVars(game, theme, identityColors),
-        ...(relocated && !reducedMotion ? { animationDelay: `${Math.min(railIndex, 4) * 45}ms` } : {}),
+        gridColumn: tonightPosition === 'left' ? column + 1 : tonightPosition === 'middle' && column === 2 ? 3 : column,
+        gridRow: expanded ? `1 / span ${rows}` : row,
       }}
       // Nothing INSIDE an open card closes it. It used to collapse on any click
       // that missed a control, which meant misjudging the edge of an energy field
@@ -263,75 +282,75 @@ function NexusNode({
           background: `linear-gradient(90deg, transparent, ${identity}, ${accent}, transparent)`,
         }}
       />
-      {!expanded && (
-        <button
-          type="button"
-          ref={collapsedTriggerRef}
-          onClick={onToggle}
-          aria-expanded={false}
-          aria-controls={controlsId}
-          aria-label={`Expand ${game.name}${accountLabel ? `, ${accountLabel}` : ''} controls`}
-          className="relative z-10 grid h-full w-full grid-rows-3 rounded-ui-card px-3 py-2 text-left transition-colors hover:bg-fill-1"
-        >
-          <span className="relative z-10 flex min-w-0 items-center gap-2">
-            <span
-              className={`max-w-20 shrink-0 truncate rounded-ui-sm border border-line-edge bg-inset px-1.5 py-0.5 text-caption font-semibold text-fg-soft ${serverLabel.startsWith('UTC') && serverLabel !== 'UTC' ? 'numeral' : ''}`}
-            >
-              {serverLabel}
-            </span>
-            {/* Display faces set the same character count at different widths.
+      <button
+        type="button"
+        ref={collapsedTriggerRef}
+        onClick={onToggle}
+        aria-expanded={expanded}
+        aria-hidden={expanded}
+        inert={expanded}
+        aria-controls={controlsId}
+        aria-label={`Expand ${game.name}${accountLabel ? `, ${accountLabel}` : ''} controls`}
+        className="nexus-summary z-10 grid w-full grid-rows-3 rounded-ui-card px-3 py-2 text-left hover:bg-fill-1"
+      >
+        <span className="relative z-10 flex min-w-0 items-center gap-2">
+          <span
+            className={`max-w-20 shrink-0 truncate rounded-ui-sm border border-line-edge bg-inset px-1.5 py-0.5 text-caption font-semibold text-fg-soft ${serverLabel.startsWith('UTC') && serverLabel !== 'UTC' ? 'numeral' : ''}`}
+          >
+            {serverLabel}
+          </span>
+          {/* Display faces set the same character count at different widths.
                 One title step plus truncation keeps every card consistent. */}
-            <span
-              className="min-w-0 flex-1 truncate text-title font-semibold"
-              style={{ fontFamily: titleFont(game.titleFont), color: titleInk }}
-            >
-              {game.name}
-            </span>
-            {accountLabel && (
-              <>
-                <span aria-hidden className="h-3 w-px shrink-0 bg-line-edge" />
-                <span className="min-w-0 max-w-[45%] shrink-0 truncate text-right text-body font-semibold text-fg-soft">
-                  {accountLabel}
-                </span>
-              </>
-            )}
+          <span
+            className="min-w-0 flex-1 truncate text-title font-semibold"
+            style={{ fontFamily: titleFont(game.titleFont), color: titleInk }}
+          >
+            {game.name}
           </span>
-
-          <span className="relative z-10 flex min-w-0 items-center">
-            <span className="block w-full min-w-0">
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="min-w-0 flex-1 truncate text-body font-medium text-fg-soft">
-                  {primary?.name ?? (game.paused ? 'Tracking paused' : 'No regen resource')}
-                </span>
-                <span className="numeral shrink-0 text-lead text-fg">
-                  {primary && projection && projection.hasSnapshot ? projection.value : '—'}
-                  <span className="text-muted">/{primary?.cap ?? '—'}</span>
-                </span>
+          {accountLabel && (
+            <>
+              <span aria-hidden className="h-3 w-px shrink-0 bg-line-edge" />
+              <span className="min-w-0 max-w-[45%] shrink-0 truncate text-right text-body font-semibold text-fg-soft">
+                {accountLabel}
               </span>
+            </>
+          )}
+        </span>
 
-              <ReactorTube
-                value={fraction}
-                // The tube reports a level that can be at fault. Urgency owns that
-                // colour once the vessel is full or nearly so; below that it is the
-                // game's own tone.
-                tone={fraction >= 1 ? 'var(--color-danger)' : fraction >= 0.9 ? 'var(--color-warn)' : titleInk}
-                charging={charging}
-                height={6}
-                className="!mt-1"
-              />
+        <span className="relative z-10 flex min-w-0 items-center">
+          <span className="block w-full min-w-0">
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="min-w-0 flex-1 truncate text-body font-medium text-fg-soft">
+                {primary?.name ?? (game.paused ? 'Tracking paused' : 'No regen resource')}
+              </span>
+              <span className="numeral shrink-0 text-lead text-fg">
+                {primary && projection && projection.hasSnapshot ? projection.value : '—'}
+                <span className="text-muted">/{primary?.cap ?? '—'}</span>
+              </span>
             </span>
-          </span>
 
-          <span className="relative z-10 flex min-w-0 items-center gap-2">
-            <span className="min-w-0 flex-1 truncate text-caption text-muted">
-              {next?.label ?? (game.paused ? 'Tracking paused' : 'All clear')}
-            </span>
-            <span className="numeral shrink-0 text-caption" style={{ color: URGENCY_TONE[tier] }}>
-              {next ? (next.at <= now ? 'NOW' : formatCardTimeLeft(next.at - now)) : '—'}
-            </span>
+            <ReactorTube
+              value={fraction}
+              // The tube reports a level that can be at fault. Urgency owns that
+              // colour once the vessel is full or nearly so; below that it is the
+              // game's own tone.
+              tone={fraction >= 1 ? 'var(--color-danger)' : fraction >= 0.9 ? 'var(--color-warn)' : titleInk}
+              charging={charging}
+              height={6}
+              className="!mt-1"
+            />
           </span>
-        </button>
-      )}
+        </span>
+
+        <span className="relative z-10 flex min-w-0 items-center gap-2">
+          <span className="min-w-0 flex-1 truncate text-caption text-muted">
+            {next?.label ?? (game.paused ? 'Tracking paused' : 'All clear')}
+          </span>
+          <span className="numeral shrink-0 text-caption" style={{ color: URGENCY_TONE[tier] }}>
+            {next ? (next.at <= now ? 'NOW' : formatCardTimeLeft(next.at - now)) : '—'}
+          </span>
+        </span>
+      </button>
 
       <div
         id={controlsId}
@@ -342,7 +361,7 @@ function NexusNode({
         inert={!expanded}
       >
         {(expanded || mounted) && (
-          <div className="max-h-(--stage-h) overflow-y-auto px-4 pb-4 pt-4">
+          <div className="h-(--stage-h) min-h-0 px-4 pb-4 pt-4">
             <GameControlsView
               entry={entry}
               state={state}
@@ -356,7 +375,7 @@ function NexusNode({
           </div>
         )}
       </div>
-    </article>
+    </m.article>
   );
 }
 
@@ -371,14 +390,18 @@ export function NexusLayout({
   onOpenEvent,
   onOpenTimeline,
 }: SharedNexusProps) {
-  const [expandedCard, setExpandedCard] = useState<{ gameId: string; side: 'left' | 'right' } | null>(null);
+  const tonightPosition = useUI((s) => s.tonightPosition);
+  const [expandedCard, setExpandedCard] = useState<{ gameId: string; side: 'left' | 'right' } | null>(() =>
+    entries.length === 1 ? { gameId: entries[0]!.game.id, side: 'left' } : null,
+  );
   const reducedMotion = useReducedMotion();
-  const wideEnough = useMediaQuery('(min-width: 1500px)');
-  const columns = wideEnough ? 2 : 1;
   const derived = useDerived(now);
   const stageRef = useRef<HTMLDivElement>(null);
   const entryById = new Map(entries.map((entry) => [entry.game.id, entry]));
-  const identityColors = resolveGameIdentityColors(entries.map((entry) => entry.game));
+  const identityColors = useMemo(
+    () => resolveGameIdentityColors(state.games.filter((game) => !game.deleted)),
+    [state.games],
+  );
   const visibleIds = displayIds.filter((id) => entryById.has(id));
   const activeExpandedGameId = expandedCard && visibleIds.includes(expandedCard.gameId) ? expandedCard.gameId : null;
   const leftCount = Math.ceil(visibleIds.length / 2);
@@ -392,6 +415,7 @@ export function NexusLayout({
       ? [activeExpandedGameId]
       : otherIds
     : restingRightIds;
+  const rows = Math.max(1, leftIds.length, rightIds.length);
   const energyById = new Map<string, { resource: Resource | undefined; projection: EnergyProjection | null }>(
     visibleIds.map((id) => {
       const entry = entryById.get(id)!;
@@ -422,52 +446,67 @@ export function NexusLayout({
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [activeExpandedGameId]);
 
-  const renderRail = (ids: string[], side: 'left' | 'right') => (
-    <aside
-      className="nexus-rail scrollbar-thin relative z-10 flex min-w-0 flex-col overflow-y-auto"
-      aria-label={`${side} game rail`}
-    >
-      {ids.map((id, index) => {
-        const entry = entryById.get(id)!;
-        const energy = energyById.get(id)!;
-        return (
-          <NexusNode
-            key={id}
-            entry={entry}
-            state={state}
-            now={now}
-            relocated={activeExpandedGameId != null && id !== activeExpandedGameId}
-            railIndex={index}
-            expanded={activeExpandedGameId === id}
-            columns={columns}
-            reducedMotion={reducedMotion}
-            primary={energy.resource}
-            projection={energy.projection}
-            identityColors={identityColors[id] ?? entry.game}
-            actions={gameControlActions}
-            onToggle={() => setExpandedCard((current) => (current?.gameId === id ? null : { gameId: id, side }))}
-            onEditGame={onEditGame}
-            onOpenGameEvent={onOpenGameEvent}
-          />
-        );
-      })}
-    </aside>
-  );
+  // Every game stays under ONE parent. Changing grid cells moves the existing
+  // node; moving it between two mapped rails would unmount it and erase motion.
+  const renderGames = () =>
+    visibleIds.map((id) => {
+      const side = leftIds.includes(id) ? 'left' : 'right';
+      const ids = side === 'left' ? leftIds : rightIds;
+      const entry = entryById.get(id)!;
+      const energy = energyById.get(id)!;
+      return (
+        <NexusNode
+          key={id}
+          entry={entry}
+          state={state}
+          now={now}
+          column={side === 'left' ? 1 : 2}
+          row={ids.indexOf(id) + 1}
+          rows={rows}
+          tonightPosition={tonightPosition}
+          expanded={activeExpandedGameId === id}
+          columns={1}
+          reducedMotion={reducedMotion}
+          primary={energy.resource}
+          projection={energy.projection}
+          identityColors={identityColors[id] ?? entry.game}
+          actions={gameControlActions}
+          onToggle={() =>
+            setExpandedCard((current) => (current?.gameId === id ? null : { gameId: id, side: current?.side ?? side }))
+          }
+          onEditGame={onEditGame}
+          onOpenGameEvent={onOpenGameEvent}
+        />
+      );
+    });
 
   return (
     <div
       ref={stageRef}
       className="nexus-stage relative grid items-stretch gap-[clamp(0.75rem,1.4vw,1.5rem)]"
-      data-focus={expandedSide}
+      data-tonight={tonightPosition}
       onClick={(event) => {
         if (activeExpandedGameId == null) return;
         const target = event.target as HTMLElement;
         if (!target.closest('.nexus-node') && !target.closest(INTERACTIVE_SELECTOR)) setExpandedCard(null);
       }}
     >
-      {renderRail(leftIds, 'left')}
-      <NexusHub state={state} entries={entries} now={now} onOpenEvent={onOpenEvent} onOpenTimeline={onOpenTimeline} />
-      {renderRail(rightIds, 'right')}
+      <m.aside
+        layoutScroll
+        className="nexus-games-scroll scrollbar-thin min-h-0 min-w-0 overflow-y-auto"
+        aria-label="Game controls"
+      >
+        <div className="nexus-games" style={{ '--nexus-rows': rows } as CSSProperties}>
+          {renderGames()}
+          <NexusHub
+            state={state}
+            entries={entries}
+            now={now}
+            onOpenEvent={onOpenEvent}
+            onOpenTimeline={onOpenTimeline}
+          />
+        </div>
+      </m.aside>
     </div>
   );
 }

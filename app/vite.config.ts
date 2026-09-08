@@ -19,6 +19,8 @@ export default defineConfig(({ mode }) => {
   return {
     // A file:// page has no site root, so nothing may be referenced from '/'.
     base: single ? './' : '/',
+    // Generated single-file exports contain bundled imports, not app entrypoints.
+    optimizeDeps: { entries: ['index.html'] },
     build: {
       outDir: single ? 'dist-single' : 'dist',
       emptyOutDir: true,

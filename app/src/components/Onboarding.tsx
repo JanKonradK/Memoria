@@ -35,6 +35,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
         setEnergyValue(resource.id, Math.min(resource.cap, Math.max(0, intOr(entered, 0))));
     }
     onComplete();
+    useUI.getState().openSheet({ kind: 'guide' });
   };
 
   return (

@@ -7,6 +7,7 @@ import { useApp, type AppStore } from '../store';
 import { useUI } from '../ui-store';
 import { useMediaQuery, useReducedMotion } from '../hooks';
 import { cardEnter } from '../motion';
+import { titleFont } from '../fonts';
 import { gameAccent, gameInk, gameRim, gameSupport, gameTitleInk, mix, resolveGameIdentityColors } from '../game-color';
 import { gameShellVars, useGround, useTheme } from '../theme';
 
@@ -183,9 +184,9 @@ function useCompletionSweep(done: boolean): {
 }
 
 /** Circular tick box at the right edge of a row: sweep plays, then the tick pops. */
-function CompletionTick({ done, color }: { done: boolean; color: string }) {
+function CompletionTick({ done, color, danger = false }: { done: boolean; color: string; danger?: boolean }) {
   const { sweep, checkEnter, end } = useCompletionSweep(done);
-  return <Tick checked={done} color={color} sweep={sweep} checkEnter={checkEnter} onSweepEnd={end} />;
+  return <Tick checked={done} color={color} danger={danger} sweep={sweep} checkEnter={checkEnter} onSweepEnd={end} />;
 }
 
 /**
@@ -243,12 +244,15 @@ function TimerTaskRow({
       onClick={stepped ? onAdvance : onRestart}
       className={TASK_ROW}
       aria-label={`${item.name}: ${action}`}
+      aria-pressed={item.done}
     >
       <TaskName tone={tone} core={item.core}>
         {item.name}
       </TaskName>
       {waitingToCollect ? (
-        <span className="shrink-0 text-meta font-bold text-ok-fg">Collect</span>
+        <span className={`shrink-0 text-meta font-bold ${item.cadence === 'custom' ? 'text-danger-fg' : 'text-ok-fg'}`}>
+          {item.cadence === 'custom' ? 'Ready' : 'Collect'}
+        </span>
       ) : running ? (
         <Tooltip content="When this dispatch comes back. Nothing to do until then.">
           <span className="shrink-0 text-meta tabular-nums text-dim">back {fmtDur(left)}</span>
@@ -260,7 +264,7 @@ function TimerTaskRow({
       {!item.done && running ? (
         <Tick fraction={fraction} color={color} />
       ) : (
-        <CompletionTick done={item.done} color={color} />
+        <CompletionTick done={item.done} color={color} danger={waitingToCollect && item.cadence === 'custom'} />
       )}
     </button>
   );
@@ -476,8 +480,8 @@ function ResourceControls({
   actions: GameControlActions;
 }) {
   const resources = state.resources.filter((r) => r.gameId === game.id && !r.deleted).sort((a, b) => a.sort - b.sort);
-  const cardResources = resources.filter((res) => effectiveResourceKind(res) === 'regen');
-  const primaryEnergy = cardResources[0];
+  const cardResources = resources.filter((res) => ['regen', 'weekly'].includes(effectiveResourceKind(res)));
+  const primaryEnergy = cardResources.find((res) => effectiveResourceKind(res) === 'regen');
   const quickChips = state.chips
     .filter((chip) => chip.gameId === game.id && !chip.deleted)
     .sort((a, b) => a.sort - b.sort);
@@ -485,7 +489,7 @@ function ResourceControls({
   return (
     <>
       {cardResources.length > 0 && (
-        <div className="mt-3.5 space-y-3">
+        <div data-tour="resources" className="mt-3.5 space-y-3">
           {cardResources.map((res) => {
             return (
               <EnergyControlRow
@@ -565,7 +569,7 @@ function ChecklistControls({
   if (game.paused || checklist.length === 0) return null;
   const groups = groupChecklist(checklist);
   return (
-    <div className="mt-3.5">
+    <div data-tour="tasks" className="mt-3.5">
       {groups.map((group) => (
         <section key={group.cadence} aria-label={`${CADENCE_LABEL[group.cadence]} tasks for ${game.name}`}>
           <ChecklistGroupRule
@@ -652,9 +656,9 @@ function GameControlsHeader({
             {regionLabel}
           </span>
           <h2
-            className={`min-w-0 flex-1 truncate ${layout === 'focus' ? 'text-display min-[1500px]:text-hero' : 'text-heading'} font-black tracking-tight text-fg transition group-hover/title:text-fg`}
+            className={`min-w-0 flex-1 ${layout === 'focus' ? 'text-title min-[1600px]:text-heading' : 'truncate text-heading'} font-semibold tracking-tight text-fg transition group-hover/title:text-fg`}
             style={{
-              fontFamily: game.titleFont,
+              fontFamily: titleFont(game.titleFont),
               color: gameTitleInk(game, ground),
               // A 1px offset for legibility over the card's own gradient — not
               // the coloured halo that used to sit behind it.
@@ -732,7 +736,10 @@ export function GameControlsView({
 }) {
   const { game } = entry;
   const derived = useDerived(now);
-  const identityColors = resolveGameIdentityColors(state.games.filter((candidate) => !candidate.deleted));
+  const identityColors = useMemo(
+    () => resolveGameIdentityColors(state.games.filter((candidate) => !candidate.deleted)),
+    [state.games],
+  );
   const visualGame = { ...game, ...(identityColors[game.id] ?? {}) };
   // Cadence order and core-first ordering now both belong to groupChecklist —
   // this flat sort used to run AFTER checklistFor's core-first one and silently
@@ -834,16 +841,18 @@ export const GameCard = memo(function GameCard({
   const ground = useGround();
   const theme = useTheme();
   const reduced = useReducedMotion();
-  const urgent = !game.paused && next != null && next.at - now < 60 * 60_000;
-  const pulseUrgent = urgent && !reduced;
+  const urgent = !game.paused && next != null && next.at - now < 2 * 60 * 60_000;
   // Depth is the game's own inset ring plus the top-edge highlight — nothing
   // outside the box. See the Shadows Float Only Rule in DESIGN.md: a card does
   // not overlay the page, so it casts nothing.
-  const identityColors = resolveGameIdentityColors(games.filter((candidate) => !candidate.deleted));
+  const identityColors = useMemo(
+    () => resolveGameIdentityColors(games.filter((candidate) => !candidate.deleted)),
+    [games],
+  );
   const visualColors = identityColors[game.id] ?? game;
   const rim = gameRim(visualColors, ground);
   const accent = gameAccent(visualColors, ground);
-  const cardShadows = [!pulseUrgent && `inset 0 0 0 1px ${tint(rim, 0.3)}`, 'inset 0 1px 0 var(--color-line-hairline)']
+  const cardShadows = [!urgent && `inset 0 0 0 1px ${tint(rim, 0.3)}`, 'inset 0 1px 0 var(--color-line-hairline)']
     .filter(Boolean)
     .join(', ');
 
@@ -888,10 +897,12 @@ export const GameCard = memo(function GameCard({
           />
         </div>
       )}
-      {pulseUrgent && (
+      {urgent && (
         <div
-          className="pulse-fade pointer-events-none absolute inset-0 rounded-ui-card"
-          style={{ boxShadow: `inset 0 0 0 1px ${tint(rim, 0.8)}, inset 0 0 24px ${tint(rim, 0.12)}` }}
+          aria-hidden
+          data-urgency-ring
+          className={`pointer-events-none absolute inset-0 rounded-ui-card ${reduced ? '' : 'pulse-fade'}`}
+          style={{ boxShadow: 'inset 0 0 0 1px var(--color-danger)' }}
         />
       )}
       <GameControls entry={entry} now={now} />

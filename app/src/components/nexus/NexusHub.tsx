@@ -1,7 +1,8 @@
 import { DateTime } from 'luxon';
+import { useMemo } from 'react';
 import type { AppState, Game, GameEvent, GameUrgency } from '@memoria/shared';
 import { gameIdentityKey, resolveGameIdentityColors, type GameColors } from '../../game-color';
-import type { AgendaRow } from '../../timeline-sort';
+import { ENDING_SOON_DAYS, type AgendaRow } from '../../timeline-sort';
 import { useDerived } from '../../selectors';
 import { fmtDur } from '../../util';
 import { serverRegionLabel } from '../NexusLayout';
@@ -121,6 +122,7 @@ function ticketsFrom(rows: AgendaRow[], useStart: boolean): Ticket[] {
 function Band({
   title,
   tone,
+  subtitle,
   tickets,
   games,
   disambiguation,
@@ -131,6 +133,7 @@ function Band({
 }: {
   title: string;
   tone: string;
+  subtitle?: string;
   tickets: Ticket[];
   games: Map<string, Game>;
   disambiguation: ReadonlyMap<string, TicketDisambiguation>;
@@ -147,6 +150,7 @@ function Band({
           {title}
         </span>
         <span className="numeral text-caption text-muted">{tickets.length}</span>
+        {subtitle && <span className="ml-auto text-caption text-muted">{subtitle}</span>}
       </div>
 
       {tickets.length === 0 ? (
@@ -163,7 +167,7 @@ function Band({
               game && distinction
                 ? `${game.name}, ${distinction.serverLabel} server${
                     distinction.accountDescription ? `, ${distinction.accountDescription}` : ''
-                  }: ${ticket.name}, ${countdown}`
+                  }: ${ticket.name}${ticket.event?.type === 'banner' ? ', Banner' : ''}, ${countdown}`
                 : undefined;
             return (
               <button
@@ -199,6 +203,11 @@ function Band({
                         )}
                       </>
                     )}
+                  </span>
+                )}
+                {ticket.event?.type === 'banner' && (
+                  <span className="shrink-0 rounded-ui-sm bg-fill-2 px-1 py-px text-caption font-semibold text-muted">
+                    Banner
                   </span>
                 )}
                 <span className="min-w-0 flex-1 truncate text-body text-fg-soft">{ticket.name}</span>
@@ -274,14 +283,17 @@ export function NexusHub({
     agenda.games,
     now,
   );
-  const identityColors = resolveGameIdentityColors(state.games.filter((game) => !game.deleted));
+  const identityColors = useMemo(
+    () => resolveGameIdentityColors(state.games.filter((game) => !game.deleted)),
+    [state.games],
+  );
 
   const dailiesComplete = dailyItems.length > 0 && dailiesDone === dailyItems.length;
   const sleepSafe = capsDuringSleep.length === 0;
 
   return (
     <section
-      className="card-shell relative z-10 flex h-full min-h-0 min-w-0 flex-col gap-3 overflow-hidden rounded-ui-card p-3"
+      className="nexus-hub card-shell relative z-10 flex h-full min-h-0 min-w-0 flex-col gap-3 overflow-hidden rounded-ui-card p-3"
       aria-label="Across every game"
     >
       {/* This column is the answer to "what do I do now", so it gets to be the
@@ -335,11 +347,14 @@ export function NexusHub({
 
       <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
         {closing.length + arrived.length + arriving.length === 0 ? (
-          <p className="pt-6 text-body text-muted">Nothing is closing, and nothing new lands in the next fortnight.</p>
+          <p className="pt-6 text-body text-muted">
+            Nothing closes in the next 10 days or arrives in the next two weeks.
+          </p>
         ) : (
           <>
             <Band
               title="Closing"
+              subtitle={`Next ${ENDING_SOON_DAYS} days`}
               tone="var(--color-danger)"
               tickets={closing}
               games={agenda.games}

@@ -8,6 +8,7 @@ import {
   ENDING_SOON_DAYS,
   groupVersionUpdates,
   selectDashboardAgendaSections,
+  sortTimelineEvents,
   type AgendaRow,
 } from '../src/timeline-sort';
 
@@ -54,6 +55,31 @@ function sorted(events: GameEvent[]): GameEvent[] {
 function row(id: string): AgendaRow {
   return { kind: 'event', event: event({ id }) };
 }
+
+describe('timeline cycle order', () => {
+  it('keeps each cycle together in time order even when other deadlines fall between its instances', () => {
+    const events = [
+      event({ id: 'abyss-next', name: 'Spiral Abyss', type: 'cycle', start: 20, end: 40 }),
+      event({ id: 'theater', name: 'Theater', type: 'cycle', start: 5, end: 30 }),
+      event({ id: 'abyss', name: 'Spiral Abyss', type: 'cycle', start: 1, end: 20, done: true }),
+      event({ id: 'theater-next', name: 'Theater', type: 'cycle', start: 30, end: 60 }),
+      event({ id: 'festival', start: 0, end: 80 }),
+    ];
+    const sorted = sortTimelineEvents(events).map((item) => item.id);
+    expect(sorted).toEqual(['festival', 'theater', 'theater-next', 'abyss', 'abyss-next']);
+    expect(events[0]!.id).toBe('abyss-next');
+  });
+
+  it('does not combine different accounts or non-cycle events with the same name', () => {
+    const events = [
+      event({ id: 'a1', name: 'Abyss', type: 'cycle', start: 0, end: 10 }),
+      event({ id: 'b1', name: 'Abyss', gameId: 'other', type: 'cycle', start: 0, end: 15 }),
+      event({ id: 'a2', name: ' abyss ', type: 'cycle', start: 10, end: 30 }),
+      event({ id: 'ordinary', name: 'Abyss', start: 0, end: 35 }),
+    ];
+    expect(sortTimelineEvents(events).map((item) => item.id)).toEqual(['ordinary', 'a1', 'a2', 'b1']);
+  });
+});
 
 describe('agendaRank', () => {
   it('uses the exact active, upcoming, ended-not-done, done ordering', () => {
@@ -250,6 +276,7 @@ describe('selectDashboardAgendaSections', () => {
   // current values: what is being pinned is that `now` is exclusive and the far
   // edge is inclusive, not how many days the panel happens to look ahead.
   it('uses an exclusive-now and inclusive far edge on the ending window', () => {
+    expect(ENDING_SOON_DAYS).toBe(10);
     const edge = ENDING_SOON_DAYS * DAY;
     const sections = selectDashboardAgendaSections(
       [
