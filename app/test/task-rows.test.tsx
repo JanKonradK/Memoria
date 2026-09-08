@@ -83,6 +83,15 @@ afterEach(() => {
 });
 
 describe('dispatch task rows', () => {
+  it('shows an expired personal cooldown as an unchecked red ring', () => {
+    renderTasks([task({ name: 'Parametric Transformer', cadence: 'custom', timelineLinked: false, timerEndsAt: now })]);
+    const ready = screen.getByRole('button', { name: /Parametric Transformer: collect and resend/ });
+    expect(ready).toHaveAttribute('aria-pressed', 'false');
+    expect(ready.querySelector('circle')).toHaveAttribute('stroke', 'var(--color-danger)');
+    expect(screen.getByText('Ready')).toBeInTheDocument();
+    fireEvent.click(ready);
+    expect(actions.restartTaskTimer).toHaveBeenCalledTimes(1);
+  });
   it('asks to be collected when the run has come back, rather than reporting itself done', () => {
     // The bug this replaces: a returned dispatch rendered struck through with a
     // filled tick — i.e. finished — at exactly the moment there was something to

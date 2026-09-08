@@ -118,6 +118,27 @@ describe('barGeometry', () => {
 
 describe('timelineRowLayout', () => {
   const laneWidth = 900;
+
+  it('gives a clipped future title its bar and moves the controls into the empty lead-in', () => {
+    const layout = timelineRowLayout(90, 10, laneWidth);
+    expect(layout).toMatchObject({ labelPlacement: 'inside', clusterBefore: true, tickFloats: false });
+    expect(layout.barTextMaxWidth).toBeGreaterThanOrEqual(80);
+    expect(layout.trailingClusterPx + 8).toBeLessThan(0.9 * laneWidth);
+  });
+
+  it('keeps a future long event inside as more of its bar enters the window', () => {
+    for (const left of [94, 90, 70]) {
+      expect(timelineRowLayout(left, 100 - left, laneWidth).labelPlacement).toBe('inside');
+    }
+  });
+
+  it('keeps a title readable outside a sliver until there is space to paint text inside', () => {
+    expect(timelineRowLayout(98, 2, laneWidth).labelPlacement).toBe('before');
+  });
+
+  it('keeps special-program and maintenance titles outside even when their bar could hold text', () => {
+    expect(timelineRowLayout(20, 30, laneWidth, 'outside').labelPlacement).toBe('after');
+  });
   const cases = [
     {
       name: 'long bar',
@@ -253,6 +274,17 @@ describe('timelineCountdown', () => {
 describe('CycleConnectors', () => {
   const ink = '#5aa9ff';
 
+  it('uses a closed filled bridge that narrows between touching cycles', () => {
+    const [d] = connectorPaths([cycle('a', 'Abyss', 0, 8), cycle('b', 'Abyss', 8, 18)]);
+    const values = d!.match(/-?[\d.]+/g)!.map(Number);
+    expect(d).toMatch(/^M .* Z$/);
+    const attachmentWidth = Math.hypot(values[0]! - values[26]!, values[1]! - values[27]!);
+    const waistWidth = Math.hypot(values[6]! - values[20]!, values[7]! - values[21]!);
+    expect(attachmentWidth).toBeGreaterThan(12);
+    expect(waistWidth).toBeGreaterThan(3);
+    expect(waistWidth).toBeLessThan(attachmentWidth / 2);
+  });
+
   it('joins consecutive instances of the same cycle', () => {
     const events = [cycle('a', 'Spiral Abyss', 0, 8), cycle('b', 'Spiral Abyss', 10, 18)];
     expect(connectorPaths(events)).toHaveLength(1);
@@ -276,7 +308,7 @@ describe('CycleConnectors', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('starts each curve on the left bar right edge and ends it on the next bar left edge', () => {
+  it('anchors each filled bridge inside the two rounded bar caps', () => {
     const first = cycle('a', 'Abyss', 0, 6);
     const second = cycle('b', 'Abyss', 12, 18);
     const [d] = buildCycleConnectorPaths(
@@ -289,15 +321,11 @@ describe('CycleConnectors', () => {
       ]),
     );
     // viewBox X runs 0..1000, so a percentage maps by ×10.
-    const expectedStart = barGeometry(first, WS, WE).displayRight * 10;
-    const expectedEnd = barGeometry(second, WS, WE).displayLeft * 10;
-    const move = /^M ([\d.]+) ([\d.]+) C .* ([\d.]+) ([\d.]+)$/.exec(d!);
-    expect(move).not.toBeNull();
-    expect(Number(move![1])).toBeCloseTo(expectedStart, 0);
-    expect(Number(move![3])).toBeCloseTo(expectedEnd, 0);
-    // Row centres: row 0 and row 1 of a 100-unit pitch.
-    expect(Number(move![2])).toBe(50);
-    expect(Number(move![4])).toBe(150);
+    const capStart = barGeometry(first, WS, WE).displayRight * 10 - 11;
+    const capEnd = barGeometry(second, WS, WE).displayLeft * 10 + 11;
+    const values = d!.match(/-?[\d.]+/g)!.map(Number);
+    expect(Math.hypot(values[0]! - capStart, values[1]! - 50)).toBeLessThan(11);
+    expect(Math.hypot(values[12]! - capEnd, values[13]! - 150)).toBeLessThan(11);
   });
 
   it('emits no NaN even when the window has zero span', () => {
@@ -324,10 +352,13 @@ describe('CycleConnectors', () => {
       174,
     );
     const [d] = paths(container);
-    const move = /^M ([\d.]+) ([\d.]+) C .* ([\d.]+) ([\d.]+)$/.exec(d!);
-    expect(move).not.toBeNull();
-    expect(Number(move![2])).toBe(14);
-    expect(Number(move![4])).toBe(146);
+    const values = d!.match(/-?[\d.]+/g)!.map(Number);
+    expect(values[1]).toBeGreaterThan(0);
+    expect(values[1]).toBeLessThan(28);
+    expect(values[13]).toBeGreaterThan(132);
+    expect(values[13]).toBeLessThan(160);
+    expect(container.querySelector('path')?.getAttribute('fill')).not.toBe('none');
+    expect(container.querySelector('path')?.hasAttribute('stroke')).toBe(false);
     expect(container.querySelector('svg')?.getAttribute('viewBox')).toBe('0 0 1000 174');
   });
 });

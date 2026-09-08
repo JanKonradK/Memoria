@@ -88,14 +88,14 @@ describe('EnergyRow reserve controls', () => {
     // Capped is the NORMAL state for a game with a reserve, so opening on it
     // meant the second stepper, tube and subtitle were always there. The
     // summary line carries the whole reading instead.
-    const { container } = renderRow();
+    renderRow();
 
     expect(screen.queryByRole('textbox', { name: 'Reserve TB Power for Trailblaze Power' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Reserve TB Power 320\/2400/ })).toHaveAttribute(
       'aria-expanded',
       'false',
     );
-    expect(container.querySelectorAll('div[aria-hidden="true"]')).toHaveLength(1);
+    expect(screen.getByLabelText('Reserve TB Power for Trailblaze Power').closest('[inert]')).not.toBeNull();
   });
 
   it('shows the reserve projection once opened', () => {

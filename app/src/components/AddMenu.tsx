@@ -1,4 +1,5 @@
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
+import { useRef } from 'react';
 import { useUI } from '../ui-store';
 
 /**
@@ -28,46 +29,53 @@ const LABELS = { addGame: 'Add game', event: 'Event', reminder: 'Reminder' } as 
 export function AddMenu() {
   const tab = useUI((store) => store.tab);
   const openSheet = useUI((store) => store.openSheet);
+  const pending = useRef<'addGame' | 'event' | 'reminder' | null>(null);
 
   return (
     <DropdownMenuPrimitive.Root>
       <DropdownMenuPrimitive.Trigger
         // Matches RefreshButton's shell so the right-hand cluster reads as one
         // family of controls rather than as a button that wandered in.
-        className="flex min-h-8 items-center justify-center rounded-ui-md border border-line px-3 py-1 text-caption uppercase tracking-[0.09em] text-muted transition-colors hover:border-line-strong hover:text-fg-soft data-[state=open]:border-line-strong data-[state=open]:text-fg"
+        className="shell-control shell-control-add group"
         aria-label="Add"
+        data-tour="add"
       >
         <svg
           viewBox="0 0 20 20"
           aria-hidden
-          className="icon h-3.5 w-3.5"
+          className="icon h-4 w-4 transition-transform duration-(--dur-fast) group-data-[state=open]:rotate-90"
           fill="none"
           stroke="currentColor"
           strokeLinecap="round"
         >
           <path d="M10 4v12M4 10h12" />
         </svg>
+        <span className="hidden sm:inline">Add</span>
       </DropdownMenuPrimitive.Trigger>
 
       <DropdownMenuPrimitive.Portal>
         <DropdownMenuPrimitive.Content
           align="end"
           sideOffset={6}
-          className="z-50 min-w-40 rounded-ui-lg bg-popover p-1 shadow-float ring-1 ring-line-strong"
+          onCloseAutoFocus={() => {
+            const kind = pending.current;
+            pending.current = null;
+            // Radix calls this after the exit animation and focus-scope teardown.
+            // Wait one frame for its pointer lock to release before opening a sheet.
+            if (kind)
+              requestAnimationFrame(() =>
+                openSheet(kind === 'event' ? { kind, gameId: useUI.getState().focusedGameId ?? undefined } : { kind }),
+              );
+          }}
+          className="popover-motion z-50 min-w-40 rounded-ui-lg bg-popover p-1 shadow-float ring-1 ring-line-strong"
         >
           {ITEMS[tab].map((kind) => (
             <DropdownMenuPrimitive.Item
               key={kind}
-              // Deferred by a frame on purpose. Both the menu and the sheet are
-              // Radix layers, and both take the page's pointer events while they
-              // are open. Opening the sheet synchronously from a select puts its
-              // mount inside the menu's own teardown, and the two cancel out:
-              // the body keeps `pointer-events: none` and the whole app stops
-              // responding to clicks until a reload.
-              onSelect={() =>
-                requestAnimationFrame(() => openSheet(kind === 'addGame' ? { kind: 'addGame' } : { kind }))
-              }
-              className="flex min-h-9 cursor-pointer items-center rounded-ui-sm px-3 text-body text-fg-soft outline-none transition-colors data-[highlighted]:bg-fill-2 data-[highlighted]:text-fg"
+              onSelect={() => {
+                pending.current = kind;
+              }}
+              className="flex min-h-11 cursor-pointer items-center rounded-ui-sm px-3 text-body text-fg-soft outline-none transition-colors data-[highlighted]:bg-fill-2 data-[highlighted]:text-fg sm:min-h-9"
             >
               {LABELS[kind]}
             </DropdownMenuPrimitive.Item>

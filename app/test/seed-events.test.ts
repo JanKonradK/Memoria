@@ -52,6 +52,37 @@ function importedMaintenance(): GameEvent {
 }
 
 describe('planSeedImport', () => {
+  it('opens ZZZ after global maintenance but closes at each server deadline', () => {
+    const games = [account('eu', 'Etc/GMT-1'), account('us', 'Etc/GMT+5'), account('asia', 'Etc/GMT-8')].map(
+      (game) => ({ ...game, presetKey: 'zzz', name: 'Zenless Zone Zero', short: 'ZZZ' }),
+    );
+    const imported = planSeedImport({ ...emptyState(), games }, Date.parse('2026-09-08T00:00:00Z'));
+    const rows = imported.filter((row) => row.seed.sourceKey === 'seed:zzz:3.2-all-new-program');
+    expect(rows).toHaveLength(3);
+    expect(rows.map((row) => row.start)).toEqual(Array(3).fill(Date.parse('2026-09-09T03:00:00Z')));
+    expect(rows.map((row) => row.end)).toEqual([
+      Date.parse('2026-10-20T02:59:00Z'),
+      Date.parse('2026-10-20T08:59:00Z'),
+      Date.parse('2026-10-19T19:59:00Z'),
+    ]);
+    const maintenance = imported.filter((row) => row.seed.sourceKey === 'seed:zzz:3.2-maint');
+    expect(maintenance.map((row) => row.start)).toEqual(Array(3).fill(Date.parse('2026-09-08T22:00:00Z')));
+  });
+  it('uses the official Genshin 7.1 broadcast instant for every server', () => {
+    const state = {
+      ...emptyState(),
+      games: [account('eu', 'Etc/GMT-1'), account('us', 'Etc/GMT+5'), account('asia', 'Etc/GMT-8')],
+    };
+    const broadcasts = planSeedImport(state, Date.parse('2026-09-07T00:00:00Z')).filter(
+      (item) => item.seed.sourceKey === 'seed:genshin:7.1-livestream',
+    );
+    expect(broadcasts).toHaveLength(3);
+    for (const broadcast of broadcasts) {
+      expect(broadcast.start).toBe(Date.parse('2026-09-12T12:00:00Z'));
+      expect(broadcast.seed.name).toBe('Genshin 7.1 Special Program');
+      expect(broadcast.seed.notes).toContain('estimate');
+    }
+  });
   it('plans one timezone-adjusted seed for every account of a preset', () => {
     const state = {
       ...emptyState(),

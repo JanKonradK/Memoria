@@ -175,10 +175,9 @@
   --dur-base: 260ms;
   --dur-slow: 420ms;
   --stagger: 40ms;
-  /* Stage motion intentionally sits between --dur-base and --dur-slow.
-     NEXUS_DUR_MS in NexusLayout.tsx mirrors this exact 340ms value. */
-  --nexus-dur: 0.34s;
-  --nexus-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  /* NEXUS_DUR_MS in NexusLayout.tsx mirrors this 300ms value. */
+  --nexus-dur: 0.3s;
+  --nexus-ease: var(--ease-out);
   --nexus-card-h: 7rem;
   /* The stage fills what the app bar leaves, minus the page's own padding
      (0.75rem top + 2rem bottom).
@@ -316,8 +315,8 @@
 
 @media (width >= 40rem) {
   :root {
-    --lane-bar-h: 1.75rem;
-    --lane-row-h: 2.75rem;
+    --lane-bar-h: 22px;
+    --lane-row-h: 26px;
   }
 }
 
@@ -348,6 +347,112 @@ body {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
+}
+
+/* Stable shell rows: utilities beside the brand, routes below on phones.
+   Route-specific controls get their own scrollable row until all four groups fit. */
+.app-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'brand utilities' 'nav nav' 'actions actions';
+  gap: 6px 12px;
+}
+.app-brand {
+  grid-area: brand;
+}
+.app-nav {
+  grid-area: nav;
+}
+.app-utilities {
+  grid-area: utilities;
+}
+.app-route-actions {
+  grid-area: actions;
+}
+.app-game-scope {
+  width: 11rem;
+  flex: 0 0 auto;
+}
+.timeline-page {
+  padding-top: 4px;
+  padding-bottom: 8px;
+}
+.timeline-rows {
+  gap: 0;
+}
+.timeline-game-heading {
+  min-height: 32px !important;
+}
+.timeline-board {
+  max-height: calc(100dvh - var(--app-bar-h) - 28px);
+  overflow-y: auto;
+}
+.timeline-board [data-timeline-ruler] {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--color-surface-0);
+}
+.app-route-actions:empty {
+  display: none;
+}
+.app-bar:has(.app-route-actions:empty) {
+  grid-template-areas: 'brand utilities' 'nav nav';
+}
+
+.shell-control {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: var(--radius-ui-md);
+  color: var(--color-muted);
+  font-size: var(--text-meta);
+  font-weight: 500;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+.shell-control:hover,
+.shell-control[data-state='open'] {
+  background: var(--color-fill-2);
+  color: var(--color-fg);
+}
+.shell-control:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.shell-control:disabled {
+  opacity: 0.6;
+}
+.shell-control-add {
+  background: var(--color-fill-2);
+  color: var(--color-fg);
+}
+@media (min-width: 640px) {
+  .shell-control {
+    min-height: 36px;
+    min-width: 36px;
+  }
+}
+@media (min-width: 768px) {
+  .app-bar {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-areas: 'brand nav utilities' 'actions actions actions';
+  }
+  .app-bar:has(.app-route-actions:empty) {
+    grid-template-areas: 'brand nav utilities';
+  }
+}
+@media (min-width: 1280px) {
+  .app-bar,
+  .app-bar:has(.app-route-actions:empty) {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: 'brand nav actions utilities';
+  }
 }
 
 /* One date tick on the timeline ruler: a 1px-wide dotted vertical line, drawn at
@@ -420,21 +525,19 @@ input[type='number'] {
    an entrance whose failure mode is "no animation" rather than "no page". */
 @keyframes pageEnterForward {
   from {
-    opacity: 0;
-    transform: translateX(32px);
+    opacity: 0.65;
   }
 }
 @keyframes pageEnterBack {
   from {
-    opacity: 0;
-    transform: translateX(-32px);
+    opacity: 0.65;
   }
 }
 .page-enter[data-direction='1'] {
-  animation: pageEnterForward var(--dur-base) var(--ease-out);
+  animation: pageEnterForward var(--dur-fast) var(--ease-out);
 }
 .page-enter[data-direction='-1'] {
-  animation: pageEnterBack var(--dur-base) var(--ease-out);
+  animation: pageEnterBack var(--dur-fast) var(--ease-out);
 }
 
 /* The grain sits on a pseudo-element so it composites once and never intercepts
@@ -549,6 +652,54 @@ input[type='number'] {
 }
 .fade-in {
   animation: fadeIn 0.18s ease-out;
+}
+
+/* Radix retains closed menus until the exit animation ends. AddMenu transfers
+   focus to the next sheet only after that retained menu releases its lock. */
+.popover-motion {
+  transform-origin: var(
+    --radix-dropdown-menu-content-transform-origin,
+    var(--radix-select-content-transform-origin, top center)
+  );
+}
+.popover-motion[data-state='open'] {
+  animation: popoverOpen var(--dur-fast) var(--ease-out);
+}
+.popover-motion[data-state='closed'] {
+  animation: popoverClose var(--dur-fast) var(--ease-out);
+}
+@keyframes popoverClose {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+@keyframes popoverOpen {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.theme-icon {
+  animation: themeTurn var(--dur-base) var(--ease-out);
+}
+@keyframes themeTurn {
+  from {
+    opacity: 0.5;
+    transform: rotate(-35deg) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+  }
 }
 
 /* A task name being struck through.
@@ -693,92 +844,109 @@ input[type='number'] {
   animation: tubeCharge 2.6s ease-in-out infinite;
 }
 
-/* ── The stage ───────────────────────────────────────────────────────────────
-   Three equal columns at rest. The selected rail gains 30%; the other two each
-   yield 15%. Each game rail scrolls inside the stage instead of growing the page.
-   The focused rail is already against the outer edge, so every column's share
-   moves inward at once — the open card grows toward the middle of the screen
-   while the hub and the far rail give way. */
+/* Two game columns and Tonight at the right, with equal widths in every state.
+   The scroll area spans two columns; its own grid repeats the same gap. */
 .nexus-stage {
+  --stage-h: calc(100dvh - var(--app-bar-h) - 2.75rem);
+  --nexus-gap: clamp(0.75rem, 1.4vw, 1.5rem);
   height: var(--stage-h);
   min-height: 0;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
-  transition: grid-template-columns var(--nexus-dur) var(--nexus-ease);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--nexus-gap);
 }
-.nexus-stage[data-focus='left'] {
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.85fr) minmax(0, 0.85fr);
+.focus-bay-grid {
+  grid-template-columns: minmax(0, 1fr);
 }
-.nexus-stage[data-focus='right'] {
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 0.85fr) minmax(0, 1.3fr);
+.focus-bay-grid[data-cols='2'] {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
-.nexus-stage > aside {
+@media (min-width: 1280px) {
+  .focus-workspace {
+    height: calc(100dvh - var(--app-bar-h) - 2.75rem);
+    overflow-y: auto;
+  }
+}
+.nexus-games-scroll {
+  grid-column: 1 / span 3;
+  grid-row: 1;
+  overflow-x: clip;
+}
+.nexus-stage .nexus-hub {
+  position: sticky;
+  top: 0;
   height: var(--stage-h);
+  z-index: 30;
+  grid-column: 3;
+  grid-row: 1 / -1;
 }
-
-/* Auto margins divide free space into one equal share above every card and one
-   below the last. The fixed sibling margin survives when overflow makes every
-   auto share zero, so cards never collapse onto each other. The zero-size lead
-   item keeps the first card reachable at scrollTop 0. */
-.nexus-rail::before {
-  content: '';
-  flex: 0 0 0;
-  margin-block-start: auto;
+.nexus-stage[data-tonight='left'] .nexus-hub {
+  grid-column: 1;
 }
-.nexus-rail > .nexus-node {
-  margin-block-end: auto;
+.nexus-stage[data-tonight='middle'] .nexus-hub {
+  grid-column: 2;
 }
-.nexus-rail > .nexus-node + .nexus-node {
-  margin-block-start: 0.5rem;
+.nexus-games {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(var(--nexus-rows), var(--nexus-card-h));
+  gap: var(--nexus-gap);
+  height: max(var(--stage-h), calc(var(--nexus-rows) * (var(--nexus-card-h) + var(--nexus-gap)) - var(--nexus-gap)));
+  position: relative;
+  align-items: start;
 }
-
-/* Resting cards keep one compact notification height; free rail space becomes
-   gaps rather than stretching a card into a panel. */
-.nexus-rail > .nexus-node:not([data-expanded='true']) {
-  flex: 0 0 var(--nexus-card-h);
-}
-.nexus-rail > .nexus-node[data-expanded='true'] {
-  flex: 1 1 auto;
-}
-
-/* Layout containment only. `paint` would also be welcome here — it stops a card
-   growing mid-animation from invalidating paint across the whole stage — but it
-   clips to the border box, which silently swallows the card's cast shadow. The
-   shadow is the depth cue; the containment was an optimisation. */
 .nexus-node {
   contain: layout;
-  min-height: var(--nexus-card-h);
+  height: var(--nexus-card-h);
+  min-height: 0;
+  transition: height var(--nexus-dur) var(--nexus-ease);
+}
+.nexus-node[data-expanded='true'] {
+  height: var(--stage-h);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+/* Both faces survive the transition. The shell changes height while its text
+   crossfades at its real size; neither numbers nor labels are stretched. */
+.nexus-summary {
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--nexus-card-h);
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--dur-fast) var(--ease-out) var(--dur-fast),
+    visibility 0s;
+}
+.nexus-node[data-expanded='true'] .nexus-summary {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    visibility 0s var(--dur-fast);
 }
 .nexus-node-body {
-  display: grid;
-  /* minmax(0, Xfr), never a bare Xfr: a bare fr track keeps an `auto` minimum,
-     and the scroll child's own padding is a floor that minimum cannot go below,
-     which left a visible drop at the end of every close. */
-  grid-template-rows: minmax(0, 0fr);
-  overflow: hidden;
+  position: absolute;
+  inset: 0;
   opacity: 0;
-  pointer-events: none;
   visibility: hidden;
-  /* The fade is deliberately shorter than the height change. Fading a subtree
-     repaints all of it every frame, so it finishes early and leaves the rest of
-     the animation to the cheaper height alone. */
+  pointer-events: none;
   transition:
-    grid-template-rows var(--nexus-dur) var(--nexus-ease),
-    opacity calc(var(--nexus-dur) * 0.45) var(--nexus-ease),
-    visibility 0s linear var(--nexus-dur);
+    opacity var(--dur-fast) var(--ease-out),
+    visibility 0s var(--dur-fast);
 }
 .nexus-node[data-expanded='true'] .nexus-node-body {
-  grid-template-rows: minmax(0, 1fr);
   opacity: 1;
-  pointer-events: auto;
   visibility: visible;
-  transition-delay: 0s;
+  pointer-events: auto;
+  transition:
+    opacity var(--dur-fast) var(--ease-out) var(--dur-fast),
+    visibility 0s var(--dur-fast);
 }
 .nexus-node-body > * {
-  min-height: 0;
   overflow: hidden;
 }
-/* Only once the growing has stopped — see the note on data-settled in NexusLayout. */
-.nexus-node[data-expanded='true'][data-settled='true'] .nexus-node-body > * {
+.nexus-node[data-settled='true'] .nexus-node-body > * {
   overflow-y: auto;
 }
 
@@ -801,6 +969,12 @@ input[type='number'] {
   transition:
     transform var(--dur-base) var(--ease-out),
     width var(--dur-base) var(--ease-out);
+}
+
+.tour-dialog {
+  transition:
+    left var(--dur-base) var(--ease-out),
+    top var(--dur-base) var(--ease-out);
 }
 
 /* Route controls grow in from nothing when the tab changes. Scale, not width:
@@ -831,24 +1005,6 @@ input[type='number'] {
   }
 }
 
-/* A card pushed to the opposite rail arrives from below rather than cutting in.
-   Only relocated cards carry this: the whole rail animating on every open would
-   read as the stage twitching, not as one card moving. */
-.nexus-node[data-relocated='true'] {
-  animation: nexusRelocate var(--nexus-dur) var(--nexus-ease) both;
-}
-
-@keyframes nexusRelocate {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
 @keyframes nexusUrgent {
   0%,
   100% {
@@ -867,6 +1023,10 @@ input[type='number'] {
   *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
   }
   .nexus-stage,
   .nexus-node-body,

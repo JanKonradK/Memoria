@@ -576,6 +576,10 @@ export const useApp = create<AppStore>((set, get) => ({
           games: [...s.games, game],
           resources: [...s.resources, ...resources],
           tasks: [...s.tasks, ...tasks],
+          chips: [
+            ...s.chips,
+            ...(preset.chips ?? []).map((chip, sort) => ({ ...chip, id: uid(), gameId, sort, updatedAt: t })),
+          ],
         },
         t,
         uid,

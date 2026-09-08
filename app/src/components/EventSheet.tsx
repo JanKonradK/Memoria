@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import type { EventType } from '@memoria/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
-import { fmtDateTimeLocalInput, parseDateTimeLocalInput } from '../util';
+import { fmtDateTimeLocalInput, fmtDur, parseDateTimeLocalInput } from '../util';
 import { Sheet } from './Sheet';
-import { Btn, Field, Select, TextInput, Toggle } from './ui';
+import { Btn, Field, Select, TextArea, TextInput, Toggle } from './ui';
 
 const DAY = 86_400_000;
 const TYPES: EventType[] = ['banner', 'event', 'cycle', 'maintenance', 'livestream', 'custom'];
@@ -15,6 +15,7 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
   const upsertEvent = useApp((s) => s.upsertEvent);
   const deleteEvent = useApp((s) => s.deleteEvent);
   const closeSheet = useUI((s) => s.closeSheet);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const games = state.games.filter((g) => !g.deleted).sort((a, b) => a.sort - b.sort);
   const existing = eventId ? state.events.find((e) => e.id === eventId && !e.deleted) : undefined;
@@ -28,10 +29,23 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
     dailyTouch: false,
     notify: true,
     done: false,
+    notes: '',
   });
+  const [dateInputs, setDateInputs] = useState(() => ({
+    start: fmtDateTimeLocalInput(draft.start, state.settings.localTz),
+    end: fmtDateTimeLocalInput(draft.end, state.settings.localTz),
+  }));
+  const invalidDates = {
+    start: parseDateTimeLocalInput(dateInputs.start, state.settings.localTz) == null,
+    end: parseDateTimeLocalInput(dateInputs.end, state.settings.localTz) == null,
+  };
 
   useEffect(() => {
     if (!open) return;
+    setDateInputs({
+      start: fmtDateTimeLocalInput(existing?.start ?? Date.now(), state.settings.localTz),
+      end: fmtDateTimeLocalInput(existing?.end ?? Date.now() + 7 * DAY, state.settings.localTz),
+    });
     if (existing) {
       setDraft({
         gameId: existing.gameId,
@@ -42,6 +56,7 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
         dailyTouch: existing.dailyTouch,
         notify: existing.notify,
         done: existing.done ?? false,
+        notes: existing.notes ?? '',
       });
     } else {
       setDraft((d) => ({
@@ -56,7 +71,8 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
   }, [open, eventId]);
 
   const save = () => {
-    if (!draft.gameId || !draft.name.trim()) return;
+    if (!draft.gameId || !draft.name.trim() || invalidDates.start || invalidDates.end || draft.end <= draft.start)
+      return;
     upsertEvent({ ...(existing ? { id: existing.id } : {}), ...draft, name: draft.name.trim() });
     closeSheet();
   };
@@ -64,11 +80,13 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
   return (
     <Sheet open={open} onClose={closeSheet} title={existing ? 'Edit event' : 'New event'}>
       <div className="space-y-3">
+        <p className="text-caption text-dim">Dates and times use {state.settings.localTz}.</p>
         <Field label="Game">
           <Select value={draft.gameId} onChange={(e) => setDraft({ ...draft, gameId: e.target.value })}>
             {games.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.name}
+                {g.accountLabel ? ` · ${g.accountLabel}` : ''}
               </option>
             ))}
           </Select>
@@ -80,7 +98,7 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
             onChange={(e) => setDraft({ ...draft, name: e.target.value })}
           />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Type">
             <Select value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as EventType })}>
               {TYPES.map((t) => (
@@ -90,13 +108,14 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
               ))}
             </Select>
           </Field>
-          <div />
+          <div className="hidden sm:block" />
           <Field label="Starts">
             <TextInput
               type="datetime-local"
-              value={fmtDateTimeLocalInput(draft.start, state.settings.localTz)}
+              value={dateInputs.start}
               onChange={(e) => {
                 const t = parseDateTimeLocalInput(e.target.value, state.settings.localTz);
+                setDateInputs((inputs) => ({ ...inputs, start: e.target.value }));
                 if (t != null) setDraft({ ...draft, start: t });
               }}
             />
@@ -104,41 +123,86 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
           <Field label="Ends">
             <TextInput
               type="datetime-local"
-              value={fmtDateTimeLocalInput(draft.end, state.settings.localTz)}
+              value={dateInputs.end}
               onChange={(e) => {
                 const t = parseDateTimeLocalInput(e.target.value, state.settings.localTz);
+                setDateInputs((inputs) => ({ ...inputs, end: e.target.value }));
                 if (t != null) setDraft({ ...draft, end: t });
               }}
             />
           </Field>
         </div>
+        {invalidDates.start || invalidDates.end || draft.end <= draft.start ? (
+          <p role="alert" className="text-caption text-danger-fg">
+            Enter valid dates. The end must be after the start.
+          </p>
+        ) : (
+          <p className="text-caption text-dim">Duration: {fmtDur(draft.end - draft.start)}</p>
+        )}
+        <div className="flex flex-wrap items-center gap-2" aria-label="Set event duration">
+          <span className="text-caption text-dim">Set duration</span>
+          {[1, 3, 7, 14, 42].map((days) => (
+            <Btn
+              key={days}
+              disabled={invalidDates.start}
+              onClick={() => {
+                setDraft({ ...draft, end: draft.start + days * DAY });
+                setDateInputs((inputs) => ({
+                  ...inputs,
+                  end: fmtDateTimeLocalInput(draft.start + days * DAY, state.settings.localTz),
+                }));
+              }}
+            >
+              {days}d
+            </Btn>
+          ))}
+        </div>
+        <Field label="Notes">
+          <TextArea
+            value={draft.notes}
+            onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
+            placeholder="Rewards, links, or anything to remember…"
+          />
+        </Field>
         <div className="flex flex-wrap gap-5 pt-1">
           <Toggle
             checked={draft.dailyTouch}
             onChange={(v) => setDraft({ ...draft, dailyTouch: v })}
-            label="Needs daily touch (pinned on card)"
+            label="Needs a daily check-in"
           />
           <Toggle
             checked={draft.notify}
             onChange={(v) => setDraft({ ...draft, notify: v })}
             label="Include in next actions"
           />
-          <Toggle checked={draft.done} onChange={(v) => setDraft({ ...draft, done: v })} label="Done (hide + mute)" />
+          <Toggle checked={draft.done} onChange={(v) => setDraft({ ...draft, done: v })} label="Mark done" />
         </div>
-        <div className="flex items-center justify-end gap-2 pt-2">
+        <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
           {existing && (
             <Btn
               kind="danger"
               className="mr-auto"
               onClick={() => {
+                if (!confirmDelete) {
+                  setConfirmDelete(true);
+                  return;
+                }
                 deleteEvent(existing.id);
                 closeSheet();
               }}
             >
-              Delete
+              {confirmDelete ? 'Confirm delete' : 'Delete'}
             </Btn>
           )}
-          <Btn kind="primary" onClick={save} disabled={!draft.name.trim() || !draft.gameId}>
+          {confirmDelete && <Btn onClick={() => setConfirmDelete(false)}>Keep event</Btn>}
+          <Btn onClick={closeSheet}>Cancel</Btn>
+          <Btn
+            kind="primary"
+            onClick={save}
+            disabled={
+              !draft.name.trim() || !draft.gameId || invalidDates.start || invalidDates.end || draft.end <= draft.start
+            }
+          >
             {existing ? 'Save' : 'Add event'}
           </Btn>
         </div>

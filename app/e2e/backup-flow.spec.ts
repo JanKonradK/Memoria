@@ -6,14 +6,12 @@ test('backup export and merge preview stay within the viewport', async ({ page }
   await page.goto('/');
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
-  await page.getByRole('button', { name: 'Add GI' }).click();
+  await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   const expand = page.getByRole('button', { name: 'Expand Genshin Impact controls' });
   if (await expand.isVisible()) await expand.click();
   await expect(page.getByRole('heading', { name: 'Genshin Impact', exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Settings' }).click();
-  // Settings is an accordion now — export/import live inside the collapsed Data section.
-  await page.getByRole('button', { name: 'Expand Data settings' }).click();
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export backup' }).click();
   const download = await downloadPromise;

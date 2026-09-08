@@ -42,20 +42,14 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
   const deleteGame = useApp((store) => store.deleteGame);
   const closeSheet = useUI((store) => store.closeSheet);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const game = state.games.find((candidate) => candidate.id === gameId && !candidate.deleted);
+  // Keep a soft-deleted game visible until its sheet finishes exiting.
+  const game = state.games.find((candidate) => candidate.id === gameId);
   const { changeDraft, commitDraft, draft } = useGameDraft(game, ACCOUNT_DRAFT_FIELDS, open);
 
-  if (!game) {
-    return (
-      <Sheet open={false} onClose={closeSheet} title="">
-        {null}
-      </Sheet>
-    );
-  }
+  if (!game) return null;
 
   const close = () => {
     commitDraft();
-    setConfirmDelete(false);
     closeSheet();
   };
   const knownServer = SERVER_OPTIONS.some((option) => option.value === game.tz);

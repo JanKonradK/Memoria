@@ -107,12 +107,12 @@ export function Disclosure({
         animate={open ? 'open' : 'closed'}
         variants={{
           open: {
-            gridTemplateRows: '1fr',
+            gridTemplateRows: 'minmax(0, 1fr)',
             opacity: 1,
             transition: { duration: reducedMotion ? 0 : duration.base, ease: easing.out },
           },
           closed: {
-            gridTemplateRows: '0fr',
+            gridTemplateRows: 'minmax(0, 0fr)',
             opacity: 0,
             transition: { duration: reducedMotion ? 0 : duration.base, ease: easing.out },
           },

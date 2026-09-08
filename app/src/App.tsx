@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, m } from 'motion/react';
 import { useApp } from './store';
 import { initCloudSync } from './cloud-sync';
@@ -10,7 +10,6 @@ import { servedByLauncher } from './launcher';
 import { easing, duration } from './motion';
 import { useTabSwipe } from './gestures';
 import { AppBar } from './components/AppBar';
-import { Onboarding } from './components/Onboarding';
 import { Btn } from './components/ui';
 
 /** Left to right, matching the route pill in the app bar. */
@@ -53,6 +52,7 @@ const EventSheet = lazy(() => import('./components/EventSheet').then((module) =>
 const ReminderSheet = lazy(() =>
   import('./components/ReminderSheet').then((module) => ({ default: module.ReminderSheet })),
 );
+const UserGuide = lazy(() => import('./components/UserGuide').then((module) => ({ default: module.UserGuide })));
 
 export default function App() {
   const load = useApp((s) => s.load);
@@ -84,7 +84,7 @@ export default function App() {
   const now = useNow(30_000);
   const online = useOnline();
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [onboardingDone, setOnboardingDone] = useState(false);
+  const autoTourStarted = useRef(false);
   const reportLoadError = (error: unknown) => {
     useApp.setState({ loadError: error instanceof Error ? error.message : 'Local data operation failed.' });
   };
@@ -107,6 +107,21 @@ export default function App() {
     document.addEventListener('tg-update-available', showUpdate);
     return () => document.removeEventListener('tg-update-available', showUpdate);
   }, []);
+
+  useEffect(() => {
+    if (
+      !loaded ||
+      loadError ||
+      autoTourStarted.current ||
+      onboardingComplete() ||
+      useUI.getState().tourSeenVersion >= 1
+    )
+      return;
+    if (servedByLauncher() && (syncStatus === 'idle' || syncStatus === 'syncing')) return;
+    autoTourStarted.current = true;
+    // Existing synced rosters already know the app. Fresh installs start in the live UI.
+    if (!hasGames) useUI.getState().openSheet({ kind: 'guide' });
+  }, [loaded, loadError, syncStatus, hasGames]);
 
   if (loadError) {
     return (
@@ -148,21 +163,6 @@ export default function App() {
       <div className="flex min-h-dvh items-center justify-center" role="status" aria-label="Loading Memoria">
         <div className="loader-spin h-12 w-12 rounded-ui-xl bg-gradient-to-br from-accent via-accent-2 to-gold" />
       </div>
-    );
-  }
-
-  // Under the launcher the first sync can still bring games in from state.json,
-  // so waiting for it to resolve keeps onboarding from flashing over real data.
-  const dataSettled = !servedByLauncher() || syncStatus !== 'idle';
-  const showOnboarding = !hasGames && dataSettled && !onboardingDone && !onboardingComplete();
-  if (showOnboarding) {
-    return (
-      <Onboarding
-        onComplete={() => {
-          localStorage.setItem(ONBOARDING_KEY, 'complete');
-          setOnboardingDone(true);
-        }}
-      />
     );
   }
 
@@ -249,12 +249,21 @@ export default function App() {
         </AnimatePresence>
       </div>
 
-      <Suspense fallback={null}>
-        {sheet?.kind === 'game' && <GameDetailSheet open gameId={sheet.gameId} />}
-        {sheet?.kind === 'addGame' && <AddGameSheet open />}
-        {sheet?.kind === 'event' && <EventSheet open eventId={sheet.eventId} gameId={sheet.gameId} />}
-        {sheet?.kind === 'reminder' && <ReminderSheet open />}
-      </Suspense>
+      <AnimatePresence mode="wait">
+        {sheet && (
+          // Keep lazy loading inside the keyed presence child. A new editor
+          // must not suspend the outgoing sheet while its exit is running.
+          <Suspense key={JSON.stringify(sheet)} fallback={null}>
+            {sheet?.kind === 'game' && <GameDetailSheet key={`game-${sheet.gameId}`} open gameId={sheet.gameId} />}
+            {sheet?.kind === 'addGame' && <AddGameSheet key="add-game" open />}
+            {sheet?.kind === 'event' && (
+              <EventSheet key={`event-${sheet.eventId ?? 'new'}`} open eventId={sheet.eventId} gameId={sheet.gameId} />
+            )}
+            {sheet?.kind === 'reminder' && <ReminderSheet key="reminder" open />}
+            {sheet?.kind === 'guide' && <UserGuide key="guide" open />}
+          </Suspense>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

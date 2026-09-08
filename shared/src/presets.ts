@@ -117,6 +117,7 @@ export interface GamePreset {
   weeklyResetDay: number; // ISO: 1 = Monday
   monthlyResetDay: number;
   resources: PresetResource[];
+  chips?: { label: string; delta: number }[];
   tasks: PresetTask[];
   notes?: string;
   /** Executable names (no .exe, case-insensitive) for "what was I just playing" detection. */
@@ -223,8 +224,7 @@ export const PRESETS: GamePreset[] = [
         key: 'genshin-commissions',
         name: 'Daily Commissions ×4',
         cadence: 'daily',
-        mode: 'count',
-        countTarget: 4,
+        mode: 'check',
         core: true,
       },
       // Condensed banks 40 Resin at a time and is the only way to carry Resin
@@ -242,7 +242,7 @@ export const PRESETS: GamePreset[] = [
       // nothing carries over, so it is quietly the largest thing most players
       // leave on the table. "Friend to Animals" — feeding the puppy — is the
       // quickest to trigger; it wants Fowl ×1 in your bag.
-      { key: 'genshin-random-events', name: 'Random Events ×10', cadence: 'daily', mode: 'count', countTarget: 10 },
+      { key: 'genshin-random-events', name: 'Random Events ×10', cadence: 'daily', mode: 'check' },
       // Overworld artifact investigation points respawn on the daily reset and
       // stop paying out after 30 pickups. Free strongbox fodder and artifact
       // EXP for a route you can run on autopilot.
@@ -261,6 +261,9 @@ export const PRESETS: GamePreset[] = [
         name: 'Parametric Transformer',
         cadence: 'custom',
         intervalDays: 7,
+        mode: 'timer',
+        timerDurationMinutes: 9_960,
+        timerStepMinutes: 720,
         timelineLinked: false,
       },
       // Produces 15 Crystal Cores per 7-day cycle; the cooldown starts on harvest, not on the weekly reset.
@@ -408,6 +411,7 @@ export const PRESETS: GamePreset[] = [
     ],
     tasks: [
       { key: 'wuwa-daily-activity', name: 'Daily Activity (100)', cadence: 'daily', core: true },
+      { key: 'wuwa-tacet-fields', name: 'Tacet Fields ×4', cadence: 'daily', mode: 'count', countTarget: 4 },
       // Named for the track, not for "the weekly things": this row sat directly
       // above Weekly Boss ×3 and the roguelike slot, so a bare "Weekly
       // Challenges" read as the heading for both of them rather than as a
@@ -463,7 +467,6 @@ export const PRESETS: GamePreset[] = [
       { key: 'nte-daily-quests', name: 'Daily quests / 100 Participation', cadence: 'daily', core: true },
       // "Make a Sincere Wish" every day — the Mhm! Coins path to a free S-Rank Arc.
       { key: 'nte-nacupeda', name: "Nacupeda's Pool wish", cadence: 'daily' },
-      { key: 'nte-mews-flash', name: 'Mews Flash lottery', cadence: 'daily' },
       // Capped at three attempts a week and the only Esper upgrade source — the
       // one weekly that actually costs you progress if you skip it.
       {
@@ -596,7 +599,17 @@ export const PRESETS: GamePreset[] = [
       { name: 'TP', cap: 100, regenMinutes: 10, reserveCap: 0, kind: 'regen' },
       { name: 'RP', cap: 5, regenMinutes: 120, reserveCap: 0, kind: 'regen' },
     ],
+    chips: [{ label: 'Independent Training', delta: -30 }],
     tasks: [
+      {
+        key: 'uma-independent-training',
+        name: 'Independent Training',
+        cadence: 'custom',
+        mode: 'timer',
+        timerDurationMinutes: 50,
+        intervalDays: 1,
+        timelineLinked: false,
+      },
       { key: 'uma-daily-missions', name: 'Daily Missions (full set)', cadence: 'daily', core: true },
       { key: 'uma-daily-race', name: 'Daily Race tickets ×3', cadence: 'daily', mode: 'count', countTarget: 3 },
       // Five borrows a day, and they do not carry over — the quietest loss in
@@ -613,7 +626,7 @@ export const PRESETS: GamePreset[] = [
       { key: 'uma-club-ranking', name: 'Club Ranking Rewards', cadence: 'monthly' },
     ],
     notes:
-      'Global service, UTC+0. Daily missions refresh 15:00; new banners and events open 22:00. Champions Meeting runs as its own limited window — see the Timeline.',
+      'Global service, UTC+0. Daily missions refresh 15:00; new banners and events open 22:00. Independent Training takes 50 minutes. Use its quick-spend button to record 30 TP, then start the timer. Edit the TP cost during discount campaigns. Champions Meeting runs in the Timeline.',
     processNames: ['UmamusumePrettyDerby'],
   },
   {

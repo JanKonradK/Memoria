@@ -7,6 +7,7 @@ import { useUI, type Tab } from '../ui-store';
 import { AddMenu } from './AddMenu';
 import { HEADER_ACTIONS_SLOT } from './HeaderActions';
 import { Logo } from './Logo';
+import { GameScope } from './GameScope';
 
 const ROUTES: Array<{ id: Tab; label: string }> = [
   { id: 'home', label: 'Dashboard' },
@@ -61,11 +62,11 @@ const SYNC_TONE = {
 } as const;
 
 function AppBarClock() {
-  const now = useNow(1000);
+  const now = useNow(30_000);
   const localTz = useApp((state) => state.state.settings.localTz);
   return (
     <span className="numeral text-meta text-muted">
-      {DateTime.fromMillis(now, { zone: localTz }).toFormat('HH:mm:ss')}
+      {DateTime.fromMillis(now, { zone: localTz }).toFormat('HH:mm')}
     </span>
   );
 }
@@ -110,7 +111,7 @@ function RefreshButton() {
       disabled={refreshing}
       aria-label="Refresh data"
       aria-busy={refreshing}
-      className="flex min-h-8 items-center gap-1.5 rounded-ui-md border border-line px-3 py-1 text-caption uppercase tracking-[0.09em] text-muted transition-colors hover:border-line-strong hover:text-fg-soft disabled:cursor-wait disabled:opacity-60"
+      className="shell-control disabled:cursor-wait"
     >
       <svg
         viewBox="0 0 20 20"
@@ -124,7 +125,7 @@ function RefreshButton() {
         <path d="M16.25 6.25V2.5m0 3.75H12.5" />
         <path d="M15.2 5.15A7 7 0 1 0 17 11" />
       </svg>
-      {refreshing ? 'Refreshing' : 'Refresh'}
+      <span className="hidden sm:inline">{refreshing ? 'Refreshing' : 'Refresh'}</span>
     </button>
   );
 }
@@ -181,20 +182,22 @@ export function AppBar() {
   return (
     <header
       ref={barRef}
-      className="sticky top-0 z-40 flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line bg-surface-0/92 px-3 py-1 backdrop-blur-sm lg:flex-nowrap lg:px-4"
+      className="app-bar sticky top-0 z-40 border-b border-line bg-surface-0/92 px-3 py-2 backdrop-blur-sm sm:px-4"
     >
-      {/* Fixed width so the mark and the wordmark hold their place while the
-          clock's glyphs change underneath them. */}
-      <div className="flex w-[11.5rem] shrink-0 items-center gap-2.5">
+      {/* Tabular clock digits keep the brand width stable while time changes. */}
+      <div className="app-brand flex items-center gap-2.5">
         <Logo className="[&>svg]:h-4 [&>svg]:w-8" />
-        <span className="text-body font-semibold tracking-[0.16em] text-fg">MEMORIA</span>
-        <AppBarClock />
+        <span className="text-body font-semibold tracking-[0.12em] text-fg">MEMORIA</span>
+        <span className="hidden sm:inline">
+          <AppBarClock />
+        </span>
       </div>
 
       <nav
         ref={navRef}
         aria-label="Primary"
-        className="relative flex shrink-0 rounded-ui-full border border-line-hairline bg-inset p-px"
+        data-tour="pages"
+        className="app-nav relative flex rounded-ui-full border border-line-hairline bg-inset p-px"
       >
         {/* One persistent element that slides between the tabs, rather than a
             highlight that blinks out of one button and into the next.
@@ -223,7 +226,7 @@ export function AppBar() {
               type="button"
               onClick={() => setTab(route.id)}
               aria-current={active ? 'page' : undefined}
-              className={`relative z-10 min-h-8 rounded-ui-full border border-transparent px-3 text-meta font-semibold transition-colors ${
+              className={`relative z-10 min-h-11 flex-1 rounded-ui-full border border-transparent px-3 text-body font-medium transition-colors sm:min-h-9 sm:flex-none sm:text-meta ${
                 active ? 'text-fg' : 'text-muted hover:text-fg-soft'
               }`}
             >
@@ -234,9 +237,12 @@ export function AppBar() {
       </nav>
 
       {/* Every route's actions land here — see HeaderActions. */}
-      <div id={HEADER_ACTIONS_SLOT} className="scrollbar-thin flex min-w-0 shrink items-center gap-2 overflow-x-auto" />
+      <div className="app-route-actions scrollbar-thin flex min-w-0 items-center gap-2 overflow-x-auto">
+        <GameScope />
+        <div id={HEADER_ACTIONS_SLOT} className="min-w-0 shrink-0" />
+      </div>
 
-      <div className="ml-auto flex shrink-0 items-center gap-2">
+      <div className="app-utilities flex items-center justify-end gap-1 sm:gap-2">
         <span className="flex items-center gap-1.5" role="status" aria-live="polite">
           <span className="sr-only">{SYNC_ANNOUNCEMENT[syncStatus]}</span>
           <span aria-hidden className={`h-1.5 w-1.5 rounded-ui-full ${SYNC_TONE[syncStatus]}`} />
@@ -247,9 +253,28 @@ export function AppBar() {
           type="button"
           onClick={toggleTheme}
           aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-          className="min-h-8 rounded-ui-md border border-line px-3 py-1 text-caption uppercase tracking-[0.09em] text-muted transition-colors hover:border-line-strong hover:text-fg-soft"
+          className="shell-control"
         >
-          {theme === 'dark' ? 'Light' : 'Dark'}
+          <svg
+            key={theme}
+            aria-hidden
+            viewBox="0 0 20 20"
+            className="theme-icon icon h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            {theme === 'dark' ? (
+              <>
+                <circle cx="10" cy="10" r="3.25" />
+                <path d="M10 1.5v1.25m0 14.5v1.25M1.5 10h1.25m14.5 0h1.25M4 4l1 1m10 10 1 1M4 16l1-1M15 5l1-1" />
+              </>
+            ) : (
+              <path d="M17 12A7.5 7.5 0 0 1 8 3a7.5 7.5 0 1 0 9 9Z" />
+            )}
+          </svg>
+          <span className="hidden sm:inline">{theme === 'dark' ? 'Light' : 'Dark'}</span>
         </button>
       </div>
     </header>

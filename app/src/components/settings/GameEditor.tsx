@@ -49,7 +49,21 @@ export function GameEditor({ game }: { game: Game }) {
 
   return (
     <div className="space-y-6 pt-4">
-      <section>
+      <nav
+        aria-label="Game settings sections"
+        className="sticky top-0 z-10 flex flex-wrap gap-1 rounded-ui-lg bg-panel p-1 ring-1 ring-line-hairline"
+      >
+        {['Game', 'Resets', 'Resources', 'Quick spend', 'Tasks'].map((label, index) => (
+          <a
+            key={label}
+            href={`#editor-${game.id}-${index}`}
+            className="flex min-h-9 items-center rounded-ui-md px-3 text-caption text-fg-soft hover:bg-fill-2"
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
+      <section id={`editor-${game.id}-0`} className="scroll-mt-24">
         <SectionTitle>Game</SectionTitle>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Name" className="sm:col-span-2">
@@ -156,7 +170,7 @@ export function GameEditor({ game }: { game: Game }) {
         </div>
       </section>
 
-      <section>
+      <section id={`editor-${game.id}-1`} className="scroll-mt-24">
         <SectionTitle>Resets and status</SectionTitle>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Daily reset hour">
@@ -216,12 +230,12 @@ export function GameEditor({ game }: { game: Game }) {
         </div>
       </section>
 
-      <section>
+      <section id={`editor-${game.id}-2`} className="scroll-mt-24">
         <SectionTitle>Energy resources</SectionTitle>
         <ResourceEditor game={game} resources={resources} />
       </section>
 
-      <section>
+      <section id={`editor-${game.id}-3`} className="scroll-mt-24">
         <SectionTitle>Quick spend</SectionTitle>
         <div className="space-y-2">
           {chips.map((chip) => (
@@ -284,7 +298,7 @@ export function GameEditor({ game }: { game: Game }) {
         </div>
       </section>
 
-      <section>
+      <section id={`editor-${game.id}-4`} className="scroll-mt-24">
         <SectionTitle>Tasks</SectionTitle>
         <div className="space-y-3">
           {tasks.map((task) => {

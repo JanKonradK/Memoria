@@ -266,6 +266,8 @@ describe('depth is tonal, not cast', () => {
       'components/ui.tsx',
       // The add menu: a dropdown genuinely overlays the page.
       'components/AddMenu.tsx',
+      'components/TimelineTools.tsx',
+      'components/UserGuide.tsx',
     ]);
     const floating = FILES.filter(({ text }) => /\bshadow-float\b/.test(text)).map(({ path }) =>
       path.slice(SRC.length + 1).replace(/\\/g, '/'),

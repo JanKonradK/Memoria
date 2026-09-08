@@ -6,7 +6,7 @@ import { useDerived } from '../selectors';
 import { useApp } from '../store';
 import { utcOffsetLabel } from '../timezone';
 import { useUI } from '../ui-store';
-import { GameCard } from './GameCard';
+import { GameCard, GameControlsView } from './GameCard';
 import { NexusLayout } from './NexusLayout';
 import { Btn, Page } from './ui';
 
@@ -67,6 +67,9 @@ export function DashboardPage({ now }: { now: number }) {
   );
   const openTimeline = useCallback(() => setTab('timeline'), [setTab]);
   const wide = useMediaQuery('(min-width: 1280px)');
+  const focusColumns = useMediaQuery('(min-width: 900px)');
+  const focusedGameId = useUI((s) => s.focusedGameId);
+  const focusedEntry = focusedGameId ? entryById.get(focusedGameId) : undefined;
 
   // Card ORDER is frozen while you're on this page — live re-sorting made cards
   // jump away mid-entry. Values and timers stay live; position changes only when
@@ -203,7 +206,25 @@ export function DashboardPage({ now }: { now: number }) {
         </div>
       ) : (
         <>
-          {wide ? (
+          {focusedEntry ? (
+            <section
+              key={focusedEntry.game.id}
+              className="card-shell focus-workspace page-enter rounded-ui-card p-4 sm:p-5"
+              data-direction="1"
+              aria-label={`${focusedEntry.game.name} focus workspace`}
+            >
+              <GameControlsView
+                entry={focusedEntry}
+                state={state}
+                actions={dashboardStore}
+                now={now}
+                layout="focus"
+                columns={focusColumns ? 2 : 1}
+                onEditGame={editGame}
+                onOpenEvent={openGameEvent}
+              />
+            </section>
+          ) : wide ? (
             <NexusLayout
               state={state}
               entries={order}

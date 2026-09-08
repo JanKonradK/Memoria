@@ -4,13 +4,15 @@ import type { Game, GameEvent } from '@memoria/shared';
 import { useReducedMotionConfig } from 'motion/react';
 import { m } from 'motion/react';
 import { useApp } from '../store';
-import { TYPE_RANK } from '../timeline-sort';
+import { cycleKey, sortTimelineEvents } from '../timeline-sort';
 import { useUI } from '../ui-store';
 import { slideIn } from '../motion';
 import { endTone, fmtDur } from '../util';
 import { Disclosure } from './Disclosure';
 import { ProgressBar } from './primitives';
 import { GameBadge, Page, Tooltip } from './ui';
+import { TimelineTools } from './TimelineTools';
+import { TimelineList } from './TimelineList';
 import { serverRegionLabel } from './NexusLayout';
 import { titleFont } from '../fonts';
 import { assignGameInks, gameRim, gameTitleInk, mix, onColor, resolveGameIdentityColors } from '../game-color';
@@ -111,6 +113,7 @@ interface TimelineRowLayoutBase {
   barTextMaxWidth: number;
   trailingClusterPx: number;
   barEndPct: number;
+  clusterBefore?: boolean;
 }
 
 export type TimelineRowLayout =
@@ -139,7 +142,12 @@ export type TimelineRowLayout =
       labelPlacement: 'after' | 'before' | 'none';
     });
 
-export function timelineRowLayout(displayLeft: number, displayWidth: number, laneWidth: number): TimelineRowLayout {
+export function timelineRowLayout(
+  displayLeft: number,
+  displayWidth: number,
+  laneWidth: number,
+  labelMode: 'auto' | 'outside' = 'auto',
+): TimelineRowLayout {
   const safeLaneWidth = Number.isFinite(laneWidth) ? Math.max(0, laneWidth) : 0;
   const safeDisplayLeft = Number.isFinite(displayLeft) ? Math.max(0, Math.min(displayLeft, 100)) : 0;
   const safeDisplayWidth = Number.isFinite(displayWidth)
@@ -164,7 +172,7 @@ export function timelineRowLayout(displayLeft: number, displayWidth: number, lan
   const textRightPx = Math.min(barEndPx, clusterStartPx);
   const insideLabelPx = Math.max(0, textRightPx - barLeftPx - BAR_TEXT_INSET_PX);
 
-  if (insideLabelPx >= MIN_LABEL_PX) {
+  if (labelMode !== 'outside' && insideLabelPx >= MIN_LABEL_PX) {
     if (tickFloats && barInnerPx >= SPAN_PX) {
       return {
         tier: 'roomy',
@@ -197,6 +205,25 @@ export function timelineRowLayout(displayLeft: number, displayWidth: number, lan
       barTextMaxWidth: insideLabelPx,
       trailingClusterPx,
       barEndPct,
+    };
+  }
+
+  // A future bar can be clipped by the right edge of the window. Use its
+  // empty lead-in for the countdown so the title stays on its own bar.
+  if (
+    labelMode !== 'outside' &&
+    barInnerPx >= MIN_LABEL_PX &&
+    barLeftPx >= COUNTDOWN_PX + TICK_SLOT_PX + BAR_TEXT_INSET_PX
+  ) {
+    return {
+      tier: 'tight',
+      tickFloats: false,
+      showSpan: false,
+      labelPlacement: 'inside',
+      barTextMaxWidth: barInnerPx,
+      trailingClusterPx: COUNTDOWN_PX + TICK_SLOT_PX,
+      barEndPct,
+      clusterBefore: true,
     };
   }
 
@@ -245,11 +272,13 @@ export function buildCycleConnectorPaths(
   ws: number,
   we: number,
   rowCenters: ReadonlyMap<string, number>,
+  laneWidth = 1000,
+  barHeights: ReadonlyMap<string, number> = new Map(),
 ): string[] {
   const byCycle = new Map<string, GameEvent[]>();
   events.forEach((ev) => {
-    if (ev.type !== 'cycle') return;
-    const key = ev.name.trim().toLowerCase();
+    const key = cycleKey(ev);
+    if (key === null) return;
     const list = byCycle.get(key) ?? [];
     list.push(ev);
     byCycle.set(key, list);
@@ -262,16 +291,36 @@ export function buildCycleConnectorPaths(
     for (let i = 0; i < ordered.length - 1; i += 1) {
       const from = ordered[i]!;
       const to = ordered[i + 1]!;
-      const x1 = barGeometry(from, ws, we).displayRight * 10;
-      const x2 = barGeometry(to, ws, we).displayLeft * 10;
+      const r1 = (barHeights.get(from.id) ?? 22) / 2;
+      const r2 = (barHeights.get(to.id) ?? 22) / 2;
+      const x1 = (barGeometry(from, ws, we).displayRight / 100) * laneWidth - r1;
+      const x2 = (barGeometry(to, ws, we).displayLeft / 100) * laneWidth + r2;
       const y1 = rowCenters.get(from.id);
       const y2 = rowCenters.get(to.id);
       if (y1 === undefined || y2 === undefined) continue;
-      // Control points pull horizontally out of one bar and into the next, so the
-      // hand-off leaves and arrives along the timeline rather than cutting across it.
-      const reach = Math.max(40, Math.abs(x2 - x1) * 0.45);
+      const distance = Math.hypot(x2 - x1, y2 - y1);
+      if (!Number.isFinite(distance) || distance < 1 || !(laneWidth > 0)) continue;
+      const dx = (x2 - x1) / distance;
+      const dy = (y2 - y1) / distance;
+      // Attach inside each curved cap. Two curved sides narrow to a small
+      // waist, making a filled bridge rather than an outlined connection.
+      const start = { x: x1 + dx * r1 * 0.5, y: y1 + dy * r1 * 0.5 };
+      const end = { x: x2 - dx * r2 * 0.5, y: y2 - dy * r2 * 0.5 };
+      const middle = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+      const waist = Math.min(2.2, r1 * 0.2, r2 * 0.2);
+      const pull = Math.hypot(end.x - start.x, end.y - start.y) * 0.22;
+      const point = (center: { x: number; y: number }, width: number, along = 0) =>
+        `${(center.x - dy * width + dx * along).toFixed(2)} ${(center.y + dx * width + dy * along).toFixed(2)}`;
       paths.push(
-        `M ${x1.toFixed(1)} ${y1} C ${(x1 + reach).toFixed(1)} ${y1}, ${(x2 - reach).toFixed(1)} ${y2}, ${x2.toFixed(1)} ${y2}`,
+        [
+          `M ${point(start, r1 * 0.65)}`,
+          `C ${point(start, r1 * 0.65, pull)}, ${point(middle, waist, -pull)}, ${point(middle, waist)}`,
+          `C ${point(middle, waist, pull)}, ${point(end, r2 * 0.65, -pull)}, ${point(end, r2 * 0.65)}`,
+          `L ${point(end, -r2 * 0.65)}`,
+          `C ${point(end, -r2 * 0.65, -pull)}, ${point(middle, -waist, pull)}, ${point(middle, -waist)}`,
+          `C ${point(middle, -waist, -pull)}, ${point(start, -r1 * 0.65, pull)}, ${point(start, -r1 * 0.65)}`,
+          'Z',
+        ].join(' '),
       );
     }
   }
@@ -280,17 +329,25 @@ export function buildCycleConnectorPaths(
 
 interface ConnectorLayout {
   height: number;
+  width: number;
   rowCenters: Map<string, number>;
+  barHeights: Map<string, number>;
 }
 
 export function CycleConnectors({ events, ws, we, ink }: { events: GameEvent[]; ws: number; we: number; ink: string }) {
+  const inset = useInset();
   const svgRef = useRef<SVGSVGElement>(null);
-  const [layout, setLayout] = useState<ConnectorLayout>({ height: 0, rowCenters: new Map() });
+  const [layout, setLayout] = useState<ConnectorLayout>({
+    height: 0,
+    width: 1000,
+    rowCenters: new Map(),
+    barHeights: new Map(),
+  });
   const hasConnections = useMemo(() => {
     const counts = new Map<string, number>();
     for (const event of events) {
-      if (event.type !== 'cycle') continue;
-      const key = event.name.trim().toLowerCase();
+      const key = cycleKey(event);
+      if (key === null) continue;
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
     return [...counts.values()].some((count) => count > 1);
@@ -303,20 +360,27 @@ export function CycleConnectors({ events, ws, we, ink }: { events: GameEvent[]; 
     const rows = [...stack.querySelectorAll<HTMLElement>('[data-timeline-event-row]')];
     const measure = () => {
       const rowCenters = new Map<string, number>();
+      const barHeights = new Map<string, number>();
       for (const row of rows) {
         const eventId = row.dataset.eventId;
         const bar = row.querySelector<HTMLElement>('[data-event-bar]');
         if (eventId) {
           rowCenters.set(eventId, row.offsetTop + (bar?.offsetTop ?? 0) + (bar?.offsetHeight ?? row.offsetHeight) / 2);
+          barHeights.set(eventId, bar?.offsetHeight || 22);
         }
       }
       const height = stack.clientHeight;
+      const width = stack.clientWidth || 1000;
       setLayout((current) => {
         const unchanged =
           current.height === height &&
+          current.width === width &&
           current.rowCenters.size === rowCenters.size &&
-          [...rowCenters].every(([id, center]) => current.rowCenters.get(id) === center);
-        return unchanged ? current : { height, rowCenters };
+          [...rowCenters].every(
+            ([id, center]) =>
+              current.rowCenters.get(id) === center && current.barHeights.get(id) === barHeights.get(id),
+          );
+        return unchanged ? current : { height, width, rowCenters, barHeights };
       });
     };
 
@@ -328,28 +392,21 @@ export function CycleConnectors({ events, ws, we, ink }: { events: GameEvent[]; 
     return () => observer.disconnect();
   }, [events]);
 
-  const paths = buildCycleConnectorPaths(events, ws, we, layout.rowCenters);
+  const paths = buildCycleConnectorPaths(events, ws, we, layout.rowCenters, layout.width, layout.barHeights);
   if (!hasConnections) return null;
 
   return (
     <svg
       ref={svgRef}
       aria-hidden
-      className="pointer-events-none absolute inset-0 h-full w-full"
-      viewBox={`0 0 1000 ${Math.max(layout.height, 1)}`}
+      data-cycle-connectors
+      className="pointer-events-none absolute inset-0 z-[1] h-full w-full"
+      viewBox={`0 0 ${layout.width} ${Math.max(layout.height, 1)}`}
       preserveAspectRatio="none"
       fill="none"
     >
       {paths.map((d) => (
-        <path
-          key={d}
-          d={d}
-          stroke={ink}
-          strokeOpacity="0.45"
-          strokeWidth="1"
-          strokeLinecap="round"
-          vectorEffect="non-scaling-stroke"
-        />
+        <path key={d} d={d} fill={mix(ink, inset, 0.34)} />
       ))}
     </svg>
   );
@@ -408,10 +465,11 @@ const EventRow = memo(function EventRow({
 
   // Deliberate over-estimates avoid a layout read per row on every clock tick.
   // The only cost of guessing high is an earlier truncation near the controls.
-  const { barEndPct, tickFloats, showSpan, labelPlacement, barTextMaxWidth } = timelineRowLayout(
+  const { barEndPct, tickFloats, showSpan, labelPlacement, barTextMaxWidth, clusterBefore } = timelineRowLayout(
     displayLeft,
     displayWidth,
     laneWidth,
+    maint || stream ? 'outside' : 'auto',
   );
 
   const tick = (
@@ -475,7 +533,7 @@ const EventRow = memo(function EventRow({
           start={displayLeft / 100}
           color={ink}
           data-event-bar
-          className="absolute top-0 flex h-[var(--lane-bar-h)] items-center overflow-hidden rounded-ui-lg border px-2"
+          className="absolute top-0 z-[2] flex h-[var(--lane-bar-h)] items-center overflow-hidden rounded-ui-lg border px-2"
           style={{
             backgroundColor: barFill,
             borderColor: ink,
@@ -527,7 +585,11 @@ const EventRow = memo(function EventRow({
 
         {/* One right-anchored cluster keeps the mandatory tick and countdown from
             stacking. The tick only joins it when the measured lane needs the gap. */}
-        <span className="pointer-events-none absolute right-1 top-0 z-30 flex h-[var(--lane-bar-h)] items-center gap-1.5">
+        <span
+          data-event-countdown
+          className="pointer-events-none absolute right-1 top-0 z-30 flex h-[var(--lane-bar-h)] items-center gap-1.5"
+          style={clusterBefore ? { right: `calc(${100 - displayLeft}% + 8px)` } : undefined}
+        >
           {!tickFloats && tick}
           <Tooltip content="d = days · h = hours · m = minutes">
             <span
@@ -553,6 +615,10 @@ export function TimelinePage({ now }: { now: number }) {
   const laneInset = useInset();
   const reducedMotion = useReducedMotionConfig();
   const [timelineScaleRef, timelineWidth] = useElementWidth();
+  const focusedGameId = useUI((s) => s.focusedGameId);
+  const [search, setSearch] = useState('');
+  const [view, setView] = useState('lanes');
+  const [showFinished, setShowFinished] = useState(false);
   const openEvent = useCallback(
     (event: GameEvent) => openSheet({ kind: 'event', eventId: event.id, gameId: event.gameId }),
     [openSheet],
@@ -565,46 +631,30 @@ export function TimelinePage({ now }: { now: number }) {
   // Lane membership and the ruler only change on the hour; the playhead below
   // animates against raw `now`. Without this the whole grid rebuilt every tick.
   const hourBucket = Math.floor(now / HOUR);
-  const { games, eventsByGame, gameById, endingSoon, ticks, ws, we, span } = useMemo(() => {
+  const { games, eventsByGame, ticks, ws, we, span } = useMemo(() => {
     const rangeNow = now;
     const rangeDays = RANGE_DAYS;
     const rangeStart = rangeNow - (rangeDays * DAY) / 3;
     const rangeEnd = rangeStart + rangeDays * DAY;
     const rangeSpan = rangeEnd - rangeStart;
-    const live = state.events.filter((event) => !event.deleted);
-    const activeGames = state.games.filter((game) => !game.deleted);
+    const live = state.events.filter(
+      (event) => !event.deleted && event.name.toLowerCase().includes(search.trim().toLowerCase()),
+    );
+    const hasFocus = state.games.some((game) => !game.deleted && game.id === focusedGameId);
+    const activeGames = state.games.filter((game) => !game.deleted && (!hasFocus || game.id === focusedGameId));
     const byGame = new Map<string, GameEvent[]>(
       activeGames.map((game) => [
         game.id,
-        live
-          .filter((event) => event.gameId === game.id && event.end > rangeStart && event.start < rangeEnd)
-          .sort(
-            (a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || TYPE_RANK[a.type] - TYPE_RANK[b.type] || a.end - b.end,
-          ),
+        sortTimelineEvents(
+          live.filter((event) => event.gameId === game.id && event.end > rangeStart && event.start < rangeEnd),
+        ),
       ]),
     );
-    const gamesById = new Map(activeGames.map((game) => [game.id, game]));
-
-    // Soonest PLAY deadlines across all games — events and endgame cycles.
-    // Banners and things you've marked done are excluded.
-    const soon = live
-      .filter(
-        (event) =>
-          (event.type === 'event' || event.type === 'custom' || event.type === 'cycle') &&
-          !event.done &&
-          event.end > rangeNow &&
-          event.start <= rangeNow &&
-          gamesById.has(event.gameId),
-      )
-      .sort((a, b) => a.end - b.end)
-      .slice(0, 5);
     const gridTicks = buildGridTicks(rangeStart, rangeEnd, timelineWidth, state.settings.localTz);
 
     return {
       games: activeGames,
       eventsByGame: byGame,
-      gameById: gamesById,
-      endingSoon: soon,
       ticks: gridTicks,
       ws: rangeStart,
       we: rangeEnd,
@@ -613,7 +663,7 @@ export function TimelinePage({ now }: { now: number }) {
     // Timeline membership and grid construction intentionally invalidate on
     // the hour bucket; the red playhead below continues to use raw `now`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hourBucket, state.events, state.games, state.settings.localTz, timelineWidth]);
+  }, [hourBucket, state.events, state.games, state.settings.localTz, timelineWidth, focusedGameId, search]);
 
   // One pass assigns every lane a colour, so the timeline and the dashboard agree
   // and no two lanes land in the same region of hue and lightness. Without it,
@@ -624,230 +674,214 @@ export function TimelinePage({ now }: { now: number }) {
   // Lanes whose finished pile has been opened. Finished means ticked off OR
   // simply over: once an event ends there is nothing left to act on, so it stops
   // competing for the eye with the things that are still running.
-  const [finishedOpen, setFinishedOpen] = useState<Set<string>>(new Set());
   const [laneOpen, setLaneOpen] = useState<Record<string, boolean>>({});
-  const toggleFinishedOpen = (gameId: string) =>
-    setFinishedOpen((s) => {
-      const next = new Set(s);
-      if (next.has(gameId)) next.delete(gameId);
-      else next.add(gameId);
-      return next;
-    });
 
   return (
-    <Page>
+    <Page className="timeline-page">
       {/* The lanes are the page, so the title only has to exist for the heading
           outline and the landmark audit — a visible one spent a band of vertical
           space restating the tab you already pressed. */}
       <h1 className="sr-only">Event timeline</h1>
+      <TimelineTools
+        search={search}
+        onSearch={setSearch}
+        view={view}
+        onView={setView}
+        showFinished={showFinished}
+        onShowFinished={setShowFinished}
+      />
+      <div className="timeline-caption flex min-h-5 items-center gap-3 text-caption text-muted">
+        <span>
+          {view === 'lanes'
+            ? `${DateTime.fromMillis(ws, { zone: state.settings.localTz }).toFormat('d LLL')}–${DateTime.fromMillis(we, { zone: state.settings.localTz }).toFormat('d LLL')}`
+            : 'Event list'}{' '}
+          · {state.settings.localTz}
+        </span>
+        {search && (
+          <button className="truncate text-accent-fg" onClick={() => setSearch('')} aria-label="Clear event search">
+            “{search}” ×
+          </button>
+        )}
+        {showFinished && <span>Including finished</span>}
+      </div>
 
-      {endingSoon.length > 0 && (
-        <div className="mb-4">
-          <div className="mb-1.5 text-label font-bold uppercase tracking-widest text-dim">Ending soonest</div>
-          {/* Badge, name and countdown on ONE line. Stacking the countdown under
-              the name made every card two rows tall to hold six characters, and
-              five of those across a phone left no room for either. Wider cards,
-              fewer columns. */}
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {endingSoon.map((ev) => {
-              const game = gameById.get(ev.gameId)!;
-              const colors = identityColors[game.id] ?? game;
-              return (
-                <button
-                  key={ev.id}
-                  type="button"
-                  onClick={() => openSheet({ kind: 'event', eventId: ev.id, gameId: ev.gameId })}
-                  className="glass flex min-h-9 items-center gap-2 rounded-ui-lg px-3 py-1.5 text-left transition hover:bg-fill-2"
-                >
-                  <GameBadge short={game.short} {...colors} size="sm" />
-                  <span className="min-w-0 flex-1 truncate text-body font-semibold text-fg-soft">{ev.name}</span>
-                  <Tooltip content="d = days · h = hours · m = minutes">
-                    <span
-                      className={`numeral shrink-0 text-meta font-bold ${ev.end - now < DAY ? 'warn-pulse' : ''}`}
-                      style={{ color: endTone(ev.end - now) }}
-                    >
-                      {fmtDur(ev.end - now)}
+      {view === 'list' ? (
+        <TimelineList
+          games={games}
+          events={state.events.filter(
+            (event) => !event.deleted && event.name.toLowerCase().includes(search.trim().toLowerCase()),
+          )}
+          now={now}
+          localTz={state.settings.localTz}
+          showFinished={showFinished}
+          onOpenEvent={openEvent}
+          onToggleEvent={toggleEvent}
+        />
+      ) : (
+        <div data-tour="timeline" className="timeline-board relative">
+          <div ref={timelineScaleRef} data-timeline-scale>
+            <div data-timeline-ruler className="relative h-5 text-caption text-muted">
+              {ticks.map((tick, index) => {
+                const first = index === 0;
+                const last = index === ticks.length - 1;
+                const previous = ticks[index - 1];
+                const showMonth = first || previous?.month !== tick.month;
+                return (
+                  <span
+                    key={tick.toMillis()}
+                    data-timeline-tick
+                    className={`absolute top-0 flex h-5 flex-row items-center gap-1 ${
+                      first ? 'translate-x-0' : last ? '-translate-x-full' : '-translate-x-1/2'
+                    }`}
+                    style={{ left: `${((tick.toMillis() - ws) / span) * 100}%` }}
+                  >
+                    <span className="numeral h-3 text-caption uppercase text-dim">
+                      {showMonth ? tick.toFormat('LLL') : ''}
                     </span>
-                  </Tooltip>
-                </button>
-              );
-            })}
+                    <span className="numeral text-caption text-muted">{tick.toFormat('d')}</span>
+                  </span>
+                );
+              })}
+            </div>
+
+            <div className="relative">
+              {ticks.map((tick) => (
+                <div
+                  key={tick.toMillis()}
+                  className="timeline-grid-dotted pointer-events-none absolute inset-y-0 w-px"
+                  style={{ left: `${((tick.toMillis() - ws) / span) * 100}%` }}
+                />
+              ))}
+              <m.div
+                initial={false}
+                animate={{ left: `${((now - ws) / span) * 100}%` }}
+                transition={{ duration: reducedMotion ? 0 : 0.6, ease: 'linear' }}
+                className="pointer-events-none absolute inset-y-0 z-10 w-px bg-danger"
+              >
+                <span className="absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-ui-full bg-danger" />
+              </m.div>
+
+              {games.length === 0 && (
+                <p className="py-8 text-center text-body text-dim">
+                  No events yet — add banners and events so nothing ends without you noticing.
+                </p>
+              )}
+
+              {games.map((game) => {
+                const colors = identityColors[game.id] ?? game;
+                const evs = eventsByGame.get(game.id) ?? [];
+                const open = laneOpen[game.id] ?? evs.length > 0;
+                const nextEnd = [...evs]
+                  .sort((a, b) => a.end - b.end)
+                  .find(
+                    (e) =>
+                      e.end > now &&
+                      !e.done &&
+                      e.type !== 'maintenance' &&
+                      e.type !== 'banner' &&
+                      e.type !== 'livestream',
+                  );
+                const finishedShown = showFinished;
+                // `now` ticks, so a row leaves the lane the moment it ends without
+                // anyone having to press anything.
+                const running = evs.filter((event) => !event.done && event.end > now);
+                const finishedCount = evs.length - running.length;
+                const shown = finishedShown ? evs : running;
+                const serverLabel = serverRegionLabel(game.tz, now);
+                const accountLabel = game.accountLabel?.trim();
+                return (
+                  <Disclosure
+                    key={game.id}
+                    headingLevel={2}
+                    open={open}
+                    onOpenChange={(nextOpen) => setLaneOpen((current) => ({ ...current, [game.id]: nextOpen }))}
+                    title={
+                      <span className="flex min-w-0 items-center gap-2">
+                        <GameBadge short={game.short} {...colors} />
+                        <span
+                          className="min-w-0 truncate text-body font-semibold"
+                          style={{ fontFamily: titleFont(game.titleFont), color: gameTitleInk(colors, ground) }}
+                        >
+                          {game.name}
+                        </span>
+                        <span
+                          className={`shrink-0 rounded-ui-sm border border-line-edge bg-inset px-1.5 py-0.5 text-caption font-semibold text-fg-soft ${serverLabel.startsWith('UTC') && serverLabel !== 'UTC' ? 'numeral' : ''}`}
+                        >
+                          {serverLabel}
+                        </span>
+                        {accountLabel && (
+                          <span className="min-w-0 max-w-[35%] shrink-0 truncate text-body font-semibold text-fg-soft">
+                            {accountLabel}
+                          </span>
+                        )}
+                        <span
+                          className="h-px flex-1"
+                          style={{
+                            background: `linear-gradient(90deg, ${mix(gameRim(colors, ground), ground, 0.3)}, ${mix(gameRim(colors, ground), ground, 0.08)})`,
+                          }}
+                        />
+                      </span>
+                    }
+                    summary={
+                      !open ? (
+                        <span className="numeral flex flex-col text-caption text-muted">
+                          <span>
+                            {running.length} {running.length === 1 ? 'event' : 'events'}
+                          </span>
+                          <span>
+                            {nextEnd ? (
+                              <span style={{ color: endTone(nextEnd.end - now) }}>
+                                next ends {fmtDur(nextEnd.end - now)}
+                              </span>
+                            ) : (
+                              'no upcoming deadline'
+                            )}
+                          </span>
+                        </span>
+                      ) : undefined
+                    }
+                    triggerLabel={`${open ? 'Collapse' : 'Expand'} ${game.name}, ${serverLabel}${accountLabel ? `, ${accountLabel}` : ''} lane`}
+                    className="relative"
+                    triggerClassName="timeline-game-heading relative z-20 rounded-ui-md px-1 transition hover:bg-fill-1"
+                    contentClassName="pb-1"
+                  >
+                    {evs.length === 0 ? (
+                      <p className="py-1 text-label text-muted">Nothing in this window — import or add events.</p>
+                    ) : shown.length === 0 ? (
+                      <p className="py-1 text-label text-muted">
+                        Nothing running — {finishedCount} finished {finishedCount === 1 ? 'event' : 'events'}. Use the
+                        history button to show them.
+                      </p>
+                    ) : (
+                      <div>
+                        <div className="timeline-rows relative flex flex-col">
+                          <CycleConnectors events={shown} ws={ws} we={we} ink={laneInk[game.id] ?? colors.color} />
+                          {shown.map((ev) => (
+                            <EventRow
+                              key={ev.id}
+                              ev={ev}
+                              game={game}
+                              ink={laneInk[game.id] ?? colors.color}
+                              inset={laneInset}
+                              now={now}
+                              ws={ws}
+                              we={we}
+                              onOpenEvent={openEvent}
+                              onToggleEvent={toggleEvent}
+                              laneWidth={timelineWidth}
+                              localTz={state.settings.localTz}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </Disclosure>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
-
-      <div className="glass gold-hairline relative rounded-ui-card p-4">
-        <div ref={timelineScaleRef} data-timeline-scale>
-          <div className="relative h-9 text-caption text-muted">
-            {ticks.map((tick, index) => {
-              const first = index === 0;
-              const last = index === ticks.length - 1;
-              const previous = ticks[index - 1];
-              const showMonth = first || previous?.month !== tick.month;
-              return (
-                <span
-                  key={tick.toMillis()}
-                  data-timeline-tick
-                  className={`absolute top-0 flex h-8 flex-col justify-between ${
-                    first ? 'translate-x-0' : last ? '-translate-x-full' : '-translate-x-1/2'
-                  }`}
-                  style={{ left: `${((tick.toMillis() - ws) / span) * 100}%` }}
-                >
-                  <span className="numeral h-3 text-caption uppercase text-dim">
-                    {showMonth ? tick.toFormat('LLL') : ''}
-                  </span>
-                  <span className="numeral text-caption text-muted">{tick.toFormat('d')}</span>
-                </span>
-              );
-            })}
-          </div>
-
-          <div className="relative pt-1">
-            {ticks.map((tick) => (
-              <div
-                key={tick.toMillis()}
-                className="timeline-grid-dotted pointer-events-none absolute inset-y-0 w-px"
-                style={{ left: `${((tick.toMillis() - ws) / span) * 100}%` }}
-              />
-            ))}
-            <m.div
-              initial={false}
-              animate={{ left: `${((now - ws) / span) * 100}%` }}
-              transition={{ duration: reducedMotion ? 0 : 0.6, ease: 'linear' }}
-              className="pointer-events-none absolute inset-y-0 z-10 w-px bg-danger"
-            >
-              <span className="absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-ui-full bg-danger" />
-            </m.div>
-
-            {games.length === 0 && (
-              <p className="py-8 text-center text-body text-dim">
-                No events yet — add banners and events so nothing ends without you noticing.
-              </p>
-            )}
-
-            {games.map((game) => {
-              const colors = identityColors[game.id] ?? game;
-              const evs = eventsByGame.get(game.id) ?? [];
-              const open = laneOpen[game.id] ?? evs.length > 0;
-              const nextEnd = [...evs]
-                .sort((a, b) => a.end - b.end)
-                .find(
-                  (e) =>
-                    e.end > now &&
-                    !e.done &&
-                    e.type !== 'maintenance' &&
-                    e.type !== 'banner' &&
-                    e.type !== 'livestream',
-                );
-              const finishedShown = finishedOpen.has(game.id);
-              // `now` ticks, so a row leaves the lane the moment it ends without
-              // anyone having to press anything.
-              const running = evs.filter((event) => !event.done && event.end > now);
-              const finishedCount = evs.length - running.length;
-              const shown = finishedShown ? evs : running;
-              const serverLabel = serverRegionLabel(game.tz, now);
-              const accountLabel = game.accountLabel?.trim();
-              return (
-                <Disclosure
-                  key={game.id}
-                  open={open}
-                  onOpenChange={(nextOpen) => setLaneOpen((current) => ({ ...current, [game.id]: nextOpen }))}
-                  title={
-                    <span className="flex min-w-0 items-center gap-2">
-                      <GameBadge short={game.short} {...colors} />
-                      <span
-                        className="min-w-0 truncate text-title font-semibold"
-                        style={{ fontFamily: titleFont(game.titleFont), color: gameTitleInk(colors, ground) }}
-                      >
-                        {game.name}
-                      </span>
-                      <span
-                        className={`shrink-0 rounded-ui-sm border border-line-edge bg-inset px-1.5 py-0.5 text-caption font-semibold text-fg-soft ${serverLabel.startsWith('UTC') && serverLabel !== 'UTC' ? 'numeral' : ''}`}
-                      >
-                        {serverLabel}
-                      </span>
-                      {accountLabel && (
-                        <span className="min-w-0 max-w-[35%] shrink-0 truncate text-body font-semibold text-fg-soft">
-                          {accountLabel}
-                        </span>
-                      )}
-                      <span
-                        className="h-px flex-1"
-                        style={{
-                          background: `linear-gradient(90deg, ${mix(gameRim(colors, ground), ground, 0.3)}, ${mix(gameRim(colors, ground), ground, 0.08)})`,
-                        }}
-                      />
-                    </span>
-                  }
-                  summary={
-                    !open ? (
-                      <span className="numeral flex flex-col text-caption text-muted">
-                        <span>
-                          {running.length} {running.length === 1 ? 'event' : 'events'}
-                        </span>
-                        <span>
-                          {nextEnd ? (
-                            <span style={{ color: endTone(nextEnd.end - now) }}>
-                              next ends {fmtDur(nextEnd.end - now)}
-                            </span>
-                          ) : (
-                            'no upcoming deadline'
-                          )}
-                        </span>
-                      </span>
-                    ) : undefined
-                  }
-                  triggerLabel={`${open ? 'Collapse' : 'Expand'} ${game.name}, ${serverLabel}${accountLabel ? `, ${accountLabel}` : ''} lane`}
-                  className="relative"
-                  triggerClassName="relative z-20 mt-2 rounded-ui-lg px-1 transition hover:bg-fill-1"
-                  contentClassName="pb-1"
-                >
-                  {evs.length === 0 ? (
-                    <p className="py-1 text-label text-muted">Nothing in this window — import or add events.</p>
-                  ) : shown.length === 0 ? (
-                    <p className="py-1 text-label text-muted">
-                      Nothing running — {finishedCount} finished {finishedCount === 1 ? 'event' : 'events'} below.
-                    </p>
-                  ) : (
-                    <div>
-                      <div className="relative flex flex-col gap-1.5">
-                        <CycleConnectors events={shown} ws={ws} we={we} ink={laneInk[game.id] ?? colors.color} />
-                        {shown.map((ev) => (
-                          <EventRow
-                            key={ev.id}
-                            ev={ev}
-                            game={game}
-                            ink={laneInk[game.id] ?? colors.color}
-                            inset={laneInset}
-                            now={now}
-                            ws={ws}
-                            we={we}
-                            onOpenEvent={openEvent}
-                            onToggleEvent={toggleEvent}
-                            laneWidth={timelineWidth}
-                            localTz={state.settings.localTz}
-                          />
-                        ))}
-                      </div>
-                      {finishedCount > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => toggleFinishedOpen(game.id)}
-                          className="mt-1 block min-h-11 w-full rounded-ui-md py-0.5 text-left text-caption font-semibold text-muted transition hover:text-fg-soft sm:min-h-8"
-                        >
-                          {finishedShown
-                            ? '− collapse finished events'
-                            : `+ ${finishedCount} finished event${finishedCount > 1 ? 's' : ''}`}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </Disclosure>
-              );
-            })}
-          </div>
-        </div>
-      </div>
     </Page>
   );
 }

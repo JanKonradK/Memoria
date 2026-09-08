@@ -20,11 +20,6 @@ export const HEADER_ACTIONS_SLOT = 'app-bar-actions';
 export function HeaderActions({ children }: { children: ReactNode }) {
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   useLayoutEffect(() => setSlot(document.getElementById(HEADER_ACTIONS_SLOT)), []);
-  // The wrapper mounts and unmounts with its route, which makes it the natural
-  // trigger for the entrance: the controls beside the route slider grow in from
-  // nothing each time the tab changes, instead of appearing fully formed. It
-  // carries the slot's own flex geometry so wrapping costs no layout.
-  return slot
-    ? createPortal(<div className="header-actions-enter flex min-w-0 items-center gap-2">{children}</div>, slot)
-    : null;
+  // Controls share the route's lifetime and the slot's flex geometry.
+  return slot ? createPortal(<div className="flex min-w-0 items-center gap-1">{children}</div>, slot) : null;
 }

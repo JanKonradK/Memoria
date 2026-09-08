@@ -34,19 +34,9 @@ export function AddGameSheet({ open }: { open: boolean }) {
   });
   const sourceEnergyResource = sourcePreset?.resources.find((resource) => resource.regenMinutes > 0);
 
-  const reset = () => {
-    setPicked(null);
-    setSourceGame(null);
-    setSourcePreset(null);
-    setTz('');
-    setCaps({});
-    setCustomName('');
-    setAccountLabel('');
-    setShort('');
-    setEnergyInput('');
-  };
   const close = () => {
-    reset();
+    // The keyed sheet unmounts after its exit. Keep its current form visible
+    // until then instead of flashing the preset picker during the exit.
     closeSheet();
   };
 
@@ -81,7 +71,6 @@ export function AddGameSheet({ open }: { open: boolean }) {
 
   const createCustom = () => {
     const id = addBlankGame(customName.trim() || 'New game');
-    reset();
     openSheet({ kind: 'game', gameId: id });
   };
 
