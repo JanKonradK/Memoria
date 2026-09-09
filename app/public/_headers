@@ -1,11 +1,11 @@
-# Keep this CSP in sync with worker/src/middleware.ts; learning-flea-86.clerk.accounts.dev is the production CLERK_FRONTEND_API value.
+# Static hosting policy. Memoria does not use an external login or API service.
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Cross-Origin-Opener-Policy: same-origin
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://learning-flea-86.clerk.accounts.dev; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://*.clerk.services; frame-src https://*.clerk.accounts.dev https://*.clerk.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-jQ/nQbqNfwWBuxq7Axwv1rhrKGa3bG+gA8yVxYT+6zk='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self'; font-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
 
 /assets/*

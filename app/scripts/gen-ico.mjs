@@ -1,11 +1,10 @@
 // Generates a multi-resolution Windows .ico (PNG-compressed entries) for the
 // desktop launcher shortcut. Run: npm run ico
 import { writeFileSync, mkdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { drawPng } from './draw-icon.mjs';
 
-const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'desktop');
+const outDir = join(import.meta.dirname, '..', '..', 'desktop');
 mkdirSync(outDir, { recursive: true });
 
 const SIZES = [16, 32, 48, 64, 128, 256];
@@ -34,6 +33,8 @@ function packIco(imgs) {
   return Buffer.concat([header, entries, ...imgs.map((i) => i.png)]);
 }
 
-const out = join(outDir, 'void.ico');
+// The name desktop/Install-Shortcut.ps1 points every shortcut at, and the one
+// scripts/package-release.mjs copies into the download.
+const out = join(outDir, 'memoria.ico');
 writeFileSync(out, packIco(images));
 console.log('Icon written to', out);

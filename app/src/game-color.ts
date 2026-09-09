@@ -116,7 +116,9 @@ export function resolveGameIdentityColors(games: readonly IdentityGame[]): Recor
   const groups = new Map<string, IdentityGame[]>();
   for (const game of games) {
     const key = gameIdentityKey(game);
-    groups.set(key, [...(groups.get(key) ?? []), game]);
+    const group = groups.get(key) ?? [];
+    group.push(game);
+    groups.set(key, group);
   }
 
   const resolved: Record<string, GameColors> = {};

@@ -3,6 +3,7 @@ import {
   currentMonthlyPeriodStart,
   customPeriodKey,
   dailyPeriodKey,
+  lastWeeklyReset,
   monthlyPeriodKey,
   nextCustomReset,
   nextDailyReset,
@@ -44,6 +45,24 @@ describe('weekly periods (Monday reset)', () => {
     expect(nextWeeklyReset(game, utc('2026-07-06T02:00:00'))).toBe(utc('2026-07-06T03:00:00'));
     // On Monday right at reset → next Monday.
     expect(nextWeeklyReset(game, utc('2026-07-06T03:00:00'))).toBe(utc('2026-07-13T03:00:00'));
+  });
+
+  it('retains the fallback for an invalid persisted weekday', () => {
+    const broken = makeGame({ ...game, weeklyResetDay: 0 });
+    const now = utc('2026-07-02T12:00:00');
+    expect(lastWeeklyReset(broken, now)).toBe(now);
+    expect(() => nextWeeklyReset(broken, now)).toThrow('nextWeeklyReset: no reset found within 8 days');
+  });
+
+  // Weekly-refill resources read the period start and the period end from these
+  // two functions, so a week that is open at one end and shut at the other would
+  // either refill twice or never.
+  it('brackets the current week: the start is at or before now, the end after it', () => {
+    expect(lastWeeklyReset(game, utc('2026-07-02T12:00:00'))).toBe(utc('2026-06-29T03:00:00'));
+    // On Monday just before reset → still last Monday's reset.
+    expect(lastWeeklyReset(game, utc('2026-07-06T02:00:00'))).toBe(utc('2026-06-29T03:00:00'));
+    // The boundary itself belongs to the new week.
+    expect(lastWeeklyReset(game, utc('2026-07-06T03:00:00'))).toBe(utc('2026-07-06T03:00:00'));
   });
 });
 
@@ -188,6 +207,16 @@ describe('custom interval periods', () => {
 });
 
 describe('DST-aware server timezone', () => {
+  it('uses the first repeated Sunday hour for the current weekly reset', () => {
+    const london = makeGame({ tz: 'Europe/London', dailyResetHour: 1, weeklyResetDay: 7 });
+    expect(lastWeeklyReset(london, utc('2026-10-25T01:30:00'))).toBe(utc('2026-10-25T00:00:00'));
+  });
+
+  it('uses the first repeated Sunday hour when looking ahead across a DST change', () => {
+    const newYork = makeGame({ tz: 'America/New_York', dailyResetHour: 1, weeklyResetDay: 7 });
+    expect(nextWeeklyReset(newYork, utc('2026-10-25T06:00:00'))).toBe(utc('2026-11-01T05:00:00'));
+  });
+
   // Dokkan-style: US Pacific, 17:00 reset. US DST starts 2026-03-08.
   const dokkan = makeGame({ tz: 'America/Los_Angeles', dailyResetHour: 17 });
   it('tracks the local reset hour across the DST switch', () => {
@@ -225,6 +254,14 @@ describe('DST-safe game-day boundaries (Europe/Warsaw, 04:00 reset)', () => {
     expect(nextWeeklyReset(warsaw, utc('2026-10-25T02:00:00'))).toBe(utc('2026-10-25T03:00:00'));
     expect(weeklyPeriodKey(warsaw, utc('2026-10-25T03:00:00'))).toBe('W2026-10-25');
     expect(nextWeeklyReset(warsaw, utc('2026-10-25T03:00:00'))).toBe(utc('2026-11-01T03:00:00'));
+  });
+
+  it('spans a fall-back week as 04:00 to 04:00 local, which is 169 real hours', () => {
+    const midweek = utc('2026-10-22T12:00:00');
+    // 04:00 CEST on the Sunday the week opened, 04:00 CET on the one it closes.
+    expect(lastWeeklyReset(warsaw, midweek)).toBe(utc('2026-10-18T02:00:00'));
+    expect(nextWeeklyReset(warsaw, midweek)).toBe(utc('2026-10-25T03:00:00'));
+    expect(weeklyPeriodKey(warsaw, midweek)).toBe('W2026-10-18');
   });
 
   it('keeps custom-cadence keys and reset timestamps at 04:00 local through fall-back', () => {

@@ -2,6 +2,10 @@ import { z } from 'zod';
 import type { AppState } from './types';
 import { CURRENT_SCHEMA_VERSION, MAX_GAME_IMAGE_LENGTH } from './types';
 
+// Browser CSP forbids code generation. Skip Zod's new Function probe instead
+// of causing a CSP violation before its interpreter fallback takes over.
+if ('document' in globalThis) z.config({ jitless: true });
+
 const id = z.string().min(1).max(160);
 const shortText = z.string().max(500);
 const longText = z.string().max(20_000);

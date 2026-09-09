@@ -10,12 +10,13 @@ import { slideIn } from '../motion';
 import { endTone, fmtDur } from '../util';
 import { Disclosure } from './Disclosure';
 import { ProgressBar } from './primitives';
-import { GameBadge, Page, Tooltip } from './ui';
+import { useIdentityColors } from './roster';
+import { GameBadge, Page, ServerChip, Tooltip } from './ui';
 import { TimelineTools } from './TimelineTools';
 import { TimelineList } from './TimelineList';
 import { serverRegionLabel } from './NexusLayout';
 import { titleFont } from '../fonts';
-import { assignGameInks, gameRim, gameTitleInk, mix, onColor, resolveGameIdentityColors } from '../game-color';
+import { assignGameInks, gameRim, gameTitleInk, mix, onColor } from '../game-color';
 import { useGround, useInset } from '../theme';
 
 const DAY = 86_400_000;
@@ -631,7 +632,7 @@ export function TimelinePage({ now }: { now: number }) {
   // Lane membership and the ruler only change on the hour; the playhead below
   // animates against raw `now`. Without this the whole grid rebuilt every tick.
   const hourBucket = Math.floor(now / HOUR);
-  const { games, eventsByGame, ticks, ws, we, span } = useMemo(() => {
+  const { games, events, eventsByGame, ticks, ws, we, span } = useMemo(() => {
     const rangeNow = now;
     const rangeDays = RANGE_DAYS;
     const rangeStart = rangeNow - (rangeDays * DAY) / 3;
@@ -654,6 +655,9 @@ export function TimelinePage({ now }: { now: number }) {
 
     return {
       games: activeGames,
+      // The searched, undeleted set the list view shows. Both views read the
+      // same filter so a search can never mean two different things.
+      events: live,
       eventsByGame: byGame,
       ticks: gridTicks,
       ws: rangeStart,
@@ -669,7 +673,7 @@ export function TimelinePage({ now }: { now: number }) {
   // and no two lanes land in the same region of hue and lightness. Without it,
   // three of the five reference games resolve to near-identical greys.
   const laneInk = useMemo(() => assignGameInks(games, ground), [games, ground]);
-  const identityColors = useMemo(() => resolveGameIdentityColors(games), [games]);
+  const identityColors = useIdentityColors(games);
 
   // Lanes whose finished pile has been opened. Finished means ticked off OR
   // simply over: once an event ends there is nothing left to act on, so it stops
@@ -708,9 +712,7 @@ export function TimelinePage({ now }: { now: number }) {
       {view === 'list' ? (
         <TimelineList
           games={games}
-          events={state.events.filter(
-            (event) => !event.deleted && event.name.toLowerCase().includes(search.trim().toLowerCase()),
-          )}
+          events={events}
           now={now}
           localTz={state.settings.localTz}
           showFinished={showFinished}
@@ -781,14 +783,18 @@ export function TimelinePage({ now }: { now: number }) {
                       e.type !== 'banner' &&
                       e.type !== 'livestream',
                   );
-                const finishedShown = showFinished;
                 // `now` ticks, so a row leaves the lane the moment it ends without
                 // anyone having to press anything.
                 const running = evs.filter((event) => !event.done && event.end > now);
                 const finishedCount = evs.length - running.length;
-                const shown = finishedShown ? evs : running;
+                const shown = showFinished ? evs : running;
                 const serverLabel = serverRegionLabel(game.tz, now);
                 const accountLabel = game.accountLabel?.trim();
+                // The lane's colour: assigned in one distinct-lanes pass, with
+                // the game's own primary as the fallback. Bars, connectors and
+                // the heading rule all take it from here so they cannot drift.
+                const ink = laneInk[game.id] ?? colors.color;
+                const rim = gameRim(colors, ground);
                 return (
                   <Disclosure
                     key={game.id}
@@ -804,11 +810,7 @@ export function TimelinePage({ now }: { now: number }) {
                         >
                           {game.name}
                         </span>
-                        <span
-                          className={`shrink-0 rounded-ui-sm border border-line-edge bg-inset px-1.5 py-0.5 text-caption font-semibold text-fg-soft ${serverLabel.startsWith('UTC') && serverLabel !== 'UTC' ? 'numeral' : ''}`}
-                        >
-                          {serverLabel}
-                        </span>
+                        <ServerChip label={serverLabel} />
                         {accountLabel && (
                           <span className="min-w-0 max-w-[35%] shrink-0 truncate text-body font-semibold text-fg-soft">
                             {accountLabel}
@@ -817,7 +819,7 @@ export function TimelinePage({ now }: { now: number }) {
                         <span
                           className="h-px flex-1"
                           style={{
-                            background: `linear-gradient(90deg, ${mix(gameRim(colors, ground), ground, 0.3)}, ${mix(gameRim(colors, ground), ground, 0.08)})`,
+                            background: `linear-gradient(90deg, ${mix(rim, ground, 0.3)}, ${mix(rim, ground, 0.08)})`,
                           }}
                         />
                       </span>
@@ -853,26 +855,24 @@ export function TimelinePage({ now }: { now: number }) {
                         history button to show them.
                       </p>
                     ) : (
-                      <div>
-                        <div className="timeline-rows relative flex flex-col">
-                          <CycleConnectors events={shown} ws={ws} we={we} ink={laneInk[game.id] ?? colors.color} />
-                          {shown.map((ev) => (
-                            <EventRow
-                              key={ev.id}
-                              ev={ev}
-                              game={game}
-                              ink={laneInk[game.id] ?? colors.color}
-                              inset={laneInset}
-                              now={now}
-                              ws={ws}
-                              we={we}
-                              onOpenEvent={openEvent}
-                              onToggleEvent={toggleEvent}
-                              laneWidth={timelineWidth}
-                              localTz={state.settings.localTz}
-                            />
-                          ))}
-                        </div>
+                      <div className="timeline-rows relative flex flex-col">
+                        <CycleConnectors events={shown} ws={ws} we={we} ink={ink} />
+                        {shown.map((ev) => (
+                          <EventRow
+                            key={ev.id}
+                            ev={ev}
+                            game={game}
+                            ink={ink}
+                            inset={laneInset}
+                            now={now}
+                            ws={ws}
+                            we={we}
+                            onOpenEvent={openEvent}
+                            onToggleEvent={toggleEvent}
+                            laneWidth={timelineWidth}
+                            localTz={state.settings.localTz}
+                          />
+                        ))}
                       </div>
                     )}
                   </Disclosure>

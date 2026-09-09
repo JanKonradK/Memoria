@@ -1,5 +1,7 @@
+import type { ZodType } from 'zod';
 import type { AppState, Resource, Settings, SettingsField, Snapshot, Syncable, Task } from './types';
 import { emptyState, MAX_GAME_IMAGE_LENGTH } from './types';
+import { groupBy, objectRecord } from './internal';
 import { migrateState } from './migrations';
 import { inferLegacyResource, inferLegacyTask } from './tracking';
 import { APP_STATE_COLLECTION_LIMITS, AppStateSchema, FUTURE_CLOCK_SKEW_TOLERANCE_MS } from './validation';
@@ -23,14 +25,16 @@ function canonical(value: unknown): string {
 
 function mergeById<T extends Syncable & { id: string }>(a: T[], b: T[]): T[] {
   const map = new Map<string, T>();
-  for (const item of [...a, ...b]) {
-    const cur = map.get(item.id);
-    if (
-      !cur ||
-      item.updatedAt > cur.updatedAt ||
-      (item.updatedAt === cur.updatedAt && canonical(item) > canonical(cur))
-    ) {
-      map.set(item.id, item);
+  for (const side of [a, b]) {
+    for (const item of side) {
+      const cur = map.get(item.id);
+      if (
+        !cur ||
+        item.updatedAt > cur.updatedAt ||
+        (item.updatedAt === cur.updatedAt && canonical(item) > canonical(cur))
+      ) {
+        map.set(item.id, item);
+      }
     }
   }
   return [...map.values()].sort((left, right) => left.id.localeCompare(right.id));
@@ -38,18 +42,14 @@ function mergeById<T extends Syncable & { id: string }>(a: T[], b: T[]): T[] {
 
 function mergeSnapshots(a: Snapshot[], b: Snapshot[]): Snapshot[] {
   const map = new Map<string, Snapshot>();
-  for (const s of [...a, ...b]) {
-    const current = map.get(s.id);
-    if (!current || canonical(s) > canonical(current)) map.set(s.id, s);
-  }
-  const byResource = new Map<string, Snapshot[]>();
-  for (const s of map.values()) {
-    const list = byResource.get(s.resourceId) ?? [];
-    list.push(s);
-    byResource.set(s.resourceId, list);
+  for (const side of [a, b]) {
+    for (const s of side) {
+      const current = map.get(s.id);
+      if (!current || canonical(s) > canonical(current)) map.set(s.id, s);
+    }
   }
   const out: Snapshot[] = [];
-  for (const list of byResource.values()) {
+  for (const list of groupBy(map.values(), (s) => s.resourceId).values()) {
     list.sort((x, y) => y.takenAt - x.takenAt || y.id.localeCompare(x.id));
     out.push(...list.slice(0, SNAPSHOTS_KEPT_PER_RESOURCE));
   }
@@ -59,10 +59,6 @@ function mergeSnapshots(a: Snapshot[], b: Snapshot[]): Snapshot[] {
       right.takenAt - left.takenAt ||
       left.id.localeCompare(right.id),
   );
-}
-
-function objectRecord(raw: unknown): Record<string, unknown> | null {
-  return raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : null;
 }
 
 function finiteNumber(value: unknown): value is number {
@@ -100,8 +96,53 @@ function nonnegative(value: unknown, fallback: number): number {
   return finiteNumber(value) ? Math.max(0, value) : fallback;
 }
 
+/** A whole, non-negative point in time — future-dated on purpose, so it has no upper bound. */
+function scheduledClock(value: number): number {
+  return Math.max(0, Math.round(value));
+}
+
+/** Leaves a non-numeric value alone so the row schema, not this pass, decides its fate. */
 function scheduledTimestamp(value: unknown): unknown {
-  return finiteNumber(value) ? Math.max(0, Math.round(value)) : value;
+  return finiteNumber(value) ? scheduledClock(value) : value;
+}
+
+/**
+ * Rewrite an optional numeric field in place, deleting it when the value is not
+ * a usable number. Absent stays absent — every one of these fields means
+ * "infer the default", so dropping a broken one is repair, not data loss.
+ */
+function reviseOptional(
+  candidate: Record<string, unknown>,
+  key: string,
+  revise: (value: number) => number | null,
+): void {
+  if (!(key in candidate)) return;
+  const value = candidate[key];
+  const next = finiteNumber(value) ? revise(value) : null;
+  if (next === null) delete candidate[key];
+  else candidate[key] = next;
+}
+
+const positiveOnly = (value: number): number | null => (value > 0 ? value : null);
+const clampToZero = (value: number): number => Math.max(0, value);
+const clampCountTarget = (value: number): number => Math.min(365, Math.max(1, value));
+
+/** The per-row schema of each collection — the last word on every normalizer below. */
+const ROWS = {
+  games: AppStateSchema.shape.games.element,
+  resources: AppStateSchema.shape.resources.element,
+  snapshots: AppStateSchema.shape.snapshots.element,
+  tasks: AppStateSchema.shape.tasks.element,
+  completions: AppStateSchema.shape.completions.element,
+  events: AppStateSchema.shape.events.element,
+  chips: AppStateSchema.shape.chips.element,
+  alertRules: AppStateSchema.shape.alertRules.element,
+  reminders: AppStateSchema.shape.reminders.element,
+} as const;
+
+function parseRow<T>(schema: ZodType, candidate: unknown): T | null {
+  const parsed = schema.safeParse(candidate);
+  return parsed.success ? (parsed.data as T) : null;
 }
 
 /**
@@ -120,8 +161,7 @@ function normalizeGame(raw: unknown): AppState['games'][number] | null {
     sort: finiteNumber(record.sort) ? record.sort : 0,
   };
   if (typeof game.image === 'string' && game.image.length > MAX_GAME_IMAGE_LENGTH) delete game.image;
-  const parsed = AppStateSchema.shape.games.element.safeParse(game);
-  return parsed.success ? (parsed.data as AppState['games'][number]) : null;
+  return parseRow(ROWS.games, game);
 }
 
 function normalizeResource(raw: unknown): Resource | null {
@@ -134,16 +174,10 @@ function normalizeResource(raw: unknown): Resource | null {
     reserveCap: nonnegative(record.reserveCap, 0),
     sort: finiteNumber(record.sort) ? record.sort : 0,
   };
-  if ('reserveRegenMinutes' in candidate && !finiteNumber(candidate.reserveRegenMinutes)) {
-    delete candidate.reserveRegenMinutes;
-  } else if (finiteNumber(candidate.reserveRegenMinutes) && candidate.reserveRegenMinutes <= 0) {
-    delete candidate.reserveRegenMinutes;
-  }
-  const parsed = AppStateSchema.shape.resources.element.safeParse(candidate);
-  if (!parsed.success) return null;
-  const inferred = inferLegacyResource(parsed.data as Resource);
-  const validated = AppStateSchema.shape.resources.element.safeParse(inferred);
-  return validated.success ? (validated.data as Resource) : null;
+  reviseOptional(candidate, 'reserveRegenMinutes', positiveOnly);
+  const parsed = parseRow<Resource>(ROWS.resources, candidate);
+  // Re-validate: the legacy inference writes fields the raw row never carried.
+  return parsed && parseRow<Resource>(ROWS.resources, inferLegacyResource(parsed));
 }
 
 function normalizeSnapshot(raw: unknown): Snapshot | null {
@@ -151,108 +185,75 @@ function normalizeSnapshot(raw: unknown): Snapshot | null {
   if (!record || !finiteNumber(record.takenAt) || !finiteNumber(record.value)) return null;
   const takenAt = observedClock(record.takenAt);
   if (takenAt === null) return null;
-  const candidate = {
-    ...record,
-    value: Math.max(0, record.value),
-    takenAt,
-  };
-  if ('reserve' in candidate) {
-    if (finiteNumber(candidate.reserve)) candidate.reserve = Math.max(0, candidate.reserve);
-    else delete candidate.reserve;
-  }
-  const parsed = AppStateSchema.shape.snapshots.element.safeParse(candidate);
-  return parsed.success ? (parsed.data as Snapshot) : null;
+  const candidate: Record<string, unknown> = { ...record, value: Math.max(0, record.value), takenAt };
+  reviseOptional(candidate, 'reserve', clampToZero);
+  return parseRow(ROWS.snapshots, candidate);
 }
 
 function normalizeTask(raw: unknown): Task | null {
   const record = syncableRecord(raw);
   if (!record) return null;
-  const candidate = {
+  const candidate: Record<string, unknown> = {
     ...record,
     intervalDays: finiteNumber(record.intervalDays) && record.intervalDays > 0 ? record.intervalDays : 1,
-    anchorAt: finiteNumber(record.anchorAt) ? scheduledTimestamp(record.anchorAt) : 0,
+    anchorAt: finiteNumber(record.anchorAt) ? scheduledClock(record.anchorAt) : 0,
     sort: finiteNumber(record.sort) ? record.sort : 0,
   };
-  if ('timerDurationMinutes' in candidate) {
-    if (!finiteNumber(candidate.timerDurationMinutes) || candidate.timerDurationMinutes <= 0)
-      delete candidate.timerDurationMinutes;
-  }
-  if ('timerStepMinutes' in candidate) {
-    if (!finiteNumber(candidate.timerStepMinutes) || candidate.timerStepMinutes <= 0) delete candidate.timerStepMinutes;
-  }
-  if ('timerEndsAt' in candidate && candidate.timerEndsAt !== null) {
-    if (finiteNumber(candidate.timerEndsAt)) candidate.timerEndsAt = scheduledTimestamp(candidate.timerEndsAt);
-    else delete candidate.timerEndsAt;
-  }
-  if ('countTarget' in candidate) {
-    if (finiteNumber(candidate.countTarget)) candidate.countTarget = Math.min(365, Math.max(1, candidate.countTarget));
-    else delete candidate.countTarget;
-  }
-  const parsed = AppStateSchema.shape.tasks.element.safeParse(candidate);
-  if (!parsed.success) return null;
-  const inferred = inferLegacyTask(parsed.data as Task);
-  if (finiteNumber(inferred.countTarget)) inferred.countTarget = Math.min(365, Math.max(1, inferred.countTarget));
-  const validated = AppStateSchema.shape.tasks.element.safeParse(inferred);
-  return validated.success ? (validated.data as Task) : null;
+  reviseOptional(candidate, 'timerDurationMinutes', positiveOnly);
+  reviseOptional(candidate, 'timerStepMinutes', positiveOnly);
+  // An explicit null is the idle state, not a broken clock — leave it alone.
+  if (candidate.timerEndsAt !== null) reviseOptional(candidate, 'timerEndsAt', scheduledClock);
+  reviseOptional(candidate, 'countTarget', clampCountTarget);
+  const parsed = parseRow<Task>(ROWS.tasks, candidate);
+  if (!parsed) return null;
+  const inferred = inferLegacyTask(parsed);
+  // Inference can read a target out of the name, and names are user text.
+  if (finiteNumber(inferred.countTarget)) inferred.countTarget = clampCountTarget(inferred.countTarget);
+  return parseRow(ROWS.tasks, inferred);
 }
 
 function normalizeCompletion(raw: unknown): AppState['completions'][number] | null {
   const record = syncableRecord(raw);
   if (!record) return null;
-  const candidate = {
+  const candidate: Record<string, unknown> = {
     ...record,
     done: typeof record.done === 'boolean' ? record.done : false,
   };
-  if ('countDone' in candidate) {
-    if (finiteNumber(candidate.countDone)) candidate.countDone = Math.max(0, candidate.countDone);
-    else delete candidate.countDone;
-  }
-  const parsed = AppStateSchema.shape.completions.element.safeParse(candidate);
-  return parsed.success ? (parsed.data as AppState['completions'][number]) : null;
+  reviseOptional(candidate, 'countDone', clampToZero);
+  return parseRow(ROWS.completions, candidate);
 }
 
 function normalizeEvent(raw: unknown): AppState['events'][number] | null {
   const record = syncableRecord(raw);
   if (!record) return null;
-  const candidate = {
+  return parseRow(ROWS.events, {
     ...record,
     start: scheduledTimestamp(record.start),
     end: scheduledTimestamp(record.end),
-  };
-  const parsed = AppStateSchema.shape.events.element.safeParse(candidate);
-  return parsed.success ? (parsed.data as AppState['events'][number]) : null;
+  });
 }
 
 function normalizeChip(raw: unknown): AppState['chips'][number] | null {
   const record = syncableRecord(raw);
   if (!record) return null;
-  const candidate = {
-    ...record,
-    sort: finiteNumber(record.sort) ? record.sort : 0,
-  };
-  const parsed = AppStateSchema.shape.chips.element.safeParse(candidate);
-  return parsed.success ? (parsed.data as AppState['chips'][number]) : null;
+  return parseRow(ROWS.chips, { ...record, sort: finiteNumber(record.sort) ? record.sort : 0 });
 }
 
 function normalizeAlertRule(raw: unknown): AppState['alertRules'][number] | null {
   const record = syncableRecord(raw);
   if (!record) return null;
-  const candidate = {
+  return parseRow(ROWS.alertRules, {
     ...record,
     thresholdMinutes: finiteNumber(record.thresholdMinutes)
       ? Math.max(0, record.thresholdMinutes)
       : record.thresholdMinutes,
-  };
-  const parsed = AppStateSchema.shape.alertRules.element.safeParse(candidate);
-  return parsed.success ? (parsed.data as AppState['alertRules'][number]) : null;
+  });
 }
 
 function normalizeReminder(raw: unknown): AppState['reminders'][number] | null {
   const record = syncableRecord(raw);
   if (!record) return null;
-  const candidate = { ...record, at: scheduledTimestamp(record.at) };
-  const parsed = AppStateSchema.shape.reminders.element.safeParse(candidate);
-  return parsed.success ? (parsed.data as AppState['reminders'][number]) : null;
+  return parseRow(ROWS.reminders, { ...record, at: scheduledTimestamp(record.at) });
 }
 
 function salvageRows<T>(raw: unknown, limit: number, normalize: (row: unknown) => T | null): T[] {

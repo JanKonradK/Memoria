@@ -148,6 +148,34 @@ describe('normalizeState', () => {
     expect(state.tasks[0]!.countTarget).toBe(3);
   });
 
+  it('drops unusable optional numbers but keeps an idle timer null', () => {
+    // These fields all mean "infer the default when absent", so a broken value
+    // must become absent — not zero, and not a reason to lose the whole row.
+    const state = normalizeState(
+      makeState({
+        resources: [makeResource({ id: 'r1', reserveRegenMinutes: 0 })],
+        tasks: [
+          makeTask({
+            id: 'idle',
+            name: 'Expeditions (collect + resend)',
+            timerEndsAt: null,
+            timerStepMinutes: -5,
+            countTarget: 900,
+          }),
+          makeTask({ id: 'running', name: 'Expeditions (collect + resend)', timerEndsAt: 1_700_000_000_123.7 }),
+        ],
+      }),
+    );
+
+    expect(state.resources[0]).not.toHaveProperty('reserveRegenMinutes');
+    const idle = state.tasks.find((task) => task.id === 'idle')!;
+    expect(idle.timerEndsAt).toBeNull();
+    expect(idle).not.toHaveProperty('timerStepMinutes');
+    // 365 is the schema ceiling; the row survives clamped rather than dropped.
+    expect(idle.countTarget).toBe(365);
+    expect(state.tasks.find((task) => task.id === 'running')!.timerEndsAt).toBe(1_700_000_000_124);
+  });
+
   it('drops oversized images so imported documents self-heal before validation', () => {
     const state = normalizeState({
       games: [makeGame({ image: 'x'.repeat(MAX_GAME_IMAGE_LENGTH + 1) })],

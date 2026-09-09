@@ -18,6 +18,7 @@ import {
   completionId,
   COMPLETION_RETENTION_MS,
   effectiveCountTarget,
+  effectiveTimerDurationMinutes,
   emptyState,
   latestSnapshots,
   mergeState,
@@ -55,10 +56,32 @@ type SyncStatus = 'idle' | 'syncing' | 'ok' | 'error';
  * in Drive — and collapsing them into one status would make either one's error
  * look like the other's.
  */
-type CloudSyncStatus = 'unsupported' | 'off' | 'needs-permission' | 'idle' | 'syncing' | 'ok' | 'error';
+export type CloudStatus = 'unsupported' | 'off' | 'needs-permission' | 'idle' | 'syncing' | 'ok' | 'error';
 
 function now(): number {
   return Date.now();
+}
+
+/** Used for both new accounts and missing routines on existing accounts. */
+function tasksFromPreset(tasks: GamePreset['tasks'], gameId: string, at: number, sortBase = 0): Task[] {
+  return tasks.map((task, index) => ({
+    id: uid(),
+    gameId,
+    name: task.name,
+    cadence: task.cadence,
+    intervalDays: task.intervalDays ?? 1,
+    anchorAt: at,
+    mode: task.mode,
+    timerDurationMinutes: task.timerDurationMinutes,
+    timerStepMinutes: task.timerStepMinutes,
+    countTarget: task.countTarget,
+    timerEndsAt: task.mode === 'timer' ? null : undefined,
+    core: task.core,
+    timelineLinked: task.timelineLinked,
+    presetTaskKey: task.key,
+    sort: sortBase + index,
+    updatedAt: at,
+  }));
 }
 
 function upsert<T extends { id: string }>(list: T[], item: T): T[] {
@@ -101,12 +124,6 @@ function applyEventUpsert(byId: Map<string, GameEvent>, ev: EventUpsert): void {
     updatedAt: t,
   };
   byId.set(item.id, item);
-}
-
-function applyUpsertEvent(s: AppState, ev: EventUpsert): AppState {
-  const byId = new Map(s.events.map((event) => [event.id, event]));
-  applyEventUpsert(byId, ev);
-  return { ...s, events: [...byId.values()] };
 }
 
 function tombstone<T extends { id: string; updatedAt: number; deleted?: boolean }>(
@@ -373,7 +390,7 @@ export interface AppStore {
   syncStatus: SyncStatus;
   syncError: string;
   lastSyncAt: number | null;
-  cloudStatus: CloudSyncStatus;
+  cloudStatus: CloudStatus;
   cloudError: string;
   cloudFileName: string;
   lastCloudSyncAt: number | null;
@@ -383,7 +400,7 @@ export interface AppStore {
   /** Replace state (sync merge / import) without re-announcing a local mutation. */
   replaceState(next: AppState): void;
   setSyncStatus(status: SyncStatus, error?: string): void;
-  setCloudStatus(status: CloudSyncStatus, error?: string): void;
+  setCloudStatus(status: CloudStatus, error?: string): void;
   setCloudFileName(name: string): void;
   mutate(fn: (s: AppState) => AppState): void;
   batch(fn: (s: AppState) => AppState): void;
@@ -507,7 +524,9 @@ export const useApp = create<AppStore>((set, get) => ({
   },
 
   batch(fn) {
-    const next = fn(get().state);
+    const state = get().state;
+    const next = fn(state);
+    if (next === state) return;
     persist(next);
     set({ state: next });
     announceMutation();
@@ -552,24 +571,7 @@ export const useApp = create<AppStore>((set, get) => ({
         sort: i,
         updatedAt: t,
       }));
-      const tasks: Task[] = preset.tasks.map((tk, i) => ({
-        id: uid(),
-        gameId,
-        name: tk.name,
-        cadence: tk.cadence,
-        intervalDays: tk.intervalDays ?? 1,
-        anchorAt: t,
-        mode: tk.mode,
-        timerDurationMinutes: tk.timerDurationMinutes,
-        timerStepMinutes: tk.timerStepMinutes,
-        countTarget: tk.countTarget,
-        timerEndsAt: tk.mode === 'timer' ? null : undefined,
-        core: tk.core,
-        timelineLinked: tk.timelineLinked,
-        presetTaskKey: tk.key,
-        sort: i,
-        updatedAt: t,
-      }));
+      const tasks = tasksFromPreset(preset.tasks, gameId, t);
       const created = seedMissingRegenSnapshots(
         {
           ...s,
@@ -770,7 +772,7 @@ export const useApp = create<AppStore>((set, get) => ({
     const t = now();
     const task = get().state.tasks.find((item) => item.id === taskId);
     if (!task) return;
-    const duration = (task.timerDurationMinutes ?? 20 * 60) * 60_000;
+    const duration = effectiveTimerDurationMinutes(task) * 60_000;
     get().mutate((s) => ({
       ...s,
       tasks: patchIn(s.tasks, taskId, { timerEndsAt: t + duration }),
@@ -854,25 +856,8 @@ export const useApp = create<AppStore>((set, get) => ({
 
     const t = now();
     get().mutate((s) => {
-      const sortBase = Math.max(0, ...s.tasks.filter((task) => task.gameId === gameId).map((task) => task.sort + 1));
-      const added: Task[] = missing.map((task, index) => ({
-        id: uid(),
-        gameId,
-        name: task.name,
-        cadence: task.cadence,
-        intervalDays: task.intervalDays ?? 1,
-        anchorAt: t,
-        mode: task.mode,
-        timerDurationMinutes: task.timerDurationMinutes,
-        timerStepMinutes: task.timerStepMinutes,
-        countTarget: task.countTarget,
-        timerEndsAt: task.mode === 'timer' ? null : undefined,
-        core: task.core,
-        timelineLinked: task.timelineLinked,
-        presetTaskKey: task.key,
-        sort: sortBase + index,
-        updatedAt: t,
-      }));
+      const sortBase = Math.max(0, ...existing.map((task) => task.sort + 1));
+      const added = tasksFromPreset(missing, gameId, t, sortBase);
       return { ...s, tasks: [...s.tasks, ...added] };
     });
     return missing.length;
@@ -881,38 +866,17 @@ export const useApp = create<AppStore>((set, get) => ({
   addMissingPresetTasksEverywhere() {
     const state = get().state;
     const t = now();
-    let total = 0;
     const added: Task[] = [];
     for (const game of state.games) {
       if (game.deleted) continue;
       const existing = state.tasks.filter((task) => task.gameId === game.id);
       const missing = missingPresetTasks(game, existing);
       const sortBase = Math.max(0, ...existing.map((task) => task.sort + 1));
-      missing.forEach((task, index) => {
-        added.push({
-          id: uid(),
-          gameId: game.id,
-          name: task.name,
-          cadence: task.cadence,
-          intervalDays: task.intervalDays ?? 1,
-          anchorAt: t,
-          mode: task.mode,
-          timerDurationMinutes: task.timerDurationMinutes,
-          timerStepMinutes: task.timerStepMinutes,
-          countTarget: task.countTarget,
-          timerEndsAt: task.mode === 'timer' ? null : undefined,
-          core: task.core,
-          timelineLinked: task.timelineLinked,
-          presetTaskKey: task.key,
-          sort: sortBase + index,
-          updatedAt: t,
-        });
-      });
-      total += missing.length;
+      added.push(...tasksFromPreset(missing, game.id, t, sortBase));
     }
-    if (total === 0) return 0;
+    if (added.length === 0) return 0;
     get().mutate((s) => ({ ...s, tasks: [...s.tasks, ...added] }));
-    return total;
+    return added.length;
   },
 
   updateTask(id, patch) {
@@ -924,7 +888,7 @@ export const useApp = create<AppStore>((set, get) => ({
   },
 
   upsertEvent(ev) {
-    get().batch((s) => applyUpsertEvent(s, ev));
+    get().upsertEvents([ev]);
   },
 
   upsertEvents(list) {

@@ -429,10 +429,6 @@ body {
 .shell-control:disabled {
   opacity: 0.6;
 }
-.shell-control-add {
-  background: var(--color-fill-2);
-  color: var(--color-fg);
-}
 @media (min-width: 640px) {
   .shell-control {
     min-height: 36px;

@@ -3,6 +3,7 @@ import type { EventType } from '@memoria/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fmtDateTimeLocalInput, fmtDur, parseDateTimeLocalInput } from '../util';
+import { rosterGames } from './roster';
 import { Sheet } from './Sheet';
 import { Btn, Field, Select, TextArea, TextInput, Toggle } from './ui';
 
@@ -17,7 +18,7 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
   const closeSheet = useUI((s) => s.closeSheet);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const games = state.games.filter((g) => !g.deleted).sort((a, b) => a.sort - b.sort);
+  const games = rosterGames(state.games);
   const existing = eventId ? state.events.find((e) => e.id === eventId && !e.deleted) : undefined;
 
   const [draft, setDraft] = useState({
@@ -38,6 +39,16 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
   const invalidDates = {
     start: parseDateTimeLocalInput(dateInputs.start, state.settings.localTz) == null,
     end: parseDateTimeLocalInput(dateInputs.end, state.settings.localTz) == null,
+  };
+  // One verdict on the window, read by the error line, the save button and save
+  // itself — three places that must never disagree about whether this is savable.
+  const badWindow = invalidDates.start || invalidDates.end || draft.end <= draft.start;
+
+  /** A typed date keeps the user's text even when it does not parse yet. */
+  const setDate = (edge: 'start' | 'end', text: string) => {
+    const parsed = parseDateTimeLocalInput(text, state.settings.localTz);
+    setDateInputs((inputs) => ({ ...inputs, [edge]: text }));
+    if (parsed != null) setDraft((current) => ({ ...current, [edge]: parsed }));
   };
 
   useEffect(() => {
@@ -71,8 +82,7 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
   }, [open, eventId]);
 
   const save = () => {
-    if (!draft.gameId || !draft.name.trim() || invalidDates.start || invalidDates.end || draft.end <= draft.start)
-      return;
+    if (!draft.gameId || !draft.name.trim() || badWindow) return;
     upsertEvent({ ...(existing ? { id: existing.id } : {}), ...draft, name: draft.name.trim() });
     closeSheet();
   };
@@ -113,26 +123,14 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
             <TextInput
               type="datetime-local"
               value={dateInputs.start}
-              onChange={(e) => {
-                const t = parseDateTimeLocalInput(e.target.value, state.settings.localTz);
-                setDateInputs((inputs) => ({ ...inputs, start: e.target.value }));
-                if (t != null) setDraft({ ...draft, start: t });
-              }}
+              onChange={(e) => setDate('start', e.target.value)}
             />
           </Field>
           <Field label="Ends">
-            <TextInput
-              type="datetime-local"
-              value={dateInputs.end}
-              onChange={(e) => {
-                const t = parseDateTimeLocalInput(e.target.value, state.settings.localTz);
-                setDateInputs((inputs) => ({ ...inputs, end: e.target.value }));
-                if (t != null) setDraft({ ...draft, end: t });
-              }}
-            />
+            <TextInput type="datetime-local" value={dateInputs.end} onChange={(e) => setDate('end', e.target.value)} />
           </Field>
         </div>
-        {invalidDates.start || invalidDates.end || draft.end <= draft.start ? (
+        {badWindow ? (
           <p role="alert" className="text-caption text-danger-fg">
             Enter valid dates. The end must be after the start.
           </p>
@@ -196,13 +194,7 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
           )}
           {confirmDelete && <Btn onClick={() => setConfirmDelete(false)}>Keep event</Btn>}
           <Btn onClick={closeSheet}>Cancel</Btn>
-          <Btn
-            kind="primary"
-            onClick={save}
-            disabled={
-              !draft.name.trim() || !draft.gameId || invalidDates.start || invalidDates.end || draft.end <= draft.start
-            }
-          >
+          <Btn kind="primary" onClick={save} disabled={!draft.name.trim() || !draft.gameId || badWindow}>
             {existing ? 'Save' : 'Add event'}
           </Btn>
         </div>

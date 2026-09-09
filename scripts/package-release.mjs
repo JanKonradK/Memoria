@@ -26,7 +26,8 @@ const nodeCacheDir = join(root, 'dist', '.node-cache');
  * the release is tested against one runtime, and a user's install should not
  * change underneath them because nodejs.org moved a tag.
  */
-const NODE_VERSION = process.env['MEMORIA_NODE_VERSION'] ?? 'v24.14.0';
+const NODE_VERSION = process.env['MEMORIA_NODE_VERSION'] ?? 'v24.21.0';
+if (!/^v\d+\.\d+\.\d+$/.test(NODE_VERSION)) throw new Error('MEMORIA_NODE_VERSION must be a version such as v24.14.0.');
 const NODE_DIST = `https://nodejs.org/dist/${NODE_VERSION}`;
 
 const ZIP_NAME = 'Memoria-win-x64.zip';
@@ -39,6 +40,16 @@ function fail(message) {
 
 function sha256(file) {
   return createHash('sha256').update(readFileSync(file)).digest('hex');
+}
+
+/** Everything written into the zip is read on Windows, in Notepad as often as not. */
+function writeStagedText(name, lines) {
+  writeFileSync(join(stageDir, name), `${lines.join('\r\n')}\r\n`, 'utf8');
+}
+
+/** Single-quoted PowerShell literal — the only escape that matters is the quote itself. */
+function powershellLiteral(value) {
+  return `'${value.replaceAll("'", "''")}'`;
 }
 
 // --- inputs -----------------------------------------------------------------
@@ -76,7 +87,6 @@ for (const [source] of required) {
  */
 async function fetchNodeExe() {
   const cached = join(nodeCacheDir, NODE_VERSION, 'node.exe');
-  if (existsSync(cached)) return cached;
 
   const sumsResponse = await fetch(`${NODE_DIST}/SHASUMS256.txt`);
   if (!sumsResponse.ok) fail(`nodejs.org returned ${sumsResponse.status} for SHASUMS256.txt`);
@@ -84,6 +94,11 @@ async function fetchNodeExe() {
   const line = sums.split(/\r?\n/).find((entry) => entry.trim().endsWith('win-x64/node.exe'));
   if (!line) fail(`SHASUMS256.txt for ${NODE_VERSION} does not list win-x64/node.exe`);
   const expected = line.trim().split(/\s+/)[0].toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(expected)) fail('nodejs.org returned an invalid node.exe checksum');
+  if (existsSync(cached)) {
+    if (sha256(cached) === expected) return cached;
+    rmSync(cached, { force: true });
+  }
 
   console.log(`Downloading Node ${NODE_VERSION} (win-x64)...`);
   const exeResponse = await fetch(`${NODE_DIST}/win-x64/node.exe`);
@@ -133,61 +148,46 @@ writeFileSync(
   'utf8',
 );
 
-writeFileSync(
-  join(stageDir, 'Start Memoria.cmd'),
-  [
-    '@echo off',
-    'rem Visible-console fallback. The Desktop shortcut installed by',
-    'rem "Add Memoria to Start Menu.cmd" runs the same launcher with no window.',
-    'cd /d "%~dp0"',
-    'node\\node.exe desktop\\memoria.mjs %*',
-    '',
-  ].join('\r\n'),
-  'utf8',
-);
+writeStagedText('Start Memoria.cmd', [
+  '@echo off',
+  'rem Visible-console fallback. The Desktop shortcut installed by',
+  'rem "Add Memoria to Start Menu.cmd" runs the same launcher with no window.',
+  'cd /d "%~dp0"',
+  'node\\node.exe desktop\\memoria.mjs %*',
+]);
 
-writeFileSync(
-  join(stageDir, 'Add Memoria to Start Menu.cmd'),
-  [
-    '@echo off',
-    'rem Puts Memoria on the Desktop and Start Menu with its icon.',
-    'cd /d "%~dp0"',
-    'powershell -NoProfile -ExecutionPolicy Bypass -File desktop\\Install-Shortcut.ps1',
-    'pause',
-    '',
-  ].join('\r\n'),
-  'utf8',
-);
+writeStagedText('Add Memoria to Start Menu.cmd', [
+  '@echo off',
+  'rem Puts Memoria on the Desktop and Start Menu with its icon.',
+  'cd /d "%~dp0"',
+  'powershell -NoProfile -ExecutionPolicy Bypass -File desktop\\Install-Shortcut.ps1',
+  'pause',
+]);
 
-writeFileSync(
-  join(stageDir, 'README.txt'),
-  [
-    `Memoria ${version}`,
-    '',
-    'A gacha daily / energy / event tracker that runs entirely on this machine.',
-    'No account, no server, nothing leaves the computer.',
-    '',
-    'START IT',
-    '  Double-click "Start Memoria.cmd".',
-    '  Then run "Add Memoria to Start Menu.cmd" once to get a Desktop icon.',
-    '',
-    'UPDATES',
-    '  Memoria checks GitHub for a new version in the background, at most once',
-    '  every six hours. A new build downloads quietly and is put in place the',
-    '  next time you start the app. Nothing is installed without a restart.',
-    '',
-    '  To check immediately:  node\\node.exe desktop\\memoria.mjs --check-update',
-    '  To turn it off:        set MEMORIA_NO_UPDATE=1 before starting.',
-    '',
-    'YOUR DATA',
-    `  Lives in %APPDATA%\\memoria, not in this folder. Deleting or replacing`,
-    '  this folder never touches it. Back it up from Settings -> Data.',
-    '',
-    'Everything, including the source: https://github.com/JanKonradK/Memoria',
-    '',
-  ].join('\r\n'),
-  'utf8',
-);
+writeStagedText('README.txt', [
+  `Memoria ${version}`,
+  '',
+  'A gacha daily / energy / event tracker that runs entirely on this machine.',
+  'No account, no server, nothing leaves the computer.',
+  '',
+  'START IT',
+  '  Double-click "Start Memoria.cmd".',
+  '  Then run "Add Memoria to Start Menu.cmd" once to get a Desktop icon.',
+  '',
+  'UPDATES',
+  '  Memoria checks GitHub for a new version in the background, at most once',
+  '  every six hours. A new build downloads quietly and is put in place the',
+  '  next time you start the app. Nothing is installed without a restart.',
+  '',
+  '  To check immediately:  node\\node.exe desktop\\memoria.mjs --check-update',
+  '  To turn it off:        set MEMORIA_NO_UPDATE=1 before starting.',
+  '',
+  'YOUR DATA',
+  '  Lives in %APPDATA%\\memoria, not in this folder. Deleting or replacing',
+  '  this folder never touches it. Back it up from Settings -> Data.',
+  '',
+  'Everything, including the source: https://github.com/JanKonradK/Memoria',
+]);
 
 // --- zip --------------------------------------------------------------------
 
@@ -202,7 +202,7 @@ if (process.platform === 'win32') {
       '-NoProfile',
       '-NonInteractive',
       '-Command',
-      `Compress-Archive -Path '${stageDir}' -DestinationPath '${zipPath}' -CompressionLevel Optimal -Force`,
+      `Compress-Archive -LiteralPath ${powershellLiteral(stageDir)} -DestinationPath ${powershellLiteral(zipPath)} -CompressionLevel Optimal -Force`,
     ],
     { stdio: 'inherit' },
   );

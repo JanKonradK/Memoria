@@ -14,7 +14,10 @@ vi.mock('idb-keyval', () => ({
   }),
 }));
 
-vi.mock('../src/launcher', () => ({ servedByLauncher: () => launcher.serving }));
+vi.mock('../src/launcher', () => ({
+  servedByLauncher: () => launcher.serving,
+  launcherFetch: (path: string, init?: RequestInit) => fetch(path, init),
+}));
 
 import { useApp } from '../src/store';
 import { resetSyncState, syncNow } from '../src/sync';

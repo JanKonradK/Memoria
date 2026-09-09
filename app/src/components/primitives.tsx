@@ -151,17 +151,9 @@ export function Tick({
             />
           </g>
         )}
-        {!segments && !progressRing && (
-          <circle
-            cx="10"
-            cy="10"
-            r="9"
-            fill="none"
-            stroke={checked ? color : danger ? 'var(--color-danger)' : 'var(--tick-idle)'}
-            strokeWidth="var(--tick-ring-width)"
-          />
-        )}
-        {segments && !progressRing && (
+        {/* The outline every non-progress tick wears, segmented or not: the ring
+            is the shape, and the sectors are drawn inside it. */}
+        {!progressRing && (
           <circle
             cx="10"
             cy="10"

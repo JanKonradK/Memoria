@@ -7,11 +7,12 @@
 // test imports a fresh copy of the module against its own scratch APPDATA.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import os from 'node:os';
 
 let scratch;
 let installRoot;
+const originalAppData = process.env['APPDATA'];
 
 /** A fresh update.mjs bound to this test's APPDATA. */
 async function loadUpdater() {
@@ -27,12 +28,15 @@ function writeRelease(root, version) {
   writeFileSync(join(root, 'release.json'), JSON.stringify({ name: 'Memoria', version, tag: `v${version}` }));
 }
 
+/** `files` keys may be nested paths ('app/dist/assets/index.js'), like a real release tree. */
 function stagePending(version, files) {
   const pending = join(scratch, 'memoria', 'updates', 'pending');
   mkdirSync(pending, { recursive: true });
   writeRelease(pending, version);
   for (const [name, content] of Object.entries(files)) {
-    writeFileSync(join(pending, name), content);
+    const file = join(pending, name);
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, content);
   }
   writeFileSync(
     join(scratch, 'memoria', 'updates', 'pending.json'),
@@ -48,7 +52,53 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllGlobals();
+  if (originalAppData === undefined) delete process.env['APPDATA'];
+  else process.env['APPDATA'] = originalAppData;
   rmSync(scratch, { recursive: true, force: true });
+});
+
+describe('bounded update downloads', () => {
+  it('streams a valid download to disk', async () => {
+    const { downloadTo } = await loadUpdater();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('verified bytes')),
+    );
+    const file = join(scratch, 'download.bin');
+    await downloadTo('https://example.invalid/download', file, 20);
+    expect(readFileSync(file, 'utf8')).toBe('verified bytes');
+  });
+
+  it('stops a chunked oversized body and removes the incomplete file', async () => {
+    const { downloadTo } = await loadUpdater();
+    const cancelled = vi.fn();
+    const body = new ReadableStream({
+      pull(controller) {
+        controller.enqueue(new Uint8Array(8));
+      },
+      cancel: cancelled,
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(body)),
+    );
+    const file = join(scratch, 'download.bin');
+    await expect(downloadTo('https://example.invalid/download', file, 10)).rejects.toThrow(/size ceiling/);
+    expect(existsSync(file)).toBe(false);
+    expect(cancelled).toHaveBeenCalled();
+  });
+
+  it('rejects an oversized declared length before creating a destination', async () => {
+    const { downloadTo } = await loadUpdater();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('small', { headers: { 'content-length': '1000' } })),
+    );
+    const file = join(scratch, 'download.bin');
+    await expect(downloadTo('https://example.invalid/download', file, 10)).rejects.toThrow(/size ceiling/);
+    expect(existsSync(file)).toBe(false);
+  });
 });
 
 describe('compareVersions', () => {
@@ -129,6 +179,30 @@ describe('applyPendingUpdate', () => {
     expect(readFileSync(join(installRoot, 'README.txt'), 'utf8')).toBe('from 0.3.0');
     // The stale tree is cleared, or it would be reconsidered on every launch.
     expect(existsSync(join(scratch, 'memoria', 'updates', 'pending'))).toBe(false);
+    // The manifest goes with it: one left behind points at a tree that is gone.
+    expect(existsSync(join(scratch, 'memoria', 'updates', 'pending.json'))).toBe(false);
+  });
+
+  it('carries nested directories across, which is the whole shape of a release tree', async () => {
+    writeRelease(installRoot, '0.1.0');
+    mkdirSync(join(installRoot, 'app', 'dist', 'assets'), { recursive: true });
+    writeFileSync(join(installRoot, 'app', 'dist', 'assets', 'index.js'), 'old bundle');
+    stagePending('0.2.0', {
+      'app/dist/index.html': 'new page',
+      'app/dist/assets/index.js': 'new bundle',
+      'desktop/dist/shared-core.mjs': 'new core',
+    });
+    const { applyPendingUpdate } = await loadUpdater();
+
+    const result = applyPendingUpdate(installRoot);
+
+    expect(result.applied).toBe(true);
+    // release.json plus the three nested files — a walk that stopped at the top
+    // level would report 1 and ship a build with no app in it.
+    expect(result.files).toBe(4);
+    expect(readFileSync(join(installRoot, 'app', 'dist', 'assets', 'index.js'), 'utf8')).toBe('new bundle');
+    expect(readFileSync(join(installRoot, 'app', 'dist', 'index.html'), 'utf8')).toBe('new page');
+    expect(readFileSync(join(installRoot, 'desktop', 'dist', 'shared-core.mjs'), 'utf8')).toBe('new core');
   });
 
   it('leaves no half-swapped staging files behind on success', async () => {

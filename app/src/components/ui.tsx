@@ -108,6 +108,53 @@ export function GameBadge({
   );
 }
 
+/**
+ * A server label is `numeral` only when it is a real UTC offset. Those digits
+ * are a measurement; `NA`, `EU`, `ASIA` and `UTC` are words. See The Mono Is For
+ * Measurement Rule.
+ */
+export function serverLabelClass(label: string): string {
+  return label.startsWith('UTC') && label !== 'UTC' ? 'numeral' : '';
+}
+
+/**
+ * The server-region chip that rides beside a game's name on the card, the stage
+ * summary, the timeline lane and every hub ticket.
+ *
+ * `sm` is the hub's tighter padding — the only difference between the four
+ * copies this replaced, apart from the truncation the card needs.
+ */
+export function ServerChip({
+  label,
+  size = 'md',
+  className = '',
+  ...props
+}: {
+  label: string;
+  size?: 'sm' | 'md';
+  className?: string;
+} & React.HTMLAttributes<HTMLSpanElement>) {
+  return (
+    <span
+      {...props}
+      className={`shrink-0 rounded-ui-sm border border-line-edge bg-inset text-caption font-semibold text-fg-soft ${
+        size === 'sm' ? 'px-1 py-px' : 'px-1.5 py-0.5'
+      } ${serverLabelClass(label)} ${className}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+/**
+ * Desktop-compact overrides for the 44px touch defaults. Dense editors — the
+ * game editor, the resource editor, the Settings data column — opt out of the
+ * touch height above `sm` rather than each field spelling the same two
+ * overrides out.
+ */
+export const COMPACT_INPUT = 'sm:!min-h-8 sm:!py-1';
+export const TOUCH_BUTTON = '!min-h-11 sm:!min-h-8';
+
 export function Field({ label, children, className = '' }: { label: string; children: ReactNode; className?: string }) {
   return (
     <label className={`block ${className}`}>

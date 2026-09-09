@@ -15,6 +15,7 @@ vi.mock('idb-keyval', () => ({
 }));
 
 import { useApp } from '../src/store';
+import { get as idbGet } from 'idb-keyval';
 import {
   cloudSyncNow,
   cloudSyncSupported,
@@ -22,7 +23,9 @@ import {
   connectNewCloudFile,
   disconnectCloudFile,
   mergeCloudDocument,
+  MAX_CLOUD_FILE_BYTES,
   resetCloudSyncState,
+  initCloudSync,
 } from '../src/cloud-sync';
 
 function game(id: string, name: string, updatedAt: number): Game {
@@ -61,6 +64,7 @@ function fakeFile(initial = '') {
     async getFile() {
       return {
         lastModified: store.lastModified,
+        size: new TextEncoder().encode(store.contents).byteLength,
         async text() {
           return store.contents;
         },
@@ -114,6 +118,49 @@ describe('cloudSyncSupported', () => {
   });
 });
 
+describe('stored connection races', () => {
+  it('does not restore a handle after the user disconnects during startup', async () => {
+    const { handle, store } = fakeFile();
+    let release!: (value: typeof handle) => void;
+    const pending = new Promise<typeof handle>((resolve) => {
+      release = resolve;
+    });
+    vi.mocked(idbGet).mockReturnValueOnce(pending);
+    Object.assign(window, { showSaveFilePicker: async () => handle, showOpenFilePicker: async () => [handle] });
+    initCloudSync();
+    await disconnectCloudFile();
+    release(handle);
+    await pending;
+    await Promise.resolve();
+    expect(useApp.getState().cloudStatus).toBe('off');
+    expect(useApp.getState().cloudFileName).toBe('');
+    expect(store.writes).toEqual([]);
+  });
+
+  it('keeps a newly selected file when an older startup read finishes', async () => {
+    const old = fakeFile();
+    const picked = fakeFile();
+    picked.handle.name = 'new-sync.json';
+    let release!: (value: typeof old.handle) => void;
+    const pending = new Promise<typeof old.handle>((resolve) => {
+      release = resolve;
+    });
+    vi.mocked(idbGet).mockReturnValueOnce(pending);
+    Object.assign(window, {
+      showSaveFilePicker: async () => picked.handle,
+      showOpenFilePicker: async () => [picked.handle],
+    });
+    initCloudSync();
+    await connectNewCloudFile();
+    release(old.handle);
+    await pending;
+    await Promise.resolve();
+    expect(useApp.getState().cloudFileName).toBe('new-sync.json');
+    expect(old.store.writes).toEqual([]);
+    expect(picked.store.writes).toHaveLength(1);
+  });
+});
+
 describe('mergeCloudDocument', () => {
   it('treats a freshly created empty file as nothing to merge', () => {
     const local = withGames(game('a', 'Genshin', 5));
@@ -159,6 +206,31 @@ describe('mergeCloudDocument', () => {
 });
 
 describe('connecting a file', () => {
+  it.each([
+    { settings: { theme: 'dark' } },
+    { ...emptyState(), games: [{ id: 'broken' }] },
+    { ...emptyState(), schemaVersion: 999, futureField: 'preserve this' },
+  ])('never overwrites a malformed or newer document', async (document) => {
+    const original = JSON.stringify(document);
+    const { store, handle } = fakeFile(original);
+    Object.assign(window, { showSaveFilePicker: async () => handle });
+    await connectNewCloudFile();
+    expect(store.contents).toBe(original);
+    expect(store.writes).toEqual([]);
+    expect(useApp.getState().cloudStatus).toBe('error');
+  });
+
+  it('rejects oversized files before reading their contents', async () => {
+    const { handle, store } = fakeFile();
+    const read = vi.fn(async () => '');
+    handle.getFile = async () => ({ size: MAX_CLOUD_FILE_BYTES + 1, lastModified: 1, text: read });
+    Object.assign(window, { showSaveFilePicker: async () => handle });
+    await connectNewCloudFile();
+    expect(read).not.toHaveBeenCalled();
+    expect(store.writes).toEqual([]);
+    expect(useApp.getState().cloudError).toMatch(/10 MB/);
+  });
+
   it('writes the local document into a file that is still empty', async () => {
     const { store, handle } = fakeFile('');
     Object.assign(window, { showSaveFilePicker: async () => handle });
@@ -213,6 +285,44 @@ describe('connecting a file', () => {
 });
 
 describe('cloudSyncNow', () => {
+  it('restores the union when a peer replaces the file with an older subset', async () => {
+    const { store, handle } = fakeFile('');
+    Object.assign(window, { showSaveFilePicker: async () => handle });
+    useApp.setState({ state: withGames(game('a', 'Genshin', 5), game('b', 'HSR', 7)) });
+    await connectNewCloudFile();
+    store.contents = JSON.stringify(withGames(game('b', 'HSR', 7)));
+    await cloudSyncNow();
+    expect(
+      JSON.parse(store.contents)
+        .games.map((g: Game) => g.id)
+        .sort(),
+    ).toEqual(['a', 'b']);
+    expect(store.writes).toHaveLength(2);
+    await cloudSyncNow();
+    expect(store.writes).toHaveLength(2);
+  });
+
+  it('does not write or merge a pending read after disconnecting', async () => {
+    const { store, handle } = fakeFile('');
+    Object.assign(window, { showSaveFilePicker: async () => handle });
+    await connectNewCloudFile();
+    const remote = JSON.stringify(withGames(game('remote', 'Remote', 1)));
+    let release!: (text: string) => void;
+    const pending = new Promise<string>((resolve) => {
+      release = resolve;
+    });
+    const started = vi.fn(() => pending);
+    handle.getFile = async () => ({ size: remote.length, lastModified: 2000, text: started });
+    const sync = cloudSyncNow();
+    await vi.waitFor(() => expect(started).toHaveBeenCalled());
+    await disconnectCloudFile();
+    release(remote);
+    await sync;
+    expect(store.writes).toHaveLength(1);
+    expect(useApp.getState().state.games).toEqual([]);
+    expect(useApp.getState().cloudStatus).toBe('off');
+  });
+
   it('does nothing at all when no file is connected', async () => {
     await cloudSyncNow();
     expect(useApp.getState().cloudStatus).toBe('off');

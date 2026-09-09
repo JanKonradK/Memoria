@@ -11,27 +11,30 @@
 // same order every time; the first entry is used unless a foreign app squats it.
 import { createServer } from 'node:http';
 import { spawn, spawnSync } from 'node:child_process';
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import {
   chmodSync,
   existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   renameSync,
   statSync,
   unlinkSync,
   watch,
   writeFileSync,
 } from 'node:fs';
-import { dirname, join, normalize, extname } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import os from 'node:os';
-import { applyPendingUpdate, checkForUpdate, isPackagedInstall, updateStatus } from './update.mjs';
+import { dirname, join, normalize, extname, sep } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { applyPendingUpdate, checkForUpdate, isPackagedInstall, paths, updateStatus } from './update.mjs';
 
-const here = dirname(fileURLToPath(import.meta.url));
+const here = import.meta.dirname;
 const repo = join(here, '..');
 const dist = join(repo, 'app', 'dist');
+
+/** npm's Windows shim is a .cmd, which spawn will not find under the bare name. */
+const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 /**
  * A packaged install ships prebuilt `app/dist` and `desktop/dist` and carries
@@ -41,14 +44,14 @@ const dist = join(repo, 'app', 'dist');
  */
 const packaged = isPackagedInstall(repo);
 
-// The one local state document — served over /api/sync to app windows.
-const APP_DATA_ROOT = process.env['APPDATA'] ?? join(os.homedir(), '.config');
+// The one local state document — served over /api/sync to app windows. The
+// directory itself is resolved by update.mjs, which stages downloads beside it.
+const { APP_DATA_ROOT, DATA_DIR } = paths;
 // Every directory this launcher has stored state in, newest first. The app has
 // been renamed twice, and this directory holds the ONLY copy of the desktop
 // state document — a rename that ignored it would look exactly like a first run
 // while the real data sat one folder away.
 const LEGACY_DATA_DIRS = [join(APP_DATA_ROOT, 'void'), join(APP_DATA_ROOT, 'technogg')];
-const DATA_DIR = join(APP_DATA_ROOT, 'memoria');
 
 function migrateLegacyDataDirectory() {
   for (const legacyDir of LEGACY_DATA_DIRS) {
@@ -88,12 +91,9 @@ const STALE_LOCK_GRACE_MS = 30_000;
  * The vocabulary two launcher processes use to recognise each other: a response
  * header, an HMAC domain string, the loopback endpoints and the session cookie.
  *
- * Every name here also exists in a pre-rename form, and BOTH are spoken. During
- * an update the copy already serving port 17817 is the previous build, and a new
- * launcher that could not identify it would conclude the port belonged to some
- * unrelated program and fall through to 17818 — a different origin, which makes
- * the app's IndexedDB look empty. The legacy half of each pair can be deleted
- * once no pre-0.2.0 install is still in use.
+ * Legacy names remain recognizable to identity probes. Ticket requests in
+ * either dialect require a signed timestamp. Builds that predate that check
+ * need a full launcher restart for this upgrade, as documented in README.md.
  */
 const MARKER = 'x-memoria';
 const LEGACY_MARKER = 'x-void';
@@ -101,10 +101,24 @@ const HMAC_DOMAIN = 'memoria-launcher-v1';
 const LEGACY_HMAC_DOMAIN = 'void-launcher-v1';
 const COOKIE_NAME = 'memoria_token';
 const LEGACY_COOKIE_NAME = 'void_token';
+/** Stamped on every response, so an identity probe of either vintage sees its own marker. */
+const MARKER_HEADERS = { [MARKER]: '1', [LEGACY_MARKER]: '1' };
 
 const MAX_SYNC_BYTES = 1_000_000;
 const LAUNCH_TICKET_TTL_MS = 30_000;
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+/**
+ * Every secret this launcher mints — the profile token, instance ids, challenge
+ * nonces and launch tickets — is one of these. 32 bytes of base64url is exactly
+ * the 43 characters TOKEN_PATTERN accepts, and minting them in one place is what
+ * keeps that true on both sides of every check.
+ */
+function newToken() {
+  return randomBytes(32).toString('base64url');
+}
+const BROWSER_SESSION = newToken();
+const CONTENT_SECURITY_POLICY =
+  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self'; font-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -146,9 +160,8 @@ function ensureBuilt() {
         'https://github.com/JanKonradK/Memoria/releases/latest and unpack it again.',
     );
   }
-  // First run (or after cleaning): build the app. npm.cmd on Windows.
-  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  spawnSync(npm, ['run', 'build'], { cwd: repo, stdio: 'ignore' });
+  // First run (or after cleaning): build the app.
+  spawnSync(NPM, ['run', 'build'], { cwd: repo, stdio: 'ignore' });
 }
 
 function protectPrivateFile(filePath) {
@@ -162,7 +175,7 @@ function installSecret() {
   mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
   if (!existsSync(TOKEN_FILE)) {
     try {
-      writeFileSync(TOKEN_FILE, randomBytes(32).toString('base64url'), {
+      writeFileSync(TOKEN_FILE, newToken(), {
         encoding: 'utf8',
         flag: 'wx',
         mode: 0o600,
@@ -196,8 +209,7 @@ function serveFile(res, filePath, extraHeaders = {}) {
     res.writeHead(200, {
       'content-type': MIME[extname(filePath).toLowerCase()] ?? 'application/octet-stream',
       'cache-control': 'no-cache',
-      [MARKER]: '1',
-      [LEGACY_MARKER]: '1',
+      ...MARKER_HEADERS,
       ...extraHeaders,
     });
     res.end(body);
@@ -216,7 +228,7 @@ function serveFile(res, filePath, extraHeaders = {}) {
  * body counts as "not this dialect" rather than as an error.
  */
 async function probeDialect(port, secret, { path, marker, domain }) {
-  const nonce = randomBytes(32).toString('base64url');
+  const nonce = newToken();
   try {
     const res = await fetch(`http://127.0.0.1:${port}${path}?nonce=${nonce}`, {
       cache: 'no-store',
@@ -239,9 +251,27 @@ async function probeDialect(port, secret, { path, marker, domain }) {
   }
 }
 
+/**
+ * The two protocol vintages, current first. Every place that has to speak one —
+ * the identity probe, the server's routing table and the launch-ticket client —
+ * reads its endpoints and its HMAC domain from here, so a dialect cannot be
+ * half-implemented.
+ */
 const DIALECTS = [
-  { protocol: 'memoria', path: '/.memoria/hello', marker: MARKER, domain: HMAC_DOMAIN },
-  { protocol: 'void', path: '/.void/hello', marker: LEGACY_MARKER, domain: LEGACY_HMAC_DOMAIN },
+  {
+    protocol: 'memoria',
+    path: '/.memoria/hello',
+    ticketPath: '/.memoria/ticket',
+    marker: MARKER,
+    domain: HMAC_DOMAIN,
+  },
+  {
+    protocol: 'void',
+    path: '/.void/hello',
+    ticketPath: '/.void/ticket',
+    marker: LEGACY_MARKER,
+    domain: LEGACY_HMAC_DOMAIN,
+  },
 ];
 
 /**
@@ -265,9 +295,9 @@ async function probeInstance(port, secret) {
 let sharedCore = null;
 function newestMtimeUnder(directory) {
   let newest = 0;
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    const path = join(directory, entry.name);
-    newest = Math.max(newest, entry.isDirectory() ? newestMtimeUnder(path) : statSync(path).mtimeMs);
+  for (const entry of readdirSync(directory, { recursive: true, withFileTypes: true })) {
+    if (entry.isDirectory()) continue;
+    newest = Math.max(newest, statSync(join(entry.parentPath, entry.name)).mtimeMs);
   }
   return newest;
 }
@@ -286,10 +316,9 @@ async function loadSharedCore() {
   }
   const newestSourceMtime = Math.max(statSync(entry).mtimeMs, newestMtimeUnder(join(repo, 'shared', 'src')));
   if (!existsSync(file) || statSync(file).mtimeMs < newestSourceMtime) {
-    const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
     mkdirSync(dirname(file), { recursive: true });
     const built = spawnSync(
-      npm,
+      NPM,
       ['exec', '--no', '--', 'esbuild', entry, '--bundle', '--platform=node', '--format=esm', `--outfile=${file}`],
       { cwd: repo, encoding: 'utf8' },
     );
@@ -305,9 +334,11 @@ async function loadSharedCore() {
 
 function readStateRaw() {
   try {
+    if (statSync(STATE_FILE).size > 10_000_000) throw new Error('State file exceeds the 10 MB limit.');
     return JSON.parse(readFileSync(STATE_FILE, 'utf8'));
-  } catch {
-    return null;
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null;
+    throw new Error('The local state file could not be read. Restore a valid backup before syncing.', { cause: error });
   }
 }
 
@@ -321,11 +352,8 @@ function writeState(state) {
     try {
       renameSync(`${STATE_FILE}.tmp`, STATE_FILE);
       return;
-    } catch {
-      if (attempt >= 4) {
-        writeFileSync(STATE_FILE, json);
-        return;
-      }
+    } catch (error) {
+      if (attempt >= 4) throw error;
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
     }
   }
@@ -335,10 +363,24 @@ function respondJson(res, status, payload) {
   res.writeHead(status, {
     'content-type': 'application/json; charset=utf-8',
     'cache-control': 'no-store',
-    [MARKER]: '1',
-    [LEGACY_MARKER]: '1',
+    ...MARKER_HEADERS,
   });
   res.end(JSON.stringify(payload));
+}
+
+/**
+ * Refuse a body that can never become a valid state document, then hang up.
+ * Closing after the response keeps a sender from making us drain the rest of it.
+ */
+function respondTooLarge(req, res) {
+  req.pause();
+  res.writeHead(413, {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+    connection: 'close',
+    ...MARKER_HEADERS,
+  });
+  res.end(JSON.stringify({ error: `Request body exceeds ${MAX_SYNC_BYTES} bytes.` }), () => req.destroy());
 }
 
 async function handleGetState(res) {
@@ -361,17 +403,7 @@ function handleSync(req, res) {
 
   const declaredLength = Number(req.headers['content-length']);
   if (Number.isFinite(declaredLength) && declaredLength > MAX_SYNC_BYTES) {
-    // Closing after the response keeps a sender from making us drain a body we
-    // have already decided can never become a valid state document.
-    req.pause();
-    res.writeHead(413, {
-      'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'no-store',
-      connection: 'close',
-      [MARKER]: '1',
-      [LEGACY_MARKER]: '1',
-    });
-    res.end(JSON.stringify({ error: `Request body exceeds ${MAX_SYNC_BYTES} bytes.` }), () => req.destroy());
+    respondTooLarge(req, res);
     return;
   }
 
@@ -387,15 +419,7 @@ function handleSync(req, res) {
     }
     settled = true;
     chunks.length = 0;
-    req.pause();
-    res.writeHead(413, {
-      'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'no-store',
-      connection: 'close',
-      [MARKER]: '1',
-      [LEGACY_MARKER]: '1',
-    });
-    res.end(JSON.stringify({ error: `Request body exceeds ${MAX_SYNC_BYTES} bytes.` }), () => req.destroy());
+    respondTooLarge(req, res);
   });
   req.on('end', async () => {
     if (settled) return;
@@ -451,7 +475,14 @@ function startStateWatcher() {
     if (filename !== 'state.json') return;
     clearTimeout(pingTimer);
     pingTimer = setTimeout(() => {
-      for (const client of sseClients) client.write('data: changed\n\n');
+      for (const client of sseClients) {
+        try {
+          client.write('data: changed\n\n');
+        } catch {
+          sseClients.delete(client);
+          client.destroy();
+        }
+      }
     }, 100);
   });
 }
@@ -462,15 +493,17 @@ function handleEvents(req, res) {
     'content-type': 'text/event-stream',
     'cache-control': 'no-cache',
     connection: 'keep-alive',
-    [MARKER]: '1',
-    [LEGACY_MARKER]: '1',
+    ...MARKER_HEADERS,
   });
   res.write('retry: 2000\n\n');
   sseClients.add(res);
-  req.on('close', () => {
+  const cleanup = () => {
     sseClients.delete(res);
     lastActivity = Date.now(); // idle countdown starts when the last window closes
-  });
+  };
+  req.on('close', cleanup);
+  res.on('close', cleanup);
+  res.on('error', cleanup);
 }
 
 const launchTickets = new Map();
@@ -488,7 +521,7 @@ function pruneLaunchCredentials() {
 
 function issueLaunchTicket() {
   pruneLaunchCredentials();
-  const ticket = randomBytes(32).toString('base64url');
+  const ticket = newToken();
   launchTickets.set(ticket, Date.now() + LAUNCH_TICKET_TTL_MS);
   return ticket;
 }
@@ -510,21 +543,14 @@ function validHost(req, port) {
   return host === `127.0.0.1:${port}` || host === `localhost:${port}`;
 }
 
-function cookieToken(req) {
-  const cookie = requestHeader(req, 'cookie');
-  if (!cookie) return null;
-  for (const part of cookie.split(';')) {
-    const [name, ...value] = part.trim().split('=');
-    // A window opened by the previous build still carries the old cookie.
-    if (name === COOKIE_NAME || name === LEGACY_COOKIE_NAME) return value.join('=');
-  }
-  return null;
+function browserToken(secret, host) {
+  return createHmac('sha256', secret).update(`memoria-browser-v1:${host}:${BROWSER_SESSION}`).digest('base64url');
 }
 
 function bearerToken(req) {
   const authorization = requestHeader(req, 'authorization');
   const match = authorization?.match(/^Bearer ([A-Za-z0-9_-]+)$/);
-  return match?.[1] ?? cookieToken(req);
+  return match?.[1] ?? null;
 }
 
 function unsafeRequestIsSameOrigin(req) {
@@ -534,7 +560,7 @@ function unsafeRequestIsSameOrigin(req) {
 }
 
 function authorizeApi(req, res, secret) {
-  if (!secretEquals(bearerToken(req), secret)) {
+  if (!secretEquals(bearerToken(req), browserToken(secret, requestHeader(req, 'host')))) {
     res.setHeader('www-authenticate', 'Bearer realm="Memoria desktop"');
     respondJson(res, 401, { error: 'A valid Memoria desktop bearer token is required.' });
     return false;
@@ -546,14 +572,16 @@ function authorizeApi(req, res, secret) {
   return true;
 }
 
-function serveLaunchHtml(res, secret) {
+function serveLaunchHtml(req, res, secret) {
   try {
-    const tokenLiteral = JSON.stringify(secret).replaceAll('<', '\\u003c');
-    const bootstrap = `<script>
+    const tokenLiteral = JSON.stringify(browserToken(secret, requestHeader(req, 'host')));
+    const nonce = randomBytes(24).toString('base64');
+    const bootstrap = `<script nonce="${nonce}">
       (() => {
         const token = ${tokenLiteral};
         try {
-          localStorage.setItem('void-sync-config', JSON.stringify({ url: location.origin, token }));
+          sessionStorage.setItem('memoria-launcher-token', token);
+          localStorage.removeItem('void-sync-config');
         } catch {
           // The API will remain closed if the browser refuses token storage.
         }
@@ -566,9 +594,14 @@ function serveLaunchHtml(res, secret) {
     res.writeHead(200, {
       'content-type': 'text/html; charset=utf-8',
       'cache-control': 'no-store',
-      'set-cookie': `${COOKIE_NAME}=${secret}; HttpOnly; SameSite=Strict; Path=/`,
-      [MARKER]: '1',
-      [LEGACY_MARKER]: '1',
+      'set-cookie': [COOKIE_NAME, LEGACY_COOKIE_NAME].map(
+        (name) => `${name}=; Max-Age=0; HttpOnly; SameSite=Strict; Path=/`,
+      ),
+      'content-security-policy': String(res.getHeader('content-security-policy')).replace(
+        "script-src 'self'",
+        `script-src 'self' 'nonce-${nonce}'`,
+      ),
+      ...MARKER_HEADERS,
     });
     res.end(body);
   } catch (error) {
@@ -601,18 +634,41 @@ function handleTicketRequest(req, res, port, secret, domain, headerPrefix) {
   pruneLaunchCredentials();
   const nonce = requestHeader(req, `${headerPrefix}-nonce`);
   const proof = requestHeader(req, `${headerPrefix}-proof`);
-  const expected = nonce && TOKEN_PATTERN.test(nonce) ? hmacProof(secret, 'ticket', port, nonce, domain) : null;
+  const timestamp = requestHeader(req, `${headerPrefix}-time`);
+  const fresh =
+    timestamp && /^\d{13}$/.test(timestamp) && Math.abs(Date.now() - Number(timestamp)) <= LAUNCH_TICKET_TTL_MS;
+  const expected =
+    fresh && nonce && TOKEN_PATTERN.test(nonce)
+      ? hmacProof(secret, 'ticket', port, `${nonce}:${timestamp}`, domain)
+      : null;
   if (!expected || !secretEquals(proof, expected) || usedTicketNonces.has(nonce)) {
     respondJson(res, 401, { error: 'The launch-ticket proof was rejected.' });
     return;
   }
-  usedTicketNonces.set(nonce, Date.now() + LAUNCH_TICKET_TTL_MS);
+  usedTicketNonces.set(nonce, Date.now() + 2 * LAUNCH_TICKET_TTL_MS);
   respondJson(res, 200, { ticket: issueLaunchTicket() });
 }
 
+/** True when `path` is `root` itself or sits beneath it — the containment test both dist checks use. */
+function within(root, path) {
+  return path === root || path.startsWith(`${root}${sep}`);
+}
+
 function tryListen(port, secret) {
+  // Hash the shipped theme bootstrap. Only the one-shot auth bootstrap needs
+  // a nonce; normal reloads keep a stable, cacheable document and policy.
+  const html = readFileSync(join(dist, 'index.html'), 'utf8').replace(/\r\n?/g, '\n');
+  const hashes = [...html.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(
+    (match) => `'sha256-${createHash('sha256').update(match[1]).digest('base64')}'`,
+  );
+  const policy = CONTENT_SECURITY_POLICY.replace("script-src 'self'", `script-src 'self' ${hashes.join(' ')}`);
   return new Promise((resolve) => {
     const server = createServer((req, res) => {
+      res.setHeader('content-security-policy', policy);
+      res.setHeader('x-content-type-options', 'nosniff');
+      res.setHeader('x-frame-options', 'DENY');
+      res.setHeader('referrer-policy', 'no-referrer');
+      res.setHeader('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=()');
       lastActivity = Date.now();
       if (!validHost(req, port)) {
         respondJson(res, 421, { error: `Host must be 127.0.0.1:${port} or localhost:${port}.` });
@@ -631,13 +687,13 @@ function tryListen(port, secret) {
 
       // Both dialects are served so that a launcher of either vintage can
       // identify this instance and reuse it rather than taking another port.
-      if (urlPath === '/.memoria/hello') return handleIdentityChallenge(req, res, url, port, secret, HMAC_DOMAIN);
-      if (urlPath === '/.void/hello') {
-        return handleIdentityChallenge(req, res, url, port, secret, LEGACY_HMAC_DOMAIN);
-      }
-      if (urlPath === '/.memoria/ticket') return handleTicketRequest(req, res, port, secret, HMAC_DOMAIN, MARKER);
-      if (urlPath === '/.void/ticket') {
-        return handleTicketRequest(req, res, port, secret, LEGACY_HMAC_DOMAIN, LEGACY_MARKER);
+      for (const dialect of DIALECTS) {
+        if (urlPath === dialect.path) {
+          return handleIdentityChallenge(req, res, url, port, secret, dialect.domain);
+        }
+        if (urlPath === dialect.ticketPath) {
+          return handleTicketRequest(req, res, port, secret, dialect.domain, dialect.marker);
+        }
       }
 
       const launchMatch = urlPath.match(/^\/api\/launch\/([A-Za-z0-9_-]{43})\/?$/);
@@ -646,29 +702,42 @@ function tryListen(port, secret) {
           respondJson(res, 401, { error: 'This launch ticket is invalid or has expired.' });
           return;
         }
-        return serveLaunchHtml(res, secret);
+        return serveLaunchHtml(req, res, secret);
       }
 
-      if (urlPath === '/api' || urlPath.startsWith('/api/')) {
-        if (!authorizeApi(req, res, secret)) return;
-      }
+      // One test, so an unauthenticated caller can never reach the static file
+      // handler by naming a route the API does not implement.
+      const isApiRoute = urlPath === '/api' || urlPath.startsWith('/api/');
+      if (isApiRoute && !authorizeApi(req, res, secret)) return;
       if (req.method === 'GET' && urlPath === '/api/events') return handleEvents(req, res);
       if (req.method === 'GET' && urlPath === '/api/state') return void handleGetState(res);
       if (req.method === 'POST' && urlPath === '/api/sync') return handleSync(req, res);
       // Lets an app window tell the user a newer build is already downloaded and
       // will be in place the next time they open Memoria.
       if (req.method === 'GET' && urlPath === '/api/update') return respondJson(res, 200, updateStatus(repo));
-      if (urlPath === '/api' || urlPath.startsWith('/api/')) {
+      if (isApiRoute) {
         respondJson(res, 404, { error: 'API route not found.' });
         return;
       }
       // Resolve within dist and block path traversal.
       let filePath = normalize(join(dist, urlPath));
-      if (!filePath.startsWith(dist)) filePath = dist;
-      if (existsSync(filePath) && statSync(filePath).isDirectory()) {
-        filePath = join(filePath, 'index.html');
+      if (!within(dist, filePath) || /[\0:]/.test(urlPath)) {
+        respondJson(res, 403, { error: 'Path is outside the app.' });
+        return;
       }
-      if (existsSync(filePath) && serveFile(res, filePath)) return;
+      try {
+        if (existsSync(filePath) && statSync(filePath).isDirectory()) filePath = join(filePath, 'index.html');
+        if (existsSync(filePath)) {
+          if (!within(realpathSync(dist), realpathSync(filePath))) {
+            respondJson(res, 403, { error: 'Path is outside the app.' });
+            return;
+          }
+          if (serveFile(res, filePath)) return;
+        }
+      } catch {
+        respondJson(res, 404, { error: 'File is unavailable.' });
+        return;
+      }
       // SPA fallback.
       serveFile(res, join(dist, 'index.html'));
     });
@@ -693,7 +762,7 @@ function releaseOwnedLock() {
 process.on('exit', releaseOwnedLock);
 
 function createInstanceLock() {
-  const instanceId = randomBytes(32).toString('base64url');
+  const instanceId = newToken();
   const body = JSON.stringify({ version: 1, pid: process.pid, instanceId, createdAt: Date.now() });
   try {
     writeFileSync(LOCK_FILE, body, { encoding: 'utf8', flag: 'wx', mode: 0o600 });
@@ -763,8 +832,10 @@ async function claimInstance(secret) {
     // exists to point at a running server, so once no server answers the
     // identity challenge and the lock is older than the grace period, the lock
     // is dead no matter what the pid claims.
-    const lockAgeMs = Date.now() - (Number(lock.createdAt) || 0);
     const createdAt = Number(lock.createdAt);
+    const lockAgeMs = Date.now() - createdAt;
+    // A lock with no usable timestamp cannot be aged out, so it is treated as
+    // still starting up and settled by the identity challenge below instead.
     const withinStartupGrace =
       !Number.isFinite(createdAt) || createdAt <= 0 || (lockAgeMs >= 0 && lockAgeMs < STALE_LOCK_GRACE_MS);
     if (processIsAlive(lock.pid) && withinStartupGrace) {
@@ -822,22 +893,20 @@ async function startOrReuse(secret) {
 
 /**
  * Ask the instance that owns the port for a one-shot launch ticket, in the
- * dialect the identity probe already established it speaks. Falling back to the
- * pre-rename endpoint matters during an update, when the process holding the
- * port is still the previous build.
+ * dialect the identity probe established. Both names use the current signed
+ * timestamp protocol; an older running launcher must stop before this upgrade.
  */
 async function requestLaunchTicket(port, secret, protocol = 'memoria') {
-  const legacy = protocol === 'void';
-  const path = legacy ? '/.void/ticket' : '/.memoria/ticket';
-  const headerPrefix = legacy ? LEGACY_MARKER : MARKER;
-  const domain = legacy ? LEGACY_HMAC_DOMAIN : HMAC_DOMAIN;
+  const { ticketPath, marker, domain } = DIALECTS.find((d) => d.protocol === protocol) ?? DIALECTS[0];
 
-  const nonce = randomBytes(32).toString('base64url');
-  const response = await fetch(`http://127.0.0.1:${port}${path}`, {
+  const nonce = newToken();
+  const timestamp = String(Date.now());
+  const response = await fetch(`http://127.0.0.1:${port}${ticketPath}`, {
     method: 'POST',
     headers: {
-      [`${headerPrefix}-nonce`]: nonce,
-      [`${headerPrefix}-proof`]: hmacProof(secret, 'ticket', port, nonce, domain),
+      [`${marker}-nonce`]: nonce,
+      [`${marker}-time`]: timestamp,
+      [`${marker}-proof`]: hmacProof(secret, 'ticket', port, `${nonce}:${timestamp}`, domain),
     },
     signal: AbortSignal.timeout(1500),
   });
@@ -994,7 +1063,15 @@ function defaultChromiumBrowser() {
 
 /** No preference set: the default browser if it can do app windows, else the first one installed. */
 function findBrowser() {
-  return defaultChromiumBrowser() ?? KNOWN_BROWSERS.map((b) => findKnownBrowser(b.key)).find(Boolean) ?? null;
+  const preferred = defaultChromiumBrowser();
+  if (preferred) return preferred;
+  // Stop at the first hit. Probing the whole table costs a filesystem check per
+  // candidate path (or a `which` per name off Windows) for browsers we will not open.
+  for (const entry of KNOWN_BROWSERS) {
+    const exe = findKnownBrowser(entry.key);
+    if (exe) return exe;
+  }
+  return null;
 }
 
 /**
@@ -1127,11 +1204,9 @@ async function main() {
 
   ensureBuilt();
   const secret = installSecret();
-  const got = await startOrReuse(secret);
-  const { server, port, protocol } = got;
-  const baseUrl = `http://127.0.0.1:${port}`;
+  const { server, port, protocol } = await startOrReuse(secret);
   const ticket = server ? issueLaunchTicket() : await requestLaunchTicket(port, secret, protocol);
-  const url = `${baseUrl}/api/launch/${ticket}`;
+  const url = `http://127.0.0.1:${port}/api/launch/${ticket}`;
   const shutdown = () => {
     server?.close();
     process.exit(0);
@@ -1139,24 +1214,18 @@ async function main() {
 
   // Headless mode for testing: serve (or point at the running instance),
   // print the URL, don't open a window.
-  if (process.env['MEMORIA_NO_BROWSER']) {
-    console.log(url);
-    if (!server) return; // reusing another instance — nothing to keep alive
-    process.on('SIGINT', shutdown);
-    process.on('SIGTERM', shutdown);
-    return;
-  }
+  const headless = Boolean(process.env['MEMORIA_NO_BROWSER']);
+  if (headless) console.log(url);
+  else openAppWindow(url);
 
-  // Reuse case: another Memoria instance owns the server; just open a window on it.
-  // Our process can exit immediately — the other instance manages lifetime.
-  if (!server) {
-    openAppWindow(url);
-    return;
-  }
+  // Reuse case: another Memoria instance owns the server, and it manages both
+  // the window's lifetime and the update check. This process is done.
+  if (!server) return;
 
-  openAppWindow(url);
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
+  // A test server has no window to keep alive and must not reach for the network.
+  if (headless) return;
 
   // Only the instance that owns the server checks, so opening a second window
   // cannot start a second download. Deliberately not awaited: the window is

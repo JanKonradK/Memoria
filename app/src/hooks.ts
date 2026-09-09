@@ -13,12 +13,26 @@ export function useMediaQuery(query: string): boolean {
   return match;
 }
 
-/** Re-render on a clock tick (default every second) — powers live countdowns. */
+/** Update visible countdowns, and refresh immediately when the tab returns. */
 export function useNow(intervalMs = 1000): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), intervalMs);
-    return () => clearInterval(id);
+    let timer: ReturnType<typeof setInterval> | undefined;
+    const update = () => setNow(Date.now());
+    const onVisibilityChange = () => {
+      clearInterval(timer);
+      timer = undefined;
+      if (!document.hidden) {
+        update();
+        timer = setInterval(update, intervalMs);
+      }
+    };
+    if (!document.hidden) timer = setInterval(update, intervalMs);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [intervalMs]);
   return now;
 }

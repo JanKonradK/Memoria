@@ -28,6 +28,24 @@ type EnergyResource = Pick<Resource, 'cap' | 'regenMinutes' | 'kind'> & {
 };
 type EnergyGame = Pick<Game, 'tz' | 'dailyResetHour' | 'weeklyResetDay' | 'monthlyResetDay'>;
 
+/**
+ * A level that is not moving on its own: no snapshot yet, a weekly refill, or a
+ * manual counter. `hasSnapshot` gates `isFull` so an unread zero-cap resource
+ * does not report itself full.
+ */
+function steadyProjection(value: number, cap: number, hasSnapshot: boolean): EnergyProjection {
+  return {
+    value,
+    precise: value,
+    isFull: hasSnapshot && value >= cap,
+    fullAt: null,
+    msToFull: null,
+    overflow: 0,
+    hasSnapshot,
+    reserve: null,
+  };
+}
+
 function effectiveSnapshot(
   game: EnergyGame | undefined,
   res: EnergyResource,
@@ -60,46 +78,22 @@ export function projectEnergy(
 
   if (!snap) {
     return {
-      value: 0,
-      precise: 0,
-      isFull: false,
-      fullAt: null,
-      msToFull: null,
-      overflow: 0,
-      hasSnapshot: false,
+      ...steadyProjection(0, res.cap, false),
       weeklyResetAt: kind === 'weekly' && game ? nextWeeklyReset(game, now) : undefined,
-      reserve: null,
     };
   }
 
   const live = effectiveSnapshot(game, res, snap, now);
 
   if (kind === 'weekly') {
-    const weeklyResetAt = game ? nextWeeklyReset(game, now) : null;
     return {
-      value: live.value,
-      precise: live.value,
-      isFull: live.value >= res.cap,
-      fullAt: null,
-      msToFull: null,
-      overflow: 0,
-      hasSnapshot: true,
-      weeklyResetAt,
-      reserve: null,
+      ...steadyProjection(live.value, res.cap, true),
+      weeklyResetAt: game ? nextWeeklyReset(game, now) : null,
     };
   }
 
   if (kind === 'counter' || res.regenMinutes <= 0) {
-    return {
-      value: live.value,
-      precise: live.value,
-      isFull: live.value >= res.cap,
-      fullAt: null,
-      msToFull: null,
-      overflow: 0,
-      hasSnapshot: true,
-      reserve: null,
-    };
+    return steadyProjection(live.value, res.cap, true);
   }
 
   const periodMs = res.regenMinutes * 60_000;
@@ -150,7 +144,8 @@ export function sleepCheck(
 ): SleepCheck {
   const horizon = now + sleepHours * 3_600_000;
   let fullAt: number | null = null;
-  for (const res of state.resources.filter((r) => r.gameId === game.id && !r.deleted && r.regenMinutes > 0)) {
+  for (const res of state.resources) {
+    if (res.gameId !== game.id || res.deleted || !(res.regenMinutes > 0)) continue;
     const proj = projectEnergy(res, snaps.get(res.id), now);
     if (!proj.hasSnapshot) continue;
     const at = proj.isFull ? now : proj.fullAt;

@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import { nextDailyReset } from '@memoria/shared';
 
 export const uid = (): string => crypto.randomUUID();
 
@@ -39,10 +40,7 @@ export function fmtClock(at: number, zone: string): string {
  * game card and the settings list so the two can never disagree.
  */
 export function localResetLabel(game: { tz: string; dailyResetHour: number }, zone: string, now: number): string {
-  const serverNow = DateTime.fromMillis(now, { zone: game.tz });
-  let nextReset = serverNow.set({ hour: game.dailyResetHour, minute: 0, second: 0, millisecond: 0 });
-  if (nextReset.toMillis() <= serverNow.toMillis()) nextReset = nextReset.plus({ days: 1 });
-  const localReset = nextReset.setZone(zone);
+  const localReset = DateTime.fromMillis(nextDailyReset(game, now), { zone });
   return localReset.isValid ? localReset.toFormat('HH:mm') : String(game.dailyResetHour).padStart(2, '0') + ':00';
 }
 
@@ -53,18 +51,6 @@ export function fmtDateTimeLocalInput(at: number, zone: string): string {
 export function parseDateTimeLocalInput(v: string, zone: string): number | null {
   const dt = DateTime.fromISO(v, { zone });
   return dt.isValid ? dt.toMillis() : null;
-}
-
-/** Minutes-from-midnight → "HH:mm" for <input type=time>. */
-export function minToTimeInput(min: number | null): string {
-  if (min == null) return '';
-  return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
-}
-
-export function timeInputToMin(v: string): number | null {
-  const m = /^(\d{1,2}):(\d{2})$/.exec(v);
-  if (!m) return null;
-  return intOr(m[1]!, 0) * 60 + intOr(m[2]!, 0);
 }
 
 /** Read an image File as a compressed data URL (max ~640px, JPEG) to keep the synced doc small. */

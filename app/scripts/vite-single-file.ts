@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import type { Plugin } from 'vite';
 
@@ -71,10 +71,9 @@ export function singleFile(): Plugin {
 }
 
 function listFiles(dir: string): string[] {
-  return readdirSync(dir).flatMap((entry) => {
-    const path = join(dir, entry);
-    return statSync(path).isDirectory() ? listFiles(path) : [path];
-  });
+  return readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter((entry) => !entry.isDirectory())
+    .map((entry) => join(entry.parentPath, entry.name));
 }
 
 function pickOne(files: string[], ext: string, dir: string): string {
@@ -94,7 +93,7 @@ function dataUri(mime: string, bytes: Uint8Array): string {
  * inside a string literal. The backslash is inert in both JS and CSS.
  */
 function escapeClosingTags(code: string): string {
-  return code.replace(/<\/(script|style)/gi, '<\/$1');
+  return code.replace(/<\/(script|style)/gi, '<\\/$1');
 }
 
 /** Turns every emitted font URL into a `data:` payload and drops the .woff twins. */
@@ -119,12 +118,20 @@ function inlineFonts(css: string, assets: Map<string, Uint8Array>): string {
   return out;
 }
 
+/** Only the types the `emitted` pattern above can actually match need an entry. */
+const MIME: Record<string, string> = {
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+};
+
 function mimeFor(url: string): string {
-  if (url.endsWith('.woff2')) return 'font/woff2';
-  if (url.endsWith('.woff')) return 'font/woff';
-  if (url.endsWith('.svg')) return 'image/svg+xml';
-  if (url.endsWith('.png')) return 'image/png';
-  return 'application/octet-stream';
+  return MIME[extname(url).toLowerCase()] ?? 'application/octet-stream';
 }
 
 function inlineHtml(html: string, parts: { js: string; css: string; favicon?: Uint8Array }): string {

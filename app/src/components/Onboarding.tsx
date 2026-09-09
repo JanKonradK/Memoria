@@ -1,11 +1,12 @@
 import { detectLocalTz, PRESETS } from '@memoria/shared';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useApp } from '../store';
 import { gameShellVars } from '../theme';
-import { homeTimeZoneOptions, resolveHomeTimeZone, SYSTEM_TIMEZONE_VALUE, utcOffsetLabel } from '../timezone';
+import { resolveHomeTimeZone, SYSTEM_TIMEZONE_VALUE } from '../timezone';
 import { useUI } from '../ui-store';
 import { intOr } from '../util';
-import { Btn, GameBadge, NumInput, Select } from './ui';
+import { HomeTimeZoneField } from './HomeTimeZoneField';
+import { Btn, GameBadge, NumInput } from './ui';
 
 export function Onboarding({ onComplete }: { onComplete: () => void }) {
   const addGameFromPreset = useApp((store) => store.addGameFromPreset);
@@ -17,7 +18,6 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [energy, setEnergy] = useState<Record<string, string>>({});
   const chosenTz = homeTzChoice === SYSTEM_TIMEZONE_VALUE ? detectedTz : homeTzChoice;
-  const timeZoneOptions = useMemo(() => homeTimeZoneOptions(chosenTz), [chosenTz]);
 
   const finish = () => {
     updateSettings({ localTz: resolveHomeTimeZone(homeTzChoice) });
@@ -56,21 +56,12 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
               Memoria uses it to convert each game’s server reset into your own clock.
             </p>
           </div>
-          <div className="flex min-w-0 flex-col items-end gap-1 sm:min-w-80">
-            <Select
-              aria-label="Home timezone"
-              value={homeTzChoice}
-              onChange={(event) => setHomeTzChoice(event.target.value)}
-            >
-              <option value={SYSTEM_TIMEZONE_VALUE}>Use system timezone ({detectedTz})</option>
-              {timeZoneOptions.map((option) => (
-                <option key={option.tz} value={option.tz}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-            <span className="numeral text-label text-dim">Current offset {utcOffsetLabel(chosenTz)}</span>
-          </div>
+          <HomeTimeZoneField
+            value={homeTzChoice}
+            resolvedTz={chosenTz}
+            detectedTz={detectedTz}
+            onChange={setHomeTzChoice}
+          />
         </div>
       </section>
       <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

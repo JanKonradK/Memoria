@@ -115,6 +115,25 @@ describe('checklistFor', () => {
       expect(items[0]!.periodKey.startsWith('win:')).toBe(false);
     });
 
+    it('picks the soonest-ending window when two matching ones overlap', () => {
+      const late = makeEvent({
+        id: 'wLate',
+        name: 'Hazard Zone 2.7',
+        type: 'cycle',
+        start: now - 100,
+        end: now + 9000,
+      });
+      const soon = makeEvent({
+        id: 'wSoon',
+        name: 'Hazard Zone 2.6',
+        type: 'cycle',
+        start: now - 100,
+        end: now + 3000,
+      });
+      const items = checklistFor(makeState({ games: [game], tasks: [task], events: [late, soon] }), game, now);
+      expect(items[0]).toMatchObject({ periodKey: 'win:wSoon', resetAt: now + 3000 });
+    });
+
     it('honors the keyword override and the timelineLinked=false opt-out', () => {
       const win = makeEvent({ id: 'w2', name: 'Endgame: Special Rerun', start: now - 1000, end: now + 5000 });
       const keyword = makeTask({ id: 'kw', name: 'Totally different name', cadence: 'custom', timelineMatch: 'rerun' });

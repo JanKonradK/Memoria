@@ -17,6 +17,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   copyFileSync,
+  createWriteStream,
   existsSync,
   mkdirSync,
   readdirSync,
@@ -27,6 +28,8 @@ import {
 } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import os from 'node:os';
+import { Readable, Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 
 /**
  * The repository the updater reads releases from. A rename on GitHub keeps
@@ -117,13 +120,16 @@ function sha256(file) {
 }
 
 /** Every file under a directory, as paths relative to it. */
-function walk(root, base = root, found = []) {
-  for (const entry of readdirSync(root, { withFileTypes: true })) {
-    const path = join(root, entry.name);
-    if (entry.isDirectory()) walk(path, base, found);
-    else found.push(relative(base, path));
-  }
-  return found;
+function walk(root) {
+  return readdirSync(root, { recursive: true, withFileTypes: true })
+    .filter((entry) => !entry.isDirectory())
+    .map((entry) => relative(root, join(entry.parentPath, entry.name)));
+}
+
+/** Drop the staged tree and its manifest together — one is meaningless without the other. */
+function clearPending() {
+  rmSync(PENDING_MANIFEST, { force: true });
+  rmSync(PENDING_DIR, { recursive: true, force: true });
 }
 
 // ---------------------------------------------------------------------------
@@ -211,15 +217,13 @@ export function applyPendingUpdate(installRoot) {
   // A pending tree at or below the running version is left over from an update
   // that already landed, or from a downgrade that should not happen on its own.
   if (compareVersions(manifest.version, record.version) <= 0) {
-    rmSync(PENDING_DIR, { recursive: true, force: true });
-    rmSync(PENDING_MANIFEST, { force: true });
+    clearPending();
     return { applied: false, reason: 'staged build is not newer' };
   }
 
   try {
     const files = applyTree(PENDING_DIR, installRoot);
-    rmSync(PENDING_DIR, { recursive: true, force: true });
-    rmSync(PENDING_MANIFEST, { force: true });
+    clearPending();
     return { applied: true, version: manifest.version, files };
   } catch (error) {
     // Leave the pending tree in place: the next launch retries, and a partially
@@ -240,28 +244,36 @@ function dueForCheck(force) {
 }
 
 async function fetchWithTimeout(url, headers = {}) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), NETWORK_TIMEOUT_MS);
-  try {
-    return await fetch(url, {
-      signal: controller.signal,
-      headers: { 'user-agent': `Memoria-updater (+https://github.com/${REPO})`, ...headers },
-      redirect: 'follow',
-    });
-  } finally {
-    clearTimeout(timer);
-  }
+  return fetch(url, {
+    // Keep the deadline active while the body is consumed too.
+    signal: AbortSignal.timeout(NETWORK_TIMEOUT_MS),
+    headers: { 'user-agent': `Memoria-updater (+https://github.com/${REPO})`, ...headers },
+    redirect: 'follow',
+  });
 }
 
-async function downloadTo(url, destination) {
+export async function downloadTo(url, destination, maxBytes = MAX_DOWNLOAD_BYTES) {
   const response = await fetchWithTimeout(url);
   if (!response.ok) throw new Error(`${url} responded ${response.status}`);
   const length = Number(response.headers.get('content-length') ?? 0);
-  if (length > MAX_DOWNLOAD_BYTES) throw new Error(`refusing a ${length}-byte download`);
-  const body = Buffer.from(await response.arrayBuffer());
-  if (body.byteLength > MAX_DOWNLOAD_BYTES) throw new Error('download exceeded the size ceiling');
+  if (length > maxBytes || !response.body) {
+    await response.body?.cancel();
+    throw new Error('download exceeds the size ceiling or has no body');
+  }
   mkdirSync(dirname(destination), { recursive: true });
-  writeFileSync(destination, body);
+  let received = 0;
+  const limit = new Transform({
+    transform(chunk, _encoding, callback) {
+      received += chunk.length;
+      callback(received > maxBytes ? new Error('download exceeded the size ceiling') : null, chunk);
+    },
+  });
+  try {
+    await pipeline(Readable.fromWeb(response.body), limit, createWriteStream(destination));
+  } catch (error) {
+    rmSync(destination, { force: true });
+    throw error;
+  }
   return destination;
 }
 
@@ -284,7 +296,7 @@ function extractZip(zipFile, destination) {
       '-NoProfile',
       '-NonInteractive',
       '-Command',
-      `Expand-Archive -LiteralPath '${zipFile}' -DestinationPath '${destination}' -Force`,
+      `Expand-Archive -LiteralPath '${zipFile.replaceAll("'", "''")}' -DestinationPath '${destination.replaceAll("'", "''")}' -Force`,
     ],
     { stdio: 'ignore' },
   );
@@ -358,7 +370,7 @@ export async function checkForUpdate(installRoot, { force = false } = {}) {
 
     const zipFile = join(workDir, ASSET_NAME);
     await downloadTo(zipAsset.browser_download_url, zipFile);
-    const sumsFile = await downloadTo(sumsAsset.browser_download_url, join(workDir, CHECKSUM_ASSET));
+    const sumsFile = await downloadTo(sumsAsset.browser_download_url, join(workDir, CHECKSUM_ASSET), 64_000);
 
     // An unsigned zip off the internet gets checked against the digest the
     // release publishes before a single byte of it is unpacked.
@@ -377,7 +389,10 @@ export async function checkForUpdate(installRoot, { force = false } = {}) {
       return { status: 'error', reason: 'downloaded build has no release.json' };
     }
 
-    rmSync(PENDING_DIR, { recursive: true, force: true });
+    // Clear the manifest along with the tree it describes. If the rename below
+    // fails, the next launch finds nothing staged rather than a manifest
+    // advertising a version whose files are no longer there.
+    clearPending();
     mkdirSync(dirname(PENDING_DIR), { recursive: true });
     renameSync(tree, PENDING_DIR);
     writeJson(PENDING_MANIFEST, { version, tag: release.tag_name, stagedAt: new Date().toISOString() });
@@ -403,5 +418,9 @@ export function updateStatus(installRoot) {
   };
 }
 
-/** Where a staged download lives, so the launcher can report and tests can clear it. */
-export const paths = { DATA_DIR, UPDATE_DIR, PENDING_DIR, PENDING_MANIFEST, LAST_CHECK_FILE };
+/**
+ * Where Memoria keeps everything outside the install: the launcher's state
+ * document and the updater's staging area. Resolved once, here, so the two
+ * modules can never disagree about which directory holds the user's data.
+ */
+export const paths = { APP_DATA_ROOT, DATA_DIR, UPDATE_DIR, PENDING_DIR, PENDING_MANIFEST, LAST_CHECK_FILE };

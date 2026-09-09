@@ -22,6 +22,7 @@ vi.mock('idb-keyval', () => ({
 }));
 
 import { flushPersist, useApp } from '../src/store';
+import { set as idbSet } from 'idb-keyval';
 import { SEED_UPDATED } from '../src/data/seed-events';
 
 const IDB_KEY = 'memoria-state';
@@ -68,7 +69,44 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+it('skips storage, subscribers, and sync for unchanged mutations but still saves real edits', async () => {
+  await flushPersist();
+  vi.mocked(idbSet).mockClear();
+  const subscriber = vi.fn();
+  const announce = vi.fn();
+  const unsubscribe = useApp.subscribe(subscriber);
+  document.addEventListener('tg-mutated', announce);
+  try {
+    useApp.getState().batch((state) => state);
+    useApp.getState().setEnergy('missing-resource', 10);
+    await flushPersist();
+    expect(idbSet).not.toHaveBeenCalled();
+    expect(subscriber).not.toHaveBeenCalled();
+    expect(announce).not.toHaveBeenCalled();
+
+    useApp.getState().addBlankGame('Saved game');
+    await flushPersist();
+    expect(idbSet).toHaveBeenCalledTimes(1);
+    expect(subscriber).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenCalledTimes(1);
+    expect(idb.get(IDB_KEY)).toEqual(expect.objectContaining({ games: useApp.getState().state.games }));
+  } finally {
+    unsubscribe();
+    document.removeEventListener('tg-mutated', announce);
+  }
+});
+
 describe('local load validation', () => {
+  it('leaves newer stored data untouched and asks for an app update', async () => {
+    const future = { ...emptyState(), schemaVersion: 999, futureField: 'keep me' };
+    idb.set(IDB_KEY, future);
+    await useApp.getState().load();
+    await flushPersist();
+    expect(useApp.getState().loaded).toBe(false);
+    expect(useApp.getState().loadError).toMatch(/newer version/);
+    expect(idb.get(IDB_KEY)).toEqual(future);
+  });
+
   it('repairs a malformed document row-wise and writes the valid result back', async () => {
     const source = useApp.getState();
     const gameId = source.addBlankGame('Stored');
@@ -330,6 +368,42 @@ describe('legacy document adoption', () => {
 });
 
 describe('addMissingPresetTasksEverywhere', () => {
+  it.each(['single', 'all'] as const)(
+    'preserves preset fields and owner edits when catching up %s accounts',
+    (scope) => {
+      const preset = PRESETS.find((item) => item.key === 'genshin')!;
+      const gameId = useApp.getState().addGameFromPreset(preset, {});
+      const original = useApp.getState().state;
+      const [removed, renamed, ...missing] = original.tasks;
+      const kept = [
+        { ...removed!, deleted: true, sort: 40 },
+        { ...renamed!, name: 'My routine', sort: 41 },
+      ];
+      useApp.getState().replaceState({ ...original, tasks: kept });
+
+      const addMissing = () =>
+        scope === 'single'
+          ? useApp.getState().addMissingPresetTasks(gameId)
+          : useApp.getState().addMissingPresetTasksEverywhere();
+      expect(addMissing()).toBe(missing.length);
+      const tasks = useApp.getState().state.tasks;
+      expect(tasks.slice(0, 2)).toEqual(kept);
+      expect(tasks.slice(2)).toEqual(
+        missing.map((task, index) => ({
+          ...task,
+          id: expect.any(String),
+          anchorAt: Date.now(),
+          updatedAt: Date.now(),
+          sort: 42 + index,
+        })),
+      );
+      expect(new Set(tasks.map((task) => task.id)).size).toBe(tasks.length);
+      const settled = useApp.getState().state;
+      expect(addMissing()).toBe(0);
+      expect(useApp.getState().state).toBe(settled);
+    },
+  );
+
   it('catches up two renamed accounts created from the same preset', () => {
     const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
     const euId = useApp.getState().addGameFromPreset(genshin, {});

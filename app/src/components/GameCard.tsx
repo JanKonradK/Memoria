@@ -8,13 +8,14 @@ import { useUI } from '../ui-store';
 import { useMediaQuery, useReducedMotion } from '../hooks';
 import { cardEnter } from '../motion';
 import { titleFont } from '../fonts';
-import { gameAccent, gameInk, gameRim, gameSupport, gameTitleInk, mix, resolveGameIdentityColors } from '../game-color';
+import { gameAccent, gameInk, gameRim, gameSupport, gameTitleInk, mix } from '../game-color';
 import { gameShellVars, useGround, useTheme } from '../theme';
 
 import { endTone, fmtDur, localResetLabel, tint } from '../util';
 import { EnergyRow } from './EnergyRow';
 import { Pill, ProgressBar, Tick } from './primitives';
-import { Tooltip } from './ui';
+import { ServerChip, Tooltip } from './ui';
+import { useIdentityColors } from './roster';
 import { serverRegionLabel } from './NexusLayout';
 
 const CADENCE_ORDER = ['daily', 'custom', 'weekly', 'monthly'] as const;
@@ -490,19 +491,17 @@ function ResourceControls({
     <>
       {cardResources.length > 0 && (
         <div data-tour="resources" className="mt-3.5 space-y-3">
-          {cardResources.map((res) => {
-            return (
-              <EnergyControlRow
-                key={res.id}
-                game={game}
-                res={res}
-                snap={snaps.get(res.id)}
-                now={now}
-                localTz={state.settings.localTz}
-                setEnergy={actions.setEnergy}
-              />
-            );
-          })}
+          {cardResources.map((res) => (
+            <EnergyControlRow
+              key={res.id}
+              game={game}
+              res={res}
+              snap={snaps.get(res.id)}
+              now={now}
+              localTz={state.settings.localTz}
+              setEnergy={actions.setEnergy}
+            />
+          ))}
         </div>
       )}
       {!game.paused && primaryEnergy && quickChips.length > 0 && (
@@ -650,11 +649,7 @@ function GameControlsHeader({
         aria-label={`Edit ${game.name}${accountLabel ? `, ${accountLabel}` : ''}`}
       >
         <div className="flex min-w-0 items-center gap-2">
-          <span
-            className={`max-w-20 shrink-0 truncate rounded-ui-sm border border-line-edge bg-inset px-1.5 py-0.5 text-caption font-semibold text-fg-soft ${regionLabel.startsWith('UTC') && regionLabel !== 'UTC' ? 'numeral' : ''}`}
-          >
-            {regionLabel}
-          </span>
+          <ServerChip label={regionLabel} className="max-w-20 truncate" />
           <h2
             className={`min-w-0 flex-1 ${layout === 'focus' ? 'text-title min-[1600px]:text-heading' : 'truncate text-heading'} font-semibold tracking-tight text-fg transition group-hover/title:text-fg`}
             style={{
@@ -736,10 +731,7 @@ export function GameControlsView({
 }) {
   const { game } = entry;
   const derived = useDerived(now);
-  const identityColors = useMemo(
-    () => resolveGameIdentityColors(state.games.filter((candidate) => !candidate.deleted)),
-    [state.games],
-  );
+  const identityColors = useIdentityColors(state.games);
   const visualGame = { ...game, ...(identityColors[game.id] ?? {}) };
   // Cadence order and core-first ordering now both belong to groupChecklist —
   // this flat sort used to run AFTER checklistFor's core-first one and silently
@@ -845,10 +837,7 @@ export const GameCard = memo(function GameCard({
   // Depth is the game's own inset ring plus the top-edge highlight — nothing
   // outside the box. See the Shadows Float Only Rule in DESIGN.md: a card does
   // not overlay the page, so it casts nothing.
-  const identityColors = useMemo(
-    () => resolveGameIdentityColors(games.filter((candidate) => !candidate.deleted)),
-    [games],
-  );
+  const identityColors = useIdentityColors(games);
   const visualColors = identityColors[game.id] ?? game;
   const rim = gameRim(visualColors, ground);
   const accent = gameAccent(visualColors, ground);

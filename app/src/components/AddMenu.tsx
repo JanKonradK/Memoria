@@ -33,13 +33,7 @@ export function AddMenu() {
 
   return (
     <DropdownMenuPrimitive.Root>
-      <DropdownMenuPrimitive.Trigger
-        // Matches RefreshButton's shell so the right-hand cluster reads as one
-        // family of controls rather than as a button that wandered in.
-        className="shell-control shell-control-add group"
-        aria-label="Add"
-        data-tour="add"
-      >
+      <DropdownMenuPrimitive.Trigger className="shell-control group" aria-label="Add" data-tour="add">
         <svg
           viewBox="0 0 20 20"
           aria-hidden

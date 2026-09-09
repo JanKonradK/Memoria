@@ -1,6 +1,7 @@
-import type { AppState, Game, GameEvent, Snapshot } from './types';
+import type { AppState, Game, GameEvent, Resource, Snapshot } from './types';
 import { latestSnapshots, projectEnergy } from './energy';
 import { buildChecklistIndex, checklistFor, type ChecklistItem } from './checklist';
+import { groupBy } from './internal';
 import { effectiveResourceKind } from './tracking';
 
 export type ActionKind = 'energy_full' | 'energy_soon' | 'daily' | 'weekly' | 'monthly' | 'custom' | 'event';
@@ -16,10 +17,12 @@ export interface NextAction {
 export interface UrgencyContext {
   snaps: Map<string, Snapshot>;
   checklistByGame: Map<string, ChecklistItem[]>;
+  /** Every resource row, live or not — `gameActions` still applies its own filters. */
+  resourcesByGame: Map<string, Resource[]>;
   eventsByGame: Map<string, GameEvent[]>;
 }
 
-function buildUrgencyContext(state: AppState, now: number, requestedGame?: Game): UrgencyContext {
+export function buildUrgencyContext(state: AppState, now: number, requestedGame?: Game): UrgencyContext {
   const checklistIndex = buildChecklistIndex(state);
   const checklistByGame = new Map<string, ChecklistItem[]>();
   for (const game of state.games) {
@@ -29,16 +32,14 @@ function buildUrgencyContext(state: AppState, now: number, requestedGame?: Game)
     checklistByGame.set(requestedGame.id, checklistFor(state, requestedGame, now, checklistIndex));
   }
 
-  // Keep the same rows as the old gameActions scan. In particular, it checked
-  // deleted/notify itself but did not exclude done events.
-  const eventsByGame = new Map<string, GameEvent[]>();
-  for (const event of state.events) {
-    const events = eventsByGame.get(event.gameId);
-    if (events) events.push(event);
-    else eventsByGame.set(event.gameId, [event]);
-  }
-
-  return { snaps: latestSnapshots(state.snapshots), checklistByGame, eventsByGame };
+  // Keep the same rows as the old gameActions scans. In particular, they checked
+  // deleted/notify/kind themselves but did not exclude done events.
+  return {
+    snaps: latestSnapshots(state.snapshots),
+    checklistByGame,
+    resourcesByGame: groupBy(state.resources, (resource) => resource.gameId),
+    eventsByGame: groupBy(state.events, (event) => event.gameId),
+  };
 }
 
 /** All time-sensitive actions for one game, soonest first. */
@@ -46,8 +47,8 @@ export function gameActions(state: AppState, game: Game, now: number, ctx?: Urge
   const actions: NextAction[] = [];
   const context = ctx ?? buildUrgencyContext(state, now, game);
 
-  for (const res of state.resources) {
-    if (res.gameId !== game.id || res.deleted || effectiveResourceKind(res) !== 'regen') continue;
+  for (const res of context.resourcesByGame.get(game.id) ?? []) {
+    if (res.deleted || effectiveResourceKind(res) !== 'regen') continue;
     const proj = projectEnergy(res, context.snaps.get(res.id), now, game);
     if (!proj.hasSnapshot) continue;
     if (proj.isFull) {
@@ -59,15 +60,8 @@ export function gameActions(state: AppState, game: Game, now: number, ctx?: Urge
 
   for (const item of context.checklistByGame.get(game.id) ?? []) {
     if (item.done) continue;
-    const kind =
-      item.cadence === 'daily'
-        ? 'daily'
-        : item.cadence === 'weekly'
-          ? 'weekly'
-          : item.cadence === 'monthly'
-            ? 'monthly'
-            : 'custom';
-    actions.push({ kind, gameId: game.id, at: item.resetAt, label: `${item.name} resets` });
+    // Every Cadence is also an ActionKind; the compiler holds that true.
+    actions.push({ kind: item.cadence, gameId: game.id, at: item.resetAt, label: `${item.name} resets` });
   }
 
   for (const ev of context.eventsByGame.get(game.id) ?? []) {

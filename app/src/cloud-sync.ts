@@ -1,6 +1,6 @@
 import { emptyState, mergeState, normalizeState, safeParseAppState, type AppState } from '@memoria/shared';
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
-import { useApp } from './store';
+import { useApp, type CloudStatus } from './store';
 
 /**
  * Sync across devices through a file in a folder that something else already
@@ -47,8 +47,9 @@ const WRITE_DEBOUNCE_MS = 4000;
 const POLL_MS = 20_000;
 
 export const CLOUD_FILE_SUGGESTED_NAME = 'memoria-sync.json';
+export const MAX_CLOUD_FILE_BYTES = 10_000_000;
 
-export type CloudStatus = 'unsupported' | 'off' | 'needs-permission' | 'idle' | 'syncing' | 'ok' | 'error';
+export type { CloudStatus } from './store';
 
 /**
  * The parts of the File System Access API this uses that TypeScript's lib.dom
@@ -104,18 +105,12 @@ let syncing = false;
 let writeTimer: ReturnType<typeof setTimeout> | undefined;
 let pollTimer: ReturnType<typeof setInterval> | undefined;
 let initialized = false;
+let connectionVersion = 0;
 /**
  * The `lastModified` of the file as this tab last saw it. A poll that finds the
  * same value does no work at all, which is what keeps a 20-second timer free.
  */
 let seenModified = 0;
-/**
- * The exact bytes this tab last wrote. If a merge produces the same document
- * again there is nothing to say, and skipping the write keeps the provider's
- * client from re-uploading an identical file every few seconds.
- */
-let lastWritten = '';
-
 function setStatus(status: CloudStatus, error = ''): void {
   useApp.getState().setCloudStatus(status, error);
 }
@@ -139,6 +134,12 @@ function isAbort(error: unknown): boolean {
  * nothing.
  */
 export function mergeCloudDocument(local: AppState, remoteText: string): { next: AppState; changed: boolean } {
+  if (
+    remoteText.length > MAX_CLOUD_FILE_BYTES ||
+    new TextEncoder().encode(remoteText).byteLength > MAX_CLOUD_FILE_BYTES
+  ) {
+    throw new Error('The sync file exceeds the 10 MB limit. Nothing was written to it.');
+  }
   const trimmed = remoteText.trim();
   if (trimmed === '') return { next: local, changed: false };
   const raw = JSON.parse(trimmed) as unknown;
@@ -154,9 +155,11 @@ export function mergeCloudDocument(local: AppState, remoteText: string): { next:
   if (!candidate || typeof candidate !== 'object' || (!('games' in candidate) && !('settings' in candidate))) {
     throw new Error('That file is not a Memoria document — nothing was written to it.');
   }
-  const parsed = safeParseAppState(normalizeState(candidate));
+  // Validate before salvage: repair must never turn a corrupt or newer file
+  // into a valid empty document that we then overwrite.
+  const parsed = safeParseAppState(candidate);
   if (!parsed.success) throw new Error(`The sync file is not a valid Memoria document: ${parsed.error}`);
-  const next = mergeState(local, parsed.data);
+  const next = mergeState(local, normalizeState(candidate));
   return { next, changed: JSON.stringify(next) !== JSON.stringify(local) };
 }
 
@@ -176,21 +179,27 @@ function serialize(state: AppState): string {
   return `${JSON.stringify(mergeState(state, emptyState()), null, 2)}\n`;
 }
 
-async function write(text: string): Promise<void> {
-  if (!handle) return;
+async function write(target: CloudFileHandle, version: number, text: string): Promise<void> {
   // createWritable() stages into a swap file and commits on close(), so a crash
   // or a pulled USB stick leaves the previous document rather than half of one.
-  const writable = await handle.createWritable();
+  const writable = await target.createWritable();
   try {
+    if (connectionVersion !== version) {
+      await writable.abort();
+      return;
+    }
     await writable.write(text);
+    if (connectionVersion !== version) {
+      await writable.abort();
+      return;
+    }
   } catch (error) {
     await writable.abort().catch(() => undefined);
     throw error;
   }
   await writable.close();
-  lastWritten = text;
-  const file = await handle.getFile();
-  seenModified = file.lastModified;
+  const file = await target.getFile();
+  if (connectionVersion === version) seenModified = file.lastModified;
 }
 
 async function permissionFor(target: CloudFileHandle, request: boolean): Promise<PermissionOutcome> {
@@ -211,11 +220,17 @@ async function permissionFor(target: CloudFileHandle, request: boolean): Promise
  */
 export async function cloudSyncNow(): Promise<void> {
   if (!handle || syncing) return;
+  const target = handle;
+  const version = connectionVersion;
   syncing = true;
   setStatus('syncing');
   try {
-    const file = await handle.getFile();
+    const file = await target.getFile();
+    if (connectionVersion !== version) return;
+    if (file.size > MAX_CLOUD_FILE_BYTES)
+      throw new Error('The sync file exceeds the 10 MB limit. Nothing was written to it.');
     const remoteText = await file.text();
+    if (connectionVersion !== version) return;
     const { next, changed } = mergeCloudDocument(useApp.getState().state, remoteText);
     if (changed) useApp.getState().replaceState(next);
     seenModified = file.lastModified;
@@ -224,10 +239,10 @@ export async function cloudSyncNow(): Promise<void> {
     // The remote already says exactly this. Writing it again would only give the
     // provider's client another upload to do and every other device another
     // download, so the quiet case stays quiet.
-    if (outgoing !== remoteText && outgoing !== lastWritten) await write(outgoing);
-    else lastWritten = outgoing;
-    setStatus('ok');
+    if (outgoing !== remoteText) await write(target, version, outgoing);
+    if (connectionVersion === version) setStatus('ok');
   } catch (error) {
+    if (connectionVersion !== version) return;
     // A handle whose grant lapsed — the folder moved, the file was deleted, the
     // browser dropped the permission — is recoverable, but only from a click.
     if (error instanceof DOMException && (error.name === 'NotAllowedError' || error.name === 'SecurityError')) {
@@ -239,6 +254,9 @@ export async function cloudSyncNow(): Promise<void> {
     }
   } finally {
     syncing = false;
+    // A picker may have replaced the connection while the previous read was
+    // pending. Its initial sync was deferred by the in-flight guard.
+    if (connectionVersion !== version && handle) void cloudSyncNow();
   }
 }
 
@@ -252,7 +270,7 @@ async function pollForRemoteChange(): Promise<void> {
   if (!handle || syncing || document.hidden) return;
   try {
     const file = await handle.getFile();
-    if (file.lastModified > seenModified) await cloudSyncNow();
+    if (file.lastModified !== seenModified) await cloudSyncNow();
   } catch {
     // A transient read failure while the provider's client swaps the file is
     // normal. The next tick, or the next edit, retries.
@@ -272,10 +290,11 @@ function stopTimers(): void {
 }
 
 async function adopt(next: CloudFileHandle): Promise<void> {
+  const version = ++connectionVersion;
   handle = next;
   seenModified = 0;
-  lastWritten = '';
   await idbSet(HANDLE_KEY, next);
+  if (connectionVersion !== version) return;
   useApp.getState().setCloudFileName(next.name);
   startTimers();
   await cloudSyncNow();
@@ -339,8 +358,12 @@ export async function connectExistingCloudFile(): Promise<boolean> {
  */
 export async function reconnectCloudFile(): Promise<boolean> {
   if (!handle) return false;
+  const target = handle;
+  const version = connectionVersion;
   try {
-    if ((await permissionFor(handle, true)) !== 'granted') {
+    const permission = await permissionFor(target, true);
+    if (connectionVersion !== version) return false;
+    if (permission !== 'granted') {
       setStatus('needs-permission', 'Permission was not granted.');
       return false;
     }
@@ -348,7 +371,7 @@ export async function reconnectCloudFile(): Promise<boolean> {
     await cloudSyncNow();
     return true;
   } catch (error) {
-    setStatus('error', message(error));
+    if (connectionVersion === version) setStatus('error', message(error));
     return false;
   }
 }
@@ -359,11 +382,12 @@ export async function reconnectCloudFile(): Promise<boolean> {
  * up as a settings change.
  */
 export async function disconnectCloudFile(): Promise<void> {
+  const version = ++connectionVersion;
   stopTimers();
   handle = null;
   seenModified = 0;
-  lastWritten = '';
   await idbDel(HANDLE_KEY).catch(() => undefined);
+  if (connectionVersion !== version) return;
   useApp.getState().setCloudFileName('');
   setStatus('off');
 }
@@ -394,32 +418,36 @@ export function initCloudSync(): void {
   });
 
   void (async () => {
+    const version = connectionVersion;
     try {
       const stored = (await idbGet(HANDLE_KEY)) as CloudFileHandle | undefined;
+      if (connectionVersion !== version) return;
       if (!stored) {
         setStatus('off');
         return;
       }
       handle = stored;
       useApp.getState().setCloudFileName(stored.name);
-      if ((await permissionFor(stored, false)) === 'granted') {
+      const permission = await permissionFor(stored, false);
+      if (connectionVersion !== version) return;
+      if (permission === 'granted') {
         startTimers();
         await cloudSyncNow();
         return;
       }
       setStatus('needs-permission', 'Memoria needs permission to open the sync file again.');
     } catch (error) {
-      setStatus('error', message(error));
+      if (connectionVersion === version) setStatus('error', message(error));
     }
   })();
 }
 
 /** Test seam: drop every timer, listener state and handle held by this module. */
 export function resetCloudSyncState(): void {
+  connectionVersion += 1;
   stopTimers();
   handle = null;
   syncing = false;
   initialized = false;
   seenModified = 0;
-  lastWritten = '';
 }
