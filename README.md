@@ -1,273 +1,123 @@
-# Memoria — Gacha Daily / Energy / Event Tracker
+# Memoria
 
-One dashboard for every gacha you play: live energy projections, dailies/weeklies/monthlies
-that reset on each game's _server_ time, an event timeline, and in-app next actions before
-you waste regen or miss a reset.
+**Keep track of your game energy, daily tasks, and events in one place.**
 
-Ships with editable presets for **Genshin, HSR, ZZZ, Wuthering Waves, NTE, Love and
-Deepspace, Umamusume, NIKKE and Arknights: Endfield** — every cap, regen rate and reset
-time is data you can change in the app in seconds when a patch changes something.
+Memoria helps you see what needs attention before you play. It shows when your energy will fill,
+when tasks reset, and when events end.
 
-Memoria runs entirely on your own machine. No account, no server, no deployment.
+You enter your progress yourself. Memoria does not read your game accounts or play games for you.
+You do not need a Memoria account or any coding knowledge.
 
-## Download
+## Download and open Memoria
 
-**[Get the latest release →](https://github.com/JanKonradK/Memoria/releases/latest)**
+**[Download the latest version](https://github.com/JanKonradK/Memoria/releases/latest)**
 
-| Download              | What it is                                                                                                                                      |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Memoria-win-x64.zip` | The Windows app. Unpack anywhere, run **Start Memoria.cmd**. Bundles its own Node, so there is nothing to install. **Keeps itself up to date.** |
-| `Memoria.html`        | The whole app as one file. Double-click, opens in any browser. Does **not** update itself.                                                      |
+### Windows app
 
-Then run **Add Memoria to Start Menu.cmd** once for a Desktop and Start Menu icon.
+1. Open the download page above.
+2. Under **Assets**, select **Memoria-win-x64.zip**.
+3. Open your Downloads folder.
+4. Right-click the ZIP file and select **Extract All**.
+5. Open the extracted **Memoria** folder.
+6. Double-click **Start Memoria.cmd**.
 
-Your data lives in `%APPDATA%\memoria`, never inside the app folder, so moving,
-replacing or deleting the folder cannot touch it.
+For a Desktop and Start Menu shortcut, double-click **Add Memoria to Start Menu.cmd** once.
+The download contains everything the app needs. You do not need to install developer tools.
 
-### How updating works
+### Try it as one file
 
-The app asks GitHub for a newer release in the background, at most once every six
-hours. If it finds one, it downloads it, checks it against the SHA-256 digest
-published with the release, and stages it. The new version is swapped in the next
-time you start Memoria — you will see nothing except a newer app.
+Download **Memoria.html** from the same page. Open the file with **Chrome or Edge**.
 
-```sh
-node\node.exe desktop\memoria.mjs --check-update   # check right now
-set MEMORIA_NO_UPDATE=1                            # turn updates off
-```
+This version works offline and saves your progress in that browser. It does not update itself.
+Keep the file in the same location, and use the same browser each time.
 
-The single-file `Memoria.html` has no updater by design: it is one file with no
-launcher behind it. Download a newer one whenever you want it — in Chrome and
-Edge your data carries over, because every `file://` page shares one origin.
+## Add your games
 
-## Layout
+1. Open Memoria.
+2. Select **Add your first game**, or select **+ → Add game** on the Dashboard.
+3. Select a game from the list.
+4. Select your server region and check the game settings.
+5. Select the **Add** button to finish.
 
-```
-app/      React PWA (Vite + Tailwind) — the whole interface
-shared/   All the math: energy projection, reset periods, urgency, merge
-desktop/  Windows launcher: local server, app window, state.json
-```
+Ready-made settings are available for:
 
-## Run it
+- Genshin Impact
+- Honkai: Star Rail
+- Zenless Zone Zero
+- Wuthering Waves
+- Neverness to Everness
+- Love and Deepspace
+- Umamusume
+- Goddess of Victory: NIKKE
+- Arknights: Endfield
 
-```sh
-npm install
-npm run dev        # app on http://localhost:5183
-npm run check      # lint, format, types, tests, build and PWA budget
-npm run test:e2e   # Playwright responsive, keyboard and accessibility journeys
-```
+You can also add a custom game or separate accounts for the same game.
+Check the starting values against your game. Server regions and game updates can change the correct values.
 
-Data lives in IndexedDB in the browser you open it with. Backups are JSON files
-you export and import from Settings → Data, and **Settings → Data → Sync across
-devices** keeps several machines in step through a folder you already sync.
+## Use Memoria each day
 
-## Cutting a release
+- **Update your energy.** Select the number on a game card, enter the amount from your game, and press Enter.
+- **Mark completed tasks.** Select the circle beside a task after you complete it.
+- **Check deadlines.** Open **Timeline** to see events and their dates. Select **List** for a simpler view.
+- **Add an event or reminder.** Select **+**, then **Event** or **Reminder**.
+- **Change game settings.** Select the game name or its pencil button.
+- **Change the appearance.** Select the sun or moon button for the light or dark theme.
 
-```sh
-npm version patch          # or minor / major — this is the version users compare against
-git push --follow-tags
-```
+Memoria estimates energy from your last entry. Enter a new value after you spend energy or receive extra energy.
+Task resets use each game's server time. Dates and clocks use your **Home timezone** in **Settings**.
 
-Pushing a `v*` tag runs `.github/workflows/release.yml`, which re-runs the full
-check, builds the zip and the single-file HTML, publishes both with a
-`SHA256SUMS.txt`, and writes the release notes. The workflow **fails the build if
-the tag and `package.json` disagree**, because `release.json` inside the zip is
-written from `package.json` — shipping them out of step would make a new build
-look older than the one it replaces, and no installed copy would ever take it.
+Some games include event dates with the app. These dates can change, so check important deadlines in your game.
+Memoria shows reminders while it is open. Do not depend on it for alerts after you close it.
 
-To assemble the download locally without publishing:
+## Keep a backup
 
-```sh
-npm run build && npm run package    # dist/release/Memoria-win-x64.zip
-```
+A backup is a separate copy of your progress. Keep one before you change computers, browsers, or app versions.
 
-Packaging is also run on every CI build, so a break in it surfaces on the pull
-request that causes it rather than at tag time.
+1. Open **Settings**.
+2. In **Data**, select **Export backup**.
+3. Save the file somewhere you can find it again.
 
-### What the zip is
+To use a backup, select **Import backup** in the same section.
+Select your saved file, check the preview, then select **Merge backup**.
+Memoria combines the backup with your current data. For the same item, the newer change wins.
 
-A tree the launcher can run with no npm and no source: prebuilt `app/dist`, the
-prebuilt `desktop/dist/shared-core.mjs`, the launcher scripts, the icon, a pinned
-`node/node.exe` verified against nodejs.org's `SHASUMS256.txt`, and a
-`release.json`. That last file is the **only** signal the launcher uses to tell a
-packaged install from a checkout — a clone has none, which is what stops a
-developer's working tree from ever being overwritten by a download.
+The Windows app also keeps a data file outside the app folder.
+The one-file version keeps its data in your browser. Clearing browser data can remove that copy.
 
-## Sync across devices
+## Use more than one computer
 
-Memoria can keep one JSON file in a folder something else already syncs — Google
-Drive, OneDrive, Proton Drive, Dropbox, iCloud Drive, Syncthing, a network share.
-Every device pointed at that file converges on the same document.
+This is optional. You need **Chrome or Edge** and a folder that already syncs between your computers,
+such as a OneDrive, Google Drive, or Dropbox folder.
 
-**Settings → Data → Sync across devices.**
+1. On your first computer, open **Settings → Data → Sync across devices**.
+2. Select **Create sync file…**.
+3. Save the file in your synced folder.
+4. Wait for your folder service to copy the file to your other computer.
+5. On the other computer, open the same section in Memoria.
+6. Select **Use existing file…** and choose that file.
 
-- On the first device, **Create sync file…** and save `memoria-sync.json` inside
-  the synced folder.
-- On every device after that, **Use existing file…** and pick the file the first
-  one made.
+Your folder service transfers the file. Memoria combines the changes when both computers have access to it.
+If Memoria asks for permission again, select **Reconnect**.
 
-That is the whole setup. There is no account and no Memoria server: the app only
-reads and writes a file, and your provider's own client moves it. It works with a
-provider this app has never heard of, for exactly that reason.
+If you do not want to use a synced folder, transfer a backup instead.
 
-Merging is the same rule as everywhere else — last write wins **per row** on
-`updatedAt`, with soft-delete tombstones. Two devices that were both offline and
-edited different games both land. Two that edited the same value keep the later
-one. Each device reads the file before it writes, so a write can only ever add.
+## Get updates
 
-- **Chrome or Edge**, including from a downloaded `Memoria.html` on `file://`.
-  Firefox and Safari have no writable file picker; there, use Export and Import.
-- **The launcher can use it too.** `%APPDATA%\memoria\state.json` keeps the
-  windows on _one_ machine in agreement; this is how a second machine sees the
-  same document. Both run at once quite happily.
-- **Pick the file, not a folder Memoria has never seen.** Anything that is not
-  already a Memoria document is refused rather than overwritten.
-- **If your provider ever leaves a `memoria-sync (1).json`**, two devices wrote
-  before it reconciled them. Nothing is lost — import the extra copy from
-  Settings → Data and the same merge absorbs it.
+- **Windows app:** Memoria checks for updates in the background. A downloaded update takes effect the next time the launcher starts.
+- **One-file version:** Export a backup first. Download the new **Memoria.html**, then open it with the same browser.
+  If your progress is missing, import your backup.
 
-## Send it to a friend (one file)
+The Windows app keeps your saved data separate from its program files.
+For the first update from an older launcher, restart Windows if Memoria cannot reconnect to local sync.
 
-```sh
-npm run build:single       # writes app/dist-single/Memoria.html
-```
+## Need help?
 
-That is the whole app in a single ~2 MB HTML file: script, styles, fonts and icon
-are all inlined, so it needs no install, no server and no network. Send the file,
-let them save it anywhere, and they open it by double-clicking. Their data is
-their own — it stays in their browser and never leaves the machine.
+**[Report a problem or request a feature](https://github.com/JanKonradK/Memoria/issues)**
 
-Tell them three things:
+Include what you tried, what happened, and whether you use the Windows app or the one-file version.
+A screenshot can help. Remove any personal information before you share it.
+GitHub requires an account to post an issue.
 
-- **Use Chrome or Edge.** Verified there: the page runs from `file://`, the app
-  saves to IndexedDB, and reloading keeps everything. Other browsers isolate
-  `file://` storage differently and may lose data when the file is moved.
-- **Keep the file where it is.** Renaming it is fine; a browser that keys storage
-  to the file path would treat a moved copy as a fresh start.
-- **Export a backup now and then** from Settings → Data. It is the only copy that
-  survives clearing browser data. If they use more than one machine, point them at
-  Sync across devices above instead — it is the same file, kept current.
+## For developers
 
-### Sending them an update
-
-Rebuild, send the new file, tell them to open it. In Chrome and Edge their data
-is already in it: every `file://` page shares one origin, so a fresh download in
-a different folder under a different name reads the same IndexedDB the old copy
-wrote (verified). Older data is migrated forward on load by `migrateState`, so
-they can skip several versions at once. The old file can just be deleted.
-
-- **Export a backup first anyway.** It is the only path that works if they are
-  on Firefox, which keys `file://` storage per file, and the only way to carry
-  data to another browser or machine.
-- **Do not let them reopen an old copy afterwards.** Loading state stamps it
-  with the running build's schema version and salvages rows against that build's
-  schemas, so an older build silently drops fields it does not know and writes
-  the result back.
-
-The single-file build carries no service worker (a `file://` page cannot register
-one) and no launcher sync. Everything else is the same app; see
-`app/scripts/vite-single-file.ts`.
-
-## Desktop shortcut (Windows)
-
-From a source checkout — the packaged download does this with
-**Add Memoria to Start Menu.cmd** instead, and needs no build:
-
-```sh
-npm run build              # the launcher serves app/dist
-npm run install:desktop    # puts a Memoria shortcut on the Desktop
-```
-
-The shortcut opens the app in its own window and serves it on the **fixed port
-17817** — the port must never change, because all data (IndexedDB) is tied to the
-origin `http://127.0.0.1:17817`. Launching twice reuses the running instance.
-After a `npm run build`, just reopen the window to pick up the new version.
-
-Opened this way, the app also reads and writes `%APPDATA%\memoria\state.json` over
-`/api/state` + `/api/sync`, and the launcher pushes an `/api/events` ping when the
-file changes on disk. That is how two open windows stay in agreement — and it
-gives you one real file to back up. The server listens on loopback only and exits
-a few minutes after the last window closes.
-
-### Choosing the browser
-
-By default Memoria opens in your default browser when that browser can do app
-windows (Chromium-based), otherwise in the first one it finds installed. To pin
-a specific one:
-
-```sh
-node desktop/memoria.mjs --list-browsers     # what's installed and what would open
-node desktop/memoria.mjs --browser zen       # this launch only
-```
-
-Persist the choice with `"browser"` in `desktop/config.json`, an environment
-variable, or arguments on the shortcut itself (`Memoria.vbs --browser zen`):
-
-```json
-{ "browser": "helium" }
-```
-
-Known names: `helium`, `chrome`, `edge`, `brave`, `vivaldi`, `opera`, `firefox`,
-`zen`, `librewolf`. You can also pass a full path to any executable, or
-`system` to hand the URL to whatever the machine has registered for `https`
-(the escape hatch for anything not on the list). Chromium-based browsers get a
-chromeless app window; Firefox-based ones get a plain window; `system` gets a
-tab. Precedence is `--browser` → `MEMORIA_BROWSER` → `config.json` → automatic.
-
-## Getting events in
-
-- **Bundled feed** (Timeline): the app ships with the current patches' events in
-  [app/src/data/seed-events.ts](app/src/data/seed-events.ts). Whenever that file
-  contains events (or corrected dates) your device doesn't have, the Timeline shows
-  an "Import N" button — one click imports everything, deduped against manual
-  entries. After a new patch, ask Claude to refresh the file
-  (it pulls the official announcement feeds + patch notes), `npm run build`, reopen,
-  click import. Entries whose exact dates weren't announced yet carry a "TBC —
-  verify in-game" note and stay out of next actions until a refresh confirms them.
-- **Paste (AI)** (Timeline): for any game — copy the generated
-  prompt, hand it to any AI, paste the JSON it returns, review, import.
-  Handles code fences and skips malformed rows; times are read in the game's
-  server timezone.
-
-## The daily loop
-
-1. Play your game(s).
-2. Open Memoria and punch in what's actually left, right on the card: click the
-   value box and type, or step with the keyboard — **A −10 · S −1 · D +1 · F +10**,
-   Enter saves. Click the cap number ("/200") to change it when your max shifts
-   (rank-ups, events), or add one-tap spend shortcuts in game ⚙ → Quick spend.
-   Tick the dailies.
-3. That's it — projections and next actions recalibrate from your entry.
-
-## Quality of life
-
-- Game ⚙ is deliberately lean: identity, resets, resources, tasks. Events live
-  on the Timeline.
-- **Endgame cycles** ship as preset tasks with real 2026 cadences (Stygian 35d,
-  HSR endgame refresh 14d, Shiyu/Deadly Assault 14d, ToA/WhiWa 28d, …) — all
-  editable per game via ⚙ → Tasks, like everything else.
-- **Safe to sleep**: evenings (20:00–05:00) each card shows either "sleep
-  safe" or the time it caps within your sleep window (Settings → sleepHours).
-- **In-app next actions**: the dashboard keeps upcoming caps, resets and event
-  deadlines visible while Memoria is open.
-- **Stable card order**: cards never re-sort themselves while you're entering
-  values — when urgency changes, a "↻ Sort by urgency" button appears instead.
-- **Reset warnings**: undone tasks turn amber under 2 hours from their reset
-  and pulse red with a countdown under 20 minutes.
-
-## After a patch / new event
-
-- **New banner/event:** Timeline → _+ Event_ (10 seconds; toggle "daily touch" if it needs logins).
-- **Cap or regen changed:** game card → ⚙ → edit the number.
-- **New game:** Dashboard → _Add game_ → pick a preset or make a custom one.
-- Preset defaults live in [shared/src/presets.ts](shared/src/presets.ts) if you want to fix them at the source.
-
-## Notes
-
-- Preset values (caps, rates, reset times) are best-effort defaults — verify against your
-  server/rank and edit in the app. The NTE preset is explicitly marked as needing
-  verification.
-- Merging (import, and the launcher's state file) is last-write-wins per row on
-  `updatedAt`, with soft-delete tombstones — never a wholesale replace.
-- Nothing runs while the app is closed: reminders, resets and deadlines are
-  computed when you open it.
+For source code setup, tests, release commands, and technical details, see the [developer guide](docs/development.md).
