@@ -3,7 +3,6 @@ import { detectLocalTz, normalizeState, safeParseAppState } from '@memoria/share
 import { useApp } from '../store';
 import { useUI, type TonightPosition } from '../ui-store';
 import { servedByLauncher } from '../launcher';
-import { resolveGameIdentityColors } from '../game-color';
 import { syncNow } from '../sync';
 import {
   CLOUD_FILE_SUGGESTED_NAME,
@@ -14,10 +13,12 @@ import {
   disconnectCloudFile,
   reconnectCloudFile,
 } from '../cloud-sync';
-import { homeTimeZoneOptions, resolveHomeTimeZone, SYSTEM_TIMEZONE_VALUE, utcOffsetLabel } from '../timezone';
+import { resolveHomeTimeZone, SYSTEM_TIMEZONE_VALUE } from '../timezone';
 import { fmtClock, intOr, localResetLabel } from '../util';
+import { HomeTimeZoneField } from './HomeTimeZoneField';
 import { Pill } from './primitives';
-import { Btn, GameBadge, NumInput, Page, Select, Segmented } from './ui';
+import { rosterGames, useIdentityColors } from './roster';
+import { Btn, GameBadge, NumInput, Page, Segmented, TOUCH_BUTTON } from './ui';
 
 export function SettingsPage() {
   const state = useApp((store) => store.state);
@@ -38,9 +39,13 @@ export function SettingsPage() {
   const setTonightPosition = useUI((s) => s.setTonightPosition);
   const focusedGameId = useUI((s) => s.focusedGameId);
   const detectedTz = detectLocalTz();
-  const timeZoneOptions = homeTimeZoneOptions(settings.localTz);
-  const games = state.games.filter((game) => !game.deleted).sort((a, b) => a.sort - b.sort);
-  const identityColors = resolveGameIdentityColors(games);
+  const games = rosterGames(state.games);
+  const identityColors = useIdentityColors(state.games);
+  // A focused game narrows this page too, so the roster shows the one game the
+  // rest of the app is showing. A focus on a game that is gone narrows nothing.
+  const listedGames = games.some((game) => game.id === focusedGameId)
+    ? games.filter((game) => game.id === focusedGameId)
+    : games;
   const [statusMessage, setStatusMessage] = useState('');
   const [importDraft, setImportDraft] = useState<{ text: string; games: number; events: number } | null>(null);
   const cloudSupported = cloudSyncSupported();
@@ -119,7 +124,7 @@ export function SettingsPage() {
               <h2 id="settings-games-heading" className="text-heading font-semibold text-fg-soft">
                 Games
               </h2>
-              <Btn className="!min-h-11 sm:!min-h-8" onClick={() => openSheet({ kind: 'addGame' })}>
+              <Btn className={TOUCH_BUTTON} onClick={() => openSheet({ kind: 'addGame' })}>
                 + Add game
               </Btn>
             </div>
@@ -151,61 +156,50 @@ export function SettingsPage() {
                 <p className="text-meta font-semibold text-fg-soft">Home timezone</p>
                 <p className="text-label text-dim">Used for every local clock and date.</p>
               </div>
-              <div className="flex min-w-0 flex-col items-end gap-1 sm:min-w-80">
-                <Select
-                  aria-label="Home timezone"
-                  value={settings.localTz === detectedTz ? SYSTEM_TIMEZONE_VALUE : settings.localTz}
-                  onChange={(event) => updateSettings({ localTz: resolveHomeTimeZone(event.target.value) })}
-                >
-                  <option value={SYSTEM_TIMEZONE_VALUE}>Use system timezone ({detectedTz})</option>
-                  {timeZoneOptions.map((option) => (
-                    <option key={option.tz} value={option.tz}>
-                      {option.label}
-                    </option>
-                  ))}
-                </Select>
-                <span className="numeral text-label text-dim">Current offset {utcOffsetLabel(settings.localTz)}</span>
-              </div>
+              <HomeTimeZoneField
+                value={settings.localTz === detectedTz ? SYSTEM_TIMEZONE_VALUE : settings.localTz}
+                resolvedTz={settings.localTz}
+                detectedTz={detectedTz}
+                onChange={(value) => updateSettings({ localTz: resolveHomeTimeZone(value) })}
+              />
             </div>
 
             {games.length > 0 ? (
               <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                {games
-                  .filter((game) => !games.some((g) => g.id === focusedGameId) || game.id === focusedGameId)
-                  .map((game) => {
-                    const colors = identityColors[game.id] ?? game;
-                    return (
-                      // One button, one destination. This row used to carry both
-                      // "Expand" (the real editor, inline) and "Edit" (a sheet
-                      // holding three fields) — two controls claiming the same job.
-                      <button
-                        key={game.id}
-                        type="button"
-                        onClick={() => openSheet({ kind: 'game', gameId: game.id })}
-                        className="flex min-h-14 w-full items-center gap-3 rounded-ui-xl bg-fill-1 px-3 py-2 text-left ring-1 ring-line-hairline transition duration-(--dur-fast) hover:bg-fill-2 hover:ring-line-strong"
-                      >
-                        <GameBadge short={game.short} {...colors} size="lg" />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate text-body font-bold text-fg-soft">{game.name}</span>
-                            {game.paused && <Pill variant="paused">paused</Pill>}
-                          </div>
-                          <span className="text-label text-dim">
-                            {game.accountLabel ? `${game.accountLabel} · ` : ''}reset{' '}
-                            {localResetLabel(game, settings.localTz, Date.now())}
-                          </span>
-                          <p className="text-label text-dim">
-                            {state.resources.filter((r) => r.gameId === game.id && !r.deleted).length} resources ·{' '}
-                            {state.tasks.filter((t) => t.gameId === game.id && !t.deleted).length} tasks
-                          </p>
+                {listedGames.map((game) => {
+                  const colors = identityColors[game.id] ?? game;
+                  return (
+                    // One button, one destination. This row used to carry both
+                    // "Expand" (the real editor, inline) and "Edit" (a sheet
+                    // holding three fields) — two controls claiming the same job.
+                    <button
+                      key={game.id}
+                      type="button"
+                      onClick={() => openSheet({ kind: 'game', gameId: game.id })}
+                      className="flex min-h-14 w-full items-center gap-3 rounded-ui-xl bg-fill-1 px-3 py-2 text-left ring-1 ring-line-hairline transition duration-(--dur-fast) hover:bg-fill-2 hover:ring-line-strong"
+                    >
+                      <GameBadge short={game.short} {...colors} size="lg" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-body font-bold text-fg-soft">{game.name}</span>
+                          {game.paused && <Pill variant="paused">paused</Pill>}
                         </div>
-                        <span className="shrink-0 text-meta font-semibold text-dim" aria-hidden="true">
-                          Edit
+                        <span className="text-label text-dim">
+                          {game.accountLabel ? `${game.accountLabel} · ` : ''}reset{' '}
+                          {localResetLabel(game, settings.localTz, Date.now())}
                         </span>
-                        <span className="sr-only">Edit {game.name}</span>
-                      </button>
-                    );
-                  })}
+                        <p className="text-label text-dim">
+                          {state.resources.filter((r) => r.gameId === game.id && !r.deleted).length} resources ·{' '}
+                          {state.tasks.filter((t) => t.gameId === game.id && !t.deleted).length} tasks
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-meta font-semibold text-dim" aria-hidden="true">
+                        Edit
+                      </span>
+                      <span className="sr-only">Edit {game.name}</span>
+                    </button>
+                  );
+                })}
               </div>
             ) : (
               <p className="mt-4 text-body text-dim">No games yet. Add one to start tracking resources and tasks.</p>
@@ -228,11 +222,7 @@ export function SettingsPage() {
                   data.
                 </p>
                 <div className="flex flex-wrap items-center gap-3">
-                  <Btn
-                    kind="primary"
-                    className="!min-h-11 sm:!min-h-8"
-                    onClick={() => void syncNow().catch(reportError)}
-                  >
+                  <Btn kind="primary" className={TOUCH_BUTTON} onClick={() => void syncNow().catch(reportError)}>
                     Save to file now
                   </Btn>
                   <span className="text-meta text-muted">
@@ -277,7 +267,7 @@ export function SettingsPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <Btn
                       kind="primary"
-                      className="!min-h-11 sm:!min-h-8"
+                      className={TOUCH_BUTTON}
                       onClick={() => {
                         setStatusMessage('');
                         void connectNewCloudFile()
@@ -288,7 +278,7 @@ export function SettingsPage() {
                       Create sync file…
                     </Btn>
                     <Btn
-                      className="!min-h-11 sm:!min-h-8"
+                      className={TOUCH_BUTTON}
                       onClick={() => {
                         setStatusMessage('');
                         void connectExistingCloudFile()
@@ -312,7 +302,7 @@ export function SettingsPage() {
                     {cloudStatus === 'needs-permission' ? (
                       <Btn
                         kind="primary"
-                        className="!min-h-11 sm:!min-h-8"
+                        className={TOUCH_BUTTON}
                         onClick={() => void reconnectCloudFile().catch(reportError)}
                       >
                         Reconnect
@@ -320,14 +310,14 @@ export function SettingsPage() {
                     ) : (
                       <Btn
                         kind="primary"
-                        className="!min-h-11 sm:!min-h-8"
+                        className={TOUCH_BUTTON}
                         onClick={() => void cloudSyncNow().catch(reportError)}
                       >
                         Sync now
                       </Btn>
                     )}
                     <Btn
-                      className="!min-h-11 sm:!min-h-8"
+                      className={TOUCH_BUTTON}
                       onClick={() => {
                         void disconnectCloudFile()
                           .then(() => setStatusMessage('Stopped syncing on this device. The file was left alone.'))
@@ -355,7 +345,7 @@ export function SettingsPage() {
 
             <div className="pt-4">
               <div className="flex flex-wrap items-center gap-2 pb-1">
-                <Btn className="!min-h-11 sm:!min-h-8" onClick={exportJson}>
+                <Btn className={TOUCH_BUTTON} onClick={exportJson}>
                   Export backup
                 </Btn>
                 <label className="btn-compact flex min-h-11 cursor-pointer items-center rounded-ui-md bg-fill-2 px-3 py-1 text-caption font-semibold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 sm:min-h-8">
@@ -371,8 +361,7 @@ export function SettingsPage() {
                   />
                 </label>
                 <span className="text-label text-dim">
-                  {state.games.filter((g) => !g.deleted).length} games · {state.events.filter((e) => !e.deleted).length}{' '}
-                  events
+                  {games.length} games · {state.events.filter((e) => !e.deleted).length} events
                 </span>
               </div>
               {statusMessage && (
@@ -393,7 +382,7 @@ export function SettingsPage() {
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Btn
                       kind="primary"
-                      className="!min-h-11 sm:!min-h-8"
+                      className={TOUCH_BUTTON}
                       onClick={() => {
                         const ok = importStateJson(importDraft.text);
                         setStatusMessage(ok ? 'Backup imported and merged.' : 'Import failed.');
@@ -402,7 +391,7 @@ export function SettingsPage() {
                     >
                       Merge backup
                     </Btn>
-                    <Btn className="!min-h-11 sm:!min-h-8" onClick={() => setImportDraft(null)}>
+                    <Btn className={TOUCH_BUTTON} onClick={() => setImportDraft(null)}>
                       Cancel
                     </Btn>
                   </div>
@@ -415,7 +404,7 @@ export function SettingsPage() {
                   Export first if you need a copy.
                 </p>
                 <Btn
-                  className="mt-3 !min-h-11 text-danger-fg ring-danger/30 sm:!min-h-8"
+                  className={`mt-3 text-danger-fg ring-danger/30 ${TOUCH_BUTTON}`}
                   onClick={() => {
                     if (!window.confirm('Permanently clear Memoria data stored in this browser?')) return;
                     void clearLocalData()

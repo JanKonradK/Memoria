@@ -1,10 +1,11 @@
 import { useId, useMemo } from 'react';
 import { DateTime } from 'luxon';
 import type { Game, GameEvent } from '@memoria/shared';
-import { gameTitleInk, resolveGameIdentityColors } from '../game-color';
+import { gameTitleInk } from '../game-color';
 import { useGround } from '../theme';
 import { endTone, fmtDur } from '../util';
-import { Btn } from './ui';
+import { useIdentityColors } from './roster';
+import { Btn, serverLabelClass } from './ui';
 import { serverRegionLabel } from './NexusLayout';
 
 /** Events grouped by status, with the nearest deadline first. */
@@ -107,8 +108,16 @@ export function TimelineList({
 }) {
   const ground = useGround();
   const headingId = useId();
-  const identityColors = useMemo(() => resolveGameIdentityColors(games), [games]);
+  const identityColors = useIdentityColors(games);
   const gamesById = useMemo(() => new Map(games.map((game) => [game.id, game])), [games]);
+  // Two accounts of one game can produce the same name+nickname, and then the
+  // row controls need the server to tell them apart. Counted once for the whole
+  // list rather than re-scanned per row.
+  const labelCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const game of games) counts.set(gameLabel(game), (counts.get(gameLabel(game)) ?? 0) + 1);
+    return counts;
+  }, [games]);
 
   // An event whose game is filtered out has nothing to identify it on the row,
   // so it leaves with its game rather than appearing under a blank badge.
@@ -157,8 +166,8 @@ export function TimelineList({
                 const serverLabel = serverRegionLabel(game.tz, now);
                 const countdown = countdownOf(event, now);
                 const baseLabel = gameLabel(game);
-                const duplicateLabel = games.some((other) => other.id !== game.id && gameLabel(other) === baseLabel);
-                const controlLabel = duplicateLabel ? `${baseLabel} (${serverLabel})` : baseLabel;
+                const controlLabel =
+                  (labelCounts.get(baseLabel) ?? 0) > 1 ? `${baseLabel} (${serverLabel})` : baseLabel;
                 const finished = section.status === 'finished';
 
                 return (
@@ -178,11 +187,7 @@ export function TimelineList({
                           {game.name}
                         </span>
                         {account && <span className="text-fg-soft">{account}</span>}
-                        <span
-                          className={`font-semibold text-fg-soft ${
-                            serverLabel.startsWith('UTC') && serverLabel !== 'UTC' ? 'numeral' : ''
-                          }`}
-                        >
+                        <span className={`font-semibold text-fg-soft ${serverLabelClass(serverLabel)}`}>
                           {serverLabel}
                         </span>
                         <span className="capitalize">

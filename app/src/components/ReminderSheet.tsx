@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fmtDateTimeLocalInput, parseDateTimeLocalInput } from '../util';
+import { rosterGames } from './roster';
 import { Sheet } from './Sheet';
 import { Btn, Field, Select, TextInput } from './ui';
 
@@ -10,7 +11,7 @@ export function ReminderSheet({ open }: { open: boolean }) {
   const addReminder = useApp((s) => s.addReminder);
   const closeSheet = useUI((s) => s.closeSheet);
 
-  const games = state.games.filter((g) => !g.deleted).sort((a, b) => a.sort - b.sort);
+  const games = rosterGames(state.games);
   const [message, setMessage] = useState('');
   const [at, setAt] = useState(Date.now() + 3600_000);
   const [gameId, setGameId] = useState('');

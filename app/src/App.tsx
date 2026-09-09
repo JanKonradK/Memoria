@@ -54,6 +54,32 @@ const ReminderSheet = lazy(() =>
 );
 const UserGuide = lazy(() => import('./components/UserGuide').then((module) => ({ default: module.UserGuide })));
 
+/** Keep countdown updates inside the active page, away from editors and the shell. */
+function LivePage({ tab }: { tab: Exclude<Tab, 'settings'> }) {
+  const now = useNow(30_000);
+  return tab === 'home' ? <DashboardPage now={now} /> : <TimelinePage now={now} />;
+}
+
+function AppSheets() {
+  const sheet = useUI((s) => s.sheet);
+  return (
+    <AnimatePresence mode="wait">
+      {sheet && (
+        // A new lazy editor must not suspend the outgoing sheet during its exit.
+        <Suspense key={JSON.stringify(sheet)} fallback={null}>
+          {sheet.kind === 'game' && <GameDetailSheet key={`game-${sheet.gameId}`} open gameId={sheet.gameId} />}
+          {sheet.kind === 'addGame' && <AddGameSheet key="add-game" open />}
+          {sheet.kind === 'event' && (
+            <EventSheet key={`event-${sheet.eventId ?? 'new'}`} open eventId={sheet.eventId} gameId={sheet.gameId} />
+          )}
+          {sheet.kind === 'reminder' && <ReminderSheet key="reminder" open />}
+          {sheet.kind === 'guide' && <UserGuide key="guide" open />}
+        </Suspense>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function App() {
   const load = useApp((s) => s.load);
   const loaded = useApp((s) => s.loaded);
@@ -63,7 +89,6 @@ export default function App() {
   const clearLocalData = useApp((s) => s.clearLocalData);
   const tab = useUI((s) => s.tab);
   const setTab = useUI((s) => s.setTab);
-  const sheet = useUI((s) => s.sheet);
 
   // Which way the pages travel. The direction belongs to the transition that is
   // happening rather than to the tab, so it is stored WITH the tab it arrived
@@ -79,9 +104,6 @@ export default function App() {
     const next = TAB_ORDER[TAB_ORDER.indexOf(tab) + towards];
     if (next) setTab(next);
   });
-  // 30s tick: nothing on screen shows seconds, and a 1s tick re-rendered every
-  // card + projection 60x/min for no visible benefit.
-  const now = useNow(30_000);
   const online = useOnline();
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const autoTourStarted = useRef(false);
@@ -197,9 +219,7 @@ export default function App() {
             The exit slide is what this gives up; the direction still reads. */}
         <Suspense fallback={<div className="px-5 py-12 text-center text-body text-dim">Loading view…</div>}>
           <div key={tab} className="page-enter" data-direction={direction}>
-            {tab === 'home' && <DashboardPage now={now} />}
-            {tab === 'timeline' && <TimelinePage now={now} />}
-            {tab === 'settings' && <SettingsPage />}
+            {tab === 'settings' ? <SettingsPage /> : <LivePage tab={tab} />}
           </div>
         </Suspense>
       </main>
@@ -249,21 +269,7 @@ export default function App() {
         </AnimatePresence>
       </div>
 
-      <AnimatePresence mode="wait">
-        {sheet && (
-          // Keep lazy loading inside the keyed presence child. A new editor
-          // must not suspend the outgoing sheet while its exit is running.
-          <Suspense key={JSON.stringify(sheet)} fallback={null}>
-            {sheet?.kind === 'game' && <GameDetailSheet key={`game-${sheet.gameId}`} open gameId={sheet.gameId} />}
-            {sheet?.kind === 'addGame' && <AddGameSheet key="add-game" open />}
-            {sheet?.kind === 'event' && (
-              <EventSheet key={`event-${sheet.eventId ?? 'new'}`} open eventId={sheet.eventId} gameId={sheet.gameId} />
-            )}
-            {sheet?.kind === 'reminder' && <ReminderSheet key="reminder" open />}
-            {sheet?.kind === 'guide' && <UserGuide key="guide" open />}
-          </Suspense>
-        )}
-      </AnimatePresence>
+      <AppSheets />
     </div>
   );
 }

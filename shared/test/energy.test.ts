@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { latestSnapshots, projectEnergy } from '../src/energy';
-import { makeResource, makeSnapshot } from './helpers';
+import { makeGame, makeResource, makeSnapshot, utc } from './helpers';
 
 const MIN = 60_000;
 
@@ -12,6 +12,26 @@ describe('projectEnergy', () => {
     expect(p.hasSnapshot).toBe(false);
     expect(p.value).toBe(0);
     expect(p.msToFull).toBeNull();
+    // An unread resource is not full, however low its cap.
+    expect(projectEnergy(makeResource({ cap: 0, regenMinutes: 0 }), undefined, 1000).isFull).toBe(false);
+  });
+
+  describe('weekly refill', () => {
+    // NTE City Stamina: wiped and refilled at the Monday 04:00 server reset.
+    const game = makeGame({ tz: 'Etc/GMT-1', dailyResetHour: 4, weeklyResetDay: 1 });
+    const weekly = makeResource({ name: 'City Stamina', cap: 100, regenMinutes: 0, kind: 'weekly' });
+    const monday = utc('2026-07-06T03:00:00'); // 04:00 UTC+1
+
+    it('reads a pre-reset snapshot back at cap and points at the next refill', () => {
+      const spent = makeSnapshot({ value: 12, takenAt: monday - MIN });
+      const p = projectEnergy(weekly, spent, monday + MIN, game);
+      expect(p).toMatchObject({ value: 100, isFull: true, weeklyResetAt: utc('2026-07-13T03:00:00') });
+    });
+
+    it('keeps a reading taken inside the current week', () => {
+      const spent = makeSnapshot({ value: 12, takenAt: monday + MIN });
+      expect(projectEnergy(weekly, spent, monday + 2 * MIN, game).value).toBe(12);
+    });
   });
 
   it('projects regen forward from the snapshot', () => {

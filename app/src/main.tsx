@@ -20,25 +20,16 @@ import '@fontsource/dm-sans/500.css';
 import '@fontsource/dm-sans/600.css';
 import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/500.css';
-// Per-game display faces (see fonts.ts). Titles set at 600; 500 is the fallback
-// cut for a face whose 600 has not landed yet.
-import '@fontsource/cinzel/500.css';
+// All three game-title surfaces use 600. Keep every character subset, but
+// omit unused 500-weight faces from the download and offline cache.
 import '@fontsource/cinzel/600.css';
-import '@fontsource/orbitron/500.css';
 import '@fontsource/orbitron/600.css';
-import '@fontsource/rajdhani/500.css';
 import '@fontsource/rajdhani/600.css';
-import '@fontsource/exo-2/500.css';
 import '@fontsource/exo-2/600.css';
-import '@fontsource/space-grotesk/500.css';
 import '@fontsource/space-grotesk/600.css';
-import '@fontsource/jost/500.css';
 import '@fontsource/jost/600.css';
-import '@fontsource/fredoka/500.css';
 import '@fontsource/fredoka/600.css';
-import '@fontsource/chakra-petch/500.css';
 import '@fontsource/chakra-petch/600.css';
-import '@fontsource/saira/500.css';
 import '@fontsource/saira/600.css';
 
 /** Loaded after first paint — see motion-features.ts. */

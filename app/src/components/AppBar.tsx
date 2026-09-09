@@ -116,7 +116,7 @@ function RefreshButton() {
       <svg
         viewBox="0 0 20 20"
         aria-hidden
-        className={`icon h-3.5 w-3.5 ${refreshing && !reducedMotion ? 'loader-spin' : ''}`}
+        className={`icon h-4 w-4 ${refreshing && !reducedMotion ? 'loader-spin' : ''}`}
         fill="none"
         stroke="currentColor"
         strokeLinecap="round"

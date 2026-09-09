@@ -1,12 +1,18 @@
 import type { AppState, Snapshot } from './types';
 import { CURRENT_SCHEMA_VERSION } from './types';
+import { objectRecord } from './internal';
 import { presetForGame } from './presets';
 import { effectiveResourceKind } from './tracking';
 
 export type StateMigration = (raw: unknown) => unknown;
 
-function objectRecord(raw: unknown): Record<string, unknown> | null {
-  return raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : null;
+/** The preset a raw game row came from, tolerating any shape a legacy document holds. */
+function presetKeyOf(game: Record<string, unknown>): string | undefined {
+  return presetForGame({
+    name: typeof game.name === 'string' ? game.name : '',
+    short: typeof game.short === 'string' ? game.short : '',
+    presetKey: typeof game.presetKey === 'string' ? game.presetKey : undefined,
+  })?.key;
 }
 
 function migrateGenshinPalette(raw: unknown): unknown {
@@ -15,13 +21,7 @@ function migrateGenshinPalette(raw: unknown): unknown {
   let changed = false;
   const games = state.games.map((item) => {
     const game = objectRecord(item);
-    if (!game) return item;
-    const preset = presetForGame({
-      name: typeof game.name === 'string' ? game.name : '',
-      short: typeof game.short === 'string' ? game.short : '',
-      presetKey: typeof game.presetKey === 'string' ? game.presetKey : undefined,
-    });
-    if (preset?.key !== 'genshin') return item;
+    if (!game || presetKeyOf(game) !== 'genshin') return item;
 
     // Both earlier Genshin palettes: the Mora gold this migration replaces, and
     // the near-white it replaced before that — a legacy document can still be
@@ -39,36 +39,27 @@ function migrateGenshinPalette(raw: unknown): unknown {
   return changed ? { ...state, games } : raw;
 }
 
-function stripResourceIcons(raw: unknown): unknown {
-  const state = objectRecord(raw);
-  if (!state || !Array.isArray(state.resources)) return raw;
-  let changed = false;
-  const resources = state.resources.map((item) => {
-    const resource = objectRecord(item);
-    if (!resource || !('icon' in resource)) return item;
-    const clean = { ...resource };
-    delete clean.icon;
-    changed = true;
-    return clean;
-  });
-  return changed ? { ...state, resources } : raw;
+/** A migration that removes retired fields from every row of one collection. */
+function stripKeys(collection: string, ...keys: string[]): StateMigration {
+  return (raw) => {
+    const state = objectRecord(raw);
+    const rows = state?.[collection];
+    if (!state || !Array.isArray(rows)) return raw;
+    let changed = false;
+    const cleaned = rows.map((item) => {
+      const row = objectRecord(item);
+      if (!row || !keys.some((key) => key in row)) return item;
+      const clean = { ...row };
+      for (const key of keys) delete clean[key];
+      changed = true;
+      return clean;
+    });
+    return changed ? { ...state, [collection]: cleaned } : raw;
+  };
 }
 
-function stripGameCardDisplayToggles(raw: unknown): unknown {
-  const state = objectRecord(raw);
-  if (!state || !Array.isArray(state.games)) return raw;
-  let changed = false;
-  const games = state.games.map((item) => {
-    const game = objectRecord(item);
-    if (!game || (!('hideProgressRing' in game) && !('hideEventStrip' in game))) return item;
-    const clean = { ...game };
-    delete clean.hideProgressRing;
-    delete clean.hideEventStrip;
-    changed = true;
-    return clean;
-  });
-  return changed ? { ...state, games } : raw;
-}
+const stripResourceIcons = stripKeys('resources', 'icon');
+const stripGameCardDisplayToggles = stripKeys('games', 'hideProgressRing', 'hideEventStrip');
 
 function migrateCrystalflyTrapTimer(raw: unknown): unknown {
   const state = objectRecord(raw);
@@ -77,12 +68,7 @@ function migrateCrystalflyTrapTimer(raw: unknown): unknown {
     state.games.flatMap((item) => {
       const game = objectRecord(item);
       if (!game || typeof game.id !== 'string') return [];
-      const preset = presetForGame({
-        name: typeof game.name === 'string' ? game.name : '',
-        short: typeof game.short === 'string' ? game.short : '',
-        presetKey: typeof game.presetKey === 'string' ? game.presetKey : undefined,
-      });
-      return preset?.key === 'genshin' ? [game.id] : [];
+      return presetKeyOf(game) === 'genshin' ? [game.id] : [];
     }),
   );
   let changed = false;
@@ -117,16 +103,7 @@ function migrateRoutineDefaults(raw: unknown): unknown {
   const games = state.games
     .map(objectRecord)
     .filter((game): game is Record<string, unknown> => Boolean(game && !game.deleted));
-  const gamePresets = new Map(
-    games.map((game) => [
-      game.id,
-      presetForGame({
-        name: String(game.name ?? ''),
-        short: String(game.short ?? ''),
-        presetKey: typeof game.presetKey === 'string' ? game.presetKey : undefined,
-      })?.key,
-    ]),
-  );
+  const gamePresets = new Map(games.map((game) => [game.id, presetKeyOf(game)]));
   const completions = Array.isArray(state.completions) ? state.completions.map(objectRecord) : [];
   const tasks = state.tasks.map((rawTask) => {
     const task = objectRecord(rawTask);
@@ -168,20 +145,16 @@ function migrateRoutineDefaults(raw: unknown): unknown {
       updatedAt,
     };
   });
+  // A tombstone counts as present: never restore a task the player removed.
+  const hasRoutine = (gameId: unknown, key: string, name: string) =>
+    tasks.some((rawTask) => {
+      const task = objectRecord(rawTask);
+      return task != null && task.gameId === gameId && (task.presetTaskKey === key || task.name === name);
+    });
+
   for (const game of games) {
     if (gamePresets.get(game.id) !== 'wuwa') continue;
-    // A tombstone counts as present: never restore a task the player removed.
-    if (
-      tasks.some((rawTask) => {
-        const task = objectRecord(rawTask);
-        return (
-          task != null &&
-          task.gameId === game.id &&
-          (task.presetTaskKey === 'wuwa-tacet-fields' || task.name === 'Tacet Fields ×4')
-        );
-      })
-    )
-      continue;
+    if (hasRoutine(game.id, 'wuwa-tacet-fields', 'Tacet Fields ×4')) continue;
     tasks.push({
       id: `preset-task:${String(game.id)}:wuwa-tacet-fields`,
       gameId: game.id,
@@ -200,16 +173,7 @@ function migrateRoutineDefaults(raw: unknown): unknown {
   const chips = Array.isArray(state.chips) ? [...state.chips] : [];
   for (const game of games) {
     if (gamePresets.get(game.id) !== 'uma') continue;
-    if (
-      !tasks.some((rawTask) => {
-        const task = objectRecord(rawTask);
-        return (
-          task != null &&
-          task.gameId === game.id &&
-          (task.presetTaskKey === 'uma-independent-training' || task.name === 'Independent Training')
-        );
-      })
-    ) {
+    if (!hasRoutine(game.id, 'uma-independent-training', 'Independent Training')) {
       tasks.push({
         id: `preset-task:${String(game.id)}:uma-independent-training`,
         gameId: game.id,
@@ -263,6 +227,9 @@ export function migrateState(raw: unknown): unknown {
   let state = raw;
   const record = objectRecord(state);
   if (!record) return raw;
+  if (typeof record.schemaVersion === 'number' && record.schemaVersion > CURRENT_SCHEMA_VERSION) {
+    throw new Error('This data needs a newer version of Memoria. Update the app before opening it.');
+  }
   let version =
     typeof record.schemaVersion === 'number' && Number.isInteger(record.schemaVersion) && record.schemaVersion >= 1
       ? record.schemaVersion
@@ -285,7 +252,7 @@ export function seedMissingRegenSnapshots(state: AppState, takenAt: number, crea
 
   for (const resource of state.resources) {
     const kind = effectiveResourceKind(resource);
-    if (resource.deleted || !['regen', 'weekly'].includes(kind) || resourcesWithSnapshots.has(resource.id)) {
+    if (resource.deleted || (kind !== 'regen' && kind !== 'weekly') || resourcesWithSnapshots.has(resource.id)) {
       continue;
     }
     seeded.push({ id: createId(), resourceId: resource.id, value: kind === 'weekly' ? resource.cap : 0, takenAt });

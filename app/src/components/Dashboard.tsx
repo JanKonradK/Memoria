@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { GameEvent } from '@memoria/shared';
 import { detectLocalTz, missingPresetTasks } from '@memoria/shared';
 import { useMediaQuery } from '../hooks';
@@ -21,6 +21,58 @@ function readDismissedGap(): number {
 
 function readLegacyHomeTzDismissed(): boolean {
   return localStorage.getItem(LEGACY_HOME_TZ_KEY) === '1';
+}
+
+/**
+ * A dismissible line across the top of the dashboard: something the app noticed,
+ * the one thing to do about it, and a way to say "not now".
+ *
+ * Both notices are the same object — a sentence, a verb and an ✕ — so they are
+ * one component rather than two copies that can drift a padding apart.
+ */
+function Notice({
+  label,
+  title,
+  detail,
+  action,
+  onAction,
+  dismissLabel,
+  onDismiss,
+}: {
+  /** Names the region for assistive tech; the visible title is the heading line. */
+  label: string;
+  title: ReactNode;
+  detail: ReactNode;
+  action: string;
+  onAction: () => void;
+  dismissLabel: string;
+  onDismiss: () => void;
+}) {
+  return (
+    <section className="panel grain mb-3 rounded-ui-card p-3" aria-label={label}>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-body font-medium text-fg">{title}</p>
+          <p className="mt-0.5 text-meta text-muted">{detail}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onAction}
+          className="min-h-8 shrink-0 rounded-ui-md border border-line-strong bg-inset px-3 py-1 text-meta font-medium text-fg transition-colors hover:border-line-strong hover:bg-surface-2"
+        >
+          {action}
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-ui-md text-muted transition-colors hover:text-fg"
+          aria-label={dismissLabel}
+        >
+          ✕
+        </button>
+      </div>
+    </section>
+  );
 }
 
 export function DashboardPage({ now }: { now: number }) {
@@ -128,69 +180,40 @@ export function DashboardPage({ now }: { now: number }) {
           a dashboard with nothing on it should say what to do next. */}
 
       {showLegacyHomeTz && (
-        <section className="panel grain mb-3 rounded-ui-card p-3" aria-label="Home timezone correction">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-body font-medium text-fg">Check your home timezone</p>
-              <p className="mt-0.5 text-meta text-muted">
-                Memoria is set to Europe/Warsaw ({utcOffsetLabel('Europe/Warsaw', now)}). This system reports{' '}
-                {detectedTz} ({utcOffsetLabel(detectedTz, now)}).
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => updateSettings({ localTz: detectedTz })}
-              className="min-h-8 shrink-0 rounded-ui-md border border-line-strong bg-inset px-3 py-1 text-meta font-medium text-fg transition-colors hover:border-line-strong hover:bg-surface-2"
-            >
-              Switch to {detectedTz}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                localStorage.setItem(LEGACY_HOME_TZ_KEY, '1');
-                setLegacyHomeTzDismissed(true);
-              }}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-ui-md text-muted transition-colors hover:text-fg"
-              aria-label="Dismiss home timezone correction"
-            >
-              ✕
-            </button>
-          </div>
-        </section>
+        <Notice
+          label="Home timezone correction"
+          title="Check your home timezone"
+          detail={
+            <>
+              Memoria is set to Europe/Warsaw ({utcOffsetLabel('Europe/Warsaw', now)}). This system reports {detectedTz}{' '}
+              ({utcOffsetLabel(detectedTz, now)}).
+            </>
+          }
+          action={`Switch to ${detectedTz}`}
+          onAction={() => updateSettings({ localTz: detectedTz })}
+          dismissLabel="Dismiss home timezone correction"
+          onDismiss={() => {
+            localStorage.setItem(LEGACY_HOME_TZ_KEY, '1');
+            setLegacyHomeTzDismissed(true);
+          }}
+        />
       )}
 
       {presetGap > 0 && !presetGapDismissed && (
-        <section className="panel grain mb-3 rounded-ui-card p-3" aria-label="New preset routines">
-          <div className="flex items-center gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-body font-medium text-fg">
-                {presetGap} new {presetGap === 1 ? 'routine' : 'routines'} for {presetGamesBehind}{' '}
-                {presetGamesBehind === 1 ? 'game' : 'games'}
-              </p>
-              <p className="mt-0.5 text-meta text-muted">
-                Presets gained dailies and weeklies since these games were added. Nothing you deleted comes back.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => addMissingPresetTasksEverywhere()}
-              className="min-h-8 shrink-0 rounded-ui-md border border-line-strong bg-inset px-3 py-1 text-meta font-medium text-fg transition-colors hover:border-line-strong hover:bg-surface-2"
-            >
-              Add them
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                localStorage.setItem(PRESET_GAP_KEY, String(presetGap));
-                setDismissedGap(presetGap);
-              }}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-ui-md text-muted transition-colors hover:text-fg"
-              aria-label="Dismiss new routines"
-            >
-              ✕
-            </button>
-          </div>
-        </section>
+        <Notice
+          label="New preset routines"
+          title={`${presetGap} new ${presetGap === 1 ? 'routine' : 'routines'} for ${presetGamesBehind} ${
+            presetGamesBehind === 1 ? 'game' : 'games'
+          }`}
+          detail="Presets gained dailies and weeklies since these games were added. Nothing you deleted comes back."
+          action="Add them"
+          onAction={() => addMissingPresetTasksEverywhere()}
+          dismissLabel="Dismiss new routines"
+          onDismiss={() => {
+            localStorage.setItem(PRESET_GAP_KEY, String(presetGap));
+            setDismissedGap(presetGap);
+          }}
+        />
       )}
 
       {order.length === 0 ? (

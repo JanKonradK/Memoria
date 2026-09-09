@@ -1,13 +1,5 @@
-import type {
-  AppState,
-  ChecklistItem,
-  GameEvent,
-  GameUrgency,
-  SleepCheck,
-  Snapshot,
-  UrgencyContext,
-} from '@memoria/shared';
-import { buildChecklistIndex, checklistFor, latestSnapshots, sleepCheck, urgencyOrder } from '@memoria/shared';
+import type { AppState, ChecklistItem, GameUrgency, SleepCheck, Snapshot } from '@memoria/shared';
+import { buildUrgencyContext, sleepCheck, urgencyOrder } from '@memoria/shared';
 import { useApp } from './store';
 import { selectAgendaData, type AgendaData, type AgendaMode } from './agenda-data';
 
@@ -25,24 +17,9 @@ export interface Derived {
 let cache: { state: AppState; now: number; derived: Derived } | undefined;
 
 function createDerived(state: AppState, now: number): Derived {
-  const snaps = latestSnapshots(state.snapshots);
-  const checklistIndex = buildChecklistIndex(state);
-  const checklistByGame = new Map<string, ChecklistItem[]>();
+  const urgencyContext = buildUrgencyContext(state, now);
+  const { snaps, checklistByGame } = urgencyContext;
   const gameById = new Map(state.games.filter((game) => !game.deleted).map((game) => [game.id, game]));
-  for (const game of gameById.values()) {
-    checklistByGame.set(game.id, checklistFor(state, game, now, checklistIndex));
-  }
-
-  // Urgency historically considers every event row and applies deleted/notify
-  // checks in gameActions, so its grouped input deliberately differs from the
-  // live, unfinished event map in ChecklistIndex.
-  const eventsByGame = new Map<string, GameEvent[]>();
-  for (const event of state.events) {
-    const events = eventsByGame.get(event.gameId);
-    if (events) events.push(event);
-    else eventsByGame.set(event.gameId, [event]);
-  }
-  const urgencyContext: UrgencyContext = { snaps, checklistByGame, eventsByGame };
   const order = urgencyOrder(state, now, urgencyContext);
   const entryById = new Map(order.map((entry) => [entry.game.id, entry]));
   const sleepByGame = new Map<string, SleepCheck>();

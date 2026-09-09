@@ -31,13 +31,13 @@ export function effectiveReserveLabel(res: Pick<Resource, 'name' | 'reserveCap' 
   return RESERVE_LABELS[res.name.toLowerCase()];
 }
 
+/** Legacy rows that say "three runs" in words rather than as a ×N suffix. */
+const THREE_RUN_NAMES = /weekly boss|echo of war|anomaly pilgrimage/i;
+
 function countTargetFromName(name: string): number | undefined {
   const match = name.match(/[×x]\s*(\d+)/i);
   if (match) return Number(match[1]);
-  if (/weekly boss/i.test(name)) return 3;
-  if (/echo of war/i.test(name)) return 3;
-  if (/anomaly pilgrimage/i.test(name)) return 3;
-  return undefined;
+  return THREE_RUN_NAMES.test(name) ? 3 : undefined;
 }
 
 export function effectiveTaskMode(task: Pick<Task, 'name' | 'mode'>): TaskMode {

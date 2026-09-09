@@ -16,24 +16,28 @@ jobs:
   release:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
+          persist-credentials: false
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: 24.14.0
+          node-version: 24.21.0
           cache: npm
 
       - run: npm ci
+      - run: npm run audit
 
       # A tag never ships without passing everything main has to pass.
       - run: npm run check
 
       - name: Refuse a tag that disagrees with package.json
         shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
-          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          tag="$RELEASE_TAG"
           declared="v$(node -p "require('./package.json').version")"
           if [ "$tag" != "$declared" ]; then
             echo "Tag $tag does not match package.json ($declared)."
@@ -46,6 +50,8 @@ jobs:
       # wants to try it without unpacking anything.
       - run: npm run package
       - run: npm run build:single
+      - run: npm exec -- playwright install chromium
+      - run: npm run check:release
 
       - name: Add the single-file build to the checksums
         shell: bash
@@ -55,7 +61,7 @@ jobs:
           sha256sum Memoria.html >> SHA256SUMS.txt
           cat SHA256SUMS.txt
 
-      - uses: softprops/action-gh-release@v3
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           name: Memoria ${{ github.event.inputs.tag || github.ref_name }}

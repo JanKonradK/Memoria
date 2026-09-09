@@ -1,5 +1,5 @@
 import { mergeState, normalizeState } from '@memoria/shared';
-import { servedByLauncher } from './launcher';
+import { launcherFetch, servedByLauncher } from './launcher';
 import { useApp } from './store';
 
 /** The launcher refuses a larger document; warn before the write fails. */
@@ -8,6 +8,13 @@ const SYNC_WARNING_BYTES = 900_000;
 let syncing = false;
 let serverVersion: number | null = null;
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Conflict recovery and successful writes accept the same launcher envelope. */
+async function mergeResponse(response: Response): Promise<void> {
+  const data = (await response.json()) as { state: unknown; version?: number };
+  serverVersion = typeof data.version === 'number' ? data.version : serverVersion;
+  useApp.getState().replaceState(mergeState(useApp.getState().state, normalizeState(data.state)));
+}
 
 export function resetSyncState(): void {
   serverVersion = null;
@@ -32,19 +39,18 @@ export async function syncNow(): Promise<void> {
   store.setSyncStatus('syncing');
   try {
     for (let attempt = 0; attempt < 3; attempt++) {
-      const res = await fetch('/api/sync', {
+      const res = await launcherFetch('/api/sync', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ state: useApp.getState().state, version: serverVersion }),
+        signal: AbortSignal.timeout(30_000),
       });
       if (res.status === 409) {
         // Another app window wrote first. Pull its document, merge, retry.
         if (attempt >= 2) throw new Error('Sync remained conflicted after three attempts.');
-        const latest = await fetch('/api/state');
+        const latest = await launcherFetch('/api/state', { signal: AbortSignal.timeout(30_000) });
         if (!latest.ok) throw new Error(`HTTP ${latest.status}`);
-        const body = (await latest.json()) as { state: unknown; version?: number };
-        serverVersion = typeof body.version === 'number' ? body.version : serverVersion;
-        useApp.getState().replaceState(mergeState(useApp.getState().state, normalizeState(body.state)));
+        await mergeResponse(latest);
         continue;
       }
       if (!res.ok) {
@@ -57,9 +63,7 @@ export async function syncNow(): Promise<void> {
         }
         throw new Error(message);
       }
-      const data = (await res.json()) as { state: unknown; version?: number };
-      serverVersion = typeof data.version === 'number' ? data.version : serverVersion;
-      useApp.getState().replaceState(mergeState(useApp.getState().state, normalizeState(data.state)));
+      await mergeResponse(res);
       useApp.getState().setSyncStatus('ok');
       return;
     }
@@ -72,6 +76,65 @@ export async function syncNow(): Promise<void> {
 
 let initialized = false;
 
+/** Fetch can send an authorization header; native EventSource cannot. */
+function watchLauncherEvents(onChange: () => void): void {
+  let stopped = false;
+  let controller: AbortController | undefined;
+  let retryTimer: ReturnType<typeof setTimeout> | undefined;
+  let retryDelay = 2000;
+  const connect = async () => {
+    if (stopped || controller) return;
+    controller = new AbortController();
+    const signal = controller.signal;
+    try {
+      const response = await launcherFetch('/api/events', { signal });
+      if (!response.ok || !response.body) throw new Error('Event stream unavailable.');
+      retryDelay = 2000;
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let pending = '';
+      try {
+        while (!signal.aborted) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          pending += decoder.decode(value, { stream: true });
+          let end;
+          while ((end = pending.indexOf('\n\n')) >= 0) {
+            const event = pending.slice(0, end);
+            pending = pending.slice(end + 2);
+            if (/^data:/m.test(event)) onChange();
+          }
+          if (pending.length > 64_000) throw new Error('Invalid event stream.');
+        }
+      } finally {
+        await reader.cancel().catch(() => undefined);
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === 'LauncherAuthorizationError') {
+        stopped = true;
+        useApp.getState().setSyncStatus('error', error.message);
+      }
+      // A launcher restart closes the stream. Reconnect without blocking edits.
+    } finally {
+      controller = undefined;
+      if (!stopped) {
+        retryTimer = setTimeout(() => void connect(), retryDelay);
+        retryDelay = Math.min(30_000, retryDelay * 2);
+      }
+    }
+  };
+  window.addEventListener('pagehide', () => {
+    stopped = true;
+    clearTimeout(retryTimer);
+    controller?.abort();
+  });
+  window.addEventListener('pageshow', () => {
+    stopped = false;
+    if (!controller) void connect();
+  });
+  void connect();
+}
+
 export function initSync(): void {
   if (!servedByLauncher() || initialized) return;
   initialized = true;
@@ -82,11 +145,10 @@ export function initSync(): void {
   });
   // The launcher pushes a ping whenever state.json changes on disk (another app
   // window saved), so a poll timer would only add redundant loopback traffic.
-  const events = new EventSource('/api/events');
-  events.onmessage = () => {
+  watchLauncherEvents(() => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => void syncNow(), 300);
-  };
+  });
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) void syncNow();
   });

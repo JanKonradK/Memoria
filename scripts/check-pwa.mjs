@@ -1,9 +1,17 @@
-import { readdir, stat } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const dist = resolve(root, 'app', 'dist');
 const required = ['index.html', 'manifest.webmanifest', 'sw.js'];
+
+const html = (await readFile(resolve(dist, 'index.html'), 'utf8')).replace(/\r\n?/g, '\n');
+const headers = await readFile(resolve(dist, '_headers'), 'utf8');
+for (const match of html.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)) {
+  const hash = `'sha256-${createHash('sha256').update(match[1]).digest('base64')}'`;
+  if (!headers.includes(hash)) throw new Error(`Update the theme script hash in app/public/_headers: ${hash}`);
+}
 
 for (const file of required) {
   await stat(resolve(dist, file)).catch(() => {

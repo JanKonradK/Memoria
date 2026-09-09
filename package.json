@@ -12,14 +12,16 @@
     "build:desktop": "esbuild desktop/shared-core.mjs --bundle --platform=node --format=esm --outfile=desktop/dist/shared-core.mjs",
     "test": "npm -w shared run test && npm -w app run test && npm run test:desktop",
     "test:desktop": "vitest run --config vitest.desktop.config.mjs",
+    "pretest:desktop": "npm run build:desktop",
     "test:e2e": "npm -w app run test:e2e",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:pwa": "node scripts/check-pwa.mjs",
+    "check:release": "node scripts/check-release.mjs",
     "check": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run build && npm run check:pwa",
     "typecheck": "npm -w shared run typecheck && npm -w app run typecheck",
-    "audit": "npm audit --audit-level=high --omit=dev",
+    "audit": "npm audit --audit-level=moderate",
     "icons": "node app/scripts/gen-mark.mjs && node app/scripts/gen-icons.mjs && node app/scripts/gen-ico.mjs",
     "ico": "node app/scripts/gen-ico.mjs",
     "install:desktop": "powershell -ExecutionPolicy Bypass -File desktop/Install-Shortcut.ps1",
@@ -37,6 +39,6 @@
     "prettier": "^3.9.5",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "typescript-eslint": "^8.63.0",
-    "vitest": "^3.2.6"
+    "vitest": "^4.1.11"
   }
 }

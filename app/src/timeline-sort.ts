@@ -57,6 +57,10 @@ export function agendaRank(event: GameEvent, now: number): 0 | 1 | 2 | 3 {
   return 2;
 }
 
+function compareUpcoming(a: GameEvent, b: GameEvent): number {
+  return a.start - b.start || a.end - b.end || a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
+}
+
 export function agendaCompare(a: GameEvent, b: GameEvent, now: number): number {
   const aRank = agendaRank(a, now);
   const bRank = agendaRank(b, now);
@@ -70,7 +74,7 @@ export function agendaCompare(a: GameEvent, b: GameEvent, now: number): number {
     );
   }
   if (aRank === 1) {
-    return a.start - b.start || a.end - b.end || a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
+    return compareUpcoming(a, b);
   }
   return b.end - a.end || a.id.localeCompare(b.id);
 }
@@ -115,7 +119,7 @@ export function selectDashboardAgendaSections(events: GameEvent[], now: number):
     );
   const upcoming = eligible
     .filter((event) => event.start > now)
-    .sort((a, b) => a.start - b.start || a.end - b.end || a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
+    .sort(compareUpcoming)
     .slice(0, DASHBOARD_UPCOMING_LIMIT);
   const arrived = new Set(newArrivals.map((event) => event.id));
   const endingSoon = active

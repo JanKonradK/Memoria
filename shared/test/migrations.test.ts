@@ -7,6 +7,13 @@ import { safeParseAppState } from '../src/validation';
 import { makeGame, makeResource, makeSnapshot, makeState, makeTask } from './helpers';
 
 describe('migrateState', () => {
+  it('refuses a newer schema before normalization can discard its fields', () => {
+    const future = { ...makeState(), schemaVersion: CURRENT_SCHEMA_VERSION + 1, futureField: 'keep me' };
+    expect(() => migrateState(future)).toThrow(/newer version/);
+    expect(() => normalizeState(future)).toThrow(/newer version/);
+    expect(future.futureField).toBe('keep me');
+  });
+
   it('aligns legacy Genshin accounts without overwriting customised fields', () => {
     const state = makeState({
       schemaVersion: 3,

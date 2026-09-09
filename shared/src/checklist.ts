@@ -1,4 +1,5 @@
 import type { AppState, Cadence, Completion, Game, GameEvent, Task, TaskMode } from './types';
+import { groupBy } from './internal';
 import { taskNextReset, taskPeriodKey } from './periods';
 import { effectiveCountTarget, effectiveTaskMode, effectiveTimerDurationMinutes } from './tracking';
 
@@ -88,23 +89,14 @@ export function buildChecklistIndex(state: AppState): ChecklistIndex {
     if (isLive(completion) && !completions.has(completion.id)) completions.set(completion.id, completion);
   }
 
-  const tasksByGame = new Map<string, Task[]>();
-  for (const task of state.tasks) {
-    if (!isLive(task)) continue;
-    const tasks = tasksByGame.get(task.gameId);
-    if (tasks) tasks.push(task);
-    else tasksByGame.set(task.gameId, [task]);
-  }
-
-  const eventsByGame = new Map<string, GameEvent[]>();
-  for (const event of state.events) {
-    if (!isLive(event) || event.done) continue;
-    const events = eventsByGame.get(event.gameId);
-    if (events) events.push(event);
-    else eventsByGame.set(event.gameId, [event]);
-  }
-
-  return { completions, tasksByGame, eventsByGame };
+  return {
+    completions,
+    tasksByGame: groupBy(state.tasks.filter(isLive), (task) => task.gameId),
+    eventsByGame: groupBy(
+      state.events.filter((event) => isLive(event) && !event.done),
+      (event) => event.gameId,
+    ),
+  };
 }
 
 function completionProgress(
@@ -113,7 +105,7 @@ function completionProgress(
   periodKey: string,
   now: number,
 ): { done: boolean; countDone: number; countTarget: number; timerEndsAt: number | null } {
-  const row = completions.get(`${task.id}|${periodKey}`);
+  const row = completions.get(completionId(task.id, periodKey));
   const mode = effectiveTaskMode(task);
   const countTarget = effectiveCountTarget(task);
   const countDone = row?.countDone ?? 0;
@@ -154,12 +146,17 @@ export function checklistFor(
     // window (resets when it ends) and hides between windows. Only windows that
     // can still become active count — degenerate (start === end) or fully past
     // events fall back to the internal interval (personal cooldowns).
-    const matches =
-      t.cadence === 'custom' && t.timelineLinked !== false
-        ? liveEvents.filter((e) => e.end > now && e.end > e.start && eventMatchesTask(t, e))
-        : [];
-    if (matches.length > 0) {
-      const active = matches.filter((e) => e.start <= now && e.end > now).sort((a, b) => a.end - b.end)[0];
+    let matched = false;
+    let active: GameEvent | undefined;
+    if (t.cadence === 'custom' && t.timelineLinked !== false) {
+      for (const e of liveEvents) {
+        if (!(e.end > now && e.end > e.start) || !eventMatchesTask(t, e)) continue;
+        matched = true;
+        // Soonest-ending open window wins; ties keep Timeline order.
+        if (e.start <= now && (!active || e.end < active.end)) active = e;
+      }
+    }
+    if (matched) {
       if (!active) continue;
       periodKey = `win:${active.id}`;
       resetAt = active.end;
@@ -198,8 +195,4 @@ export function checklistFor(
 
 export function completionId(taskId: string, periodKey: string): string {
   return `${taskId}|${periodKey}`;
-}
-
-export function timerDurationMinutes(task: Task): number {
-  return effectiveTimerDurationMinutes(task);
 }

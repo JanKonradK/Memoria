@@ -1,13 +1,13 @@
 import { DateTime } from 'luxon';
-import { useMemo } from 'react';
 import type { AppState, Game, GameEvent, GameUrgency } from '@memoria/shared';
-import { gameIdentityKey, resolveGameIdentityColors, type GameColors } from '../../game-color';
+import { gameIdentityKey, type GameColors } from '../../game-color';
 import { ENDING_SOON_DAYS, type AgendaRow } from '../../timeline-sort';
 import { useDerived } from '../../selectors';
 import { fmtDur } from '../../util';
 import { serverRegionLabel } from '../NexusLayout';
 import { ProgressBar } from '../primitives';
-import { GameBadge } from '../ui';
+import { useIdentityColors } from '../roster';
+import { GameBadge, ServerChip } from '../ui';
 
 const DAY = 86_400_000;
 const WEEK = 7 * DAY;
@@ -183,16 +183,7 @@ function Band({
                     <GameBadge short={game.short} {...colors!} size="sm" />
                     {distinction && (
                       <>
-                        <span
-                          aria-hidden
-                          className={`rounded-ui-sm border border-line-edge bg-inset px-1 py-px text-caption font-semibold text-fg-soft ${
-                            distinction.serverLabel.startsWith('UTC') && distinction.serverLabel !== 'UTC'
-                              ? 'numeral'
-                              : ''
-                          }`}
-                        >
-                          {distinction.serverLabel}
-                        </span>
+                        <ServerChip aria-hidden label={distinction.serverLabel} size="sm" />
                         {distinction.accountTag && (
                           <span
                             aria-hidden
@@ -261,35 +252,41 @@ export function NexusHub({
 
   // Reminders are attention too, and they were buried in a third disclosure that
   // was collapsed by default — so a due reminder said nothing until you opened it.
-  const reminderTickets: Ticket[] = state.reminders
-    .filter((reminder) => !reminder.deleted && reminder.at > now - DAY && reminder.at <= horizon)
-    .sort((a, b) => a.at - b.at)
-    .map((reminder) => ({
+  // A reminder inside the day joins Closing; anything further out is Arriving.
+  const dueReminders: Ticket[] = [];
+  const laterReminders: Ticket[] = [];
+  for (const reminder of state.reminders) {
+    if (reminder.deleted || !(reminder.at > now - DAY && reminder.at <= horizon)) continue;
+    const ticket: Ticket = {
       key: reminder.id,
       gameId: reminder.gameId ?? '',
       name: reminder.message,
       at: reminder.at,
-    }));
+    };
+    (reminder.at - now < DAY ? dueReminders : laterReminders).push(ticket);
+  }
 
-  const closing = [...ticketsFrom(agenda.endingSoon, false), ...reminderTickets.filter((t) => t.at - now < DAY)].sort(
-    (a, b) => a.at - b.at,
-  );
+  const closing = [...ticketsFrom(agenda.endingSoon, false), ...dueReminders].sort((a, b) => a.at - b.at);
   const arrived = ticketsFrom(agenda.live, false);
-  const arriving = [...ticketsFrom(agenda.upcoming, true), ...reminderTickets.filter((t) => t.at - now >= DAY)].sort(
-    (a, b) => a.at - b.at,
-  );
+  const arriving = [...ticketsFrom(agenda.upcoming, true), ...laterReminders].sort((a, b) => a.at - b.at);
   const ticketDisambiguation = decideTicketDisambiguation(
     [...closing, ...arrived, ...arriving].map((ticket) => ticket.gameId),
     agenda.games,
     now,
   );
-  const identityColors = useMemo(
-    () => resolveGameIdentityColors(state.games.filter((game) => !game.deleted)),
-    [state.games],
-  );
+  const identityColors = useIdentityColors(state.games);
 
   const dailiesComplete = dailyItems.length > 0 && dailiesDone === dailyItems.length;
   const sleepSafe = capsDuringSleep.length === 0;
+  // Everything the three bands share; only the title, tone, tickets and which
+  // end of the window they count to differ.
+  const bandContext = {
+    games: agenda.games,
+    disambiguation: ticketDisambiguation,
+    identityColors,
+    now,
+    onOpenEvent,
+  };
 
   return (
     <section
@@ -357,34 +354,16 @@ export function NexusHub({
               subtitle={`Next ${ENDING_SOON_DAYS} days`}
               tone="var(--color-danger)"
               tickets={closing}
-              games={agenda.games}
-              disambiguation={ticketDisambiguation}
-              identityColors={identityColors}
-              now={now}
               countdownFrom="end"
-              onOpenEvent={onOpenEvent}
+              {...bandContext}
             />
-            <Band
-              title="Just arrived"
-              tone="var(--color-ok)"
-              tickets={arrived}
-              games={agenda.games}
-              disambiguation={ticketDisambiguation}
-              identityColors={identityColors}
-              now={now}
-              countdownFrom="end"
-              onOpenEvent={onOpenEvent}
-            />
+            <Band title="Just arrived" tone="var(--color-ok)" tickets={arrived} countdownFrom="end" {...bandContext} />
             <Band
               title="Arriving"
               tone="var(--color-later)"
               tickets={arriving}
-              games={agenda.games}
-              disambiguation={ticketDisambiguation}
-              identityColors={identityColors}
-              now={now}
               countdownFrom="start"
-              onOpenEvent={onOpenEvent}
+              {...bandContext}
             />
           </>
         )}

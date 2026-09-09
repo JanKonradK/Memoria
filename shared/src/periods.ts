@@ -3,13 +3,18 @@ import type { Game, Task } from './types';
 
 type ResetGame = Pick<Game, 'tz' | 'dailyResetHour' | 'weeklyResetDay' | 'monthlyResetDay'>;
 
+/** Server-local time for an instant. */
+function zoned(game: Pick<Game, 'tz'>, at: number): DateTime {
+  return DateTime.fromMillis(at, { zone: game.tz });
+}
+
 /**
  * Server-local time on the calendar date associated with the current game day.
  * Comparing the wall clock and stepping a calendar day keeps a 04:00 boundary
  * at 04:00 through DST; subtracting four duration-hours moves it by an offset change.
  */
 function shiftedNow(game: ResetGame, now: number): DateTime {
-  const dt = DateTime.fromMillis(now, { zone: game.tz });
+  const dt = zoned(game, now);
   return dt.hour < game.dailyResetHour ? dt.minus({ days: 1 }) : dt;
 }
 
@@ -39,75 +44,78 @@ export function monthlyPeriodKey(game: ResetGame, now: number): string {
   return `M${m.toFormat('yyyy-LL')}`;
 }
 
-export function nextDailyReset(game: ResetGame, now: number): number {
-  const dt = DateTime.fromMillis(now, { zone: game.tz });
-  let reset = atHour(dt, game.dailyResetHour);
-  if (reset.toMillis() <= now) reset = atHour(dt.plus({ days: 1 }), game.dailyResetHour);
-  return reset.toMillis();
+/** Wall-clock reset moment on the configured monthly day, `months` from the month of `dt`. */
+function monthlyResetAt(game: ResetGame, dt: DateTime, months: number): DateTime {
+  return atHour(
+    dt
+      .startOf('month')
+      .plus({ months })
+      .set({ day: monthlyResetDay(game) }),
+    game.dailyResetHour,
+  );
+}
+
+export function nextDailyReset(game: Pick<Game, 'tz' | 'dailyResetHour'>, now: number): number {
+  const dt = zoned(game, now);
+  const reset = atHour(dt, game.dailyResetHour);
+  return (reset.toMillis() <= now ? atHour(dt.plus({ days: 1 }), game.dailyResetHour) : reset).toMillis();
+}
+
+/** Start from midnight so a repeated DST hour selects the same reset from either direction. */
+function weeklyResetAt(game: ResetGame, now: number, direction: 1 | -1): number | undefined {
+  let day = zoned(game, now).startOf('day');
+  for (let i = 0; i <= 7; i++) {
+    const candidate = atHour(day, game.dailyResetHour).toMillis();
+    if (day.weekday === game.weeklyResetDay && (direction === 1 ? candidate > now : candidate <= now)) {
+      return candidate;
+    }
+    day = day.plus({ days: direction }).startOf('day');
+  }
+  return undefined;
 }
 
 export function nextWeeklyReset(game: ResetGame, now: number): number {
-  const dt = DateTime.fromMillis(now, { zone: game.tz });
-  let day = dt.startOf('day');
-  for (let i = 0; i <= 7; i++) {
-    const candidate = atHour(day, game.dailyResetHour);
-    if (candidate.toMillis() > now && day.weekday === game.weeklyResetDay) return candidate.toMillis();
-    day = day.plus({ days: 1 }).startOf('day');
-  }
-  /* istanbul ignore next */
+  const reset = weeklyResetAt(game, now, 1);
+  if (reset !== undefined) return reset;
   throw new Error('nextWeeklyReset: no reset found within 8 days');
 }
 
 /** Epoch ms when the current weekly period began (most recent weekly reset at or before `now`). */
 export function lastWeeklyReset(game: ResetGame, now: number): number {
-  const dt = DateTime.fromMillis(now, { zone: game.tz });
-  let day = dt.startOf('day');
-  for (let i = 0; i <= 7; i++) {
-    const candidate = atHour(day, game.dailyResetHour);
-    if (candidate.toMillis() <= now && day.weekday === game.weeklyResetDay) return candidate.toMillis();
-    day = day.minus({ days: 1 }).startOf('day');
-  }
-  /* istanbul ignore next */
-  return now;
+  return weeklyResetAt(game, now, -1) ?? now;
 }
 
 export function currentMonthlyPeriodStart(game: ResetGame, now: number): number {
-  const dt = DateTime.fromMillis(now, { zone: game.tz });
-  const day = monthlyResetDay(game);
-  let candidate = atHour(dt.startOf('month').set({ day }), game.dailyResetHour);
-  if (candidate.toMillis() > now) {
-    candidate = atHour(dt.startOf('month').minus({ months: 1 }).set({ day }), game.dailyResetHour);
-  }
-  return candidate.toMillis();
+  const dt = zoned(game, now);
+  const thisMonth = monthlyResetAt(game, dt, 0);
+  return (thisMonth.toMillis() > now ? monthlyResetAt(game, dt, -1) : thisMonth).toMillis();
 }
 
 export function nextMonthlyReset(game: ResetGame, now: number): number {
-  const dt = DateTime.fromMillis(now, { zone: game.tz });
-  const day = monthlyResetDay(game);
-  let candidate = atHour(dt.startOf('month').set({ day }), game.dailyResetHour);
-  if (candidate.toMillis() <= now) {
-    candidate = atHour(dt.startOf('month').plus({ months: 1 }).set({ day }), game.dailyResetHour);
-  }
-  return candidate.toMillis();
+  const dt = zoned(game, now);
+  const thisMonth = monthlyResetAt(game, dt, 0);
+  return (thisMonth.toMillis() <= now ? monthlyResetAt(game, dt, 1) : thisMonth).toMillis();
 }
 
-function customPeriodIndex(game: ResetGame, task: Pick<Task, 'anchorAt' | 'intervalDays'>, now: number): number {
-  const interval = Math.max(1, task.intervalDays);
-  const s = shiftedNow(game, now).startOf('day');
-  const a = shiftedNow(game, task.anchorAt).startOf('day');
-  const days = Math.floor(s.diff(a, 'days').days);
-  return Math.floor(days / interval);
+type CustomTask = Pick<Task, 'anchorAt' | 'intervalDays'>;
+
+/** Server-local game day the custom cadence counts its intervals from. */
+function customAnchorDay(game: ResetGame, task: CustomTask): DateTime {
+  return shiftedNow(game, task.anchorAt).startOf('day');
 }
 
-export function customPeriodKey(game: ResetGame, task: Pick<Task, 'anchorAt' | 'intervalDays'>, now: number): string {
+function customPeriodIndex(game: ResetGame, task: CustomTask, now: number): number {
+  const days = Math.floor(shiftedNow(game, now).startOf('day').diff(customAnchorDay(game, task), 'days').days);
+  return Math.floor(days / Math.max(1, task.intervalDays));
+}
+
+export function customPeriodKey(game: ResetGame, task: CustomTask, now: number): string {
   return `C${customPeriodIndex(game, task, now)}`;
 }
 
-export function nextCustomReset(game: ResetGame, task: Pick<Task, 'anchorAt' | 'intervalDays'>, now: number): number {
-  const interval = Math.max(1, task.intervalDays);
-  const idx = customPeriodIndex(game, task, now);
-  const a = shiftedNow(game, task.anchorAt).startOf('day');
-  const nextDay = a.plus({ days: (idx + 1) * interval });
+export function nextCustomReset(game: ResetGame, task: CustomTask, now: number): number {
+  const periods = customPeriodIndex(game, task, now) + 1;
+  const nextDay = customAnchorDay(game, task).plus({ days: periods * Math.max(1, task.intervalDays) });
   // A wall-clock set preserves the configured reset hour when the interval crosses DST.
   return atHour(nextDay, game.dailyResetHour).toMillis();
 }

@@ -1,10 +1,9 @@
 // Generates the PWA icons (PNG). Run: npm run icons
 import { writeFileSync, mkdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { drawPng } from './draw-icon.mjs';
 
-const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
+const outDir = join(import.meta.dirname, '..', 'public');
 mkdirSync(outDir, { recursive: true });
 
 writeFileSync(join(outDir, 'icon-192.png'), drawPng(192, { maskable: false }));

@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { m } from 'motion/react';
 import type { AppState, EnergyProjection, GameEvent, GameUrgency, Resource } from '@memoria/shared';
 import { effectiveResourceKind, projectEnergy } from '@memoria/shared';
 import { DateTime } from 'luxon';
 import { titleFont } from '../fonts';
-import { gameAccent, gameRim, gameTitleInk, resolveGameIdentityColors, type GameColors } from '../game-color';
+import { gameAccent, gameRim, gameTitleInk, type GameColors } from '../game-color';
 import { useReducedMotion } from '../hooks';
 import { easing } from '../motion';
 import { useUI, type TonightPosition } from '../ui-store';
@@ -13,6 +13,8 @@ import { gameShellVars, useGround, useTheme } from '../theme';
 import { tint } from '../util';
 import { GameControlsView, type GameControlActions } from './GameCard';
 import { ReactorTube } from './primitives';
+import { useIdentityColors } from './roster';
+import { ServerChip } from './ui';
 import { NexusHub } from './nexus/NexusHub';
 
 /** Mirrors --nexus-dur in app/src/index.css. */
@@ -294,11 +296,7 @@ function NexusNode({
         className="nexus-summary z-10 grid w-full grid-rows-3 rounded-ui-card px-3 py-2 text-left hover:bg-fill-1"
       >
         <span className="relative z-10 flex min-w-0 items-center gap-2">
-          <span
-            className={`max-w-20 shrink-0 truncate rounded-ui-sm border border-line-edge bg-inset px-1.5 py-0.5 text-caption font-semibold text-fg-soft ${serverLabel.startsWith('UTC') && serverLabel !== 'UTC' ? 'numeral' : ''}`}
-          >
-            {serverLabel}
-          </span>
+          <ServerChip label={serverLabel} className="max-w-20 truncate" />
           {/* Display faces set the same character count at different widths.
                 One title step plus truncation keeps every card consistent. */}
           <span
@@ -398,10 +396,7 @@ export function NexusLayout({
   const derived = useDerived(now);
   const stageRef = useRef<HTMLDivElement>(null);
   const entryById = new Map(entries.map((entry) => [entry.game.id, entry]));
-  const identityColors = useMemo(
-    () => resolveGameIdentityColors(state.games.filter((game) => !game.deleted)),
-    [state.games],
-  );
+  const identityColors = useIdentityColors(state.games);
   const visibleIds = displayIds.filter((id) => entryById.has(id));
   const activeExpandedGameId = expandedCard && visibleIds.includes(expandedCard.gameId) ? expandedCard.gameId : null;
   const leftCount = Math.ceil(visibleIds.length / 2);

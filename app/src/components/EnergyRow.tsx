@@ -77,6 +77,105 @@ function StepBtn({ delta, onStep, label }: { delta: number; onStep: (d: number) 
 }
 
 /**
+ * The reading, as a stepper: −, an editable figure against its cap, +.
+ *
+ * The main value and the reserve are the same instrument pointed at two
+ * vessels, so they share one. What they do NOT share is what Enter means: the
+ * main field commits the number even when it has not changed, because "it is
+ * 60 right now" is a fresh snapshot the projection needs, while the reserve has
+ * nothing to timestamp and simply blurs.
+ */
+function ValueStepper({
+  value,
+  cap,
+  color,
+  label,
+  ariaLabel,
+  placeholder,
+  valueClassName,
+  onStep,
+  onBeginEdit,
+  onDraft,
+  onEndEdit,
+  onCommit,
+  onCancel,
+}: {
+  /** The text in the field: the caller's draft, or the live reading. */
+  value: string;
+  cap: number;
+  color: string;
+  /** Names the ± buttons — "Increase Trailblaze Power". */
+  label: string;
+  ariaLabel: string;
+  placeholder?: string;
+  valueClassName: string;
+  onStep: (delta: number) => void;
+  /** Focus: seed the draft from the live reading and arm the edit. */
+  onBeginEdit: () => void;
+  onDraft: (text: string) => void;
+  /** Blur: commit the edit, or discard it. */
+  onEndEdit: () => void;
+  /** Enter. Omitted where the blur that follows already commits. */
+  onCommit?: () => void;
+  /** Escape: throw the draft away without writing it. */
+  onCancel: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  return (
+    <span className="ml-auto flex w-full items-center justify-end gap-1 sm:w-auto">
+      <StepBtn delta={-1} onStep={onStep} label={label} />
+      {/* One pill: editable value + "/ cap" together inside the same box. */}
+      <span
+        className="focus-ring-group flex h-9 cursor-text items-center rounded-ui-md bg-fill-2 px-2 ring-1 ring-line-hairline transition focus-within:bg-fill-3 sm:h-7"
+        onMouseDown={(e) => {
+          if (e.target !== inputRef.current) {
+            e.preventDefault();
+            inputRef.current?.focus();
+          }
+        }}
+      >
+        <input
+          ref={inputRef}
+          value={value}
+          placeholder={placeholder}
+          inputMode="numeric"
+          onFocus={(e) => {
+            onBeginEdit();
+            e.target.select();
+          }}
+          onChange={(e) => onDraft(e.target.value.replace(/[^\d]/g, ''))}
+          onBlur={onEndEdit}
+          onKeyDown={(e) => {
+            const delta = ENERGY_STEP_KEYS[e.key.toLowerCase()];
+            if (delta !== undefined && !e.ctrlKey && !e.altKey && !e.metaKey) {
+              // Browser repeat already supplies one event per tick; a second
+              // timer here would make a held key accelerate unpredictably.
+              e.preventDefault();
+              onStep(delta);
+              return;
+            }
+            if (e.key === 'Enter') {
+              onCommit?.();
+              inputRef.current?.blur();
+            }
+            if (e.key === 'Escape') {
+              onCancel();
+              inputRef.current?.blur();
+            }
+          }}
+          className={`bg-transparent text-right tabular-nums outline-none ${valueClassName}`}
+          style={{ color, width: `${Math.max(2, value.length || 1) + 0.5}ch` }}
+          aria-label={ariaLabel}
+          aria-keyshortcuts="a s d f Enter Escape"
+        />
+        <span className="pl-1 text-label tabular-nums text-dim">/ {cap}</span>
+      </span>
+      <StepBtn delta={1} onStep={onStep} label={label} />
+    </span>
+  );
+}
+
+/**
  * Resource row: energy and weekly stock show a bar. Only energy regenerates;
  * weekly stock shows its refill deadline. Counters use compact controls.
  */
@@ -101,8 +200,6 @@ export const EnergyRow = memo(function EnergyRow({
 }) {
   const kind = effectiveResourceKind(res);
   const compact = kind === 'counter';
-  const inputRef = useRef<HTMLInputElement>(null);
-  const reserveInputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<string | null>(null);
   const [reserveDraft, setReserveDraft] = useState<string | null>(null);
   const liveRef = useRef({ value: proj.value, reserve: reserve ?? 0 });
@@ -205,78 +302,47 @@ export const EnergyRow = memo(function EnergyRow({
           <span className="truncate text-label font-semibold uppercase tracking-wider text-muted">{res.name}</span>
         </span>
 
-        <span className="ml-auto flex w-full items-center justify-end gap-1 sm:w-auto">
-          <StepBtn delta={-1} onStep={step} label={res.name} />
-          {/* One pill: editable value + "/ cap" together inside the same box. */}
-          <span
-            className="focus-ring-group flex h-9 cursor-text items-center rounded-ui-md bg-fill-2 px-2 ring-1 ring-line-hairline transition focus-within:bg-fill-3 sm:h-7"
-            onMouseDown={(e) => {
-              if (e.target !== inputRef.current) {
-                e.preventDefault();
-                inputRef.current?.focus();
-              }
-            }}
-          >
-            <input
-              ref={inputRef}
-              value={shown}
-              placeholder="—"
-              inputMode="numeric"
-              onFocus={(e) => {
-                mainEdit.current = { dirty: false, cancelled: false };
-                setDraft(liveValue == null ? '' : String(liveValue));
-                e.target.select();
-              }}
-              onChange={(e) => {
-                mainEdit.current.dirty = true;
-                setDraft(e.target.value.replace(/[^\d]/g, ''));
-              }}
-              onKeyDown={(e) => {
-                const delta = ENERGY_STEP_KEYS[e.key.toLowerCase()];
-                if (delta !== undefined && !e.ctrlKey && !e.altKey && !e.metaKey) {
-                  // Browser repeat already supplies one event per tick; a second
-                  // timer here would make a held key accelerate unpredictably.
-                  e.preventDefault();
-                  step(delta);
-                  return;
-                }
-                if (e.key === 'Enter') {
-                  commit(intOr(shown, liveValue ?? 0));
-                  inputRef.current?.blur();
-                }
-                if (e.key === 'Escape') {
-                  mainEdit.current.cancelled = true;
-                  setDraft(null);
-                  inputRef.current?.blur();
-                }
-              }}
-              onBlur={() => {
-                const edit = mainEdit.current;
-                if (
-                  !edit.cancelled &&
-                  edit.dirty &&
-                  draft != null &&
-                  draft !== '' &&
-                  intOr(draft, -1) !== liveRef.current.value
-                ) {
-                  commit(intOr(draft, liveValue ?? 0));
-                } else setDraft(null);
-                mainEdit.current = { dirty: false, cancelled: false };
-              }}
-              // The readout is the content. It used to sit at text-body, the
-              // same size as every task name on the card, which left the number
-              // the user opened the app to read tied for smallest-thing-on-
-              // screen. Title size makes it the clear second voice after the
-              // game's own name. leading-none keeps it inside the 28px pill.
-              className="bg-transparent text-right text-title font-black leading-none tabular-nums outline-none"
-              style={{ color, width: `${Math.max(2, shown.length || 1) + 0.5}ch` }}
-              aria-label={`${res.name} current value`}
-              aria-keyshortcuts="a s d f Enter Escape"
-            />
-            <span className="pl-1 text-label tabular-nums text-dim">/ {res.cap}</span>
-          </span>
-          <StepBtn delta={1} onStep={step} label={res.name} />
-        </span>
+        <ValueStepper
+          value={shown}
+          cap={res.cap}
+          color={color}
+          label={res.name}
+          ariaLabel={`${res.name} current value`}
+          placeholder="—"
+          // The readout is the content. It used to sit at text-body, the same
+          // size as every task name on the card, which left the number the user
+          // opened the app to read tied for smallest-thing-on-screen. Title size
+          // makes it the clear second voice after the game's own name.
+          // leading-none keeps it inside the 28px pill.
+          valueClassName="text-title font-black leading-none"
+          onStep={step}
+          onBeginEdit={() => {
+            mainEdit.current = { dirty: false, cancelled: false };
+            setDraft(liveValue == null ? '' : String(liveValue));
+          }}
+          onDraft={(text) => {
+            mainEdit.current.dirty = true;
+            setDraft(text);
+          }}
+          onCommit={() => commit(intOr(shown, liveValue ?? 0))}
+          onCancel={() => {
+            mainEdit.current.cancelled = true;
+            setDraft(null);
+          }}
+          onEndEdit={() => {
+            const edit = mainEdit.current;
+            if (
+              !edit.cancelled &&
+              edit.dirty &&
+              draft != null &&
+              draft !== '' &&
+              intOr(draft, -1) !== liveRef.current.value
+            ) {
+              commit(intOr(draft, liveValue ?? 0));
+            } else setDraft(null);
+            mainEdit.current = { dirty: false, cancelled: false };
+          }}
+        />
       </div>
 
       {!compact && (
@@ -338,65 +404,36 @@ export const EnergyRow = memo(function EnergyRow({
                 <div className="min-h-0 overflow-hidden">
                   <div className="mt-1 border-t border-line-hairline pt-2">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                      <span className="ml-auto flex w-full items-center justify-end gap-1 sm:w-auto">
-                        <StepBtn delta={-1} onStep={reserveStep} label={reserveLabel} />
-                        <span
-                          className="focus-ring-group flex h-9 cursor-text items-center rounded-ui-md bg-fill-2 px-2 ring-1 ring-line-hairline transition focus-within:bg-fill-3 sm:h-7"
-                          onMouseDown={(e) => {
-                            if (e.target !== reserveInputRef.current) {
-                              e.preventDefault();
-                              reserveInputRef.current?.focus();
-                            }
-                          }}
-                        >
-                          <input
-                            ref={reserveInputRef}
-                            value={reserveDraft ?? String(reserveValue)}
-                            inputMode="numeric"
-                            onFocus={(e) => {
-                              reserveEdit.current = { dirty: false, cancelled: false };
-                              setReserveDraft(String(reserveValue));
-                              e.target.select();
-                            }}
-                            onChange={(e) => {
-                              reserveEdit.current.dirty = true;
-                              setReserveDraft(e.target.value.replace(/[^\d]/g, ''));
-                            }}
-                            onKeyDown={(e) => {
-                              const delta = ENERGY_STEP_KEYS[e.key.toLowerCase()];
-                              if (delta !== undefined && !e.ctrlKey && !e.altKey && !e.metaKey) {
-                                e.preventDefault();
-                                reserveStep(delta);
-                                return;
-                              }
-                              if (e.key === 'Enter') e.currentTarget.blur();
-                              if (e.key === 'Escape') {
-                                reserveEdit.current.cancelled = true;
-                                setReserveDraft(null);
-                                e.currentTarget.blur();
-                              }
-                            }}
-                            onBlur={() => {
-                              const edit = reserveEdit.current;
-                              if (!edit.cancelled && edit.dirty && reserveDraft != null && reserveDraft !== '') {
-                                const next = clamp(intOr(reserveDraft, reserveValue), 0, res.reserveCap);
-                                if (next !== liveRef.current.reserve) onCommit(liveRef.current.value, next);
-                              }
-                              setReserveDraft(null);
-                              reserveEdit.current = { dirty: false, cancelled: false };
-                            }}
-                            className="bg-transparent text-right text-body font-bold tabular-nums outline-none"
-                            style={{
-                              color: reserveAccent,
-                              width: `${Math.max(2, (reserveDraft ?? String(reserveValue)).length) + 0.5}ch`,
-                            }}
-                            aria-label={`${reserveLabel} for ${res.name}`}
-                            aria-keyshortcuts="a s d f Enter Escape"
-                          />
-                          <span className="pl-1 text-label tabular-nums text-dim">/ {res.reserveCap}</span>
-                        </span>
-                        <StepBtn delta={1} onStep={reserveStep} label={reserveLabel} />
-                      </span>
+                      <ValueStepper
+                        value={reserveDraft ?? String(reserveValue)}
+                        cap={res.reserveCap}
+                        color={reserveAccent}
+                        label={reserveLabel}
+                        ariaLabel={`${reserveLabel} for ${res.name}`}
+                        valueClassName="text-body font-bold"
+                        onStep={reserveStep}
+                        onBeginEdit={() => {
+                          reserveEdit.current = { dirty: false, cancelled: false };
+                          setReserveDraft(String(reserveValue));
+                        }}
+                        onDraft={(text) => {
+                          reserveEdit.current.dirty = true;
+                          setReserveDraft(text);
+                        }}
+                        onCancel={() => {
+                          reserveEdit.current.cancelled = true;
+                          setReserveDraft(null);
+                        }}
+                        onEndEdit={() => {
+                          const edit = reserveEdit.current;
+                          if (!edit.cancelled && edit.dirty && reserveDraft != null && reserveDraft !== '') {
+                            const next = clamp(intOr(reserveDraft, reserveValue), 0, res.reserveCap);
+                            if (next !== liveRef.current.reserve) onCommit(liveRef.current.value, next);
+                          }
+                          setReserveDraft(null);
+                          reserveEdit.current = { dirty: false, cancelled: false };
+                        }}
+                      />
                     </div>
                     <ProgressBar
                       value={reservePct / 100}

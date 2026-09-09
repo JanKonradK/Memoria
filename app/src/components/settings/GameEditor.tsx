@@ -6,7 +6,18 @@ import { useApp } from '../../store';
 import { fileToImageDataUrl, intOr } from '../../util';
 import { ResourceEditor } from '../game-detail/ResourceEditor';
 import { useGameDraft } from '../game-detail/useGameDraft';
-import { Btn, Field, NumInput, SectionTitle, Select, TextArea, TextInput, Toggle } from '../ui';
+import {
+  Btn,
+  COMPACT_INPUT,
+  Field,
+  NumInput,
+  SectionTitle,
+  Select,
+  TextArea,
+  TextInput,
+  Toggle,
+  TOUCH_BUTTON,
+} from '../ui';
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const CADENCES: { value: Cadence; label: string }[] = [
@@ -21,6 +32,20 @@ const TASK_MODES: { value: TaskMode; label: string }[] = [
   { value: 'count', label: 'Counter' },
 ];
 const SETTINGS_DRAFT_FIELDS = ['name', 'short', 'notes'] as const;
+
+/** The ✕ at the end of an editable row — same control for a quick spend and a task. */
+function RemoveRowButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="btn-compact flex h-11 w-11 items-center justify-center rounded-ui-md text-caption text-dim transition hover:bg-danger/10 hover:text-danger sm:h-8 sm:w-8"
+      aria-label={label}
+    >
+      ✕
+    </button>
+  );
+}
 
 export function GameEditor({ game }: { game: Game }) {
   const state = useApp((store) => store.state);
@@ -68,7 +93,7 @@ export function GameEditor({ game }: { game: Game }) {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Name" className="sm:col-span-2">
             <TextInput
-              className="sm:!min-h-8 sm:!py-1"
+              className={COMPACT_INPUT}
               value={draft.name}
               onChange={(event) => changeDraft('name', event.target.value)}
               onBlur={commitDraft}
@@ -77,7 +102,7 @@ export function GameEditor({ game }: { game: Game }) {
           <div className="sm:col-span-2">
             <Field label="Short label (shown as the game's badge)">
               <TextInput
-                className="sm:!min-h-8 sm:!py-1"
+                className={COMPACT_INPUT}
                 value={draft.short}
                 onChange={(event) => changeDraft('short', event.target.value)}
                 onBlur={commitDraft}
@@ -105,7 +130,7 @@ export function GameEditor({ game }: { game: Game }) {
           </Field>
           <Field label="Title font">
             <Select
-              className="sm:!min-h-8 sm:!py-1"
+              className={COMPACT_INPUT}
               value={game.titleFont ?? ''}
               onChange={(event) => updateGame(game.id, { titleFont: event.target.value || undefined })}
             >
@@ -151,7 +176,7 @@ export function GameEditor({ game }: { game: Game }) {
               </label>
               {game.image && (
                 <Btn
-                  className="!min-h-11 sm:!min-h-8"
+                  className={TOUCH_BUTTON}
                   onClick={() => {
                     setImageError('');
                     updateGame(game.id, { image: undefined });
@@ -175,7 +200,7 @@ export function GameEditor({ game }: { game: Game }) {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Daily reset hour">
             <NumInput
-              className="sm:!min-h-8 sm:!py-1"
+              className={COMPACT_INPUT}
               value={String(game.dailyResetHour)}
               min={0}
               max={23}
@@ -188,7 +213,7 @@ export function GameEditor({ game }: { game: Game }) {
           </Field>
           <Field label="Weekly reset day">
             <Select
-              className="sm:!min-h-8 sm:!py-1"
+              className={COMPACT_INPUT}
               value={String(game.weeklyResetDay)}
               onChange={(event) => updateGame(game.id, { weeklyResetDay: intOr(event.target.value, 1) })}
             >
@@ -201,7 +226,7 @@ export function GameEditor({ game }: { game: Game }) {
           </Field>
           <Field label="Monthly reset day">
             <NumInput
-              className="sm:!min-h-8 sm:!py-1"
+              className={COMPACT_INPUT}
               value={String(game.monthlyResetDay)}
               min={1}
               max={28}
@@ -241,44 +266,37 @@ export function GameEditor({ game }: { game: Game }) {
           {chips.map((chip) => (
             <div key={chip.id} className="grid grid-cols-[minmax(0,1fr)_88px_auto] items-center gap-2">
               <TextInput
-                className="sm:!min-h-8 sm:!py-1"
+                className={COMPACT_INPUT}
                 value={chip.label}
                 aria-label="Quick spend label"
                 onChange={(event) => upsertChip({ id: chip.id, gameId: game.id, label: event.target.value })}
               />
               <NumInput
-                className="sm:!min-h-8 sm:!py-1"
+                className={COMPACT_INPUT}
                 value={String(chip.delta)}
                 aria-label={`${chip.label} energy change`}
                 onChange={(event) =>
                   upsertChip({ id: chip.id, gameId: game.id, delta: intOr(event.target.value, chip.delta) })
                 }
               />
-              <button
-                type="button"
-                onClick={() => deleteChip(chip.id)}
-                className="btn-compact flex h-11 w-11 items-center justify-center rounded-ui-md text-caption text-dim transition hover:bg-danger/10 hover:text-danger sm:h-8 sm:w-8"
-                aria-label={`Delete quick spend ${chip.label}`}
-              >
-                ✕
-              </button>
+              <RemoveRowButton label={`Delete quick spend ${chip.label}`} onClick={() => deleteChip(chip.id)} />
             </div>
           ))}
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_88px_auto]">
             <TextInput
-              className="sm:!min-h-8 sm:!py-1"
+              className={COMPACT_INPUT}
               placeholder="Label, e.g. Domain"
               value={newChipLabel}
               onChange={(event) => setNewChipLabel(event.target.value)}
             />
             <NumInput
-              className="sm:!min-h-8 sm:!py-1"
+              className={COMPACT_INPUT}
               value={newChipDelta}
               aria-label="Energy change"
               onChange={(event) => setNewChipDelta(event.target.value)}
             />
             <Btn
-              className="!min-h-11 sm:!min-h-8"
+              className={TOUCH_BUTTON}
               onClick={() => {
                 if (!newChipLabel.trim()) return;
                 upsertChip({
@@ -310,7 +328,7 @@ export function GameEditor({ game }: { game: Game }) {
                 <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_128px_128px_auto]">
                   <Field label="Name">
                     <TextInput
-                      className="sm:!min-h-8 sm:!py-1"
+                      className={COMPACT_INPUT}
                       value={task.name}
                       aria-label={`Task name: ${task.name}`}
                       onChange={(event) => updateTask(task.id, { name: event.target.value })}
@@ -318,7 +336,7 @@ export function GameEditor({ game }: { game: Game }) {
                   </Field>
                   <Field label="Cadence">
                     <Select
-                      className="sm:!min-h-8 sm:!py-1"
+                      className={COMPACT_INPUT}
                       value={task.cadence}
                       onChange={(event) => updateTask(task.id, { cadence: event.target.value as Cadence })}
                       aria-label={`Cadence for ${task.name}`}
@@ -332,7 +350,7 @@ export function GameEditor({ game }: { game: Game }) {
                   </Field>
                   <Field label="Mode">
                     <Select
-                      className="sm:!min-h-8 sm:!py-1"
+                      className={COMPACT_INPUT}
                       value={mode}
                       onChange={(event) => updateTask(task.id, { mode: event.target.value as TaskMode })}
                       aria-label={`Mode for ${task.name}`}
@@ -344,14 +362,7 @@ export function GameEditor({ game }: { game: Game }) {
                       ))}
                     </Select>
                   </Field>
-                  <button
-                    type="button"
-                    onClick={() => deleteTask(task.id)}
-                    className="btn-compact flex h-11 w-11 items-center justify-center rounded-ui-md text-caption text-dim transition hover:bg-danger/10 hover:text-danger sm:h-8 sm:w-8"
-                    aria-label={`Delete task ${task.name}`}
-                  >
-                    ✕
-                  </button>
+                  <RemoveRowButton label={`Delete task ${task.name}`} onClick={() => deleteTask(task.id)} />
                 </div>
 
                 {hasConditionalControls && (
@@ -360,7 +371,7 @@ export function GameEditor({ game }: { game: Game }) {
                       <>
                         <Field label="Cycle days">
                           <NumInput
-                            className="sm:!min-h-8 sm:!py-1"
+                            className={COMPACT_INPUT}
                             aria-label={`Cycle days for ${task.name}`}
                             value={String(task.intervalDays)}
                             onChange={(event) =>
@@ -379,7 +390,7 @@ export function GameEditor({ game }: { game: Game }) {
                         {task.timelineLinked !== false && (
                           <Field label="Timeline match">
                             <TextInput
-                              className="sm:!min-h-8 sm:!py-1"
+                              className={COMPACT_INPUT}
                               placeholder="Auto (task name)"
                               aria-label={`Timeline match for ${task.name}`}
                               value={task.timelineMatch ?? ''}
@@ -395,7 +406,7 @@ export function GameEditor({ game }: { game: Game }) {
                       <>
                         <Field label="Timer minutes">
                           <NumInput
-                            className="sm:!min-h-8 sm:!py-1"
+                            className={COMPACT_INPUT}
                             aria-label={`Timer minutes for ${task.name}`}
                             value={String(task.timerDurationMinutes ?? 20 * 60)}
                             onChange={(event) =>
@@ -407,7 +418,7 @@ export function GameEditor({ game }: { game: Game }) {
                         </Field>
                         <Field label="Timer step minutes">
                           <NumInput
-                            className="sm:!min-h-8 sm:!py-1"
+                            className={COMPACT_INPUT}
                             aria-label={`Timer step minutes for ${task.name}`}
                             placeholder="No step"
                             value={task.timerStepMinutes ?? ''}
@@ -424,7 +435,7 @@ export function GameEditor({ game }: { game: Game }) {
                     {mode === 'count' && (
                       <Field label="Count target">
                         <NumInput
-                          className="sm:!min-h-8 sm:!py-1"
+                          className={COMPACT_INPUT}
                           aria-label={`Count target for ${task.name}`}
                           value={String(task.countTarget ?? 1)}
                           onChange={(event) =>
@@ -443,7 +454,7 @@ export function GameEditor({ game }: { game: Game }) {
           <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_112px_auto]">
             <Field label="New task">
               <TextInput
-                className="sm:!min-h-8 sm:!py-1"
+                className={COMPACT_INPUT}
                 placeholder="New task…"
                 aria-label="New task name"
                 value={newTask}
@@ -452,7 +463,7 @@ export function GameEditor({ game }: { game: Game }) {
             </Field>
             <Field label="Cadence">
               <Select
-                className="w-full sm:!min-h-8 sm:w-28 sm:!py-1"
+                className={`w-full sm:w-28 ${COMPACT_INPUT}`}
                 value={newTaskCadence}
                 onChange={(event) => setNewTaskCadence(event.target.value as Cadence)}
                 aria-label="New task cadence"
@@ -465,7 +476,7 @@ export function GameEditor({ game }: { game: Game }) {
               </Select>
             </Field>
             <Btn
-              className="!min-h-11 shrink-0 sm:!min-h-8"
+              className={`shrink-0 ${TOUCH_BUTTON}`}
               onClick={() => {
                 if (!newTask.trim()) return;
                 addTask(game.id, newTask.trim(), newTaskCadence);
@@ -480,7 +491,7 @@ export function GameEditor({ game }: { game: Game }) {
               <p className="min-w-0 flex-1 text-label text-muted">
                 This game's preset has {presetGap} {presetGap === 1 ? 'routine' : 'routines'} you are not tracking.
               </p>
-              <Btn className="!min-h-11 sm:!min-h-8" onClick={() => addMissingPresetTasks(game.id)}>
+              <Btn className={TOUCH_BUTTON} onClick={() => addMissingPresetTasks(game.id)}>
                 + Add {presetGap}
               </Btn>
             </div>

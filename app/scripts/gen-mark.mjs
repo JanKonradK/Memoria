@@ -8,12 +8,10 @@
 // product; a tab strip or a dark nav rail wants the mark alone so it sits on
 // whatever is behind it.
 import { writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { markAspect, markPath } from './mobius.mjs';
 
-const here = dirname(fileURLToPath(import.meta.url));
-const app = join(here, '..');
+const app = join(import.meta.dirname, '..');
 
 // White-led, matching draw-icon.mjs. The mark reads white first and gold
 // second; gold only arrives as the form falls away.
