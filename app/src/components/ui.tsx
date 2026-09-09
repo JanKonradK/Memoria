@@ -181,8 +181,8 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
         aria-label={ariaLabel}
         className={`${inputCls} group flex items-center justify-between gap-2 text-left disabled:opacity-40 ${className}`}
       >
-        <SelectPrimitive.Value>
-          <span className="truncate">{current?.label ?? <span className="text-dim">—</span>}</span>
+        <SelectPrimitive.Value className="min-w-0 truncate">
+          {current?.label ?? <span className="text-dim">—</span>}
         </SelectPrimitive.Value>
         <SelectPrimitive.Icon asChild>
           <svg

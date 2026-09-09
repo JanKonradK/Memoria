@@ -370,8 +370,9 @@ body {
   grid-area: actions;
 }
 .app-game-scope {
-  width: 11rem;
-  flex: 0 0 auto;
+  width: max-content;
+  max-width: 100%;
+  flex: 0 1 auto;
 }
 .timeline-page {
   padding-top: 4px;
