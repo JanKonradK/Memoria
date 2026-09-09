@@ -181,7 +181,7 @@ import { presetForGame } from '@memoria/shared';
  */
 
 /** When the bundled data was last refreshed. */
-export const SEED_UPDATED = '2026-09-08';
+export const SEED_UPDATED = '2026-09-09';
 
 /**
  * How long a finished event is worth keeping. Two months.
@@ -328,7 +328,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: 'Spiral Abyss',
     type: 'cycle',
     start: '2026-06-16 04:00',
-    end: '2026-07-16 03:59',
+    end: '2026-07-16 04:00',
     notes: 'Resets the 16th, monthly.',
     sourceKey: 'seed:genshin:abyss-2026-06',
   },
@@ -337,7 +337,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: 'Spiral Abyss',
     type: 'cycle',
     start: '2026-07-16 04:00',
-    end: '2026-08-16 03:59',
+    end: '2026-08-16 04:00',
     notes: 'Resets the 16th, monthly.',
     sourceKey: 'seed:genshin:abyss-2026-07',
   },
@@ -347,7 +347,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     type: 'cycle',
     notify: false,
     start: '2026-08-16 04:00',
-    end: '2026-09-16 03:59',
+    end: '2026-09-16 04:00',
     notes: 'Resets the 16th, monthly.',
     sourceKey: 'seed:genshin:abyss-2026-08',
   },
@@ -356,7 +356,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: 'Imaginarium Theater',
     type: 'cycle',
     start: '2026-07-01 04:00',
-    end: '2026-08-01 03:59',
+    end: '2026-08-01 04:00',
     notes: 'Resets the 1st, monthly.',
     sourceKey: 'seed:genshin:theater-2026-07',
   },
@@ -366,7 +366,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     type: 'cycle',
     notify: false,
     start: '2026-08-01 04:00',
-    end: '2026-09-01 03:59',
+    end: '2026-09-01 04:00',
     notes: 'Resets the 1st, monthly.',
     sourceKey: 'seed:genshin:theater-2026-08',
   },
@@ -599,7 +599,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     type: 'cycle',
     notify: false,
     start: '2026-09-01 04:00',
-    end: '2026-10-01 03:59',
+    end: '2026-10-01 04:00',
     notes: 'Resets the 1st, monthly. September season confirmed open; close is the monthly cadence.',
     sourceKey: 'seed:genshin:theater-2026-09',
   },
@@ -609,7 +609,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     type: 'cycle',
     notify: false,
     start: '2026-10-01 04:00',
-    end: '2026-11-01 03:59',
+    end: '2026-11-01 04:00',
     notes: 'Resets the 1st, monthly. Cadence, not a notice — the October season has not been announced.',
     sourceKey: 'seed:genshin:theater-2026-10',
   },
@@ -618,7 +618,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: 'Spiral Abyss',
     type: 'cycle',
     start: '2026-09-16 04:00',
-    end: '2026-10-16 03:59',
+    end: '2026-10-16 04:00',
     notes:
       'The 7.0 notice states this one outright: "Phase 2 of the Spiral Abyss will be updated on September 16." Resets the 16th, once a month.',
     sourceKey: 'seed:genshin:abyss-2026-09',

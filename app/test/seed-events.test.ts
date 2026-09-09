@@ -13,6 +13,20 @@ const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
 const maintenance = SEED_EVENTS.find((seed) => seed.sourceKey === 'seed:genshin:6.8-maint')!;
 const beforeMaintenance = Date.parse('2026-08-07T00:00:00Z');
 
+it.each(['UTC+1', 'UTC+8', 'UTC-5'])('keeps permanent Genshin cycles continuous in %s', (tz) => {
+  const state = { ...emptyState(), games: [account('cycle-account', tz)] };
+  const planned = planSeedImport(state, Date.parse('2026-06-01T00:00:00Z'));
+  for (const name of ['Spiral Abyss', 'Imaginarium Theater']) {
+    const cycles = planned.filter((entry) => entry.seed?.name === name).sort((a, b) => a.start! - b.start!);
+    expect(cycles.length).toBeGreaterThan(1);
+    for (let i = 1; i < cycles.length; i++) {
+      expect(cycles[i - 1]!.end).toBe(cycles[i]!.start);
+    }
+  }
+  const stygian = planned.filter((entry) => entry.seed?.name === 'Stygian Onslaught');
+  expect(stygian[0]!.end).toBeLessThan(stygian[1]!.start!);
+});
+
 function account(id: string, tz: string): Game {
   return {
     id,
