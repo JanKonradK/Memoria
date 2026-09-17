@@ -78,7 +78,7 @@ export default defineConfig(({ mode }) => {
                 // actually offline-capable. Precache only the subsets the UI can render:
                 // devanagari/vietnamese ship in dist/ but unicode-range keeps them from
                 // ever being requested, so precaching them would cost ~590 KB for nothing.
-                globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff2}'],
+                globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,webmanifest,woff2}'],
                 // hebrew and thai arrived with Fredoka and Chakra Petch; same reasoning.
                 globIgnores: ['**/*-{devanagari,vietnamese,cyrillic,cyrillic-ext,hebrew,thai,greek,greek-ext}-*'],
                 navigateFallback: '/index.html',

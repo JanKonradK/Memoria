@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { EventType } from '@memoria/shared';
+import { presetForGame, type EventType, type BannerKind } from '@memoria/shared';
+import { eventCategory, eventBannerKind } from '../event-category';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fmtDateTimeLocalInput, fmtDur, parseDateTimeLocalInput } from '../util';
@@ -25,6 +26,8 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
     gameId: gameId ?? games[0]?.id ?? '',
     name: '',
     type: 'event' as EventType,
+    bannerKind: '' as BannerKind | '',
+    category: 'teyvat' as 'teyvat' | 'miliastra',
     start: Date.now(),
     end: Date.now() + 7 * DAY,
     dailyTouch: false,
@@ -62,6 +65,14 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
         gameId: existing.gameId,
         name: existing.name,
         type: existing.type,
+        bannerKind: eventBannerKind(existing) ?? '',
+        category:
+          eventCategory(
+            games.find((game) => game.id === existing.gameId),
+            existing,
+          ) === 'miliastra'
+            ? 'miliastra'
+            : 'teyvat',
         start: existing.start,
         end: existing.end,
         dailyTouch: existing.dailyTouch,
@@ -83,7 +94,14 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
 
   const save = () => {
     if (!draft.gameId || !draft.name.trim() || badWindow) return;
-    upsertEvent({ ...(existing ? { id: existing.id } : {}), ...draft, name: draft.name.trim() });
+    const selectedGame = games.find((game) => game.id === draft.gameId);
+    upsertEvent({
+      ...(existing ? { id: existing.id } : {}),
+      ...draft,
+      category: selectedGame && presetForGame(selectedGame)?.key === 'genshin' ? draft.category : undefined,
+      bannerKind: draft.type === 'banner' ? draft.bannerKind || undefined : undefined,
+      name: draft.name.trim(),
+    });
     closeSheet();
   };
 
@@ -118,7 +136,36 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
               ))}
             </Select>
           </Field>
-          <div className="hidden sm:block" />
+          {draft.type === 'banner' && (
+            <Field label="Banner tag">
+              <Select
+                value={draft.bannerKind}
+                onChange={(event) => setDraft({ ...draft, bannerKind: event.target.value as BannerKind | '' })}
+              >
+                <option value="">Choose tag</option>
+                <option value="other">Banner (other)</option>
+                <option value="character">Character banner</option>
+                <option value="weapon">Weapon banner</option>
+                <option value="support">Support banner</option>
+                <option value="memory">Memory banner</option>
+              </Select>
+            </Field>
+          )}
+          {draft.type !== 'maintenance' &&
+          draft.type !== 'livestream' &&
+          games.some((game) => game.id === draft.gameId && presetForGame(game)?.key === 'genshin') ? (
+            <Field label="Genshin world">
+              <Select
+                value={draft.category}
+                onChange={(event) => setDraft({ ...draft, category: event.target.value as 'teyvat' | 'miliastra' })}
+              >
+                <option value="teyvat">Teyvat</option>
+                <option value="miliastra">Miliastra Wonderland</option>
+              </Select>
+            </Field>
+          ) : (
+            <div className="hidden sm:block" />
+          )}
           <Field label="Starts">
             <TextInput
               type="datetime-local"

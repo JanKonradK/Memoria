@@ -233,6 +233,12 @@ describe('timelineRowLayout', () => {
     expect(layout.barTextMaxWidth).toBeLessThanOrEqual(barLeftPx);
   });
 
+  it('reserves the countdown beside a title before a right-edge sliver', () => {
+    const layout = timelineRowLayout(99, 1, 390, 'auto', 124);
+    expect(layout.labelPlacement).toBe('before');
+    expect(layout.barTextMaxWidth).toBeLessThanOrEqual(390 - 124 - 26);
+  });
+
   it('returns finite, non-negative measurements for a degenerate lane', () => {
     const layout = timelineRowLayout(10, 0.125, 0);
 
@@ -286,18 +292,31 @@ describe('CycleConnectors', () => {
   });
 
   it('joins consecutive instances of the same cycle', () => {
-    const events = [cycle('a', 'Spiral Abyss', 0, 8), cycle('b', 'Spiral Abyss', 10, 18)];
+    const events = [cycle('a', 'Spiral Abyss', 0, 8), cycle('b', 'Spiral Abyss', 8, 18)];
     expect(connectorPaths(events)).toHaveLength(1);
   });
 
   it('draws n-1 hand-offs for n instances, never a loop back to the first', () => {
-    const events = [cycle('a', 'Abyss', 0, 5), cycle('b', 'Abyss', 7, 12), cycle('c', 'Abyss', 14, 19)];
+    const events = [cycle('a', 'Abyss', 0, 5), cycle('b', 'Abyss', 5, 12), cycle('c', 'Abyss', 12, 19)];
     expect(connectorPaths(events)).toHaveLength(2);
+  });
+
+  it('does not bridge gaps between separate cycle windows', () => {
+    expect(
+      connectorPaths([cycle('a', 'Stygian Onslaught', 0, 2), cycle('b', 'Stygian Onslaught', 13, 20)]),
+    ).toHaveLength(0);
   });
 
   it('never joins two different cycles, however adjacent', () => {
     const events = [cycle('a', 'Spiral Abyss', 0, 8), cycle('b', 'Imaginarium Theater', 10, 18)];
     expect(connectorPaths(events)).toHaveLength(0);
+  });
+
+  it('does not cross other rows or reverse direction after manual reordering', () => {
+    const first = cycle('a', 'Abyss', 0, 8);
+    const next = cycle('b', 'Abyss', 8, 18);
+    expect(connectorPaths([first, cycle('c', 'Other', 2, 10), next])).toHaveLength(0);
+    expect(connectorPaths([next, first])).toHaveLength(0);
   });
 
   it('renders nothing at all when a cycle has a single instance', () => {
@@ -310,7 +329,7 @@ describe('CycleConnectors', () => {
 
   it('anchors each filled bridge inside the two rounded bar caps', () => {
     const first = cycle('a', 'Abyss', 0, 6);
-    const second = cycle('b', 'Abyss', 12, 18);
+    const second = cycle('b', 'Abyss', 6, 18);
     const [d] = buildCycleConnectorPaths(
       [first, second],
       WS,
@@ -339,8 +358,8 @@ describe('CycleConnectors', () => {
     const first = cycle('a', 'Abyss', 0, 6);
     const maintenance = { ...cycle('m', 'Maintenance', 7, 8), type: 'maintenance' as const };
     const ordinary = { ...cycle('e', 'Festival', 9, 10), type: 'event' as const };
-    const second = cycle('b', 'Abyss', 12, 18);
-    const events = [first, maintenance, ordinary, second];
+    const second = cycle('b', 'Abyss', 6, 18);
+    const events = [first, second, maintenance, ordinary];
     const { container } = renderMeasuredLane(
       events,
       [
@@ -355,8 +374,8 @@ describe('CycleConnectors', () => {
     const values = d!.match(/-?[\d.]+/g)!.map(Number);
     expect(values[1]).toBeGreaterThan(0);
     expect(values[1]).toBeLessThan(28);
-    expect(values[13]).toBeGreaterThan(132);
-    expect(values[13]).toBeLessThan(160);
+    expect(values[13]).toBeGreaterThan(50);
+    expect(values[13]).toBeLessThan(74);
     expect(container.querySelector('path')?.getAttribute('fill')).not.toBe('none');
     expect(container.querySelector('path')?.hasAttribute('stroke')).toBe(false);
     expect(container.querySelector('svg')?.getAttribute('viewBox')).toBe('0 0 1000 174');

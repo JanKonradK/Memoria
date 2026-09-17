@@ -21,6 +21,7 @@ import { useUI } from '../ui-store';
 const ITEMS = {
   home: ['addGame', 'event', 'reminder'],
   timeline: ['event', 'reminder'],
+  livestreams: ['event', 'reminder'],
   settings: ['addGame'],
 } as const satisfies Record<string, readonly ('addGame' | 'event' | 'reminder')[]>;
 

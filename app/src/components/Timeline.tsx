@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { DateTime } from 'luxon';
 import type { Game, GameEvent } from '@memoria/shared';
@@ -18,6 +19,7 @@ import { serverRegionLabel } from './NexusLayout';
 import { titleFont } from '../fonts';
 import { assignGameInks, gameRim, gameTitleInk, mix, onColor } from '../game-color';
 import { useGround, useInset } from '../theme';
+import { EventTags } from './EventTags';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -41,16 +43,16 @@ function useElementWidth() {
   const observerRef = useRef<ResizeObserver | null>(null);
   const [width, setWidth] = useState(0);
 
-  const setElement = useCallback((element: HTMLDivElement | null) => {
+  const setElement = useCallback((element: HTMLElement | null) => {
     observerRef.current?.disconnect();
     observerRef.current = null;
     if (!element) return;
-    const updateWidth = (nextWidth: number) => setWidth(Math.round(nextWidth));
+    const updateWidth = (nextWidth: number) => setWidth(Math.ceil(nextWidth));
     updateWidth(element.getBoundingClientRect().width);
 
     if (typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(([entry]) => {
-      if (entry) updateWidth(entry.contentRect.width);
+      if (entry) updateWidth(entry.target.getBoundingClientRect().width);
     });
     observer.observe(element);
     observerRef.current = observer;
@@ -148,6 +150,7 @@ export function timelineRowLayout(
   displayWidth: number,
   laneWidth: number,
   labelMode: 'auto' | 'outside' = 'auto',
+  countdownWidth = COUNTDOWN_PX,
 ): TimelineRowLayout {
   const safeLaneWidth = Number.isFinite(laneWidth) ? Math.max(0, laneWidth) : 0;
   const safeDisplayLeft = Number.isFinite(displayLeft) ? Math.max(0, Math.min(displayLeft, 100)) : 0;
@@ -167,8 +170,8 @@ export function timelineRowLayout(
 
   // Preserve room for the optional span before the tick is allowed to float.
   // This keeps long bars from pushing the tick into the countdown.
-  const tickFloats = safeLaneWidth > 0 && barEndPx + TICK_SLOT_PX <= safeLaneWidth - COUNTDOWN_PX - SPAN_PX;
-  const trailingClusterPx = COUNTDOWN_PX + (tickFloats ? 0 : TICK_SLOT_PX);
+  const tickFloats = safeLaneWidth > 0 && barEndPx + TICK_SLOT_PX <= safeLaneWidth - countdownWidth - SPAN_PX;
+  const trailingClusterPx = countdownWidth + (tickFloats ? 0 : TICK_SLOT_PX);
   const clusterStartPx = Math.max(0, safeLaneWidth - trailingClusterPx);
   const textRightPx = Math.min(barEndPx, clusterStartPx);
   const insideLabelPx = Math.max(0, textRightPx - barLeftPx - BAR_TEXT_INSET_PX);
@@ -214,7 +217,7 @@ export function timelineRowLayout(
   if (
     labelMode !== 'outside' &&
     barInnerPx >= MIN_LABEL_PX &&
-    barLeftPx >= COUNTDOWN_PX + TICK_SLOT_PX + BAR_TEXT_INSET_PX
+    barLeftPx >= countdownWidth + TICK_SLOT_PX + BAR_TEXT_INSET_PX
   ) {
     return {
       tier: 'tight',
@@ -222,7 +225,7 @@ export function timelineRowLayout(
       showSpan: false,
       labelPlacement: 'inside',
       barTextMaxWidth: barInnerPx,
-      trailingClusterPx: COUNTDOWN_PX + TICK_SLOT_PX,
+      trailingClusterPx: countdownWidth + TICK_SLOT_PX,
       barEndPct,
       clusterBefore: true,
     };
@@ -231,10 +234,10 @@ export function timelineRowLayout(
   // An outside label and a floating tick would compete for the same gap. Keep
   // the mandatory tick with the countdown, then give the label the remaining
   // lane space on either side of the bar.
-  const minimalTrailingClusterPx = COUNTDOWN_PX + TICK_SLOT_PX;
+  const minimalTrailingClusterPx = countdownWidth + TICK_SLOT_PX;
   const minimalClusterStartPx = Math.max(0, safeLaneWidth - minimalTrailingClusterPx);
   const afterLabelPx = Math.max(0, minimalClusterStartPx - barEndPx);
-  const beforeLabelPx = Math.max(0, barLeftPx);
+  const beforeLabelPx = Math.max(0, Math.min(barLeftPx, minimalClusterStartPx));
   const labelPlacement = afterLabelPx >= MIN_LABEL_PX ? 'after' : beforeLabelPx >= MIN_LABEL_PX ? 'before' : 'none';
   const barTextMaxWidth = labelPlacement === 'after' ? afterLabelPx : labelPlacement === 'before' ? beforeLabelPx : 0;
 
@@ -292,6 +295,10 @@ export function buildCycleConnectorPaths(
     for (let i = 0; i < ordered.length - 1; i += 1) {
       const from = ordered[i]!;
       const to = ordered[i + 1]!;
+      // Manual ordering must not draw bridges across other events or backwards.
+      if (events.indexOf(to) !== events.indexOf(from) + 1) continue;
+      // Separate playable windows must not look like one continuous event.
+      if (to.start > from.end || to.start < from.end - HOUR) continue;
       const r1 = (barHeights.get(from.id) ?? 22) / 2;
       const r2 = (barHeights.get(to.id) ?? 22) / 2;
       const x1 = (barGeometry(from, ws, we).displayRight / 100) * laneWidth - r1;
@@ -425,6 +432,7 @@ const EventRow = memo(function EventRow({
   onToggleEvent,
   laneWidth,
   localTz,
+  reorderHandle,
 }: {
   ev: GameEvent;
   game: Game;
@@ -440,15 +448,21 @@ const EventRow = memo(function EventRow({
   /** Measured lane width in px, so the trailing furniture can be laid out. */
   laneWidth: number;
   localTz: string;
+  reorderHandle?: ReactNode;
 }) {
-  const { displayLeft, displayWidth } = barGeometry(ev, ws, we);
+  const { displayLeft: proportionalLeft, displayWidth } = barGeometry(ev, ws, we);
+  // Keep the minimum painted cap inside the lane for events at the window edge.
+  const displayLeft =
+    laneWidth > 0 ? Math.min(proportionalLeft, Math.max(0, 100 - (MIN_BAR_PX / laneWidth) * 100)) : proportionalLeft;
   const countdown = timelineCountdown(ev, now);
+  const [countdownRef, countdownWidth] = useElementWidth();
   const { ended, remainingMs } = countdown;
   const maint = ev.type === 'maintenance';
   const banner = ev.type === 'banner';
   const cycle = ev.type === 'cycle';
   const stream = ev.type === 'livestream';
-  const tone = endTone(remainingMs);
+  const endColor = endTone(remainingMs);
+  const tone = endColor === 'var(--color-later)' ? 'var(--color-muted)' : endColor;
   const spanLabel = `${DateTime.fromMillis(ev.start, { zone: localTz }).toFormat('dd LLL')} → ${DateTime.fromMillis(ev.end, { zone: localTz }).toFormat('dd LLL')}`;
   // Computed once so the fill and the ink chosen for it can never disagree.
   // A livestream is a one-off marker only a few hours wide, so it carries the
@@ -464,13 +478,14 @@ const EventRow = memo(function EventRow({
           : mix(ink, inset, 0.46);
   const barInk = onColor(barFill);
 
-  // Deliberate over-estimates avoid a layout read per row on every clock tick.
-  // The only cost of guessing high is an earlier truncation near the controls.
+  // Measure the countdown when its size changes so text zoom and longer arrival
+  // labels reserve their true width. ResizeObserver avoids reads on every tick.
   const { barEndPct, tickFloats, showSpan, labelPlacement, barTextMaxWidth, clusterBefore } = timelineRowLayout(
     displayLeft,
     displayWidth,
     laneWidth,
     maint || stream ? 'outside' : 'auto',
+    Math.max(COUNTDOWN_PX, countdownWidth + 8),
   );
 
   const tick = (
@@ -515,7 +530,15 @@ const EventRow = memo(function EventRow({
   );
 
   return (
-    <m.div variants={slideIn} initial="hidden" animate="visible" data-timeline-event-row data-event-id={ev.id}>
+    <m.div
+      variants={slideIn}
+      initial="hidden"
+      animate="visible"
+      data-timeline-event-row
+      data-event-id={ev.id}
+      className="relative"
+    >
+      {reorderHandle}
       <div
         className={`group/row relative block h-[var(--lane-row-h)] w-full rounded-ui-lg text-left ${
           ev.done ? 'opacity-40' : ''
@@ -543,10 +566,13 @@ const EventRow = memo(function EventRow({
         >
           {labelPlacement === 'inside' && (
             <span
-              className={`min-w-0 flex-1 truncate text-meta ${maint || banner ? 'font-normal' : 'font-medium'}`}
+              className={`flex min-w-0 flex-1 items-center gap-1 overflow-hidden text-meta ${maint || banner ? 'font-normal' : 'font-medium'}`}
               style={{ color: barInk, maxWidth: barTextMaxWidth }}
             >
-              {ev.name}
+              <EventTags game={game} event={ev} inherit availableWidth={barTextMaxWidth} />
+              <span data-event-title className="min-w-0 truncate">
+                {ev.name}
+              </span>
             </span>
           )}
           {/* An uncrowded row keeps the range where it reads best: inside the bar
@@ -563,7 +589,7 @@ const EventRow = memo(function EventRow({
 
         {labelPlacement !== 'inside' && labelPlacement !== 'none' && (
           <span
-            className={`pointer-events-none absolute top-0 z-20 flex h-[var(--lane-bar-h)] items-center truncate text-meta text-fg-soft ${
+            className={`pointer-events-none absolute top-0 z-20 flex h-[var(--lane-bar-h)] items-center overflow-hidden text-meta text-fg-soft ${
               maint || banner ? 'font-normal' : 'font-medium'
             } ${labelPlacement === 'before' ? 'justify-end text-right' : ''}`}
             style={
@@ -578,7 +604,12 @@ const EventRow = memo(function EventRow({
                   }
             }
           >
-            {ev.name}
+            <span className="flex min-w-0 items-center gap-1">
+              <EventTags game={game} event={ev} inherit availableWidth={barTextMaxWidth} />
+              <span data-event-title className="min-w-0 truncate">
+                {ev.name}
+              </span>
+            </span>
           </span>
         )}
 
@@ -594,7 +625,8 @@ const EventRow = memo(function EventRow({
           {!tickFloats && tick}
           <Tooltip content="d = days · h = hours · m = minutes">
             <span
-              className={`rounded-ui-sm bg-scrim-veil px-1.5 py-px text-caption font-bold tabular-nums ${
+              ref={countdownRef}
+              className={`whitespace-nowrap rounded-ui-sm bg-scrim-veil px-1.5 py-px text-caption font-bold tabular-nums ${
                 !ended && !ev.done && remainingMs < DAY ? 'warn-pulse' : ''
               }`}
               style={{ color: ev.done ? 'var(--color-ok)' : tone }}
@@ -608,9 +640,140 @@ const EventRow = memo(function EventRow({
   );
 });
 
+/** A dedicated handle leaves event actions and normal touch scrolling intact. */
+export function ReorderableEventRows({
+  events,
+  game,
+  ...rowProps
+}: {
+  events: GameEvent[];
+  game: Game;
+  ink: string;
+  inset: string;
+  now: number;
+  ws: number;
+  we: number;
+  onOpenEvent: (event: GameEvent) => void;
+  onToggleEvent: (event: GameEvent) => void;
+  laneWidth: number;
+  localTz: string;
+}) {
+  const reorder = useApp((s) => s.reorderEvents);
+  const container = useRef<HTMLDivElement>(null);
+  const gesture = useRef<{ id: string; pointerId: number; y: number; order: string[]; moved: boolean } | null>(null);
+  const [preview, setPreview] = useState<string[] | null>(null);
+  const [announcement, setAnnouncement] = useState('');
+  const ids = events.map((event) => event.id);
+  const visible = preview ? preview.flatMap((id) => events.filter((event) => event.id === id)) : events;
+  const commit = (order: string[], id: string) => {
+    reorder(game.id, order);
+    setAnnouncement(
+      `${events.find((event) => event.id === id)?.name} moved to position ${order.indexOf(id) + 1} of ${order.length}.`,
+    );
+  };
+  return (
+    <div
+      ref={container}
+      className="timeline-rows relative flex flex-col"
+      onPointerMove={(e) => {
+        const drag = gesture.current;
+        if (!drag || drag.pointerId !== e.pointerId || (Math.abs(e.clientY - drag.y) < 5 && !drag.moved)) return;
+        drag.moved = true;
+        // Read current viewport positions: the page can scroll while the pointer is held.
+        // A pointer-down snapshot targets stale slots after a long drag.
+        const centers = [...e.currentTarget.querySelectorAll('[data-timeline-event-row]')].map((row) => {
+          const rect = row.getBoundingClientRect();
+          return rect.top + rect.height / 2;
+        });
+        const target = centers.reduce(
+          (best, center, index) => (Math.abs(center - e.clientY) < Math.abs(centers[best] - e.clientY) ? index : best),
+          0,
+        );
+        const order = drag.order.filter((id) => id !== drag.id);
+        order.splice(target, 0, drag.id);
+        drag.order = order;
+        setPreview(order);
+      }}
+      onPointerUp={(e) => {
+        const drag = gesture.current;
+        if (!drag || drag.pointerId !== e.pointerId) return;
+        gesture.current = null;
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+        if (drag?.moved) commit(drag.order, drag.id);
+        setPreview(null);
+      }}
+      onPointerCancel={(e) => {
+        if (gesture.current?.pointerId !== e.pointerId) return;
+        gesture.current = null;
+        setPreview(null);
+      }}
+      onLostPointerCapture={(e) => {
+        if (gesture.current?.pointerId !== e.pointerId) return;
+        gesture.current = null;
+        setPreview(null);
+      }}
+    >
+      <span className="sr-only" role="status">
+        {announcement}
+      </span>
+      <CycleConnectors events={visible} ws={rowProps.ws} we={rowProps.we} ink={rowProps.ink} />
+      {visible.map((event) => (
+        <EventRow
+          key={event.id}
+          ev={event}
+          game={game}
+          {...rowProps}
+          reorderHandle={
+            <button
+              type="button"
+              aria-label={`Reorder ${event.name}`}
+              aria-describedby="event-reorder-help"
+              title="Hold and drag to reorder. Use Arrow Up or Arrow Down with the keyboard."
+              disabled={events.length < 2}
+              className="absolute -left-7 top-0 z-30 flex h-[var(--lane-row-h)] w-7 touch-none select-none items-center justify-center rounded-ui-sm text-muted hover:bg-fill-2 hover:text-fg disabled:opacity-30"
+              style={{ cursor: preview ? 'grabbing' : 'grab' }}
+              onPointerDown={(e) => {
+                if (e.button !== 0 || gesture.current) return;
+                e.preventDefault();
+                e.currentTarget.focus();
+                container.current?.setPointerCapture(e.pointerId);
+                gesture.current = {
+                  id: event.id,
+                  pointerId: e.pointerId,
+                  y: e.clientY,
+                  order: ids,
+                  moved: false,
+                };
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  gesture.current = null;
+                  setPreview(null);
+                  return;
+                }
+                if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+                e.preventDefault();
+                const from = ids.indexOf(event.id);
+                const to = from + (e.key === 'ArrowUp' ? -1 : 1);
+                if (to < 0 || to >= ids.length) return;
+                const order = [...ids];
+                [order[from], order[to]] = [order[to], order[from]];
+                commit(order, event.id);
+              }}
+            >
+              <span aria-hidden>⠿</span>
+            </button>
+          }
+        />
+      ))}
+    </div>
+  );
+}
+
 export function TimelinePage({ now }: { now: number }) {
   const state = useApp((s) => s.state);
   const upsertEvent = useApp((s) => s.upsertEvent);
+  const resetEventOrder = useApp((s) => s.resetEventOrder);
   const openSheet = useUI((s) => s.openSheet);
   const ground = useGround();
   const laneInset = useInset();
@@ -686,6 +849,9 @@ export function TimelinePage({ now }: { now: number }) {
           outline and the landmark audit — a visible one spent a band of vertical
           space restating the tab you already pressed. */}
       <h1 className="sr-only">Event timeline</h1>
+      <p id="event-reorder-help" className="sr-only">
+        Hold and drag the handle to reorder events within a game. Or focus a handle and press Arrow Up or Arrow Down.
+      </p>
       <TimelineTools
         search={search}
         onSearch={setSearch}
@@ -721,7 +887,7 @@ export function TimelinePage({ now }: { now: number }) {
         />
       ) : (
         <div data-tour="timeline" className="timeline-board relative">
-          <div ref={timelineScaleRef} data-timeline-scale>
+          <div ref={timelineScaleRef} data-timeline-scale className="ml-7">
             <div data-timeline-ruler className="relative h-5 text-caption text-muted">
               {ticks.map((tick, index) => {
                 const first = index === 0;
@@ -845,7 +1011,7 @@ export function TimelinePage({ now }: { now: number }) {
                     triggerLabel={`${open ? 'Collapse' : 'Expand'} ${game.name}, ${serverLabel}${accountLabel ? `, ${accountLabel}` : ''} lane`}
                     className="relative"
                     triggerClassName="timeline-game-heading relative z-20 rounded-ui-md px-1 transition hover:bg-fill-1"
-                    contentClassName="pb-1"
+                    contentClassName="-ml-7 pb-1 pl-7"
                   >
                     {evs.length === 0 ? (
                       <p className="py-1 text-label text-muted">Nothing in this window — import or add events.</p>
@@ -855,25 +1021,32 @@ export function TimelinePage({ now }: { now: number }) {
                         history button to show them.
                       </p>
                     ) : (
-                      <div className="timeline-rows relative flex flex-col">
-                        <CycleConnectors events={shown} ws={ws} we={we} ink={ink} />
-                        {shown.map((ev) => (
-                          <EventRow
-                            key={ev.id}
-                            ev={ev}
-                            game={game}
-                            ink={ink}
-                            inset={laneInset}
-                            now={now}
-                            ws={ws}
-                            we={we}
-                            onOpenEvent={openEvent}
-                            onToggleEvent={toggleEvent}
-                            laneWidth={timelineWidth}
-                            localTz={state.settings.localTz}
-                          />
-                        ))}
-                      </div>
+                      <>
+                        {state.events.some(
+                          (event) => event.gameId === game.id && !event.deleted && event.sort !== undefined,
+                        ) && (
+                          <button
+                            type="button"
+                            className="mb-1 text-caption text-accent-fg hover:underline"
+                            onClick={() => resetEventOrder(game.id)}
+                          >
+                            Reset automatic order
+                          </button>
+                        )}
+                        <ReorderableEventRows
+                          events={shown}
+                          game={game}
+                          ink={ink}
+                          inset={laneInset}
+                          now={now}
+                          ws={ws}
+                          we={we}
+                          onOpenEvent={openEvent}
+                          onToggleEvent={toggleEvent}
+                          laneWidth={timelineWidth}
+                          localTz={state.settings.localTz}
+                        />
+                      </>
                     )}
                   </Disclosure>
                 );

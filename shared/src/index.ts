@@ -9,3 +9,4 @@ export * from './migrations';
 export * from './presets';
 export * from './validation';
 export * from './tracking';
+export * from './redemption';

@@ -388,3 +388,20 @@ describe('budgetAgenda', () => {
     expect(budgeted.upcoming).toHaveLength(2);
   });
 });
+
+it('manual positions override cycle grouping while new events retain automatic order', () => {
+  const rows = [
+    event({ id: 'cycle-a', type: 'cycle', name: 'Cycle', sort: 2 }),
+    event({ id: 'cycle-b', type: 'cycle', name: 'Cycle', sort: 0 }),
+    event({ id: 'between', sort: 1 }),
+    event({ id: 'new-late', end: 3000 }),
+    event({ id: 'new-soon', end: 2000 }),
+  ];
+  expect(sortTimelineEvents(rows).map((row) => row.id)).toEqual([
+    'cycle-b',
+    'between',
+    'cycle-a',
+    'new-soon',
+    'new-late',
+  ]);
+});

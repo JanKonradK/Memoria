@@ -1,3 +1,5 @@
+import { EventTags } from '../EventTags';
+import { eventCategory } from '../../event-category';
 import { DateTime } from 'luxon';
 import type { AppState, Game, GameEvent, GameUrgency } from '@memoria/shared';
 import { gameIdentityKey, type GameColors } from '../../game-color';
@@ -163,11 +165,13 @@ function Band({
             const left = ticket.at - now;
             const countdown = left <= 0 ? 'now' : fmtDur(left);
             const distinction = disambiguation.get(ticket.gameId);
+            const categoryLabel =
+              ticket.event && eventCategory(game, ticket.event) === 'miliastra' ? 'Miliastra · ' : '';
             const accessibleName =
               game && distinction
                 ? `${game.name}, ${distinction.serverLabel} server${
                     distinction.accountDescription ? `, ${distinction.accountDescription}` : ''
-                  }: ${ticket.name}${ticket.event?.type === 'banner' ? ', Banner' : ''}, ${countdown}`
+                  }: ${categoryLabel}${ticket.name}${ticket.event?.type === 'banner' ? ', Banner' : ''}, ${countdown}`
                 : undefined;
             return (
               <button
@@ -196,11 +200,7 @@ function Band({
                     )}
                   </span>
                 )}
-                {ticket.event?.type === 'banner' && (
-                  <span className="shrink-0 rounded-ui-sm bg-fill-2 px-1 py-px text-caption font-semibold text-muted">
-                    Banner
-                  </span>
-                )}
+                {ticket.event && <EventTags game={game} event={ticket.event} />}
                 <span className="min-w-0 flex-1 truncate text-body text-fg-soft">{ticket.name}</span>
                 <span
                   className="numeral shrink-0 text-meta"

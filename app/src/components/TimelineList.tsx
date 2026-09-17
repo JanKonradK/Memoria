@@ -1,3 +1,4 @@
+import { EventTags } from './EventTags';
 import { useId, useMemo } from 'react';
 import { DateTime } from 'luxon';
 import type { Game, GameEvent } from '@memoria/shared';
@@ -187,6 +188,7 @@ export function TimelineList({
                           {game.name}
                         </span>
                         {account && <span className="text-fg-soft">{account}</span>}
+                        <EventTags game={game} event={event} />
                         <span className={`font-semibold text-fg-soft ${serverLabelClass(serverLabel)}`}>
                           {serverLabel}
                         </span>

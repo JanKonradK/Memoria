@@ -7,7 +7,7 @@ import { drawPng } from './draw-icon.mjs';
 const outDir = join(import.meta.dirname, '..', '..', 'desktop');
 mkdirSync(outDir, { recursive: true });
 
-const SIZES = [16, 32, 48, 64, 128, 256];
+const SIZES = [16, 20, 24, 32, 40, 48, 64, 96, 128, 256];
 const images = SIZES.map((size) => ({ size, png: drawPng(size, { maskable: false }) }));
 
 function packIco(imgs) {

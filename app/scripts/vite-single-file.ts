@@ -26,7 +26,8 @@ export function singleFile(): Plugin {
     config() {
       return {
         build: {
-          assetsInlineLimit: 0, // this plugin does the inlining, so Vite must not
+          assetsInlineLimit: (path) => /\.(?:jpe?g|png|webp)$/i.test(path),
+          // Inline imported artwork in JS; this plugin handles fonts and CSS.
           cssCodeSplit: false,
           // public/ is copied so favicon.svg can be inlined from disk; writeBundle
           // deletes everything it did not inline.

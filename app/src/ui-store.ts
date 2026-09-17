@@ -29,7 +29,7 @@ export function migrateLegacyUiStorage(): void {
 
 migrateLegacyUiStorage();
 
-export type Tab = 'home' | 'timeline' | 'settings';
+export type Tab = 'home' | 'timeline' | 'livestreams' | 'settings';
 export type Theme = 'dark' | 'light';
 export type TonightPosition = 'left' | 'middle' | 'right';
 
