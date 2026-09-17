@@ -807,3 +807,39 @@ describe('importJson', () => {
     expect(useApp.getState().state.games.some((g) => g.id === 'imported-game')).toBe(true);
   });
 });
+
+describe('manual event order', () => {
+  it('keeps hidden slots and other games intact, validates IDs, and round-trips through persistence', async () => {
+    const gameId = useApp.getState().addBlankGame('Order');
+    const otherGame = useApp.getState().addBlankGame('Other');
+    useApp.getState().upsertEvents([
+      ...['a', 'hidden', 'b'].map((id, index) => ({
+        id,
+        gameId,
+        end: Date.now() + (index + 1) * 10000,
+        seedHash: 'feed-hash',
+      })),
+      { id: 'other', gameId: otherGame },
+    ]);
+    const before = useApp.getState().state;
+    useApp.getState().reorderEvents(gameId, ['b', 'other']);
+    expect(useApp.getState().state).toBe(before);
+    useApp.getState().reorderEvents(gameId, ['b', 'b']);
+    expect(useApp.getState().state).toBe(before);
+    useApp.getState().reorderEvents(gameId, ['b', 'missing']);
+    expect(useApp.getState().state).toBe(before);
+    useApp.getState().reorderEvents(gameId, ['b', 'a']);
+    const events = useApp.getState().state.events;
+    expect(events.find((event) => event.id === 'b')?.sort).toBe(0);
+    expect(events.find((event) => event.id === 'hidden')?.sort).toBe(1);
+    expect(events.find((event) => event.id === 'a')?.sort).toBe(2);
+    expect(events.find((event) => event.id === 'other')).toBe(before.events.find((event) => event.id === 'other'));
+    expect(events.find((event) => event.id === 'a')?.seedHash).toBe('feed-hash');
+    await flushPersist();
+    const parsed = safeParseAppState(idb.get(IDB_KEY));
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.events.find((event) => event.id === 'a')?.sort).toBe(2);
+    useApp.getState().resetEventOrder(gameId);
+    expect(useApp.getState().state.events.every((event) => event.sort === undefined)).toBe(true);
+  });
+});

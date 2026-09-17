@@ -18,6 +18,14 @@ if (-not (Test-Path $ico) -and -not $packaged) {
   & node (Join-Path $repo 'app\scripts\gen-ico.mjs')
 }
 
+# Windows caches icons by path. A content-specific name makes an updated icon
+# appear without clearing the user's icon cache or restarting Explorer.
+$iconHash = (Get-FileHash -LiteralPath $ico -Algorithm SHA256).Hash.Substring(0, 16).ToLowerInvariant()
+$iconDirectory = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Memoria\icons'
+New-Item -ItemType Directory -Path $iconDirectory -Force | Out-Null
+$shortcutIcon = Join-Path $iconDirectory ('memoria-' + $iconHash + '.ico')
+Copy-Item -LiteralPath $ico -Destination $shortcutIcon -Force
+
 # Ensure the app is built so the first click opens instantly.
 if (-not (Test-Path (Join-Path $repo 'app\dist\index.html'))) {
   if ($packaged) {
@@ -36,7 +44,7 @@ function New-MemoriaShortcut([string]$linkPath) {
   $sc.TargetPath = Join-Path $env:WINDIR 'System32\wscript.exe'
   $sc.Arguments = '"' + $vbs + '"'
   $sc.WorkingDirectory = $repo
-  $sc.IconLocation = $ico
+  $sc.IconLocation = $shortcutIcon
   $sc.Description = 'Memoria — gacha energy & daily tracker'
   $sc.Save()
 }

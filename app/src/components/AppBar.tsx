@@ -12,6 +12,7 @@ import { GameScope } from './GameScope';
 const ROUTES: Array<{ id: Tab; label: string }> = [
   { id: 'home', label: 'Dashboard' },
   { id: 'timeline', label: 'Timeline' },
+  { id: 'livestreams', label: 'Livestreams' },
   { id: 'settings', label: 'Settings' },
 ];
 
@@ -226,8 +227,8 @@ export function AppBar() {
               type="button"
               onClick={() => setTab(route.id)}
               aria-current={active ? 'page' : undefined}
-              className={`relative z-10 min-h-11 flex-1 rounded-ui-full border border-transparent px-3 text-body font-medium transition-colors sm:min-h-9 sm:flex-none sm:text-meta ${
-                active ? 'text-fg' : 'text-muted hover:text-fg-soft'
+              className={`relative z-10 min-h-11 min-w-0 flex-1 rounded-ui-full border border-transparent px-1.5 text-meta font-medium transition-colors sm:min-h-9 sm:flex-none sm:px-3 ${
+                active ? 'text-fg' : 'text-fg-soft hover:text-fg'
               }`}
             >
               {route.label}

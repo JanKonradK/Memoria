@@ -73,15 +73,17 @@ export function onColor(hex: string): string {
 }
 
 /** Keeps a palette role intact, lifting only as far as legibility demands. */
-function legible(color: string, ground: string): string {
-  if (contrast(color, ground) >= 3) return color;
+function legible(color: string, ground: string, minimum = 3): string {
+  if (contrast(color, ground) >= minimum) return color;
   const liftLight = contrast('#ffffff', ground) >= contrast('#000000', ground);
   // The endpoint retains ~40% of the source, so a pale cream primary is still
   // recognisably that game's cream after the walk.
-  const toward = liftLight ? mix(color, '#ffffff', 0.4) : mix(color, '#000000', 0.4);
+  const toward = liftLight
+    ? mix(color, '#ffffff', minimum > 3 ? 0.2 : 0.4)
+    : mix(color, '#000000', minimum > 3 ? 0.2 : 0.4);
   for (let step = 1; step <= 20; step += 1) {
     const candidate = mix(color, toward, 1 - step / 20);
-    if (contrast(candidate, ground) >= 3.2) return candidate;
+    if (contrast(candidate, ground) >= minimum + 0.2) return candidate;
   }
   return toward;
 }
@@ -206,9 +208,12 @@ export function gameInk(game: GameColors, ground: string): string {
  * light for cream, in every slot) still fall through to the lift, which is the
  * correct answer when the owner has not supplied a dark option.
  */
-export function gameTitleInk(game: GameColors, ground: string): string {
+export function gameTitleInk(game: GameColors, ground: string, minimum = 3): string {
   const { primary, secondary, accent } = trioOf(game);
-  return [primary, secondary, accent].find((candidate) => contrast(candidate, ground) >= 3) ?? legible(primary, ground);
+  return (
+    [primary, secondary, accent].find((candidate) => contrast(candidate, ground) >= minimum) ??
+    legible(primary, ground, minimum)
+  );
 }
 
 /** The second-priority colour: title ink and the lead tube tone. */

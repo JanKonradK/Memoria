@@ -2,12 +2,10 @@
 // the Windows .ico generator. Renders the Memoria app icon: the infinity mark (see
 // mobius.mjs) in white-into-gold on a pure black squircle.
 //
-// Everything is drawn from a signed distance field rather than sampled shapes,
-// so edges antialias analytically and the bevel can read the distance and the
-// surface normal at every pixel — that is what keeps the sword tips genuinely
-// pointed at 512px and still legible at 16px.
+// The raster uses the same cubic outline as the SVG mark. Subpixel coverage
+// preserves its pointed ends; small icons use a larger optical fit and flat ink.
 import { deflateSync } from 'node:zlib';
-import { bandBounds, bandSamples } from './mobius.mjs';
+import { MARK, markPath } from './mobius.mjs';
 
 // --- minimal PNG encoder (RGBA, 8-bit) ---
 const CRC_TABLE = new Int32Array(256).map((_, n) => {
@@ -110,78 +108,75 @@ const FIELD = [0x00, 0x00, 0x00];
 const GLYPH_TOP = [0xff, 0xff, 0xff];
 const GLYPH_MID = [0xff, 0xfa, 0xed];
 const GLYPH_BOTTOM = [0xe8, 0xb4, 0x5a];
-const GLYPH_SHADE = [0x8a, 0x5c, 0x14];
-const WHITE = [0xff, 0xff, 0xff];
-/** Up and to the left, so the mark is lit like the reference app icons. */
-const LIGHT = [-0.42, -0.91];
-
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
-function smoothstep(edge0, edge1, x) {
-  const t = clamp01((x - edge0) / (edge1 - edge0));
-  return t * t * (3 - 2 * t);
-}
-
-/**
- * Signed distance (in pixels, negative inside) to the squircle, plus the two
- * fields the glyph shading needs: the distance to the band and the outward
- * normal of the nearest band edge.
- */
-function bandField(size, scale, cx, cy, pad) {
-  const sd = new Float32Array(size * size).fill(Infinity);
-  const nx = new Float32Array(size * size);
-  const ny = new Float32Array(size * size);
-  const halfWidth = new Float32Array(size * size);
-  const { band } = bandSamples();
-
-  for (const s of band) {
-    // Screen space: y grows downward, so the centreline's y is negated once here
-    // and every normal derived from it follows.
-    const px = cx + s.x * scale;
-    const py = cy - s.y * scale;
-    const r = s.w * scale;
-    const reach = r + pad;
-    const x0 = Math.max(0, Math.floor(px - reach));
-    const x1 = Math.min(size - 1, Math.ceil(px + reach));
-    const y0 = Math.max(0, Math.floor(py - reach));
-    const y1 = Math.min(size - 1, Math.ceil(py + reach));
-    for (let y = y0; y <= y1; y++) {
-      for (let x = x0; x <= x1; x++) {
-        const dx = x + 0.5 - px;
-        const dy = y + 0.5 - py;
-        const d = Math.hypot(dx, dy);
-        const value = d - r;
-        const i = y * size + x;
-        if (value >= sd[i]) continue;
-        sd[i] = value;
-        // Outward edge normal: away from the centreline, which for a point off
-        // the spine is simply the direction from the nearest spine point.
-        const inv = d > 1e-6 ? 1 / d : 0;
-        nx[i] = dx * inv;
-        ny[i] = dy * inv;
-        halfWidth[i] = r;
-      }
+/** Supersampled scanline fill of the shared cubic outline, with nonzero winding. */
+function markCoverage(size, fit) {
+  const samples = 4;
+  // The launcher silhouette closes the decorative break: pointed caps overlap
+  // at this scale and otherwise leave two tiny notches on the outer lobe.
+  const path = markPath({
+    width: size,
+    height: size,
+    padding: (size * (1 - fit)) / 2,
+    precision: 5,
+    mark: { ...MARK, gapArc: 0, tipLength: 0, samples: MARK.samples * 16 },
+  });
+  const commands = path.match(/[MC][^MCZ]+/g);
+  const points = [];
+  for (const command of commands) {
+    const values = command.slice(1).trim().split(/[ ,]+/).map(Number);
+    if (command[0] === 'M') {
+      points.push(values);
+      continue;
+    }
+    const [x0, y0] = points.at(-1);
+    const [x1, y1, x2, y2, x3, y3] = values;
+    for (let step = 1; step <= 12; step++) {
+      const t = step / 12;
+      const u = 1 - t;
+      points.push([
+        u ** 3 * x0 + 3 * u ** 2 * t * x1 + 3 * u * t ** 2 * x2 + t ** 3 * x3,
+        u ** 3 * y0 + 3 * u ** 2 * t * y1 + 3 * u * t ** 2 * y2 + t ** 3 * y3,
+      ]);
     }
   }
-  return { sd, nx, ny, halfWidth };
+  const cover = new Float32Array(size * size);
+  for (let sy = 0; sy < size * samples; sy++) {
+    const y = (sy + 0.5) / samples;
+    const crossings = [];
+    for (let index = 0; index < points.length; index++) {
+      const [ax, ay] = points[index];
+      const [bx, by] = points[(index + 1) % points.length];
+      if ((ay <= y && by > y) || (by <= y && ay > y)) {
+        crossings.push({ x: ax + ((y - ay) * (bx - ax)) / (by - ay), direction: by > ay ? 1 : -1 });
+      }
+    }
+    crossings.sort((a, b) => a.x - b.x);
+    let winding = 0;
+    for (let index = 0; index < crossings.length - 1; index++) {
+      winding += crossings[index].direction;
+      if (!winding) continue;
+      const first = Math.max(0, Math.ceil(crossings[index].x * samples - 0.5));
+      const last = Math.min(size * samples, Math.ceil(crossings[index + 1].x * samples - 0.5));
+      for (let sx = first; sx < last; sx++)
+        cover[Math.floor(sy / samples) * size + Math.floor(sx / samples)] += 1 / (samples * samples);
+    }
+  }
+  return cover;
 }
 
 /** Draw the icon and return the raw RGBA pixel buffer for `size`×`size`. */
 export function drawPixels(size, { maskable = false, squircle = true } = {}) {
   const px = new Uint8Array(size * size * 4);
-  const bounds = bandBounds();
-  // Maskable icons must keep their content inside the safe circle; the plain
-  // icon can run closer to the edge because the squircle is the frame.
-  const fit = maskable ? 0.62 : 0.78;
-  const scale = (fit * size) / bounds.width;
-  const cx = size / 2 - ((bounds.minX + bounds.maxX) / 2) * scale;
-  const cy = size / 2 + ((bounds.minY + bounds.maxY) / 2) * scale;
-  const glyphTop = cy - bounds.maxY * scale;
-  const glyphHeight = bounds.height * scale;
-
-  // Just enough padding to antialias the edge. This used to be sized from the
-  // halo radius; with no halo it only has to cover the coverage ramp.
-  const field = bandField(size, scale, cx, cy, Math.max(2, size * 0.02));
+  // Optical sizing gives Windows' 16–32 px entries enough visible stroke area.
+  // Larger icons retain the established padding; maskable icons keep a safe inset.
+  const fit = maskable ? 0.62 : size <= 32 ? 0.88 : size <= 48 ? 0.84 : 0.78;
+  const coverage = markCoverage(size, fit);
+  const occupied = [];
+  for (let y = 0; y < size; y++) if (coverage.subarray(y * size, (y + 1) * size).some((v) => v > 0)) occupied.push(y);
+  const glyphTop = occupied[0] ?? 0;
+  const glyphHeight = (occupied.at(-1) ?? size - 1) - glyphTop + 1;
 
   // Squircle: a superellipse, the shape every platform's app icon actually is.
   const exponent = 4.4;
@@ -207,26 +202,23 @@ export function drawPixels(size, { maskable = false, squircle = true } = {}) {
       // the shell — every one of those was a soft edge competing with a symbol
       // whose whole job is to be crisp.
       let color = FIELD;
-      const dist = field.sd[i];
 
       let alpha = shell * 255;
 
       // The mark itself.
-      const cover = clamp01(0.5 - dist);
+      const cover = coverage[i];
       if (cover > 0) {
         // White through the top two thirds, warming to gold only at the bottom.
         // The old split put gold at the midpoint, so almost none of the mark was
         // ever actually white.
         const g = clamp01((y + 0.5 - glyphTop) / glyphHeight);
-        let glyph = g < 0.68 ? mix(GLYPH_TOP, GLYPH_MID, g / 0.68) : mix(GLYPH_MID, GLYPH_BOTTOM, (g - 0.68) / 0.32);
-        // Bevel, tightened to the outermost sliver of the band. A wide soft
-        // bevel is what made the mark look airbrushed; keeping it narrow leaves
-        // a hard lit edge and a flat white body.
-        const w = field.halfWidth[i] || 1;
-        const edge = smoothstep(0.62, 1, 1 + dist / w);
-        const lit = field.nx[i] * LIGHT[0] + field.ny[i] * LIGHT[1];
-        glyph = mix(glyph, WHITE, clamp01(lit) * edge * 0.5);
-        glyph = mix(glyph, GLYPH_SHADE, clamp01(-lit) * edge * 0.4);
+        // Flat white at tiny sizes avoids brown bevel pixels swallowing the stroke.
+        const glyph =
+          size <= 32
+            ? GLYPH_TOP
+            : g < 0.68
+              ? mix(GLYPH_TOP, GLYPH_MID, g / 0.68)
+              : mix(GLYPH_MID, GLYPH_BOTTOM, (g - 0.68) / 0.32);
         color = mix(color, glyph, cover);
         alpha = Math.max(alpha, cover * 255);
       }

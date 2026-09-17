@@ -2,6 +2,7 @@ import { emptyState, PRESETS, type AppState, type Game, type GameEvent } from '@
 import { describe, expect, it } from 'vitest';
 import { seedBundledEvents } from '../src/store';
 import { SEED_EVENTS, SEED_UPDATED } from '../src/data/seed-events';
+import { eventFingerprint } from '../src/data/seed-events';
 
 /**
  * The promise made to anyone who pulls a new build: their document gains the
@@ -49,6 +50,31 @@ function friendsDocument(): AppState {
 }
 
 describe('shipping a new bundle to an existing install', () => {
+  it('corrects a same-day broadcast forecast but preserves edits and deletions', () => {
+    const base = seedBundledEvents({ ...emptyState(), games: [gameFor('nte', 'nte-1')] }, AT);
+    const broadcast = base.events.find((event) => event.sourceKey === 'seed:nte:1.4-livestream')!;
+    const stale = {
+      ...broadcast,
+      name: 'NTE 1.4 Preview Special Program — predicted window',
+      end: Date.parse('2026-09-22T14:30:00Z'),
+    };
+    stale.seedHash = eventFingerprint(stale);
+    for (const kind of ['pristine', 'edited', 'deleted'] as const) {
+      const row = {
+        ...stale,
+        ...(kind === 'edited' ? { notes: 'My note' } : {}),
+        ...(kind === 'deleted' ? { deleted: true } : {}),
+      };
+      const before = { ...base, events: base.events.map((event) => (event.id === row.id ? row : event)) };
+      const after = seedBundledEvents(before, Date.parse('2026-09-17T12:00:00Z'));
+      const actual = after.events.find((event) => event.id === row.id)!;
+      if (kind === 'pristine') {
+        expect(actual.name).toBe('NTE 1.4 Preview Special Program');
+        expect(actual.start).toBe(Date.parse('2026-09-16T11:30:00Z'));
+        expect(actual.end).toBe(Date.parse('2026-09-16T12:30:00Z'));
+      } else expect(actual).toEqual(row);
+    }
+  });
   it('adopts every seeded row without changing one of them', () => {
     const before = friendsDocument();
     const after = seedBundledEvents(before, AT);

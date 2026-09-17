@@ -38,6 +38,7 @@ import {
   type PlannedSeed,
 } from './data/seed-events';
 import { uid } from './util';
+import { sortTimelineEvents } from './timeline-sort';
 
 const IDB_KEY = 'memoria-state';
 /**
@@ -112,6 +113,9 @@ function applyEventUpsert(byId: Map<string, GameEvent>, ev: EventUpsert): void {
     gameId: ev.gameId,
     name: ev.name ?? 'Event',
     type: ev.type ?? 'event',
+    category: ev.category,
+    bannerKind: ev.bannerKind,
+    sort: ev.sort,
     start: ev.start ?? t,
     end: ev.end ?? t + 7 * 86_400_000,
     dailyTouch: ev.dailyTouch ?? false,
@@ -234,6 +238,8 @@ function applySeedPlan(state: AppState, plan: PlannedSeed[]): AppState {
       gameId: item.gameId,
       name: seed.name,
       type: seed.type,
+      category: seed.category,
+      bannerKind: seed.bannerKind,
       start: item.start,
       end: item.end,
       dailyTouch: seed.dailyTouch ?? false,
@@ -441,6 +447,8 @@ export interface AppStore {
 
   upsertEvent(ev: EventUpsert): void;
   upsertEvents(list: EventUpsert[]): void;
+  reorderEvents(gameId: string, orderedIds: string[]): void;
+  resetEventOrder(gameId: string): void;
   deleteEvent(id: string): void;
 
   upsertRule(rule: Partial<AlertRule> & { type: AlertRule['type']; gameId: string | null }): void;
@@ -898,6 +906,29 @@ export const useApp = create<AppStore>((set, get) => ({
       for (const event of list) applyEventUpsert(byId, event);
       return { ...s, events: [...byId.values()] };
     });
+  },
+
+  reorderEvents(gameId, orderedIds) {
+    const state = get().state;
+    if (!state.games.some((game) => game.id === gameId && !game.deleted)) return;
+    const events = sortTimelineEvents(state.events.filter((event) => event.gameId === gameId && !event.deleted));
+    const selected = new Set(orderedIds);
+    if (selected.size !== orderedIds.length || orderedIds.some((id) => !events.some((event) => event.id === id)))
+      return;
+    if (orderedIds.length < 2) return;
+    // Replace only visible slots. Search, history, and time-window exclusions keep their place.
+    let cursor = 0;
+    const order = events.map((event) => (selected.has(event.id) ? orderedIds[cursor++] : event.id));
+    if (order.every((id, index) => id === events[index].id)) return;
+    get().upsertEvents(order.map((id, sort) => ({ id, gameId, sort })));
+  },
+
+  resetEventOrder(gameId) {
+    get().upsertEvents(
+      get()
+        .state.events.filter((event) => event.gameId === gameId && !event.deleted && event.sort !== undefined)
+        .map((event) => ({ id: event.id, gameId, sort: undefined })),
+    );
   },
 
   deleteEvent(id) {

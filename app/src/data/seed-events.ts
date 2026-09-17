@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
-import type { AppState, EventType, Game, GameEvent } from '@memoria/shared';
+import type { AppState, BannerKind, EventType, Game, GameEvent } from '@memoria/shared';
 import { presetForGame } from '@memoria/shared';
-import { SEED_EVENTS, SEED_UPDATED, type SeedEvent } from './seed-feed';
+import { SEED_EVENTS, SEED_UPDATED, SEED_WITHDRAWN_KEYS, type SeedEvent } from './seed-feed';
 
 // Keep the public import path stable. Update event facts in seed-feed.ts.
 export { SEED_EVENTS, SEED_UPDATED, SEED_RETENTION_MS, type SeedEvent } from './seed-feed';
@@ -34,6 +34,8 @@ export interface PlannedSeed {
  * event, and a done row should still get a corrected end date.
  */
 function fingerprint(fields: {
+  bannerKind?: BannerKind;
+  category?: 'teyvat' | 'miliastra';
   name: string;
   type: EventType;
   start: number;
@@ -50,6 +52,10 @@ function fingerprint(fields: {
     fields.dailyTouch ? '1' : '0',
     fields.notify ? '1' : '0',
     fields.notes,
+    // Keep pre-category hashes valid so existing pristine rows can be updated.
+    ...(fields.category ? [fields.category] : []),
+    // Absent fields preserve hashes written before banner classification.
+    ...(fields.bannerKind ? [`banner:${fields.bannerKind}`] : []),
   ].join('\u0000');
   // FNV-1a. Not cryptographic and does not need to be: it guards against
   // accidental collision between two versions of the same row, not an attacker.
@@ -64,6 +70,8 @@ function fingerprint(fields: {
 /** What the bundle says this row should be. */
 function seedFingerprint(seed: SeedEvent, start: number, end: number): string {
   return fingerprint({
+    bannerKind: seed.bannerKind,
+    category: seed.category,
     name: seed.name,
     type: seed.type,
     start,
@@ -146,14 +154,15 @@ export function planSeedImport(state: AppState, now: number): PlannedSeed[] {
   for (const seed of SEED_EVENTS) {
     for (const game of gamesByPreset.get(seed.game) ?? []) {
       const start = parseServerTime(seed.start, seed.startTimezone ?? seed.timezone ?? game.tz);
-      const end = parseServerTime(seed.end, seed.timezone ?? game.tz);
+      const end = parseServerTime(seed.end, seed.endTimezone ?? seed.timezone ?? game.tz);
       if (start == null || end == null || end <= start) continue;
       const hash = seedFingerprint(seed, start, end);
       const existing = byKey.get(sourceIdentity(game.id, seed.sourceKey));
       if (existing) {
         seenKeys.add(existing.id);
-        if (!refreshSeeds || existing.deleted) continue;
+        if (existing.deleted) continue;
         if (existing.seedHash === undefined) {
+          if (!refreshSeeds) continue;
           // Imported before fingerprints existed, so there is no baseline to
           // compare against and no way to tell an edit from an older bundle.
           // Apply the rule that was in force when the row was written — dates and
@@ -169,6 +178,8 @@ export function planSeedImport(state: AppState, now: number): PlannedSeed[] {
           }
           continue;
         }
+        // Compare stamped rows even for a same-day feed correction. The date
+        // stamp gates legacy adoption and removals, not safe fingerprint updates.
         // Dates and name are not all a refresh corrects: a row promoted from
         // community estimate to official notice keeps its window and changes only
         // `notify`. So the comparison is the whole fingerprint — but it is gated
@@ -205,8 +216,9 @@ export function planSeedImport(state: AppState, now: number): PlannedSeed[] {
   // gets stamped, so it can never be withdrawn here. Everything still in the
   // bundle today is stamped by the pass above, so from the next bundle onward
   // withdrawal is complete. The gap is bounded and shrinks to nothing.
-  if (refreshSeeds) {
+  {
     for (const event of state.events) {
+      if (!refreshSeeds && !SEED_WITHDRAWN_KEYS.includes(event.sourceKey ?? '')) continue;
       if (event.deleted || event.done || seenKeys.has(event.id)) continue;
       if (!isPristine(event)) continue;
       out.push({ kind: 'remove', eventId: event.id, gameId: event.gameId });

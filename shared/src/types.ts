@@ -148,12 +148,18 @@ export interface Completion extends Syncable {
  * plausible date RANGE rather than as a single guessed moment.
  */
 export type EventType = 'banner' | 'event' | 'cycle' | 'maintenance' | 'livestream' | 'custom';
+export type BannerKind = 'character' | 'weapon' | 'support' | 'memory' | 'other';
 
 export interface GameEvent extends Syncable {
   id: string;
   gameId: string;
   name: string;
   type: EventType;
+  category?: 'teyvat' | 'miliastra';
+  /** What the banner awards; absent for unclassified or cosmetic banners. */
+  bannerKind?: BannerKind;
+  /** Manual timeline position; absent means automatic order. */
+  sort?: number;
   start: number;
   end: number;
   /** Requires a daily touch (login/claim) — always shown on the game card's event strip while active. */

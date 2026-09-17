@@ -1,3 +1,4 @@
+import { EventTags } from './EventTags';
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { AppState, ChecklistItem, Game, GameUrgency, Snapshot } from '@memoria/shared';
 import { effectiveResourceKind, projectEnergy } from '@memoria/shared';
@@ -402,7 +403,8 @@ export function EventStrip({
             onClick={() => onOpenEvent(ev.id, game.id)}
             className="flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-0.5 text-left text-body transition hover:bg-fill-2 sm:min-h-8"
           >
-            <Pill>{ev.type === 'cycle' || ev.type === 'banner' || ev.type === 'livestream' ? ev.type : 'event'}</Pill>
+            {ev.type !== 'banner' && <Pill>{ev.type === 'cycle' || ev.type === 'livestream' ? ev.type : 'event'}</Pill>}
+            <EventTags game={game} event={ev} />
             {ev.dailyTouch && <Pill variant="warn">daily</Pill>}
             <span className="truncate text-fg-soft">{ev.name}</span>
             <Tooltip content="d = days · h = hours · m = minutes">

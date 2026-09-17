@@ -8,7 +8,6 @@ import { gameRim, gameTitleInk, mix } from '../game-color';
 import { useReducedMotion } from '../hooks';
 import { duration, easing } from '../motion';
 import { useGround } from '../theme';
-import { Ring } from './Ring';
 
 /**
  * Single page-width container shared by every tab so all edges and shell
@@ -40,7 +39,6 @@ export function GameBadge({
   color2,
   color3,
   size = 'md',
-  progress,
   className = '',
 }: {
   short: string;
@@ -48,62 +46,33 @@ export function GameBadge({
   color2?: string;
   color3?: string;
   size?: 'sm' | 'md' | 'lg';
-  /** 0..1 — closes the ring's gap. Pass where checklist data is already to hand. */
-  progress?: number;
   className?: string;
 }) {
-  // An INCOMPLETE RING around the short code. Shorts are user-editable and
-  // arbitrary (the presets alone include 'WuWa'), so a strict circle would clip
-  // worse than the old hexagon did. The ring is a stadium: circular caps, flat
-  // edges that stretch to the label. Sized to its own content via inline-flex
-  // padding rather than an estimated per-character width, because estimating
-  // undercounts wide glyphs like W.
-  //
-  // Three steps, one letter-spacing. The sizes used to run 20/24/32 against
-  // three different tracking values chosen per size, which is two scales doing
-  // one job; md moves to 26 so the steps are even.
+  // A complete border identifies the game; progress belongs to its task controls.
+  // Content-sized widths keep custom short names intact.
   const badgeHeights = { sm: 20, md: 26, lg: 32 } as const;
-  const strokeWidths = { sm: 1.5, md: 1.75, lg: 2 } as const;
-  const textSizes = { sm: 'text-caption', md: 'text-caption', lg: 'text-label' };
+  const textSizes = { sm: 'text-caption', md: 'text-meta', lg: 'text-body' };
   const height = badgeHeights[size];
-  const strokeWidth = strokeWidths[size];
-  const c2 = color2 ?? color;
-  // Default leaves a deliberate gap so the "incomplete" language reads even
-  // where no progress data is available.
-  const sweep = progress == null ? 0.82 : Math.min(1, Math.max(0, progress));
-
-  // Every surface here used to be `tint()`, which is a white-ish alpha over
-  // whatever is behind it. On charcoal that lifts; on cream it evaporates, and
-  // a pale primary drew a white badge on a white ground. Mixing toward the
-  // actual ground gives the same softening in either direction.
   const ground = useGround();
-  const ink = gameTitleInk({ color, color2, color3 }, ground);
   const rim = gameRim({ color, color2, color3 }, ground);
+  const fill = mix(rim, ground, 0.08);
+  const ink = gameTitleInk({ color, color2, color3 }, fill, 4.5);
 
   return (
     <span
-      className={`relative inline-flex shrink-0 items-center justify-center align-middle font-black tracking-wider ${textSizes[size]} ${className}`}
+      data-game-badge
+      className={`inline-flex shrink-0 items-center justify-center border align-middle font-semibold ${textSizes[size]} ${className}`}
       style={{
         height,
         minWidth: height,
-        paddingInline: height * 0.42,
-        borderRadius: height / 2,
-        background: `linear-gradient(135deg, ${mix(rim, ground, 0.1)}, ${mix(c2, ground, 0.16)})`,
+        paddingInline: height * 0.38,
+        borderRadius: 'var(--radius-ui-sm)',
+        borderColor: mix(rim, ground, 0.58),
+        backgroundColor: fill,
+        color: ink,
       }}
     >
-      <span aria-hidden className="pointer-events-none absolute inset-0">
-        <Ring
-          size={height}
-          width="fluid"
-          strokeWidth={strokeWidth}
-          sweep={sweep}
-          stroke={[ink, rim]}
-          track={mix(rim, ground, 0.22)}
-        />
-      </span>
-      <span className="relative leading-none" style={{ color: ink }}>
-        {short}
-      </span>
+      <span className="leading-none">{short}</span>
     </span>
   );
 }

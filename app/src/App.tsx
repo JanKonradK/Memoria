@@ -13,7 +13,7 @@ import { AppBar } from './components/AppBar';
 import { Btn } from './components/ui';
 
 /** Left to right, matching the route pill in the app bar. */
-const TAB_ORDER = ['home', 'timeline', 'settings'] as const;
+const TAB_ORDER = ['home', 'timeline', 'livestreams', 'settings'] as const;
 
 const ONBOARDING_KEY = 'memoria-onboarding';
 /** The key this flag shipped under before the rename; still honoured on read. */
@@ -44,6 +44,9 @@ const DashboardPage = lazy(() =>
 );
 const TimelinePage = lazy(() => import('./components/Timeline').then((module) => ({ default: module.TimelinePage })));
 const SettingsPage = lazy(() => import('./components/Settings').then((module) => ({ default: module.SettingsPage })));
+const LivestreamsPage = lazy(() =>
+  import('./components/Livestreams').then((module) => ({ default: module.LivestreamsPage })),
+);
 const GameDetailSheet = lazy(() =>
   import('./components/GameDetail').then((module) => ({ default: module.GameDetailSheet })),
 );
@@ -55,7 +58,7 @@ const ReminderSheet = lazy(() =>
 const UserGuide = lazy(() => import('./components/UserGuide').then((module) => ({ default: module.UserGuide })));
 
 /** Keep countdown updates inside the active page, away from editors and the shell. */
-function LivePage({ tab }: { tab: Exclude<Tab, 'settings'> }) {
+function LivePage({ tab }: { tab: 'home' | 'timeline' }) {
   const now = useNow(30_000);
   return tab === 'home' ? <DashboardPage now={now} /> : <TimelinePage now={now} />;
 }
@@ -219,7 +222,13 @@ export default function App() {
             The exit slide is what this gives up; the direction still reads. */}
         <Suspense fallback={<div className="px-5 py-12 text-center text-body text-dim">Loading view…</div>}>
           <div key={tab} className="page-enter" data-direction={direction}>
-            {tab === 'settings' ? <SettingsPage /> : <LivePage tab={tab} />}
+            {tab === 'settings' ? (
+              <SettingsPage />
+            ) : tab === 'livestreams' ? (
+              <LivestreamsPage />
+            ) : (
+              <LivePage tab={tab} />
+            )}
           </div>
         </Suspense>
       </main>
