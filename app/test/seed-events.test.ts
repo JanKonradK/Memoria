@@ -66,6 +66,27 @@ function importedMaintenance(): GameEvent {
 }
 
 describe('planSeedImport', () => {
+  it('imports urgent Genshin gameplay cutoffs separately from the later reward claim', () => {
+    const state = {
+      ...emptyState(),
+      games: [account('eu', 'UTC+1'), account('us', 'UTC-5'), account('asia', 'UTC+8')],
+    };
+    const plans = planSeedImport(state, Date.parse('2026-09-17T00:00:00Z'));
+    const bastion = plans.filter((row) => row.seed?.sourceKey === 'genshin:21816');
+    expect(bastion.map((row) => [row.gameId, row.end])).toEqual([
+      ['eu', Date.parse('2026-09-17T02:59:00Z')],
+      ['us', Date.parse('2026-09-17T08:59:00Z')],
+    ]);
+    const quests = plans.find(
+      (row) => row.gameId === 'eu' && row.seed?.sourceKey === 'seed:genshin:7.0-starlight-voyage-quests',
+    );
+    const claims = plans.find((row) => row.gameId === 'eu' && row.seed?.sourceKey === 'genshin:21831');
+    expect(quests?.end).toBe(Date.parse('2026-09-17T03:00:00Z'));
+    expect(claims?.end).toBe(Date.parse('2026-09-21T02:59:00Z'));
+    expect(quests?.seed?.notify).not.toBe(false);
+    expect(claims?.seed?.notify).not.toBe(false);
+  });
+
   it('opens ZZZ after global maintenance but closes at each server deadline', () => {
     const games = [account('eu', 'Etc/GMT-1'), account('us', 'Etc/GMT+5'), account('asia', 'Etc/GMT-8')].map(
       (game) => ({ ...game, presetKey: 'zzz', name: 'Zenless Zone Zero', short: 'ZZZ' }),
@@ -172,10 +193,10 @@ describe('livestream seeds', () => {
     }
   });
 
-  it('puts every predicted window in the future of the refresh stamp', () => {
-    // A stream that has already aired is not a reminder to update anything.
-    for (const seed of streams) {
-      expect(seed.start.slice(0, 10) >= SEED_UPDATED).toBe(true);
+  it('keeps predicted windows active or future at the refresh stamp', () => {
+    // A window can already be open. Dated broadcasts remain historical facts.
+    for (const seed of streams.filter((seed) => seed.name.includes('predicted'))) {
+      expect(seed.end.slice(0, 10) >= SEED_UPDATED).toBe(true);
     }
   });
 });

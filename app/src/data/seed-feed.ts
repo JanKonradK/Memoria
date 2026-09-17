@@ -179,7 +179,7 @@ import type { EventType } from '@memoria/shared';
  */
 
 /** When the bundled data was last refreshed. */
-export const SEED_UPDATED = '2026-09-09';
+export const SEED_UPDATED = '2026-09-17';
 
 /**
  * How long a finished event is worth keeping. Two months.
@@ -321,15 +321,6 @@ export const SEED_EVENTS: SeedEvent[] = [
     sourceKey: 'genshin:21847',
   },
   // Abyss and Theater BOTH run permanently. Abyss resets the 16th, Theater the 1st.
-  {
-    game: 'genshin',
-    name: 'Spiral Abyss',
-    type: 'cycle',
-    start: '2026-06-16 04:00',
-    end: '2026-07-16 04:00',
-    notes: 'Resets the 16th, monthly.',
-    sourceKey: 'seed:genshin:abyss-2026-06',
-  },
   {
     game: 'genshin',
     name: 'Spiral Abyss',
@@ -540,11 +531,41 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: 'Overflowing Abundance — double drops',
     type: 'event',
     dailyTouch: true,
-    notify: false,
-    start: '2026-09-14 10:00',
+    start: '2026-09-14 04:00',
     end: '2026-09-21 03:59',
-    notes: 'Dates approximate — verify in-game.',
+    notes:
+      'Official announcement 20888: server-local times. Three double talent-book or weapon-material claims per day.',
     sourceKey: 'seed:genshin:7.0-abundance',
+  },
+  {
+    game: 'genshin',
+    name: 'Trial of the Bastion',
+    type: 'event',
+    start: '2026-09-07 10:00',
+    end: '2026-09-17 03:59',
+    notes:
+      'Official announcement 21816: both boundaries are server-local. Five defense trials; each requires the previous trial. Requires AR20, Prologue Act III and Gunfire in the Silent Lands.',
+    sourceKey: 'genshin:21816',
+  },
+  {
+    game: 'genshin',
+    name: 'Starlight Voyage: Joyous Moment — quests',
+    type: 'event',
+    start: '2026-09-07 10:00',
+    end: '2026-09-17 04:00',
+    notes:
+      'Official announcement 21831: quest completion ends before the reward claim window. Requires an awakened Miliastra Wonderland Manekin. Times are server-local.',
+    sourceKey: 'seed:genshin:7.0-starlight-voyage-quests',
+  },
+  {
+    game: 'genshin',
+    name: 'Starlight Voyage: Joyous Moment — claim rewards',
+    type: 'event',
+    start: '2026-09-07 10:00',
+    end: '2026-09-21 03:59',
+    notes:
+      'Official announcement 21831: claim Prismatic Crystals before this deadline. Quests close September 17 at 04:00 server time; this later close does not extend gameplay.',
+    sourceKey: 'genshin:21831',
   },
   {
     game: 'genshin',
@@ -659,6 +680,69 @@ export const SEED_EVENTS: SeedEvent[] = [
     notes:
       'Derived the same way 7.0 was and from the same feed: every 7.0 notice expires 2026-09-22 23:00 on the Europe clock, and HoYo prints "estimated to take 5 hours" for every version update. The 7.1 notice itself is not out.',
     sourceKey: 'seed:genshin:7.1-maint',
+  },
+  // Official 7.1 calendar gives dates in UTC+8, without hours. These display
+  // whole calendar days until timed notices publish; they must not send alerts.
+  {
+    game: 'genshin',
+    name: 'Silverwing in Pursuit of the Moon',
+    type: 'event',
+    start: '2026-09-24 00:00',
+    end: '2026-10-12 23:59',
+    timezone: 'UTC+8',
+    notify: false,
+    notes:
+      'Official calendar dates only; displayed hours are placeholders. Exact server schedule awaits its notice. Source: https://www.hoyolab.com/article/46673425',
+    sourceKey: 'seed:genshin:7.1-silverwing',
+  },
+  {
+    game: 'genshin',
+    name: 'Predictive Victory Dynamics',
+    type: 'event',
+    start: '2026-10-12 00:00',
+    end: '2026-10-20 23:59',
+    timezone: 'UTC+8',
+    notify: false,
+    notes:
+      'Official calendar dates only; displayed hours are placeholders. Announcement period continues to October 23. Exact server schedule awaits its notice. Source: https://www.hoyolab.com/article/46673425',
+    sourceKey: 'seed:genshin:7.1-predictive-victory',
+  },
+  {
+    game: 'genshin',
+    name: 'Carefree Snowball Fight',
+    type: 'event',
+    start: '2026-10-21 00:00',
+    end: '2026-11-02 23:59',
+    timezone: 'UTC+8',
+    notify: false,
+    notes:
+      'Official calendar dates only; displayed hours are placeholders. Exact server schedule awaits its notice. Source: https://www.hoyolab.com/article/46673425',
+    sourceKey: 'seed:genshin:7.1-snowball',
+  },
+  {
+    game: 'genshin',
+    name: 'Overflowing Favor',
+    type: 'event',
+    start: '2026-10-26 00:00',
+    end: '2026-11-02 23:59',
+    timezone: 'UTC+8',
+    dailyTouch: true,
+    notify: false,
+    notes:
+      'Official calendar dates only; displayed hours are placeholders. Exact server schedule awaits its notice. Source: https://www.hoyolab.com/article/46673425',
+    sourceKey: 'seed:genshin:7.1-overflowing-favor',
+  },
+  {
+    game: 'genshin',
+    name: 'Stygian Onslaught',
+    type: 'cycle',
+    start: '2026-09-30 00:00',
+    end: '2026-11-03 23:59',
+    timezone: 'UTC+8',
+    notify: false,
+    notes:
+      'v7.1 rotation. Official calendar dates only; displayed hours are placeholders. Exact server schedule awaits its notice. Source: https://www.hoyolab.com/article/46673425',
+    sourceKey: 'seed:genshin:7.1-stygian',
   },
 
   /* ================================================== HONKAI: STAR RAIL — v4.4 "In Ravages
@@ -833,14 +917,6 @@ export const SEED_EVENTS: SeedEvent[] = [
   // --- maintenance
   {
     game: 'hsr',
-    name: 'v4.4 update maintenance',
-    type: 'maintenance',
-    start: '2026-07-14 23:00',
-    end: '2026-07-15 04:00',
-    sourceKey: 'seed:hsr:4.4-maint',
-  },
-  {
-    game: 'hsr',
     name: 'v4.5 update maintenance',
     type: 'maintenance',
     start: '2026-08-25 23:00',
@@ -931,9 +1007,8 @@ export const SEED_EVENTS: SeedEvent[] = [
     notes: 'Domain Genesis. Officially SHORTENED to 5 weeks alongside Apocalyptic Shadow; both run on into v4.6.',
     sourceKey: 'seed:hsr:pf-4.5',
   },
-  // Phase-swap times (11:59 / 12:00) and the 15:00 close copy the 4.4 handoff, which was
-  // verified from t_lc. The 4.3 rows closed at maintenance instead, so this is a
-  // convention rather than a rule — recheck when the 4.5 warp notice lands.
+  // Phase 1 and phase 2 use their published local times. The phase 2 close
+  // conflicts with the global maintenance boundary; those rows remain silent.
   {
     game: 'hsr',
     name: 'Robin • Summeretto · Hyacine rerun (phase 1)',
@@ -960,9 +1035,9 @@ export const SEED_EVENTS: SeedEvent[] = [
     type: 'banner',
     notify: false,
     start: '2026-09-12 12:00',
-    end: '2026-09-27 15:00',
+    end: '2026-09-28 03:59',
     notes:
-      'Still an estimate on 09-02: only the phase-1 warp notice has published. The 15:00 close copies the 4.4 handoff and is a convention, not a printed time.',
+      'Official announcement 1331 prints September 28 03:59 server time. This conflicts with the earlier global maintenance start for Europe/America; verify in-game and finish before maintenance. Alerts remain off while the conflict is unresolved.',
     sourceKey: 'seed:hsr:4.5-p2-aventurine',
   },
   {
@@ -971,8 +1046,9 @@ export const SEED_EVENTS: SeedEvent[] = [
     type: 'banner',
     notify: false,
     start: '2026-09-12 12:00',
-    end: '2026-09-27 15:00',
-    notes: 'Livestream/press estimate — no official Warp notice yet.',
+    end: '2026-09-28 03:59',
+    notes:
+      'Official announcement 1331 prints September 28 03:59 server time. This conflicts with the earlier global maintenance start for Europe/America; verify in-game and finish before maintenance. Alerts remain off while the conflict is unresolved.',
     sourceKey: 'seed:hsr:4.5-p2-lc',
   },
 
@@ -1559,8 +1635,9 @@ export const SEED_EVENTS: SeedEvent[] = [
     type: 'event',
     dailyTouch: true,
     start: '2026-08-20 04:00',
-    end: '2026-09-29 11:59',
-    notes: '7-day login — the window is the whole version, the claims are not.',
+    end: '2026-09-29 03:59',
+    notes:
+      'Kuro patch-note transcription confirms the server-local close. Source: https://wutheringwaves.gg/patch-notes-for-version-3-6-lamplight-in-mirage-swords-resolve-in-heart/',
     sourceKey: 'seed:wuwa:3.6-login',
   },
   {
@@ -1600,7 +1677,9 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: 'Wuthering Exploration: Fogveil Pagoda',
     type: 'event',
     start: '2026-09-17 04:00',
-    end: '2026-09-29 11:59',
+    end: '2026-09-29 03:59',
+    notes:
+      'Kuro patch-note transcription confirms the server-local close. Source: https://wutheringwaves.gg/patch-notes-for-version-3-6-lamplight-in-mirage-swords-resolve-in-heart/',
     sourceKey: 'seed:wuwa:3.6-fogveil',
   },
   {
@@ -1827,19 +1906,22 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'nte',
     name: 'Surfing All Channels — Linko (phase 2)',
     type: 'banner',
-    notify: false,
-    start: '2026-09-09 04:00',
-    end: '2026-09-29 22:59',
-    notes: 'Start is the officially stated 06:00–11:00 (UTC+8) maintenance on Sep 9.',
+    start: '2026-09-09 11:00',
+    end: '2026-09-30 05:59',
+    notes:
+      'Official global window. Opening uses the scheduled maintenance finish. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260908/263947.html',
+    timezone: 'UTC+8',
     sourceKey: 'seed:nte:1.3-linko',
   },
   {
     game: 'nte',
     name: 'Misty Tipsy Style — Hotori rerun (phase 2)',
     type: 'banner',
-    notify: false,
-    start: '2026-09-09 04:00',
-    end: '2026-09-29 22:59',
+    start: '2026-09-09 11:00',
+    end: '2026-09-30 05:59',
+    timezone: 'UTC+8',
+    notes:
+      'Official global window. Opening uses the scheduled maintenance finish. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260908/263947.html',
     sourceKey: 'seed:nte:1.3-hotori',
   },
   // --- events with durations quoted from the 1.3 notes
@@ -1874,18 +1956,22 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'nte',
     name: 'Runaway Echoes',
     type: 'event',
-    notify: false,
-    start: '2026-09-09 04:00',
-    end: '2026-09-29 22:59',
+    start: '2026-09-09 11:00',
+    end: '2026-09-30 05:59',
+    timezone: 'UTC+8',
+    notes:
+      'Official global window. Opening uses the scheduled maintenance finish. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260908/263947.html',
     sourceKey: 'seed:nte:1.3-runaway-echoes',
   },
   {
     game: 'nte',
     name: 'Breezy Tour',
     type: 'event',
-    notify: false,
-    start: '2026-09-17 03:00',
-    end: '2026-09-29 22:59',
+    start: '2026-09-17 10:00',
+    end: '2026-09-30 05:59',
+    timezone: 'UTC+8',
+    notes:
+      'Limited rewards end at this global deadline. Cycling Invitations remain permanent. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260908/263947.html',
     sourceKey: 'seed:nte:1.3-breezy-tour',
   },
   // --- day-level only. Clock times assume the standard 05:00 → 04:59 server-time pattern,
@@ -1933,10 +2019,10 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: 'Pixel Surge',
     type: 'event',
     dailyTouch: true,
-    notify: false,
     start: '2026-09-14 05:00',
     end: '2026-09-21 04:59',
-    notes: 'Double rewards on Character Pixels — spend them here. Day-level dates only.',
+    notes:
+      'Official server-local window. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260908/263947.html',
     sourceKey: 'seed:nte:1.3-pixelsurge',
   },
   {
@@ -1944,10 +2030,10 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: 'Fons Rush',
     type: 'event',
     dailyTouch: true,
-    notify: false,
     start: '2026-09-21 05:00',
     end: '2026-09-28 04:59',
-    notes: 'Double Fons on City Stamina — spend the weekly pool here. Day-level dates only.',
+    notes:
+      'Official server-local window. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260908/263947.html',
     sourceKey: 'seed:nte:1.3-fonsrush',
   },
   {
@@ -2217,12 +2303,13 @@ export const SEED_EVENTS: SeedEvent[] = [
   },
   {
     game: 'uma',
-    name: 'Hark Back Run Forward (Autumn Festival story event)',
+    name: 'Hark Back, Run Forward (Autumn Festival story event)',
     type: 'event',
-    notify: false,
     start: '2026-09-07 22:00',
     end: '2026-09-19 21:59',
-    notes: 'Tamamo Cross, Inari One, Yaeno Muteki, Oguri Cap and Mejiro Ardan. Runs with the scout below.',
+    notes:
+      'Cygames notice transcription confirms both boundaries: https://umamusume.gg/check-out-all-the-latest-updates-3/',
+    timezone: 'UTC',
     sourceKey: 'seed:uma:story-event-19',
   },
   {
@@ -2247,11 +2334,11 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'uma',
     name: 'Champions Meeting',
     type: 'cycle',
-    notify: false,
     start: '2026-09-15 22:00',
     end: '2026-09-25 21:59',
     notes:
-      'Scorpio Cup (CM19) — 2200m Medium, Kyoto Racecourse. Sign-ups open 09-15 and the first round runs 09-19; only the window is modelled here.',
+      'Scorpio Cup. League selection starts Sep 15; races run Sep 19–25. Registration closes Sep 23 at 21:59 UTC. Cygames notice transcription: https://umamusume.gg/the-league-selection-period-for-the-champions-meeting-scorpio-cup-has-begun/',
+    timezone: 'UTC',
     sourceKey: 'seed:uma:cm-scorpio-2026-09',
   },
   {
@@ -2481,29 +2568,28 @@ export const SEED_EVENTS: SeedEvent[] = [
     notes: 'Final Season 9 cycle; closes on the published season end. Same derivation caveat.',
     sourceKey: 'seed:nikke:overclock-2026-09-08',
   },
-  /* --- the September 3 update, from the patch notes. NIKKE prints real UTC+9
-     clock times for everything, so these are exact, not derived — the one game in
-     this file where "after maintenance" is the only soft edge. Maintenance itself
-     is not modelled: NIKKE has never published its length in advance, and the
-     04:00 open below is where every event in the notes starts counting. */
+  // September 3 notice: all times are UTC+9. Opening after maintenance
+  // uses its scheduled finish; the actual finish can change.
   {
     game: 'nikke',
     name: 'GREAT VILLAIN UNION',
     type: 'event',
-    start: '2026-09-03 07:00',
+    start: '2026-09-03 18:00',
     end: '2026-09-17 04:59',
     notes:
-      'Drake founds the New Villain Union. Collect Memory Films to unlock the Archives stories. The notes say "after maintenance" and print only the close, so the 07:00 open copies the 08-13 update day, which was verified.',
+      'Opening uses the scheduled maintenance finish, not a confirmed actual finish. Publisher notice transcription: https://nikke.gg/september-3-patch-notes/',
+    timezone: 'UTC+9',
     sourceKey: 'seed:nikke:great-villain-union',
   },
   {
     game: 'nikke',
     name: 'Drake: Great Villain Pick Up',
     type: 'banner',
-    start: '2026-09-03 07:00',
+    start: '2026-09-03 18:00',
     end: '2026-09-17 04:59',
     notes:
-      'SSR — Wind Code Defender, Missilis, shotgun. Joins Ordinary Recruit, Social Point Recruit and molds in a later update. Publisher notice transcription: https://nikke.gg/september-3-patch-notes/',
+      'Opening uses the scheduled maintenance finish, not a confirmed actual finish. Publisher notice transcription: https://nikke.gg/september-3-patch-notes/',
+    timezone: 'UTC+9',
     sourceKey: 'seed:nikke:drake-great-villain-pickup',
   },
   {
@@ -2511,9 +2597,11 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: 'DAILY EVIL DEED — 7-day login',
     type: 'event',
     dailyTouch: true,
-    start: '2026-09-03 07:00',
+    start: '2026-09-03 18:00',
     end: '2026-09-17 04:59',
-    notes: 'Recruit Vouchers and development materials across seven check-ins. Two weeks to collect seven days.',
+    notes:
+      'Opening uses the scheduled maintenance finish, not a confirmed actual finish. Publisher notice transcription: https://nikke.gg/september-3-patch-notes/',
+    timezone: 'UTC+9',
     sourceKey: 'seed:nikke:daily-evil-deed',
   },
   {
@@ -2529,11 +2617,12 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'nikke',
     name: 'October Mission Pass',
     type: 'event',
-    notify: false,
     dailyTouch: true,
     start: '2026-10-01 00:00',
     end: '2026-10-31 23:59',
-    notes: 'Calendar month, like every pass before it. Not separately announced.',
+    notes:
+      'Crust: Treat Chef. Dates confirmed by publisher notice transcription: https://nikke.gg/september-17-patch-notes/',
+    timezone: 'UTC+9',
     sourceKey: 'seed:nikke:mission-pass-oct',
   },
 
@@ -2666,30 +2755,18 @@ export const SEED_EVENTS: SeedEvent[] = [
     notes: 'Season of Delirating — Cycle III. Runs 10 days, to the 1.4 end.',
     sourceKey: 'seed:endfield:eow-delirating-3',
   },
-  /* --- v1.5 "Dreamscape of Wind and Snow", live since 2026-09-01 23:00 on this
-     (Americas, UTC-5) clock. Two things make this block different from every
-     other one in the file:
-
-     ENDFIELD SPLITS A TIME INSIDE ONE LINE, and it does it again here. The
-     version OPENS on the local clock — 09-02 11:00 in Asia is 09-01 23:00 here,
-     which is what "released after the 09-02 maintenance" means for a UTC-5
-     account — while the Winter Hunt CLOSE is quoted globally, "11:59 on
-     2026/09/30 (UTC+8)", and lands 13 hours earlier at 09-29 22:59. Only the
-     close needed shifting.
-
-     THE VERSION HAS NO PUBLISHED END. Hypergryph has not printed one, and the
-     Winter Hunt close is the last first-party date that exists. Nothing here
-     invents a 1.6 boundary: rows that plainly outlive phase 1 are cut at the
-     phase-2 open or at Winter Hunt's close, and say so. Refresh once the 1.6
-     preview airs — 1.5's aired 08-21, twelve days ahead of release. */
+  /* v1.5 update notice 5208: event dates below use server time unless a
+     timezone override is set. The next maintenance has no confirmed date.
+     Rows with an estimated end remain silent. See the September 17 audit. */
   {
     game: 'endfield',
     name: 'Winter Hunt — Typhoeus',
     type: 'banner',
-    start: '2026-09-01 23:00',
-    end: '2026-09-29 22:59',
+    start: '2026-09-02 04:00',
+    end: '2026-09-30 11:59',
     notes:
-      'Chartered Headhunting. The only first-party date in 1.5: "until 11:59 of 2026/09/30" quoted in UTC+8, which is 09-29 22:59 here.',
+      'Update notes explicitly label the close server time. Opening uses the global scheduled maintenance finish. Source: https://endfield.gryphline.com/en-us/news/5208',
+    startTimezone: 'UTC',
     sourceKey: 'seed:endfield:1.5-typhoeus',
   },
   {
@@ -2727,10 +2804,10 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'endfield',
     name: 'Snow Over Deep Woods',
     type: 'event',
-    notify: false,
-    start: '2026-09-01 23:00',
-    end: '2026-09-29 22:59',
-    notes: 'Guide event, opens with the version. No published close.',
+    start: '2026-09-02 04:00',
+    end: '2026-09-30 12:00',
+    notes: 'Official server-local window. Source: https://endfield.gryphline.com/en-us/news/5208',
+    startTimezone: 'UTC',
     sourceKey: 'seed:endfield:1.5-snow-over-deep-woods',
   },
   {
@@ -2738,29 +2815,30 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: 'Trial of the Bow',
     type: 'event',
     notify: false,
-    start: '2026-09-08 23:00',
-    end: '2026-09-29 22:59',
-    notes: 'Challenge event, week two. Start is dated (09-09 UTC+8); the close is not published.',
+    start: '2026-09-09 12:00',
+    end: '2026-10-14 17:00',
+    notes:
+      'Official server-local opening. Ends at next version maintenance, whose date is not confirmed here. Displayed close is a placeholder aligned to the last Sanity Supply close on Americas/Europe. Source: https://endfield.gryphline.com/en-us/news/5208',
     sourceKey: 'seed:endfield:1.5-trial-of-the-bow',
   },
   {
     game: 'endfield',
     name: 'AIC Support: Chubby Lung Attacks',
     type: 'event',
-    notify: false,
-    start: '2026-09-15 23:00',
-    end: '2026-09-29 22:59',
-    notes: 'AIC production event, week three. Start is dated (09-16 UTC+8); the close is not published.',
+    start: '2026-09-16 12:00',
+    end: '2026-09-30 16:00',
+    notes:
+      'Production deadline. Goods exchange remains open until October 7 at 04:00 server time. Source: https://endfield.gryphline.com/en-us/news/5208',
     sourceKey: 'seed:endfield:1.5-aic-chubby-lung',
   },
   {
     game: 'endfield',
     name: 'Sanity Supply (first window)',
     type: 'event',
-    notify: false,
-    start: '2026-09-16 23:00',
-    end: '2026-09-23 22:59',
-    notes: 'Free stamina. Start is dated (09-17 UTC+8); the seven-day length copies the 1.4 windows.',
+    start: '2026-09-17 04:00',
+    end: '2026-09-24 04:00',
+    notes: 'Official server-local window. Source: https://endfield.gryphline.com/en-us/news/5208',
+    dailyTouch: true,
     sourceKey: 'seed:endfield:1.5-sanity-1',
   },
   {
@@ -2768,10 +2846,10 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: 'Resplendent Spectrum — Yvonne rerun (phase 2)',
     type: 'banner',
     notify: false,
-    start: '2026-09-23 23:00',
-    end: '2026-09-29 22:59',
+    start: '2026-09-24 12:00',
+    end: '2026-10-14 17:00',
     notes:
-      'RE-Factor rerun. Opens 09-24 UTC+8; the close is unpublished and is cut at Winter Hunt’s rather than invented — it will almost certainly run past it.',
+      'Official server-local opening. Ends at next version maintenance, whose date is not confirmed here. Displayed close is a placeholder aligned to the last Sanity Supply close on Americas/Europe. Source: https://endfield.gryphline.com/en-us/news/5208',
     sourceKey: 'seed:endfield:1.5-yvonne',
   },
   {
@@ -2779,20 +2857,21 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: 'Tag Artist Issue — Artzy Tyrannical rerun (phase 2)',
     type: 'banner',
     notify: false,
-    start: '2026-09-23 23:00',
-    end: '2026-09-29 22:59',
-    notes: 'Weapon rerun beside Yvonne. Same unpublished close.',
+    start: '2026-09-24 12:00',
+    end: '2026-10-14 17:00',
+    notes:
+      'Official server-local opening. Ends at next version maintenance, whose date is not confirmed here. Displayed close is a placeholder aligned to the last Sanity Supply close on Americas/Europe. Source: https://endfield.gryphline.com/en-us/news/5208',
     sourceKey: 'seed:endfield:1.5-tag-artist',
   },
   {
     game: 'endfield',
-    name: 'Purrchena Tribute — free Operator',
+    name: 'Purry Big Feline! RAWR! — free Purrchena',
     type: 'event',
     notify: false,
-    start: '2026-09-23 23:00',
-    end: '2026-09-29 22:59',
+    start: '2026-09-24 12:00',
+    end: '2026-10-14 17:00',
     notes:
-      'Recruits Purrchena for free — do not let this one pass. Opens with phase 2 on 09-24 UTC+8; the close is not published.',
+      'Official server-local opening. Ends at next version maintenance, whose date is not confirmed here. Displayed close is a placeholder aligned to the last Sanity Supply close on Americas/Europe. Source: https://endfield.gryphline.com/en-us/news/5208',
     sourceKey: 'seed:endfield:1.5-purrchena',
   },
   {
@@ -2800,19 +2879,21 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: 'Echoing Bell of an Old City',
     type: 'event',
     notify: false,
-    start: '2026-09-23 23:00',
-    end: '2026-09-29 22:59',
-    notes: 'Guide event for the Suiming map, which runs on a 15-minute time loop. No published close.',
+    start: '2026-09-24 12:00',
+    end: '2026-10-14 17:00',
+    notes:
+      'Official server-local opening. Ends at next version maintenance, whose date is not confirmed here. Displayed close is a placeholder aligned to the last Sanity Supply close on Americas/Europe. Source: https://endfield.gryphline.com/en-us/news/5208',
     sourceKey: 'seed:endfield:1.5-echoing-bell',
   },
   {
     game: 'endfield',
     name: 'Echoes of War',
     type: 'cycle',
-    notify: false,
     start: '2026-09-02 04:00',
-    end: '2026-09-09 03:59',
-    notes: 'First cycle of 1.5. Season name not announced. 7-day cadence, not a notice.',
+    end: '2026-09-24 11:59',
+    notes:
+      'Season of Virtuality. Three internal cycles, but their individual boundaries are not published. This row tracks the full season. Source: https://endfield.gryphline.com/en-us/news/5208',
+    startTimezone: 'UTC',
     sourceKey: 'seed:endfield:eow-1.5-1',
   },
   {
@@ -2820,29 +2901,10 @@ export const SEED_EVENTS: SeedEvent[] = [
     name: 'Echoes of War',
     type: 'cycle',
     notify: false,
-    start: '2026-09-09 04:00',
-    end: '2026-09-16 03:59',
-    notes: '7-day cadence, not a notice.',
-    sourceKey: 'seed:endfield:eow-1.5-2',
-  },
-  {
-    game: 'endfield',
-    name: 'Echoes of War',
-    type: 'cycle',
-    notify: false,
-    start: '2026-09-16 04:00',
-    end: '2026-09-23 03:59',
-    notes: '7-day cadence, not a notice.',
-    sourceKey: 'seed:endfield:eow-1.5-3',
-  },
-  {
-    game: 'endfield',
-    name: 'Echoes of War',
-    type: 'cycle',
-    notify: false,
-    start: '2026-09-23 04:00',
-    end: '2026-09-30 03:59',
-    notes: '7-day cadence, not a notice.',
+    start: '2026-09-24 12:00',
+    end: '2026-10-14 17:00',
+    notes:
+      'Season of Illusion. Three internal cycles. Ends at next maintenance; displayed close is an unconfirmed placeholder aligned to the final Americas/Europe Sanity Supply close. Source: https://endfield.gryphline.com/en-us/news/5208',
     sourceKey: 'seed:endfield:eow-1.5-4',
   },
 
@@ -2893,12 +2955,13 @@ export const SEED_EVENTS: SeedEvent[] = [
   },
   {
     game: 'hsr',
-    name: 'HSR 4.6 Special Program — predicted window',
+    name: 'HSR 4.6 Special Program',
     type: 'livestream',
-    start: '2026-09-16 12:30',
-    end: '2026-09-18 14:30',
+    start: '2026-09-20 11:30',
+    end: '2026-09-20 12:30',
     notes:
-      'Not announced. v4.6 goes live 09-28 04:00, and the usual offset is 10-12 days on a Friday 12:30 — which lands on 09-18 almost exactly. Three redemption codes drop during the broadcast, ~100 Stellar Jade each, and expire within 24-48 hours.',
+      'Announced start: 19:30 UTC+8. The one-hour display duration is estimated. Publisher announcement repost: https://www.reddit.com/r/HonkaiStarRail/comments/1wfz7hq/version_46_dance_with_the_beast_before_moonrise/',
+    timezone: 'UTC',
     sourceKey: 'seed:hsr:4.6-livestream',
   },
   {
@@ -3030,5 +3093,583 @@ export const SEED_EVENTS: SeedEvent[] = [
     notes:
       'Publisher patch-note transcription, section 5 (notice body takes precedence over editorial summary): https://nikke.gg/september-3-patch-notes/',
     sourceKey: 'seed:nikke:coop-storm-bringer-2026-09',
+  },
+  // September 17 audit. Source coverage: docs/event-feed-2026-09-17.md.
+  {
+    game: 'nte',
+    name: 'Soundscape Special — Voice of the Voyager',
+    type: 'banner',
+    start: '2026-09-09 11:00',
+    end: '2026-09-30 05:59',
+    timezone: 'UTC+8',
+    notes:
+      'Official global window. Opening uses the scheduled maintenance finish. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260908/263947.html',
+    sourceKey: 'seed:nte:1.3-voyager',
+  },
+  {
+    game: 'nte',
+    name: 'Bright Moon Special — Marching Beyond Time',
+    type: 'banner',
+    start: '2026-09-09 11:00',
+    end: '2026-09-30 05:59',
+    timezone: 'UTC+8',
+    notes:
+      'Official global window. Opening uses the scheduled maintenance finish. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260908/263947.html',
+    sourceKey: 'seed:nte:1.3-marching',
+  },
+  {
+    game: 'lads',
+    name: 'Voyage Anew — free Caleb memory',
+    type: 'event',
+    start: '2026-09-17 05:00',
+    end: '2026-09-27 04:59',
+    dailyTouch: false,
+    notes:
+      'Server-local schedule from a publisher notice repost; original social notice not fetched. Source: https://www.reddit.com/r/RafayelMains/comments/1whykrf/love_and_deepspace_update_on_sept_16/',
+    sourceKey: 'seed:lads:voyage-anew-2026-09',
+  },
+  {
+    game: 'lads',
+    name: 'Fragrant Sachets',
+    type: 'event',
+    start: '2026-09-17 05:00',
+    end: '2026-10-01 04:59',
+    dailyTouch: false,
+    notes:
+      'Server-local schedule from a publisher notice repost; original social notice not fetched. Source: https://www.reddit.com/r/RafayelMains/comments/1whykrf/love_and_deepspace_update_on_sept_16/',
+    sourceKey: 'seed:lads:fragrant-sachets-2026-09',
+  },
+  {
+    game: 'lads',
+    name: 'Blooming Osmanthus — daily check-in',
+    type: 'event',
+    start: '2026-09-17 05:00',
+    end: '2026-10-01 04:59',
+    dailyTouch: true,
+    notes:
+      'Server-local schedule from a publisher notice repost; original social notice not fetched. Source: https://www.reddit.com/r/RafayelMains/comments/1whykrf/love_and_deepspace_update_on_sept_16/',
+    sourceKey: 'seed:lads:blooming-osmanthus-2026-09',
+  },
+  {
+    game: 'uma',
+    name: 'JBC Series — limited missions',
+    type: 'event',
+    start: '2026-09-10 15:00',
+    end: '2026-09-17 14:59',
+    timezone: 'UTC',
+    notes: 'Cygames notice transcription: https://umamusume.gg/fall-g1-celebration-part-2-now-available-2/',
+    sourceKey: 'seed:uma:fall-g1-jbc-2026',
+  },
+  {
+    game: 'uma',
+    name: 'Queen Elizabeth II Cup — limited missions',
+    type: 'event',
+    start: '2026-09-23 15:00',
+    end: '2026-09-30 14:59',
+    timezone: 'UTC',
+    notes: 'Cygames notice transcription: https://umamusume.gg/fall-g1-celebration-part-2-now-available-2/',
+    sourceKey: 'seed:uma:fall-g1-queen-2026',
+  },
+  {
+    game: 'uma',
+    name: 'Mile Championship — limited missions',
+    type: 'event',
+    start: '2026-09-29 22:00',
+    end: '2026-10-06 14:59',
+    timezone: 'UTC',
+    notes: 'Cygames notice transcription: https://umamusume.gg/fall-g1-celebration-part-2-now-available-2/',
+    sourceKey: 'seed:uma:fall-g1-mile-2026',
+  },
+  {
+    game: 'uma',
+    name: 'Japan Cup — limited missions',
+    type: 'event',
+    start: '2026-10-01 15:00',
+    end: '2026-10-08 14:59',
+    timezone: 'UTC',
+    notes: 'Cygames notice transcription: https://umamusume.gg/fall-g1-celebration-part-2-now-available-2/',
+    sourceKey: 'seed:uma:fall-g1-japan-2026',
+  },
+  {
+    game: 'uma',
+    name: 'Champions Cup — limited missions',
+    type: 'event',
+    start: '2026-10-08 15:00',
+    end: '2026-10-15 14:59',
+    timezone: 'UTC',
+    notes: 'Cygames notice transcription: https://umamusume.gg/fall-g1-celebration-part-2-now-available-2/',
+    sourceKey: 'seed:uma:fall-g1-champions-2026',
+  },
+  {
+    game: 'uma',
+    name: 'Bonus Star Pieces — JBC races',
+    type: 'event',
+    start: '2026-09-15 15:00',
+    end: '2026-09-17 14:59',
+    timezone: 'UTC',
+    dailyTouch: true,
+    notes:
+      'Daily race bonus. Cygames notice transcription: https://umamusume.gg/fall-g1-celebration-part-2-now-available-2/',
+    sourceKey: 'seed:uma:star-pieces-jbc-2026',
+  },
+  {
+    game: 'uma',
+    name: 'Bonus Star Pieces — Queen Elizabeth II Cup',
+    type: 'event',
+    start: '2026-09-28 15:00',
+    end: '2026-09-30 14:59',
+    timezone: 'UTC',
+    dailyTouch: true,
+    notes:
+      'Daily race bonus. Cygames notice transcription: https://umamusume.gg/fall-g1-celebration-part-2-now-available-2/',
+    sourceKey: 'seed:uma:star-pieces-queen-2026',
+  },
+  {
+    game: 'uma',
+    name: 'Bonus Star Pieces — Mile Championship',
+    type: 'event',
+    start: '2026-10-04 15:00',
+    end: '2026-10-06 14:59',
+    timezone: 'UTC',
+    dailyTouch: true,
+    notes:
+      'Daily race bonus. Cygames notice transcription: https://umamusume.gg/fall-g1-celebration-part-2-now-available-2/',
+    sourceKey: 'seed:uma:star-pieces-mile-2026',
+  },
+  {
+    game: 'uma',
+    name: 'Bonus Star Pieces — Japan Cup',
+    type: 'event',
+    start: '2026-10-06 15:00',
+    end: '2026-10-08 14:59',
+    timezone: 'UTC',
+    dailyTouch: true,
+    notes:
+      'Daily race bonus. Cygames notice transcription: https://umamusume.gg/fall-g1-celebration-part-2-now-available-2/',
+    sourceKey: 'seed:uma:star-pieces-japan-2026',
+  },
+  {
+    game: 'uma',
+    name: 'Bonus Star Pieces — Champions Cup',
+    type: 'event',
+    start: '2026-10-13 15:00',
+    end: '2026-10-15 14:59',
+    timezone: 'UTC',
+    dailyTouch: true,
+    notes:
+      'Daily race bonus. Cygames notice transcription: https://umamusume.gg/fall-g1-celebration-part-2-now-available-2/',
+    sourceKey: 'seed:uma:star-pieces-champions-2026',
+  },
+  {
+    game: 'uma',
+    name: 'Scorpio Cup — registration',
+    type: 'event',
+    start: '2026-09-15 22:00',
+    end: '2026-09-23 21:59',
+    timezone: 'UTC',
+    notes:
+      'Registration ends before the final race. Cygames notice transcription: https://umamusume.gg/the-league-selection-period-for-the-champions-meeting-scorpio-cup-has-begun/',
+    sourceKey: 'seed:uma:scorpio-registration-2026-09',
+  },
+  {
+    game: 'nikke',
+    name: 'COIN RUSH SHOWDOWN',
+    type: 'event',
+    start: '2026-09-17 18:00',
+    end: '2026-10-08 04:59',
+    timezone: 'UTC+9',
+    dailyTouch: true,
+    notes:
+      'After maintenance; opening uses its planned finish. Publisher notice transcription: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:2026-09-17-coin-rush',
+  },
+  {
+    game: 'nikke',
+    name: 'THREE COMPANY RUMBLE',
+    type: 'event',
+    start: '2026-09-17 18:00',
+    end: '2026-10-08 04:59',
+    timezone: 'UTC+9',
+    dailyTouch: true,
+    notes:
+      'After maintenance; opening uses its planned finish. Publisher notice transcription: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:2026-09-17-three-company',
+  },
+  {
+    game: 'nikke',
+    name: 'EXPO CHECK-IN — 14-day login',
+    type: 'event',
+    start: '2026-09-17 18:00',
+    end: '2026-10-08 04:59',
+    timezone: 'UTC+9',
+    dailyTouch: true,
+    notes:
+      'After maintenance; opening uses its planned finish. Publisher notice transcription: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:2026-09-17-expo-check-in',
+  },
+  {
+    game: 'nikke',
+    name: 'Guilty: Mighty Bunny Pick Up',
+    type: 'banner',
+    start: '2026-09-17 18:00',
+    end: '2026-10-08 04:59',
+    timezone: 'UTC+9',
+    dailyTouch: false,
+    notes:
+      'After maintenance; opening uses its planned finish. Publisher notice transcription: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:2026-09-17-guilty',
+  },
+  {
+    game: 'nikke',
+    name: 'Winter Limited Select Recruit',
+    type: 'banner',
+    start: '2026-09-17 18:00',
+    end: '2026-10-08 04:59',
+    timezone: 'UTC+9',
+    dailyTouch: false,
+    notes:
+      'After maintenance; opening uses its planned finish. Publisher notice transcription: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:2026-09-17-winter-select',
+  },
+  {
+    game: 'nikke',
+    name: 'Sugar: Killer Rabbit — Costume Gacha',
+    type: 'banner',
+    start: '2026-09-17 18:00',
+    end: '2026-10-08 04:59',
+    timezone: 'UTC+9',
+    dailyTouch: false,
+    notes:
+      'After maintenance; opening uses its planned finish. Publisher notice transcription: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:2026-09-17-sugar',
+  },
+  {
+    game: 'nikke',
+    name: 'LET’S DRINK PASS',
+    type: 'event',
+    start: '2026-09-17 18:00',
+    end: '2026-10-08 04:59',
+    timezone: 'UTC+9',
+    dailyTouch: true,
+    notes:
+      'After maintenance; opening uses its planned finish. Publisher notice transcription: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:2026-09-17-lets-drink',
+  },
+  {
+    game: 'nikke',
+    name: 'Bunny costume reruns',
+    type: 'event',
+    start: '2026-09-17 18:00',
+    end: '2026-10-08 04:59',
+    timezone: 'UTC+9',
+    dailyTouch: false,
+    notes:
+      'After maintenance; opening uses its planned finish. Publisher notice transcription: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:2026-09-17-costume-reruns',
+  },
+  {
+    game: 'nikke',
+    name: 'September 17 update maintenance',
+    type: 'maintenance',
+    start: '2026-09-17 11:00',
+    end: '2026-09-17 18:00',
+    timezone: 'UTC+9',
+    notes:
+      'Scheduled window; actual finish may vary. Publisher notice transcription: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:2026-09-17-maint',
+  },
+  {
+    game: 'nikke',
+    name: 'Sin: Swift Bunny Pick Up',
+    type: 'banner',
+    start: '2026-09-24 05:00',
+    end: '2026-10-15 04:59',
+    timezone: 'UTC+9',
+    dailyTouch: false,
+    notes: 'Publisher notice transcription: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:2026-09-sin',
+  },
+  {
+    game: 'nikke',
+    name: 'COIN RUSH SHOWDOWN — Story II',
+    type: 'event',
+    start: '2026-09-24 05:00',
+    end: '2026-10-08 04:59',
+    timezone: 'UTC+9',
+    dailyTouch: false,
+    notes: 'Publisher notice transcription: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:2026-09-story-2',
+  },
+  {
+    game: 'nikke',
+    name: 'Full Burst Day',
+    type: 'event',
+    start: '2026-09-26 05:00',
+    end: '2026-09-28 04:59',
+    timezone: 'UTC+9',
+    dailyTouch: true,
+    notes: 'Publisher notice transcription: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:2026-09-full-burst-1',
+  },
+  {
+    game: 'nikke',
+    name: 'Full Burst Day',
+    type: 'event',
+    start: '2026-10-03 05:00',
+    end: '2026-10-05 04:59',
+    timezone: 'UTC+9',
+    dailyTouch: true,
+    notes: 'Publisher notice transcription: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:2026-09-full-burst-2',
+  },
+  {
+    game: 'nikke',
+    name: 'Solo Raid',
+    type: 'cycle',
+    start: '2026-09-24 12:00',
+    end: '2026-10-01 04:59',
+    timezone: 'UTC+9',
+    dailyTouch: true,
+    notes: 'Publisher notice transcription: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:2026-09-solo-41',
+  },
+  {
+    game: 'nikke',
+    name: 'Coordinated Operation — Land Eater',
+    type: 'cycle',
+    start: '2026-09-25 12:00',
+    end: '2026-09-27 23:59',
+    timezone: 'UTC+9',
+    dailyTouch: true,
+    notes: 'Publisher notice transcription: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:2026-09-land-eater',
+  },
+  {
+    game: 'nikke',
+    name: 'Simulation Room: Overclock — reward cycle',
+    type: 'cycle',
+    start: '2026-09-22 05:00',
+    end: '2026-10-06 04:59',
+    timezone: 'UTC+9',
+    notes:
+      'Season 10. Reward window follows the stated two-week reset rule. Source: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:overclock-2026-09-22',
+  },
+  {
+    game: 'nikke',
+    name: 'Simulation Room: Overclock — reward cycle',
+    type: 'cycle',
+    start: '2026-10-06 05:00',
+    end: '2026-10-20 04:59',
+    timezone: 'UTC+9',
+    notes:
+      'Season 10. Reward window follows the stated two-week reset rule. Source: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:overclock-2026-10-06',
+  },
+  {
+    game: 'nikke',
+    name: 'Simulation Room: Overclock — reward cycle',
+    type: 'cycle',
+    start: '2026-10-20 05:00',
+    end: '2026-11-03 04:59',
+    timezone: 'UTC+9',
+    notes:
+      'Season 10. Reward window follows the stated two-week reset rule. Source: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:overclock-2026-10-20',
+  },
+  {
+    game: 'nikke',
+    name: 'Simulation Room: Overclock — reward cycle',
+    type: 'cycle',
+    start: '2026-11-03 05:00',
+    end: '2026-11-17 04:59',
+    timezone: 'UTC+9',
+    notes:
+      'Season 10. Reward window follows the stated two-week reset rule. Source: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:overclock-2026-11-03',
+  },
+  {
+    game: 'nikke',
+    name: 'Simulation Room: Overclock — reward cycle',
+    type: 'cycle',
+    start: '2026-11-17 05:00',
+    end: '2026-12-01 04:59',
+    timezone: 'UTC+9',
+    notes:
+      'Season 10. Reward window follows the stated two-week reset rule. Source: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:overclock-2026-11-17',
+  },
+  {
+    game: 'nikke',
+    name: 'Simulation Room: Overclock — reward cycle',
+    type: 'cycle',
+    start: '2026-12-01 05:00',
+    end: '2026-12-15 04:59',
+    timezone: 'UTC+9',
+    notes:
+      'Season 10. Reward window follows the stated two-week reset rule. Source: https://nikke.gg/september-17-patch-notes/',
+    sourceKey: 'seed:nikke:overclock-2026-12-01',
+  },
+  {
+    game: 'zzz',
+    name: 'Shadow Chase Showdown',
+    type: 'event',
+    start: '2026-09-16 10:00',
+    end: '2026-10-05 03:59',
+    notes:
+      'Publisher notice transcription. Server-local window: https://zenless.gg/shadow-chase-showdown-event-details/',
+    sourceKey: 'seed:zzz:3.2-shadow-chase',
+  },
+  {
+    game: 'endfield',
+    name: 'Chubby Lung Attacks — goods exchange',
+    type: 'event',
+    start: '2026-09-16 12:00',
+    end: '2026-10-07 04:00',
+    notes:
+      'Exchange closes after production ends. Official server-local window. Source: https://endfield.gryphline.com/en-us/news/5208',
+    sourceKey: 'seed:endfield:1.5-aic-exchange',
+  },
+  {
+    game: 'endfield',
+    name: 'Sanity Supply (second window)',
+    type: 'event',
+    start: '2026-10-08 04:00',
+    end: '2026-10-14 17:00',
+    dailyTouch: true,
+    notify: false,
+    notes:
+      'Americas/Europe close shown. Asia closes October 15 at 04:00 server time. This regional end difference is not represented by one shared row. Source: https://endfield.gryphline.com/en-us/news/5208',
+    sourceKey: 'seed:endfield:1.5-sanity-2',
+  },
+  {
+    game: 'endfield',
+    name: 'Monumental Etching: Shadow Marked',
+    type: 'event',
+    start: '2026-10-05 12:00',
+    end: '2026-10-19 04:00',
+    notes: 'Official server-local window. Source: https://endfield.gryphline.com/en-us/news/5208',
+    sourceKey: 'seed:endfield:1.5-monument-shadow',
+  },
+  {
+    game: 'endfield',
+    name: 'Ridgeline Flows of Autumn — sign-in',
+    type: 'event',
+    start: '2026-10-01 12:00',
+    end: '2026-10-14 17:00',
+    dailyTouch: true,
+    notify: false,
+    notes:
+      'Official server-local opening. Ends at next maintenance; displayed close is an unconfirmed placeholder aligned to the final Americas/Europe Sanity Supply close. Source: https://endfield.gryphline.com/en-us/news/5208',
+    sourceKey: 'seed:endfield:1.5-ridgeline',
+  },
+  {
+    game: 'endfield',
+    name: 'Runners’ Steeplechase',
+    type: 'event',
+    start: '2026-10-01 12:00',
+    end: '2026-10-14 17:00',
+    dailyTouch: false,
+    notify: false,
+    notes:
+      'Official server-local opening. Ends at next maintenance; displayed close is an unconfirmed placeholder aligned to the final Americas/Europe Sanity Supply close. Source: https://endfield.gryphline.com/en-us/news/5208',
+    sourceKey: 'seed:endfield:1.5-steeplechase',
+  },
+  {
+    game: 'zzz',
+    name: 'Surprise Screening Plan',
+    type: 'event',
+    start: '2026-09-23 10:00',
+    end: '2026-10-20 03:59',
+    dailyTouch: true,
+    notes:
+      'Server-local schedule in the publisher Steam announcement, mirrored at https://steamdb.info/patchnotes/24927009/',
+    sourceKey: 'seed:zzz:3.2-screening',
+  },
+  {
+    game: 'zzz',
+    name: 'Advanced Bounty: Area Patrol',
+    type: 'event',
+    start: '2026-09-23 04:00',
+    end: '2026-09-28 03:59',
+    dailyTouch: true,
+    notes:
+      'Server-local schedule in the publisher Steam announcement, mirrored at https://steamdb.info/patchnotes/24927009/',
+    sourceKey: 'seed:zzz:3.2-area-bounty',
+  },
+  {
+    game: 'zzz',
+    name: 'Diary of an Orbie Parent',
+    type: 'event',
+    start: '2026-09-30 10:00',
+    end: '2026-10-19 03:59',
+    dailyTouch: true,
+    notes:
+      'Server-local schedule in the publisher Steam announcement, mirrored at https://steamdb.info/patchnotes/24927009/',
+    sourceKey: 'seed:zzz:3.2-orbie-parent',
+  },
+  {
+    game: 'zzz',
+    name: 'En-Nah Into Your Lap',
+    type: 'event',
+    start: '2026-09-30 10:00',
+    end: '2026-10-20 03:59',
+    dailyTouch: true,
+    notes:
+      'Server-local schedule in the publisher Steam announcement, mirrored at https://steamdb.info/patchnotes/24927009/',
+    sourceKey: 'seed:zzz:3.2-en-nah',
+  },
+  {
+    game: 'zzz',
+    name: 'Chronicles of the Hobbling Crow',
+    type: 'event',
+    start: '2026-10-03 10:00',
+    end: '2026-10-19 03:59',
+    dailyTouch: false,
+    notes:
+      'Server-local schedule in the publisher Steam announcement, mirrored at https://steamdb.info/patchnotes/24927009/',
+    sourceKey: 'seed:zzz:3.2-hobbling-crow',
+  },
+  {
+    game: 'zzz',
+    name: 'Data Bounty: Combat Simulation',
+    type: 'event',
+    start: '2026-10-14 04:00',
+    end: '2026-10-19 03:59',
+    dailyTouch: true,
+    notes:
+      'Server-local schedule in the publisher Steam announcement, mirrored at https://steamdb.info/patchnotes/24927009/',
+    sourceKey: 'seed:zzz:3.2-data-bounty',
+  },
+  {
+    game: 'zzz',
+    name: 'Potential Hypothesis: Reforged in Fire',
+    type: 'event',
+    start: '2026-09-09 03:00',
+    end: '2026-10-20 22:00',
+    timezone: 'UTC',
+    notes:
+      'Ends with Version 3.2: October 21 at 06:00 UTC+8. Opening uses the planned maintenance finish. Publisher announcement mirror: https://steamdb.info/patchnotes/24927009/',
+    sourceKey: 'seed:zzz:3.2-reforged',
+  },
+  {
+    game: 'hsr',
+    name: 'Planar Fissure',
+    type: 'event',
+    start: '2026-09-07 04:00',
+    end: '2026-09-21 03:59',
+    notes: 'Official announcement 1391. Both times use t_lc (server time). Double Planar Ornament drops.',
+    sourceKey: 'hsr:1391',
+  },
+  {
+    game: 'hsr',
+    name: 'Nameless Honor — Battle Pass',
+    type: 'event',
+    start: '2026-08-26 03:00',
+    end: '2026-09-27 19:59',
+    timezone: 'UTC',
+    notes:
+      'Official announcement 1361. Global close: September 28 at 03:59 UTC+8. Purchase deadline is one hour earlier. Opening uses the planned maintenance finish.',
+    sourceKey: 'hsr:1361',
   },
 ];
