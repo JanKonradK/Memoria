@@ -13,7 +13,7 @@
 // Downloads produces a folder rather than a mess.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
@@ -64,6 +64,9 @@ if (!/^\d+\.\d+\.\d+/.test(version)) fail(`package.json version "${version}" is 
 const required = [
   ['app/dist', 'app/dist'],
   ['desktop/memoria.mjs', 'desktop/memoria.mjs'],
+  ['desktop/electron-main.mjs', 'desktop/electron-main.mjs'],
+  ['desktop/electron-preload.cjs', 'desktop/electron-preload.cjs'],
+  ['desktop/native-policy.mjs', 'desktop/native-policy.mjs'],
   ['desktop/lan-sync.mjs', 'desktop/lan-sync.mjs'],
   ['desktop/game-connections.mjs', 'desktop/game-connections.mjs'],
   ['desktop/screenshot-ocr.mjs', 'desktop/screenshot-ocr.mjs'],
@@ -80,6 +83,19 @@ for (const [source] of required) {
   if (!existsSync(join(root, source))) {
     fail(`missing ${source} — run "npm run build" before packaging`);
   }
+}
+
+// The release includes its own window engine. Never package a host runtime for
+// a different platform under the Windows download name.
+const electronRoot = join(root, 'node_modules', 'electron');
+const electronDist = join(electronRoot, 'dist');
+const electronExe = join(electronDist, 'electron.exe');
+if (process.platform !== 'win32' || process.arch !== 'x64' || !existsSync(electronExe)) {
+  fail('the Windows x64 Electron runtime is missing — install dependencies on Windows x64 before packaging');
+}
+const electronVersion = JSON.parse(readFileSync(join(electronRoot, 'package.json'), 'utf8')).version;
+if (readFileSync(join(electronDist, 'version'), 'utf8').trim() !== electronVersion) {
+  fail('the Electron runtime version does not match the installed package');
 }
 
 // --- bundled Node -----------------------------------------------------------
@@ -121,9 +137,36 @@ async function fetchNodeExe() {
 
 // --- assemble ---------------------------------------------------------------
 
+if (process.platform === 'win32' && existsSync(join(stageDir, 'Memoria.exe'))) {
+  const idle = spawnSync(
+    'powershell',
+    [
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      `$ErrorActionPreference = 'Stop'; $active = @(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith(${powershellLiteral(`${stageDir}\\`)}, [StringComparison]::OrdinalIgnoreCase) }); if ($active.Count -gt 0) { exit 1 }`,
+    ],
+    { stdio: 'inherit', windowsHide: true },
+  );
+  if (idle.status !== 0) fail(`close Memoria from ${stageDir} before replacing the staged release`);
+}
+
 // Keep independently built Android artifacts in the shared release directory.
 rmSync(stageDir, { recursive: true, force: true });
 mkdirSync(stageDir, { recursive: true });
+
+// Include Electron's license files, locale files, resources, and native DLLs.
+// Only its default example app is replaced with our small bootstrap module.
+cpSync(electronDist, stageDir, { recursive: true });
+renameSync(join(stageDir, 'electron.exe'), join(stageDir, 'Memoria.exe'));
+rmSync(join(stageDir, 'resources', 'default_app.asar'), { force: true });
+const electronApp = join(stageDir, 'resources', 'app');
+mkdirSync(electronApp, { recursive: true });
+writeFileSync(
+  join(electronApp, 'package.json'),
+  `${JSON.stringify({ name: 'memoria', productName: 'Memoria', version, type: 'module', main: 'main.mjs' }, null, 2)}\n`,
+);
+writeFileSync(join(electronApp, 'main.mjs'), "import '../../desktop/electron-main.mjs';\n");
 
 for (const [source, destination] of required) {
   cpSync(join(root, source), join(stageDir, destination), { recursive: true });
@@ -144,6 +187,9 @@ writeFileSync(
       tag: `v${version}`,
       channel: 'stable',
       node: NODE_VERSION,
+      electron: electronVersion,
+      runtime: 'electron',
+      updateMode: 'manual',
       builtAt: new Date().toISOString(),
       platform: 'win-x64',
     },
@@ -155,15 +201,14 @@ writeFileSync(
 
 writeStagedText('Start Memoria.cmd', [
   '@echo off',
-  'rem Visible-console fallback. The Desktop shortcut installed by',
-  'rem "Add Memoria to Start Menu.cmd" runs the same launcher with no window.',
+  'rem Open the standalone app with its bundled runtime.',
   'cd /d "%~dp0"',
-  'node\\node.exe desktop\\memoria.mjs %*',
+  'start "" "%~dp0Memoria.exe" %*',
 ]);
 
 writeStagedText('Add Memoria to Start Menu.cmd', [
   '@echo off',
-  'rem Puts Memoria on the Desktop and Start Menu with its icon.',
+  'rem Installs Memoria for this Windows user and creates shortcuts.',
   'cd /d "%~dp0"',
   'powershell -NoProfile -ExecutionPolicy Bypass -File desktop\\Install-Shortcut.ps1',
   'pause',
@@ -174,18 +219,20 @@ writeStagedText('README.txt', [
   '',
   'A gacha daily / energy / event tracker that runs entirely on this machine.',
   'No cloud account. Optional Wi-Fi sync connects your Android phone to this PC.',
+  'Includes its own window and runtime. No browser or developer tools required.',
   '',
   'START IT',
-  '  Double-click "Start Memoria.cmd".',
-  '  Then run "Add Memoria to Start Menu.cmd" once to get a Desktop icon.',
+  '  Double-click Memoria.exe.',
+  '  To install it, close Memoria and run "Add Memoria to Start Menu.cmd".',
+  '  The installer copies the app to %LOCALAPPDATA%\\Programs\\Memoria.',
+  '  It creates Desktop and Start Menu shortcuts. No administrator rights needed.',
   '',
   'UPDATES',
-  '  Memoria checks GitHub for a new version in the background, at most once',
-  '  every six hours. A new build downloads quietly and is put in place the',
-  '  next time you start the app. Nothing is installed without a restart.',
-  '',
-  '  To check immediately:  node\\node.exe desktop\\memoria.mjs --check-update',
-  '  To turn it off:        set MEMORIA_NO_UPDATE=1 before starting.',
+  '  Press Alt to show the desktop menu.',
+  '  Select Help > Download updates to open the release page.',
+  '  Download and extract the new Windows ZIP. Close Memoria.',
+  '  Run "Add Memoria to Start Menu.cmd" from the new folder.',
+  '  This version does not replace its program files automatically.',
   '',
   'YOUR DATA',
   '  Lives in %APPDATA%\\memoria, not in this folder. Deleting or replacing',

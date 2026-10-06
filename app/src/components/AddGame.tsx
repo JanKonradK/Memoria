@@ -79,6 +79,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
       open={open}
       onClose={close}
       wide
+      dirty={Boolean(picked || sourceGame || customName.trim())}
       title={sourceGame ? `Add ${sourceGame.name} account` : picked ? `Add ${picked.name}` : 'Add a game'}
     >
       {!picked && !sourceGame ? (

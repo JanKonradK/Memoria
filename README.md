@@ -31,10 +31,15 @@ See [Import game progress](docs/game-imports.md) for supported methods, setup st
 3. Open your Downloads folder.
 4. Right-click the ZIP file and select **Extract All**.
 5. Open the extracted **Memoria** folder.
-6. Double-click **Start Memoria.cmd**.
+6. Double-click **Memoria.exe**.
 
-For a Desktop and Start Menu shortcut, double-click **Add Memoria to Start Menu.cmd** once.
-The download contains everything the app needs. You do not need to install developer tools.
+Memoria opens in its own desktop window. The download includes its own runtime.
+You do not need a browser or developer tools.
+Press **Alt** to show the desktop menu.
+
+To install Memoria, close the app and double-click **Add Memoria to Start Menu.cmd**.
+The installer copies the app to `%LOCALAPPDATA%\Programs\Memoria` and creates Desktop and Start Menu shortcuts.
+Your saved progress and phone connection stay in `%APPDATA%\memoria`.
 
 ### Android app
 
@@ -153,7 +158,7 @@ Wi-Fi sync uses HTTP without encryption. Use a trusted private network.
 
 ### Sync computers through a shared folder
 
-This is optional. You need **Chrome or Edge** and a folder that already syncs between your computers,
+This is optional. Use the **Windows app**, **Chrome**, or **Edge**, and a folder that syncs between your computers,
 such as a OneDrive, Google Drive, or Dropbox folder.
 
 1. On your first computer, open **Settings → Data → Shared-folder sync**.
@@ -165,16 +170,18 @@ such as a OneDrive, Google Drive, or Dropbox folder.
 
 Your folder service transfers the file. Memoria combines the changes when both computers have access to it.
 If Memoria asks for permission again, select **Reconnect**.
+When you move from a browser to the Windows app, select **Use existing file…** to connect that file again.
 
 If you do not want to use a synced folder, transfer a backup instead.
 
 ## Get updates
 
-- **Windows app:** Memoria checks for updates in the background. A downloaded update takes effect the next time the launcher starts.
+- **Windows app:** Select **Help → Download updates**. Download and extract the new Windows ZIP. Close Memoria, then run **Add Memoria to Start Menu.cmd** from the new folder.
 - **One-file version:** Export a backup first. Download the new **Memoria.html**, then open it with the same browser.
   If your progress is missing, import your backup.
 
 The Windows app keeps your saved data separate from its program files.
+This desktop version uses manual updates. It does not replace program files while the app is open.
 For the first update from an older launcher, restart Windows if Memoria cannot reconnect to local sync.
 
 ## Need help?

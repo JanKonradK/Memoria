@@ -1,26 +1,24 @@
-' Memoria launcher — runs the Node launcher with no visible console window.
-' Self-locating: works no matter where the project folder lives.
+' Memoria launcher: open the standalone app without a console window.
 Set fso = CreateObject("Scripting.FileSystemObject")
 scriptDir = fso.GetParentFolderName(WScript.ScriptFullName)
 repo = fso.GetParentFolderName(scriptDir)
 Set sh = CreateObject("WScript.Shell")
 sh.CurrentDirectory = repo
 
-' A packaged download ships its own Node under node\node.exe, so the app runs on
-' the runtime it was tested against and a machine with no Node installed still
-' works. A source checkout has no such folder and falls back to Node on PATH.
-bundledNode = repo & "\node\node.exe"
-If fso.FileExists(bundledNode) Then
-  nodeExe = """" & bundledNode & """"
-Else
-  nodeExe = "node"
-End If
-
-' Pass anything the shortcut carries straight through, so a shortcut can pin a
-' browser: Memoria.vbs --browser zen
 extra = ""
 For Each arg In WScript.Arguments
   extra = extra & " """ & arg & """"
 Next
-' 0 = hidden window, False = don't wait.
-sh.Run nodeExe & " """ & scriptDir & "\memoria.mjs""" & extra, 0, False
+
+packagedExe = repo & "\Memoria.exe"
+sourceExe = repo & "\node_modules\electron\dist\electron.exe"
+If fso.FileExists(packagedExe) Then
+  command = """" & packagedExe & """" & extra
+ElseIf fso.FileExists(sourceExe) Then
+  command = """" & sourceExe & """ """ & scriptDir & "\electron-main.mjs""" & extra
+Else
+  MsgBox "The Memoria runtime is missing. Install the Windows download or run npm install in the source folder.", 16, "Memoria"
+  WScript.Quit 1
+End If
+
+sh.Run command, 0, False

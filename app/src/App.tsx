@@ -13,6 +13,7 @@ import { applyPwaUpdate } from './pwa';
 import { servedByLauncher } from './launcher';
 import { isNativeApp } from './native';
 import { initWorkspaceHistory } from './workspace-navigation';
+import { initDesktopHost } from './desktop-host';
 import { easing, duration } from './motion';
 import { useTabSwipe } from './gestures';
 import { AppBar } from './components/AppBar';
@@ -184,6 +185,7 @@ export default function App() {
   }, [load]);
 
   useEffect(initWorkspaceHistory, []);
+  useEffect(initDesktopHost, []);
 
   useEffect(() => {
     if (loaded) return initGameConnections();

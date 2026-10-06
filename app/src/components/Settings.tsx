@@ -8,6 +8,7 @@ import { DeviceSync } from './settings/DeviceSync';
 import { DeviceNotifications } from './settings/DeviceNotifications';
 import { disconnectLanSync } from '../lan-sync';
 import { exportNativeBackup, isNativeApp } from '../native';
+import { useUnsavedDraft } from '../desktop-host';
 import {
   CLOUD_FILE_SUGGESTED_NAME,
   cloudSyncNow,
@@ -52,6 +53,7 @@ export function SettingsPage() {
     : games;
   const [statusMessage, setStatusMessage] = useState('');
   const [importDraft, setImportDraft] = useState<{ text: string; games: number; events: number } | null>(null);
+  useUnsavedDraft(importDraft !== null);
   const importRequest = useRef(0);
   const cloudSupported = cloudSyncSupported();
   const cloudConnected = cloudFileName !== '' && cloudStatus !== 'off' && cloudStatus !== 'unsupported';

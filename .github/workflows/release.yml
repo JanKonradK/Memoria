@@ -52,6 +52,7 @@ jobs:
       - run: npm run build:single
       - run: npm exec -- playwright install chromium
       - run: npm run check:release
+      - run: npm run check:native
 
       - name: Add the single-file build to the checksums
         shell: bash
@@ -77,10 +78,11 @@ jobs:
 
             | | |
             |---|---|
-            | **[Memoria-win-x64.zip](https://github.com/JanKonradK/Memoria/releases/download/${{ github.event.inputs.tag || github.ref_name }}/Memoria-win-x64.zip)** | Windows app. Unpack anywhere, run `Start Memoria.cmd`. Includes its own Node — nothing to install. **Updates itself.** |
+            | **[Memoria-win-x64.zip](https://github.com/JanKonradK/Memoria/releases/download/${{ github.event.inputs.tag || github.ref_name }}/Memoria-win-x64.zip)** | Standalone Windows app. Extract the ZIP and open `Memoria.exe`. Includes its own runtime. No browser required. Run `Add Memoria to Start Menu.cmd` to install. |
             | [Memoria.html](https://github.com/JanKonradK/Memoria/releases/download/${{ github.event.inputs.tag || github.ref_name }}/Memoria.html) | The whole app in one file. Double-click to open in any browser. Does **not** update itself — download a newer one when you want it. |
 
             Your data stays in `%APPDATA%\memoria` and is never touched by an update.
+            To update, close Memoria and run the installer from the new download.
 
             Verify a download against `SHA256SUMS.txt` if you like:
             `Get-FileHash .\Memoria-win-x64.zip -Algorithm SHA256`

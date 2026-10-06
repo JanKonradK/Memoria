@@ -7,6 +7,7 @@ import { TooltipProvider } from './components/ui';
 import { initPwa } from './pwa';
 import { initNative, isNativeApp } from './native';
 import { applyTheme, useUI } from './ui-store';
+import { isDesktopApp } from './desktop-host';
 import './index.css';
 // Per-game title fonts (see fonts.ts). These aggregate weight files are the ONLY
 // @fontsource entry points that carry `unicode-range` per subset — the per-subset
@@ -39,7 +40,13 @@ const loadMotionFeatures = () => import('./motion-features').then((module) => mo
 // Before first paint: a theme applied inside React would flash the dark ground
 // on a light-theme load, and that flash is the whole reason this runs here.
 applyTheme(useUI.getState().theme);
-if (!isNativeApp) initPwa();
+if (isDesktopApp()) {
+  // The installed app carries its own assets. A service worker from an older
+  // build must not keep serving stale code after the PC package is updated.
+  void navigator.serviceWorker?.getRegistrations().then((registrations) => {
+    return Promise.all(registrations.map((registration) => registration.unregister()));
+  });
+} else if (!isNativeApp) initPwa();
 void initNative();
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Memoria unhandled rejection', event.reason);

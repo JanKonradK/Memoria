@@ -208,6 +208,11 @@ function applyTree(pendingRoot, installRoot) {
 export function applyPendingUpdate(installRoot) {
   const record = readReleaseRecord(installRoot);
   if (!record) return { applied: false, reason: 'not a packaged install' };
+  // Electron loads native files throughout its lifetime. Replacing files from
+  // its backend at startup is unsafe because the host is already running.
+  if (record.runtime === 'electron' || record.updateMode === 'manual') {
+    return { applied: false, reason: 'close Memoria and install the new Windows download' };
+  }
 
   sweepRetiredFiles(installRoot);
 
@@ -336,6 +341,9 @@ function parseChecksums(text) {
 export async function checkForUpdate(installRoot, { force = false } = {}) {
   const record = readReleaseRecord(installRoot);
   if (!record) return { status: 'skipped', reason: 'not a packaged install' };
+  if (record.runtime === 'electron' || record.updateMode === 'manual') {
+    return { status: 'manual', reason: `Download updates from ${RELEASE_PAGE}` };
+  }
   if (process.env['MEMORIA_NO_UPDATE']) return { status: 'skipped', reason: 'MEMORIA_NO_UPDATE is set' };
   if (!dueForCheck(force)) return { status: 'skipped', reason: 'checked recently' };
 
@@ -408,11 +416,13 @@ export async function checkForUpdate(installRoot, { force = false } = {}) {
 export function updateStatus(installRoot) {
   const record = readReleaseRecord(installRoot);
   const staged = readJson(PENDING_MANIFEST);
+  const manual = record?.runtime === 'electron' || record?.updateMode === 'manual';
   return {
     packaged: record !== null,
     version: record?.version ?? null,
     channel: record?.channel ?? 'stable',
-    pending: staged && record && compareVersions(staged.version, record.version) > 0 ? staged.version : null,
+    mode: manual ? 'manual' : 'automatic',
+    pending: !manual && staged && record && compareVersions(staged.version, record.version) > 0 ? staged.version : null,
     lastChecked: readJson(LAST_CHECK_FILE)?.checkedAt ?? null,
     releasePage: RELEASE_PAGE,
   };

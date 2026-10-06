@@ -119,7 +119,10 @@ const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 function newToken() {
   return randomBytes(32).toString('base64url');
 }
-const BROWSER_SESSION = newToken();
+const BROWSER_SESSION =
+  process.parentPort && TOKEN_PATTERN.test(process.env['MEMORIA_DESKTOP_SESSION'] ?? '')
+    ? process.env['MEMORIA_DESKTOP_SESSION']
+    : newToken();
 const CONTENT_SECURITY_POLICY =
   "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self'; font-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
@@ -1279,7 +1282,9 @@ async function main() {
   // Headless mode for testing: serve (or point at the running instance),
   // print the URL, don't open a window.
   const headless = Boolean(process.env['MEMORIA_NO_BROWSER']);
-  if (headless) console.log(url);
+  if (process.env['MEMORIA_DESKTOP_HOST'] && process.parentPort) {
+    process.parentPort.postMessage({ type: 'memoria-ready', url, ownsServer: Boolean(server) });
+  } else if (headless) console.log(url);
   else openAppWindow(url);
 
   // Reuse case: another Memoria instance owns the server, and it manages both

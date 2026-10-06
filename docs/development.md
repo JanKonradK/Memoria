@@ -107,17 +107,32 @@ The [Capacitor Android documentation](https://capacitorjs.com/docs/android) desc
 The [View Transition API documentation](https://developer.mozilla.org/en-US/docs/Web/API/Document/startViewTransition)
 describes the optional card transition. Older browsers use immediate navigation.
 
-## Desktop shortcut from source
+## Standalone Windows app
 
 ```sh
 npm run build
+npm run desktop
+```
+
+Electron opens the interface in its own window with its bundled runtime.
+The renderer has no Node access. The preload exposes only the close-and-save handshake.
+The local backend keeps the existing data file and Wi-Fi connections.
+The desktop profile stays in `%APPDATA%\memoria\desktop-profile`.
+
+To install a copy with Desktop and Start Menu shortcuts:
+
+```sh
+npm run package
 npm run install:desktop
 ```
 
-The launcher serves `app/dist`. Reopen the window after a new build.
-Restart the launcher process after changes to launcher code.
+The installer copies `dist/release/Memoria` to `%LOCALAPPDATA%\Programs\Memoria`.
+Close an installed copy before installation. The installer refuses to replace an active runtime.
+User data stays in `%APPDATA%\memoria`.
 
-### Browser choice
+### Legacy browser launcher
+
+The browser launcher remains available for diagnostics and browser checks:
 
 ```sh
 node desktop/memoria.mjs --list-browsers
@@ -141,6 +156,7 @@ npm run build
 npm run package
 npm run build:single
 npm run check:release
+npm run check:native
 ```
 
 Outputs:
@@ -152,9 +168,12 @@ Outputs:
 Release checks use a copied install, isolated app data, and an available launcher port.
 They cover startup, disk sync, a second launch, live changes, and offline HTML use.
 
-The ZIP includes the built app, launcher, icon, and a pinned Node runtime.
+The ZIP includes `Memoria.exe`, Electron, the built app, backend, icon, and a pinned Node runtime.
+Electron's license files stay in the download. The package uses the Electron version from `package-lock.json`.
 Packaging verifies the Node download against the official checksum.
 `release.json` identifies a packaged install. The updater does not replace a source checkout.
+The native release record uses `runtime: "electron"` and `updateMode: "manual"`.
+This prevents the backend from changing program files that the desktop runtime uses.
 
 The standalone HTML includes its scripts, styles, fonts, and icon.
 It has no service worker, launcher sync, or automatic updater.
@@ -176,13 +195,17 @@ The tag must match the version in `package.json`.
 The workflow builds and publishes both downloads, checksums, and release notes.
 CI also assembles the Windows package on each push to `main` and each pull request.
 
-## Automatic updates
+## Desktop updates
 
-The packaged launcher checks GitHub at most once every six hours.
-It verifies the download checksum and stages the update for the next launcher start.
-User data stays outside the install folder.
+The standalone desktop app uses manual updates. Select **Help → Download updates** to open the release page.
+Close Memoria before you install a newer download. The installer retains the current program folder until the new copy is complete.
+If the final folder change fails, the installer restores the previous program folder.
+User data stays separate from the program files.
 
-From the packaged install folder, use this command for a manual check:
+Older browser packages keep the previous background updater.
+The updater checks GitHub at most once every six hours and verifies the download checksum.
+It stages updates for the next launcher start.
+For an older browser package, this command starts a manual check:
 
 ```bat
 node\node.exe desktop\memoria.mjs --check-update
