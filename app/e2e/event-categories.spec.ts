@@ -8,6 +8,7 @@ test('MW uses an inline tag and owner tag changes persist', async ({ page }) => 
   await page.clock.setFixedTime(new Date(now));
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const game = makeGame({ name: 'Genshin category test', presetKey: 'genshin', updatedAt: now });
   const state = {
@@ -51,7 +52,7 @@ test('MW uses an inline tag and owner tag changes persist', async ({ page }) => 
     buffer: Buffer.from(JSON.stringify(state)),
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })
@@ -67,7 +68,8 @@ test('MW uses an inline tag and owner tag changes persist', async ({ page }) => 
   await expect(page.locator('[data-event-id="mw-test"] [data-event-tag]')).toHaveCount(0);
   await page.waitForTimeout(400);
   await page.reload();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })

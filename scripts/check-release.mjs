@@ -73,6 +73,7 @@ try {
     .toBe(1);
   expect(await page.evaluate(() => window.auditCsp)).toEqual([]);
   await page.reload();
+  await page.getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Open Genshin Impact controls', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Genshin Impact', exact: true })).toBeVisible();
   expect(await page.evaluate(() => window.auditCsp)).toEqual([]);
@@ -82,6 +83,7 @@ try {
   const second = await context.newPage();
   second.on('pageerror', (error) => errors.push(error.message));
   await second.goto(secondUrl);
+  await second.getByRole('button', { name: 'Games', exact: true }).click();
   await second.getByRole('button', { name: 'Open Genshin Impact controls', exact: true }).click();
   await expect(second.getByRole('heading', { name: 'Genshin Impact', exact: true })).toBeVisible();
   const state = JSON.parse(readFileSync(stateFile));
@@ -131,7 +133,8 @@ try {
     await navigator.serviceWorker.ready;
   });
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Dashboard', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('button', { name: 'Today', exact: true })).toHaveAttribute('aria-current', 'page');
+  await page.getByRole('button', { name: 'Games', exact: true }).click();
   const openGame = page.getByRole('button', { name: 'Open Audit sync check controls', exact: true });
   const energy = page.getByLabel('Original Resin current value');
   await expect.poll(async () => (await openGame.isVisible()) || (await energy.isVisible())).toBe(true);
@@ -148,6 +151,7 @@ try {
   await expect(energy).toHaveValue('42');
   await energy.press('Enter');
   await Promise.all([page.waitForEvent('load'), page.getByRole('button', { name: 'Update now', exact: true }).click()]);
+  await page.getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Open Audit sync check controls', exact: true }).click();
   await expect(energy).toHaveValue('42');
   await context.close();
@@ -163,6 +167,7 @@ try {
     if (/^https?:/.test(request.url())) requests.push(request.url());
   });
   await standalone.goto(pathToFileURL(join(root, 'app/dist-single/Memoria.html')).href);
+  await standalone.getByRole('button', { name: 'Games', exact: true }).click();
   await standalone.getByRole('button', { name: 'Add your first game' }).click();
   await standalone.getByRole('button', { name: /Genshin Impact/ }).click();
   await standalone.getByRole('button', { name: 'Add Genshin', exact: true }).click();
@@ -171,6 +176,7 @@ try {
   // Wait for the debounced local write before reload.
   await standalone.waitForTimeout(300);
   await standalone.reload();
+  await standalone.getByRole('button', { name: 'Games', exact: true }).click();
   await standalone.getByRole('button', { name: 'Open Genshin Impact controls', exact: true }).click();
   await expect(standalone.getByRole('heading', { name: 'Genshin Impact', exact: true })).toBeVisible();
   expect(requests).toEqual([]);

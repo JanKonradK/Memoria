@@ -7,6 +7,7 @@ test('saved sheets animate out and lazy editors can open after dismissal', async
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   const add = page.getByRole('button', { name: 'Add', exact: true });
   await add.click();
   await page.getByRole('menuitem', { name: 'Reminder', exact: true }).click();
@@ -50,6 +51,7 @@ test('desktop summaries open an integrated page and return to the same overview 
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   for (const [index, name, short] of [
     [0, 'Genshin Impact', 'Genshin'],
     [1, 'Honkai: Star Rail', 'HSR'],
@@ -111,6 +113,7 @@ test('a long desktop roster restores its scroll and supports repeated page visit
   test.skip(!['desktop', 'wide-short'].includes(testInfo.project.name), 'Long roster at two desktop heights');
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   const games = Array.from({ length: 24 }, (_, index) => {
     const preset = PRESETS[index % PRESETS.length]!;
     return makeGame({
@@ -129,7 +132,7 @@ test('a long desktop roster restores its scroll and supports repeated page visit
     buffer: Buffer.from(JSON.stringify({ ...emptyState(), games })),
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
+  await page.getByRole('button', { name: 'Games', exact: true }).click();
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await expect(page.locator('.nexus-node')).toHaveCount(24);
   const area = page.getByRole('complementary', { name: 'Game controls' });
@@ -177,6 +180,7 @@ test('a phone sheet follows its drag, returns smoothly, and dismisses from the r
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Reminder', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'New reminder' });

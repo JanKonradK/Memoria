@@ -5,6 +5,7 @@ import { makeGame } from '../../shared/test/helpers';
 test('separate cycles stay separate and clipped titles stay clear of countdowns', async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const now = Date.now();
   const day = 86_400_000;
@@ -35,7 +36,7 @@ test('separate cycles stay separate and clipped titles stay clear of countdowns'
     .locator('input[type="file"]')
     .setInputFiles({ name: 'timeline.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })

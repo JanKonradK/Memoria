@@ -5,6 +5,7 @@ test('game tracking controls keep energy, task, reset and reminder edits', async
   test.skip(!['android-s23', 'mobile-320', 'desktop'].includes(info.project.name), 'Tracking editor sizes');
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
@@ -54,6 +55,7 @@ test('game tracking controls keep energy, task, reset and reminder edits', async
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await dialog.getByRole('button', { name: 'Done', exact: true }).click();
   await page.reload();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await openEditor();
   await expect(dialog.getByLabel('Cap', { exact: true }).first()).toHaveValue('220');
   await expect(dialog.getByLabel('Minutes per point', { exact: true }).first()).toHaveValue('7');

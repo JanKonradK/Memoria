@@ -5,6 +5,7 @@ import { makeGame } from '../../shared/test/helpers';
 test('agenda keeps full titles, actions and route-return choices usable at every width', async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const now = Date.now();
   const day = 86_400_000;
@@ -36,7 +37,7 @@ test('agenda keeps full titles, actions and route-return choices usable at every
     .locator('input[type="file"]')
     .setInputFiles({ name: 'agenda.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page.getByRole('radiogroup', { name: 'Event view' }).getByRole('radio', { name: 'List', exact: true }).click();
   await expect(page.locator('[data-list-event]')).toHaveCount(12);
   await expect(page.getByRole('button', { name: 'Find events', exact: true })).toHaveText('Find');
@@ -89,7 +90,7 @@ test('agenda keeps full titles, actions and route-return choices usable at every
   }, phone);
   expect(scrollPosition).toBeGreaterThan(0);
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await expect
     .poll(() =>
       page.evaluate(
@@ -111,7 +112,7 @@ test('agenda keeps full titles, actions and route-return choices usable at every
   await page.getByRole('dialog', { name: 'Find events' }).getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Find events', exact: true })).toBeFocused();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await expect(viewControls.getByRole('radio', { name: chosenView, exact: true })).toHaveAttribute('data-state', 'on');
   await expect(page.getByRole('button', { name: 'Show finished events', exact: true })).toHaveAttribute(
     'aria-pressed',

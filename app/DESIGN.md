@@ -8,7 +8,7 @@
 
 **Story:** Find the game that needs attention, update energy, complete tasks, then check upcoming events.
 
-**First viewport:** Desktop keeps game summaries beside Tonight. Phone presents readable game summaries, energy levels, and daily progress above a floating glass navigation dock.
+**First viewport:** Today leads with approaching caps and unfinished routines. Desktop places the game list on the left and selected game details on the right. Phone places priorities above three primary tabs. Games retains the complete game controls and Tonight summary.
 
 **Form:** DM Sans for language, IBM Plex Mono for compact measurements, and each game's saved title font. Standard cards and sheets use 32px corners with progressive continuous corner support. Compact overview cards use 24px corners. Controls use nested 10px, 16px and 24px curves; navigation and segmented controls use capsules. Glass light is static; motion follows presses, progress, and navigation.
 
@@ -37,6 +37,22 @@ Preserve each game's saved colors, title font, image, and account label. Use col
 All font subsets remain available. Never remove non-Latin support to reduce a bundle.
 
 ## Layout and interaction
+
+Today, Games, and Calendar are the three primary routes. Settings is a header utility.
+Calendar contains Events and Livestreams controls. The Calendar tab stays selected for both views.
+Today opens by default. Existing game controls remain on the internal `home` route.
+
+Today uses the existing urgency and energy calculations. The configured sleep window sets the attention interval.
+Paused games remain in the desktop game list but do not enter priority groups.
+Select a priority on desktop to inspect its next actions. Select Open game to use complete controls.
+On a phone, a priority opens the game directly. Browser Back returns to its original page.
+
+Each reading shows its source and observation age. Calculated energy explicitly says Estimated.
+Device sync status does not represent a new game reading.
+Import readings is available on Today. Settings exposes Game connections and imports.
+The import sheet protects drafts, requires review of detected values, and exposes import history with undo.
+Calendar shows the public feed status beside its date range. A failed check keeps saved events and exposes Retry update.
+Android Settings exposes Phone reminders and its permission control. No permission request occurs before the user enables reminders.
 
 All features are available on Android, including the Samsung S23 Ultra. The phone overview opens the same complete game controls as desktop. A single back arrow returns to the overview. Tonight & reminders opens the full summary. Cards select a game on Dashboard; the game selector filters Timeline, Livestreams, and Settings.
 
@@ -92,7 +108,7 @@ Genshin card events appear in three sections: Teyvat, Miliastra Wonderland, then
 
 Official calendar entries show confirmed date ranges in the publisher's calendar timezone. They do not show hourly countdowns or send deadline alerts without a published hour. Exact notices retain their clocks. Personal edits to the time fields retain the owner's chosen schedule.
 
-Navigation floats in a glass capsule with one persistent moving selection. On phones the dock clears the safe area and content reserves its full height; all four routes retain text labels and touch targets. Blue marks the selected route. Content and urgency retain their own colours. Settings and broadcasts use the same large curved surfaces. Inputs and nested controls use smaller curves.
+Navigation floats in a glass capsule with one persistent moving selection. On phones the dock clears the safe area and content reserves its full height. All three primary routes retain text labels and touch targets. Blue marks the selected route. Content and urgency retain their own colours. Settings and broadcasts use the same large curved surfaces. Inputs and nested controls use smaller curves.
 
 Timeline keeps the existing list and duration views, filters, completion actions and event editing. Its heading explains the visible range; rounded groups separate status and date information. Data bars retain accurate time geometry. Glass is concentrated in navigation and floating tools, with quiet legible content surfaces beneath it.
 

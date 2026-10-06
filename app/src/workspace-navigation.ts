@@ -10,14 +10,14 @@ let historyReady = false;
 export function initWorkspaceHistory(): () => void {
   historyReady = true;
   // Focused games are session routes; a reload starts at the overview.
-  history.replaceState({ ...history.state, memoriaWorkspace: null }, '');
+  history.replaceState({ ...history.state, memoriaWorkspace: null, memoriaTab: useUI.getState().tab }, '');
   let restoringOverlay = false;
   const onPopState = (event: PopStateEvent) => {
     if (restoringOverlay) {
       restoringOverlay = false;
       return;
     }
-    const route = event.state as { memoriaWorkspace?: string | null } | null;
+    const route = event.state as { memoriaWorkspace?: string | null; memoriaTab?: string } | null;
     if (!route || !Object.hasOwn(route, 'memoriaWorkspace')) return;
     const state = useUI.getState();
     if (
@@ -37,7 +37,7 @@ export function initWorkspaceHistory(): () => void {
       state.focusedGameId,
       () => {
         state.setFocusedGameId(gameId);
-        state.setTab('home');
+        state.setTab(gameId === null && route.memoriaTab === 'today' ? 'today' : 'home');
       },
       true,
     );
@@ -51,7 +51,7 @@ export function initWorkspaceHistory(): () => void {
 
 export function recordWorkspaceHistory(gameId: string): void {
   if (historyReady && history.state?.memoriaWorkspace !== gameId)
-    history.pushState({ ...history.state, memoriaWorkspace: gameId }, '');
+    history.pushState({ ...history.state, memoriaWorkspace: gameId, memoriaTab: 'home' }, '');
 }
 
 /** Open a workspace without capturing and resizing the whole page. */
@@ -70,6 +70,8 @@ export function navigateWorkspace(
   const fromRoster = gameId !== null && previousId === null && row !== null;
   const toRoster = gameId === null && previousId !== null && !!document.querySelector('.focus-workspace');
   if (fromRoster) {
+    if (historyReady)
+      history.replaceState({ ...history.state, memoriaTab: useUI.getState().tab, memoriaWorkspace: null }, '');
     rosterScroll = window.scrollY;
     gamesScroll = document.querySelector<HTMLElement>('.nexus-games-scroll')?.scrollTop ?? 0;
   }
@@ -102,7 +104,7 @@ export function navigateWorkspace(
   }
 
   const destination = document.querySelector<HTMLElement>(
-    toRoster ? '.mobile-game-roster, .nexus-stage' : '.focus-workspace',
+    toRoster ? '.mobile-game-roster, .nexus-stage, .today-page' : '.focus-workspace',
   );
   if (!destination?.animate) return;
   // A short directional arrival explains forward/back navigation. Only the

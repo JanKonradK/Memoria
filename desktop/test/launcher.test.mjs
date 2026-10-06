@@ -39,13 +39,34 @@ beforeAll(async () => {
     '<!doctype html><html><head></head><body>Memoria</body></html>',
   );
   writeFileSync(join(install, 'app', 'dist-private', 'private.txt'), 'outside the public app');
-  for (const file of ['memoria.mjs', 'lan-sync.mjs', 'update.mjs', 'dist/shared-core.mjs']) {
+  for (const file of [
+    'memoria.mjs',
+    'lan-sync.mjs',
+    'update.mjs',
+    'game-connections.mjs',
+    'screenshot-ocr.mjs',
+    'screenshot-ocr.ps1',
+    'dist/shared-core.mjs',
+  ]) {
     cpSync(join(root, 'desktop', file), join(install, 'desktop', file));
   }
   // Isolate the test server from all real Memoria ports and app data. The
   // production launcher remains fixed to its existing browser storage origins.
   const launcher = join(install, 'desktop', 'memoria.mjs');
   await isolateLauncherPort(launcher);
+  // Split every UTF-8 sequence at transport boundaries in the isolated process.
+  writeFileSync(
+    launcher,
+    `${readFileSync(launcher, 'utf8')}\nconst realTestFetch = globalThis.fetch;
+globalThis.fetch = (url, options) => {
+  if (url !== 'https://raw.githubusercontent.com/JanKonradK/Memoria/main/app/public/events.json')
+    return realTestFetch(url, options);
+  const bytes = Buffer.from(JSON.stringify({ name: '原神 — étoile 🌟' }));
+  return Promise.resolve({ ok: true, body: (async function* () {
+    for (const byte of bytes) yield Uint8Array.of(byte);
+  })() });
+};\n`,
+  );
   // Damaged optional phone metadata must not prevent the desktop from opening.
   mkdirSync(join(appdata, 'memoria'), { recursive: true });
   writeFileSync(join(appdata, 'memoria', 'devices.json'), '{ unreadable connections');
@@ -93,6 +114,12 @@ afterAll(async () => {
 });
 
 describe('launcher security boundary', () => {
+  it('preserves Unicode when calendar response chunks split characters', async () => {
+    const response = await fetch(`${origin}/api/calendar`, { headers: auth() });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ name: '原神 — étoile 🌟' });
+  });
+
   it('opens with unreadable phone metadata and backs it up only on explicit recovery', async () => {
     const file = join(appdata, 'memoria', 'devices.json');
     expect((await fetch(`${origin}/api/state`, { headers: auth() })).status).toBe(200);

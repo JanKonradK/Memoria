@@ -47,6 +47,7 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
       return event;
     });
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.locator('input[type="file"]').setInputFiles({
     name: 'genshin-legacy.json',
@@ -56,7 +57,7 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   // Loading the stored document is when the app safely refreshes bundled facts.
   await page.getByRole('button', { name: 'Refresh data', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   const view = page.getByRole('radiogroup', { name: 'Event view' });
   await view.getByRole('radio', { name: 'Timeline', exact: true }).click();
   const groups = page.locator('[data-timeline-event-group]');

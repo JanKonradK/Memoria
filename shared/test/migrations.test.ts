@@ -173,8 +173,20 @@ describe('seedMissingRegenSnapshots', () => {
 
     expect(once.snapshots).toEqual([
       realSnapshot,
-      { id: 'seed-1', resourceId: 'missing-reading', value: 0, takenAt: seenAt },
-      { id: 'seed-2', resourceId: 'weekly', value: 200, takenAt: seenAt },
+      {
+        id: 'seed-1',
+        resourceId: 'missing-reading',
+        value: 0,
+        takenAt: seenAt,
+        provenance: { kind: 'estimate', observedAt: seenAt, importedAt: seenAt },
+      },
+      {
+        id: 'seed-2',
+        resourceId: 'weekly',
+        value: 200,
+        takenAt: seenAt,
+        provenance: { kind: 'estimate', observedAt: seenAt, importedAt: seenAt },
+      },
     ]);
     expect(once.snapshots[0]).toBe(normalized.snapshots[0]);
     expect(twice).toBe(once);

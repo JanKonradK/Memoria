@@ -4,6 +4,7 @@ test.beforeEach(async ({ page }, info) => {
   test.skip(!['desktop', 'android-s23', 'mobile-320'].includes(info.project.name), 'Workspace return sizes');
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();

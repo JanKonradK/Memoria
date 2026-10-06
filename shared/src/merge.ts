@@ -9,6 +9,8 @@ import {
   AppStateSchema,
   FUTURE_CLOCK_SKEW_TOLERANCE_MS,
   GameLayoutItemSchema,
+  ObservationProvenanceSchema,
+  RemoteFeedVersionSchema,
 } from './validation';
 
 const SNAPSHOTS_KEPT_PER_RESOURCE = 200;
@@ -202,6 +204,7 @@ function normalizeSnapshot(raw: unknown): Snapshot | null {
   if (takenAt === null) return null;
   const candidate: Record<string, unknown> = { ...record, value: Math.max(0, record.value), takenAt };
   reviseOptional(candidate, 'reserve', clampToZero);
+  if (!ObservationProvenanceSchema.safeParse(candidate.provenance).success) delete candidate.provenance;
   return parseRow(ROWS.snapshots, candidate);
 }
 
@@ -235,6 +238,7 @@ function normalizeCompletion(raw: unknown): AppState['completions'][number] | nu
     done: typeof record.done === 'boolean' ? record.done : false,
   };
   reviseOptional(candidate, 'countDone', clampToZero);
+  if (!ObservationProvenanceSchema.safeParse(candidate.provenance).success) delete candidate.provenance;
   return parseRow(ROWS.completions, candidate);
 }
 
@@ -352,6 +356,9 @@ function normalizeSettings(raw: unknown): Settings {
       typeof record.seedImportedVersion === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(record.seedImportedVersion)
         ? record.seedImportedVersion
         : undefined,
+    remoteFeedVersion: RemoteFeedVersionSchema.safeParse(record.remoteFeedVersion).success
+      ? RemoteFeedVersionSchema.parse(record.remoteFeedVersion)
+      : undefined,
     updatedAt: updatedAt ?? base.updatedAt,
     fieldUpdatedAt: safeFieldClocks,
   };
@@ -382,6 +389,15 @@ function mergeSettings(left: Partial<Settings> | undefined, right: Partial<Setti
     merged.fieldUpdatedAt![field] = Math.max(aTime, bTime);
   }
   merged.updatedAt = Math.max(a.updatedAt, b.updatedAt);
+  const remoteVersions = [a.remoteFeedVersion, b.remoteFeedVersion].filter((version) => version != null);
+  remoteVersions.sort(
+    (left, right) =>
+      right.seedUpdated.localeCompare(left.seedUpdated) ||
+      Date.parse(right.generatedAt) - Date.parse(left.generatedAt) ||
+      right.receivedAt - left.receivedAt ||
+      right.revision.localeCompare(left.revision),
+  );
+  if (remoteVersions[0]) merged.remoteFeedVersion = remoteVersions[0];
   return merged;
 }
 

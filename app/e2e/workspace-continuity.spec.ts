@@ -6,6 +6,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     await page.emulateMedia({ reducedMotion });
     await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
     await page.goto('/');
+    await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
     for (const [name, short] of [
       ['Genshin Impact', 'Genshin'],
       ['Honkai: Star Rail', 'HSR'],

@@ -6,6 +6,7 @@ import { makeGame, makeEvent } from '../../shared/test/helpers';
 test('banner tags distinguish rewards across games and can be edited', async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const now = Date.now();
   const games = ['genshin', 'wuwa', 'hsr'].map((presetKey) => makeGame({ id: presetKey, name: presetKey, presetKey }));
@@ -28,7 +29,7 @@ test('banner tags distinguish rewards across games and can be edited', async ({ 
     buffer: Buffer.from(JSON.stringify({ ...emptyState(), games, events })),
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })

@@ -5,6 +5,7 @@ import { useUI, type TonightPosition } from '../ui-store';
 import { servedByLauncher } from '../launcher';
 import { syncNow } from '../sync';
 import { DeviceSync } from './settings/DeviceSync';
+import { DeviceNotifications } from './settings/DeviceNotifications';
 import { disconnectLanSync } from '../lan-sync';
 import { exportNativeBackup, isNativeApp } from '../native';
 import {
@@ -117,9 +118,15 @@ export function SettingsPage() {
       <div data-tour="settings" className="mx-auto max-w-[1600px]">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-heading font-semibold tracking-tight text-fg">Settings</h1>
-          <Btn onClick={() => openSheet({ kind: 'guide' })}>User guide</Btn>
+          <div className="flex flex-wrap gap-2">
+            <Btn onClick={() => document.dispatchEvent(new CustomEvent('memoria:open-import'))}>
+              Game connections and imports
+            </Btn>
+            <Btn onClick={() => openSheet({ kind: 'guide' })}>User guide</Btn>
+          </div>
         </div>
         <DeviceSync />
+        <DeviceNotifications />
         <div className="mb-5 hidden flex-wrap items-center justify-between gap-3 border-b border-line-hairline pb-4 xl:flex">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-meta text-muted">Tonight position</span>

@@ -255,7 +255,13 @@ export function seedMissingRegenSnapshots(state: AppState, takenAt: number, crea
     if (resource.deleted || (kind !== 'regen' && kind !== 'weekly') || resourcesWithSnapshots.has(resource.id)) {
       continue;
     }
-    seeded.push({ id: createId(), resourceId: resource.id, value: kind === 'weekly' ? resource.cap : 0, takenAt });
+    seeded.push({
+      id: createId(),
+      resourceId: resource.id,
+      value: kind === 'weekly' ? resource.cap : 0,
+      takenAt,
+      provenance: { kind: 'estimate', observedAt: takenAt, importedAt: takenAt },
+    });
     resourcesWithSnapshots.add(resource.id);
   }
 

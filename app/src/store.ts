@@ -7,6 +7,10 @@ import type {
   Game,
   GameEvent,
   GamePreset,
+  GameImportBatch,
+  GameImportHistoryEntry,
+  GameImportResult,
+  RemoteEventImportResult,
   Reminder,
   Resource,
   Settings,
@@ -33,6 +37,11 @@ import {
   projectEnergy,
   missingPresetTasks,
   presetForGame,
+  planGameImport,
+  importProvenance,
+  GameImportHistorySchema,
+  RemoteEventFeedSchema,
+  MAX_EVENT_FEED_BYTES,
 } from '@memoria/shared';
 import {
   planSeedImport,
@@ -53,6 +62,31 @@ const IDB_KEY = 'memoria-state';
 const LEGACY_IDB_KEYS = ['void-state', 'technogg-state'] as const;
 /** Matches the merge-side retention. */
 const SNAPSHOTS_KEPT = 200;
+const IMPORT_HISTORY_KEY = 'memoria-import-history';
+
+function readImportHistory(): GameImportHistoryEntry[] {
+  try {
+    const raw = localStorage.getItem(IMPORT_HISTORY_KEY);
+    if (!raw || raw.length > 2_000_000) return [];
+    const parsed = GameImportHistorySchema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Keep undo on this device. Neither cookies nor image data is accepted by its schema. */
+function saveImportHistory(history: GameImportHistoryEntry[]): GameImportHistoryEntry[] {
+  let bounded = history.slice(0, 40);
+  while (bounded.length > 1 && JSON.stringify(bounded).length > 2_000_000) bounded = bounded.slice(0, -1);
+  try {
+    localStorage.setItem(IMPORT_HISTORY_KEY, JSON.stringify(bounded));
+  } catch {
+    // A full or restricted store must not prevent the import. Undo remains
+    // available in this session; synced readings retain their provenance.
+  }
+  return bounded;
+}
 
 type SyncStatus = 'idle' | 'syncing' | 'ok' | 'error';
 /**
@@ -147,7 +181,12 @@ function recordEnergySnapshot(state: AppState, reading: Omit<Snapshot, 'id' | 't
   const mine = state.snapshots.filter((snapshot) => snapshot.resourceId === reading.resourceId);
   mine.sort((a, b) => b.takenAt - a.takenAt);
   // A new reading must win even when a seed or earlier edit has the same timestamp.
-  const snapshot = { ...reading, id: uid(), takenAt: Math.max(at, (mine[0]?.takenAt ?? 0) + 1) };
+  const snapshot: Snapshot = {
+    ...reading,
+    provenance: reading.provenance ?? { kind: 'manual', observedAt: at, importedAt: at },
+    id: uid(),
+    takenAt: Math.max(at, (mine.find((item) => item.provenance?.kind !== 'estimate')?.takenAt ?? 0) + 1),
+  };
   const keep = new Set(mine.slice(0, SNAPSHOTS_KEPT - 1).map((item) => item.id));
   return {
     ...state,
@@ -264,7 +303,7 @@ function stateForStorage(raw: unknown): { state: AppState; repaired: boolean } {
   };
 }
 
-function applySeedPlan(state: AppState, plan: PlannedSeed[]): AppState {
+function applySeedPlan(state: AppState, plan: PlannedSeed[], version = SEED_UPDATED): AppState {
   const byId = new Map(state.events.map((event) => [event.id, event]));
   for (const item of plan) {
     // A row the bundle has withdrawn. Tombstoned rather than dropped, so the
@@ -316,7 +355,7 @@ function applySeedPlan(state: AppState, plan: PlannedSeed[]): AppState {
     });
   }
   const events = [...byId.values()];
-  if (state.settings.seedImportedVersion === SEED_UPDATED) return { ...state, events };
+  if (state.settings.seedImportedVersion === version) return { ...state, events };
   // Record the stamp so the refresh pass does not re-apply the bundled name and
   // dates over a user's edit on every subsequent load.
   return {
@@ -324,7 +363,7 @@ function applySeedPlan(state: AppState, plan: PlannedSeed[]): AppState {
     events,
     settings: {
       ...state.settings,
-      seedImportedVersion: SEED_UPDATED,
+      seedImportedVersion: version,
       fieldUpdatedAt: settingsFieldClocks(state.settings),
       updatedAt: now(),
     },
@@ -498,6 +537,7 @@ export interface AppStore {
   cloudError: string;
   cloudFileName: string;
   lastCloudSyncAt: number | null;
+  importHistory: GameImportHistoryEntry[];
 
   load(): Promise<void>;
   clearLocalData(): Promise<void>;
@@ -531,6 +571,9 @@ export interface AppStore {
 
   setEnergy(resourceId: string, value: number, reserve?: number): void;
   adjustEnergy(resourceId: string, delta: number): void;
+  applyGameImport(batch: GameImportBatch): GameImportResult;
+  undoGameImport(batchId: string): GameImportResult;
+  importRemoteEvents(payload: unknown): RemoteEventImportResult;
 
   setTaskDone(taskId: string, periodKey: string, done: boolean): void;
   restartTaskTimer(taskId: string, periodKey: string): void;
@@ -573,6 +616,7 @@ export const useApp = create<AppStore>((set, get) => ({
   cloudError: '',
   cloudFileName: '',
   lastCloudSyncAt: null,
+  importHistory: [],
 
   async load() {
     // A refresh started during Clear must read the result of Clear, not adopt
@@ -595,7 +639,7 @@ export const useApp = create<AppStore>((set, get) => ({
       if (epoch !== storageEpoch) return;
       const editedWhileLoading = get().loaded && get().state !== before;
       const next = editedWhileLoading ? mergeState(stored.state, get().state) : stored.state;
-      set({ state: next, loaded: true, loadError: '' });
+      set({ state: next, loaded: true, loadError: '', importHistory: readImportHistory() });
       if (stored.repaired || editedWhileLoading) persist(next);
       const seedPlan = planSeedImport(get().state, now());
       if (seedPlan.length > 0) get().batch((state) => applySeedPlan(state, seedPlan));
@@ -631,7 +675,12 @@ export const useApp = create<AppStore>((set, get) => ({
         // The same applies to the retired notification credentials, or the one
         // action a user takes to wipe the device leaves their bot token behind.
         purgeRetiredSecrets();
-        set({ state: emptyState(), loaded: true, loadError: '', saveError: '' });
+        try {
+          localStorage.removeItem(IMPORT_HISTORY_KEY);
+        } catch {
+          // Restricted localStorage must not prevent clearing the main database.
+        }
+        set({ state: emptyState(), loaded: true, loadError: '', saveError: '', importHistory: [] });
       } catch (error) {
         set({ loadError: error instanceof Error ? error.message : 'Local data could not be cleared.' });
       }
@@ -929,7 +978,215 @@ export const useApp = create<AppStore>((set, get) => ({
     get().setEnergy(resourceId, next, proj.reserve ?? snap?.reserve);
   },
 
+  applyGameImport(input) {
+    const at = now();
+    const state = get().state;
+    const plan = planGameImport(state, input, at);
+    const batch = plan.batch;
+    const result: GameImportResult = {
+      batchId: batch.id,
+      applied: 0,
+      skipped: plan.issues.length,
+      issues: plan.issues,
+    };
+    if (get().importHistory.some((entry) => entry.batchId === batch.id)) {
+      return {
+        batchId: batch.id,
+        applied: 0,
+        skipped: 1,
+        issues: [{ fieldId: 'batch', reason: 'duplicate', message: 'This import was already applied.' }],
+      };
+    }
+    if (plan.resources.length + plan.tasks.length === 0) return result;
+    const provenance = importProvenance(batch, at);
+    const receipt: GameImportHistoryEntry = {
+      ...result,
+      gameId: batch.gameId,
+      source: batch.source,
+      observedAt: batch.observedAt,
+      importedAt: at,
+      status: 'applied',
+      resources: [],
+      tasks: [],
+    };
+    const previous = latestSnapshots(state.snapshots);
+    get().batch((current) => {
+      let next = current;
+      for (const reading of plan.resources) {
+        const before = previous.get(reading.resourceId);
+        const resource = current.resources.find((item) => item.id === reading.resourceId)!;
+        const game = current.games.find((item) => item.id === resource.gameId);
+        // A missing reserve reading is unknown, not an instruction to set it to zero.
+        const reserve =
+          reading.reserve ??
+          (before?.reserve == null
+            ? undefined
+            : (projectEnergy(resource, before, batch.observedAt, game).reserve ?? undefined));
+        next = recordEnergySnapshot(
+          next,
+          { ...reading, ...(reserve == null ? {} : { reserve }), provenance },
+          batch.observedAt,
+        );
+        const after = next.snapshots[next.snapshots.length - 1]!;
+        receipt.resources.push({ resourceId: reading.resourceId, afterId: after.id, ...(before ? { before } : {}) });
+      }
+      for (const reading of plan.tasks) {
+        const id = completionId(reading.taskId, reading.periodKey);
+        const before = current.completions.find((item) => item.id === id);
+        const after = { ...reading, id, updatedAt: batch.observedAt, provenance };
+        next = { ...next, completions: upsert(next.completions, after) };
+        receipt.tasks.push({ after, ...(before ? { before } : {}) });
+      }
+      assertStateCapacity(next);
+      return next;
+    });
+    receipt.applied = plan.resources.length + plan.tasks.length;
+    set({ importHistory: saveImportHistory([receipt, ...get().importHistory]) });
+    return { ...result, applied: receipt.applied };
+  },
+
+  importRemoteEvents(payload) {
+    let bytes = Infinity;
+    try {
+      bytes = new TextEncoder().encode(JSON.stringify(payload)).byteLength;
+    } catch {
+      /* Invalid input is rejected below. */
+    }
+    const parsed = bytes <= MAX_EVENT_FEED_BYTES ? RemoteEventFeedSchema.safeParse(payload) : null;
+    if (!parsed?.success)
+      return { applied: 0, skipped: true, error: 'The public calendar is invalid. Existing events were kept.' };
+    const feed = parsed.data;
+    const at = now();
+    const generatedAt = Date.parse(feed.generatedAt);
+    const current = get().state.settings.remoteFeedVersion;
+    if (generatedAt > at + 300_000 || feed.seedUpdated > new Date(at).toISOString().slice(0, 10))
+      return { applied: 0, skipped: true, error: 'The public calendar has a future publication date.' };
+    if (
+      feed.seedUpdated < SEED_UPDATED ||
+      (current && (generatedAt < Date.parse(current.generatedAt) || feed.seedUpdated < current.seedUpdated))
+    )
+      return { applied: 0, skipped: true };
+    // Equal publication time with different contents is ambiguous. A reviewed
+    // correction must carry a later publication timestamp.
+    if (current && generatedAt === Date.parse(current.generatedAt) && feed.revision !== current.revision)
+      return { applied: 0, skipped: true };
+    const plan = planSeedImport(get().state, at, feed);
+    if (!plan.length && current?.revision === feed.revision) return { applied: 0, skipped: true };
+    get().batch((state) => {
+      const next = applySeedPlan(state, plan, feed.seedUpdated);
+      const result = {
+        ...next,
+        settings: {
+          ...next.settings,
+          remoteFeedVersion: {
+            generatedAt: feed.generatedAt,
+            seedUpdated: feed.seedUpdated,
+            revision: feed.revision,
+            receivedAt: at,
+          },
+          fieldUpdatedAt: settingsFieldClocks(state.settings),
+          updatedAt: at,
+        },
+      };
+      assertStateCapacity(result);
+      return result;
+    });
+    return { applied: plan.length, skipped: false };
+  },
+
+  undoGameImport(batchId) {
+    const receipt = get().importHistory.find((entry) => entry.batchId === batchId);
+    const result: GameImportResult = { batchId, applied: 0, skipped: 0, issues: [] };
+    const skip = (fieldId: string, reason: 'changed' | 'no-history', message: string) => {
+      result.skipped += 1;
+      result.issues.push({ fieldId, reason, message });
+    };
+    if (!receipt || receipt.undoneAt != null) {
+      skip('batch', 'no-history', 'This import has no available undo record on this device.');
+      return result;
+    }
+    const at = now();
+    get().batch((state) => {
+      let next = state;
+      const latest = latestSnapshots(state.snapshots);
+      for (const record of receipt.resources) {
+        const resource = state.resources.find((item) => item.id === record.resourceId && !item.deleted);
+        const game = state.games.find((item) => item.id === resource?.gameId && !item.deleted);
+        const current = latest.get(record.resourceId);
+        if (
+          !resource ||
+          !game ||
+          current?.id !== record.afterId ||
+          current.provenance?.batchId !== batchId ||
+          resource.updatedAt > receipt.importedAt
+        ) {
+          skip(record.resourceId, 'changed', 'This resource changed after the import. Its current value was kept.');
+          continue;
+        }
+        if (!record.before) {
+          skip(record.resourceId, 'no-history', 'There is no earlier reading to restore.');
+          continue;
+        }
+        const restored = projectEnergy(resource, record.before, at, game);
+        next = recordEnergySnapshot(
+          next,
+          {
+            resourceId: record.resourceId,
+            value: restored.value,
+            ...(restored.reserve == null ? {} : { reserve: restored.reserve }),
+          },
+          at,
+        );
+        result.applied += 1;
+      }
+      for (const record of receipt.tasks) {
+        const current = state.completions.find((item) => item.id === record.after.id);
+        const task = state.tasks.find((item) => item.id === record.after.taskId && !item.deleted);
+        if (
+          !current ||
+          !task ||
+          !state.games.some((game) => game.id === task.gameId && !game.deleted) ||
+          current.provenance?.batchId !== batchId ||
+          current.updatedAt !== record.after.updatedAt ||
+          current.done !== record.after.done ||
+          current.countDone !== record.after.countDone ||
+          current.deleted ||
+          task.updatedAt > receipt.importedAt
+        ) {
+          skip(record.after.taskId, 'changed', 'This task changed after the import. Its current value was kept.');
+          continue;
+        }
+        const restored = record.before ?? {
+          id: current.id,
+          taskId: current.taskId,
+          periodKey: current.periodKey,
+          done: false,
+          deleted: true,
+        };
+        next = {
+          ...next,
+          completions: upsert(next.completions, {
+            ...restored,
+            updatedAt: Math.max(at, current.updatedAt + 1),
+            provenance: { kind: 'manual', observedAt: at, importedAt: at },
+          }),
+        };
+        result.applied += 1;
+      }
+      return next;
+    });
+    set({
+      importHistory: saveImportHistory(
+        get().importHistory.map((entry) =>
+          entry.batchId === batchId ? { ...entry, status: result.skipped ? 'partial' : 'undone', undoneAt: at } : entry,
+        ),
+      ),
+    });
+    return result;
+  },
+
   setTaskDone(taskId, periodKey, done) {
+    const at = now();
     get().mutate((s) => ({
       ...s,
       completions: upsert(s.completions, {
@@ -937,7 +1194,8 @@ export const useApp = create<AppStore>((set, get) => ({
         taskId,
         periodKey,
         done,
-        updatedAt: now(),
+        updatedAt: at,
+        provenance: { kind: 'manual', observedAt: at, importedAt: at },
       }),
     }));
   },
@@ -965,6 +1223,7 @@ export const useApp = create<AppStore>((set, get) => ({
         periodKey,
         done: true,
         updatedAt: t,
+        provenance: { kind: 'manual', observedAt: t, importedAt: t },
       }),
     }));
   },
@@ -988,11 +1247,13 @@ export const useApp = create<AppStore>((set, get) => ({
         periodKey,
         done: true,
         updatedAt: t,
+        provenance: { kind: 'manual', observedAt: t, importedAt: t },
       }),
     }));
   },
 
   setTaskCount(taskId, periodKey, countDone) {
+    const at = now();
     const task = get().state.tasks.find((item) => item.id === taskId);
     const target = task ? effectiveCountTarget(task) : 1;
     const done = countDone >= target;
@@ -1004,7 +1265,8 @@ export const useApp = create<AppStore>((set, get) => ({
         periodKey,
         done,
         countDone,
-        updatedAt: now(),
+        updatedAt: at,
+        provenance: { kind: 'manual', observedAt: at, importedAt: at },
       }),
     }));
   },

@@ -2,6 +2,9 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type Reac
 import { AnimatePresence, m } from 'motion/react';
 import { flushPersist, useApp } from './store';
 import { initCloudSync } from './cloud-sync';
+import { initGameConnections } from './game-connections';
+import { initRemoteFeed } from './data/remote-feed';
+import { initNotifications } from './notifications';
 import { initSync } from './sync';
 import { disconnectLanSync, initLanSync } from './lan-sync';
 import { useUI, type Tab } from './ui-store';
@@ -15,8 +18,8 @@ import { useTabSwipe } from './gestures';
 import { AppBar } from './components/AppBar';
 import { Btn } from './components/ui';
 
-/** Left to right, matching the route pill in the app bar. */
-const TAB_ORDER = ['home', 'timeline', 'livestreams', 'settings'] as const;
+/** Primary pages lead their secondary and utility views in transition order. */
+const TAB_ORDER = ['today', 'home', 'timeline', 'livestreams', 'settings'] as const;
 
 const ONBOARDING_KEY = 'memoria-onboarding';
 /** The key this flag shipped under before the rename; still honoured on read. */
@@ -42,6 +45,7 @@ const toastMotion = {
   },
 };
 
+const TodayPage = lazy(() => import('./components/Today').then((module) => ({ default: module.TodayPage })));
 const DashboardPage = lazy(() =>
   import('./components/Dashboard').then((module) => ({ default: module.DashboardPage })),
 );
@@ -59,6 +63,9 @@ const ReminderSheet = lazy(() =>
   import('./components/ReminderSheet').then((module) => ({ default: module.ReminderSheet })),
 );
 const UserGuide = lazy(() => import('./components/UserGuide').then((module) => ({ default: module.UserGuide })));
+const ImportCenter = lazy(() =>
+  import('./components/ImportCenter').then((module) => ({ default: module.ImportCenter })),
+);
 
 type PagePosition = { page: number; board: number };
 
@@ -78,7 +85,7 @@ function PageFrame({
   useLayoutEffect(() => {
     const page = pageRef.current;
     const savedPositions = positions.current;
-    const positionKey = () => `${tab}:${useUI.getState().focusedGameId ?? ''}`;
+    const positionKey = () => `${tab}:${tab === 'today' ? '' : (useUI.getState().focusedGameId ?? '')}`;
     const saved = savedPositions.get(positionKey()) ?? { page: 0, board: 0 };
     const restore = () => {
       window.scrollTo({ top: saved.page, behavior: 'instant' });
@@ -104,9 +111,15 @@ function PageFrame({
 }
 
 /** Keep countdown updates inside the active page, away from editors and the shell. */
-function LivePage({ tab }: { tab: 'home' | 'timeline' }) {
+function LivePage({ tab }: { tab: 'today' | 'home' | 'timeline' }) {
   const now = useNow(30_000);
-  return tab === 'home' ? <DashboardPage now={now} /> : <TimelinePage now={now} />;
+  return tab === 'today' ? (
+    <TodayPage now={now} />
+  ) : tab === 'home' ? (
+    <DashboardPage now={now} />
+  ) : (
+    <TimelinePage now={now} />
+  );
 }
 
 function AppSheets() {
@@ -171,6 +184,18 @@ export default function App() {
   }, [load]);
 
   useEffect(initWorkspaceHistory, []);
+
+  useEffect(() => {
+    if (loaded) return initGameConnections();
+  }, [loaded]);
+
+  useEffect(() => {
+    if (loaded) return initRemoteFeed();
+  }, [loaded]);
+
+  useEffect(() => {
+    if (loaded) return initNotifications();
+  }, [loaded]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -363,6 +388,9 @@ export default function App() {
       </div>
 
       <AppSheets />
+      <Suspense fallback={null}>
+        <ImportCenter />
+      </Suspense>
     </div>
   );
 }

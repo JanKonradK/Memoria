@@ -5,6 +5,7 @@ test('urgent indicators breathe, pause during interaction, and respect reduced m
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
@@ -15,7 +16,7 @@ test('urgent indicators breathe, pause during interaction, and respect reduced m
   await value.fill('200');
   await value.press('Enter');
   await page.getByRole('button', { name: 'Back to dashboard', exact: true }).click();
-  const navigation = page.getByRole('button', { name: 'Dashboard', exact: true });
+  const navigation = page.getByRole('button', { name: 'Games', exact: true });
   await navigation.focus();
   await page.mouse.move(0, 0);
   const ring = page.locator('.attention-indicator').first();

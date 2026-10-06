@@ -29,6 +29,8 @@ import { dirname, join, normalize, extname, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { applyPendingUpdate, checkForUpdate, isPackagedInstall, paths, updateStatus } from './update.mjs';
 import { createLanSync, createStateAccess, readJson } from './lan-sync.mjs';
+import { createGameConnections } from './game-connections.mjs';
+import { recognizeScreenshot } from './screenshot-ocr.mjs';
 
 const here = import.meta.dirname;
 const repo = join(here, '..');
@@ -385,6 +387,46 @@ function respondTooLarge(req, res) {
 }
 
 const stateAccess = createStateAccess({ loadCore: loadSharedCore, read: readStateRaw, write: writeState });
+const gameConnections = createGameConnections({ directory: DATA_DIR });
+async function handleGameConnections(req, res) {
+  try {
+    const result =
+      req.method === 'GET' ? gameConnections.status() : await gameConnections.control(await readJson(req, 20000));
+    respondJson(res, 200, result);
+  } catch (error) {
+    respondJson(res, error.status ?? 500, { error: error.message });
+  }
+}
+async function handleOcr(req, res) {
+  try {
+    respondJson(res, 200, await recognizeScreenshot(await readJson(req, 12 * 1024 * 1024)));
+  } catch (error) {
+    respondJson(res, error.status ?? 500, { error: error.message });
+  }
+}
+let calendarCache;
+async function handleCalendar(res) {
+  try {
+    if (!calendarCache || Date.now() - calendarCache.fetchedAt > 15 * 60_000) {
+      const response = await fetch('https://raw.githubusercontent.com/JanKonradK/Memoria/main/app/public/events.json', {
+        signal: AbortSignal.timeout(15000),
+        redirect: 'error',
+      });
+      if (!response.ok) throw new Error('Calendar updates are unavailable. Your saved calendar is unchanged.');
+      const chunks = [];
+      let bytes = 0;
+      for await (const chunk of response.body ?? []) {
+        bytes += chunk.byteLength;
+        if (bytes > 524288) throw new Error('Calendar feed exceeds its size limit.');
+        chunks.push(Buffer.from(chunk));
+      }
+      calendarCache = { fetchedAt: Date.now(), payload: JSON.parse(Buffer.concat(chunks).toString('utf8')) };
+    }
+    respondJson(res, 200, calendarCache.payload);
+  } catch {
+    respondJson(res, 502, { error: 'Calendar updates are unavailable. Your saved calendar is unchanged.' });
+  }
+}
 const LAN_FILE = join(DATA_DIR, 'devices.json');
 const lanSync = createLanSync({
   state: stateAccess,
@@ -730,6 +772,10 @@ function tryListen(port, secret) {
       if (req.method === 'GET' && urlPath === '/api/state') return void handleGetState(res);
       if (req.method === 'POST' && urlPath === '/api/sync') return handleSync(req, res);
       if (['GET', 'POST'].includes(req.method) && urlPath === '/api/devices') return void handleDevices(req, res);
+      if (['GET', 'POST'].includes(req.method) && urlPath === '/api/connections')
+        return void handleGameConnections(req, res);
+      if (req.method === 'POST' && urlPath === '/api/ocr') return void handleOcr(req, res);
+      if (req.method === 'GET' && urlPath === '/api/calendar') return void handleCalendar(res);
       // Lets an app window tell the user a newer build is already downloaded and
       // will be in place the next time they open Memoria.
       if (req.method === 'GET' && urlPath === '/api/update') return respondJson(res, 200, updateStatus(repo));

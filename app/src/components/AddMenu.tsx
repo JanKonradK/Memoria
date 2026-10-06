@@ -19,6 +19,7 @@ import { useUI } from '../ui-store';
 
 /** What each route can meaningfully add, in the order it is offered. */
 const ITEMS = {
+  today: ['addGame', 'event', 'reminder'],
   home: ['addGame', 'event', 'reminder'],
   timeline: ['event', 'reminder'],
   livestreams: ['event', 'reminder'],
@@ -45,7 +46,7 @@ export function AddMenu() {
         >
           <path d="M10 4v12M4 10h12" />
         </svg>
-        <span>Add</span>
+        <span className="hidden sm:inline">Add</span>
       </DropdownMenuPrimitive.Trigger>
 
       <DropdownMenuPrimitive.Portal>

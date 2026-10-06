@@ -30,7 +30,7 @@ beforeAll(async () => initNative());
 beforeEach(() => {
   vi.clearAllMocks();
   document.body.replaceChildren();
-  useUI.setState({ sheet: null, focusedGameId: null, tab: 'home' });
+  useUI.setState({ sheet: null, focusedGameId: null, tab: 'today' });
 });
 
 describe('Android back navigation', () => {
@@ -47,14 +47,14 @@ describe('Android back navigation', () => {
     expect(native.exit).not.toHaveBeenCalled();
   });
 
-  it('returns from game to roster, then to home, before exiting', async () => {
+  it('returns from game to roster, then to Today, before exiting', async () => {
     useUI.setState({ focusedGameId: 'game', tab: 'timeline' });
     native.back?.();
     expect(native.navigate).toHaveBeenCalledWith(null, 'game', expect.any(Function));
     expect(useUI.getState().focusedGameId).toBeNull();
     expect(native.exit).not.toHaveBeenCalled();
     native.back?.();
-    expect(useUI.getState().tab).toBe('home');
+    expect(useUI.getState().tab).toBe('today');
     expect(native.exit).not.toHaveBeenCalled();
     native.back?.();
     await vi.waitFor(() => expect(native.exit).toHaveBeenCalledOnce());

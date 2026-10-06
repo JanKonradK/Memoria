@@ -168,7 +168,13 @@ export function latestSnapshots(snapshots: Snapshot[]): Map<string, Snapshot> {
   const map = new Map<string, Snapshot>();
   for (const s of snapshots) {
     const cur = map.get(s.resourceId);
-    if (!cur || s.takenAt > cur.takenAt || (s.takenAt === cur.takenAt && s.id > cur.id)) {
+    const estimate = s.provenance?.kind === 'estimate';
+    const currentEstimate = cur?.provenance?.kind === 'estimate';
+    if (
+      !cur ||
+      (currentEstimate && !estimate) ||
+      (estimate === currentEstimate && (s.takenAt > cur.takenAt || (s.takenAt === cur.takenAt && s.id > cur.id)))
+    ) {
       map.set(s.resourceId, s);
     }
   }

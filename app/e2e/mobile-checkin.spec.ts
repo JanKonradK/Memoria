@@ -5,6 +5,7 @@ test.beforeEach(async ({ page }, info) => {
   test.skip(!['android-s23', 'mobile-320', 'mobile-390'].includes(info.project.name), 'Phone check-in flow');
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
@@ -59,7 +60,7 @@ test('phone roster opens full controls and keeps edits across navigation', async
   expect(await reminder.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
   await page.getByRole('button', { name: 'Switch to light theme' }).click();
   // Scan the settled theme rather than an intermediate color transition.
-  await expect(page.getByRole('button', { name: 'Livestreams', exact: true })).toHaveCSS('color', 'rgb(53, 55, 64)');
+  await expect(page.getByRole('button', { name: 'Calendar', exact: true })).toHaveCSS('color', 'rgb(53, 55, 64)');
   await expect(page.getByRole('radio', { name: 'Games', exact: true })).toHaveCSS('color', 'rgb(91, 94, 105)');
   expect(
     (await new AxeBuilder({ page }).analyze()).violations.filter((v) =>
@@ -88,7 +89,7 @@ test('touch scroll on an energy button does not change the value', async ({ page
 test('event actions stay visible while the form scrolls and both event views remain available', async ({
   page,
 }, info) => {
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await expect(page.getByRole('radio', { name: 'List', exact: true })).toHaveAttribute('data-state', 'on');
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Event', exact: true }).click();

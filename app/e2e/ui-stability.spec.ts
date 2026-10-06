@@ -102,6 +102,7 @@ test.beforeEach(async ({ page }) => {
   // The onboarding screen itself is covered by its own test.
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Add your first game' })).toBeVisible();
 });
 
@@ -117,14 +118,14 @@ test('empty app is accessible and fits the viewport', async ({ page }) => {
   const appBar = page.locator('header');
   await expect(appBar).toBeVisible();
   await expect.poll(() => appBar.evaluate((bar) => getComputedStyle(bar).position)).toBe('sticky');
-  await expect(page.getByRole('button', { name: 'Dashboard', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('button', { name: 'Games', exact: true })).toHaveAttribute('aria-current', 'page');
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
   await expectSoundDocumentStructure(page);
 
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Event timeline' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Timeline', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('button', { name: 'Calendar', exact: true })).toHaveAttribute('aria-current', 'page');
   await expectNoPageOverflow(page);
   await expectSoundDocumentStructure(page);
 
@@ -163,7 +164,7 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
 
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
-  await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
+  await page.getByRole('button', { name: 'Games', exact: true }).click();
   const openControls = page.getByRole('button', { name: 'Open Genshin Impact controls' });
   if (await openControls.isVisible()) await openControls.click();
   await expect(page.getByRole('button', { name: /Domain -20/ })).toBeVisible();
@@ -203,7 +204,7 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
 test('tabs, timeline controls, and settings fit after adding a game', async ({ page }) => {
   await addGenshin(page);
 
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await expectNoPageOverflow(page);
   // The 7d/40d control is retired: the window is fixed at 40 days, so the only
   // thing left to hold is that the ruler still fits whatever width it is given.
@@ -263,7 +264,7 @@ test('wide dashboard opens integrated game pages while timeline bars stay in sca
   await expectNoPageOverflow(page);
   await expectNoPageVerticalOverflow(page);
 
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   // Importing the bundled feed is automatic on load, so the seeded lane is
   // present without anything being pressed. The button it replaced is gone.
   await expect(page.getByRole('button', { name: /^Import \d+$/ })).toHaveCount(0);
@@ -289,9 +290,9 @@ test('tabs cross-slide without spilling the page sideways', async ({ page }) => 
   await addGenshin(page);
 
   for (const [route, heading] of [
-    ['Timeline', 'Event timeline'],
+    ['Calendar', 'Event timeline'],
     ['Settings', 'Settings'],
-    ['Dashboard', 'Dashboard'],
+    ['Games', 'Dashboard'],
   ] as const) {
     await page.getByRole('button', { name: route, exact: true }).click();
     await expect(page.getByRole('button', { name: route, exact: true })).toHaveAttribute('aria-current', 'page');
@@ -335,7 +336,7 @@ test('animated Add menu transfers focus to a sheet and releases pointer input', 
 test('floating phone navigation contains touch targets and tracks each selected route', async ({ page }) => {
   test.skip(page.viewportSize()!.width >= 768, 'Floating phone dock');
   const nav = page.getByRole('navigation', { name: 'Primary' });
-  for (const route of ['Dashboard', 'Timeline', 'Livestreams', 'Settings']) {
+  for (const route of ['Today', 'Games', 'Calendar']) {
     await nav.getByRole('button', { name: route, exact: true }).click();
     const selected = nav.getByRole('button', { name: route, exact: true });
     await expect(selected).toHaveAttribute('aria-current', 'page');

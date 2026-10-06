@@ -12,10 +12,13 @@ import { Logo } from './Logo';
 import { GameScope } from './GameScope';
 
 const ROUTES: Array<{ id: Tab; label: string; icon: string }> = [
-  { id: 'home', label: 'Dashboard', icon: 'M3 3h5v5H3zM12 3h5v5h-5zM3 12h5v5H3zM12 12h5v5h-5z' },
-  { id: 'timeline', label: 'Timeline', icon: 'M3 5h14v12H3zM6 3v4M14 3v4M3 9h14M6 12h3M11 14h3' },
-  { id: 'livestreams', label: 'Livestreams', icon: 'M3 5h14v10H3zM7 18h6M10 15v3M8 8l4 2-4 2z' },
-  { id: 'settings', label: 'Settings', icon: 'M3 5h14M3 10h14M3 15h14M6 3v4M14 8v4M8 13v4' },
+  {
+    id: 'today',
+    label: 'Today',
+    icon: 'M10 2v2m0 12v2M2 10h2m12 0h2M4.3 4.3l1.4 1.4m8.6 8.6 1.4 1.4M4.3 15.7l1.4-1.4m8.6-8.6 1.4-1.4M14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
+  },
+  { id: 'home', label: 'Games', icon: 'M3 3h5v5H3zM12 3h5v5h-5zM3 12h5v5H3zM12 12h5v5h-5z' },
+  { id: 'timeline', label: 'Calendar', icon: 'M3 5h14v12H3zM6 3v4M14 3v4M3 9h14M6 12h3M11 14h3' },
 ];
 
 /**
@@ -189,7 +192,10 @@ function useRouteSlider(tab: Tab) {
     if (!nav) return;
     const measure = () => {
       const active = nav.querySelector<HTMLElement>('button[aria-current="page"]');
-      if (!active) return;
+      if (!active) {
+        setSlider(null);
+        return;
+      }
       setSlider({ x: active.offsetLeft, y: active.offsetTop, w: active.offsetWidth, h: active.offsetHeight });
     };
     measure();
@@ -250,7 +256,7 @@ export function AppBar() {
           />
         )}
         {ROUTES.map((route) => {
-          const active = tab === route.id;
+          const active = tab === route.id || (route.id === 'timeline' && tab === 'livestreams');
           return (
             <button
               key={route.id}
@@ -281,7 +287,27 @@ export function AppBar() {
 
       {/* Every route's actions land here — see HeaderActions. */}
       <div className="app-route-actions scrollbar-thin flex min-w-0 items-center gap-2 overflow-x-auto">
-        {tab !== 'home' && <GameScope />}
+        {(tab === 'timeline' || tab === 'livestreams') && (
+          <nav aria-label="Calendar views" className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              className="shell-control"
+              aria-current={tab === 'timeline' ? 'page' : undefined}
+              onClick={() => setTab('timeline')}
+            >
+              Events
+            </button>
+            <button
+              type="button"
+              className="shell-control"
+              aria-current={tab === 'livestreams' ? 'page' : undefined}
+              onClick={() => setTab('livestreams')}
+            >
+              Livestreams
+            </button>
+          </nav>
+        )}
+        {tab !== 'home' && tab !== 'today' && <GameScope />}
         <div id={HEADER_ACTIONS_SLOT} className="min-w-0 shrink-0" />
       </div>
 
@@ -289,6 +315,25 @@ export function AppBar() {
         <SyncIndicator />
         <AddMenu />
         <RefreshButton />
+        <button
+          type="button"
+          onClick={() => setTab('settings')}
+          aria-label="Settings"
+          aria-current={tab === 'settings' ? 'page' : undefined}
+          className="shell-control"
+        >
+          <svg
+            viewBox="0 0 20 20"
+            aria-hidden
+            className="icon h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+          >
+            <path d="M3 5h14M3 10h14M3 15h14M6 3v4M14 8v4M8 13v4" />
+          </svg>
+          <span className="hidden sm:inline">Settings</span>
+        </button>
         <button
           type="button"
           onClick={toggleTheme}
