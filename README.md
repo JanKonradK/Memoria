@@ -140,6 +140,8 @@ If you cannot use the camera, select **Enter a code instead** on both devices.
 Then copy the PC address and pairing code into the phone app.
 If the code expires, select **Show a new code** on the PC.
 If Windows Firewall requests access, allow Memoria on your private network.
+If Windows blocks the connection, press **Alt** and select **Help → Allow phone sync through Windows**.
+Approve the Windows permission request to allow phone connections from your local network.
 
 Keep Memoria open on the PC. The phone syncs while its app is open.
 Changes from both devices merge automatically. Offline changes stay on each device until the next connection.

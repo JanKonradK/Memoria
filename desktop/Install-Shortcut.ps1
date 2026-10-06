@@ -7,6 +7,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
+. (Join-Path $here 'Install-Lock.ps1')
 $repo = Split-Path -Parent $here
 $source = $repo
 if (-not (Test-Path -LiteralPath (Join-Path $source 'release.json'))) {
@@ -46,13 +47,6 @@ if (-not $source.Equals($destination, [StringComparison]::OrdinalIgnoreCase)) {
       throw 'The install folder must not be a symbolic link or junction.'
     }
   }
-  $running = @(Get-CimInstance Win32_Process | Where-Object {
-    $_.ExecutablePath -and $_.ExecutablePath.StartsWith($destination + '\', [StringComparison]::OrdinalIgnoreCase)
-  })
-  if ($running.Count -gt 0) {
-    throw 'Close Memoria before you install this version. Your current app and saved data have not changed.'
-  }
-
   $parent = Split-Path -Parent $destination
   New-Item -ItemType Directory -Path $parent -Force | Out-Null
   $id = [Guid]::NewGuid().ToString('N')
@@ -69,6 +63,7 @@ if (-not $source.Equals($destination, [StringComparison]::OrdinalIgnoreCase)) {
     throw 'The temporary install folder already exists. Start the installer again.'
   }
 
+  $programLocks = Lock-MemoriaProgramTree $destination
   try {
     New-Item -ItemType Directory -Path $stage | Out-Null
     Get-ChildItem -LiteralPath $source -Force | Copy-Item -Destination $stage -Recurse -Force
@@ -88,6 +83,7 @@ if (-not $source.Equals($destination, [StringComparison]::OrdinalIgnoreCase)) {
       Remove-Item -LiteralPath $previous -Recurse -Force
     }
   } finally {
+    Unlock-MemoriaProgramTree $programLocks
     if (Test-Path -LiteralPath $stage) {
       Remove-Item -LiteralPath $stage -Recurse -Force
     }
