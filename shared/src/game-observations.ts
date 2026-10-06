@@ -1,6 +1,7 @@
 import type { AppState, Resource } from './types';
 import type { GameImportBatch, ResourceObservation, TaskObservation } from './automation';
 import { effectiveResourceKind } from './tracking';
+import { presetForGame } from './presets';
 
 export type HoYoProvider = 'genshin' | 'hsr' | 'zzz';
 
@@ -71,7 +72,8 @@ export function mapHoYoNotes(state: AppState, gameId: string, observation: HoYoN
     tasks: [],
   };
   const game = state.games.find((item) => item.id === gameId && !item.deleted);
-  if (!game || game.presetKey !== observation.provider || !/^\d{5,20}$/.test(observation.uid)) return finish(batch);
+  const preset = game && presetForGame(game);
+  if (!game || preset?.key !== observation.provider || !/^\d{5,20}$/.test(observation.uid)) return finish(batch);
   const data = record(observation.data);
   const resources = state.resources.filter((item) => item.gameId === gameId && !item.deleted);
   const addResource = (name: string, value: unknown, reserve?: unknown, primary = false) => {
@@ -87,8 +89,13 @@ export function mapHoYoNotes(state: AppState, gameId: string, observation: HoYoN
   };
   const addTask = (presetTaskKey: string, done: boolean | undefined) => {
     if (done == null) return;
+    const presetTask = preset.tasks.find((task) => task.key === presetTaskKey);
     const matching = state.tasks.filter(
-      (task) => task.gameId === gameId && task.presetTaskKey === presetTaskKey && !task.deleted,
+      (task) =>
+        task.gameId === gameId &&
+        !task.deleted &&
+        (task.presetTaskKey === presetTaskKey ||
+          (!task.presetTaskKey && presetTask != null && sameName(task.name, presetTask.name))),
     );
     if (matching.length === 1) batch.tasks!.push({ taskId: matching[0]!.id, done });
   };

@@ -4,6 +4,7 @@ import {
   parseScreenshotReadings,
   extractScreenshotRatios,
   planGameImport,
+  PRESETS,
   type HoYoProvider,
 } from '../src';
 import { makeGame, makeResource, makeState, makeTask, utc } from './helpers';
@@ -28,6 +29,41 @@ function stateFor(provider: HoYoProvider | 'wuwa') {
 }
 
 describe('HoYoLAB observation mapping', () => {
+  it.each([
+    ['genshin', { current_resin: 123, finished_task_num: 4, total_task_num: 4, is_extra_task_reward_received: true }],
+    ['hsr', { current_stamina: 123, current_train_score: 500, max_train_score: 500 }],
+    ['zzz', { energy: { progress: { current: 123 } }, vitality: { current: 400, max: 400 } }],
+  ] as const)('maps a legacy %s game and its unkeyed preset task', (provider, data) => {
+    const state = stateFor(provider);
+    const preset = PRESETS.find((item) => item.key === provider)!;
+    state.games[0] = { ...state.games[0]!, presetKey: undefined, name: preset.name, short: preset.short };
+    const task = preset.tasks.find((item) => item.key === state.tasks[0]!.presetTaskKey)!;
+    state.tasks[0] = { ...state.tasks[0]!, presetTaskKey: undefined, name: task.name };
+    const batch = mapHoYoNotes(state, 'g1', { provider, uid: '700000001', observedAt, data });
+    expect(batch.resources).toEqual([{ resourceId: 'r1', value: 123 }]);
+    expect(batch.tasks).toEqual([{ taskId: 't1', done: true }]);
+  });
+
+  it('preserves ambiguous, renamed, and differently keyed legacy tasks', () => {
+    const state = stateFor('hsr');
+    const preset = PRESETS.find((item) => item.key === 'hsr')!;
+    const task = preset.tasks.find((item) => item.key === 'hsr-daily-training')!;
+    const observation = {
+      provider: 'hsr' as const,
+      uid: '700000001',
+      observedAt,
+      data: { current_train_score: 500, max_train_score: 500 },
+    };
+    state.tasks = [makeTask({ name: task.name }), makeTask({ id: 'duplicate', name: task.name })];
+    expect(mapHoYoNotes(state, 'g1', observation).tasks).toEqual([]);
+    state.tasks = [makeTask({ name: 'My custom routine' })];
+    expect(mapHoYoNotes(state, 'g1', observation).tasks).toEqual([]);
+    state.tasks = [makeTask({ name: task.name, presetTaskKey: 'some-other-task' })];
+    expect(mapHoYoNotes(state, 'g1', observation).tasks).toEqual([]);
+    state.tasks = [makeTask({ name: task.name }), makeTask({ id: 'keyed', presetTaskKey: task.key })];
+    expect(mapHoYoNotes(state, 'g1', observation).tasks).toEqual([]);
+  });
+
   it('maps Genshin resin and reward-confirmed commissions using API fields', () => {
     const state = stateFor('genshin');
     state.resources.push(makeResource({ id: 'realm', name: 'Realm Currency', cap: 2400 }));
