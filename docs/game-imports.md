@@ -68,10 +68,12 @@ The Windows app does not have a built-in sign-in browser.
 4. Select **Sign in with HoYoLAB**.
 5. Sign in on the official page.
 6. Select **Done** to return to Memoria.
-7. Enter the **In-game UID**.
-8. Select the **Game server**.
+7. Select **Find my accounts** if Memoria did not find your account after sign-in.
+8. If Memoria finds multiple accounts, select the correct **Linked HoYoLAB account**.
 9. Select **Connect and review**.
 10. Check the readings before you apply them.
+
+If Memoria cannot find the account, enter the **In-game UID** and select the **Game server** manually.
 
 The phone supports one HoYoLAB sign-in identity at a time.
 You can connect multiple game UIDs and servers for that identity.
