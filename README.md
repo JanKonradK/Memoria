@@ -5,8 +5,20 @@
 Memoria helps you see what needs attention before you play. It shows when your energy will fill,
 when tasks reset, and when events end.
 
-You enter your progress yourself. Memoria does not read your game accounts or play games for you.
+Enter progress manually, import a screenshot, or connect a supported HoYoLAB account in the Windows or Android app.
+Memoria does not play games or collect rewards for you.
 You do not need a Memoria account or any coding knowledge.
+
+## Version 2.0
+
+- **Today** shows approaching energy caps and unfinished routines within your sleep window.
+- **Games** keeps the complete game controls, account list, and Tonight summary.
+- **Calendar** shows events, banners, resets, and livestreams. Select **Livestreams** for broadcast details.
+- **Import readings** accepts game screenshots and supported account data. Review detected values before you apply them.
+
+Each energy estimate shows the source and age of its last reading.
+The header status refers to device sync. It does not mean that Memoria just checked your game account.
+See [Import game progress](docs/game-imports.md) for supported methods, setup steps, and limits.
 
 ## Download and open Memoria
 
@@ -49,7 +61,7 @@ Keep the file in the same location, and use the same browser each time.
 ## Add your games
 
 1. Open Memoria.
-2. Select **Add your first game**, or select **+ → Add game** on the Dashboard.
+2. Select **Add your first game**, or select **+ → Add game**.
 3. Select a game from the list.
 4. Select your server region and check the game settings.
 5. Select the **Add** button to finish.
@@ -75,7 +87,7 @@ Check the starting values against your game. Server regions and game updates can
 - **Mark completed tasks.** Select the circle beside a task after you complete it.
 - **Return to the game list.** Press **Alt+Left**, use browser **Back**, or select the back arrow. If an editor is open, Back closes it first. Memoria asks before discarding an unsaved draft.
 - **Change daily-task rules.** Open the game, select its pencil button, then select a task. Change its cadence, mode, or count target here. Use **Add item** to add another task.
-- **Check deadlines.** Open **Timeline** to see events and their dates. Select **List** for a simpler view.
+- **Check deadlines.** Open **Calendar** to see events and their dates. Select **List** for a simpler view.
 - **Add an event or reminder.** Select **+**, then **Event** or **Reminder**.
 - **Change events for one game.** Open its card, then select **Manage events**. Select an event to change its name, type, dates, or check-in rules. You can also add or delete events here.
 - **Read Genshin events.** The card, Timeline lanes, and Manage events show Teyvat events first, Miliastra Wonderland events next, and banners last. Reorder events within each timeline section. Official calendar entries show confirmed date ranges. Events with exact times keep their countdowns.
@@ -87,7 +99,9 @@ Memoria estimates energy from your last entry. Enter a new value after you spend
 Task resets use each game's server time. Dates and clocks use your **Home timezone** in **Settings**.
 
 Some games include event dates with the app. These dates can change, so check important deadlines in your game.
-Memoria shows reminders while it is open. Do not depend on it for alerts after you close it.
+The Android app can schedule optional phone reminders. Enable **Phone reminders** in **Settings** and allow Android notifications.
+The schedule covers the next 24 hours, with custom reminders and one approaching deadline per game.
+Quiet hours apply. Android can delay delivery. Open Memoria regularly to update the schedule.
 
 ## Keep a backup
 

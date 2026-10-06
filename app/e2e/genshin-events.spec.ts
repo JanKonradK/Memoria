@@ -42,6 +42,7 @@ test('Genshin keeps complete Teyvat, Wonderland and banner groups through editin
   ];
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.locator('input[type="file"]').setInputFiles({
     name: 'genshin-groups.json',
@@ -49,7 +50,7 @@ test('Genshin keeps complete Teyvat, Wonderland and banner groups through editin
     buffer: Buffer.from(JSON.stringify({ ...emptyState(), games: [game], events })),
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
+  await page.getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Open Genshin Impact controls', exact: true }).click();
   const teyvat = page.getByRole('region', { name: 'Teyvat events for Genshin Impact', exact: true });
   const mw = page.getByRole('region', { name: 'Miliastra Wonderland events for Genshin Impact', exact: true });

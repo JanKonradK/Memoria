@@ -14,6 +14,7 @@ import { Pill, ProgressBar } from './primitives';
 import { rosterGames, useIdentityColors } from './roster';
 import { Btn, GameBadge, Page, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
 import { TimelineTools } from './TimelineTools';
+import { CalendarFeedStatus } from './CalendarFeedStatus';
 import { TimelineList } from './TimelineList';
 import { serverRegionLabel } from './NexusLayout';
 import { titleFont } from '../fonts';
@@ -968,6 +969,7 @@ export function TimelinePage({ now }: { now: number }) {
           {visibleCount} {visibleCount === 1 ? 'event' : 'events'}
         </span>
         <span>Dates in {state.settings.localTz}</span>
+        <CalendarFeedStatus now={now} />
         {search.trim() && (
           <button
             type="button"

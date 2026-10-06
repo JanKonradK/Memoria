@@ -4,6 +4,7 @@ test.beforeEach(async ({ page }, info) => {
   test.skip(!['android-s23', 'desktop'].includes(info.project.name), 'Phone and desktop draft protection');
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
@@ -159,7 +160,7 @@ test('event and reminder forms save from Enter and explain invalid dates', async
   await expect(page.getByRole('button', { name: 'Edit reminder Keyboard reminder', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.locator('[data-layer=sheet]')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page.getByRole('radio', { name: 'List', exact: true }).click();
   await expect(
     page.getByRole('button', { name: 'Edit Genshin Impact event: Keyboard event', exact: true }),

@@ -40,8 +40,8 @@ export async function initNative(): Promise<void> {
       state.closeSheet();
     } else if (state.focusedGameId) {
       navigateWorkspace(null, state.focusedGameId, () => state.setFocusedGameId(null));
-    } else if (state.tab !== 'home') {
-      state.setTab('home');
+    } else if (state.tab !== 'today') {
+      state.setTab('today');
     } else {
       if (exiting) return;
       exiting = true;
@@ -50,7 +50,7 @@ export async function initNative(): Promise<void> {
       void flushPersist()
         .then(() => {
           const latest = useUI.getState();
-          if (latest.tab === 'home' && !latest.focusedGameId && !latest.sheet && !hasOverlay()) {
+          if (latest.tab === 'today' && !latest.focusedGameId && !latest.sheet && !hasOverlay()) {
             return App.exitApp();
           }
         })

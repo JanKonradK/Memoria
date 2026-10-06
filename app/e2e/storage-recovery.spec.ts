@@ -11,6 +11,7 @@ test('failed local saves keep edits available for retry and backup', async ({ pa
     };
   });
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
@@ -41,7 +42,8 @@ test('failed local saves keep edits available for retry and backup', async ({ pa
   await page.getByRole('button', { name: 'Try saving again' }).click();
   await expect(page.getByRole('alert')).toHaveCount(0);
   await page.reload();
-  await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('button', { name: 'Games', exact: true }).click();
   await openControls();
   await expect(energy).toHaveValue('37');
 });

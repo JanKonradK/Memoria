@@ -1,4 +1,4 @@
-import type { AppState, BannerKind, EventType, Game, GameEvent } from '@memoria/shared';
+import type { AppState, BannerKind, EventType, Game, GameEvent, RemoteEventFeed } from '@memoria/shared';
 import { parseServerDateTime, presetForGame } from '@memoria/shared';
 import { SEED_EVENTS, SEED_UPDATED, SEED_WITHDRAWN_KEYS, type SeedEvent } from './seed-feed';
 
@@ -125,7 +125,10 @@ export function pruneRetiredSeedEvents(state: AppState, before: number): AppStat
   return kept.length === state.events.length ? state : { ...state, events: kept };
 }
 
-export function planSeedImport(state: AppState, now: number): PlannedSeed[] {
+export function planSeedImport(state: AppState, now: number, feed?: RemoteEventFeed): PlannedSeed[] {
+  // Never roll a reviewed remote correction back when an older installed app loads.
+  if (!feed && state.settings.remoteFeedVersion && state.settings.remoteFeedVersion.seedUpdated >= SEED_UPDATED)
+    return [];
   const out: PlannedSeed[] = [];
   const live = state.events.filter((e) => !e.deleted);
   // Resolve each account once, rather than matching the roster for every seed.
@@ -149,11 +152,12 @@ export function planSeedImport(state: AppState, now: number): PlannedSeed[] {
       .filter((event) => event.sourceKey)
       .map((event) => [sourceIdentity(event.gameId, event.sourceKey!), event]),
   );
-  const refreshSeeds = state.settings.seedImportedVersion !== SEED_UPDATED;
+  const version = feed?.seedUpdated ?? SEED_UPDATED;
+  const refreshSeeds = state.settings.seedImportedVersion !== version;
   // Ids the current bundle still accounts for; anything stamped and missing from
   // this set has been dropped upstream.
   const seenKeys = new Set<string>();
-  for (const seed of SEED_EVENTS) {
+  for (const seed of feed?.events ?? SEED_EVENTS) {
     for (const game of gamesByPreset.get(seed.game) ?? []) {
       const start = parseServerDateTime(seed.start, seed.startTimezone ?? seed.timezone ?? game.tz);
       const end = parseServerDateTime(seed.end, seed.endTimezone ?? seed.timezone ?? game.tz);
@@ -164,6 +168,9 @@ export function planSeedImport(state: AppState, now: number): PlannedSeed[] {
         seenKeys.add(existing.id);
         if (existing.deleted) continue;
         if (existing.seedHash === undefined) {
+          // A remote feed cannot prove ownership of a legacy or hand-imported
+          // row. Preserve it rather than guessing which fields the user edited.
+          if (feed) continue;
           if (!refreshSeeds) continue;
           // Imported before fingerprints existed, so there is no baseline to
           // compare against and no way to tell an edit from an older bundle.
@@ -220,7 +227,13 @@ export function planSeedImport(state: AppState, now: number): PlannedSeed[] {
   // withdrawal is complete. The gap is bounded and shrinks to nothing.
   {
     for (const event of state.events) {
-      if (!refreshSeeds && !SEED_WITHDRAWN_KEYS.includes(event.sourceKey ?? '')) continue;
+      // A remote feed may be a partial delivery. Absence is never a withdrawal.
+      if (
+        feed
+          ? !feed.withdrawn.includes(event.sourceKey ?? '')
+          : !refreshSeeds && !SEED_WITHDRAWN_KEYS.includes(event.sourceKey ?? '')
+      )
+        continue;
       if (event.deleted || event.done || seenKeys.has(event.id)) continue;
       if (!isPristine(event)) continue;
       out.push({ kind: 'remove', eventId: event.id, gameId: event.gameId });

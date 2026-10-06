@@ -9,6 +9,7 @@ test('24 events remain reachable in the rounded timeline board with controls in 
   await page.setViewportSize({ width: 1365, height: 768 });
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const now = Date.now();
   const day = 86_400_000;
@@ -59,7 +60,7 @@ test('24 events remain reachable in the rounded timeline board with controls in 
     .locator('input[type="file"]')
     .setInputFiles({ name: 'density.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await expect(page.locator('header').getByRole('combobox', { name: 'Focus game' })).toBeVisible();
   await expect(page.getByRole('button', { name: '+ Event', exact: true })).toHaveCount(0);
   await expect(page.locator('[data-timeline-event-row]')).toHaveCount(24);
@@ -101,6 +102,7 @@ test('24 events remain reachable in the rounded timeline board with controls in 
 test('the tour highlights live controls, walks pages, and finishes only once', async ({ page }, info) => {
   test.skip(!['desktop', 'mobile-390'].includes(info.project.name), 'Tour keyboard and phone flow');
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Your daily run starts here' })).toBeVisible();
   await expect(page.locator('[data-tour-highlight]')).toBeVisible();
   await page.getByRole('button', { name: 'Next', exact: true }).click();
@@ -116,6 +118,7 @@ test('the tour highlights live controls, walks pages, and finishes only once', a
   await page.getByRole('button', { name: 'Finish', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.reload();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Add your first game' })).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Settings', exact: true }).click();

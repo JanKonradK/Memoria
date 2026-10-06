@@ -43,6 +43,7 @@ test.beforeEach(async ({ page }, info) => {
   test.skip(!['android-s23', 'mobile-320', 'desktop'].includes(info.project.name), 'Widget layout sizes');
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
@@ -140,6 +141,7 @@ test('each widget stays full width and can be moved, hidden, restored, and saved
   expect(saved.layout?.find((item) => item.id.startsWith('resource:'))).toBeDefined();
   expect(saved.layout?.every((item) => !('width' in item))).toBe(true);
   await page.reload();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await openControls(page);
   expect((await stored(page)).layout).toEqual(saved.layout);
   const value = page.getByLabel('Original Resin current value');
@@ -259,6 +261,7 @@ test('Edit changes the game title and creates, renames, deletes, and restores re
     regenMinutes: 8,
   });
   await page.reload();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   const open = page.getByRole('button', { name: /^(Open|Expand) Evening check-in controls$/ });
   await expect(open.or(page.getByLabel('Tickets current value'))).toBeVisible();
   if (await open.isVisible()) await open.click();

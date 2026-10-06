@@ -16,6 +16,7 @@ vi.mock('../src/components/Settings', () => ({ SettingsPage: views.settings }));
 vi.mock('../src/components/AppBar', () => ({ AppBar: views.shell }));
 vi.mock('../src/components/GameDetail', () => ({ GameDetailSheet: views.editor }));
 vi.mock('../src/cloud-sync', () => ({ initCloudSync: vi.fn() }));
+vi.mock('../src/data/remote-feed', () => ({ initRemoteFeed: vi.fn() }));
 vi.mock('../src/sync', () => ({ initSync: vi.fn() }));
 vi.mock('../src/pwa', () => ({ applyPwaUpdate: vi.fn() }));
 

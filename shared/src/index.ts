@@ -12,3 +12,7 @@ export * from './tracking';
 export * from './redemption';
 export * from './card-layout';
 export * from './pairing';
+export * from './automation';
+export * from './game-observations';
+export * from './event-feed';
+export * from './notification-plan';

@@ -1,0 +1,87 @@
+.today-page {
+  max-width: 1600px;
+  margin-inline: auto;
+}
+
+.today-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-block: 0.75rem 2rem;
+}
+
+.today-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 2rem;
+}
+
+.today-roster,
+.today-detail {
+  display: none;
+}
+
+.today-roster-button {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  text-align: left;
+  border-radius: var(--radius-ui-lg);
+}
+
+.today-roster-button:hover,
+.today-priority-row:hover,
+.today-priority-row[aria-pressed='true'] {
+  background: var(--color-fill-2);
+}
+
+.today-priority-list {
+  border-top: 1px solid var(--color-line);
+}
+
+.today-priority-row {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1.25rem 0.5rem;
+  border-bottom: 1px solid var(--color-line);
+  text-align: left;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.today-priority-row > svg {
+  margin-top: 0.5rem;
+}
+
+.today-empty {
+  max-width: 42rem;
+  margin-block: 1rem;
+}
+
+@media (min-width: 1100px) {
+  .today-page {
+    padding-inline: 2rem;
+  }
+  .today-layout {
+    grid-template-columns: minmax(10rem, 0.7fr) minmax(20rem, 1.7fr) minmax(17rem, 1fr);
+  }
+  .today-roster,
+  .today-detail {
+    display: block;
+    position: sticky;
+    top: calc(var(--app-bar-h) + 1.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .today-priority-row {
+    transition: none;
+  }
+}

@@ -438,6 +438,8 @@ body {
   html {
     scroll-padding-top: calc(var(--app-bar-h) + 1rem);
     scroll-padding-bottom: calc(var(--mobile-nav-h) + 1rem);
+    /* App restores route and workspace positions after mounting their content. */
+    overflow-anchor: none;
   }
   .app-bar,
   .app-bar:not(:has(.app-game-scope, #app-bar-actions > *)) {
@@ -497,6 +499,10 @@ body {
   }
   .app-utilities {
     gap: 0;
+  }
+  .app-bar button {
+    /* Sticky controls already clear the header; exclude its content inset. */
+    scroll-margin-top: calc(-1 * (var(--app-bar-h) + 1rem));
   }
   .app-utilities .shell-control {
     padding-inline: 0.5rem;

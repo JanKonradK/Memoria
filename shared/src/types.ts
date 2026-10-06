@@ -82,6 +82,15 @@ export interface Resource extends Syncable {
 }
 
 /** A reading (manual or auto-imported): "this resource had `value` points at `takenAt`". */
+export interface ObservationProvenance {
+  kind: 'manual' | 'account' | 'screenshot' | 'estimate';
+  /** A short adapter name, never a login secret or account cookie. */
+  provider?: string;
+  observedAt: number;
+  importedAt: number;
+  batchId?: string;
+}
+
 export interface Snapshot {
   id: string;
   resourceId: string;
@@ -89,6 +98,7 @@ export interface Snapshot {
   takenAt: number;
   /** Overflow reserve level at the same moment (HSR Reserve TB Power), if known. */
   reserve?: number;
+  provenance?: ObservationProvenance;
 }
 
 export interface Task extends Syncable {
@@ -146,6 +156,7 @@ export interface Completion extends Syncable {
   done: boolean;
   /** Progress for count-mode tasks in this period. */
   countDone?: number;
+  provenance?: ObservationProvenance;
 }
 
 /**
@@ -241,6 +252,8 @@ export interface Settings extends Syncable {
    * refreshed", which is the correct state for a device that has only ever added.
    */
   seedImportedVersion?: string;
+  /** Latest reviewed public calendar; protects its corrections from older bundles. */
+  remoteFeedVersion?: { generatedAt: string; seedUpdated: string; revision: string; receivedAt: number };
   /** Per-field clocks prevent unrelated settings edits on two devices from overwriting each other. */
   fieldUpdatedAt?: Partial<Record<SettingsField, number>>;
 }

@@ -1,4 +1,4 @@
-import type { BannerKind, EventType } from '@memoria/shared';
+import type { PublicFeedEvent } from '@memoria/shared';
 
 /**
  * Bundled event feed — banners/events per game, reviewed against publisher
@@ -200,31 +200,7 @@ export const SEED_WITHDRAWN_KEYS = ['seed:endfield:1.5-deep-cold-issue'];
  */
 export const SEED_RETENTION_MS = 60 * 86_400_000;
 
-export interface SeedEvent {
-  bannerKind?: BannerKind;
-  category?: 'teyvat' | 'miliastra';
-  /** Preset key — matched against the stored preset id, with legacy name/short fallbacks. */
-  game: string;
-  name: string;
-  type: EventType;
-  /** 'yyyy-MM-dd HH:mm' in the game's server timezone. */
-  start: string;
-  end: string;
-  /** Confirmed calendar days; these boundaries draw the bar, not hourly deadlines. */
-  dateOnly?: boolean;
-  /** A global broadcast uses one instant across every server. */
-  timezone?: string;
-  /** A global maintenance finish can open an event whose close is server-local. */
-  startTimezone?: string;
-  /** A global close may follow a server-local opening. */
-  endTimezone?: string;
-  dailyTouch?: boolean;
-  /** Include in in-app next actions. Omitted = true; maintenance stays informational. */
-  notify?: boolean;
-  notes?: string;
-  /** Stable identity — re-imports update dates instead of duplicating. */
-  sourceKey: string;
-}
+export type SeedEvent = PublicFeedEvent;
 
 export const SEED_EVENTS: SeedEvent[] = [
   /* ================================================== GENSHIN IMPACT — v6.7 "Luna VIII"

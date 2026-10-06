@@ -32,6 +32,7 @@ test.beforeEach(async ({ page }, info) => {
   test.skip(!['android-s23', 'mobile-320', 'desktop'].includes(info.project.name), 'Game management sizes');
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
@@ -121,6 +122,7 @@ test('pause survives reload and resumes saved daily progress from the dashboard'
   await expect(page.getByRole('button', { name: 'Resume tracking', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Back to dashboard', exact: true }).click();
   await page.reload();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   if (info.project.name === 'desktop') {
     await openWorkspace(page);
     await page.getByRole('button', { name: 'Resume tracking', exact: true }).click();

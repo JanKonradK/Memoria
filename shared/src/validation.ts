@@ -47,6 +47,26 @@ const syncable = {
   deleted: z.boolean().optional(),
 };
 
+export const ObservationProvenanceSchema = z.object({
+  kind: z.enum(['manual', 'account', 'screenshot', 'estimate']),
+  provider: z.string().min(1).max(80).optional(),
+  observedAt: timestamp,
+  importedAt: timestamp,
+  batchId: id.optional(),
+});
+
+export const RemoteFeedVersionSchema = z.object({
+  generatedAt: z.iso
+    .datetime({ offset: true })
+    .refine(
+      (value) => Date.parse(value) <= Date.now() + FUTURE_CLOCK_SKEW_TOLERANCE_MS,
+      'The calendar publication time is in the future.',
+    ),
+  seedUpdated: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  revision: z.string().min(1).max(80),
+  receivedAt: syncClock,
+});
+
 export const GameLayoutItemSchema = z.object({
   id: z
     .string()
@@ -101,6 +121,7 @@ const snapshot = z.object({
   value: finite.nonnegative(),
   takenAt: snapshotClock,
   reserve: finite.nonnegative().optional(),
+  provenance: ObservationProvenanceSchema.optional(),
 });
 
 const task = z.object({
@@ -130,6 +151,7 @@ const completion = z.object({
   periodKey: z.string().max(80),
   done: z.boolean(),
   countDone: finite.nonnegative().optional(),
+  provenance: ObservationProvenanceSchema.optional(),
 });
 
 const event = z.object({
@@ -188,6 +210,7 @@ const settings = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
+  remoteFeedVersion: RemoteFeedVersionSchema.optional(),
   fieldUpdatedAt: z.record(z.string(), syncClock).optional(),
 });
 

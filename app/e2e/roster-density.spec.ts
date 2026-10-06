@@ -53,12 +53,13 @@ test('the overview fits more games and keeps compact summaries readable and acti
     ),
   );
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page
     .locator('input[type="file"]')
     .setInputFiles({ name: 'roster.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
+  await page.getByRole('button', { name: 'Games', exact: true }).click();
   const cards = page.locator('[data-roster-game]');
   await expect(cards).toHaveCount(presets.length);
   await expect(page.getByText('Your daily check-in', { exact: true })).toHaveCount(0);

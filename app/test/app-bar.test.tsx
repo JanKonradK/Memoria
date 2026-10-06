@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { AppBar } from '../src/components/AppBar';
 import { useApp } from '../src/store';
@@ -33,6 +33,23 @@ beforeEach(() => {
 });
 
 afterEach(() => useApp.setState({ load: originalLoad }));
+
+it('keeps three primary routes and makes calendar livestreams and settings reachable', () => {
+  useUI.setState({ tab: 'today' });
+  render(<AppBar />);
+  const nav = screen.getByRole('navigation', { name: 'Primary' });
+  expect(
+    within(nav)
+      .getAllByRole('button')
+      .map((button) => button.textContent),
+  ).toEqual(['Today', 'Games', 'Calendar']);
+  fireEvent.click(within(nav).getByRole('button', { name: 'Calendar' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Livestreams' }));
+  expect(useUI.getState().tab).toBe('livestreams');
+  expect(within(nav).getByRole('button', { name: 'Calendar' })).toHaveAttribute('aria-current', 'page');
+  fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+  expect(useUI.getState().tab).toBe('settings');
+});
 
 it('shows phone sync status even without a desktop launcher in this window', () => {
   useLanSync.setState({ status: 'ok' });

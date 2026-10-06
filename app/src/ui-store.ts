@@ -29,7 +29,7 @@ export function migrateLegacyUiStorage(): void {
 
 migrateLegacyUiStorage();
 
-export type Tab = 'home' | 'timeline' | 'livestreams' | 'settings';
+export type Tab = 'today' | 'home' | 'timeline' | 'livestreams' | 'settings';
 export type Theme = 'dark' | 'light';
 export type TonightPosition = 'left' | 'middle' | 'right';
 export type TimelineView = 'list' | 'lanes';
@@ -108,7 +108,7 @@ interface UIStore {
 export const useUI = create<UIStore>()(
   persist(
     (set, get) => ({
-      tab: 'home',
+      tab: 'today',
       sheet: null,
       reserveOpen: {},
       theme: 'dark',

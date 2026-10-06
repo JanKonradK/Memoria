@@ -6,6 +6,7 @@ test('Tonight tags banners and limits Closing to ten days', async ({ page }, inf
   test.skip(!['desktop', 'wide-short'].includes(info.project.name), 'Tonight is part of the desktop dashboard');
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const now = Date.now();
   const day = 86_400_000;
@@ -32,7 +33,7 @@ test('Tonight tags banners and limits Closing to ten days', async ({ page }, inf
     buffer: Buffer.from(JSON.stringify(state)),
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
+  await page.getByRole('button', { name: 'Games', exact: true }).click();
   const closing = page.getByRole('region', { name: 'Closing', exact: true });
   await expect(closing.getByText('Next 10 days')).toBeVisible();
   await expect(closing.getByText('Banner', { exact: true })).toHaveCount(4);

@@ -21,6 +21,7 @@ test('daily task rules can change on the card, including Tacet counts and new ta
   test.skip(!['desktop', 'android-s23', 'mobile-320'].includes(info.project.name), 'Card editing sizes');
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Wuthering Waves/ }).click();
   await page.getByRole('button', { name: 'Add WuWa', exact: true }).click();
@@ -93,6 +94,7 @@ test('daily task rules can change on the card, including Tacet counts and new ta
     )
     .toBe(5);
   await page.reload();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
   await page.getByRole('button', { name: 'Open Wuthering Waves controls', exact: true }).click();
   await expect(nests).toHaveAccessibleName('Tacet Discord Nests: 5 of 5 done, complete — click to reset');
   await expect(

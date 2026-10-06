@@ -1,7 +1,7 @@
 {
   "name": "memoria",
   "private": true,
-  "version": "0.1.0",
+  "version": "2.0.0",
   "workspaces": [
     "shared",
     "app"
@@ -20,15 +20,17 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:pwa": "node scripts/check-pwa.mjs",
+    "check:events": "node scripts/export-event-feed.mjs --check",
     "check:release": "node scripts/check-release.mjs",
-    "check": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run build && npm run check:pwa",
+    "check": "npm run lint && npm run format:check && npm run check:events && npm run typecheck && npm test && npm run build && npm run check:pwa",
     "typecheck": "npm -w shared run typecheck && npm -w app run typecheck",
     "audit": "npm audit --audit-level=moderate",
     "icons": "node app/scripts/gen-mark.mjs && node app/scripts/gen-icons.mjs && node app/scripts/gen-ico.mjs",
     "ico": "node app/scripts/gen-ico.mjs",
     "install:desktop": "powershell -ExecutionPolicy Bypass -File desktop/Install-Shortcut.ps1",
     "build:single": "npm -w app run build:single",
-    "package": "node scripts/package-release.mjs"
+    "package": "node scripts/package-release.mjs",
+    "export:events": "node scripts/export-event-feed.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
