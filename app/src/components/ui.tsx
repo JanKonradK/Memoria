@@ -15,30 +15,17 @@ import { useGround } from '../theme';
  * width and horizontal padding overrides won't win against the defaults reliably.
  */
 export function Page({ children, className = '' }: { children: ReactNode; className?: string }) {
-  // The full window is the canvas: chrome now lives in the app bar at the top
-  // edge, so there is no floating rail to reserve clearance for and no reason to
-  // cap the width. The bottom padding is ordinary breathing room, not a keep-out
-  // zone for something overlapping the page.
-  return <div className={`w-full px-3 pb-8 pt-3 sm:px-4 ${className}`}>{children}</div>;
+  return <div className={`app-page w-full px-3 pb-8 pt-3 sm:px-4 ${className}`}>{children}</div>;
 }
 
-/**
- * Game identity mark: the game's short code in its accent color. Replaces the
- * old emoji icons everywhere — reads instantly at a glance and never depends
- * on the user having set an icon.
- *
- * The badge reads the ground itself rather than taking it as a prop. Ten call
- * sites across six files pass nothing but the game, and none of them has any
- * business knowing what the badge is being painted against — the theme is not
- * their concern, and threading it through would have made a theme change touch
- * every one of them.
- */
+/** Compact game identity, tinted against the current theme. */
 export function GameBadge({
   short,
   color,
   color2,
   color3,
   size = 'md',
+  interactive = false,
   className = '',
 }: {
   short: string;
@@ -46,30 +33,26 @@ export function GameBadge({
   color2?: string;
   color3?: string;
   size?: 'sm' | 'md' | 'lg';
+  interactive?: boolean;
   className?: string;
 }) {
-  // A complete border identifies the game; progress belongs to its task controls.
-  // Content-sized widths keep custom short names intact.
-  const badgeHeights = { sm: 20, md: 26, lg: 32 } as const;
-  const textSizes = { sm: 'text-caption', md: 'text-meta', lg: 'text-body' };
-  const height = badgeHeights[size];
+  const height = { sm: 20, md: 26, lg: 32 }[size];
+  const textSize = { sm: 'text-caption', md: 'text-meta', lg: 'text-body' }[size];
   const ground = useGround();
-  const rim = gameRim({ color, color2, color3 }, ground);
-  const fill = mix(rim, ground, 0.08);
-  const ink = gameTitleInk({ color, color2, color3 }, fill, 4.5);
-
+  const trio = { color, color2, color3 };
+  const rim = gameRim(trio, ground);
+  const fill = mix(rim, ground, 0.1);
   return (
     <span
       data-game-badge
-      className={`inline-flex shrink-0 items-center justify-center border align-middle font-semibold ${textSizes[size]} ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-ui-sm border align-middle font-semibold ${textSize} ${interactive ? 'transition-colors group-hover:border-current' : ''} ${className}`}
       style={{
         height,
         minWidth: height,
-        paddingInline: height * 0.38,
-        borderRadius: 'var(--radius-ui-sm)',
-        borderColor: mix(rim, ground, 0.58),
-        backgroundColor: fill,
-        color: ink,
+        paddingInline: height * 0.26,
+        background: fill,
+        color: gameTitleInk(trio, fill, 4.5),
+        borderColor: mix(rim, ground, 0.25),
       }}
     >
       <span className="leading-none">{short}</span>
@@ -127,16 +110,16 @@ export const TOUCH_BUTTON = '!min-h-11 sm:!min-h-8';
 export function Field({ label, children, className = '' }: { label: string; children: ReactNode; className?: string }) {
   return (
     <label className={`block ${className}`}>
-      <span className="mb-1 block text-label font-semibold uppercase tracking-wider text-muted">{label}</span>
+      <span className="mb-1 block text-meta font-medium text-muted">{label}</span>
       {children}
     </label>
   );
 }
 
 const inputCls =
-  'min-h-11 w-full rounded-ui-lg bg-fill-2 px-3 py-2 text-body text-fg ring-1 ring-line-edge outline-none placeholder:text-muted focus:bg-fill-3 transition sm:min-h-9';
+  'ui-input min-h-11 w-full rounded-ui-lg bg-fill-2 px-3 py-2 text-body text-fg ring-1 ring-line-edge outline-none placeholder:text-muted focus:bg-fill-3 transition sm:min-h-9';
 
-export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+export function TextInput(props: React.ComponentProps<'input'>) {
   return <input {...props} className={`${inputCls} ${props.className ?? ''}`} />;
 }
 
@@ -189,17 +172,25 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
       disabled={disabled}
       name={name}
       required={required}
-      onValueChange={(next) =>
-        onChange?.({ target: { value: fromRadixValue(next) } } as unknown as React.ChangeEvent<HTMLSelectElement>)
-      }
+      onValueChange={(next) => {
+        // A form's hidden native select can emit an empty reset during a
+        // controlled update. Real empty options use our sentinel instead.
+        if (next === '') return;
+        onChange?.({ target: { value: fromRadixValue(next) } } as unknown as React.ChangeEvent<HTMLSelectElement>);
+      }}
     >
       <SelectPrimitive.Trigger
+        id={props.id}
         aria-label={ariaLabel}
-        className={`${inputCls} group flex items-center justify-between gap-2 text-left disabled:opacity-40 ${className}`}
+        aria-labelledby={props['aria-labelledby']}
+        aria-describedby={props['aria-describedby']}
+        aria-invalid={props['aria-invalid']}
+        aria-errormessage={props['aria-errormessage']}
+        className={`${inputCls} group flex min-w-0 items-center justify-between gap-2 text-left disabled:opacity-40 ${className}`}
       >
-        <SelectPrimitive.Value className="min-w-0 truncate">
-          {current?.label ?? <span className="text-dim">—</span>}
-        </SelectPrimitive.Value>
+        <span className="min-w-0 flex-1 truncate">
+          <SelectPrimitive.Value>{current?.label ?? <span className="text-dim">—</span>}</SelectPrimitive.Value>
+        </span>
         <SelectPrimitive.Icon asChild>
           <svg
             width="12"
@@ -218,16 +209,16 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
           position="popper"
           sideOffset={4}
           collisionPadding={8}
-          className="popover-motion z-[80] max-h-60 w-[var(--radix-select-trigger-width)] min-w-max overflow-hidden rounded-ui-lg bg-popover p-1 shadow-float ring-1 ring-line-strong"
+          className="popover-motion z-[80] max-h-[min(15rem,var(--radix-select-content-available-height))] w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-16px)] overflow-hidden rounded-ui-lg bg-popover p-1 shadow-float ring-1 ring-line-strong"
         >
-          <SelectPrimitive.Viewport className="max-h-60 overflow-y-auto scrollbar-thin">
+          <SelectPrimitive.Viewport className="max-h-[inherit] overflow-y-auto scrollbar-thin">
             {opts.map((option) => (
               <SelectPrimitive.Item
                 key={option.value}
                 value={toRadixValue(option.value)}
                 disabled={option.disabled}
                 textValue={typeof option.label === 'string' ? option.label : undefined}
-                className="relative flex min-h-11 cursor-default select-none items-center rounded-ui-md px-3 py-2 pr-8 text-body text-fg-soft outline-none transition data-[disabled]:opacity-40 data-[highlighted]:bg-fill-3 data-[state=checked]:bg-fill-4 data-[state=checked]:font-semibold sm:min-h-9 sm:py-1.5"
+                className="relative flex min-h-11 cursor-default select-none items-center rounded-ui-md px-3 py-2 pr-8 text-body text-fg-soft [overflow-wrap:anywhere] outline-none transition data-[disabled]:opacity-40 data-[highlighted]:bg-fill-3 data-[state=checked]:bg-fill-4 data-[state=checked]:font-semibold sm:min-h-9 sm:py-1.5"
               >
                 <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
                 <SelectPrimitive.ItemIndicator className="absolute right-2 text-accent">
@@ -255,12 +246,14 @@ export function Toggle({
   onChange,
   label,
   ariaLabel,
+  ariaDescribedBy,
   className = '',
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   label?: string;
   ariaLabel?: string;
+  ariaDescribedBy?: string;
   className?: string;
 }) {
   const id = useId();
@@ -272,6 +265,7 @@ export function Toggle({
         onCheckedChange={onChange}
         className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-ui-full bg-fill-3 transition-colors duration-(--dur-fast) data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-accent data-[state=checked]:to-accent-2"
         aria-label={ariaLabel ?? label}
+        aria-describedby={ariaDescribedBy}
       >
         <SwitchPrimitive.Thumb className="block h-5 w-5 translate-x-0.5 rounded-ui-full bg-fg shadow transition duration-(--dur-fast) data-[state=checked]:translate-x-[22px] data-[state=checked]:bg-fg-invert" />
       </SwitchPrimitive.Root>
@@ -306,7 +300,7 @@ export function Segmented<T extends string>({
       onValueChange={(next) => {
         if (next) onChange(next as T);
       }}
-      className="inline-flex rounded-ui-full border border-line-hairline bg-inset p-[3px]"
+      className="ui-segmented inline-flex rounded-ui-md border border-line-hairline bg-inset p-[3px]"
       aria-label={ariaLabel}
     >
       {options.map((option) => {
@@ -315,12 +309,12 @@ export function Segmented<T extends string>({
             key={option.value}
             value={option.value}
             disabled={option.disabled}
-            className="relative min-h-8 rounded-ui-full border border-transparent px-3 text-meta font-semibold text-muted transition-colors hover:text-fg-soft disabled:cursor-default disabled:hover:text-muted data-[state=on]:text-fg"
+            className="relative min-h-8 rounded-ui-md border border-transparent px-3 text-meta font-semibold text-muted transition-colors hover:text-fg-soft disabled:cursor-default disabled:hover:text-muted data-[state=on]:text-fg"
           >
             {option.value === value && (
               <m.span
                 aria-hidden
-                className="pointer-events-none absolute inset-0 rounded-ui-full border border-line-strong bg-surface-2"
+                className="pointer-events-none absolute inset-0 rounded-ui-md border border-line-strong bg-surface-2"
                 layoutId={indicatorLayoutId}
                 initial={false}
                 transition={reducedMotion ? { duration: 0 } : { duration: duration.base, ease: easing.out }}
@@ -358,6 +352,7 @@ export function Tooltip({ children, content }: { children: ReactElement; content
 export function Btn({
   children,
   onClick,
+  type = 'button',
   kind = 'ghost',
   className = '',
   disabled,
@@ -368,18 +363,18 @@ export function Btn({
   kind?: 'primary' | 'ghost' | 'danger';
   className?: string;
   disabled?: boolean;
-} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+} & React.ComponentPropsWithRef<'button'>) {
   const base =
     'btn-compact min-h-8 rounded-ui-md px-3 py-1 text-caption font-semibold transition active:scale-[0.97] disabled:opacity-40';
   const kinds = {
-    primary: 'bg-gradient-to-br from-accent to-accent-2 text-fg-invert hover:brightness-110 ring-1 ring-line-edge',
+    primary: 'bg-accent text-fg-invert hover:brightness-110 ring-1 ring-line-edge',
     ghost: 'bg-fill-2 text-fg-soft ring-1 ring-line-hairline hover:bg-fill-3',
     danger: 'bg-danger/15 text-danger-fg ring-1 ring-danger/30 hover:bg-danger/25',
   };
   return (
     <button
       {...props}
-      type="button"
+      type={type}
       disabled={disabled}
       onClick={onClick}
       className={`${base} ${kinds[kind]} ${className}`}
@@ -396,9 +391,5 @@ export function Btn({
  */
 export function SectionTitle({ children, level = 3 }: { children: ReactNode; level?: 2 | 3 }) {
   const Heading = level === 2 ? 'h2' : 'h3';
-  return (
-    <Heading className="mb-2 mt-6 text-meta font-bold uppercase tracking-widest text-muted first:mt-0">
-      {children}
-    </Heading>
-  );
+  return <Heading className="mb-2 mt-6 text-meta font-semibold text-muted first:mt-0">{children}</Heading>;
 }

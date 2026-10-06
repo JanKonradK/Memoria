@@ -89,4 +89,19 @@ describe('urgency', () => {
     expect(gameActions(state, game, now, context)).toEqual(actions);
     expect(urgencyOrder(state, now, context)).toEqual(urgencyOrder(state, now));
   });
+
+  it('removes completed events from next actions until they are reopened', () => {
+    const game = makeGame();
+    const state = makeState({
+      games: [game],
+      events: [makeEvent({ start: now - 1, end: now + 1_000, notify: true, done: true })],
+    });
+
+    expect(gameActions(state, game, now)).toEqual([]);
+    expect(urgencyOrder(state, now)[0]!.next).toBeNull();
+    expect(gameActions(state, game, now, buildUrgencyContext(state, now))).toEqual([]);
+
+    state.events[0]!.done = false;
+    expect(gameActions(state, game, now)).toHaveLength(1);
+  });
 });

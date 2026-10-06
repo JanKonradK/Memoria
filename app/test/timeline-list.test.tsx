@@ -94,7 +94,7 @@ describe('timeline agenda controls', () => {
     expect(screen.queryByText('Other game')).not.toBeInTheDocument();
     view.rerender(<TimelineList {...options} showFinished />);
     const finished = screen.getByRole('region', { name: /Finished\s*2/ });
-    expect(within(finished).getByText('Completed')).toBeInTheDocument();
+    expect(within(finished).getByText('Completed', { selector: 'p' })).toBeInTheDocument();
     expect(within(finished).getByText('Expired')).toBeInTheDocument();
     expect(screen.queryByText('Other game')).not.toBeInTheDocument();
   });
@@ -113,7 +113,7 @@ describe('timeline agenda controls', () => {
     expect(options.onOpenEvent).toHaveBeenCalledExactlyOnceWith(item);
     const done = { ...item, done: true };
     view.rerender(<TimelineList {...options} events={[done]} showFinished />);
-    const restore = screen.getByRole('checkbox', { name: 'Restore: Genshin Impact event Spiral Abyss' });
+    const restore = screen.getByRole('checkbox', { name: 'Completed — Restore: Genshin Impact event Spiral Abyss' });
     expect(restore).toBeChecked();
     fireEvent.click(restore);
     expect(options.onToggleEvent).toHaveBeenLastCalledWith(done);
@@ -126,12 +126,26 @@ describe('timeline agenda controls', () => {
     render(<TimelineList {...options} games={[main, alt]} localTz="Asia/Tokyo" />);
     expect(screen.getByRole('button', { name: 'Edit Genshin Impact (Main) event: Abyss' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Edit Genshin Impact (Alt) event: Abyss' })).toBeInTheDocument();
-    expect(screen.getAllByText('8 Sep 20:00 → 22:00')).toHaveLength(2);
+    expect(screen.getAllByText('Starts')).toHaveLength(2);
+    expect(screen.getAllByText('8 Sep 20:00')).toHaveLength(2);
+    expect(screen.getAllByText('Ends')).toHaveLength(2);
+    expect(screen.getAllByText('8 Sep 22:00')).toHaveLength(2);
+    expect(screen.getAllByText('8 Sep 20:00')[0]).toHaveAttribute('datetime', '2026-09-08T20:00:00.000+09:00');
+  });
+
+  it('shows both years when local event dates cross New Year', () => {
+    const item = event('New Year event', {
+      start: Date.UTC(2026, 11, 31, 14),
+      end: Date.UTC(2026, 11, 31, 16),
+    });
+    render(<TimelineList {...props([item])} localTz="Asia/Tokyo" />);
+    expect(screen.getByText('31 Dec 2026 23:00')).toHaveAttribute('datetime', '2026-12-31T23:00:00.000+09:00');
+    expect(screen.getByText('1 Jan 2027 01:00')).toHaveAttribute('datetime', '2027-01-01T01:00:00.000+09:00');
   });
 
   it('explains hidden history instead of presenting an empty list as missing data', () => {
     render(<TimelineList {...props([event('Completed', { done: true })])} />);
-    expect(screen.getByText(/1 finished event is hidden.*history control/)).toBeInTheDocument();
+    expect(screen.getByText(/1 finished event is hidden.*Show finished events/)).toBeInTheDocument();
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 });

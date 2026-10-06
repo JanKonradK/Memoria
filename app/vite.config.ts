@@ -57,7 +57,8 @@ export default defineConfig(({ mode }) => {
         ? [singleFile()]
         : [
             VitePWA({
-              registerType: 'autoUpdate',
+              // Keep the current page and its drafts until Update now is selected.
+              registerType: 'prompt',
               includeAssets: ['icon-192.png', 'icon-512.png', 'icon-maskable.png'],
               manifest: {
                 name: 'Memoria — Gacha Tracker',

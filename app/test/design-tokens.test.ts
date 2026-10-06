@@ -251,9 +251,8 @@ describe('depth is tonal, not cast', () => {
   });
 
   it('only lets dialogs and popovers float', () => {
-    // The floating nav rail was retired with the redesign — chrome lives in the
-    // app bar at the top edge now, and a sticky bar is part of the page rather
-    // than something overlaying it. Nothing else may cast.
+    // Floating navigation uses the shared CSS glass material. This allowance
+    // covers components that explicitly apply the Tailwind shadow-float token.
     //
     // The list is an ALLOWANCE, not an inventory: it is checked for extras, not
     // for exact equality, so a file that has not been written yet can be
@@ -268,6 +267,8 @@ describe('depth is tonal, not cast', () => {
       'components/AddMenu.tsx',
       'components/TimelineTools.tsx',
       'components/UserGuide.tsx',
+      // A lifted widget overlays the grid only for the duration of its drag.
+      'components/GameLayoutCanvas.tsx',
     ]);
     const floating = FILES.filter(({ text }) => /\bshadow-float\b/.test(text)).map(({ path }) =>
       path.slice(SRC.length + 1).replace(/\\/g, '/'),

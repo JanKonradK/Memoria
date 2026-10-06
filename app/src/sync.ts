@@ -1,23 +1,32 @@
-import { mergeState, normalizeState } from '@memoria/shared';
+import { mergeState, normalizeState, safeParseAppState, type AppState } from '@memoria/shared';
 import { launcherFetch, servedByLauncher } from './launcher';
 import { useApp } from './store';
 
 /** The launcher refuses a larger document; warn before the write fails. */
 const SYNC_WARNING_BYTES = 900_000;
 
-let syncing = false;
+let syncing: Promise<void> | null = null;
+let syncAgain = false;
 let serverVersion: number | null = null;
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 /** Conflict recovery and successful writes accept the same launcher envelope. */
-async function mergeResponse(response: Response): Promise<void> {
-  const data = (await response.json()) as { state: unknown; version?: number };
-  serverVersion = typeof data.version === 'number' ? data.version : serverVersion;
-  useApp.getState().replaceState(mergeState(useApp.getState().state, normalizeState(data.state)));
+async function mergeResponse(response: Response, sent?: AppState): Promise<boolean> {
+  const data = (await response.json()) as { state: unknown; version?: number } | null;
+  const remote = data?.state;
+  // Repairing a damaged response can hide missing remote rows, then push that
+  // incomplete document back to the launcher on the next sync.
+  if (!safeParseAppState(remote).success)
+    throw new Error('The desktop launcher returned invalid data. Update Memoria and try again. Local edits were kept.');
+  const local = useApp.getState().state;
+  useApp.getState().replaceState(mergeState(local, normalizeState(remote)));
+  serverVersion = typeof data?.version === 'number' ? data.version : serverVersion;
+  return sent !== undefined && local !== sent;
 }
 
 export function resetSyncState(): void {
   serverVersion = null;
+  syncAgain = false;
   clearTimeout(debounceTimer);
   debounceTimer = undefined;
   useApp.getState().setSyncStatus('idle');
@@ -25,7 +34,11 @@ export function resetSyncState(): void {
 
 /** Push local state to the launcher, receive the merged document, merge it back in. */
 export async function syncNow(): Promise<void> {
-  if (!servedByLauncher() || syncing) return;
+  if (!servedByLauncher()) return;
+  if (syncing) {
+    syncAgain = true;
+    return syncing;
+  }
   const store = useApp.getState();
   const stateBytes = new TextEncoder().encode(JSON.stringify(store.state)).byteLength;
   if (stateBytes > SYNC_WARNING_BYTES) {
@@ -35,14 +48,20 @@ export async function syncNow(): Promise<void> {
     );
     return;
   }
-  syncing = true;
+  let complete!: () => void;
+  syncing = new Promise<void>((resolve) => {
+    complete = resolve;
+  });
+  syncAgain = false;
+  let success = false;
   store.setSyncStatus('syncing');
   try {
     for (let attempt = 0; attempt < 3; attempt++) {
+      const sent = useApp.getState().state;
       const res = await launcherFetch('/api/sync', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ state: useApp.getState().state, version: serverVersion }),
+        body: JSON.stringify({ state: sent, version: serverVersion }),
         signal: AbortSignal.timeout(30_000),
       });
       if (res.status === 409) {
@@ -63,14 +82,21 @@ export async function syncNow(): Promise<void> {
         }
         throw new Error(message);
       }
-      await mergeResponse(res);
+      const editedDuringRequest = await mergeResponse(res, sent);
+      syncAgain ||= editedDuringRequest;
       useApp.getState().setSyncStatus('ok');
+      success = true;
       return;
     }
   } catch (e) {
     useApp.getState().setSyncStatus('error', e instanceof Error ? e.message : String(e));
   } finally {
-    syncing = false;
+    syncing = null;
+    complete();
+    if (success && syncAgain) {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => void syncNow(), 300);
+    }
   }
 }
 
@@ -90,6 +116,9 @@ function watchLauncherEvents(onChange: () => void): void {
       const response = await launcherFetch('/api/events', { signal });
       if (!response.ok || !response.body) throw new Error('Event stream unavailable.');
       retryDelay = 2000;
+      // The stream has no replay. Pull once when it connects so edits made
+      // during a dropped connection cannot leave this window stale.
+      onChange();
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let pending = '';

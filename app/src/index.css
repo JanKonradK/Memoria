@@ -1,35 +1,16 @@
 @import 'tailwindcss';
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Jewelry on charcoal — see DESIGN.md.
-
-   The chrome is a machined charcoal housing that recedes against an OLED
-   ground, so a game's own colours read as an edge, a title and a tube. A game's
-   primary colour only whispers into a card fill (~7% on dark); everything else
-   saturated is either a trio role or urgency.
-
-   Two systems, never the same pixel job: colour means URGENCY or it means a
-   GAME TRIO ROLE. Urgency wins where they collide.
-
-   Every ladder below is CLOSED. If a value is needed between two steps, one of
-   the two steps is wrong. Components may not name a Tailwind palette colour.
-   ───────────────────────────────────────────────────────────────────────────── */
+/* Quiet workspace surfaces. See app/DESIGN.md. */
 @theme {
-  /* ── Chrome ────────────────────────────────────────────────────────────────
-     Panels are a two-stop vertical gradient, never a flat fill: at panel size a
-     flat dark fill bands and reads plastic. --panel-hi/--panel-lo are the stops;
-     --color-surface-1 is the flat mid for the few places that cannot take a
-     gradient. */
-  --panel-hi: #131316;
-  --panel-lo: #0c0c0e;
-  --panel-hover-hi: #1a1a1e;
-  --panel-hover-lo: #121215;
+  /* Flat surface levels separate the canvas, panels, and floating controls. */
+  --panel-hi: #151619;
+  --panel-lo: #151619;
 
-  --color-surface-0: #000000; /* the OLED ground */
-  --color-surface-1: #101013; /* flat charcoal mid */
-  --color-surface-2: #1a1a1e; /* hovered / raised chrome */
-  --color-inset: #08080a; /* inputs, tube tracks, chip fills, wells */
-  --color-popover: #17171b; /* the one genuinely floating surface */
+  --color-surface-0: #0c0d0f; /* the graphite ground */
+  --color-surface-1: #151619; /* neutral panel */
+  --color-surface-2: #202126; /* hovered / raised chrome */
+  --color-inset: #101114; /* inputs, tube tracks, chip fills, wells */
+  --color-popover: #202126; /* the one genuinely floating surface */
 
   /* ── Text ramp ─────────────────────────────────────────────────────────────
      Three steps carry language; `faint` is decorative stroke only. `dim` is
@@ -39,7 +20,7 @@
   --color-fg: #f4f4f6;
   --color-fg-soft: #dcdce2;
   --color-muted: #9a9aa4;
-  --color-dim: #83838d;
+  --color-dim: #96969f;
   --color-faint: #63636d; /* decorative strokes only — never text */
   --color-fg-invert: #0a0a0b; /* text on a light or filled surface */
 
@@ -54,7 +35,7 @@
   --color-warn-fg: var(--color-warn);
   --color-danger: #ff5a48;
   --color-danger-fg: var(--color-danger);
-  --color-later: #74747e; /* present, not asking for anything */
+  --color-later: #96969f; /* present, not asking for anything */
   --color-danger-bg: #241009;
   --color-warn-bg: #231a08;
 
@@ -89,7 +70,7 @@
   --color-fill-4: rgba(255, 255, 255, 0.16); /* active, selected, pressed */
 
   /* ── Border ladder ─────────────────────────────────────────────────────────
-     Opaque hairlines rather than white alphas: against the OLED ground an alpha
+     Opaque hairlines rather than white alphas: against the graphite ground an alpha
      edge disappears, and the 1px edge is the only thing giving a panel a shape. */
   --color-line-hairline: #1c1c21; /* default rule inside chrome */
   --color-line: #232329; /* panel perimeter */
@@ -108,24 +89,21 @@
   --color-panel2: var(--color-surface-2);
 
   /* ── Radius ────────────────────────────────────────────────────────────────
-     Six steps. Controls use the pill step; cards and panels use fixed corners. */
-  --radius-ui-sm: 8px;
-  --radius-ui-md: 999px;
-  --radius-ui-lg: 14px;
-  --radius-ui-xl: 18px;
-  --radius-ui-card: 22px;
+     Six related curves. Nested controls use smaller corners than their containers. */
+  --radius-ui-sm: 10px;
+  --radius-ui-md: 16px;
+  --radius-ui-lg: 24px;
+  --radius-ui-xl: 32px;
+  --radius-ui-card: 32px;
   --radius-ui-full: 999px;
 
   --lane-bar-h: 2.25rem;
   --lane-row-h: 3.25rem;
 
   /* ── Type scale ────────────────────────────────────────────────────────────
-     Language in DM Sans, numbers in IBM Plex Mono. Caption is the floor at 10px;
-     nothing renders smaller.
-
-     The scale is closed, but four of its steps sit within 3px of each other
-     (caption 10, label 11, meta 12, body 13), which is how eight different jobs
-     ended up spread arbitrarily across them. One role per step:
+     Language in DM Sans, numbers in IBM Plex Mono. Body text starts at 16px;
+     supporting text stays at 13px or above. Phone task text uses 17px.
+     Use weight and spacing to distinguish labels from metadata.
 
        display  expanded stage card title (hero above 1500px)
        heading  card and panel headings
@@ -136,18 +114,18 @@
        caption  small numeric annotation only — ruler digits, a badge short
 
      Reach for the role, not for the size that happens to look right. */
-  --text-caption: 0.625rem;
-  --text-caption--line-height: 0.875rem;
-  --text-label: 0.6875rem;
-  --text-label--line-height: 1rem;
-  --text-meta: 0.75rem;
-  --text-meta--line-height: 1rem;
-  --text-body: 0.8125rem;
-  --text-body--line-height: 1.125rem;
-  --text-lead: 0.9375rem;
-  --text-lead--line-height: 1.375rem;
-  --text-title: 1.0625rem;
-  --text-title--line-height: 1.5rem;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.125rem;
+  --text-label: 0.8125rem;
+  --text-label--line-height: 1.25rem;
+  --text-meta: 0.875rem;
+  --text-meta--line-height: 1.25rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
+  --text-lead: 1.0625rem;
+  --text-lead--line-height: 1.5rem;
+  --text-title: 1.1875rem;
+  --text-title--line-height: 1.625rem;
   --text-heading: 1.25rem;
   --text-heading--line-height: 1.75rem;
   --text-numeral: 1.75rem;
@@ -167,6 +145,12 @@
 
 :root {
   color-scheme: dark;
+  --glass-bg: rgba(32, 33, 38, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.16);
+  --glass-highlight: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.42);
+  --glass-blur: 24px;
+  --nav-ink: #80c3ff;
 
   /* One easing for everything that is not the stage. Exponential deceleration
      from an already-visible default; real objects do not overshoot. */
@@ -175,10 +159,7 @@
   --dur-base: 260ms;
   --dur-slow: 420ms;
   --stagger: 40ms;
-  /* NEXUS_DUR_MS in NexusLayout.tsx mirrors this 300ms value. */
-  --nexus-dur: 0.3s;
-  --nexus-ease: var(--ease-out);
-  --nexus-card-h: 7rem;
+  --nexus-card-h: 8rem;
   /* The stage fills what the app bar leaves, minus the page's own padding
      (0.75rem top + 2rem bottom).
      --app-bar-h is MEASURED and written by AppBar, never guessed. A guess was
@@ -189,7 +170,7 @@
   --stage-h: calc(100dvh - var(--app-bar-h) - 2.75rem);
 
   /* A ring, not a glow: on charcoal the bright text step is the only thing that
-     reads at 2px against both the panel and the OLED ground. */
+     reads at 2px against both the panel and the graphite ground. */
   --focus-ring-color: var(--color-fg);
   --focus-ring-width: 2px;
   --focus-ring-offset: 1px;
@@ -200,24 +181,6 @@
   --tick-spoke-width: 1px;
   --progress-track: var(--color-inset);
 
-  /* ── Machined surfaces ─────────────────────────────────────────────────────
-     The reactor tube and the card shell are lit objects, not flat fills: they
-     read as machined because a highlight runs along one edge and a shadow along
-     the other. Those two lights were written as literal black and white alphas,
-     which is correct on charcoal and wrong on cream — a 45% black floor under a
-     paper-coloured tube is a smear, and a 42% white lip is nothing at all.
-     Light does not invert them; it warms and rebalances them. */
-  --tube-floor: rgba(0, 0, 0, 0.45);
-  --tube-lip: rgba(255, 255, 255, 0.42);
-  --tube-rib-dark: rgba(0, 0, 0, 0.24);
-  --tube-rib-light: rgba(255, 255, 255, 0.18);
-  --tube-sweep: rgba(255, 255, 255, 0.76);
-  --card-cast-near: rgba(0, 0, 0, 0.45);
-  --card-cast-far: rgba(0, 0, 0, 0.75);
-  /* A 1px offset for legibility over a card's own gradient. The offset direction
-     is fixed; only which way it reads changes. */
-  --title-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
-
   /* ── Icons ─────────────────────────────────────────────────────────────────
      A stroke weight is not a constant. The same 1.75px line reads a full weight
      heavier as dark-on-cream than as light-on-black, because the light ground
@@ -227,43 +190,38 @@
   --icon-sm: 14px;
   --icon-md: 16px;
   --icon-lg: 20px;
-
-  /* How strongly the grain tile reads. Flat dark fills band and look plastic
-     over large areas; a little noise gives them a material to be made of. */
-  --grain-opacity: 0.05;
-  /* Generated rather than shipped: a 128px PNG tile costs ~17KB against the PWA
-     budget, and feTurbulence is the same texture for ~250 bytes. */
-  --grain-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* Cream paper ground; chrome surfaces stay warm, never pure white. The whole
-   theme is a token re-point — every component already speaks in semantic
-   classes, so nothing below the token layer knows a theme exists. */
+/* Cool neutral light theme; components use the same semantic tokens. */
 :root[data-theme='light'] {
   color-scheme: light;
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --glass-highlight: rgba(255, 255, 255, 0.7);
+  --glass-shadow: 0 12px 32px -12px rgba(35, 42, 58, 0.22);
+  --nav-ink: #005bbf;
 
-  --panel-hi: #f3eee4;
-  --panel-lo: #ebe4d6;
-  --panel-hover-hi: #f7f2e8;
-  --panel-hover-lo: #f0e9db;
+  --panel-hi: #ffffff;
+  --panel-lo: #ffffff;
 
-  --color-surface-0: #efeae0;
-  --color-surface-1: #efe9dd;
-  --color-surface-2: #f7f2e8;
-  --color-inset: #e4ddd0;
-  --color-popover: #f3eee4;
+  --color-surface-0: #f6f7f9;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #f0f1f4;
+  --color-inset: #edeef2;
+  --color-popover: #ffffff;
 
-  --color-fg: #191713;
-  --color-fg-soft: #35312a;
-  --color-muted: #5c564b;
-  --color-dim: #6b6558;
+  --color-fg: #202127;
+  --color-fg-soft: #353740;
+  --color-muted: #5b5e69;
+  --color-dim: #656874;
   --color-faint: #938c7b;
   --color-fg-invert: #f4f4f6;
 
   --color-ok: #2c7a57;
   --color-warn: #8a5e0a;
   --color-danger: #b8341f;
-  --color-later: #7c7669;
+  --color-danger-fg: #9c2b1a; /* AA text on tinted danger controls. */
+  --color-later: #656874;
   --color-danger-bg: #f6e6e1;
   --color-warn-bg: #f6edd9;
 
@@ -281,34 +239,22 @@
   --color-tag-daily: #8a5e0a;
   --color-tag-weekly: #1c6b78;
 
-  /* The overlay ladder inverts: on cream, "lift" is a darkening. */
+  /* Light-theme fills darken the underlying surface. */
   --color-fill-1: rgba(25, 23, 19, 0.03);
   --color-fill-2: rgba(25, 23, 19, 0.06);
   --color-fill-3: rgba(25, 23, 19, 0.1);
   --color-fill-4: rgba(25, 23, 19, 0.16);
 
-  --color-line-hairline: #ded7c9;
-  --color-line: #d6cfc0;
-  --color-line-edge: #cbc3b2;
-  --color-line-strong: #c0b7a4;
+  --color-line-hairline: #e7e8ed;
+  --color-line: #dddfe6;
+  --color-line-edge: #ced1db;
+  --color-line-strong: #babecb;
 
   --color-scrim-well: rgba(25, 23, 19, 0.08);
   --color-scrim-veil: rgba(25, 23, 19, 0.35);
   --color-scrim-modal: rgba(25, 23, 19, 0.55);
 
-  --grain-opacity: 0.035;
   --shadow-float: 0 18px 44px -22px rgba(60, 50, 30, 0.35);
-
-  /* Warm and rebalanced, not inverted: the floor lightens so it shades rather
-     than smears, and the highlights strengthen so they still read as light. */
-  --tube-floor: rgba(60, 50, 30, 0.16);
-  --tube-lip: rgba(255, 255, 255, 0.7);
-  --tube-rib-dark: rgba(60, 50, 30, 0.14);
-  --tube-rib-light: rgba(255, 255, 255, 0.55);
-  --tube-sweep: rgba(255, 255, 255, 0.85);
-  --card-cast-near: rgba(60, 50, 30, 0.14);
-  --card-cast-far: rgba(60, 50, 30, 0.22);
-  --title-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 
   --icon-stroke: 1.5;
 }
@@ -332,6 +278,7 @@ body {
   background: var(--color-surface-0);
   color: var(--color-fg);
   font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
 }
@@ -349,8 +296,7 @@ body {
   letter-spacing: -0.01em;
 }
 
-/* Stable shell rows: utilities beside the brand, routes below on phones.
-   Route-specific controls get their own scrollable row until all four groups fit. */
+/* Desktop shell rows. Phone rules below move navigation to the bottom edge. */
 .app-bar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -362,12 +308,37 @@ body {
 }
 .app-nav {
   grid-area: nav;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-ui-full);
+  padding: 5px;
+  background: var(--glass-bg);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+}
+.app-nav-button,
+.app-nav .nav-slider {
+  border-radius: var(--radius-ui-full);
+}
+.app-nav-button[aria-current='page'] {
+  color: var(--nav-ink);
+}
+.app-nav .nav-slider {
+  background: color-mix(in srgb, var(--color-surface-2) 90%, transparent);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 2px 5px rgba(0, 0, 0, 0.08);
 }
 .app-utilities {
   grid-area: utilities;
 }
 .app-route-actions {
   grid-area: actions;
+}
+.app-toasts {
+  bottom: calc(0.75rem + env(safe-area-inset-bottom));
 }
 .app-game-scope {
   width: max-content;
@@ -394,10 +365,10 @@ body {
   z-index: 40;
   background: var(--color-surface-0);
 }
-.app-route-actions:empty {
+.app-route-actions:not(:has(.app-game-scope, #app-bar-actions > *)) {
   display: none;
 }
-.app-bar:has(.app-route-actions:empty) {
+.app-bar:not(:has(.app-game-scope, #app-bar-actions > *)) {
   grid-template-areas: 'brand utilities' 'nav nav';
 }
 
@@ -440,15 +411,142 @@ body {
     grid-template-columns: auto auto minmax(0, 1fr);
     grid-template-areas: 'brand nav utilities' 'actions actions actions';
   }
-  .app-bar:has(.app-route-actions:empty) {
+  .app-bar:not(:has(.app-game-scope, #app-bar-actions > *)) {
     grid-template-areas: 'brand nav utilities';
   }
 }
 @media (min-width: 1280px) {
   .app-bar,
-  .app-bar:has(.app-route-actions:empty) {
+  .app-bar:not(:has(.app-game-scope, #app-bar-actions > *)) {
     grid-template-columns: auto auto minmax(0, 1fr) auto;
     grid-template-areas: 'brand nav actions utilities';
+  }
+}
+
+/* Phone check-in: a readable roster, reachable navigation, and a single
+   document scroll. Desktop retains its full stage and compact controls. */
+@media (max-width: 767px) {
+  :root {
+    --text-body: 1.0625rem;
+    --text-body--line-height: 1.625rem;
+    --text-meta: 0.9375rem;
+    --text-meta--line-height: 1.375rem;
+    --text-label: 0.875rem;
+    --text-label--line-height: 1.25rem;
+    --mobile-nav-h: calc(6rem + env(safe-area-inset-bottom));
+  }
+  html {
+    scroll-padding-top: calc(var(--app-bar-h) + 1rem);
+    scroll-padding-bottom: calc(var(--mobile-nav-h) + 1rem);
+  }
+  .app-bar,
+  .app-bar:not(:has(.app-game-scope, #app-bar-actions > *)) {
+    grid-template-areas: 'brand utilities' 'actions actions';
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+    background: var(--color-surface-0);
+    /* A filter would make the fixed bottom nav relative to this header. */
+    backdrop-filter: none;
+  }
+  .app-brand > span {
+    font-size: 0.75rem;
+  }
+  .app-brand > span.hidden {
+    display: none;
+  }
+  .app-nav {
+    position: fixed;
+    inset: auto 12px calc(12px + env(safe-area-inset-bottom));
+    z-index: 40;
+    height: 72px;
+    max-width: 460px;
+    margin-inline: auto;
+    padding: 6px;
+    gap: 0;
+  }
+  .app-nav-button {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: var(--radius-ui-full);
+    font-size: 0.75rem;
+  }
+  .app-nav .nav-slider {
+    border-radius: var(--radius-ui-full);
+  }
+  .app-route-actions {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+  .app-game-scope,
+  #app-bar-actions {
+    width: 100%;
+  }
+  #app-bar-actions:empty {
+    display: none;
+  }
+  .shell-control,
+  .btn-compact,
+  button[role='radio'],
+  button[role='combobox'] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .app-utilities {
+    gap: 0;
+  }
+  .app-utilities .shell-control {
+    padding-inline: 0.5rem;
+  }
+  .app-utilities .shell-control span.hidden {
+    display: none;
+  }
+  .app-page {
+    padding-top: 1.25rem;
+    padding-bottom: calc(var(--mobile-nav-h) + 1.5rem);
+  }
+  .app-toasts {
+    bottom: calc(var(--mobile-nav-h) + 0.75rem);
+  }
+  .timeline-board {
+    max-height: none;
+    overflow-y: visible;
+  }
+  .timeline-board [data-timeline-ruler] {
+    top: var(--app-bar-h);
+  }
+  input,
+  textarea {
+    font-size: max(1rem, 1em);
+  }
+}
+
+/* In phone landscape, keep the game selector and page tools on one row so
+   content still has room between the header and bottom navigation. */
+@media (min-width: 540px) and (max-width: 767px) and (max-height: 500px) {
+  :root {
+    --mobile-nav-h: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+  .app-nav {
+    height: 60px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+  .app-nav-button {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+  .app-game-scope {
+    width: auto;
+    flex: 1;
+  }
+  #app-bar-actions {
+    width: auto;
+  }
+  .app-page {
+    padding-top: 0.75rem;
   }
 }
 
@@ -477,18 +575,15 @@ input[type='number'] {
   appearance: textfield;
 }
 
-/* ── Surfaces ────────────────────────────────────────────────────────────────
-   Depth is tone, gradient, grain and a 1px edge against the ground. No drop
-   shadows: on a true-black OLED canvas a soft shadow is invisible where it
-   should be subtle and a grey smear where it is not. */
+/* Panels use a fine border. Game surfaces add only a slight identity tint. */
 
 .panel {
   position: relative;
-  background: linear-gradient(180deg, var(--panel-hi), var(--panel-lo));
+  background: var(--color-surface-1);
   border: 1px solid var(--color-line);
 }
 .panel-hover:hover {
-  background: linear-gradient(180deg, var(--panel-hover-hi), var(--panel-hover-lo));
+  background: var(--color-surface-2);
 }
 
 /* One neutral material for the attention hub and every game card. Game identity
@@ -501,10 +596,211 @@ input[type='number'] {
   position: relative;
   isolation: isolate;
   background: linear-gradient(180deg, var(--card-shell-hi, var(--panel-hi)), var(--card-shell-lo, var(--panel-lo)));
+  border: 1px solid var(--color-line);
+}
+
+/* The game itself owns the light in its glass. Chrome stays quiet around it.
+   One material follows a roster card into its expanded workspace. */
+.game-card-surface {
+  --game-glint: rgba(255, 255, 255, 0.14);
+  --game-shadow: rgba(0, 0, 0, 0.28);
+  --game-tint: 11%;
+  --color-muted: #b0b2c0;
+  --color-dim: #a4a7b6;
+  border-radius: var(--radius-ui-card);
+  border-color: color-mix(in srgb, var(--game-primary, var(--color-fg)) 16%, var(--color-line));
+  background:
+    radial-gradient(
+      ellipse at 0% 0%,
+      color-mix(in srgb, var(--game-secondary, var(--color-fg)) var(--game-tint), transparent),
+      transparent 65%
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--card-shell-hi, var(--panel-hi)) 94%, transparent),
+      color-mix(in srgb, var(--card-shell-lo, var(--panel-lo)) 90%, transparent)
+    );
   box-shadow:
-    inset 0 1px 0 var(--color-line-hairline),
-    0 1px 2px var(--card-cast-near),
-    0 10px 24px -12px var(--card-cast-far);
+    0 12px 28px -16px var(--game-shadow),
+    inset 0 1px 0 var(--game-glint);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  backdrop-filter: blur(18px) saturate(1.25);
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+.game-card-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  corner-shape: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse at 100% 0%,
+      color-mix(in srgb, var(--game-accent, var(--color-fg)) 7%, transparent),
+      transparent 52%
+    ),
+    linear-gradient(135deg, var(--game-glint), transparent 30%);
+  opacity: 0.6;
+}
+:root[data-theme='light'] .game-card-surface {
+  --game-glint: rgba(255, 255, 255, 0.95);
+  --game-shadow: rgba(40, 46, 72, 0.17);
+  --game-tint: 8%;
+  --color-muted: #555b6c;
+  --color-dim: #5f6473;
+  border-color: color-mix(in srgb, var(--game-secondary, var(--color-line)) 12%, var(--color-line));
+}
+@media (hover: hover) {
+  .game-card-surface:hover {
+    border-color: color-mix(in srgb, var(--game-primary, var(--color-fg)) 30%, var(--color-line));
+    box-shadow:
+      0 16px 32px -16px var(--game-shadow),
+      inset 0 1px 0 var(--game-glint);
+  }
+}
+.game-card-heading {
+  position: relative;
+}
+.game-card-value {
+  letter-spacing: -0.035em;
+}
+.game-card-surface .energy-value-box,
+.game-card-surface .energy-value-stepper > button {
+  border-radius: var(--radius-ui-full);
+}
+.game-card-surface .energy-value-stepper > button {
+  background: color-mix(in srgb, var(--game-ink, var(--color-fg)) 8%, transparent);
+}
+.game-card-surface .game-widget,
+.game-card-surface button[role='checkbox'] {
+  border-radius: var(--radius-ui-md);
+}
+.game-card-surface .game-energy-track {
+  margin-top: 10px;
+  background: color-mix(in srgb, var(--game-ink, var(--color-fg)) 13%, transparent);
+  box-shadow: inset 0 1px 2px var(--game-shadow);
+}
+.game-energy-track > div {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--game-ink) 75%, var(--game-secondary)),
+    var(--game-ink)
+  ) !important;
+  box-shadow: inset 0 1px 0 var(--game-glint);
+}
+
+.mobile-game-roster {
+  display: grid;
+  gap: 8px;
+}
+.mobile-game-row {
+  min-width: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-ui-xl);
+  touch-action: pan-y;
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+.mobile-game-row:active {
+  transform: scale(0.985);
+  transition-duration: var(--dur-fast);
+}
+.mobile-game-row[data-paused='true'] {
+  --game-tint: 3%;
+}
+.mobile-game-title {
+  color: var(--game-ink);
+  font-size: var(--text-body);
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+.mobile-game-meta {
+  margin-top: 2px;
+  line-height: 1.25;
+}
+.mobile-game-region {
+  color: var(--color-fg-soft);
+  border: 1px solid color-mix(in srgb, var(--game-ink) 16%, transparent);
+  border-radius: var(--radius-ui-full);
+  padding: 0 6px;
+  font-size: var(--text-caption);
+  line-height: 1.25;
+}
+.mobile-game-energy {
+  margin-top: 4px;
+}
+.mobile-game-energy .game-energy-track {
+  margin-top: 4px;
+}
+.mobile-game-value {
+  color: var(--color-fg);
+  font-size: 1.375rem;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.mobile-game-cap {
+  font-size: var(--text-caption);
+  font-weight: 450;
+  letter-spacing: 0;
+}
+.mobile-game-next {
+  margin-top: 4px;
+  line-height: 1.35;
+}
+.mobile-game-deadline {
+  font-weight: 600;
+}
+.mobile-game-cta {
+  display: inline-flex;
+  align-items: center;
+  color: var(--game-ink);
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+.mobile-game-cta > svg {
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.mobile-game-row:active .mobile-game-cta > svg {
+  transform: translateX(2px);
+}
+@media (max-width: 359px) {
+  .mobile-game-row {
+    padding-block: 6px;
+  }
+}
+/* A selected game is a page, with one identity header and ordinary document scroll. */
+.focus-workspace {
+  position: relative;
+  min-width: 0;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: 8px 0 24px;
+}
+.focus-workspace > .game-card-heading {
+  align-items: flex-start;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-line);
+}
+.focus-workspace .game-card-heading h2 {
+  font-size: clamp(1.375rem, 3vw, 1.75rem);
+  overflow-wrap: anywhere;
+}
+.focus-workspace .workspace-back {
+  margin-left: -6px;
+}
+@media (max-width: 767px) {
+  .focus-workspace .game-card-heading {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }
 
 /* Stroke weight belongs to the theme, not to the drawing. Icons opt in with a
@@ -522,41 +818,28 @@ input[type='number'] {
    an entrance whose failure mode is "no animation" rather than "no page". */
 @keyframes pageEnterForward {
   from {
-    opacity: 0.65;
+    opacity: 0.88;
   }
 }
 @keyframes pageEnterBack {
   from {
-    opacity: 0.65;
+    opacity: 0.88;
   }
 }
 .page-enter[data-direction='1'] {
-  animation: pageEnterForward var(--dur-fast) var(--ease-out);
+  animation: pageEnterForward var(--dur-base) var(--ease-out);
 }
 .page-enter[data-direction='-1'] {
-  animation: pageEnterBack var(--dur-fast) var(--ease-out);
+  animation: pageEnterBack var(--dur-base) var(--ease-out);
 }
 
-/* The grain sits on a pseudo-element so it composites once and never intercepts
-   a pointer event. isolation keeps it from bleeding into a parent's blend. */
-.grain::before,
-.card-shell::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  opacity: var(--grain-opacity);
-  background-image: var(--grain-tile);
-  background-repeat: repeat;
-}
-
-/* Retained name, new material: every former `.glass` call site is a chrome
-   panel, so it now resolves to the panel gradient rather than a blur. */
+/* Sheets retain a mostly opaque reading surface over softly blurred content. */
 .glass {
   position: relative;
-  background: linear-gradient(180deg, var(--panel-hi), var(--panel-lo));
-  border: 1px solid var(--color-line);
+  background: color-mix(in srgb, var(--color-surface-1) 96%, transparent);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
 .gold-hairline {
@@ -568,8 +851,9 @@ input[type='number'] {
   inset: 0;
   pointer-events: none;
   border: 1px solid transparent;
-  border-top-color: color-mix(in oklab, var(--color-gold) 34%, transparent);
+  border-top-color: var(--glass-highlight);
   border-radius: inherit;
+  corner-shape: inherit;
 }
 
 .scrollbar-thin {
@@ -614,32 +898,38 @@ input[type='number'] {
    Focus expand and shrink, tube charge, tube glide, ring burst, commit flash.
    Nothing else. */
 
-/* Gentle attention pulse for warning TEXT — never dips below readable. */
-@keyframes warnPulse {
+/* Only the small status dot breathes. Card borders, text, and fills stay steady. */
+@keyframes attentionBreath {
   0%,
   100% {
-    opacity: 1;
-  }
-  50% {
     opacity: 0.45;
   }
-}
-.warn-pulse {
-  animation: warnPulse 1.5s ease-in-out infinite;
-}
-
-/* Compositor-friendly pulse: animates only opacity on an overlay element. */
-@keyframes pulseFade {
-  0%,
-  100% {
-    opacity: 0.15;
-  }
   50% {
-    opacity: 0.8;
+    opacity: 0.85;
   }
 }
-.pulse-fade {
-  animation: pulseFade 2.4s ease-in-out infinite;
+.attention-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  pointer-events: none;
+  background: var(--color-danger);
+  border-radius: 50%;
+  opacity: 0.45;
+  animation: attentionBreath 3.2s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  animation-play-state: paused;
+}
+.attention-indicator[data-running='true'] {
+  animation-play-state: running;
+}
+.card-shell:focus-within .attention-indicator {
+  animation-play-state: paused;
+}
+@media (hover: hover) {
+  .card-shell:hover .attention-indicator {
+    animation-play-state: paused;
+  }
 }
 
 @keyframes fadeIn {
@@ -728,7 +1018,8 @@ input[type='number'] {
    itself. Every animated SVG transform in this file needs both. */
 @keyframes checkPop {
   from {
-    transform: scale(0);
+    transform: scale(0.85);
+    opacity: 0;
   }
 }
 .check-pop {
@@ -741,14 +1032,14 @@ input[type='number'] {
    four is progress; ticking the fourth is the moment worth marking. */
 @keyframes checkBurst {
   0% {
-    transform: scale(0);
+    transform: scale(0.85);
     opacity: 0;
   }
   14% {
     opacity: 1;
   }
   38% {
-    transform: scale(2.3);
+    transform: scale(1.12);
   }
   100% {
     transform: scale(1);
@@ -758,49 +1049,25 @@ input[type='number'] {
 .check-burst {
   transform-box: fill-box;
   transform-origin: center;
-  animation: checkBurst 0.62s var(--ease-out) forwards;
+  animation: checkBurst var(--dur-base) var(--ease-out) forwards;
 }
 
-/* The shell blows outward and thins as it goes. */
+/* Completion echoes the control's outline without covering adjacent tasks. */
 @keyframes novaWave {
   0% {
-    transform: scale(0.4);
+    transform: scale(1);
     opacity: 0;
   }
   18% {
-    opacity: 1;
+    opacity: 0.5;
   }
   100% {
-    transform: scale(3);
+    transform: scale(1.6);
     opacity: 0;
   }
 }
 .nova-wave {
-  animation: novaWave 0.62s var(--ease-out) forwards;
-}
-
-/* Ejecta: thrown out, then dragged back past where they started. --a is the
-   angle each shard leaves on, set per element. */
-@keyframes novaShard {
-  0% {
-    transform: rotate(var(--a)) translateX(1px) scale(0);
-    opacity: 0;
-  }
-  20% {
-    transform: rotate(var(--a)) translateX(4px) scale(1);
-    opacity: 1;
-  }
-  52% {
-    transform: rotate(var(--a)) translateX(13px) scale(0.8);
-    opacity: 1;
-  }
-  100% {
-    transform: rotate(var(--a)) translateX(1px) scale(0);
-    opacity: 0;
-  }
-}
-.nova-shard {
-  animation: novaShard 0.62s var(--ease-out) forwards;
+  animation: novaWave var(--dur-slow) var(--ease-out) forwards;
 }
 
 @keyframes loaderSpin {
@@ -813,32 +1080,6 @@ input[type='number'] {
 }
 .loader-spin {
   animation: loaderSpin 1.6s linear infinite;
-}
-
-/* ── The reactor tube ────────────────────────────────────────────────────────
-   A containment tube, not a progress bar. The travelling charge highlight runs
-   only while the resource is still charging — a full tube goes visually still,
-   and that stillness is the signal that it is wasting.
-
-   The sweep rides a full-width carrier so a percentage translate resolves
-   against the FILL's width rather than the highlight's own 24px — which is what
-   keeps this on the compositor instead of animating `left` and relaying out
-   every card, twice a second, forever. */
-@keyframes tubeCharge {
-  0% {
-    transform: translateX(0%);
-    opacity: 0;
-  }
-  50% {
-    opacity: 0.55;
-  }
-  100% {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-}
-.tube-charge {
-  animation: tubeCharge 2.6s ease-in-out infinite;
 }
 
 /* Two game columns and Tonight at the right, with equal widths in every state.
@@ -856,12 +1097,6 @@ input[type='number'] {
 }
 .focus-bay-grid[data-cols='2'] {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
-@media (min-width: 1280px) {
-  .focus-workspace {
-    height: calc(100dvh - var(--app-bar-h) - 2.75rem);
-    overflow-y: auto;
-  }
 }
 .nexus-games-scroll {
   grid-column: 1 / span 3;
@@ -895,7 +1130,6 @@ input[type='number'] {
   contain: layout;
   height: var(--nexus-card-h);
   min-height: 0;
-  transition: height var(--nexus-dur) var(--nexus-ease);
 }
 .nexus-node[data-expanded='true'] {
   height: var(--stage-h);
@@ -903,61 +1137,29 @@ input[type='number'] {
   top: 0;
   z-index: 20;
 }
-/* Both faces survive the transition. The shell changes height while its text
-   crossfades at its real size; neither numbers nor labels are stretched. */
+/* One spring drives crop and crossfade. Text always stays at its real size. */
+.nexus-node[data-collapsing='true'] {
+  z-index: 15;
+  pointer-events: none;
+}
 .nexus-summary {
   position: absolute;
   inset: 0 0 auto;
   height: var(--nexus-card-h);
-  opacity: 1;
-  visibility: visible;
-  transition:
-    opacity var(--dur-fast) var(--ease-out) var(--dur-fast),
-    visibility 0s;
-}
-.nexus-node[data-expanded='true'] .nexus-summary {
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity var(--dur-fast) var(--ease-out),
-    visibility 0s var(--dur-fast);
 }
 .nexus-node-body {
   position: absolute;
   inset: 0;
-  opacity: 0;
-  visibility: hidden;
   pointer-events: none;
-  transition:
-    opacity var(--dur-fast) var(--ease-out),
-    visibility 0s var(--dur-fast);
 }
 .nexus-node[data-expanded='true'] .nexus-node-body {
-  opacity: 1;
-  visibility: visible;
   pointer-events: auto;
-  transition:
-    opacity var(--dur-fast) var(--ease-out) var(--dur-fast),
-    visibility 0s var(--dur-fast);
 }
 .nexus-node-body > * {
   overflow: hidden;
 }
 .nexus-node[data-settled='true'] .nexus-node-body > * {
   overflow-y: auto;
-}
-
-/* The card that is about to waste something breathes. Opacity on a pseudo
-   element, never the card's own box-shadow: animating that would re-rasterise a
-   large blur every frame of an expansion that is already moving the grid. */
-.nexus-node[data-urgent='true']::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: inset 0 0 0 1px var(--color-danger);
-  animation: nexusUrgent 2.2s ease-in-out infinite;
 }
 
 /* The route pill. Transform and width only — both are cheap, and the pill sits
@@ -974,47 +1176,9 @@ input[type='number'] {
     top var(--dur-base) var(--ease-out);
 }
 
-/* Route controls grow in from nothing when the tab changes. Scale, not width:
-   width would relayout the whole bar every frame, and the bar publishes its own
-   height to the stage — so a width tween would shiver the stage underneath it. */
-.header-actions-enter > * {
-  animation: headerActionIn var(--dur-base) var(--ease-out) both;
-  transform-origin: left center;
-}
-.header-actions-enter > *:nth-child(2) {
-  animation-delay: 40ms;
-}
-.header-actions-enter > *:nth-child(3) {
-  animation-delay: 80ms;
-}
-.header-actions-enter > *:nth-child(n + 4) {
-  animation-delay: 120ms;
-}
-
-@keyframes headerActionIn {
-  from {
-    opacity: 0;
-    transform: scale(0.72);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes nexusUrgent {
-  0%,
-  100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   /* Pseudo-elements need naming explicitly — a bare `*` does not match them, and
-     the urgency pulse lives on .nexus-node::after. */
+     the attention indicator must remain static too. */
   *,
   *::before,
   *::after {
@@ -1025,12 +1189,149 @@ input[type='number'] {
     transition-delay: 0ms !important;
     scroll-behavior: auto !important;
   }
+  .attention-indicator {
+    animation: none !important;
+    opacity: 0.45;
+  }
   .nexus-stage,
   .nexus-node-body,
   .nav-slider {
     transition-duration: 0.001ms !important;
   }
-  .tube-charge {
-    animation: none !important;
+}
+
+/* Widgets size their controls from their own width, including half-width phone layouts. */
+.game-widget {
+  container-type: inline-size;
+}
+.game-widget [data-task-name] {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+}
+@container (max-width: 240px) {
+  .game-task-row {
+    flex-wrap: wrap;
+  }
+  .game-task-row [data-task-name] {
+    flex-basis: 100%;
+  }
+  .energy-value-stepper {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(44px, 1fr));
+    width: 100%;
+    gap: 0.5rem;
+  }
+  .energy-value-box {
+    grid-column: 1 / -1;
+    order: -1;
+    justify-content: center;
+    min-width: 0;
+    padding-inline: 0.25rem;
+  }
+  .energy-resource-name {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Shared curved controls keep sheets, settings and navigation in one family. */
+.ui-segmented {
+  border-radius: var(--radius-ui-full);
+  padding: 4px;
+  max-width: 100%;
+  background: var(--color-fill-2);
+}
+.ui-segmented button,
+.ui-segmented button > span:first-child {
+  border-radius: var(--radius-ui-full);
+}
+.ui-input {
+  border-radius: var(--radius-ui-md);
+}
+.shell-control {
+  border-radius: var(--radius-ui-full);
+  color: var(--color-fg-soft);
+}
+.app-game-scope button {
+  border-radius: var(--radius-ui-full);
+  padding-inline: 16px;
+}
+.settings-section,
+.broadcast-story {
+  border-radius: var(--radius-ui-card);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-line);
+  padding: 24px;
+}
+.broadcast-story + .broadcast-story {
+  margin-top: 20px;
+}
+@supports (corner-shape: superellipse(1.5)) {
+  .game-card-surface,
+  .card-shell,
+  .settings-section,
+  .broadcast-story,
+  .glass {
+    corner-shape: superellipse(1.5);
+  }
+}
+@media (max-width: 767px) {
+  .settings-section,
+  .broadcast-story {
+    padding: 20px;
+  }
+  .app-nav-button {
+    font-size: var(--text-caption);
+    font-weight: 600;
+  }
+  .app-nav-button svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app-nav {
+    background: var(--color-surface-1);
+    backdrop-filter: none;
+  }
+  .glass {
+    background: var(--color-surface-1);
+    backdrop-filter: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .settings-game-row {
+    gap: 10px;
+    padding: 14px 10px;
+  }
+  .settings-game-action {
+    padding-inline: 8px;
+    min-width: 32px;
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+.ui-segmented button {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+@media (pointer: coarse), (max-width: 767px) {
+  .ui-segmented button {
+    min-height: 44px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .mobile-game-roster {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .mobile-game-roster {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

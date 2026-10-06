@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { detectLocalTz, normalizeState, safeParseAppState } from '@memoria/shared';
 import { useApp } from '../store';
 import { useUI, type TonightPosition } from '../ui-store';
 import { servedByLauncher } from '../launcher';
 import { syncNow } from '../sync';
+import { DeviceSync } from './settings/DeviceSync';
+import { disconnectLanSync } from '../lan-sync';
+import { exportNativeBackup, isNativeApp } from '../native';
 import {
   CLOUD_FILE_SUGGESTED_NAME,
   cloudSyncNow,
@@ -48,39 +51,51 @@ export function SettingsPage() {
     : games;
   const [statusMessage, setStatusMessage] = useState('');
   const [importDraft, setImportDraft] = useState<{ text: string; games: number; events: number } | null>(null);
+  const importRequest = useRef(0);
   const cloudSupported = cloudSyncSupported();
   const cloudConnected = cloudFileName !== '' && cloudStatus !== 'off' && cloudStatus !== 'unsupported';
   const reportError = (error: unknown) => setStatusMessage(error instanceof Error ? error.message : String(error));
   const syncSizeWarning = syncStatus === 'error' && syncError.startsWith('Local data is ');
 
   const exportJson = () => {
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const text = JSON.stringify(state, null, 2);
+    const fileName = `memoria-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    if (isNativeApp) {
+      void exportNativeBackup(text, fileName).catch((error: unknown) => {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'CANCELLED') return;
+        reportError(error);
+      });
+      return;
+    }
+    const blob = new Blob([text], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `memoria-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = fileName;
     a.click();
     URL.revokeObjectURL(a.href);
   };
 
   const importJson = (file: File | undefined) => {
     if (!file) return;
+    const request = ++importRequest.current;
+    setImportDraft(null);
+    setStatusMessage('');
     if (file.size > 1_000_000) {
-      setImportDraft(null);
       setStatusMessage('Import failed — backup exceeds the 1 MB limit.');
       return;
     }
     void file
       .text()
       .then((text) => {
+        if (request !== importRequest.current) return;
         try {
           const raw = JSON.parse(text) as unknown;
           const candidate = raw && typeof raw === 'object' && 'state' in raw ? (raw as { state: unknown }).state : raw;
           if (!candidate || typeof candidate !== 'object' || (!('games' in candidate) && !('settings' in candidate)))
             throw new Error('Not a Memoria backup');
-          const normalized = normalizeState(candidate);
-          const parsed = safeParseAppState(normalized);
+          const parsed = safeParseAppState(candidate);
           if (!parsed.success) throw new Error(parsed.error);
-          const incoming = parsed.data;
+          const incoming = normalizeState(candidate);
           setImportDraft({
             text: JSON.stringify(candidate),
             games: incoming.games.filter((g) => !g.deleted).length,
@@ -92,17 +107,20 @@ export function SettingsPage() {
           setStatusMessage('Import failed — not a valid Memoria backup file.');
         }
       })
-      .catch(reportError);
+      .catch((error: unknown) => {
+        if (request === importRequest.current) reportError(error);
+      });
   };
 
   return (
     <Page>
       <div data-tour="settings" className="mx-auto max-w-[1600px]">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-title font-black tracking-tight text-fg-soft">Settings</h1>
+          <h1 className="text-heading font-semibold tracking-tight text-fg">Settings</h1>
           <Btn onClick={() => openSheet({ kind: 'guide' })}>User guide</Btn>
         </div>
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-line-hairline pb-4">
+        <DeviceSync />
+        <div className="mb-5 hidden flex-wrap items-center justify-between gap-3 border-b border-line-hairline pb-4 xl:flex">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-meta text-muted">Tonight position</span>
             <Segmented
@@ -119,7 +137,7 @@ export function SettingsPage() {
         </div>
 
         <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-          <section className="min-w-0" aria-labelledby="settings-games-heading">
+          <section className="settings-section min-w-0" aria-labelledby="settings-games-heading">
             <div className="flex items-center justify-between gap-3 border-b border-line-hairline pb-2">
               <h2 id="settings-games-heading" className="text-heading font-semibold text-fg-soft">
                 Games
@@ -175,16 +193,19 @@ export function SettingsPage() {
                     <button
                       key={game.id}
                       type="button"
+                      aria-label={`Game settings for ${game.name}${game.accountLabel ? `, ${game.accountLabel}` : ''}`}
                       onClick={() => openSheet({ kind: 'game', gameId: game.id })}
-                      className="flex min-h-14 w-full items-center gap-3 rounded-ui-xl bg-fill-1 px-3 py-2 text-left ring-1 ring-line-hairline transition duration-(--dur-fast) hover:bg-fill-2 hover:ring-line-strong"
+                      className="settings-game-row group flex min-h-14 w-full items-center gap-3 rounded-ui-md bg-fill-1 px-3 py-2 text-left ring-1 ring-line-hairline transition duration-(--dur-fast) hover:bg-fill-2 hover:ring-line-strong"
                     >
                       <GameBadge short={game.short} {...colors} size="lg" />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="truncate text-body font-bold text-fg-soft">{game.name}</span>
+                          <span className="min-w-0 text-body font-semibold text-fg-soft [overflow-wrap:anywhere]">
+                            {game.name}
+                          </span>
                           {game.paused && <Pill variant="paused">paused</Pill>}
                         </div>
-                        <span className="text-label text-dim">
+                        <span className="text-label text-dim [overflow-wrap:anywhere]">
                           {game.accountLabel ? `${game.accountLabel} · ` : ''}reset{' '}
                           {localResetLabel(game, settings.localTz, Date.now())}
                         </span>
@@ -193,10 +214,25 @@ export function SettingsPage() {
                           {state.tasks.filter((t) => t.gameId === game.id && !t.deleted).length} tasks
                         </p>
                       </div>
-                      <span className="shrink-0 text-meta font-semibold text-dim" aria-hidden="true">
-                        Edit
+                      {/* Still ONE control and one tab stop — the pencil is the
+                          row's own pressed state made visible, not a second
+                          button claiming the same job. It reads as pressable
+                          because it answers the row: hover, focus and press all
+                          land on it. The row keeps the accessible name. */}
+                      <span
+                        aria-hidden="true"
+                        className="settings-game-action btn-compact flex min-h-11 shrink-0 items-center gap-1.5 rounded-ui-md bg-fill-2 px-3 text-meta font-semibold text-muted ring-1 ring-line-hairline transition duration-(--dur-fast) group-hover:bg-fill-3 group-hover:text-fg-soft group-hover:ring-line-strong group-focus-visible:bg-fill-3 group-focus-visible:text-fg-soft group-focus-visible:ring-line-strong group-active:scale-[0.97] sm:min-h-8"
+                      >
+                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" className="icon h-4 w-4" aria-hidden>
+                          <path
+                            d="M13.4 3.3a1.8 1.8 0 0 1 2.5 2.5l-8.2 8.2-3.3.8.8-3.3 8.2-8.2z"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path d="M12.6 4.6l2.5 2.5" strokeLinecap="round" />
+                        </svg>
+                        <span className="hidden sm:inline">Settings</span>
                       </span>
-                      <span className="sr-only">Edit {game.name}</span>
                     </button>
                   );
                 })}
@@ -206,7 +242,7 @@ export function SettingsPage() {
             )}
           </section>
 
-          <section className="min-w-0" aria-labelledby="settings-data-heading">
+          <section className="settings-section min-w-0" aria-labelledby="settings-data-heading">
             <h2
               id="settings-data-heading"
               className="border-b border-line-hairline pb-2 text-heading font-semibold text-fg-soft"
@@ -217,13 +253,11 @@ export function SettingsPage() {
             {launcher && (
               <div className="space-y-3 border-b border-line-hairline py-4">
                 <p className="text-meta text-muted">
-                  This window is served by the Memoria launcher. Edits stay in this browser first and are written to{' '}
-                  <code className="text-fg-soft">%APPDATA%\memoria\state.json</code>, so every open window sees the same
-                  data.
+                  Your changes save automatically on this PC. Every open Memoria window uses the same progress.
                 </p>
                 <div className="flex flex-wrap items-center gap-3">
                   <Btn kind="primary" className={TOUCH_BUTTON} onClick={() => void syncNow().catch(reportError)}>
-                    Save to file now
+                    Save now
                   </Btn>
                   <span className="text-meta text-muted">
                     {syncStatus === 'syncing' && 'Saving…'}
@@ -240,115 +274,119 @@ export function SettingsPage() {
               </div>
             )}
 
-            {/* Sync across devices through a folder something else already syncs.
-                Shown in every build: a launcher window is one machine, and this
-                is how a second machine — or a phone-side browser — sees the same
-                document. See cloud-sync.ts for why this is a file and not an
-                account. */}
-            <div className="space-y-3 border-b border-line-hairline py-4">
-              <div>
-                <p className="text-meta font-semibold text-fg-soft">Sync across devices</p>
-                <p className="text-label text-dim">
-                  Keep one file in a folder your computer already syncs — Google Drive, OneDrive, Proton Drive, Dropbox,
-                  iCloud Drive. Point every device at that same file and they stay in agreement. Memoria never contacts
-                  the provider; it only reads and writes the file, and their app moves it.
-                </p>
-              </div>
-
-              {!cloudSupported && (
-                <p className="text-meta text-muted">
-                  This browser cannot open a file for writing. Chrome and Edge can, including from a downloaded{' '}
-                  <code className="text-fg-soft">Memoria.html</code>. Elsewhere, use Export and Import below.
-                </p>
-              )}
-
-              {cloudSupported && !cloudConnected && (
-                <>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Btn
-                      kind="primary"
-                      className={TOUCH_BUTTON}
-                      onClick={() => {
-                        setStatusMessage('');
-                        void connectNewCloudFile()
-                          .then((ok) => ok && setStatusMessage('Syncing to the file you chose.'))
-                          .catch(reportError);
-                      }}
-                    >
-                      Create sync file…
-                    </Btn>
-                    <Btn
-                      className={TOUCH_BUTTON}
-                      onClick={() => {
-                        setStatusMessage('');
-                        void connectExistingCloudFile()
-                          .then((ok) => ok && setStatusMessage('Joined the existing sync file.'))
-                          .catch(reportError);
-                      }}
-                    >
-                      Use existing file…
-                    </Btn>
-                  </div>
-                  <p className="text-label text-dim">
-                    First device: create <code className="text-fg-soft">{CLOUD_FILE_SUGGESTED_NAME}</code> inside the
-                    synced folder. Every device after that: pick the file the first one made.
-                  </p>
-                </>
-              )}
-
-              {cloudSupported && cloudConnected && (
-                <>
-                  <div className="flex flex-wrap items-center gap-3">
-                    {cloudStatus === 'needs-permission' ? (
-                      <Btn
-                        kind="primary"
-                        className={TOUCH_BUTTON}
-                        onClick={() => void reconnectCloudFile().catch(reportError)}
-                      >
-                        Reconnect
-                      </Btn>
-                    ) : (
-                      <Btn
-                        kind="primary"
-                        className={TOUCH_BUTTON}
-                        onClick={() => void cloudSyncNow().catch(reportError)}
-                      >
-                        Sync now
-                      </Btn>
-                    )}
-                    <Btn
-                      className={TOUCH_BUTTON}
-                      onClick={() => {
-                        void disconnectCloudFile()
-                          .then(() => setStatusMessage('Stopped syncing on this device. The file was left alone.'))
-                          .catch(reportError);
-                      }}
-                    >
-                      Stop syncing
-                    </Btn>
-                    <span className="text-meta text-muted">
-                      <span className="text-fg-soft">{cloudFileName}</span>
-                      {cloudStatus === 'syncing' && ' · syncing…'}
-                      {cloudStatus === 'ok' &&
-                        lastCloudSyncAt !== null &&
-                        ` · ✓ ${fmtClock(lastCloudSyncAt, settings.localTz)}`}
-                    </span>
-                  </div>
-                  {(cloudStatus === 'error' || cloudStatus === 'needs-permission') && cloudError && (
-                    <p className="rounded-ui-lg bg-warn/10 p-3 text-meta text-warn-fg" role="status">
-                      {cloudError}
+            {/* Shared-folder sync uses desktop browser file handles. Android
+                uses Wi-Fi pairing above and the native backup picker below. */}
+            {!isNativeApp && (
+              <div className="space-y-3 border-b border-line-hairline py-4">
+                <div>
+                  <p className="text-meta font-semibold text-fg-soft">Shared-folder sync</p>
+                  <details className="mt-1 text-meta text-muted">
+                    <summary className="min-h-11 cursor-pointer rounded-ui-sm py-3 font-medium text-fg-soft">
+                      How shared-folder sync works
+                    </summary>
+                    <p className="pb-2 leading-relaxed">
+                      Keep one file in a folder your computer already syncs — Google Drive, OneDrive, Proton Drive,
+                      Dropbox, iCloud Drive. Point every device at that same file and they stay in agreement. Memoria
+                      never contacts the provider; it only reads and writes the file, and their app moves it.
                     </p>
-                  )}
-                </>
-              )}
-            </div>
+                  </details>
+                </div>
+
+                {!cloudSupported && (
+                  <p className="text-meta text-muted">
+                    This browser cannot open a file for writing. Chrome and Edge can, including from a downloaded{' '}
+                    <code className="text-fg-soft">Memoria.html</code>. Elsewhere, use Export and Import below.
+                  </p>
+                )}
+
+                {cloudSupported && !cloudConnected && (
+                  <>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Btn
+                        kind="primary"
+                        className={TOUCH_BUTTON}
+                        onClick={() => {
+                          setStatusMessage('');
+                          void connectNewCloudFile()
+                            .then((ok) => ok && setStatusMessage('Syncing to the file you chose.'))
+                            .catch(reportError);
+                        }}
+                      >
+                        Create sync file…
+                      </Btn>
+                      <Btn
+                        className={TOUCH_BUTTON}
+                        onClick={() => {
+                          setStatusMessage('');
+                          void connectExistingCloudFile()
+                            .then((ok) => ok && setStatusMessage('Joined the existing sync file.'))
+                            .catch(reportError);
+                        }}
+                      >
+                        Use existing file…
+                      </Btn>
+                    </div>
+                    <p className="text-label text-dim">
+                      First device: create <code className="text-fg-soft">{CLOUD_FILE_SUGGESTED_NAME}</code> inside the
+                      synced folder. Every device after that: pick the file the first one made.
+                    </p>
+                  </>
+                )}
+
+                {cloudSupported && cloudConnected && (
+                  <>
+                    <div className="flex flex-wrap items-center gap-3">
+                      {cloudStatus === 'needs-permission' ? (
+                        <Btn
+                          kind="primary"
+                          className={TOUCH_BUTTON}
+                          onClick={() => void reconnectCloudFile().catch(reportError)}
+                        >
+                          Reconnect
+                        </Btn>
+                      ) : (
+                        <Btn
+                          kind="primary"
+                          className={TOUCH_BUTTON}
+                          onClick={() => void cloudSyncNow().catch(reportError)}
+                        >
+                          Sync now
+                        </Btn>
+                      )}
+                      <Btn
+                        className={TOUCH_BUTTON}
+                        onClick={() => {
+                          void disconnectCloudFile()
+                            .then(() => setStatusMessage('Stopped syncing on this device. The file was left alone.'))
+                            .catch(reportError);
+                        }}
+                      >
+                        Stop syncing
+                      </Btn>
+                      <span className="text-meta text-muted">
+                        <span className="text-fg-soft">{cloudFileName}</span>
+                        {cloudStatus === 'syncing' && ' · syncing…'}
+                        {cloudStatus === 'ok' &&
+                          lastCloudSyncAt !== null &&
+                          ` · ✓ ${fmtClock(lastCloudSyncAt, settings.localTz)}`}
+                      </span>
+                    </div>
+                  </>
+                )}
+                {(cloudStatus === 'error' || cloudStatus === 'needs-permission') && cloudError && (
+                  <p className="rounded-ui-lg bg-warn/10 p-3 text-meta text-warn-fg" role="status">
+                    {cloudError}
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="pt-4">
               <div className="flex flex-wrap items-center gap-2 pb-1">
                 <Btn className={TOUCH_BUTTON} onClick={exportJson}>
                   Export backup
                 </Btn>
-                <label className="btn-compact flex min-h-11 cursor-pointer items-center rounded-ui-md bg-fill-2 px-3 py-1 text-caption font-semibold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 sm:min-h-8">
+                <label className="focus-ring-group btn-compact flex min-h-11 cursor-pointer items-center rounded-ui-md bg-fill-2 px-3 py-1 text-caption font-semibold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 sm:min-h-8">
                   Import backup
                   {/* sr-only, never `hidden`: display:none drops the input out of the
                       tab order and the wrapping label is not focusable, which made
@@ -357,7 +395,11 @@ export function SettingsPage() {
                     type="file"
                     accept="application/json"
                     className="sr-only"
-                    onChange={(e) => importJson(e.target.files?.[0])}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = '';
+                      importJson(file);
+                    }}
                   />
                 </label>
                 <span className="text-label text-dim">
@@ -370,14 +412,14 @@ export function SettingsPage() {
                 </p>
               )}
               {importDraft && (
-                <div className="mt-3 rounded-ui-xl bg-warn/10 p-3 ring-1 ring-warn/25">
+                <div className="mt-3 rounded-ui-md bg-warn/10 p-4 ring-1 ring-warn/25">
                   <p className="text-body font-semibold text-warn-fg">
                     Merge backup with {importDraft.games} game{importDraft.games === 1 ? '' : 's'} and{' '}
                     {importDraft.events} event
                     {importDraft.events === 1 ? '' : 's'}?
                   </p>
                   <p className="mt-1 text-meta text-muted">
-                    Newer rows win. Existing local data is not replaced wholesale.
+                    Your current progress is kept. If both copies changed the same item, the latest edit is used.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Btn
@@ -404,11 +446,15 @@ export function SettingsPage() {
                   Export first if you need a copy.
                 </p>
                 <Btn
-                  className={`mt-3 text-danger-fg ring-danger/30 ${TOUCH_BUTTON}`}
+                  kind="danger"
+                  className={`mt-3 ${TOUCH_BUTTON}`}
                   onClick={() => {
                     if (!window.confirm('Permanently clear Memoria data stored in this browser?')) return;
-                    void clearLocalData()
-                      .then(() => setStatusMessage('Local data cleared.'))
+                    void disconnectLanSync()
+                      .then(clearLocalData)
+                      .then(() => {
+                        if (!useApp.getState().loadError) setStatusMessage('Local data cleared.');
+                      })
                       .catch(reportError);
                   }}
                 >

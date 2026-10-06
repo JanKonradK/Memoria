@@ -32,6 +32,7 @@ migrateLegacyUiStorage();
 export type Tab = 'home' | 'timeline' | 'livestreams' | 'settings';
 export type Theme = 'dark' | 'light';
 export type TonightPosition = 'left' | 'middle' | 'right';
+export type TimelineView = 'list' | 'lanes';
 
 /**
  * The theme is a token re-point on the root element — see index.css. Nothing
@@ -46,7 +47,7 @@ export type TonightPosition = 'left' | 'middle' | 'right';
  * It lives here rather than in theme.ts because theme.ts imports this store for
  * its hooks, and a colour constant is not worth an import cycle.
  */
-export const THEME_GROUND: Record<Theme, string> = { dark: '#000000', light: '#efeae0' };
+export const THEME_GROUND: Record<Theme, string> = { dark: '#0c0d0f', light: '#f6f7f9' };
 
 export function applyTheme(theme: Theme): void {
   if (typeof document === 'undefined') return;
@@ -57,8 +58,10 @@ export function applyTheme(theme: Theme): void {
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_GROUND[theme]);
 }
 
+export type GameEditorSection = 'game' | 'resets' | 'resources' | 'spend' | 'tasks' | 'reminders' | 'events';
+
 export type SheetRoute =
-  | { kind: 'game'; gameId: string }
+  | { kind: 'game'; gameId: string; section?: GameEditorSection }
   | { kind: 'addGame' }
   | { kind: 'event'; gameId?: string; eventId?: string }
   | { kind: 'reminder' }
@@ -72,6 +75,13 @@ interface UIStore {
   theme: Theme;
   tonightPosition: TonightPosition;
   focusedGameId: string | null;
+  /** Session-only route controls survive navigation, without entering backups. */
+  timelineView: TimelineView | null;
+  timelineSearch: string;
+  timelineShowFinished: boolean;
+  setTimelineView(view: TimelineView): void;
+  setTimelineSearch(search: string): void;
+  setTimelineShowFinished(show: boolean): void;
   tourSeenVersion: number;
   finishTour(): void;
   setTonightPosition(position: TonightPosition): void;
@@ -104,6 +114,12 @@ export const useUI = create<UIStore>()(
       theme: 'dark',
       tonightPosition: 'right',
       focusedGameId: null,
+      timelineView: null,
+      timelineSearch: '',
+      timelineShowFinished: false,
+      setTimelineView: (timelineView) => set({ timelineView }),
+      setTimelineSearch: (timelineSearch) => set({ timelineSearch }),
+      setTimelineShowFinished: (timelineShowFinished) => set({ timelineShowFinished }),
       tourSeenVersion: 0,
       finishTour: () => set({ tourSeenVersion: 1, sheet: null }),
       setTonightPosition: (tonightPosition) => set({ tonightPosition }),

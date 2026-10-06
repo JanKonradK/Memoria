@@ -64,6 +64,7 @@ if (!/^\d+\.\d+\.\d+/.test(version)) fail(`package.json version "${version}" is 
 const required = [
   ['app/dist', 'app/dist'],
   ['desktop/memoria.mjs', 'desktop/memoria.mjs'],
+  ['desktop/lan-sync.mjs', 'desktop/lan-sync.mjs'],
   ['desktop/update.mjs', 'desktop/update.mjs'],
   ['desktop/shared-core.mjs', 'desktop/shared-core.mjs'],
   ['desktop/dist/shared-core.mjs', 'desktop/dist/shared-core.mjs'],
@@ -117,7 +118,8 @@ async function fetchNodeExe() {
 
 // --- assemble ---------------------------------------------------------------
 
-rmSync(releaseDir, { recursive: true, force: true });
+// Keep independently built Android artifacts in the shared release directory.
+rmSync(stageDir, { recursive: true, force: true });
 mkdirSync(stageDir, { recursive: true });
 
 for (const [source, destination] of required) {
@@ -168,7 +170,7 @@ writeStagedText('README.txt', [
   `Memoria ${version}`,
   '',
   'A gacha daily / energy / event tracker that runs entirely on this machine.',
-  'No account, no server, nothing leaves the computer.',
+  'No cloud account. Optional Wi-Fi sync connects your Android phone to this PC.',
   '',
   'START IT',
   '  Double-click "Start Memoria.cmd".',
@@ -215,7 +217,13 @@ if (process.platform === 'win32') {
 }
 
 const digest = sha256(zipPath);
-writeFileSync(join(releaseDir, SUMS_NAME), `${digest}  ${ZIP_NAME}\n`, 'utf8');
+const sumsPath = join(releaseDir, SUMS_NAME);
+const otherSums = existsSync(sumsPath)
+  ? readFileSync(sumsPath, 'utf8')
+      .split(/\r?\n/)
+      .filter((line) => line && !line.endsWith(`  ${ZIP_NAME}`))
+  : [];
+writeFileSync(sumsPath, [...otherSums, `${digest}  ${ZIP_NAME}`, ''].join('\n'), 'utf8');
 
 const megabytes = (statSync(zipPath).size / 1024 / 1024).toFixed(1);
 console.log(`\n${basename(zipPath)}  ${megabytes} MB`);

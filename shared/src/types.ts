@@ -13,6 +13,12 @@ export interface Syncable {
   deleted?: boolean;
 }
 
+/** Stable resource/task references, plus the card's shared controls. */
+export interface GameLayoutItem {
+  id: string;
+  hidden?: boolean;
+}
+
 export interface Game extends Syncable {
   id: string;
   name: string;
@@ -53,6 +59,8 @@ export interface Game extends Syncable {
   processNames?: string[];
   /** CSS font-family for the card/hero title — each game keeps its own personality. */
   titleFont?: string;
+  /** Absent uses the grouped default card. Stored with the game for backup/sync. */
+  cardLayout?: GameLayoutItem[];
 }
 
 export interface Resource extends Syncable {

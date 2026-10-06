@@ -28,6 +28,7 @@ import {
 import { dirname, join, normalize, extname, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { applyPendingUpdate, checkForUpdate, isPackagedInstall, paths, updateStatus } from './update.mjs';
+import { createLanSync, createStateAccess, readJson } from './lan-sync.mjs';
 
 const here = import.meta.dirname;
 const repo = join(here, '..');
@@ -383,10 +384,44 @@ function respondTooLarge(req, res) {
   res.end(JSON.stringify({ error: `Request body exceeds ${MAX_SYNC_BYTES} bytes.` }), () => req.destroy());
 }
 
+const stateAccess = createStateAccess({ loadCore: loadSharedCore, read: readStateRaw, write: writeState });
+const LAN_FILE = join(DATA_DIR, 'devices.json');
+const lanSync = createLanSync({
+  state: stateAccess,
+  load: () => {
+    try {
+      return JSON.parse(readFileSync(LAN_FILE, 'utf8'));
+    } catch (error) {
+      if (error.code === 'ENOENT') return {};
+      throw error;
+    }
+  },
+  save: (config) => {
+    mkdirSync(DATA_DIR, { recursive: true });
+    writeFileSync(`${LAN_FILE}.tmp`, JSON.stringify(config), { mode: 0o600 });
+    protectPrivateFile(`${LAN_FILE}.tmp`);
+    renameSync(`${LAN_FILE}.tmp`, LAN_FILE);
+  },
+  reset: () => {
+    if (!existsSync(LAN_FILE)) return;
+    const backup = join(DATA_DIR, `devices-unreadable-${Date.now()}-${randomBytes(4).toString('hex')}.json`);
+    renameSync(LAN_FILE, backup);
+    protectPrivateFile(backup);
+  },
+});
+
+async function handleDevices(req, res) {
+  try {
+    const result = req.method === 'GET' ? lanSync.status() : await lanSync.control(await readJson(req, 1024));
+    respondJson(res, 200, result);
+  } catch (error) {
+    respondJson(res, error.status ?? 500, { error: error.message });
+  }
+}
+
 async function handleGetState(res) {
   try {
-    const { normalizeState } = await loadSharedCore();
-    respondJson(res, 200, { state: normalizeState(readStateRaw()) });
+    respondJson(res, 200, { state: await stateAccess.read() });
   } catch (e) {
     respondJson(res, 500, { error: String(e?.message ?? e) });
   }
@@ -433,27 +468,9 @@ function handleSync(req, res) {
         return;
       }
 
-      const { mergeState, normalizeState, safeParseAppState } = await loadSharedCore();
-      const parsedClient = safeParseAppState(payload?.state);
-      if (!parsedClient.success) {
-        respondJson(res, 400, { error: `Invalid app state: ${parsedClient.error}` });
-        return;
-      }
-
-      const current = normalizeState(readStateRaw());
-      const merged = mergeState(current, parsedClient.data);
-      const parsedMerged = safeParseAppState(merged);
-      if (!parsedMerged.success) {
-        respondJson(res, 500, { error: 'The merged state failed validation; state.json was not changed.' });
-        return;
-      }
-      // Only write when the merge changed something — otherwise every synced
-      // client's pull would bump the file's mtime and re-ping every client
-      // through /api/events, ad infinitum.
-      if (JSON.stringify(parsedMerged.data) !== JSON.stringify(current)) writeState(parsedMerged.data);
-      respondJson(res, 200, { state: parsedMerged.data });
+      respondJson(res, 200, { state: await stateAccess.merge(payload?.state) });
     } catch (e) {
-      respondJson(res, 500, { error: String(e?.message ?? e) });
+      respondJson(res, e.status ?? 500, { error: String(e?.message ?? e) });
     }
   });
 }
@@ -712,6 +729,7 @@ function tryListen(port, secret) {
       if (req.method === 'GET' && urlPath === '/api/events') return handleEvents(req, res);
       if (req.method === 'GET' && urlPath === '/api/state') return void handleGetState(res);
       if (req.method === 'POST' && urlPath === '/api/sync') return handleSync(req, res);
+      if (['GET', 'POST'].includes(req.method) && urlPath === '/api/devices') return void handleDevices(req, res);
       // Lets an app window tell the user a newer build is already downloaded and
       // will be in place the next time they open Memoria.
       if (req.method === 'GET' && urlPath === '/api/update') return respondJson(res, 200, updateStatus(repo));
@@ -1222,6 +1240,9 @@ async function main() {
   // the window's lifetime and the update check. This process is done.
   if (!server) return;
 
+  // The user's opt-in survives restarts. A bind failure does not block local work.
+  await lanSync.restore().catch((error) => console.error(`Wi-Fi sync unavailable: ${error.message}`));
+
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
   // A test server has no window to keep alive and must not reach for the network.
@@ -1239,7 +1260,7 @@ async function main() {
   // once none are connected and nothing has talked to us for a while, exit.
   const IDLE_MS = 5 * 60_000;
   setInterval(() => {
-    if (sseClients.size === 0 && Date.now() - lastActivity > IDLE_MS) shutdown();
+    if (!lanSync.status().enabled && sseClients.size === 0 && Date.now() - lastActivity > IDLE_MS) shutdown();
   }, 60_000);
 }
 

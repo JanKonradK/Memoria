@@ -2,7 +2,9 @@ import { expect, test } from '@playwright/test';
 import { emptyState } from '@memoria/shared';
 import { makeGame } from '../../shared/test/helpers';
 
-test('24 events fit in a single desktop viewport with controls in the app bar', async ({ page }, info) => {
+test('24 events remain reachable in the rounded timeline board with controls in the app bar', async ({
+  page,
+}, info) => {
   test.skip(info.project.name !== 'desktop', 'Measured at a 1365 × 768 CSS viewport, including zoom-sized layouts');
   await page.setViewportSize({ width: 1365, height: 768 });
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
@@ -69,12 +71,17 @@ test('24 events fit in a single desktop viewport with controls in the app bar', 
     }),
   );
   expect(bounds[0]!.top).toBeGreaterThan(50);
-  expect(bounds.at(-1)!.bottom).toBeLessThanOrEqual(768);
   expect(bounds.every((row) => row.height >= 26 && row.height <= 27)).toBe(true);
-  const board = await page
-    .locator('.timeline-board')
-    .evaluate((node) => ({ height: node.clientHeight, scroll: node.scrollHeight }));
-  expect(board.scroll).toBeLessThanOrEqual(board.height);
+  const board = page.locator('.timeline-board');
+  const boardBox = (await board.boundingBox())!;
+  expect(boardBox.y + boardBox.height).toBeLessThanOrEqual(768);
+  for (const row of await page.locator('[data-timeline-event-row]').all()) {
+    await row.scrollIntoViewIfNeeded();
+    const box = (await row.boundingBox())!;
+    expect(box.y).toBeGreaterThanOrEqual(boardBox.y);
+    expect(box.y + box.height).toBeLessThanOrEqual(boardBox.y + boardBox.height);
+  }
+  expect(await board.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
   const ids = await page
     .locator('[data-timeline-event-row]')
     .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-event-id')));
@@ -88,7 +95,7 @@ test('24 events fit in a single desktop viewport with controls in the app bar', 
   for (const id of ['density-22', 'density-23']) {
     await expect(page.locator(`[data-event-id="${id}"] [data-event-bar]`)).toHaveText('');
   }
-  await page.screenshot({ path: info.outputPath('24-visible-rows.png') });
+  await page.screenshot({ path: info.outputPath('24-reachable-rows.png') });
 });
 
 test('the tour highlights live controls, walks pages, and finishes only once', async ({ page }, info) => {

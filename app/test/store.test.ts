@@ -2,6 +2,7 @@ import {
   effectiveCountTarget,
   emptyState,
   latestSnapshots,
+  mergeState,
   PRESETS,
   projectEnergy,
   safeParseAppState,
@@ -22,7 +23,7 @@ vi.mock('idb-keyval', () => ({
 }));
 
 import { flushPersist, useApp } from '../src/store';
-import { set as idbSet } from 'idb-keyval';
+import { get as idbGet, set as idbSet } from 'idb-keyval';
 import { SEED_UPDATED } from '../src/data/seed-events';
 
 const IDB_KEY = 'memoria-state';
@@ -96,6 +97,93 @@ it('skips storage, subscribers, and sync for unchanged mutations but still saves
   }
 });
 
+it('keeps a just-entered value when Refresh runs before the pending save', async () => {
+  const { resourceId } = addGameWithResource();
+  await flushPersist();
+  writeEnergy(resourceId, 37);
+  await useApp.getState().load();
+  expect(latestSnapshots(useApp.getState().state.snapshots).get(resourceId)?.value).toBe(37);
+});
+
+it('keeps failed writes for retry and keeps the current view during a failed refresh', async () => {
+  const { resourceId } = addGameWithResource();
+  await flushPersist();
+  writeEnergy(resourceId, 37);
+  vi.mocked(idbSet).mockRejectedValueOnce(new Error('Storage full'));
+  await useApp.getState().load();
+  expect(useApp.getState().loaded).toBe(true);
+  expect(useApp.getState().loadError).toBe('');
+  expect(useApp.getState().saveError).toBe('Storage full');
+  expect(latestSnapshots(useApp.getState().state.snapshots).get(resourceId)?.value).toBe(37);
+  await flushPersist();
+  expect(useApp.getState().saveError).toBe('');
+  await useApp.getState().load();
+  expect(latestSnapshots(useApp.getState().state.snapshots).get(resourceId)?.value).toBe(37);
+});
+
+it('serializes overlapping saves and writes the newest edit last', async () => {
+  const { resourceId } = addGameWithResource();
+  await flushPersist();
+  let release!: () => void;
+  const delayed = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  vi.mocked(idbSet).mockImplementationOnce(async (key, value) => {
+    await delayed;
+    idb.set(String(key), value);
+  });
+  writeEnergy(resourceId, 37);
+  const first = flushPersist();
+  writeEnergy(resourceId, 62);
+  const second = flushPersist();
+  release();
+  await Promise.all([first, second]);
+  await useApp.getState().load();
+  expect(latestSnapshots(useApp.getState().state.snapshots).get(resourceId)?.value).toBe(62);
+});
+
+it('does not restore cleared data when an older load finishes late', async () => {
+  useApp.getState().addBlankGame('To be cleared');
+  await flushPersist();
+  const old = idb.get(IDB_KEY);
+  let release!: (value: unknown) => void;
+  let started!: () => void;
+  const reading = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  vi.mocked(idbGet).mockImplementationOnce(() => {
+    started();
+    return new Promise((resolve) => {
+      release = resolve;
+    });
+  });
+  const load = useApp.getState().load();
+  await reading;
+  await useApp.getState().clearLocalData();
+  release(old);
+  await load;
+  await flushPersist();
+  expect(useApp.getState().state.games).toEqual([]);
+  expect(idb.has(IDB_KEY)).toBe(false);
+});
+
+it('retains an over-capacity edit in memory without truncating the last saved copy', async () => {
+  useApp.getState().addBlankGame('Saved game');
+  await flushPersist();
+  const saved = useApp.getState().state;
+  const disk = idb.get(IDB_KEY);
+  useApp.getState().replaceState({
+    ...saved,
+    games: Array.from({ length: 101 }, (_, i) => ({ ...saved.games[0]!, id: `game-${i}` })),
+  });
+  await expect(flushPersist()).rejects.toThrow('limit');
+  expect(useApp.getState().state.games).toHaveLength(101);
+  expect(useApp.getState().saveError).toContain('limit');
+  expect(idb.get(IDB_KEY)).toEqual(disk);
+  useApp.getState().replaceState(saved);
+  await flushPersist();
+});
+
 describe('local load validation', () => {
   it('leaves newer stored data untouched and asks for an app update', async () => {
     const future = { ...emptyState(), schemaVersion: 999, futureField: 'keep me' };
@@ -110,6 +198,7 @@ describe('local load validation', () => {
   it('repairs a malformed document row-wise and writes the valid result back', async () => {
     const source = useApp.getState();
     const gameId = source.addBlankGame('Stored');
+    await flushPersist();
     const raw = {
       ...useApp.getState().state,
       games: [
@@ -134,6 +223,7 @@ describe('local load validation', () => {
 
   it('seeds a missing regen snapshot when an older document loads', async () => {
     const gameId = useApp.getState().addBlankGame('Stored without a reading');
+    await flushPersist();
     const resource = useApp.getState().state.resources.find((item) => item.gameId === gameId)!;
     idb.set(IDB_KEY, { ...useApp.getState().state, snapshots: [] });
 
@@ -145,9 +235,27 @@ describe('local load validation', () => {
     });
   });
 
+  it('carries every preset trio member onto the game, accent included', () => {
+    // `gameRim` prefers the accent, so a dropped `color3` is not a cosmetic
+    // loss — it is the badge edge and the card rim falling back to a colour the
+    // owner did not choose for that job. Seven of the nine presets ship an
+    // accent that differs from their secondary, so this is checked across all
+    // of them rather than on one game that might happen to agree.
+    for (const preset of PRESETS) {
+      const gameId = useApp.getState().addGameFromPreset(preset, {});
+      const game = useApp.getState().state.games.find((candidate) => candidate.id === gameId)!;
+      expect({ color: game.color, color2: game.color2, color3: game.color3 }).toEqual({
+        color: preset.color,
+        color2: preset.color2,
+        color3: preset.color3,
+      });
+    }
+  });
+
   it('migrates an old preset Genshin color only once', async () => {
     const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
     const gameId = useApp.getState().addGameFromPreset(genshin, {});
+    await flushPersist();
     const state = useApp.getState().state;
     const originalUpdatedAt = 1_700_000_000_000;
     idb.set(IDB_KEY, {
@@ -173,6 +281,7 @@ describe('local load validation', () => {
   it('leaves a user-selected Genshin color unchanged', async () => {
     const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
     const gameId = useApp.getState().addGameFromPreset(genshin, {});
+    await flushPersist();
     const state = useApp.getState().state;
     idb.set(IDB_KEY, {
       ...state,
@@ -187,6 +296,7 @@ describe('local load validation', () => {
   it('migrates a stored GI badge once', async () => {
     const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
     const gameId = useApp.getState().addGameFromPreset(genshin, {});
+    await flushPersist();
     const state = useApp.getState().state;
     const originalUpdatedAt = 1_700_000_000_000;
     idb.set(IDB_KEY, {
@@ -212,6 +322,7 @@ describe('local load validation', () => {
   it('leaves a customised GI-EU badge unchanged', async () => {
     const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
     const gameId = useApp.getState().addGameFromPreset(genshin, {});
+    await flushPersist();
     const state = useApp.getState().state;
     idb.set(IDB_KEY, {
       ...state,
@@ -365,6 +476,89 @@ describe('legacy document adoption', () => {
     expect([...idb.keys()].filter((key) => key.startsWith('void-state'))).toEqual([]);
     expect(idb.has(IDB_KEY)).toBe(false);
   });
+
+  it('does not adopt a cached legacy document after Clear finishes', async () => {
+    const old = await doc(['Legacy game']);
+    await freshStore();
+    idb.set('void-state', old);
+    let mainReads = 0;
+    let release!: () => void;
+    let started!: () => void;
+    const reading = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    vi.mocked(idbGet).mockImplementation(async (key) => {
+      const value = idb.get(String(key));
+      if (key === IDB_KEY && ++mainReads === 2) {
+        started();
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
+      }
+      return value;
+    });
+    vi.mocked(idbSet).mockClear();
+    try {
+      const first = useApp.getState().load();
+      const second = useApp.getState().load();
+      await reading;
+      await useApp.getState().clearLocalData();
+      release();
+      await Promise.all([first, second]);
+      await flushPersist();
+      expect(useApp.getState().state.games).toEqual([]);
+      expect(idb.has(IDB_KEY)).toBe(false);
+      expect(idb.has('void-state')).toBe(false);
+      expect(idbSet).not.toHaveBeenCalled();
+    } finally {
+      vi.mocked(idbGet).mockImplementation(async (key) => idb.get(String(key)));
+    }
+  });
+
+  it.each([false, true])(
+    'waits for a started legacy write before Clear, including failed writes (%s)',
+    async (failWrite) => {
+      const old = await doc(['Legacy game']);
+      await freshStore();
+      idb.set('void-state::user:old', old);
+      let release!: () => void;
+      let started!: () => void;
+      const writing = new Promise<void>((resolve) => {
+        started = resolve;
+      });
+      const heldWrite = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      vi.mocked(idbSet).mockClear();
+      vi.mocked(idbSet).mockImplementationOnce(async (key, value) => {
+        started();
+        await heldWrite;
+        if (failWrite) throw new Error('Migration write failed');
+        idb.set(String(key), value);
+      });
+      const first = useApp.getState().load();
+      const second = useApp.getState().load();
+      await writing;
+      let finished = false;
+      const clear = useApp
+        .getState()
+        .clearLocalData()
+        .then(() => {
+          finished = true;
+        });
+      const duringClear = useApp.getState().load();
+      await Promise.resolve();
+      expect(finished).toBe(false);
+      release();
+      await Promise.all([first, second, clear, duringClear]);
+      await flushPersist();
+      expect(useApp.getState().loadError).toBe('');
+      expect(useApp.getState().state.games).toEqual([]);
+      expect(idb.has(IDB_KEY)).toBe(false);
+      expect(idb.has('void-state::user:old')).toBe(false);
+      expect(idbSet).toHaveBeenCalledTimes(1);
+    },
+  );
 });
 
 describe('addMissingPresetTasksEverywhere', () => {
@@ -494,6 +688,57 @@ describe('regen snapshot seeding', () => {
     expect(state.snapshots.filter((snapshot) => snapshot.resourceId === resource.id)).toEqual([
       expect.objectContaining({ value: 0 }),
     ]);
+  });
+});
+
+describe('resource rule edits', () => {
+  it.each([{ regenMinutes: 5 }, { kind: 'counter' as const }])('keeps earned energy when changing %j', (patch) => {
+    const { gameId, resourceId } = addGameWithResource(100, 10);
+    writeEnergy(resourceId, 10);
+    vi.advanceTimersByTime(60 * 60_000);
+    useApp.getState().upsertResource({ id: resourceId, gameId, ...patch });
+
+    const state = useApp.getState().state;
+    const resource = state.resources.find((row) => row.id === resourceId)!;
+    const snapshot = latestSnapshots(state.snapshots).get(resourceId)!;
+    expect(projectEnergy(resource, snapshot, Date.now()).value).toBe(16);
+    vi.advanceTimersByTime(10 * 60_000);
+    expect(projectEnergy(resource, snapshot, Date.now()).value).toBe(patch.kind === 'counter' ? 16 : 18);
+  });
+
+  it('does not award energy or reserve for time spent at the previous cap', () => {
+    const { gameId, resourceId } = addGameWithResource(100, 10, 10);
+    writeEnergy(resourceId, 100, 10);
+    vi.advanceTimersByTime(120 * 60_000);
+    useApp.getState().upsertResource({ id: resourceId, gameId, cap: 200, reserveCap: 100 });
+
+    const state = useApp.getState().state;
+    const resource = state.resources.find((row) => row.id === resourceId)!;
+    const snapshot = latestSnapshots(state.snapshots).get(resourceId)!;
+    expect(projectEnergy(resource, snapshot, Date.now())).toMatchObject({ value: 100, reserve: 10 });
+  });
+
+  it('preserves over-cap readings when editing a cap and does not record presentation edits', () => {
+    const { gameId, resourceId } = addGameWithResource(100, 10);
+    writeEnergy(resourceId, 50);
+    const before = useApp.getState().state.snapshots;
+    useApp.getState().upsertResource({ id: resourceId, gameId, name: 'Renamed', sort: 2 });
+    expect(useApp.getState().state.snapshots).toBe(before);
+    useApp.getState().upsertResource({ id: resourceId, gameId, cap: 20 });
+    useApp.getState().upsertResource({ id: resourceId, gameId, cap: 200 });
+    const state = useApp.getState().state;
+    const resource = state.resources.find((row) => row.id === resourceId)!;
+    expect(projectEnergy(resource, latestSnapshots(state.snapshots).get(resourceId), Date.now()).value).toBe(50);
+  });
+
+  it('keeps already-held reserve while a cap edit passes through a smaller number', () => {
+    const { gameId, resourceId } = addGameWithResource(100, 10, 100);
+    writeEnergy(resourceId, 100, 50);
+    useApp.getState().upsertResource({ id: resourceId, gameId, reserveCap: 2 });
+    useApp.getState().upsertResource({ id: resourceId, gameId, reserveCap: 200 });
+    const state = useApp.getState().state;
+    const resource = state.resources.find((row) => row.id === resourceId)!;
+    expect(projectEnergy(resource, latestSnapshots(state.snapshots).get(resourceId), Date.now()).reserve).toBe(50);
   });
 });
 
@@ -692,20 +937,57 @@ describe('deleteGame', () => {
     store.addTask(gameId, 'Daily', 'daily');
     store.upsertChip({ gameId, label: 'Domain', delta: -20 });
     store.upsertEvent({ gameId, name: 'Banner', start: Date.now(), end: Date.now() + 1000 });
+    store.addReminder('Game reminder', Date.now() + 1000, gameId);
+    store.upsertRule({ gameId, type: 'event_end', enabled: true });
+    const otherGameId = store.addBlankGame('Keep');
+    store.addReminder('Other game reminder', Date.now() + 1000, otherGameId);
+    store.addReminder('Global reminder', Date.now() + 1000, null);
+    store.upsertRule({ gameId: otherGameId, type: 'event_end', enabled: true });
+    store.upsertRule({ gameId: null, type: 'event_end', enabled: true });
 
     useApp.getState().deleteGame(gameId);
     const after = useApp.getState().state;
 
     expect(after.games.find((g) => g.id === gameId)?.deleted).toBe(true);
-    for (const collection of [after.resources, after.tasks, after.chips, after.events]) {
+    for (const collection of [
+      after.resources,
+      after.tasks,
+      after.chips,
+      after.events,
+      after.reminders,
+      after.alertRules,
+    ]) {
       const children = collection.filter((row) => (row as { gameId?: string }).gameId === gameId);
       expect(children.length).toBeGreaterThan(0);
       expect(children.every((row) => (row as { deleted?: boolean }).deleted === true)).toBe(true);
     }
+    expect(after.reminders.filter((row) => !row.deleted).map((row) => row.message)).toEqual([
+      'Other game reminder',
+      'Global reminder',
+    ]);
+    expect(after.alertRules.filter((row) => !row.deleted).map((row) => row.gameId)).toEqual([otherGameId, null]);
   });
 });
 
 describe('updateSettings', () => {
+  it('keeps the other device first edit when each device changes a different setting', () => {
+    const original = emptyState();
+    original.settings.localTz = 'UTC';
+    useApp.setState({ state: original });
+    useApp.getState().updateSettings({ localTz: 'Europe/Warsaw' });
+    const phone = useApp.getState().state;
+
+    useApp.setState({ state: original });
+    vi.advanceTimersByTime(1000);
+    useApp.getState().updateSettings({ sleepHours: 10 });
+    const desktop = useApp.getState().state;
+
+    for (const merged of [mergeState(phone, desktop), mergeState(desktop, phone)]) {
+      expect(merged.settings.localTz).toBe('Europe/Warsaw');
+      expect(merged.settings.sleepHours).toBe(10);
+    }
+  });
+
   it('advances the clock only for the fields actually touched', () => {
     useApp.getState().updateSettings({ sleepHours: 8, localTz: 'Europe/Warsaw' });
     const first = useApp.getState().state.settings;
@@ -722,6 +1004,20 @@ describe('updateSettings', () => {
 });
 
 describe('upsertEvents', () => {
+  it('keeps the completion choice when saving an event as a new copy', () => {
+    const gameId = useApp.getState().addBlankGame('Events');
+    useApp.getState().upsertEvent({ id: 'original', gameId, name: 'Completed event', done: true });
+    const original = useApp.getState().state.events.find((event) => event.id === 'original')!;
+    expect(original.done).toBe(true);
+    useApp.getState().deleteEvent(original.id);
+    useApp.getState().upsertEvent({ gameId, name: original.name, done: original.done });
+    const events = useApp.getState().state.events;
+    expect(events.find((event) => event.id === original.id)?.deleted).toBe(true);
+    expect(events.filter((event) => !event.deleted)).toEqual([
+      expect.objectContaining({ name: original.name, done: true }),
+    ]);
+  });
+
   it('appends in order and updates existing ids in place rather than duplicating', () => {
     const store = useApp.getState();
     const gameId = store.addBlankGame('Batch');
@@ -768,6 +1064,19 @@ describe('upsertEvents', () => {
 });
 
 describe('importJson', () => {
+  it('does not promote an impossible backup reading over the current local reading', () => {
+    const { resourceId } = addGameWithResource();
+    writeEnergy(resourceId, 27);
+    const before = latestSnapshots(useApp.getState().state.snapshots).get(resourceId)!;
+    vi.advanceTimersByTime(1000);
+    const incoming = emptyState();
+    incoming.snapshots = [{ id: 'future-backup-reading', resourceId, value: 99, takenAt: Date.now() + 86_400_000 }];
+
+    expect(useApp.getState().importJson(JSON.stringify(incoming))).toBe(true);
+    expect(latestSnapshots(useApp.getState().state.snapshots).get(resourceId)).toEqual(before);
+    expect(useApp.getState().state.snapshots.some((snapshot) => snapshot.id === 'future-backup-reading')).toBe(false);
+  });
+
   it('returns false for text that is not JSON at all', () => {
     expect(useApp.getState().importJson('not json at all')).toBe(false);
   });
@@ -841,5 +1150,43 @@ describe('manual event order', () => {
     if (parsed.success) expect(parsed.data.events.find((event) => event.id === 'a')?.sort).toBe(2);
     useApp.getState().resetEventOrder(gameId);
     expect(useApp.getState().state.events.every((event) => event.sort === undefined)).toBe(true);
+  });
+});
+
+describe('per-game tracking customization', () => {
+  it('reorders resources in one game without changing snapshots or another account', () => {
+    const { gameId, resourceId } = addGameWithResource();
+    const otherGameId = useApp.getState().addBlankGame('Other account');
+    useApp.getState().upsertResource({ gameId, name: 'Second resource', sort: 0 });
+    const before = useApp.getState().state;
+    const second = before.resources.find((item) => item.gameId === gameId && item.id !== resourceId)!;
+    const other = before.resources.filter((item) => item.gameId === otherGameId);
+    useApp.getState().moveResource(second.id, -1);
+    const after = useApp.getState().state;
+    expect(
+      after.resources
+        .filter((item) => item.gameId === gameId)
+        .sort((a, b) => a.sort - b.sort)
+        .map((item) => item.id),
+    ).toEqual([second.id, resourceId]);
+    expect(after.resources.filter((item) => item.gameId === otherGameId)).toEqual(other);
+    expect(after.snapshots).toEqual(before.snapshots);
+  });
+
+  it('edits a reminder without moving it between games or reviving a deleted reminder', () => {
+    const { gameId } = addGameWithResource();
+    useApp.getState().addReminder('Original', Date.now(), gameId);
+    const reminder = useApp.getState().state.reminders[0]!;
+    useApp.getState().updateReminder(reminder.id, { message: '  Updated  ', at: reminder.at + 1000 });
+    expect(useApp.getState().state.reminders[0]).toMatchObject({
+      id: reminder.id,
+      gameId,
+      message: 'Updated',
+      at: reminder.at + 1000,
+    });
+    useApp.getState().deleteReminder(reminder.id);
+    const deleted = useApp.getState().state.reminders[0];
+    useApp.getState().updateReminder(reminder.id, { message: 'Stale edit', at: reminder.at });
+    expect(useApp.getState().state.reminders[0]).toEqual(deleted);
   });
 });

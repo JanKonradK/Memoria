@@ -48,6 +48,10 @@ async function expectSoundDocumentStructure(page: Page) {
 }
 
 async function expectTimelineTicksToFit(page: Page) {
+  await page
+    .getByRole('radiogroup', { name: 'Event view' })
+    .getByRole('radio', { name: 'Timeline', exact: true })
+    .click();
   const scale = page.locator('[data-timeline-scale]');
   const ticks = page.locator('[data-timeline-tick]');
   await expect(ticks.first()).toBeVisible();
@@ -75,16 +79,17 @@ async function openAddMenu(page: Page, item: 'Add game' | 'Event' | 'Reminder') 
 }
 
 async function addPreset(page: Page, name: string, short: string, first = false) {
+  const allGames = page.getByRole('button', { name: 'Back to dashboard', exact: true });
+  if (await allGames.isVisible()) await allGames.click();
   if (first) await page.getByRole('button', { name: 'Add your first game' }).click();
   else await openAddMenu(page, 'Add game');
   await expect(page.getByRole('dialog', { name: 'Add a game' })).toBeVisible();
   await page.getByRole('button', { name: new RegExp(name) }).click();
   await page.getByRole('button', { name: `Add ${short}` }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  // On the wide stage a resting card shows its name in a span; the heading only
-  // exists once the card is open, so open it before asserting on the heading.
-  const expandButton = page.getByRole('button', { name: `Expand ${name} controls` });
-  if (await expandButton.isVisible()) await expandButton.click();
+  // Open the game page before asserting its heading.
+  const phoneOpen = page.getByRole('button', { name: `Open ${name} controls` });
+  if (await phoneOpen.isVisible()) await phoneOpen.click();
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
 }
 
@@ -135,13 +140,20 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   await addGenshin(page);
   await expectNoPageOverflow(page);
 
-  // The title and pencil both open the same complete game editor.
-  await page.getByRole('button', { name: 'Edit Genshin Impact' }).first().click();
+  // Tracking rules live in Settings; the card Edit button changes its layout.
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Game settings for Genshin Impact' }).click();
   const dialog = page.getByRole('dialog', { name: 'Genshin Impact' });
   await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Energy resources' })).toBeVisible();
+  await dialog.getByRole('tab', { name: 'Resets' }).click();
   await expect(dialog.getByRole('radiogroup', { name: 'Server' })).toBeVisible();
+  await dialog.getByRole('tab', { name: 'Game', exact: true }).click();
   await expect(dialog.getByRole('button', { name: 'Delete game…' })).toBeVisible();
   await expectNoSeriousAccessibilityViolations(page);
+  // The editor's sections are tab panels now, so only the selected one is
+  // mounted — reach Quick spend through its tab rather than by scrolling to it.
+  await dialog.getByRole('tab', { name: 'Quick spend' }).click();
   // By role: the section heading and the "+ Quick spend" button share text.
   await dialog.getByRole('heading', { name: 'Quick spend' }).scrollIntoViewIfNeeded();
   await dialog.getByPlaceholder('Label, e.g. Domain').fill('Domain');
@@ -151,10 +163,9 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
 
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
-  // Card expansion is per-visit state on the wide stage, so coming back from
-  // Settings lands on a collapsed card and its chips are not in the DOM.
-  const reopenGenshin = page.getByRole('button', { name: 'Expand Genshin Impact controls' });
-  if (await reopenGenshin.isVisible()) await reopenGenshin.click();
+  await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
+  const openControls = page.getByRole('button', { name: 'Open Genshin Impact controls' });
+  if (await openControls.isVisible()) await openControls.click();
   await expect(page.getByRole('button', { name: /Domain -20/ })).toBeVisible();
   const timer = page.getByRole('button', { name: 'Crystalfly Trap (Crystal Cores): mark collected and resent' });
   await timer.scrollIntoViewIfNeeded();
@@ -176,15 +187,16 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   await page.getByRole('button', { name: /Reserve TB Power/ }).click();
   await expect(page.getByLabel(/Reserve TB Power for Trailblaze Power/)).toBeVisible();
 
+  const allGames = page.getByRole('button', { name: 'Back to dashboard', exact: true });
+  if (await allGames.isVisible()) await allGames.click();
   await openAddMenu(page, 'Add game');
   await page.getByRole('button', { name: /Neverness to Everness/ }).click();
   await page.locator('label:has-text("City Stamina cap") input').fill('100');
   await page.getByRole('button', { name: 'Add NTE' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  // On wide desktop the new card lands collapsed in the Nexus layout, where the
-  // name is a <span>; expand it to get the <h2> heading (as addPreset does).
-  const expandNte = page.getByRole('button', { name: 'Expand Neverness to Everness controls' });
-  if (await expandNte.isVisible()) await expandNte.click();
+  // A new game opens the same page at every width.
+  const openNte = page.getByRole('button', { name: 'Open Neverness to Everness controls' });
+  if (await openNte.isVisible()) await openNte.click();
   await expect(page.getByRole('heading', { name: 'Neverness to Everness', exact: true })).toBeVisible();
 });
 
@@ -213,11 +225,11 @@ test('tabs, timeline controls, and settings fit after adding a game', async ({ p
 
   const gameSettings = page.getByRole('region', { name: 'Games' });
   await expect(gameSettings.getByText('Genshin Impact', { exact: true })).toBeVisible();
-  await gameSettings.getByRole('button', { name: 'Edit Genshin Impact' }).click();
+  await gameSettings.getByRole('button', { name: 'Game settings for Genshin Impact' }).click();
   await expect(page.getByRole('dialog', { name: 'Genshin Impact' })).toBeVisible();
 });
 
-test('wide dashboard stage expands a card while timeline bars stay in scale', async ({ page }, testInfo) => {
+test('wide dashboard opens integrated game pages while timeline bars stay in scale', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-16x9', '16:9 desktop layout check');
 
   await addGenshin(page);
@@ -226,57 +238,30 @@ test('wide dashboard stage expands a card while timeline bars stay in scale', as
   await addPreset(page, 'Wuthering Waves', 'WuWa');
   await addPreset(page, 'Neverness to Everness', 'NTE');
 
+  await page.getByRole('button', { name: 'Back to dashboard', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Across every game' })).toBeVisible();
-  const gameArea = page.getByRole('complementary', { name: 'Game controls' });
-  const leftRail = gameArea.locator('.nexus-node[data-column="1"]');
-  const rightRail = gameArea.locator('.nexus-node[data-column="2"]');
-  await expect(gameArea).toBeVisible();
-  await expect(gameArea).toHaveCSS('overflow-y', 'auto');
-  await expect(page.locator('.nexus-node')).toHaveCount(5);
-  await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeVisible();
-  // Freeze the current order as the oracle. Urgency changes with server time,
-  // so a hard-coded game order is not stable across days.
-  await page.keyboard.press('Escape');
+  const cards = page.locator('.nexus-node');
+  await expect(cards).toHaveCount(5);
   const restingOrder = await page
-    .locator('.nexus-node button[aria-label^="Expand "]')
+    .locator('[data-roster-game]')
     .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label')));
-  const startingColumn = await page
-    .getByRole('button', { name: 'Expand Honkai: Star Rail controls' })
-    .evaluate((button) => button.closest('.nexus-node')?.getAttribute('data-column'));
-  const expandedRail = startingColumn === '1' ? leftRail : rightRail;
-  const collapsedRail = startingColumn === '1' ? rightRail : leftRail;
-  await page.getByRole('button', { name: 'Expand Honkai: Star Rail controls' }).click();
-  await expect(page.getByRole('region', { name: 'Honkai: Star Rail controls' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Collapse Honkai: Star Rail controls' })).toHaveCount(0);
-  await expect(expandedRail).toHaveCount(1);
-  await expect(collapsedRail).toHaveCount(4);
-  await expect(collapsedRail.getByRole('button', { name: /^Expand .+ controls$/ })).toHaveCount(4);
-  await expect
-    .poll(() =>
-      collapsedRail.evaluateAll((cards) =>
-        cards.map((card) => card.querySelector('button[aria-label^="Expand "]')?.getAttribute('aria-label')),
-      ),
-    )
-    .toEqual(restingOrder.filter((label) => label !== 'Expand Honkai: Star Rail controls'));
+  const starRailTrigger = page.getByRole('button', { name: 'Open Honkai: Star Rail controls', exact: true });
+  await starRailTrigger.click();
+  const workspace = page.getByRole('region', { name: 'Honkai: Star Rail focus workspace' });
+  await expect(workspace).toBeVisible();
+  await expect(workspace).not.toHaveClass(/card-shell/);
+  await expect(page.getByRole('combobox', { name: 'Focus game' })).toHaveCount(0);
+  await expectNoPageOverflow(page);
+  await page.getByRole('button', { name: 'Back to dashboard', exact: true }).click();
+  await expect(starRailTrigger).toBeFocused();
+  await expect(cards).toHaveCount(5);
+  expect(
+    await page
+      .locator('[data-roster-game]')
+      .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label'))),
+  ).toEqual(restingOrder);
   await expectNoPageOverflow(page);
   await expectNoPageVerticalOverflow(page);
-  // The open card has no collapse control: Escape and a click outside close it.
-  await page.keyboard.press('Escape');
-  const starRailTrigger = page.getByRole('button', { name: 'Expand Honkai: Star Rail controls' });
-  await expect(starRailTrigger).toBeVisible();
-  await expect(starRailTrigger).toBeFocused();
-  await expect(leftRail).toHaveCount(3);
-  await expect(rightRail).toHaveCount(2);
-
-  await starRailTrigger.click();
-  await expect(page.getByRole('region', { name: 'Honkai: Star Rail controls' })).toBeVisible();
-  await page.locator('.app-bar').click({ position: { x: 2, y: 2 } });
-  await expect(starRailTrigger).toBeVisible();
-
-  // The Cards masonry was retired: the stage is the only wide composition, and
-  // every card reaches its controls in place rather than through a second layout.
-  await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeVisible();
-  await expectNoPageOverflow(page);
 
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   // Importing the bundled feed is automatic on load, so the seeded lane is
@@ -345,4 +330,31 @@ test('animated Add menu transfers focus to a sheet and releases pointer input', 
   await page.getByRole('button', { name: 'Switch to light theme' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await expectNoPageOverflow(page);
+});
+
+test('floating phone navigation contains touch targets and tracks each selected route', async ({ page }) => {
+  test.skip(page.viewportSize()!.width >= 768, 'Floating phone dock');
+  const nav = page.getByRole('navigation', { name: 'Primary' });
+  for (const route of ['Dashboard', 'Timeline', 'Livestreams', 'Settings']) {
+    await nav.getByRole('button', { name: route, exact: true }).click();
+    const selected = nav.getByRole('button', { name: route, exact: true });
+    await expect(selected).toHaveAttribute('aria-current', 'page');
+    const dock = (await nav.boundingBox())!;
+    for (const button of await nav.getByRole('button').all()) {
+      const box = (await button.boundingBox())!;
+      expect(box.width).toBeGreaterThanOrEqual(44);
+      expect(box.height).toBeGreaterThanOrEqual(44);
+      expect(box.y).toBeGreaterThanOrEqual(dock.y);
+      expect(box.y + box.height).toBeLessThanOrEqual(dock.y + dock.height);
+    }
+    await expect
+      .poll(async () => {
+        const active = (await selected.boundingBox())!;
+        const pill = (await nav.locator('.nav-slider').boundingBox())!;
+        return Math.abs(active.x - pill.x) + Math.abs(active.y - pill.y);
+      })
+      .toBeLessThan(1);
+    expect(dock.y + dock.height).toBeLessThan(page.viewportSize()!.height);
+    await expectNoPageOverflow(page);
+  }
 });

@@ -411,7 +411,7 @@ export const PRESETS: GamePreset[] = [
     ],
     tasks: [
       { key: 'wuwa-daily-activity', name: 'Daily Activity (100)', cadence: 'daily', core: true },
-      { key: 'wuwa-tacet-fields', name: 'Tacet Fields ×4', cadence: 'daily', mode: 'count', countTarget: 4 },
+      { key: 'wuwa-tacet-fields', name: 'Tacet Fields ×5', cadence: 'daily', mode: 'count', countTarget: 5 },
       // Named for the track, not for "the weekly things": this row sat directly
       // above Weekly Boss ×3 and the roguelike slot, so a bare "Weekly
       // Challenges" read as the heading for both of them rather than as a

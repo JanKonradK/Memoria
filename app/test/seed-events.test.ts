@@ -1,4 +1,4 @@
-import { emptyState, PRESETS, type Game, type GameEvent } from '@memoria/shared';
+import { checklistFor, emptyState, PRESETS, type Game, type GameEvent } from '@memoria/shared';
 import { describe, expect, it } from 'vitest';
 import {
   eventFingerprint,
@@ -66,6 +66,144 @@ function importedMaintenance(): GameEvent {
 }
 
 describe('planSeedImport', () => {
+  it('refreshes a lost legacy category only when it reconstructs the exact stored fingerprint', () => {
+    const original = {
+      ...importedMaintenance(),
+      id: 'legacy-selector',
+      sourceKey: 'seed:genshin:7.1-standard-selector',
+      name: 'Anniversary standard character selection — time TBC',
+      type: 'event' as const,
+      category: 'teyvat' as const,
+      notify: false,
+      start: Date.parse('2026-09-22T23:00:00Z'),
+      end: Date.parse('2026-11-03T22:59:00Z'),
+    };
+    const lost = { ...original, category: undefined, seedHash: eventFingerprint(original), sort: 4, done: true };
+    const state = {
+      ...emptyState(),
+      games: [account('eu', 'UTC+1')],
+      events: [lost],
+      settings: { ...emptyState().settings, seedImportedVersion: SEED_UPDATED },
+    };
+    const now = Date.parse('2026-10-03T12:00:00Z');
+    const plan = planSeedImport(state, now).find((row) => row.eventId === lost.id);
+    expect(plan?.seed).toMatchObject({
+      name: 'Across the Frozen Wilds, Honing One’s Edge — choose a standard 5★',
+      category: 'teyvat',
+    });
+    expect(plan?.end).toBe(Date.parse('2026-11-03T13:59:00Z'));
+    for (const edited of [
+      { ...lost, notes: 'My instructions' },
+      { ...lost, end: lost.end + 1 },
+      { ...lost, category: 'miliastra' as const },
+      { ...lost, deleted: true },
+    ]) {
+      expect(planSeedImport({ ...state, events: [edited] }, now).some((row) => row.eventId === lost.id)).toBe(false);
+    }
+  });
+
+  it('corrects pristine Wonderland draws on the same bundle date while preserving owner edits and deletions', () => {
+    const previous = {
+      ...importedMaintenance(),
+      id: 'cosmetic',
+      name: 'Event Ode: Moonlight After the Rain',
+      type: 'event' as const,
+      category: 'miliastra' as const,
+      sourceKey: 'genshin:21895',
+      start: Date.parse('2026-09-23T03:00:00Z'),
+      end: Date.parse('2026-11-03T13:59:00Z'),
+    };
+    const old = { ...previous, seedHash: eventFingerprint(previous) };
+    const state = {
+      ...emptyState(),
+      games: [account('eu', 'UTC+1')],
+      events: [old],
+      settings: { ...emptyState().settings, seedImportedVersion: SEED_UPDATED },
+    };
+    const now = Date.parse('2026-10-03T12:00:00Z');
+    const corrected = planSeedImport(state, now).find((row) => row.eventId === 'cosmetic');
+    expect(corrected?.seed).toMatchObject({ type: 'banner', bannerKind: 'other', category: 'miliastra' });
+    expect(corrected?.end).toBe(previous.end);
+    for (const event of [
+      { ...old, name: 'My draw' },
+      { ...old, deleted: true },
+    ]) {
+      const plans = planSeedImport({ ...state, events: [event] }, now);
+      expect(plans.some((row) => row.eventId === old.id || row.seed?.sourceKey === old.sourceKey)).toBe(false);
+    }
+  });
+
+  it('keeps a personal Stygian task tied to the full rotation rather than the Resin cutoff', () => {
+    const game = account('eu', 'UTC+1');
+    const now = Date.parse('2026-10-03T12:00:00Z');
+    const plans = planSeedImport({ ...emptyState(), games: [game] }, now);
+    const events = plans
+      .filter(
+        (row) =>
+          row.seed?.sourceKey === 'seed:genshin:7.1-stygian' ||
+          row.seed?.sourceKey === 'seed:genshin:7.1-disturbance-outbreak',
+      )
+      .map((row) => ({
+        ...importedMaintenance(),
+        id: row.seed!.sourceKey,
+        name: row.seed!.name,
+        type: row.seed!.type,
+        start: row.start!,
+        end: row.end!,
+      }));
+    const task = {
+      id: 'personal-stygian',
+      gameId: game.id,
+      name: 'Stygian Onslaught',
+      cadence: 'custom' as const,
+      intervalDays: 42,
+      anchorAt: 0,
+      sort: 0,
+      updatedAt: 1,
+    };
+    const [item] = checklistFor({ ...emptyState(), games: [game], events, tasks: [task] }, game, now);
+    expect(item?.resetAt).toBe(Date.parse('2026-11-03T02:59:00Z'));
+  });
+
+  it.each(['UTC+1', 'UTC+8', 'UTC-5'])('keeps October global and server-local boundaries distinct in %s', (tz) => {
+    const games = ['genshin', 'hsr', 'wuwa', 'nte'].map((key) => ({
+      ...account(key, tz),
+      presetKey: key,
+    }));
+    const plans = planSeedImport({ ...emptyState(), games }, Date.parse('2026-09-20T00:00:00Z'));
+    const row = (key: string) => plans.find((entry) => entry.seed?.sourceKey === key)!;
+    const offset = tz === 'UTC+1' ? '+01:00' : tz === 'UTC+8' ? '+08:00' : '-05:00';
+    expect(row('seed:genshin:7.1-silverwing').start).toBe(Date.parse(`2026-09-24T10:00:00${offset}`));
+    expect(row('seed:genshin:7.1-silverwing').end).toBe(Date.parse(`2026-10-12T03:59:00${offset}`));
+    expect(row('seed:genshin:7.1-disturbance-outbreak').start).toBe(Date.parse(`2026-09-30T10:00:00${offset}`));
+    expect(row('seed:genshin:7.1-disturbance-outbreak').end).toBe(Date.parse(`2026-10-10T03:59:00${offset}`));
+    expect(row('seed:genshin:7.1-stygian').end).toBe(Date.parse(`2026-11-03T03:59:00${offset}`));
+    expect(row('seed:genshin:7.1-limited-selector').start).toBe(Date.parse('2026-09-23T03:00:00Z'));
+    expect(row('seed:genshin:7.1-limited-selector').end).toBe(Date.parse(`2026-11-03T14:59:00${offset}`));
+    expect(row('seed:hsr:4.6-pearl').start).toBe(Date.parse('2026-09-28T03:00:00Z'));
+    expect(row('seed:hsr:4.6-pearl').end).toBe(Date.parse(`2026-11-10T15:00:00${offset}`));
+    expect(row('seed:hsr:4.6-interastral-gala').start).toBe(Date.parse(`2026-10-21T12:00:00${offset}`));
+    expect(row('seed:hsr:4.6-interastral-gala').end).toBe(Date.parse('2026-11-10T19:59:00Z'));
+    expect(row('seed:wuwa:3.7-p1').start).toBe(Date.parse('2026-09-30T03:00:00Z'));
+    expect(row('seed:wuwa:3.7-p1').end).toBe(Date.parse(`2026-10-22T09:59:00${offset}`));
+    expect(row('seed:nte:1.4-coal-lump').start).toBe(Date.parse('2026-10-08T02:00:00Z'));
+    expect(row('seed:nte:1.4-pixel-surge').start).toBe(Date.parse(`2026-10-19T05:00:00${offset}`));
+  });
+
+  it.each(['UTC+1', 'UTC+8', 'UTC-5'])('keeps newly verified WuWa rewards on the %s server clock', (tz) => {
+    const game = { ...account('wuwa-account', tz), presetKey: 'wuwa', name: 'Wuthering Waves', short: 'WW' };
+    const rows = planSeedImport({ ...emptyState(), games: [game] }, Date.parse('2026-09-20T22:00:00Z'));
+    const chord = rows.find((row) => row.seed?.sourceKey === 'seed:wuwa:3.6-chord')!;
+    const gifts = rows.find((row) => row.seed?.sourceKey === 'seed:wuwa:3.7-singing-drizzle')!;
+    const offset = tz === 'UTC+1' ? '+01:00' : tz === 'UTC+8' ? '+08:00' : '-05:00';
+    expect(chord.start).toBe(Date.parse(`2026-09-22T04:00:00${offset}`));
+    expect(chord.end).toBe(Date.parse(`2026-09-29T03:59:00${offset}`));
+    expect(gifts.start).toBe(Date.parse(`2026-10-22T10:00:00${offset}`));
+    expect(gifts.end).toBe(Date.parse(`2026-11-11T03:59:00${offset}`));
+    expect(chord.seed?.notify).not.toBe(false);
+    expect(gifts.seed?.notify).not.toBe(false);
+  });
+
   it('imports urgent Genshin gameplay cutoffs separately from the later reward claim', () => {
     const state = {
       ...emptyState(),

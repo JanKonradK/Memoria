@@ -36,6 +36,10 @@ test('separate cycles stay separate and clipped titles stay clear of countdowns'
     .setInputFiles({ name: 'timeline.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page
+    .getByRole('radiogroup', { name: 'Event view' })
+    .getByRole('radio', { name: 'Timeline', exact: true })
+    .click();
   await expect(page.locator('[data-timeline-event-row]')).toHaveCount(4);
   await expect(page.locator('[data-cycle-connectors] path')).toHaveCount(0);
   for (const id of ['clipped-title', 'long-title']) {

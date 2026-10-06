@@ -70,6 +70,34 @@ describe('checklistFor', () => {
     expect(checklistFor(complete, game, now)[0]!.done).toBe(true);
   });
 
+  it('uses recorded progress against an edited count target instead of a stale completion flag', () => {
+    const task = makeTask({ mode: 'count', countTarget: 3 });
+    const periodKey = taskPeriodKey(game, task, now);
+    const state = makeState({
+      games: [game],
+      tasks: [task],
+      completions: [
+        { id: completionId(task.id, periodKey), taskId: task.id, periodKey, countDone: 3, done: true, updatedAt: now },
+      ],
+    });
+    expect(checklistFor(state, game, now)[0]!.done).toBe(true);
+    state.tasks[0] = { ...task, countTarget: 5 };
+    expect(checklistFor(state, game, now)[0]).toMatchObject({ countDone: 3, countTarget: 5, done: false });
+    state.tasks[0] = { ...task, countTarget: 2 };
+    expect(checklistFor(state, game, now)[0]!.done).toBe(true);
+  });
+
+  it('keeps legacy checkbox completions when a task changes to counter mode', () => {
+    const task = makeTask({ mode: 'count', countTarget: 3 });
+    const periodKey = taskPeriodKey(game, task, now);
+    const state = makeState({
+      games: [game],
+      tasks: [task],
+      completions: [{ id: completionId(task.id, periodKey), taskId: task.id, periodKey, done: true, updatedAt: now }],
+    });
+    expect(checklistFor(state, game, now)[0]!.done).toBe(true);
+  });
+
   describe('timeline-linked cycles', () => {
     const task = makeTask({ id: 'cyc', name: 'ToA Hazard Zone cycle', cadence: 'custom', intervalDays: 28 });
 

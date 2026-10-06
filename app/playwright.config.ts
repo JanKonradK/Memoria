@@ -19,6 +19,13 @@ export default defineConfig({
   },
   projects: [
     {
+      name: 'android-s23',
+      use: {
+        ...devices['Pixel 7'],
+        viewport: { width: 412, height: 915 },
+      },
+    },
+    {
       name: 'mobile-320',
       use: {
         ...devices['Desktop Chrome'],

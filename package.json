@@ -10,6 +10,8 @@
     "dev": "npm -w app run dev",
     "build": "npm -w app run build && npm run build:desktop",
     "build:desktop": "esbuild desktop/shared-core.mjs --bundle --platform=node --format=esm --outfile=desktop/dist/shared-core.mjs",
+    "build:android": "node scripts/build-android.mjs",
+    "android:open": "cd app && cap open android",
     "test": "npm -w shared run test && npm -w app run test && npm run test:desktop",
     "test:desktop": "vitest run --config vitest.desktop.config.mjs",
     "pretest:desktop": "npm run build:desktop",
@@ -30,6 +32,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
+    "@capacitor/cli": "8.4.3",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",
     "eslint": "^10.7.0",

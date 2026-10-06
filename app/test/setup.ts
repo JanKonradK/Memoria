@@ -1,6 +1,9 @@
 import '@testing-library/jest-dom/vitest';
-import { afterEach } from 'vitest';
+import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
+
+// jsdom has no layout or document scrolling.
+window.scrollTo = vi.fn();
 
 // jsdom ships no ResizeObserver, and Ring.tsx observes its container to size the
 // stroke — so any test rendering a GameBadge dies on mount without this stub.
@@ -20,9 +23,12 @@ if (!('ResizeObserver' in globalThis)) {
 if (!window.matchMedia) {
   window.matchMedia = ((query: string) => {
     const minWidth = /\(min-width:\s*(\d+)px\)/.exec(query);
+    const maxWidth = /\(max-width:\s*(\d+)px\)/.exec(query);
     const matches = minWidth
       ? window.innerWidth >= Number(minWidth[1])
-      : query.includes('prefers-reduced-motion: reduce');
+      : maxWidth
+        ? window.innerWidth <= Number(maxWidth[1])
+        : query.includes('prefers-reduced-motion: reduce');
     return {
       matches,
       media: query,

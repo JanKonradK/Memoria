@@ -1,8 +1,25 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
+test('upcoming broadcasts show estimates and keep expired codes collapsed', async ({ page }, info) => {
+  await page.clock.setFixedTime(new Date('2026-10-03T12:00:00Z'));
+  await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Livestreams', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Upcoming broadcasts', exact: true })).toBeVisible();
+  await expect(page.getByText('The publisher has not confirmed the date. This range is an estimate.')).toBeVisible();
+  await expect(page.getByText('Date unconfirmed', { exact: true })).toBeVisible();
+  const genshin = page.getByRole('article', { name: 'A Rekviem for the Underworld' });
+  await expect(genshin.getByRole('button', { name: 'Copy Rekviem', exact: true })).toBeHidden();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: info.outputPath('upcoming-broadcasts.png') });
+  await page.getByRole('button', { name: 'Track game', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Add a game', exact: true })).toBeVisible();
+});
+
 test('livestream recaps have readable artwork, working navigation and accessible content', async ({ page }) => {
-  await page.clock.setFixedTime(new Date('2026-09-17T12:00:00Z'));
+  await page.clock.setFixedTime(new Date('2026-10-03T12:00:00Z'));
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
   await page.getByRole('button', { name: 'Livestreams', exact: true }).click();
@@ -13,7 +30,7 @@ test('livestream recaps have readable artwork, working navigation and accessible
     await expect(artwork).toBeVisible();
     await expect.poll(() => artwork.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
   }
-  await expect(page.getByRole('link', { name: 'Watch official replay ↗', exact: true })).toHaveCount(2);
+  await expect(page.getByRole('link', { name: 'Watch official replay ↗', exact: true })).toHaveCount(4);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole('button', { name: 'Switch to light theme' }).click();
@@ -34,6 +51,7 @@ test('codes copy, show official destinations and expire while the page stays ope
   await nte.getByRole('button', { name: 'Copy WITCHHOUSE', exact: true }).click();
   await expect(nte.getByRole('status')).toHaveText('WITCHHOUSE copied. Paste it to redeem.');
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('WITCHHOUSE');
+  await genshin.getByText('Show expired codes (3)', { exact: true }).click();
   await expect(genshin.getByRole('button', { name: 'Copy Rekviem', exact: true })).toBeDisabled();
   await expect(genshin.getByRole('link', { name: 'Redemption page for Rekviem' })).toHaveAttribute(
     'href',
@@ -48,6 +66,7 @@ test('codes copy, show official destinations and expire while the page stays ope
   await nte.getByRole('button', { name: 'Copy THEWHOOTS', exact: true }).click();
   await expect(nte.getByRole('status')).toContainText('Select the code and copy it manually.');
   await page.clock.fastForward(90_000);
+  await nte.getByText('Show expired codes (3)', { exact: true }).click();
   await expect(nte.getByRole('button', { name: 'Copy WITCHHOUSE', exact: true })).toBeDisabled();
   await expect(nte.getByText('Expired', { exact: true })).toBeVisible();
 });

@@ -14,19 +14,19 @@
 
 import type { CSSProperties } from 'react';
 
-import { gameWash, type GameColors } from './game-color';
+import { gameTitleInk, gameWash, mix, trioOf, type GameColors } from './game-color';
 import { THEME_GROUND, useUI, type Theme } from './ui-store';
 
 export { THEME_GROUND };
 export type { Theme };
 
 /** Must match --color-inset for each theme in index.css. */
-export const THEME_INSET: Record<Theme, string> = { dark: '#08080a', light: '#e4ddd0' };
+export const THEME_INSET: Record<Theme, string> = { dark: '#101114', light: '#edeef2' };
 
 /** The two stops of .card-shell's default gradient: --panel-hi, --panel-lo. */
 export const THEME_PANEL: Record<Theme, [string, string]> = {
-  dark: ['#131316', '#0c0c0e'],
-  light: ['#f3eee4', '#ebe4d6'],
+  dark: ['#151619', '#151619'],
+  light: ['#ffffff', '#ffffff'],
 };
 
 /** The theme itself, for the few callers that need more than a ground. */
@@ -44,18 +44,17 @@ export function useInset(): string {
   return THEME_INSET[useUI((store) => store.theme)];
 }
 
-/**
- * The card's own wash, as the two custom properties .card-shell already reads.
- *
- * The primary only *whispers* into the shell — 7% on charcoal, 22% on cream —
- * so a row of cards stays a row of panels wearing jewelry rather than five
- * painted walls. See The Whisper Rule in DESIGN.md.
- *
- * Returned as a style object rather than applied here so a card keeps one
- * background declaration, in CSS, with the neutral panel gradient as its
- * fallback: a card that has not opted in is unchanged.
- */
+/** One identity palette for the glass, its reflected light, and readable ink. */
 export function gameShellVars(game: GameColors, theme: Theme, resolvedIdentity: GameColors = game): CSSProperties {
   const [hi, lo] = gameWash(resolvedIdentity, THEME_PANEL[theme], theme);
-  return { '--card-shell-hi': hi, '--card-shell-lo': lo } as CSSProperties;
+  const { primary, secondary, accent } = trioOf(resolvedIdentity);
+  const inkGround = theme === 'dark' ? mix(THEME_PANEL.light[0], mix(secondary, hi, 0.18), 0.05) : hi;
+  return {
+    '--card-shell-hi': hi,
+    '--card-shell-lo': lo,
+    '--game-primary': primary,
+    '--game-secondary': secondary,
+    '--game-accent': accent,
+    '--game-ink': gameTitleInk(resolvedIdentity, inkGround, 4.5),
+  } as CSSProperties;
 }

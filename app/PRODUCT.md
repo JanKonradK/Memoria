@@ -27,10 +27,11 @@ Umamusume runs one UTC+0 global service), that daily reset means 04:00 or 05:00
 one). Anything that assumes the HoYo shape is now a bug waiting for the right
 account.
 
-Memoria is **a local tool on the owner's Windows machine**, not a hosted service:
-there are no accounts, no server and no deployment. Design must still hold up
-for someone opening it cold — first run and empty states are in scope — but
-sign-up, tenancy and cloud operations are explicitly out of it.
+Memoria is **a local tool on the owner's Windows machine and Android phone**, not a hosted service.
+It needs no Memoria account or cloud deployment. The Android app stores data offline.
+Optional Wi-Fi sync connects a paired phone to the Windows launcher while the PC is on.
+First run, empty states, device pairing, and reconnect states are in scope.
+Sign-up, tenancy, and hosted cloud operations are out of scope.
 
 ## Product Purpose
 
@@ -65,7 +66,7 @@ Three things a neighbouring tracker could not truthfully claim:
   saves) → tick dailies → close. Projections and next actions recalibrate from that
   entry. The loop must stay measured in seconds.
 - **Two devices, two postures**: a large desktop window (the primary surface,
-  authored against 1440p) and a phone PWA used mid-session or in bed.
+  authored against 1440p) and an Android app or phone PWA used mid-session or in bed.
 - **A Windows desktop launcher** opens the app in its own chromeless window on
   fixed port `17817` and serves the canonical local `state.json`.
 - **Urgency stays in the app** — upcoming caps, resets, event deadlines and

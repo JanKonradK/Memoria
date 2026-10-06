@@ -47,6 +47,14 @@ const syncable = {
   deleted: z.boolean().optional(),
 };
 
+export const GameLayoutItemSchema = z.object({
+  id: z
+    .string()
+    .max(180)
+    .regex(/^(resource:.+|task:.+|events|quick-spend)$/),
+  hidden: z.boolean().optional(),
+});
+
 const game = z.object({
   ...syncable,
   id,
@@ -70,6 +78,7 @@ const game = z.object({
   notes: longText.optional(),
   processNames: z.array(z.string().max(160)).max(20).optional(),
   titleFont: z.string().max(120).optional(),
+  cardLayout: z.array(GameLayoutItemSchema).max(2000).optional(),
 });
 
 const resource = z.object({

@@ -28,6 +28,7 @@ const projection: EnergyProjection = {
   overflow: 0,
   hasSnapshot: true,
   reserve: 320,
+  reserveFullAt: now + (2400 - 320) * 12 * 60_000,
 };
 
 function projectionAt(value: number): EnergyProjection {
@@ -108,6 +109,29 @@ describe('EnergyRow reserve controls', () => {
     expect(screen.queryByText(/charging/i)).not.toBeInTheDocument();
   });
 
+  it('uses the projected reserve deadline instead of restarting from the whole-point reading', () => {
+    renderRow({ proj: { ...projection, reserveFullAt: now + 35 * 60_000 } });
+    openReserve();
+
+    expect(screen.getByText(/\+1 \/ 12m · full .* · in 35m/)).toBeInTheDocument();
+  });
+
+  it('does not mark a full weekly refill as wasted regeneration', () => {
+    render(
+      <EnergyRow
+        res={{ ...resource, kind: 'weekly', reserveCap: 0 }}
+        color="#f2a7c8"
+        proj={{ ...projection, weeklyResetAt: now + 86_400_000 }}
+        now={now}
+        localTz="UTC"
+        onCommit={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/^refills /)).toHaveClass('text-fg-soft');
+    expect(screen.getByText(/^refills /)).not.toHaveClass('text-danger-fg');
+  });
+
   it('reads out its own resource verdict above the reserve, not below it', () => {
     // "full Sat 10:10" belongs to Trailblaze Power. Printed after the reserve
     // block it read as the reserve's own line, directly under "fills while
@@ -176,8 +200,7 @@ describe('EnergyRow reserve controls', () => {
     openReserve();
     const reserveIncrement = screen.getByRole('button', { name: 'Increase Reserve TB Power' });
 
-    fireEvent.mouseDown(reserveIncrement);
-    fireEvent.mouseUp(reserveIncrement);
+    fireEvent.click(reserveIncrement);
 
     expect(onCommit).toHaveBeenCalledWith(300, 321);
   });

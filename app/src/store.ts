@@ -11,13 +11,16 @@ import type {
   Resource,
   Settings,
   SettingsField,
+  Snapshot,
   QuickChip,
   Task,
 } from '@memoria/shared';
 import {
   completionId,
+  assertStateCapacity,
   COMPLETION_RETENTION_MS,
   effectiveCountTarget,
+  effectiveResourceKind,
   effectiveTimerDurationMinutes,
   emptyState,
   latestSnapshots,
@@ -26,6 +29,7 @@ import {
   pruneCompletions,
   safeParseAppState,
   seedMissingRegenSnapshots,
+  settingsFieldClocks,
   projectEnergy,
   missingPresetTasks,
   presetForGame,
@@ -120,6 +124,7 @@ function applyEventUpsert(byId: Map<string, GameEvent>, ev: EventUpsert): void {
     end: ev.end ?? t + 7 * 86_400_000,
     dailyTouch: ev.dailyTouch ?? false,
     notify: ev.notify ?? true,
+    done: ev.done,
     notes: ev.notes ?? '',
     sourceKey: ev.sourceKey,
     // Only the bundled feed sets this. A hand-made event stays unstamped, which
@@ -137,8 +142,29 @@ function tombstone<T extends { id: string; updatedAt: number; deleted?: boolean 
   return list.map((x) => (match(x) ? { ...x, deleted: true, updatedAt: now() } : x));
 }
 
+/** Manual readings and resource-rule edits use the same ordering and retention. */
+function recordEnergySnapshot(state: AppState, reading: Omit<Snapshot, 'id' | 'takenAt'>, at: number): AppState {
+  const mine = state.snapshots.filter((snapshot) => snapshot.resourceId === reading.resourceId);
+  mine.sort((a, b) => b.takenAt - a.takenAt);
+  // A new reading must win even when a seed or earlier edit has the same timestamp.
+  const snapshot = { ...reading, id: uid(), takenAt: Math.max(at, (mine[0]?.takenAt ?? 0) + 1) };
+  const keep = new Set(mine.slice(0, SNAPSHOTS_KEPT - 1).map((item) => item.id));
+  return {
+    ...state,
+    snapshots: [
+      ...state.snapshots.filter((item) => item.resourceId !== reading.resourceId || keep.has(item.id)),
+      snapshot,
+    ],
+  };
+}
+
 let persistTimer: ReturnType<typeof setTimeout> | undefined;
 let pendingPersist: AppState | null = null;
+let persistInFlight: Promise<void> | null = null;
+let storageEpoch = 0;
+let storedReadInFlight: { epoch: number; promise: Promise<unknown> } | null = null;
+let migrationWriteInFlight: Promise<void> | null = null;
+let clearInFlight: Promise<void> | null = null;
 
 function persist(state: AppState): void {
   clearTimeout(persistTimer);
@@ -155,12 +181,36 @@ function persist(state: AppState): void {
 export async function flushPersist(): Promise<void> {
   clearTimeout(persistTimer);
   persistTimer = undefined;
+  if (persistInFlight) {
+    await persistInFlight;
+    return flushPersist();
+  }
   const pending = pendingPersist;
+  if (!pending) return;
   pendingPersist = null;
   // This is the last boundary shared by every local writer. Keeping the guard
   // here preserves debounce performance while making an invalid disk write
   // impossible even if a future mutation forgets its own range check.
-  if (pending) await idbSet(IDB_KEY, normalizeState(pending));
+  persistInFlight = (async () => {
+    try {
+      assertStateCapacity(pending);
+      await idbSet(IDB_KEY, normalizeState(pending));
+      if (useApp.getState().saveError) useApp.setState({ saveError: '' });
+    } catch (error) {
+      // A newer edit takes priority. Otherwise retain this exact document for retry.
+      pendingPersist ??= pending;
+      useApp.setState({
+        saveError: error instanceof Error ? error.message : 'The device could not save your changes.',
+      });
+      throw error;
+    }
+  })();
+  try {
+    await persistInFlight;
+  } finally {
+    persistInFlight = null;
+  }
+  if (pendingPersist) await flushPersist();
 }
 
 function sameJson(left: unknown, right: unknown): boolean {
@@ -233,6 +283,20 @@ function applySeedPlan(state: AppState, plan: PlannedSeed[]): AppState {
     }
     const seed = item.seed;
     if (!seed || item.start === undefined || item.end === undefined) continue;
+    const existing = item.eventId ? byId.get(item.eventId) : undefined;
+    if (existing && existing.seedHash === undefined) {
+      // Legacy rows have no baseline. Correct only the historical importer fields;
+      // notes and alert preferences may already belong to the user.
+      applyEventUpsert(byId, {
+        id: existing.id,
+        gameId: item.gameId,
+        name: seed.name,
+        start: item.start,
+        end: item.end,
+        seedHash: item.hash,
+      });
+      continue;
+    }
     applyEventUpsert(byId, {
       ...(item.eventId ? { id: item.eventId } : {}),
       gameId: item.gameId,
@@ -255,7 +319,16 @@ function applySeedPlan(state: AppState, plan: PlannedSeed[]): AppState {
   if (state.settings.seedImportedVersion === SEED_UPDATED) return { ...state, events };
   // Record the stamp so the refresh pass does not re-apply the bundled name and
   // dates over a user's edit on every subsequent load.
-  return { ...state, events, settings: { ...state.settings, seedImportedVersion: SEED_UPDATED, updatedAt: now() } };
+  return {
+    ...state,
+    events,
+    settings: {
+      ...state.settings,
+      seedImportedVersion: SEED_UPDATED,
+      fieldUpdatedAt: settingsFieldClocks(state.settings),
+      updatedAt: now(),
+    },
+  };
 }
 
 /**
@@ -321,18 +394,42 @@ async function legacyCandidates(): Promise<Array<{ key: IDBValidKey; value: unkn
   return [...unscoped, ...scoped];
 }
 
-async function readStoredState(): Promise<unknown> {
+async function readStoredState(epoch: number): Promise<unknown> {
+  // StrictMode and Refresh can overlap. Share adoption work within one storage
+  // lifetime, while allowing a new lifetime to ignore a stale pending read.
+  if (storedReadInFlight?.epoch === epoch) return storedReadInFlight.promise;
+  const promise = readAndAdoptStoredState(epoch);
+  storedReadInFlight = { epoch, promise };
+  try {
+    return await promise;
+  } finally {
+    if (storedReadInFlight?.promise === promise) storedReadInFlight = null;
+  }
+}
+
+async function readAndAdoptStoredState(epoch: number): Promise<unknown> {
   const existing = await idbGet(IDB_KEY);
+  if (epoch !== storageEpoch) return undefined;
   if (existing !== undefined) return existing;
 
   const candidates = await legacyCandidates();
+  if (epoch !== storageEpoch) return undefined;
   for (const candidate of candidates) {
     // Re-check immediately before writing so an already-created value wins.
     const current = await idbGet(IDB_KEY);
+    if (epoch !== storageEpoch) return undefined;
     if (current !== undefined) return current;
 
-    await idbSet(IDB_KEY, candidate.value);
+    const write = idbSet(IDB_KEY, candidate.value);
+    migrationWriteInFlight = write;
+    try {
+      await write;
+    } finally {
+      if (migrationWriteInFlight === write) migrationWriteInFlight = null;
+    }
+    if (epoch !== storageEpoch) return undefined;
     const migrated = await idbGet(IDB_KEY);
+    if (epoch !== storageEpoch) return undefined;
     if (migrated === undefined) continue;
 
     // Only the key that was actually adopted is cleared. Any other identity's
@@ -393,6 +490,7 @@ export interface AppStore {
   state: AppState;
   loaded: boolean;
   loadError: string;
+  saveError: string;
   syncStatus: SyncStatus;
   syncError: string;
   lastSyncAt: number | null;
@@ -427,6 +525,7 @@ export interface AppStore {
 
   upsertResource(res: Partial<Resource> & { gameId: string }): void;
   deleteResource(id: string): void;
+  moveResource(id: string, direction: -1 | 1): void;
   upsertChip(chip: Partial<QuickChip> & { gameId: string }): void;
   deleteChip(id: string): void;
 
@@ -456,6 +555,7 @@ export interface AppStore {
 
   addReminder(message: string, at: number, gameId: string | null): void;
   deleteReminder(id: string): void;
+  updateReminder(id: string, patch: Pick<Reminder, 'message' | 'at'>): void;
 
   updateSettings(patch: Partial<Settings>): void;
   importJson(text: string): boolean;
@@ -465,6 +565,7 @@ export const useApp = create<AppStore>((set, get) => ({
   state: emptyState(),
   loaded: false,
   loadError: '',
+  saveError: '',
   syncStatus: 'idle',
   syncError: '',
   lastSyncAt: null,
@@ -474,15 +575,32 @@ export const useApp = create<AppStore>((set, get) => ({
   lastCloudSyncAt: null,
 
   async load() {
+    // A refresh started during Clear must read the result of Clear, not adopt
+    // a legacy key while the deletion is still working through those keys.
+    if (clearInFlight) await clearInFlight;
+    const epoch = storageEpoch;
     set({ loadError: '' });
     purgeRetiredSecrets();
+    const before = get().state;
+    // Refresh must not replace an edit made during the debounce window.
     try {
-      const stored = stateForStorage(await readStoredState());
-      set({ state: stored.state, loaded: true, loadError: '' });
-      if (stored.repaired) persist(stored.state);
+      await flushPersist();
+    } catch {
+      // Keep the current view available so the user can retry or export it.
+      if (get().loaded) return;
+    }
+    if (epoch !== storageEpoch) return;
+    try {
+      const stored = stateForStorage(await readStoredState(epoch));
+      if (epoch !== storageEpoch) return;
+      const editedWhileLoading = get().loaded && get().state !== before;
+      const next = editedWhileLoading ? mergeState(stored.state, get().state) : stored.state;
+      set({ state: next, loaded: true, loadError: '' });
+      if (stored.repaired || editedWhileLoading) persist(next);
       const seedPlan = planSeedImport(get().state, now());
       if (seedPlan.length > 0) get().batch((state) => applySeedPlan(state, seedPlan));
     } catch (error) {
+      if (epoch !== storageEpoch) return;
       set({
         loaded: false,
         loadError: error instanceof Error ? error.message : 'Local data could not be opened.',
@@ -491,22 +609,38 @@ export const useApp = create<AppStore>((set, get) => ({
   },
 
   async clearLocalData() {
+    if (clearInFlight) return clearInFlight;
+    ++storageEpoch;
     clearTimeout(persistTimer);
     persistTimer = undefined;
     pendingPersist = null;
+    const clearing = (async () => {
+      try {
+        // Finish an older write before deleting, so it cannot restore cleared data.
+        await persistInFlight?.catch(() => undefined);
+        // An adoption write may have already started before this epoch changed.
+        // Wait only for that write; stale reads can finish later and are ignored.
+        await migrationWriteInFlight?.catch(() => undefined);
+        pendingPersist = null;
+        await idbDel(IDB_KEY);
+        // Every legacy document, INCLUDING the identity-suffixed ones the reader
+        // deliberately leaves in place. Adoption is conservative because it must
+        // not destroy data; an explicit wipe is the opposite, and leaving another
+        // identity's copy behind here would make "clear local data" a lie.
+        for (const { key } of await legacyCandidates()) await idbDel(key);
+        // The same applies to the retired notification credentials, or the one
+        // action a user takes to wipe the device leaves their bot token behind.
+        purgeRetiredSecrets();
+        set({ state: emptyState(), loaded: true, loadError: '', saveError: '' });
+      } catch (error) {
+        set({ loadError: error instanceof Error ? error.message : 'Local data could not be cleared.' });
+      }
+    })();
+    clearInFlight = clearing;
     try {
-      await idbDel(IDB_KEY);
-      // Every legacy document, INCLUDING the identity-suffixed ones the reader
-      // deliberately leaves in place. Adoption is conservative because it must
-      // not destroy data; an explicit wipe is the opposite, and leaving another
-      // identity's copy behind here would make "clear local data" a lie.
-      for (const { key } of await legacyCandidates()) await idbDel(key);
-      // The same applies to the retired notification credentials, or the one
-      // action a user takes to wipe the device leaves their bot token behind.
-      purgeRetiredSecrets();
-      set({ state: emptyState(), loaded: true, loadError: '' });
-    } catch (error) {
-      set({ loadError: error instanceof Error ? error.message : 'Local data could not be cleared.' });
+      await clearing;
+    } finally {
+      if (clearInFlight === clearing) clearInFlight = null;
     }
   },
 
@@ -553,6 +687,14 @@ export const useApp = create<AppStore>((set, get) => ({
         short: over.short ?? preset.short,
         color: preset.color,
         color2: preset.color2,
+        // The accent, which was dropped here for as long as this function has
+        // existed. `gameRim` PREFERS the accent — it is the badge edge and the
+        // card rim, the two things a user picks a game out of a rail by — so
+        // every preset game fell back to its secondary and Genshin's navy
+        // `#2f4078` never reached a pixel. Seven of the nine presets ship an
+        // accent that differs from their secondary. It also kept `sameTrio` in
+        // resolveGameIdentityColors from ever matching a game to its own preset.
+        color3: preset.color3,
         titleFont: preset.titleFont,
         icon: preset.icon,
         platform: preset.platform,
@@ -659,13 +801,40 @@ export const useApp = create<AppStore>((set, get) => ({
       tasks: tombstone(s.tasks, (t) => t.gameId === id),
       chips: tombstone(s.chips, (c) => c.gameId === id),
       events: tombstone(s.events, (e) => e.gameId === id),
+      alertRules: tombstone(s.alertRules, (rule) => rule.gameId === id),
+      reminders: tombstone(s.reminders, (reminder) => reminder.gameId === id),
     }));
   },
 
   upsertResource(res) {
     get().mutate((s) => {
-      if (res.id && s.resources.some((r) => r.id === res.id)) {
-        return { ...s, resources: patchIn(s.resources, res.id, res) };
+      const existing = res.id ? s.resources.find((resource) => resource.id === res.id) : undefined;
+      if (existing) {
+        const updated = { ...existing, ...res, updatedAt: now() };
+        const next = { ...s, resources: upsert(s.resources, updated) };
+        const rulesChanged =
+          effectiveResourceKind(existing) !== effectiveResourceKind(updated) ||
+          existing.cap !== updated.cap ||
+          existing.regenMinutes !== updated.regenMinutes ||
+          existing.reserveCap !== updated.reserveCap ||
+          existing.reserveRegenMinutes !== updated.reserveRegenMinutes;
+        if (!rulesChanged || existing.deleted || updated.deleted) return next;
+        const snapshot = latestSnapshots(s.snapshots).get(existing.id);
+        if (!snapshot) return seedMissingRegenSnapshots(next, updated.updatedAt, uid);
+        const game = s.games.find((item) => item.id === existing.gameId);
+        // Apply the old rules until this edit, then begin the new rules from the
+        // current reading. A lower cap must not discard already-held energy or reserve.
+        const projection = projectEnergy(existing, snapshot, updated.updatedAt, game);
+        return recordEnergySnapshot(
+          next,
+          {
+            resourceId: existing.id,
+            value: projection.value,
+            reserve:
+              projection.reserve == null ? snapshot.reserve : Math.max(projection.reserve, snapshot.reserve ?? 0),
+          },
+          updated.updatedAt,
+        );
       }
       const item: Resource = {
         id: res.id ?? uid(),
@@ -681,6 +850,29 @@ export const useApp = create<AppStore>((set, get) => ({
         updatedAt: now(),
       };
       return seedMissingRegenSnapshots({ ...s, resources: [...s.resources, item] }, item.updatedAt, uid);
+    });
+  },
+
+  moveResource(id, direction) {
+    get().mutate((s) => {
+      const resource = s.resources.find((item) => item.id === id && !item.deleted);
+      if (!resource) return s;
+      const ordered = s.resources
+        .filter((item) => item.gameId === resource.gameId && !item.deleted)
+        .sort((a, b) => a.sort - b.sort);
+      const index = ordered.findIndex((item) => item.id === id);
+      const other = index + direction;
+      if (other < 0 || other >= ordered.length) return s;
+      [ordered[index], ordered[other]] = [ordered[other]!, ordered[index]!];
+      const positions = new Map(ordered.map((item, position) => [item.id, position]));
+      const updatedAt = now();
+      return {
+        ...s,
+        resources: s.resources.map((item) => {
+          const sort = positions.get(item.id);
+          return sort == null || sort === item.sort ? item : { ...item, sort, updatedAt };
+        }),
+      };
     });
   },
 
@@ -716,28 +908,11 @@ export const useApp = create<AppStore>((set, get) => ({
       const clamped = Math.min(res.cap, Math.max(0, Math.round(value)));
       const clampedReserve =
         reserve != null && res.reserveCap > 0 ? Math.min(res.reserveCap, Math.max(0, Math.round(reserve))) : undefined;
-      const mine = s.snapshots.filter((x) => x.resourceId === resourceId);
-      mine.sort((a, b) => b.takenAt - a.takenAt);
-      // A reading the user just gave must WIN, and `latestSnapshots` breaks a
-      // same-millisecond tie by comparing uuids — a coin flip. That was harmless
-      // while snapshots only ever came from typing, and became data loss the
-      // moment resources started seeding themselves at zero: onboarding writes
-      // the seed and the typed value in the same tick, so which one you saw was
-      // random. Stepping one millisecond past the newest existing snapshot makes
-      // the newest write win by timestamp, deterministically.
-      const newest = mine[0]?.takenAt ?? 0;
-      const snap = {
-        id: uid(),
-        resourceId,
-        value: clamped,
-        takenAt: Math.max(now(), newest + 1),
-        ...(clampedReserve != null ? { reserve: clampedReserve } : {}),
-      };
-      const keep = new Set(mine.slice(0, SNAPSHOTS_KEPT - 1).map((x) => x.id));
-      return {
-        ...s,
-        snapshots: [...s.snapshots.filter((x) => x.resourceId !== resourceId || keep.has(x.id)), snap],
-      };
+      return recordEnergySnapshot(
+        s,
+        { resourceId, value: clamped, ...(clampedReserve != null ? { reserve: clampedReserve } : {}) },
+        now(),
+      );
     });
   },
 
@@ -967,6 +1142,14 @@ export const useApp = create<AppStore>((set, get) => ({
     }));
   },
 
+  updateReminder(id, patch) {
+    if (!patch.message.trim() || !Number.isFinite(patch.at)) return;
+    get().mutate((s) => {
+      if (!s.reminders.some((item) => item.id === id && !item.deleted)) return s;
+      return { ...s, reminders: patchIn(s.reminders, id, { message: patch.message.trim(), at: patch.at }) };
+    });
+  },
+
   deleteReminder(id) {
     get().mutate((s) => ({ ...s, reminders: tombstone(s.reminders, (r) => r.id === id) }));
   },
@@ -984,7 +1167,7 @@ export const useApp = create<AppStore>((set, get) => ({
           ...patch,
           updatedAt,
           fieldUpdatedAt: {
-            ...s.settings.fieldUpdatedAt,
+            ...settingsFieldClocks(s.settings),
             ...Object.fromEntries(fields.map((field) => [field, updatedAt])),
           },
         },
@@ -1006,7 +1189,9 @@ export const useApp = create<AppStore>((set, get) => ({
       if (!parsed.success) return false;
       // Imports do not go through stateForStorage, so apply the shared schema
       // migrations and the temporary legacy badge repair at this boundary too.
-      const migrated = migrateGenshinBadge(normalizeState(parsed.data)).state;
+      // Keep original clocks so impossible future readings are discarded before
+      // merge, as they are for sync. Schema transforms would promote them to now.
+      const migrated = migrateGenshinBadge(normalizeState(raw)).state;
       get().mutate((s) => mergeState(s, migrated));
       return true;
     } catch {

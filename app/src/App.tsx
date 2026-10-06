@@ -1,12 +1,15 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { AnimatePresence, m } from 'motion/react';
-import { useApp } from './store';
+import { flushPersist, useApp } from './store';
 import { initCloudSync } from './cloud-sync';
 import { initSync } from './sync';
+import { disconnectLanSync, initLanSync } from './lan-sync';
 import { useUI, type Tab } from './ui-store';
 import { useNow, useOnline } from './hooks';
 import { applyPwaUpdate } from './pwa';
 import { servedByLauncher } from './launcher';
+import { isNativeApp } from './native';
+import { initWorkspaceHistory } from './workspace-navigation';
 import { easing, duration } from './motion';
 import { useTabSwipe } from './gestures';
 import { AppBar } from './components/AppBar';
@@ -57,6 +60,49 @@ const ReminderSheet = lazy(() =>
 );
 const UserGuide = lazy(() => import('./components/UserGuide').then((module) => ({ default: module.UserGuide })));
 
+type PagePosition = { page: number; board: number };
+
+/** Restore only after the lazy page has mounted, so its content can hold the scroll. */
+function PageFrame({
+  tab,
+  direction,
+  positions,
+  children,
+}: {
+  tab: Tab;
+  direction: 1 | -1;
+  positions: RefObject<Map<string, PagePosition>>;
+  children: ReactNode;
+}) {
+  const pageRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const page = pageRef.current;
+    const savedPositions = positions.current;
+    const positionKey = () => `${tab}:${useUI.getState().focusedGameId ?? ''}`;
+    const saved = savedPositions.get(positionKey()) ?? { page: 0, board: 0 };
+    const restore = () => {
+      window.scrollTo({ top: saved.page, behavior: 'instant' });
+      const board = page?.querySelector<HTMLElement>('.timeline-board');
+      if (board) board.scrollTop = saved.board;
+    };
+    restore();
+    // The timeline measures its lanes on mount. Restore once more after that layout.
+    const frame = requestAnimationFrame(restore);
+    return () => {
+      cancelAnimationFrame(frame);
+      savedPositions.set(positionKey(), {
+        page: window.scrollY,
+        board: page?.querySelector<HTMLElement>('.timeline-board')?.scrollTop ?? 0,
+      });
+    };
+  }, [positions, tab]);
+  return (
+    <div ref={pageRef} className="page-enter" data-direction={direction}>
+      {children}
+    </div>
+  );
+}
+
 /** Keep countdown updates inside the active page, away from editors and the shell. */
 function LivePage({ tab }: { tab: 'home' | 'timeline' }) {
   const now = useNow(30_000);
@@ -70,7 +116,9 @@ function AppSheets() {
       {sheet && (
         // A new lazy editor must not suspend the outgoing sheet during its exit.
         <Suspense key={JSON.stringify(sheet)} fallback={null}>
-          {sheet.kind === 'game' && <GameDetailSheet key={`game-${sheet.gameId}`} open gameId={sheet.gameId} />}
+          {sheet.kind === 'game' && (
+            <GameDetailSheet key={`game-${sheet.gameId}`} open gameId={sheet.gameId} initialSection={sheet.section} />
+          )}
           {sheet.kind === 'addGame' && <AddGameSheet key="add-game" open />}
           {sheet.kind === 'event' && (
             <EventSheet key={`event-${sheet.eventId ?? 'new'}`} open eventId={sheet.eventId} gameId={sheet.gameId} />
@@ -89,9 +137,13 @@ export default function App() {
   const hasGames = useApp((s) => s.state.games.some((game) => !game.deleted));
   const syncStatus = useApp((s) => s.syncStatus);
   const loadError = useApp((s) => s.loadError);
+  const saveError = useApp((s) => s.saveError);
+  const [retryingSave, setRetryingSave] = useState(false);
   const clearLocalData = useApp((s) => s.clearLocalData);
   const tab = useUI((s) => s.tab);
   const setTab = useUI((s) => s.setTab);
+
+  const pagePositions = useRef(new Map<string, PagePosition>());
 
   // Which way the pages travel. The direction belongs to the transition that is
   // happening rather than to the tab, so it is stored WITH the tab it arrived
@@ -118,6 +170,8 @@ export default function App() {
     void load().catch(reportLoadError);
   }, [load]);
 
+  useEffect(initWorkspaceHistory, []);
+
   useEffect(() => {
     if (!loaded) return;
     initSync();
@@ -125,6 +179,7 @@ export default function App() {
     // mergeState, so a launcher window can also keep a copy in a synced folder
     // — which is the only way a second machine ever sees this document.
     initCloudSync();
+    initLanSync();
   }, [loaded]);
 
   useEffect(() => {
@@ -145,7 +200,7 @@ export default function App() {
     if (servedByLauncher() && (syncStatus === 'idle' || syncStatus === 'syncing')) return;
     autoTourStarted.current = true;
     // Existing synced rosters already know the app. Fresh installs start in the live UI.
-    if (!hasGames) useUI.getState().openSheet({ kind: 'guide' });
+    if (!hasGames && !isNativeApp) useUI.getState().openSheet({ kind: 'guide' });
   }, [loaded, loadError, syncStatus, hasGames]);
 
   if (loadError) {
@@ -167,7 +222,8 @@ export default function App() {
               kind="danger"
               onClick={() => {
                 if (window.confirm('Permanently clear Memoria data stored in this browser and start fresh?')) {
-                  void clearLocalData()
+                  void disconnectLanSync()
+                    .then(clearLocalData)
                     .then(() => {
                       if (!useApp.getState().loadError) window.location.reload();
                     })
@@ -208,7 +264,36 @@ export default function App() {
           what stops the slide from producing a horizontal scrollbar.
           touch-action lets the browser keep vertical scrolling natively, so a
           scroll never waits on the swipe handler to make up its mind. */}
-      <main id="main-content" tabIndex={-1} className="relative overflow-x-clip [touch-action:pan-y]" {...swipe}>
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="relative overflow-x-clip [touch-action:pan-y_pinch-zoom]"
+        {...swipe}
+      >
+        {saveError && (
+          <section className="mx-4 my-3 space-y-2 rounded-ui-lg bg-danger/10 p-4 text-body" role="alert">
+            <p className="font-semibold text-danger-fg">Your latest changes could not be saved.</p>
+            <p className="text-muted">Keep Memoria open. Try saving again, or export a backup from Settings.</p>
+            <div className="flex flex-wrap gap-2">
+              <Btn
+                disabled={retryingSave}
+                onClick={() => {
+                  setRetryingSave(true);
+                  void flushPersist()
+                    .catch(() => undefined)
+                    .finally(() => setRetryingSave(false));
+                }}
+              >
+                {retryingSave ? 'Saving…' : 'Try saving again'}
+              </Btn>
+              <Btn onClick={() => setTab('settings')}>Open backup settings</Btn>
+            </div>
+            <details className="text-meta text-muted">
+              <summary className="cursor-pointer py-2">Save error details</summary>
+              <p className="break-words">{saveError}</p>
+            </details>
+          </section>
+        )}
         {/* A CSS entrance, re-keyed on the tab, deliberately NOT a motion one.
             Every route is a lazy chunk, and a subtree that suspends part-way
             through a JS-driven transition leaves the library holding an element
@@ -221,7 +306,7 @@ export default function App() {
             animation never runs, for any reason, the page is simply there.
             The exit slide is what this gives up; the direction still reads. */}
         <Suspense fallback={<div className="px-5 py-12 text-center text-body text-dim">Loading view…</div>}>
-          <div key={tab} className="page-enter" data-direction={direction}>
+          <PageFrame key={tab} tab={tab} direction={direction} positions={pagePositions}>
             {tab === 'settings' ? (
               <SettingsPage />
             ) : tab === 'livestreams' ? (
@@ -229,15 +314,14 @@ export default function App() {
             ) : (
               <LivePage tab={tab} />
             )}
-          </div>
+          </PageFrame>
         </Suspense>
       </main>
 
-      {/* The floating rail this used to clear is gone, so the toasts sit on the
-          bottom edge itself. */}
-      <div className="pointer-events-none fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2 lg:left-auto lg:right-4 lg:w-[min(28rem,calc(100vw-2rem))] lg:items-end">
+      {/* Phone notices clear the bottom navigation and the device safe area. */}
+      <div className="app-toasts pointer-events-none fixed inset-x-3 z-50 flex flex-col items-center gap-2 lg:left-auto lg:right-4 lg:w-[min(28rem,calc(100vw-2rem))] lg:items-end">
         <AnimatePresence>
-          {!online && (
+          {!online && !saveError && (
             <m.div
               key="offline"
               variants={toastMotion}
@@ -248,7 +332,7 @@ export default function App() {
               role="status"
               aria-live="polite"
             >
-              Offline — changes stay on this device and sync when your connection returns.
+              Offline — changes are saved on this device.
             </m.div>
           )}
           {updateAvailable && (

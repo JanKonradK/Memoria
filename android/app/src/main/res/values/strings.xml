@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Memoria</string>
+    <string name="title_activity_main">Memoria</string>
+    <string name="package_name">app.memoria.tracker</string>
+    <string name="custom_url_scheme">app.memoria.tracker</string>
+</resources>

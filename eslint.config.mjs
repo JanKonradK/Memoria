@@ -16,6 +16,8 @@ export default [
       '**/node_modules/**',
       '**/playwright-report/**',
       '**/test-results/**',
+      '**/test-results-*/**',
+      'android/**',
       // Vendored AI-harness tooling (impeccable, agent configs). Third-party
       // source we do not own and must not gate our own lint run on.
       '.claude/**',

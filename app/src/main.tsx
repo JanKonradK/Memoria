@@ -5,6 +5,7 @@ import App from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { TooltipProvider } from './components/ui';
 import { initPwa } from './pwa';
+import { initNative, isNativeApp } from './native';
 import { applyTheme, useUI } from './ui-store';
 import './index.css';
 // Per-game title fonts (see fonts.ts). These aggregate weight files are the ONLY
@@ -38,7 +39,8 @@ const loadMotionFeatures = () => import('./motion-features').then((module) => mo
 // Before first paint: a theme applied inside React would flash the dark ground
 // on a light-theme load, and that flash is the whole reason this runs here.
 applyTheme(useUI.getState().theme);
-initPwa();
+if (!isNativeApp) initPwa();
+void initNative();
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Memoria unhandled rejection', event.reason);
 });

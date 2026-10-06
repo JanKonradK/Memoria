@@ -1,6 +1,5 @@
-import { DateTime } from 'luxon';
 import type { AppState, BannerKind, EventType, Game, GameEvent } from '@memoria/shared';
-import { presetForGame } from '@memoria/shared';
+import { parseServerDateTime, presetForGame } from '@memoria/shared';
 import { SEED_EVENTS, SEED_UPDATED, SEED_WITHDRAWN_KEYS, type SeedEvent } from './seed-feed';
 
 // Keep the public import path stable. Update event facts in seed-feed.ts.
@@ -92,13 +91,16 @@ export function eventFingerprint(event: GameEvent): string {
 }
 
 /** True when nobody has edited the row since the bundle stamped it. */
-function isPristine(event: GameEvent): boolean {
-  return event.seedHash !== undefined && event.seedHash === eventFingerprint(event);
-}
-
-function parseServerTime(s: string, tz: string): number | null {
-  const dt = DateTime.fromFormat(s, 'yyyy-LL-dd HH:mm', { zone: tz });
-  return dt.isValid ? dt.toMillis() : null;
+function isPristine(event: GameEvent, seedCategory?: GameEvent['category']): boolean {
+  if (event.seedHash === undefined) return false;
+  if (event.seedHash === eventFingerprint(event)) return true;
+  // Older sync schemas dropped category while retaining the bundle's stamp.
+  // Recover only when that one missing field reconstructs the exact baseline.
+  return (
+    event.category === undefined &&
+    seedCategory !== undefined &&
+    event.seedHash === eventFingerprint({ ...event, category: seedCategory })
+  );
 }
 
 function sourceIdentity(gameId: string, sourceKey: string): string {
@@ -153,8 +155,8 @@ export function planSeedImport(state: AppState, now: number): PlannedSeed[] {
   const seenKeys = new Set<string>();
   for (const seed of SEED_EVENTS) {
     for (const game of gamesByPreset.get(seed.game) ?? []) {
-      const start = parseServerTime(seed.start, seed.startTimezone ?? seed.timezone ?? game.tz);
-      const end = parseServerTime(seed.end, seed.endTimezone ?? seed.timezone ?? game.tz);
+      const start = parseServerDateTime(seed.start, seed.startTimezone ?? seed.timezone ?? game.tz);
+      const end = parseServerDateTime(seed.end, seed.endTimezone ?? seed.timezone ?? game.tz);
       if (start == null || end == null || end <= start) continue;
       const hash = seedFingerprint(seed, start, end);
       const existing = byKey.get(sourceIdentity(game.id, seed.sourceKey));
@@ -185,7 +187,7 @@ export function planSeedImport(state: AppState, now: number): PlannedSeed[] {
         // `notify`. So the comparison is the whole fingerprint — but it is gated
         // on the row being untouched, or that same breadth would overwrite the
         // edits it is meant to protect.
-        if (existing.seedHash !== hash && isPristine(existing)) {
+        if (existing.seedHash !== hash && isPristine(existing, seed.category)) {
           out.push({ kind: 'update', eventId: existing.id, gameId: game.id, seed, start, end, hash });
         }
         continue;

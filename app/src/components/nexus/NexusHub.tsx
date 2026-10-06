@@ -180,7 +180,7 @@ function Band({
                 disabled={!ticket.event}
                 onClick={() => ticket.event && onOpenEvent(ticket.event)}
                 aria-label={accessibleName}
-                className="flex min-h-8 items-center gap-2 rounded-ui-sm px-1 py-1 text-left transition-colors enabled:hover:bg-fill-2 disabled:cursor-default"
+                className="flex min-h-11 items-center gap-2 rounded-ui-sm px-1 py-1 text-left transition-colors enabled:hover:bg-fill-2 disabled:cursor-default md:min-h-8"
               >
                 {game && (
                   <span className="flex shrink-0 items-center gap-1">
@@ -201,7 +201,7 @@ function Band({
                   </span>
                 )}
                 {ticket.event && <EventTags game={game} event={ticket.event} />}
-                <span className="min-w-0 flex-1 truncate text-body text-fg-soft">{ticket.name}</span>
+                <span className="min-w-0 flex-1 break-words text-body text-fg-soft md:truncate">{ticket.name}</span>
                 <span
                   className="numeral shrink-0 text-meta"
                   style={{ color: countdownFrom === 'end' && left < DAY ? 'var(--color-danger)' : undefined }}
@@ -290,14 +290,14 @@ export function NexusHub({
 
   return (
     <section
-      className="nexus-hub card-shell relative z-10 flex h-full min-h-0 min-w-0 flex-col gap-3 overflow-hidden rounded-ui-card p-3"
+      className="nexus-hub card-shell relative z-10 flex h-full min-h-0 min-w-0 flex-col gap-3 overflow-hidden rounded-ui-card p-4"
       aria-label="Across every game"
     >
       {/* This column is the answer to "what do I do now", so it gets to be the
           loudest thing on the stage. It was set at the same size as a card
           heading, which made the most important panel read as one of five. */}
       <header className="flex items-baseline justify-between gap-2">
-        <h2 className="text-display font-semibold text-fg">Tonight</h2>
+        <h2 className="text-heading font-semibold text-fg">Tonight</h2>
         <span className="numeral text-meta text-muted">
           {DateTime.fromMillis(now, { zone: state.settings.localTz }).toFormat('ccc dd LLL')}
         </span>
@@ -324,7 +324,7 @@ export function NexusHub({
         <div className="flex items-center gap-2.5">
           <span
             aria-hidden
-            className={`ml-[0.6875rem] h-1.5 w-1.5 shrink-0 rounded-ui-full ${sleepSafe ? 'bg-ok' : 'warn-pulse bg-danger'}`}
+            className={`ml-[0.6875rem] h-1.5 w-1.5 shrink-0 rounded-ui-full ${sleepSafe ? 'bg-ok' : 'bg-danger'}`}
           />
           <span className={`min-w-0 flex-1 text-body ${sleepSafe ? 'text-fg-soft' : 'text-danger'}`}>
             {sleepSafe ? (

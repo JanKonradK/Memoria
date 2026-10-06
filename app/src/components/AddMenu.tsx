@@ -45,7 +45,7 @@ export function AddMenu() {
         >
           <path d="M10 4v12M4 10h12" />
         </svg>
-        <span className="hidden sm:inline">Add</span>
+        <span>Add</span>
       </DropdownMenuPrimitive.Trigger>
 
       <DropdownMenuPrimitive.Portal>

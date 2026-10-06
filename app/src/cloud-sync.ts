@@ -101,7 +101,8 @@ export function cloudSyncSupported(): boolean {
 }
 
 let handle: CloudFileHandle | null = null;
-let syncing = false;
+let syncing: Promise<void> | null = null;
+let syncAgain = false;
 let writeTimer: ReturnType<typeof setTimeout> | undefined;
 let pollTimer: ReturnType<typeof setInterval> | undefined;
 let initialized = false;
@@ -180,6 +181,12 @@ function serialize(state: AppState): string {
 }
 
 async function write(target: CloudFileHandle, version: number, text: string): Promise<void> {
+  // A valid local document can still grow beyond the file transport's limit.
+  // Keep the existing remote copy readable by every device.
+  if (new TextEncoder().encode(text).byteLength > MAX_CLOUD_FILE_BYTES)
+    throw new Error(
+      'The merged data exceeds the 10 MB sync file limit. Export a backup and reduce large images or old data. Nothing was written to the sync file.',
+    );
   // createWritable() stages into a swap file and commits on close(), so a crash
   // or a pulled USB stick leaves the previous document rather than half of one.
   const writable = await target.createWritable();
@@ -219,10 +226,20 @@ async function permissionFor(target: CloudFileHandle, request: boolean): Promise
  * document replaces it, so a write can only ever add.
  */
 export async function cloudSyncNow(): Promise<void> {
-  if (!handle || syncing) return;
+  if (!handle) return;
+  if (syncing) {
+    syncAgain = true;
+    return syncing;
+  }
   const target = handle;
   const version = connectionVersion;
-  syncing = true;
+  let complete!: () => void;
+  syncing = new Promise<void>((resolve) => {
+    complete = resolve;
+  });
+  syncAgain = false;
+  let sent: AppState | undefined;
+  let success = false;
   setStatus('syncing');
   try {
     const file = await target.getFile();
@@ -235,12 +252,16 @@ export async function cloudSyncNow(): Promise<void> {
     if (changed) useApp.getState().replaceState(next);
     seenModified = file.lastModified;
 
-    const outgoing = serialize(useApp.getState().state);
+    sent = useApp.getState().state;
+    const outgoing = serialize(sent);
     // The remote already says exactly this. Writing it again would only give the
     // provider's client another upload to do and every other device another
     // download, so the quiet case stays quiet.
     if (outgoing !== remoteText) await write(target, version, outgoing);
-    if (connectionVersion === version) setStatus('ok');
+    if (connectionVersion === version) {
+      setStatus('ok');
+      success = true;
+    }
   } catch (error) {
     if (connectionVersion !== version) return;
     // A handle whose grant lapsed — the folder moved, the file was deleted, the
@@ -253,10 +274,12 @@ export async function cloudSyncNow(): Promise<void> {
       setStatus('error', message(error));
     }
   } finally {
-    syncing = false;
+    syncing = null;
+    complete();
     // A picker may have replaced the connection while the previous read was
     // pending. Its initial sync was deferred by the in-flight guard.
-    if (connectionVersion !== version && handle) void cloudSyncNow();
+    if (handle && (connectionVersion !== version || (success && (syncAgain || useApp.getState().state !== sent))))
+      scheduleWrite(300);
   }
 }
 
@@ -268,12 +291,24 @@ function scheduleWrite(delay = WRITE_DEBOUNCE_MS): void {
 /** Cheap tick: only the file's timestamp is read unless it actually moved. */
 async function pollForRemoteChange(): Promise<void> {
   if (!handle || syncing || document.hidden) return;
+  // A failed write leaves the remote timestamp unchanged, but local edits
+  // still need another attempt. Permission requests must wait for a click.
+  const status = useApp.getState().cloudStatus;
+  if (status === 'needs-permission') return;
+  if (status === 'error') {
+    await cloudSyncNow();
+    return;
+  }
+  const target = handle;
+  const version = connectionVersion;
   try {
-    const file = await handle.getFile();
+    const file = await target.getFile();
+    if (connectionVersion !== version) return;
     if (file.lastModified !== seenModified) await cloudSyncNow();
   } catch {
-    // A transient read failure while the provider's client swaps the file is
-    // normal. The next tick, or the next edit, retries.
+    // Retry once through the normal error handler. A persistent permission or
+    // missing-file error must expose recovery controls instead of staying green.
+    if (connectionVersion === version) await cloudSyncNow();
   }
 }
 
@@ -289,15 +324,28 @@ function stopTimers(): void {
   pollTimer = undefined;
 }
 
-async function adopt(next: CloudFileHandle): Promise<void> {
+async function adopt(next: CloudFileHandle): Promise<boolean> {
+  const previous = handle;
   const version = ++connectionVersion;
+  // Pause writes until the connection can survive a reload. On failure, keep
+  // the previous visible connection instead of activating an unnamed file.
+  handle = null;
+  try {
+    await idbSet(HANDLE_KEY, next);
+  } catch (error) {
+    if (connectionVersion === version) {
+      handle = previous;
+      setStatus('error', message(error));
+    }
+    return false;
+  }
+  if (connectionVersion !== version) return false;
   handle = next;
   seenModified = 0;
-  await idbSet(HANDLE_KEY, next);
-  if (connectionVersion !== version) return;
   useApp.getState().setCloudFileName(next.name);
   startTimers();
   await cloudSyncNow();
+  return connectionVersion === version && useApp.getState().cloudStatus === 'ok';
 }
 
 /**
@@ -317,8 +365,7 @@ export async function connectNewCloudFile(): Promise<boolean> {
       id: 'memoria-cloud-sync',
       startIn: 'documents',
     });
-    await adopt(picked);
-    return true;
+    return await adopt(picked);
   } catch (error) {
     if (!isAbort(error)) setStatus('error', message(error));
     return false;
@@ -343,8 +390,7 @@ export async function connectExistingCloudFile(): Promise<boolean> {
       setStatus('needs-permission', 'Memoria can read that file but not write to it.');
       return false;
     }
-    await adopt(picked);
-    return true;
+    return await adopt(picked);
   } catch (error) {
     if (!isAbort(error)) setStatus('error', message(error));
     return false;
@@ -369,7 +415,7 @@ export async function reconnectCloudFile(): Promise<boolean> {
     }
     startTimers();
     await cloudSyncNow();
-    return true;
+    return connectionVersion === version && useApp.getState().cloudStatus === 'ok';
   } catch (error) {
     if (connectionVersion === version) setStatus('error', message(error));
     return false;
@@ -386,7 +432,15 @@ export async function disconnectCloudFile(): Promise<void> {
   stopTimers();
   handle = null;
   seenModified = 0;
-  await idbDel(HANDLE_KEY).catch(() => undefined);
+  try {
+    await idbDel(HANDLE_KEY);
+  } catch {
+    const error = new Error(
+      'The saved sync connection could not be removed. Sync is paused for this session. Try Stop syncing again before closing Memoria.',
+    );
+    if (connectionVersion === version) setStatus('error', error.message);
+    throw error;
+  }
   if (connectionVersion !== version) return;
   useApp.getState().setCloudFileName('');
   setStatus('off');
@@ -447,7 +501,8 @@ export function resetCloudSyncState(): void {
   connectionVersion += 1;
   stopTimers();
   handle = null;
-  syncing = false;
+  syncing = null;
+  syncAgain = false;
   initialized = false;
   seenModified = 0;
 }

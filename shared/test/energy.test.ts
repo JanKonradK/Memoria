@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { latestSnapshots, projectEnergy } from '../src/energy';
-import { makeGame, makeResource, makeSnapshot, utc } from './helpers';
+import { latestSnapshots, projectEnergy, sleepCheck } from '../src/energy';
+import { makeGame, makeResource, makeSnapshot, makeState, utc } from './helpers';
 
 const MIN = 60_000;
 
@@ -87,6 +87,25 @@ describe('projectEnergy', () => {
     // HSR-style: 6 min/point main bar, reserve fills at half speed (12 min/point) once capped.
     const reserveRes = makeResource({ cap: 300, regenMinutes: 6, reserveCap: 2400 });
 
+    it('keeps the reserve deadline fixed between and across regeneration ticks', () => {
+      const snap = makeSnapshot({ value: 300, takenAt: 0, reserve: 50 });
+      const fullAt = (2400 - 50) * 12 * MIN;
+      expect(projectEnergy(reserveRes, snap, 5 * MIN)).toMatchObject({ reserve: 50, reserveFullAt: fullAt });
+      expect(projectEnergy(reserveRes, snap, 13 * MIN)).toMatchObject({ reserve: 51, reserveFullAt: fullAt });
+      expect(projectEnergy(reserveRes, snap, fullAt)).toMatchObject({ reserve: 2400, reserveFullAt: null });
+    });
+
+    it('includes the wait for the main bar before reserve starts to fill', () => {
+      const snap = makeSnapshot({ value: 290, takenAt: 0, reserve: 50 });
+      const resource = { ...reserveRes, reserveRegenMinutes: 20 };
+      const reserveFullAt = 60 * MIN + (2400 - 50) * 20 * MIN;
+      expect(projectEnergy(resource, snap, 30 * MIN).reserveFullAt).toBe(reserveFullAt);
+      expect(projectEnergy(resource, snap, 90 * MIN).reserveFullAt).toBe(reserveFullAt);
+      expect(projectEnergy(resource, undefined, 90 * MIN).reserveFullAt).toBeNull();
+      expect(projectEnergy({ ...resource, reserveCap: 0 }, snap, 90 * MIN).reserveFullAt).toBeNull();
+      expect(projectEnergy({ ...resource, regenMinutes: 0 }, snap, 90 * MIN).reserveFullAt).toBeNull();
+    });
+
     it('grows the reserve at half speed while the bar sits at cap', () => {
       const snap = makeSnapshot({ value: 300, takenAt: 0, reserve: 100 });
       const p = projectEnergy(reserveRes, snap, 60 * MIN); // 60 min at 12 min/point → +5
@@ -124,5 +143,21 @@ describe('latestSnapshots', () => {
     ]);
     expect(map.get('r1')?.id).toBe('b');
     expect(map.get('r2')?.id).toBe('c');
+  });
+});
+
+describe('sleepCheck', () => {
+  it.each(['counter', 'weekly'] as const)('ignores a full %s after its kind changes from regeneration', (kind) => {
+    const game = makeGame();
+    const resource = makeResource({ kind, cap: 100, regenMinutes: 6 });
+    const state = makeState({
+      games: [game],
+      resources: [resource],
+      snapshots: [makeSnapshot({ value: 100, takenAt: 0 })],
+    });
+
+    expect(sleepCheck(state, game, 8, MIN)).toEqual({ caps: false, fullAt: null });
+    state.resources[0] = { ...resource, kind: 'regen' };
+    expect(sleepCheck(state, game, 8, MIN)).toEqual({ caps: true, fullAt: MIN });
   });
 });

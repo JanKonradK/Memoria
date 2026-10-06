@@ -1,11 +1,12 @@
+import { SERVER_TZ_OPTIONS } from '@memoria/shared';
 import { useState } from 'react';
 import { useApp } from '../store';
-import { useUI } from '../ui-store';
+import { useUI, type GameEditorSection } from '../ui-store';
 import { serverRegionLabel } from './NexusLayout';
 import { useGameDraft } from './game-detail/useGameDraft';
 import { GameEditor } from './settings/GameEditor';
 import { Sheet } from './Sheet';
-import { Btn, Field, SectionTitle, Segmented, TextInput } from './ui';
+import { Btn, Field, SectionTitle, Segmented, Select, TextInput } from './ui';
 
 const ACCOUNT_DRAFT_FIELDS = ['accountLabel'] as const;
 
@@ -36,18 +37,32 @@ const SERVER_OPTIONS = [
  * offered no way at all to change a task, and Settings offered two buttons that
  * both said they edited the game and did different things. One surface now.
  */
-export function GameDetailSheet({ gameId, open }: { gameId: string | null; open: boolean }) {
+export function GameDetailSheet({
+  gameId,
+  open,
+  initialSection,
+}: {
+  gameId: string | null;
+  open: boolean;
+  initialSection?: GameEditorSection;
+}) {
   const state = useApp((store) => store.state);
   const updateGame = useApp((store) => store.updateGame);
   const deleteGame = useApp((store) => store.deleteGame);
   const closeSheet = useUI((store) => store.closeSheet);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [dirty, setDirty] = useState(false);
   // Keep a soft-deleted game visible until its sheet finishes exiting.
   const game = state.games.find((candidate) => candidate.id === gameId);
   const { changeDraft, commitDraft, draft } = useGameDraft(game, ACCOUNT_DRAFT_FIELDS, open);
 
   if (!game) return null;
 
+  // The title reads the DRAFT, not the store. The nickname deliberately keeps
+  // its debounce — nothing outside this sheet renders it while it is being
+  // typed — but the sheet's own heading is inside the sheet, and a heading that
+  // lags a third of a second behind the field under it looks broken.
+  const nickname = draft.accountLabel.trim();
   const close = () => {
     commitDraft();
     closeSheet();
@@ -68,66 +83,98 @@ export function GameDetailSheet({ gameId, open }: { gameId: string | null; open:
     <Sheet
       open={open}
       onClose={close}
+      dirty={dirty}
       wide
-      title={game.accountLabel?.trim() ? `${game.name} · ${game.accountLabel.trim()}` : game.name}
+      title={nickname ? `${game.name} · ${nickname}` : game.name}
+      footer={
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-meta text-muted">
+            {dirty ? 'Add or save your draft before closing' : 'Game settings save automatically'}
+          </span>
+          <Btn
+            kind="primary"
+            onClick={() => {
+              if (!dirty || window.confirm('Discard your unsaved changes?')) close();
+            }}
+          >
+            Done
+          </Btn>
+        </div>
+      }
     >
-      <div className="space-y-6">
-        <div>
-          <Field label="Nickname">
-            <TextInput
-              value={draft.accountLabel}
-              placeholder="e.g. Main EU"
-              onChange={(event) => changeDraft('accountLabel', event.target.value)}
-              onBlur={commitDraft}
+      <GameEditor
+        key={`${game.id}:${initialSection ?? ''}`}
+        game={game}
+        initialSection={initialSection}
+        onDraftChange={setDirty}
+        accountControls={
+          <div>
+            <Field label="Nickname">
+              <TextInput
+                value={draft.accountLabel}
+                placeholder="e.g. Main EU"
+                onChange={(event) => changeDraft('accountLabel', event.target.value)}
+                onBlur={commitDraft}
+              />
+            </Field>
+            <p className="mt-1 text-label text-muted">Only needed if you track more than one account of this game.</p>
+          </div>
+        }
+        serverControl={
+          <div className="space-y-3">
+            <span className="mb-1 block text-label font-semibold uppercase tracking-wider text-muted">Server</span>
+            <Segmented
+              options={serverOptions}
+              value={game.tz}
+              onChange={(tz) => updateGame(game.id, { tz })}
+              ariaLabel="Server"
             />
-          </Field>
-          <p className="mt-1 text-label text-muted">Only needed if you track more than one account of this game.</p>
-        </div>
-
-        {/* Deliberately not a <Field>. Field renders a <label>, and a label may
-            only name ONE control — wrapping a radiogroup in one hands its first
-            radio the label's text as that radio's accessible name, so the EU
-            option announced itself as "Server". The group carries its own name
-            through ariaLabel instead. */}
-        <div>
-          <span className="mb-1 block text-label font-semibold uppercase tracking-wider text-muted">Server</span>
-          <Segmented
-            options={serverOptions}
-            value={game.tz}
-            onChange={(tz) => updateGame(game.id, { tz })}
-            ariaLabel="Server"
-          />
-        </div>
-
-        <GameEditor game={game} />
-
-        <div className="border-t border-line-hairline pt-5">
-          <SectionTitle>Delete game</SectionTitle>
-          {!confirmDelete ? (
-            <Btn kind="danger" onClick={() => setConfirmDelete(true)}>
-              Delete game…
-            </Btn>
-          ) : (
-            <>
-              <p className="mb-2 text-label text-danger-fg">
-                This also deletes this game's resources, tasks, quick spends, and events.
-              </p>
-              <div className="flex gap-2">
-                <Btn
-                  kind="danger"
-                  onClick={() => {
-                    deleteGame(game.id);
-                    close();
-                  }}
-                >
-                  Really delete {game.short}
-                </Btn>
-                <Btn onClick={() => setConfirmDelete(false)}>Cancel</Btn>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+            <Field label="Server timezone">
+              <Select value={game.tz} onChange={(event) => updateGame(game.id, { tz: event.target.value })}>
+                {SERVER_TZ_OPTIONS.map((option) => (
+                  <option key={option.tz} value={option.tz}>
+                    {option.label}
+                  </option>
+                ))}
+                {!SERVER_TZ_OPTIONS.some((option) => option.tz === game.tz) && (
+                  <option value={game.tz}>{game.tz}</option>
+                )}
+              </Select>
+            </Field>
+            <p className="text-label text-muted">
+              EU, NA, and Asia are HoYo/Kuro shortcuts. Choose the timezone above for other servers.
+            </p>
+          </div>
+        }
+        dangerControls={
+          <div className="mt-6 border-t border-line-hairline pt-5">
+            <SectionTitle>Delete game</SectionTitle>
+            {!confirmDelete ? (
+              <Btn kind="danger" onClick={() => setConfirmDelete(true)}>
+                Delete game…
+              </Btn>
+            ) : (
+              <>
+                <p className="mb-2 text-label text-danger-fg">
+                  This also deletes this game's resources, tasks, quick spends, and events.
+                </p>
+                <div className="flex gap-2">
+                  <Btn
+                    kind="danger"
+                    onClick={() => {
+                      deleteGame(game.id);
+                      close();
+                    }}
+                  >
+                    Really delete {game.short}
+                  </Btn>
+                  <Btn onClick={() => setConfirmDelete(false)}>Cancel</Btn>
+                </div>
+              </>
+            )}
+          </div>
+        }
+      />
     </Sheet>
   );
 }

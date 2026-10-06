@@ -24,6 +24,21 @@ You do not need a Memoria account or any coding knowledge.
 For a Desktop and Start Menu shortcut, double-click **Add Memoria to Start Menu.cmd** once.
 The download contains everything the app needs. You do not need to install developer tools.
 
+### Android app
+
+The Android build creates **Memoria-android-debug.apk** for Android 7 or later.
+This test package is available from a local build. It is not part of the published GitHub download yet.
+See [Build the Android APK](docs/development.md#build-the-android-apk) for the build command.
+
+1. Copy the APK to your phone.
+2. Open the APK on your phone.
+3. If Android requests permission, permit installation from that file source.
+4. Install Memoria.
+5. Open Memoria.
+
+The app works offline and stores your data on the phone. Use **Settings → Data → Export backup** to save a separate copy.
+Install future updates over the existing app. Uninstalling the app removes its local data.
+
 ### Try it as one file
 
 Download **Memoria.html** from the same page. Open the file with **Chrome or Edge**.
@@ -58,9 +73,14 @@ Check the starting values against your game. Server regions and game updates can
 
 - **Update your energy.** Select the number on a game card, enter the amount from your game, and press Enter.
 - **Mark completed tasks.** Select the circle beside a task after you complete it.
+- **Return to the game list.** Press **Alt+Left**, use browser **Back**, or select the back arrow. If an editor is open, Back closes it first. Memoria asks before discarding an unsaved draft.
+- **Change daily-task rules.** Open the game, select its pencil button, then select a task. Change its cadence, mode, or count target here. Use **Add item** to add another task.
 - **Check deadlines.** Open **Timeline** to see events and their dates. Select **List** for a simpler view.
 - **Add an event or reminder.** Select **+**, then **Event** or **Reminder**.
-- **Change game settings.** Select the game name or its pencil button.
+- **Change events for one game.** Open its card, then select **Manage events**. Select an event to change its name, type, dates, or check-in rules. You can also add or delete events here.
+- **Read Genshin events.** The card, Timeline lanes, and Manage events show Teyvat events first, Miliastra Wonderland events next, and banners last. Reorder events within each timeline section. Official calendar entries show confirmed date ranges. Events with exact times keep their countdowns.
+- **Take a break from a game.** Open its card and select **Pause tracking**. Select **Resume tracking** when you return. Your saved progress and events stay in Memoria.
+- **Change game settings.** Select the pencil button, then **Game settings**. You can also change the card layout here.
 - **Change the appearance.** Select the sun or moon button for the light or dark theme.
 
 Memoria estimates energy from your last entry. Enter a new value after you spend energy or receive extra energy.
@@ -84,12 +104,45 @@ Memoria combines the backup with your current data. For the same item, the newer
 The Windows app also keeps a data file outside the app folder.
 The one-file version keeps its data in your browser. Clearing browser data can remove that copy.
 
-## Use more than one computer
+## Use your phone and computer
+
+### Sync a PC and Android phone over Wi-Fi
+
+Connect the PC and phone to the same Wi-Fi. Open Memoria on both devices.
+
+1. On the PC, open **Settings** and select **Connect my phone**.
+2. On the phone, open **Settings** and tap **Scan PC code**.
+3. Point the phone camera at the code on the PC.
+
+Memoria connects the devices and keeps your existing progress. You do not need to type an address or code.
+If Android requests camera access, allow it to scan the code. Memoria does not save a photo.
+
+If you cannot use the camera, select **Enter a code instead** on both devices.
+Then copy the PC address and pairing code into the phone app.
+If the code expires, select **Show a new code** on the PC.
+If Windows Firewall requests access, allow Memoria on your private network.
+
+Keep Memoria open on the PC. The phone syncs while its app is open.
+Changes from both devices merge automatically. Offline changes stay on each device until the next connection.
+For conflicting changes to the same item, the later change wins.
+
+Connection options are below the connection status. You can check the connection or scan a new PC code there.
+If you move the PC to another network, scan a new code. Your saved progress stays on both devices.
+Use **Pause sync** on the PC to stop sync temporarily. **Resume sync** connects your saved devices again.
+Use **Disconnect** on the phone or **Disconnect phone** on the PC to remove a connection.
+These actions keep your saved data.
+
+If an older PC launcher remains active after an update, restart Windows and open the updated app.
+This starts the new Wi-Fi listener without a change to your saved data.
+
+Wi-Fi sync uses HTTP without encryption. Use a trusted private network.
+
+### Sync computers through a shared folder
 
 This is optional. You need **Chrome or Edge** and a folder that already syncs between your computers,
 such as a OneDrive, Google Drive, or Dropbox folder.
 
-1. On your first computer, open **Settings → Data → Sync across devices**.
+1. On your first computer, open **Settings → Data → Shared-folder sync**.
 2. Select **Create sync file…**.
 3. Save the file in your synced folder.
 4. Wait for your folder service to copy the file to your other computer.

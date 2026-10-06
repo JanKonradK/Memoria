@@ -25,3 +25,24 @@ export function eventCategory(game: Game | undefined, event: GameEvent): 'teyvat
   if (event.type === 'maintenance' || event.type === 'livestream') return 'shared';
   return event.category ?? (event.sourceKey ? seedCategories.get(event.sourceKey) : undefined) ?? 'teyvat';
 }
+
+/** Card and editor sections share the same world order and banner classification. */
+export function groupGameEvents(
+  game: Game,
+  events: GameEvent[],
+): { key: string; label: string; events: GameEvent[] }[] {
+  if (presetForGame(game)?.key !== 'genshin') return [{ key: 'events', label: 'Windows', events }];
+  return [
+    {
+      key: 'teyvat',
+      label: 'Teyvat',
+      events: events.filter((event) => event.type !== 'banner' && eventCategory(game, event) !== 'miliastra'),
+    },
+    {
+      key: 'miliastra',
+      label: 'Miliastra Wonderland',
+      events: events.filter((event) => event.type !== 'banner' && eventCategory(game, event) === 'miliastra'),
+    },
+    { key: 'banners', label: 'Banners', events: events.filter((event) => event.type === 'banner') },
+  ].filter((group) => group.events.length > 0);
+}

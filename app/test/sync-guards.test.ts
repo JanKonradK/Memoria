@@ -46,6 +46,7 @@ beforeEach(() => {
 afterEach(() => {
   resetSyncState();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe('syncNow preconditions', () => {
@@ -74,6 +75,38 @@ describe('syncNow preconditions', () => {
 });
 
 describe('re-entrancy', () => {
+  it('waits for an active request and sends edits made during it in a follow-up', async () => {
+    vi.useFakeTimers();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const sent: { settings: { sleepHours: number } }[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url, init: RequestInit) => {
+        const state = JSON.parse(String(init.body)).state;
+        sent.push(state);
+        if (sent.length === 1) await gate;
+        return { ok: true, status: 200, json: async () => ({ state }) };
+      }),
+    );
+    const first = syncNow();
+    useApp.getState().updateSettings({ sleepHours: 9 });
+    const completed = vi.fn();
+    const concurrent = syncNow().then(completed);
+    await Promise.resolve();
+    expect(completed).not.toHaveBeenCalled();
+    release();
+    await Promise.all([first, concurrent]);
+    expect(completed).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(sent).toHaveLength(2);
+    expect(sent[1]?.settings.sleepHours).toBe(9);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(sent).toHaveLength(2);
+  });
+
   it('does not double-post when a second sync starts while one is in flight', async () => {
     const { mock, release } = deferredFetch();
     vi.stubGlobal('fetch', mock);
@@ -127,6 +160,41 @@ describe('conflict handling', () => {
 });
 
 describe('launcher errors', () => {
+  it.each([
+    { settings: { theme: 'dark' } },
+    { ...emptyState(), games: [{ id: 'broken' }] },
+    { ...emptyState(), schemaVersion: 999 },
+  ])('keeps local data when the launcher returns an invalid or newer document', async (state) => {
+    useApp.getState().updateSettings({ sleepHours: 9 });
+    const local = useApp.getState().state;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ state, version: 5 }) })),
+    );
+
+    await syncNow();
+
+    expect(useApp.getState().state).toBe(local);
+    expect(useApp.getState().syncStatus).toBe('error');
+    expect(useApp.getState().syncError).toMatch(/invalid data/i);
+  });
+
+  it('does not retry a write after conflict recovery returns invalid data', async () => {
+    const local = useApp.getState().state;
+    const fetchMock = vi.fn(async (url: string) =>
+      url.endsWith('/api/sync')
+        ? { ok: false, status: 409, json: async () => ({ error: 'sync_conflict_retry' }) }
+        : { ok: true, status: 200, json: async () => ({ state: { settings: {} }, version: 5 }) },
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await syncNow();
+
+    expect(fetchMock.mock.calls.filter(([url]) => url.endsWith('/api/sync'))).toHaveLength(1);
+    expect(useApp.getState().state).toBe(local);
+    expect(useApp.getState().syncStatus).toBe('error');
+  });
+
   it('surfaces the launcher JSON error instead of only the status code', async () => {
     const fetchMock = vi.fn(async () => ({
       ok: false,

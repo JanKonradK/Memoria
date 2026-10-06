@@ -2,6 +2,7 @@ import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { Select } from './ui';
 import { serverRegionLabel } from './NexusLayout';
+import { navigateWorkspace } from '../workspace-navigation';
 
 /** One selection follows the player across Dashboard, Timeline and Settings. */
 export function GameScope() {
@@ -15,9 +16,13 @@ export function GameScope() {
       <span className="sr-only">Focus game</span>
       <Select
         aria-label="Focus game"
-        className="!min-h-9 !w-full min-w-0 !py-1"
+        className="!min-h-11 !w-full min-w-0 !py-1 md:!min-h-9"
         value={value}
-        onChange={(event) => setFocused(event.target.value || null)}
+        onChange={(event) => {
+          const next = event.target.value || null;
+          if (useUI.getState().tab === 'home') navigateWorkspace(next, focused, () => setFocused(next));
+          else setFocused(next);
+        }}
       >
         <option value="">All games</option>
         {active.map((game) => (

@@ -1,5 +1,4 @@
 import type { CSSProperties, HTMLAttributes, ReactNode } from 'react';
-import { mix } from '../game-color';
 
 export type PillVariant = 'neutral' | 'muted' | 'warn' | 'paused';
 
@@ -38,9 +37,6 @@ export function Pill({
     </span>
   );
 }
-
-/** Ejecta angles for the completion burst — eight, evenly spaced. */
-const NOVA_SHARDS = [0, 45, 90, 135, 180, 225, 270, 315];
 
 const TICK_CENTER = 10;
 const TICK_RADIUS = 9;
@@ -189,13 +185,6 @@ export function Tick({
             // sweep state clears exactly once rather than per element.
             onAnimationEnd={onSweepEnd}
           />
-          {NOVA_SHARDS.map((angle) => (
-            <span
-              key={angle}
-              className="nova-shard absolute left-1/2 top-1/2 -ml-px -mt-px h-0.5 w-0.5 rounded-ui-full bg-ok"
-              style={{ '--a': `${angle}deg` } as CSSProperties}
-            />
-          ))}
         </span>
       )}
     </span>
@@ -209,8 +198,6 @@ type ProgressBarProps = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
   start?: number;
   size?: number;
   stroke?: number;
-  glow?: boolean;
-  segmented?: boolean;
   fillStyle?: CSSProperties;
   children?: ReactNode;
 };
@@ -223,8 +210,6 @@ export function ProgressBar({
   start = 0,
   size = 40,
   stroke = 4,
-  glow = false,
-  segmented = false,
   fillStyle,
   children,
   className = '',
@@ -261,7 +246,7 @@ export function ProgressBar({
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={circumference * (1 - progress)}
-            className="[transition:stroke-dashoffset_0.6s_ease-out] motion-reduce:transition-none"
+            className="transition-[stroke-dashoffset] duration-(--dur-slow) ease-(--ease-out) motion-reduce:transition-none"
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center text-caption font-bold text-fg-soft">
@@ -283,125 +268,36 @@ export function ProgressBar({
     );
   }
 
-  // `segmented` used to draw ten hard dividers over a flat bar; the tube's own
-  // ribs are that same idea done as a material, so the flag now only chooses how
-  // many. `color2` is gone: the tube shades a single tone through its own
-  // gradient rather than running a second hue across it.
   return (
-    <ReactorTube
-      value={progress}
-      tone={color}
-      charging={glow}
-      ribs={segmented ? 10 : RIB_COUNT}
-      className={className}
-      style={style}
-      fillStyle={fillStyle}
-      {...props}
-    />
+    <ReactorTube value={progress} tone={color} className={className} style={style} fillStyle={fillStyle} {...props} />
   );
 }
 
-/** Containment ribs give the tube a physical length rather than a bare span. */
-const RIB_COUNT = 7;
-
-/**
- * A containment tube, not a progress bar.
- *
- * Progress bars say "a task is advancing". This reads as a vessel holding
- * something that is accumulating and can overflow, which is what energy actually
- * is. Layers, bottom to top: a concave track, shaded liquid with a meniscus at
- * its leading edge, a travelling charge sweep, embossed ribs, and a glass lip.
- *
- * The sweep runs ONLY while the resource is still charging, so a full tube goes
- * visually still — stillness is the signal that it is wasting. The level glides
- * to a new reading rather than snapping, so a typed figure reads as the vessel
- * filling to it.
- */
+/** A flat energy level. Text beside the bar carries the value and status. */
 export function ReactorTube({
   value,
   tone,
-  charging = true,
-  ribs = RIB_COUNT,
-  height = 10,
+  height = 4,
   className = '',
   style,
   fillStyle,
   ...props
 }: Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
-  /** Already clamped 0–1. */
   value: number;
-  /** The fill colour. Urgency decides it; the tube itself has no opinion. */
   tone: string;
-  charging?: boolean;
-  ribs?: number;
   height?: number;
   fillStyle?: CSSProperties;
 }) {
-  const shade = (target: string, amount: number) => mix(tone, target, 1 - amount);
   return (
     <div
       {...props}
       aria-hidden="true"
-      className={`relative mt-1.5 overflow-hidden rounded-ui-full bg-inset ${className}`}
+      className={`relative mt-1.5 overflow-hidden rounded-ui-full bg-fill-3 ${className}`}
       style={{ height, ...style }}
     >
-      {/* Concave track: darker at the top lip, lifted at the bottom, so the
-          vessel reads as a channel rather than as a painted stripe. */}
-      <span
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background: 'var(--tube-floor)',
-        }}
-      />
-
       <div
-        className="absolute inset-y-0 left-0 overflow-hidden rounded-ui-full transition-[width] duration-(--dur-slow) ease-out motion-reduce:transition-none"
-        style={{
-          width: `${value * 100}%`,
-          background: `linear-gradient(180deg, ${shade('#ffffff', 0.12)} 0%, ${shade('#ffffff', 0.34)} 30%, ${tone} 48%, ${tone} 68%, ${shade('#000000', 0.28)} 100%)`,
-          ...fillStyle,
-        }}
-      >
-        {charging && (
-          // The carrier is full-width so its percentage translate resolves
-          // against the FILL, not against the 24px highlight it carries.
-          <span className="tube-charge pointer-events-none absolute inset-y-0 left-0 w-full motion-reduce:hidden">
-            <span
-              className="absolute inset-y-0 -ml-3 w-6"
-              style={{
-                background: 'var(--tube-sweep)',
-              }}
-            />
-          </span>
-        )}
-        {/* Meniscus: the liquid climbs its own leading edge. */}
-        <span
-          className="pointer-events-none absolute inset-y-0 right-0 w-0.5"
-          style={{ background: `linear-gradient(180deg, ${shade('#ffffff', 0.5)}, ${shade('#ffffff', 0.18)})` }}
-        />
-      </div>
-
-      {/* Ribs sit above the fill so the tube reads as one vessel, not two bars. */}
-      <span className="pointer-events-none absolute inset-0 flex">
-        {Array.from({ length: ribs }, (_, index) => (
-          <span key={index} className="relative flex-1">
-            {index < ribs - 1 && (
-              <>
-                <span className="absolute inset-y-px right-px w-px" style={{ background: 'var(--tube-rib-dark)' }} />
-                <span className="absolute inset-y-px right-0 w-px" style={{ background: 'var(--tube-rib-light)' }} />
-              </>
-            )}
-          </span>
-        ))}
-      </span>
-
-      {/* Glass lip. */}
-      <span
-        className="pointer-events-none absolute inset-x-px top-0"
-        style={{
-          height: Math.max(2, Math.min(4, height * 0.34)),
-          background: 'var(--tube-lip)',
-        }}
+        className="h-full w-full origin-left rounded-ui-full transition-transform duration-(--dur-slow) ease-(--ease-out) motion-reduce:transition-none"
+        style={{ transform: `scaleX(${Math.max(0, Math.min(1, value))})`, background: tone, ...fillStyle }}
       />
     </div>
   );

@@ -3,6 +3,7 @@ import type { Game, Resource, ResourceKind } from '@memoria/shared';
 import { effectiveReserveRegenMinutes } from '@memoria/shared';
 import { useApp } from '../../store';
 import { intOr } from '../../util';
+import { TrackingItem } from '../settings/TrackingItem';
 import { Btn, COMPACT_INPUT, Field, NumInput, Select, TextInput, TOUCH_BUTTON } from '../ui';
 
 const RESOURCE_KINDS: Array<{ value: ResourceKind; label: string }> = [
@@ -13,17 +14,35 @@ const RESOURCE_KINDS: Array<{ value: ResourceKind; label: string }> = [
 
 export function ResourceEditor({ game, resources }: { game: Game; resources: Resource[] }) {
   const upsertResource = useApp((store) => store.upsertResource);
+  const moveResource = useApp((store) => store.moveResource);
   const deleteResource = useApp((store) => store.deleteResource);
   const [reserveOpen, setReserveOpen] = useState<Record<string, boolean>>({});
 
   return (
     <div className="space-y-3">
-      {resources.map((r) => {
+      {resources.map((r, index) => {
         const kind = r.kind ?? 'regen';
         const showReserveFields = r.reserveCap > 0 || reserveOpen[r.id];
 
         return (
-          <div key={r.id} className="rounded-ui-xl bg-fill-1 p-3 ring-1 ring-line-hairline">
+          <TrackingItem
+            key={r.id}
+            name={r.name || 'Untitled resource'}
+            defaultOpen={index === 0}
+            summary={`${r.cap} capacity · ${kind === 'regen' ? `${r.regenMinutes} min / point` : kind === 'weekly' ? 'Weekly refill' : 'Manual counter'}`}
+          >
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <Btn disabled={index === 0} onClick={() => moveResource(r.id, -1)} aria-label={`Move ${r.name} up`}>
+                ↑ Move up
+              </Btn>
+              <Btn
+                disabled={index === resources.length - 1}
+                onClick={() => moveResource(r.id, 1)}
+                aria-label={`Move ${r.name} down`}
+              >
+                ↓ Move down
+              </Btn>
+            </div>
             <div className="flex flex-wrap items-end gap-2">
               <Field label="Name" className="min-w-32 flex-[2_1_10rem]">
                 <TextInput
@@ -128,13 +147,16 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                 </Field>
               </div>
             )}
-          </div>
+          </TrackingItem>
         );
       })}
       <Btn className={TOUCH_BUTTON} onClick={() => upsertResource({ gameId: game.id, name: 'Energy' })}>
         + Resource
       </Btn>
-      <p className="text-label text-dim">
+      <p className="text-label text-muted">
+        Order sets the card order. Quick spend buttons use the first regenerating resource.
+      </p>
+      <p className="text-label text-muted">
         Minutes per point sets the regeneration rate. Use 0 for a resource that does not regenerate. Reserve minutes per
         point applies after the main resource reaches its cap. If left blank, it uses twice the main rate, so the
         reserve fills at half speed.

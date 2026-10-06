@@ -4,7 +4,7 @@ import { AnimatePresence, m, usePresence } from 'motion/react';
 import { useUI, type Tab } from '../ui-store';
 import { useApp } from '../store';
 import { useReducedMotion } from '../hooks';
-import { Btn } from './ui';
+import { Btn, TOUCH_BUTTON } from './ui';
 import { Logo } from './Logo';
 
 type Step = { title: string; body: string; target: string; tab: Tab; focus?: boolean };
@@ -40,10 +40,10 @@ export function UserGuide({ open }: { open: boolean }) {
         tab: 'home',
       },
       {
-        title: 'One game, your full attention',
-        body: 'Choose a game here to focus the whole workspace. Your choice follows you between pages. All games brings the roster back.',
+        title: 'Find events for one game',
+        body: 'Choose a game to filter this page. Your choice follows you to Settings and Livestreams. Choose All games to see the full list again.',
         target: '[data-tour="focus"]',
-        tab: 'home',
+        tab: 'timeline',
       },
       ...(firstGameId
         ? [
@@ -65,19 +65,19 @@ export function UserGuide({ open }: { open: boolean }) {
         : []),
       {
         title: 'See what is coming',
-        body: 'Each bar is an event. Select it to edit its dates or notes. The small check beside it marks it done. The red line is now.',
+        body: 'Use Manage events on a game card to add events or change their names, types, dates, and check-in rules. You can also delete events there. Use Pause tracking when you take a break from a game.',
         target: '[data-tour="timeline"]',
         tab: 'timeline',
       },
       {
         title: 'Find the window you need',
-        body: 'Switch between Timeline and List here. The magnifying glass finds an event by name. The history button includes finished events.',
+        body: 'Switch between Timeline and List here. Use Find to search for an event by name. Use Finished to include finished events.',
         target: '[data-tour="timeline-tools"]',
         tab: 'timeline',
       },
       {
         title: 'Make yourself at home',
-        body: 'Choose where Tonight sits, edit your games, and export a backup here. You can replay this tour with User guide. You’re ready to cook.',
+        body: 'Edit your games, connect your phone and PC, or export a backup here. You can open User guide to see this tour again.',
         target: '[data-tour="settings"]',
         tab: 'settings',
       },
@@ -238,12 +238,17 @@ export function UserGuide({ open }: { open: boolean }) {
                   </Dialog.Description>
                 </div>
                 <div className="mt-5 flex flex-wrap items-center gap-2">
-                  <button className="mr-auto min-h-9 text-meta text-muted hover:text-fg" onClick={close}>
-                    Let me cook
+                  <button className="mr-auto min-h-11 px-2 text-meta text-muted hover:text-fg" onClick={close}>
+                    Skip tour
                   </button>
-                  {index > 0 && <Btn onClick={() => setIndex((current) => current - 1)}>Back</Btn>}
+                  {index > 0 && (
+                    <Btn className={TOUCH_BUTTON} onClick={() => setIndex((current) => current - 1)}>
+                      Back
+                    </Btn>
+                  )}
                   <Btn
                     kind="primary"
+                    className={TOUCH_BUTTON}
                     disabled={readyTarget !== step.target}
                     onClick={() => (index === steps.length - 1 ? close() : setIndex((current) => current + 1))}
                   >
