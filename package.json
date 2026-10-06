@@ -30,13 +30,18 @@
     "install:desktop": "powershell -ExecutionPolicy Bypass -File desktop/Install-Shortcut.ps1",
     "build:single": "npm -w app run build:single",
     "package": "node scripts/package-release.mjs",
-    "export:events": "node scripts/export-event-feed.mjs"
+    "export:events": "node scripts/export-event-feed.mjs",
+    "desktop": "electron desktop/electron-main.mjs",
+    "check:native": "node scripts/check-native.mjs",
+    "prepackage": "node node_modules/electron/install.js",
+    "predesktop": "node node_modules/electron/install.js"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@capacitor/cli": "8.4.3",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",
+    "electron": "44.5.1",
     "eslint": "^10.7.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",

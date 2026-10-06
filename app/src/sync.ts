@@ -100,11 +100,26 @@ export async function syncNow(): Promise<void> {
   }
 }
 
+/** Closing the desktop app must also send edits made during an earlier request. */
+export async function flushSync(): Promise<void> {
+  if (!servedByLauncher()) return;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    clearTimeout(debounceTimer);
+    debounceTimer = undefined;
+    await syncNow();
+    const status = useApp.getState();
+    if (status.syncStatus !== 'ok') throw new Error(status.syncError || 'The PC data could not be saved.');
+    if (!syncAgain && !syncing) return;
+  }
+  throw new Error('Changes are still syncing. Keep Memoria open and try closing it again.');
+}
+
 let initialized = false;
 
 /** Fetch can send an authorization header; native EventSource cannot. */
 function watchLauncherEvents(onChange: () => void): void {
   let stopped = false;
+  let generation = 0;
   let controller: AbortController | undefined;
   let retryTimer: ReturnType<typeof setTimeout> | undefined;
   let retryDelay = 2000;
@@ -112,9 +127,14 @@ function watchLauncherEvents(onChange: () => void): void {
     if (stopped || controller) return;
     controller = new AbortController();
     const signal = controller.signal;
+    const current = generation;
     try {
       const response = await launcherFetch('/api/events', { signal });
       if (!response.ok || !response.body) throw new Error('Event stream unavailable.');
+      if (current !== generation) {
+        await response.body.cancel().catch(() => undefined);
+        return;
+      }
       retryDelay = 2000;
       // The stream has no replay. Pull once when it connects so edits made
       // during a dropped connection cannot leave this window stale.
@@ -123,9 +143,9 @@ function watchLauncherEvents(onChange: () => void): void {
       const decoder = new TextDecoder();
       let pending = '';
       try {
-        while (!signal.aborted) {
+        while (!signal.aborted && current === generation) {
           const { value, done } = await reader.read();
-          if (done) break;
+          if (done || current !== generation) break;
           pending += decoder.decode(value, { stream: true });
           let end;
           while ((end = pending.indexOf('\n\n')) >= 0) {
@@ -139,7 +159,7 @@ function watchLauncherEvents(onChange: () => void): void {
         await reader.cancel().catch(() => undefined);
       }
     } catch (error) {
-      if (error instanceof Error && error.name === 'LauncherAuthorizationError') {
+      if (current === generation && error instanceof Error && error.name === 'LauncherAuthorizationError') {
         stopped = true;
         useApp.getState().setSyncStatus('error', error.message);
       }
@@ -147,20 +167,30 @@ function watchLauncherEvents(onChange: () => void): void {
     } finally {
       controller = undefined;
       if (!stopped) {
-        retryTimer = setTimeout(() => void connect(), retryDelay);
-        retryDelay = Math.min(30_000, retryDelay * 2);
+        if (current !== generation) void connect();
+        else {
+          retryTimer = setTimeout(() => void connect(), retryDelay);
+          retryDelay = Math.min(30_000, retryDelay * 2);
+        }
       }
     }
   };
   window.addEventListener('pagehide', () => {
     stopped = true;
+    generation++;
     clearTimeout(retryTimer);
     controller?.abort();
   });
-  window.addEventListener('pageshow', () => {
+  const restart = () => {
     stopped = false;
-    if (!controller) void connect();
-  });
+    generation++;
+    retryDelay = 2000;
+    clearTimeout(retryTimer);
+    if (controller) controller.abort();
+    else void connect();
+  };
+  window.addEventListener('pageshow', restart);
+  window.addEventListener('memoria-launcher-restored', restart);
   void connect();
 }
 
@@ -180,6 +210,19 @@ export function initSync(): void {
   });
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) void syncNow();
+  });
+
+  let restoration = 0;
+  window.addEventListener('memoria-launcher-restored', () => {
+    const current = ++restoration;
+    // The host renewed this origin's token. An old in-flight request can still
+    // fail with 401, so let it settle before starting the new authenticated write.
+    void (async () => {
+      await syncing;
+      if (current !== restoration) return;
+      resetSyncState();
+      await flushSync();
+    })().catch(() => undefined);
   });
 
   void syncNow();

@@ -140,6 +140,25 @@ describe('isPackagedInstall', () => {
 });
 
 describe('applyPendingUpdate', () => {
+  it('does not replace native runtime files or consume a pending browser update', async () => {
+    writeRelease(installRoot, '2.0.0');
+    const recordFile = join(installRoot, 'release.json');
+    const record = JSON.parse(readFileSync(recordFile, 'utf8'));
+    writeFileSync(recordFile, JSON.stringify({ ...record, runtime: 'electron', updateMode: 'manual' }));
+    writeFileSync(join(installRoot, 'Memoria.exe'), 'running runtime');
+    const pending = stagePending('3.0.0', { 'Memoria.exe': 'replacement runtime' });
+    const { applyPendingUpdate, checkForUpdate, updateStatus } = await loadUpdater();
+    const fetch = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+
+    expect(applyPendingUpdate(installRoot)).toMatchObject({ applied: false });
+    expect(await checkForUpdate(installRoot, { force: true })).toMatchObject({ status: 'manual' });
+    expect(updateStatus(installRoot)).toMatchObject({ mode: 'manual', pending: null });
+    expect(readFileSync(join(installRoot, 'Memoria.exe'), 'utf8')).toBe('running runtime');
+    expect(existsSync(pending)).toBe(true);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it('refuses to touch a source checkout even with an update staged', async () => {
     stagePending('9.9.9', { 'README.txt': 'from the update' });
     const { applyPendingUpdate } = await loadUpdater();

@@ -54,3 +54,94 @@ it('pulls changes missed while the desktop event stream was disconnected', async
   expect(syncs).toBeGreaterThan(beforeReconnect);
   expect(useApp.getState().state.settings.sleepHours).toBe(9);
 });
+
+it('resumes a stream stopped by an expired launcher token after the host restores it', async () => {
+  vi.useFakeTimers();
+  useApp.setState({ state: emptyState(), loaded: true });
+  let restored = false;
+  let streams = 0;
+  let writes = 0;
+  const remote = emptyState();
+  remote.settings = { ...remote.settings, sleepHours: 6, updatedAt: Date.now() };
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, init?: RequestInit) => {
+      if (!restored) {
+        throw Object.assign(new Error('Old session expired'), { name: 'LauncherAuthorizationError' });
+      }
+      if (url === '/api/events') {
+        streams++;
+        return new Response(
+          new ReadableStream<Uint8Array>({
+            start(controller) {
+              init?.signal?.addEventListener('abort', () => controller.close(), { once: true });
+            },
+          }),
+        );
+      }
+      writes++;
+      return { ok: true, status: 200, json: async () => ({ state: remote }) };
+    }),
+  );
+  initSync();
+  window.dispatchEvent(new Event('pageshow'));
+  await vi.advanceTimersByTimeAsync(1);
+  expect(useApp.getState().syncStatus).toBe('error');
+
+  restored = true;
+  window.dispatchEvent(new Event('memoria-launcher-restored'));
+  await vi.advanceTimersByTimeAsync(350);
+
+  expect(streams).toBe(1);
+  expect(writes).toBeGreaterThan(0);
+  expect(useApp.getState().syncStatus).toBe('ok');
+  expect(useApp.getState().state.settings.sleepHours).toBe(6);
+});
+
+it('does not let an old unauthorized response stop a renewed session or discard pending edits', async () => {
+  vi.useFakeTimers();
+  useApp.setState({ state: emptyState(), loaded: true });
+  let release!: () => void;
+  const oldRequest = new Promise<void>((resolve) => (release = resolve));
+  let restored = false;
+  let streams = 0;
+  const sent: { settings: { sleepHours: number } }[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, init?: RequestInit) => {
+      if (!restored) {
+        await oldRequest;
+        throw Object.assign(new Error('Old session expired'), { name: 'LauncherAuthorizationError' });
+      }
+      if (url === '/api/events') {
+        streams++;
+        return new Response(
+          new ReadableStream<Uint8Array>({
+            start(controller) {
+              init?.signal?.addEventListener('abort', () => controller.close(), { once: true });
+            },
+          }),
+        );
+      }
+      const state = JSON.parse(String(init?.body)).state;
+      sent.push(state);
+      return { ok: true, status: 200, json: async () => ({ state }) };
+    }),
+  );
+  initSync();
+  window.dispatchEvent(new Event('pageshow'));
+  document.dispatchEvent(new Event('visibilitychange'));
+  await vi.advanceTimersByTimeAsync(1);
+  useApp.getState().updateSettings({ sleepHours: 5 });
+
+  restored = true;
+  window.dispatchEvent(new Event('memoria-launcher-restored'));
+  release();
+  await vi.advanceTimersByTimeAsync(350);
+
+  expect(streams).toBe(1);
+  expect(sent.at(-1)?.settings.sleepHours).toBe(5);
+  expect(useApp.getState().syncStatus).toBe('ok');
+  await vi.advanceTimersByTimeAsync(3000);
+  expect(streams).toBe(1);
+});

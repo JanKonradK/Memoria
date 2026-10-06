@@ -52,6 +52,7 @@ import {
 } from './data/seed-events';
 import { uid } from './util';
 import { sortTimelineEvents } from './timeline-sort';
+import { launcherFetch, servedByLauncher } from './launcher';
 
 const IDB_KEY = 'memoria-state';
 /**
@@ -481,6 +482,30 @@ async function readAndAdoptStoredState(epoch: number): Promise<unknown> {
       // The new copy is durable; leaving the old one makes a later retry safe.
     }
     return migrated;
+  }
+  if (servedByLauncher()) {
+    // A new desktop profile must read the existing PC document before its first
+    // sync write. Merging fresh defaults first can replace zero-clock settings.
+    // A failed read stays on the recovery screen instead of posting an empty app.
+    const response = await launcherFetch('/api/state', { signal: AbortSignal.timeout(30_000) });
+    if (!response.ok) throw new Error(`The PC data could not be opened (HTTP ${response.status}).`);
+    const body = (await response.json()) as { state?: unknown } | null;
+    const parsed = safeParseAppState(body?.state);
+    if (!parsed.success) throw new Error('The PC data is invalid. Update Memoria and try again.');
+    if (epoch !== storageEpoch) return undefined;
+    // Clear or another writer may have filled the key during the request.
+    const current = await idbGet(IDB_KEY);
+    if (epoch !== storageEpoch) return undefined;
+    if (current !== undefined) return current;
+    const write = idbSet(IDB_KEY, parsed.data);
+    migrationWriteInFlight = write;
+    try {
+      await write;
+    } finally {
+      if (migrationWriteInFlight === write) migrationWriteInFlight = null;
+    }
+    if (epoch !== storageEpoch) return undefined;
+    return parsed.data;
   }
   return undefined;
 }

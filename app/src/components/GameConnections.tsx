@@ -6,6 +6,7 @@ import { isNativeApp } from '../native';
 import { connectHoyo, listHoyoAccounts } from '../hoyo-native';
 import { useApp } from '../store';
 import { Btn, Field, Select, TextInput } from './ui';
+import { useUnsavedDraft } from '../desktop-host';
 
 const SERVERS = {
   genshin: [
@@ -39,6 +40,7 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
   const [uid, setUid] = useState('');
   const [server, setServer] = useState('');
   const [cookie, setCookie] = useState('');
+  useUnsavedDraft(!connected && Boolean(uid || server || cookie));
   const [automatic, setAutomatic] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');

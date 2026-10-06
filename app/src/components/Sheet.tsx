@@ -3,6 +3,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { animate, AnimatePresence, m, useMotionValue, usePresence, type MotionValue } from 'motion/react';
 import { useMediaQuery, useReducedMotion } from '../hooks';
 import { backdropFade, dialogEnter, sheetEnter, sheetSpring } from '../motion';
+import { useUnsavedDraft } from '../desktop-host';
 
 function CloseButton() {
   return (
@@ -134,6 +135,7 @@ export function Sheet({
   // Every close updates the route first. Retain its portal until the inner
   // exit finishes, then release App's waiting presence boundary.
   const [present, safeToRemove] = usePresence();
+  useUnsavedDraft(open && present && dirty);
   const close = () => {
     if (dirty && !window.confirm('Discard your unsaved changes?')) return false;
     onClose();

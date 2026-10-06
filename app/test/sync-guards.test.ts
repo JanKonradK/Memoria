@@ -20,7 +20,7 @@ vi.mock('../src/launcher', () => ({
 }));
 
 import { useApp } from '../src/store';
-import { resetSyncState, syncNow } from '../src/sync';
+import { flushSync, resetSyncState, syncNow } from '../src/sync';
 
 /** A fetch mock whose response is released manually, so two calls can race. */
 function deferredFetch() {
@@ -209,5 +209,38 @@ describe('launcher errors', () => {
       syncStatus: 'error',
       syncError: 'Invalid app state: schema version is too new',
     });
+  });
+});
+
+describe('PC close sync boundary', () => {
+  it('sends the last edit made while an earlier request was still running', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const sent: { settings: { sleepHours: number } }[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url, init: RequestInit) => {
+        const state = JSON.parse(String(init.body)).state;
+        sent.push(state);
+        if (sent.length === 1) await gate;
+        return { ok: true, status: 200, json: async () => ({ state }) };
+      }),
+    );
+    const earlier = syncNow();
+    useApp.getState().updateSettings({ sleepHours: 6 });
+    const finalSave = flushSync();
+    release();
+    await Promise.all([earlier, finalSave]);
+    expect(sent).toHaveLength(2);
+    expect(sent[1].settings.sleepHours).toBe(6);
+    expect(useApp.getState().syncStatus).toBe('ok');
+  });
+
+  it('rejects instead of approving close after a failed PC write', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: false, status: 500, json: async () => ({ error: 'Disk full' }) })),
+    );
+    await expect(flushSync()).rejects.toThrow('Disk full');
   });
 });
