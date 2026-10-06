@@ -77,6 +77,8 @@ const required = [
   ['desktop/Memoria.vbs', 'desktop/Memoria.vbs'],
   ['desktop/memoria.ico', 'desktop/memoria.ico'],
   ['desktop/Install-Shortcut.ps1', 'desktop/Install-Shortcut.ps1'],
+  ['desktop/Install-Lock.ps1', 'desktop/Install-Lock.ps1'],
+  ['desktop/Enable-Phone-Sync.ps1', 'desktop/Enable-Phone-Sync.ps1'],
 ];
 
 for (const [source] of required) {
@@ -137,14 +139,14 @@ async function fetchNodeExe() {
 
 // --- assemble ---------------------------------------------------------------
 
-if (process.platform === 'win32' && existsSync(join(stageDir, 'Memoria.exe'))) {
+if (process.platform === 'win32' && existsSync(stageDir)) {
   const idle = spawnSync(
     'powershell',
     [
       '-NoProfile',
       '-NonInteractive',
       '-Command',
-      `$ErrorActionPreference = 'Stop'; $active = @(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith(${powershellLiteral(`${stageDir}\\`)}, [StringComparison]::OrdinalIgnoreCase) }); if ($active.Count -gt 0) { exit 1 }`,
+      `$ErrorActionPreference = 'Stop'; . ${powershellLiteral(join(root, 'desktop', 'Install-Lock.ps1'))}; $locks = Lock-MemoriaProgramTree ${powershellLiteral(stageDir)}; try { Remove-Item -LiteralPath ${powershellLiteral(stageDir)} -Recurse -Force } finally { Unlock-MemoriaProgramTree $locks }`,
     ],
     { stdio: 'inherit', windowsHide: true },
   );
@@ -152,7 +154,7 @@ if (process.platform === 'win32' && existsSync(join(stageDir, 'Memoria.exe'))) {
 }
 
 // Keep independently built Android artifacts in the shared release directory.
-rmSync(stageDir, { recursive: true, force: true });
+if (process.platform !== 'win32') rmSync(stageDir, { recursive: true, force: true });
 mkdirSync(stageDir, { recursive: true });
 
 // Include Electron's license files, locale files, resources, and native DLLs.
@@ -226,6 +228,8 @@ writeStagedText('README.txt', [
   '  To install it, close Memoria and run "Add Memoria to Start Menu.cmd".',
   '  The installer copies the app to %LOCALAPPDATA%\\Programs\\Memoria.',
   '  It creates Desktop and Start Menu shortcuts. No administrator rights needed.',
+  '  For phone sync, press Alt and select Help > Allow phone sync through Windows.',
+  '  Approve the Windows permission request to allow local phone connections.',
   '',
   'UPDATES',
   '  Press Alt to show the desktop menu.',

@@ -3,6 +3,8 @@ Set fso = CreateObject("Scripting.FileSystemObject")
 scriptDir = fso.GetParentFolderName(WScript.ScriptFullName)
 repo = fso.GetParentFolderName(scriptDir)
 Set sh = CreateObject("WScript.Shell")
+Set launchEnvironment = sh.Environment("Process")
+launchEnvironment.Remove "ELECTRON_RUN_AS_NODE"
 sh.CurrentDirectory = repo
 
 extra = ""

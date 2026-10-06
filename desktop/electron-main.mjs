@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, screen, shell, utilityProcess } from 'electron';
 import { randomBytes, randomUUID } from 'node:crypto';
+import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { externalUrl, isAppUrl, launchOrigin, windowBounds } from './native-policy.mjs';
@@ -50,6 +51,30 @@ async function openExternal(value) {
   } catch {
     dialog.showErrorBox('Memoria', 'Windows could not open this link.');
   }
+}
+
+function allowPhoneSync() {
+  const setup = spawn(
+    'powershell.exe',
+    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(here, 'Enable-Phone-Sync.ps1')],
+    {
+      windowsHide: true,
+      stdio: 'ignore',
+    },
+  );
+  setup.on('error', () => dialog.showErrorBox('Memoria phone sync', 'Windows could not open the network setup.'));
+  setup.on('exit', (code) => {
+    if (!window || window.isDestroyed()) return;
+    void dialog.showMessageBox(window, {
+      type: code === 0 ? 'info' : 'warning',
+      title: 'Memoria phone sync',
+      message:
+        code === 0
+          ? 'Windows now allows your phone to connect to Memoria on this local network.'
+          : 'Windows did not allow the network change. Approve the administrator prompt to enable phone sync.',
+      buttons: ['OK'],
+    });
+  });
 }
 
 function requestClose() {
@@ -356,6 +381,7 @@ async function createWindow() {
       {
         label: 'Help',
         submenu: [
+          { label: 'Allow phone sync through Windows', click: allowPhoneSync },
           {
             label: 'Download updates',
             click: () => {
