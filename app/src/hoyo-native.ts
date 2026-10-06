@@ -7,10 +7,20 @@ export interface HoyoNativeReading {
   data: Record<string, unknown>;
 }
 
+export interface HoyoNativeAccount {
+  provider: HoyoNativeReading['provider'];
+  uid: string;
+  server: string;
+  nickname: string;
+}
+
 interface HoyoConnectionPlugin {
   connect(): Promise<{ connected: boolean }>;
   status(): Promise<{ connected: boolean }>;
   disconnect(): Promise<{ connected: boolean }>;
+  listAccounts(options: { provider: HoyoNativeReading['provider'] }): Promise<{
+    accounts: HoyoNativeAccount[];
+  }>;
   fetchNotes(options: {
     provider: HoyoNativeReading['provider'];
     uid: string;
@@ -23,6 +33,8 @@ export const HoyoConnection = registerPlugin<HoyoConnectionPlugin>('HoyoConnecti
 
 export const connectHoyo = () => HoyoConnection.connect();
 export const getHoyoStatus = () => HoyoConnection.status();
+export const listHoyoAccounts = (options: Parameters<HoyoConnectionPlugin['listAccounts']>[0]) =>
+  HoyoConnection.listAccounts(options);
 export const fetchHoyoNotes = (options: Parameters<HoyoConnectionPlugin['fetchNotes']>[0]) =>
   HoyoConnection.fetchNotes(options);
 export async function disconnectHoyo(): Promise<void> {

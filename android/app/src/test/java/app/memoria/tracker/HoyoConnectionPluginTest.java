@@ -38,4 +38,19 @@ public class HoyoConnectionPluginTest {
     public void protocolDigestMatchesTheDesktopImplementation() throws Exception {
         assertEquals("b2f7cea3edf3390d634472e10d51dbe5", HoyoConnectionPlugin.digest(1600000000L, "abcdef"));
     }
+
+    @Test
+    public void discoveryRejectsUnknownGamesAndAccountsFromOtherServers() {
+        assertEquals("hk4e_global", HoyoConnectionPlugin.accountBusiness("genshin"));
+        assertEquals("hkrpg_global", HoyoConnectionPlugin.accountBusiness("hsr"));
+        assertEquals("nap_global", HoyoConnectionPlugin.accountBusiness("zzz"));
+        assertNull(HoyoConnectionPlugin.accountBusiness("genshin&game_biz=other"));
+        assertTrue(HoyoConnectionPlugin.validAccount("genshin", "712345678", "os_euro"));
+        assertTrue(HoyoConnectionPlugin.validAccount("hsr", "712345678", "prod_official_eur"));
+        assertTrue(HoyoConnectionPlugin.validAccount("zzz", "1501234567", "prod_gf_eu"));
+        assertFalse(HoyoConnectionPlugin.validAccount("genshin", "712345678", "prod_official_eur"));
+        assertFalse(HoyoConnectionPlugin.validAccount("genshin", "712345678&x=1", "os_euro"));
+        assertFalse(HoyoConnectionPlugin.validAccount("genshin", "123", "os_euro"));
+        assertFalse(HoyoConnectionPlugin.validAccount("genshin", null, "os_euro"));
+    }
 }

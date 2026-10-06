@@ -3,7 +3,7 @@ import { mapHoYoNotes, presetForGame, type GameImportBatch } from '@memoria/shar
 import { connectionRequest, useGameConnections, type GameConnection } from '../game-connections';
 import { servedByLauncher } from '../launcher';
 import { isNativeApp } from '../native';
-import { connectHoyo } from '../hoyo-native';
+import { connectHoyo, listHoyoAccounts } from '../hoyo-native';
 import { useApp } from '../store';
 import { Btn, Field, Select, TextInput } from './ui';
 
@@ -42,6 +42,10 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
   const [automatic, setAutomatic] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [accounts, setAccounts] = useState<
+    { provider: GameConnection['provider']; uid: string; server: string; nickname: string }[]
+  >([]);
+  const [accountNotice, setAccountNotice] = useState('');
   const active = useRef(true);
   useLayoutEffect(() => {
     active.current = true;
@@ -51,9 +55,9 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
   }, []);
   useEffect(() => {
     if (servedByLauncher() || isNativeApp)
-      void connectionRequest().catch((cause: unknown) =>
-        setError(cause instanceof Error ? cause.message : 'Connections could not load.'),
-      );
+      void connectionRequest().catch((cause: unknown) => {
+        if (active.current) setError(cause instanceof Error ? cause.message : 'Connections could not load.');
+      });
   }, []);
   const run = async (body: Record<string, unknown>) => {
     setBusy(true);
@@ -69,6 +73,32 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
         setBusy(false);
         setCookie('');
       }
+    }
+  };
+  const findAccounts = async () => {
+    if (!provider) return;
+    setBusy(true);
+    setError('');
+    setAccountNotice('');
+    setAccounts([]);
+    try {
+      const result = await listHoyoAccounts({ provider });
+      if (!active.current) return;
+      setAccounts(result.accounts);
+      if (result.accounts.length === 1) {
+        setUid(result.accounts[0].uid);
+        setServer(result.accounts[0].server);
+        setAccountNotice('Account found. Select Connect and review to check its readings.');
+      } else if (result.accounts.length === 0) {
+        setAccountNotice('No linked account was found for this game. You can enter its UID and server below.');
+      } else {
+        setAccountNotice('Choose a linked account, then select Connect and review.');
+      }
+    } catch (cause) {
+      if (active.current)
+        setError(cause instanceof Error ? cause.message : 'Accounts could not load. Enter the UID and server below.');
+    } finally {
+      if (active.current) setBusy(false);
     }
   };
   if (!servedByLauncher() && !isNativeApp)
@@ -99,8 +129,15 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
               setBusy(true);
               setError('');
               void connectHoyo()
-                .catch((cause: unknown) => setError(cause instanceof Error ? cause.message : 'Sign-in could not open.'))
-                .finally(() => setBusy(false));
+                .then((result) => {
+                  if (active.current && result.connected && !connected) return findAccounts();
+                })
+                .catch((cause: unknown) => {
+                  if (active.current) setError(cause instanceof Error ? cause.message : 'Sign-in could not open.');
+                })
+                .finally(() => {
+                  if (active.current) setBusy(false);
+                });
             }}
           >
             Sign in with HoYoLAB
@@ -150,9 +187,50 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
             });
           }}
         >
+          {isNativeApp && (
+            <div className="space-y-2">
+              <Btn disabled={busy} onClick={() => void findAccounts()}>
+                Find my accounts
+              </Btn>
+              {accountNotice && (
+                <p role="status" className="text-body text-muted">
+                  {accountNotice}
+                </p>
+              )}
+              {accounts.length > 1 && (
+                <Field label="Linked HoYoLAB account">
+                  <Select
+                    disabled={busy}
+                    value={
+                      accounts.some((account) => account.uid === uid && account.server === server)
+                        ? `${uid}:${server}`
+                        : ''
+                    }
+                    onChange={(event) => {
+                      const account = accounts.find((item) => `${item.uid}:${item.server}` === event.target.value);
+                      if (account) {
+                        setUid(account.uid);
+                        setServer(account.server);
+                      }
+                    }}
+                  >
+                    <option value="">Choose an account</option>
+                    {accounts.map((account) => (
+                      <option key={`${account.uid}:${account.server}`} value={`${account.uid}:${account.server}`}>
+                        {account.nickname || 'Traveler'} ·{' '}
+                        {SERVERS[provider].find(([value]) => value === account.server)?.[1] || account.server} ·{' '}
+                        {account.uid}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="In-game UID">
               <TextInput
+                disabled={busy}
                 required
                 inputMode="numeric"
                 pattern="[0-9]{8,12}"
@@ -163,7 +241,11 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
               />
             </Field>
             <Field label="Game server">
-              <Select value={server || SERVERS[provider][0][0]} onChange={(event) => setServer(event.target.value)}>
+              <Select
+                disabled={busy}
+                value={server || SERVERS[provider][0][0]}
+                onChange={(event) => setServer(event.target.value)}
+              >
                 {SERVERS[provider].map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
@@ -197,6 +279,7 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
               <TextInput
                 required
                 type="password"
+                disabled={busy}
                 value={cookie}
                 maxLength={16000}
                 onChange={(event) => setCookie(event.target.value)}
@@ -206,7 +289,12 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
             </Field>
           )}
           <label className="flex min-h-11 items-center gap-3 text-body">
-            <input type="checkbox" checked={automatic} onChange={(event) => setAutomatic(event.target.checked)} />
+            <input
+              type="checkbox"
+              disabled={busy}
+              checked={automatic}
+              onChange={(event) => setAutomatic(event.target.checked)}
+            />
             Automatically import supported readings every five minutes
           </label>
           <Btn type="submit" kind="primary" disabled={busy}>

@@ -30,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.HttpsURLConnection;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /** HoYoLAB credentials stay in Android's private WebView cookie store. */
@@ -163,6 +164,113 @@ public class HoyoConnectionPlugin extends Plugin {
         return result.toString();
     }
 
+    static String accountBusiness(String provider) {
+        if ("genshin".equals(provider)) return "hk4e_global";
+        if ("hsr".equals(provider)) return "hkrpg_global";
+        if ("zzz".equals(provider)) return "nap_global";
+        return null;
+    }
+
+    static boolean validAccount(String provider, String uid, String server) {
+        return uid != null && uid.matches("\\d{8,12}") && providerIndex(provider, server) >= 0;
+    }
+
+    private static void configureRequest(HttpsURLConnection connection, String cookies, long observedAt) throws Exception {
+        connection.setInstanceFollowRedirects(false);
+        connection.setConnectTimeout(15_000);
+        connection.setReadTimeout(15_000);
+        connection.setRequestProperty("Cookie", cookies);
+        connection.setRequestProperty("Referer", "https://act.hoyolab.com/");
+        connection.setRequestProperty("x-rpc-app_version", "1.5.0");
+        connection.setRequestProperty("x-rpc-client_type", "5");
+        connection.setRequestProperty("x-rpc-language", "en-us");
+        connection.setRequestProperty("x-rpc-lang", "en-us");
+        connection.setRequestProperty("User-Agent", "Memoria/2.0");
+        String alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        SecureRandom random = new SecureRandom();
+        StringBuilder nonce = new StringBuilder();
+        for (int i = 0; i < 6; i++) nonce.append(alphabet.charAt(random.nextInt(alphabet.length())));
+        long seconds = observedAt / 1000;
+        connection.setRequestProperty("DS", seconds + "," + nonce + "," + digest(seconds, nonce.toString()));
+    }
+
+    private static JSONObject readResponse(HttpsURLConnection connection) throws Exception {
+        int status = connection.getResponseCode();
+        if (status == 429) throw new IOException("HoYoLAB asked us to wait. Try again later.");
+        if (status != 200) throw new IOException("HoYoLAB is unavailable. Try again later.");
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (InputStream stream = connection.getInputStream()) {
+            byte[] buffer = new byte[8192];
+            int count;
+            while ((count = stream.read(buffer)) != -1) {
+                if (bytes.size() + count > 1_000_000) throw new IOException("The account response was too large.");
+                bytes.write(buffer, 0, count);
+            }
+        }
+        return new JSONObject(bytes.toString("UTF-8"));
+    }
+
+    @PluginMethod
+    public void listAccounts(PluginCall call) {
+        String provider = call.getString("provider");
+        String business = accountBusiness(provider);
+        if (business == null) {
+            call.reject("Choose a supported game.", "INVALID_ACCOUNT");
+            return;
+        }
+        if (!isConnected()) {
+            call.reject("Sign in to HoYoLAB on this phone first.", "NOT_CONNECTED");
+            return;
+        }
+        if (!busy.compareAndSet(false, true)) {
+            call.reject("Finish the current account request first.", "CONNECTION_BUSY");
+            return;
+        }
+        final String cookieHeader = filterCookies(CookieManager.getInstance().getCookie(LOGIN_URL));
+        if (cookieHeader.isEmpty()) {
+            busy.set(false);
+            call.reject("Sign in to HoYoLAB on this phone first.", "NOT_CONNECTED");
+            return;
+        }
+        final int requestGeneration = generation.get();
+        network.execute(() -> {
+            HttpsURLConnection connection = null;
+            try {
+                connection = (HttpsURLConnection) new URL(
+                    "https://api-account-os.hoyolab.com/binding/api/getUserGameRolesByCookie?game_biz=" + business
+                ).openConnection();
+                configureRequest(connection, cookieHeader, System.currentTimeMillis());
+                JSONObject payload = readResponse(connection);
+                if (payload.optInt("retcode", -1) != 0)
+                    throw new IOException("Open HoYoLAB and check your sign-in, then find accounts again.");
+                JSONObject data = payload.optJSONObject("data");
+                JSONArray list = data == null ? null : data.optJSONArray("list");
+                if (list == null) throw new IOException("HoYoLAB returned no account list. Enter the UID and server manually.");
+                JSONArray accounts = new JSONArray();
+                Set<String> seen = new HashSet<>();
+                for (int i = 0; i < list.length() && accounts.length() < 20; i++) {
+                    JSONObject account = list.optJSONObject(i);
+                    if (account == null) continue;
+                    String uid = account.optString("game_uid", "");
+                    String server = account.optString("region", "");
+                    if (!validAccount(provider, uid, server) || !seen.add(uid + ":" + server)) continue;
+                    String nickname = account.optString("nickname", "").replaceAll("[\\p{Cntrl}]", "");
+                    if (nickname.length() > 100) nickname = nickname.substring(0, 100);
+                    accounts.put(new JSONObject().put("provider", provider).put("uid", uid)
+                        .put("server", server).put("nickname", nickname));
+                }
+                if (generation.get() != requestGeneration)
+                    throw new IOException("The account connection changed. Find accounts again.");
+                call.resolve(new JSObject().put("accounts", accounts));
+            } catch (Exception error) {
+                call.reject(error instanceof IOException ? error.getMessage() : "HoYoLAB could not be reached. Enter the UID and server manually.", "ACCOUNT_LIST_FAILED");
+            } finally {
+                if (connection != null) connection.disconnect();
+                busy.set(false);
+            }
+        });
+    }
+
     @PluginMethod
     public void fetchNotes(PluginCall call) {
         String provider = call.getString("provider");
@@ -202,35 +310,8 @@ public class HoyoConnectionPlugin extends Plugin {
             try {
                 long observedAt = System.currentTimeMillis();
                 connection = (HttpsURLConnection) new URL(ENDPOINTS[index] + "?role_id=" + uid + "&server=" + server).openConnection();
-                connection.setInstanceFollowRedirects(false);
-                connection.setConnectTimeout(15_000);
-                connection.setReadTimeout(15_000);
-                connection.setRequestProperty("Cookie", cookieHeader);
-                connection.setRequestProperty("Referer", "https://act.hoyolab.com/");
-                connection.setRequestProperty("x-rpc-app_version", "1.5.0");
-                connection.setRequestProperty("x-rpc-client_type", "5");
-                connection.setRequestProperty("x-rpc-language", "en-us");
-                connection.setRequestProperty("x-rpc-lang", "en-us");
-                connection.setRequestProperty("User-Agent", "Memoria/2.0");
-                String alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-                SecureRandom random = new SecureRandom();
-                StringBuilder nonce = new StringBuilder();
-                for (int i = 0; i < 6; i++) nonce.append(alphabet.charAt(random.nextInt(alphabet.length())));
-                long seconds = observedAt / 1000;
-                connection.setRequestProperty("DS", seconds + "," + nonce + "," + digest(seconds, nonce.toString()));
-                int status = connection.getResponseCode();
-                if (status == 429) throw new IOException("HoYoLAB asked us to wait. Try again later.");
-                if (status != 200) throw new IOException("HoYoLAB is unavailable. Try again later.");
-                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-                try (InputStream stream = connection.getInputStream()) {
-                    byte[] buffer = new byte[8192];
-                    int count;
-                    while ((count = stream.read(buffer)) != -1) {
-                        if (bytes.size() + count > 1_000_000) throw new IOException("The account response was too large.");
-                        bytes.write(buffer, 0, count);
-                    }
-                }
-                JSONObject payload = new JSONObject(bytes.toString("UTF-8"));
+                configureRequest(connection, cookieHeader, observedAt);
+                JSONObject payload = readResponse(connection);
                 int code = payload.optInt("retcode", -1);
                 if (Arrays.asList(10035, 5003, 10041, 1034).contains(code))
                     throw new IOException("Open HoYoLAB and complete its verification, then refresh again.");
