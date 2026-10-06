@@ -7,14 +7,17 @@ import { join } from 'node:path';
 // https://github.com/seriaati/genshin.py/blob/master/genshin/client/routes.py
 const PROVIDERS = {
   genshin: {
+    business: 'hk4e_global',
     url: 'https://sg-public-api.hoyolab.com/event/game_record/genshin/api/dailyNote',
     servers: ['os_euro', 'os_usa', 'os_asia', 'os_cht'],
   },
   hsr: {
+    business: 'hkrpg_global',
     url: 'https://bbs-api-os.hoyolab.com/game_record/hkrpg/api/note',
     servers: ['prod_official_eur', 'prod_official_usa', 'prod_official_asia', 'prod_official_cht'],
   },
   zzz: {
+    business: 'nap_global',
     url: 'https://sg-act-public-api.hoyolab.com/event/game_record_zzz/api/zzz/note',
     servers: ['prod_gf_eu', 'prod_gf_us', 'prod_gf_jp', 'prod_gf_sg'],
   },
@@ -41,17 +44,22 @@ function protect(value, decrypt = false) {
   return result.stdout.trim();
 }
 
-function validateConnection(input) {
+export function validateConnection(input) {
   if (!input || typeof input !== 'object') throw fail('Choose a game account.');
   const { gameId, provider, uid, server, cookie } = input;
   if (typeof gameId !== 'string' || !/^[\w-]{1,100}$/.test(gameId)) throw fail('Invalid game identifier.');
   if (!Object.hasOwn(PROVIDERS, provider) || !PROVIDERS[provider].servers.includes(server))
     throw fail('Choose a supported game and server.');
   if (typeof uid !== 'string' || !/^\d{8,12}$/.test(uid)) throw fail('Enter the in-game UID, using 8 to 12 digits.');
+  return { gameId, provider, uid, server, cookie: filterHoyoCookies(cookie), autoRefresh: input.autoRefresh === true };
+}
+
+/** Keep only the session fields required by HoYoLAB. Never return this to the app window. */
+export function filterHoyoCookies(cookie) {
   if (
     typeof cookie !== 'string' ||
     cookie.length > 16000 ||
-    [...cookie].some((character) => character.charCodeAt(0) < 32)
+    [...cookie].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)
   )
     throw fail('Enter a valid HoYoLAB session cookie.');
   const allowed = new Set([
@@ -72,7 +80,7 @@ function validateConnection(input) {
     .filter((part) => allowed.has(part.split('=')[0]));
   if (!pairs.some((part) => /^ltoken(?:_v2)?=.+/.test(part)) || !pairs.some((part) => /^ltuid(?:_v2)?=\d+$/.test(part)))
     throw fail('The session needs ltoken and ltuid (or their v2 values). Sign in to HoYoLAB again.');
-  return { gameId, provider, uid, server, cookie: pairs.join('; '), autoRefresh: input.autoRefresh === true };
+  return pairs.join('; ');
 }
 
 export async function fetchGameNotes(connection, fetcher = fetch) {
@@ -81,6 +89,49 @@ export async function fetchGameNotes(connection, fetcher = fetch) {
   const url = new URL(PROVIDERS[entry.provider].url);
   url.searchParams.set('role_id', entry.uid);
   url.searchParams.set('server', entry.server);
+  const data = await fetchHoyoData(url, entry.cookie, observedAt, fetcher);
+  return { gameId: entry.gameId, provider: entry.provider, uid: entry.uid, observedAt, data };
+}
+
+/** Account discovery shares the same bounded, publisher-only native request path. */
+export async function fetchGameAccounts({ provider, cookie }, fetcher = fetch) {
+  if (!Object.hasOwn(PROVIDERS, provider)) throw fail('Choose a supported game.');
+  const url = new URL('https://api-account-os.hoyolab.com/binding/api/getUserGameRolesByCookie');
+  url.searchParams.set('game_biz', PROVIDERS[provider].business);
+  const data = await fetchHoyoData(url, filterHoyoCookies(cookie), Date.now(), fetcher);
+  if (!Array.isArray(data.list))
+    throw fail('HoYoLAB returned no account list. Enter the UID and server manually.', 502);
+  const accounts = [];
+  const seen = new Set();
+  for (const account of data.list) {
+    if (accounts.length >= 20) break;
+    if (
+      !account ||
+      typeof account.game_uid !== 'string' ||
+      !/^\d{8,12}$/.test(account.game_uid) ||
+      !PROVIDERS[provider].servers.includes(account.region)
+    )
+      continue;
+    const key = `${account.game_uid}:${account.region}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    accounts.push({
+      provider,
+      uid: account.game_uid,
+      server: account.region,
+      nickname:
+        typeof account.nickname === 'string'
+          ? [...account.nickname]
+              .filter((letter) => letter.charCodeAt(0) >= 32 && letter.charCodeAt(0) !== 127)
+              .join('')
+              .slice(0, 100)
+          : '',
+    });
+  }
+  return { accounts };
+}
+
+async function fetchHoyoData(url, cookie, observedAt, fetcher) {
   const timestamp = Math.floor(observedAt / 1000);
   const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const nonce = [...randomBytes(6)].map((value) => letters[value % letters.length]).join('');
@@ -91,14 +142,14 @@ export async function fetchGameNotes(connection, fetcher = fetch) {
   try {
     response = await fetcher(url, {
       headers: {
-        Cookie: entry.cookie,
+        Cookie: cookie,
         Referer: 'https://act.hoyolab.com/',
         'x-rpc-app_version': '1.5.0',
         'x-rpc-client_type': '5',
         'x-rpc-language': 'en-us',
         'x-rpc-lang': 'en-us',
         DS: `${timestamp},${nonce},${digest}`,
-        'User-Agent': 'Memoria/2.0',
+        'User-Agent': 'Memoria/3.0',
       },
       redirect: 'error',
       signal: AbortSignal.timeout(15000),
@@ -137,7 +188,7 @@ export async function fetchGameNotes(connection, fetcher = fetch) {
   }
   if (!payload.data || typeof payload.data !== 'object' || Array.isArray(payload.data))
     throw fail('HoYoLAB returned no readings.', 502);
-  return { gameId: entry.gameId, provider: entry.provider, uid: entry.uid, observedAt, data: payload.data };
+  return payload.data;
 }
 
 export function createGameConnections({

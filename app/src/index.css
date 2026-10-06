@@ -423,6 +423,20 @@ body {
   }
 }
 
+/* Keep navigation and every utility reachable in a snapped desktop window.
+   Accessible button names remain intact when their visible labels give way. */
+@media (min-width: 768px) and (max-width: 1099px) {
+  .app-utilities .shell-control > span,
+  .app-brand > span:last-child {
+    display: none;
+  }
+}
+@media (max-width: 439px) {
+  .app-bar[data-desktop='true'] .app-brand > span {
+    display: none;
+  }
+}
+
 /* Phone check-in: a readable roster, reachable navigation, and a single
    document scroll. Desktop retains its full stage and compact controls. */
 @media (max-width: 767px) {

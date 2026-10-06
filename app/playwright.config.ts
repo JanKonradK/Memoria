@@ -1,5 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const port = Number(process.env.MEMORIA_E2E_PORT ?? '5183');
+if (!Number.isInteger(port) || port < 1 || port > 65_535) throw new Error('MEMORIA_E2E_PORT must be a valid port.');
+const baseURL = `http://127.0.0.1:${port}`;
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -7,13 +11,13 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
-    baseURL: 'http://127.0.0.1:5183',
+    baseURL,
     reducedMotion: 'reduce',
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'npm run dev -- --host 127.0.0.1',
-    url: 'http://127.0.0.1:5183',
+    command: `npm run dev -- --host 127.0.0.1 --port ${port}`,
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,
   },

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createGameConnections, fetchGameNotes } from '../game-connections.mjs';
+import { createGameConnections, fetchGameAccounts, fetchGameNotes } from '../game-connections.mjs';
 
 const dirs = [];
 afterEach(() => {
@@ -25,6 +25,52 @@ function make(fetcher = vi.fn(async () => reply())) {
   return { directory, fetcher, service: createGameConnections({ directory, fetcher, seal, unseal }) };
 }
 describe('local game connections', () => {
+  it.each([
+    ['genshin', 'hk4e_global', 'os_euro'],
+    ['hsr', 'hkrpg_global', 'prod_official_eur'],
+    ['zzz', 'nap_global', 'prod_gf_eu'],
+  ])(
+    'discovers %s accounts without leaking credentials or extra publisher fields',
+    async (provider, business, server) => {
+      const fetcher = vi.fn(async () =>
+        reply({
+          list: [
+            {
+              game_uid: '712345678',
+              region: server,
+              nickname: 'Traveler\n' + 'x'.repeat(120),
+              cookie: 'private-extra',
+            },
+            { game_uid: '712345678', region: server, nickname: 'duplicate' },
+            { game_uid: 'invalid', region: server },
+            { game_uid: '712345679', region: 'invalid' },
+            null,
+          ],
+        }),
+      );
+      const result = await fetchGameAccounts({ provider, cookie: entry.cookie }, fetcher);
+      expect(result.accounts).toEqual([
+        { provider, uid: '712345678', server, nickname: ('Traveler' + 'x'.repeat(120)).slice(0, 100) },
+      ]);
+      expect(fetcher.mock.calls[0][0].origin).toBe('https://api-account-os.hoyolab.com');
+      expect(fetcher.mock.calls[0][0].searchParams.get('game_biz')).toBe(business);
+      expect(JSON.stringify(result)).not.toContain('private');
+      expect(fetcher.mock.calls[0][1].headers.Cookie).not.toContain('unrelated');
+      expect(fetcher.mock.calls[0][1].redirect).toBe('error');
+    },
+  );
+
+  it('rejects invalid discovery requests and malformed account lists', async () => {
+    const fetcher = vi.fn(async () => reply({ list: null }));
+    await expect(fetchGameAccounts({ provider: 'anything', cookie: entry.cookie }, fetcher)).rejects.toThrow(
+      'supported',
+    );
+    expect(fetcher).not.toHaveBeenCalled();
+    await expect(fetchGameAccounts({ provider: 'genshin', cookie: entry.cookie }, fetcher)).rejects.toThrow(
+      'no account list',
+    );
+  });
+
   it('preserves Unicode split across response chunks', async () => {
     const data = { current_resin: 120, name: '原神 — étoile 🌟' };
     const bytes = Buffer.from(JSON.stringify({ retcode: 0, data }));

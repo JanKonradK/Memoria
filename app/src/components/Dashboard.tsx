@@ -187,7 +187,7 @@ export function DashboardPage({ now }: { now: number }) {
   return (
     <Page>
       <h1 className="sr-only">Dashboard</h1>
-      {phone && !focusedEntry && order.length > 0 && (
+      {!wide && !focusedEntry && order.length > 0 && (
         <div className="mb-2">
           <Segmented
             ariaLabel="Dashboard view"
@@ -280,13 +280,13 @@ export function DashboardPage({ now }: { now: number }) {
                 onOpenEvent={openGameEvent}
               />
             </section>
-          ) : phone ? (
+          ) : !wide ? (
             phoneView === 'tonight' ? (
               <NexusHub state={state} entries={order} now={now} onOpenEvent={openEvent} onOpenTimeline={openTimeline} />
             ) : (
               <MobileRoster entries={displayIds.map((id) => entryById.get(id)!)} now={now} />
             )
-          ) : wide ? (
+          ) : (
             <NexusLayout
               state={state}
               entries={order}
@@ -295,8 +295,6 @@ export function DashboardPage({ now }: { now: number }) {
               onOpenEvent={openEvent}
               onOpenTimeline={openTimeline}
             />
-          ) : (
-            <MobileRoster entries={displayIds.map((id) => entryById.get(id)!)} now={now} />
           )}
         </>
       )}

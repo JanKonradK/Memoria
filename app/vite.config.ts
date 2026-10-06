@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
-import { singleFile } from './scripts/vite-single-file';
+import { singleFile } from './scripts/vite-single-file.ts';
 
 /**
  * `--mode singlefile` builds the shareable copy: one self-contained
@@ -25,20 +25,19 @@ export default defineConfig(({ mode }) => {
       outDir: single ? 'dist-single' : 'dist',
       emptyOutDir: true,
       chunkSizeWarningLimit: single ? 4000 : 350,
-      rollupOptions: {
+      rolldownOptions: {
         // The single-file build inlines every dynamic import (see
-        // scripts/vite-single-file.ts), and Rollup rejects manualChunks alongside that.
+        // scripts/vite-single-file.ts), so its output has no manual chunk groups.
         output: single
           ? {}
           : {
-              manualChunks(id) {
-                if (id.includes('node_modules/react') || id.includes('node_modules/scheduler')) return 'react';
-                if (id.includes('node_modules/luxon')) return 'luxon';
-                // Motion is deliberately NOT force-chunked: main.tsx loads the
-                // domAnimation feature set via a dynamic import, and pinning every
-                // motion module to one manual chunk would merge that async chunk
-                // back into the eager graph and undo the split.
-                return undefined;
+              codeSplitting: {
+                groups: [
+                  { name: 'react', test: /node_modules[\\/](?:react(?:-dom)?|scheduler)[\\/]/ },
+                  { name: 'luxon', test: /node_modules[\\/]luxon[\\/]/ },
+                ],
+                // Keep Motion's dynamically imported feature set separate from
+                // the initial page; do not collect all Motion modules in a group.
               },
             },
       },

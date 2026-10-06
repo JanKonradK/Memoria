@@ -95,7 +95,8 @@ it('distinguishes starting estimates and clamps age when the device clock moves 
 
 it('opens complete controls from a priority and emits a scoped import request', () => {
   render(<TodayPage now={NOW} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Open Near cap', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Review Near cap', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Open game', exact: true }));
   expect(useUI.getState().tab).toBe('home');
   expect(useUI.getState().focusedGameId).toBe('Near cap');
   const listener = vi.fn();

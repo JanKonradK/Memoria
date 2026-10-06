@@ -4,6 +4,7 @@ import { launcherFetch, servedByLauncher } from './launcher';
 import { useApp } from './store';
 import { isNativeApp } from './native';
 import { disconnectHoyo, fetchHoyoNotes } from './hoyo-native';
+import { isDesktopApp } from './desktop-host';
 
 export type GameConnection = {
   gameId: string;
@@ -20,22 +21,54 @@ export type AccountReading = {
   observedAt: number;
   data: Record<string, unknown>;
 };
-type ConnectionResponse = { connections?: GameConnection[]; reading?: AccountReading; error?: string };
+export type ConnectionResponse = { connections?: GameConnection[]; reading?: AccountReading; error?: string };
 export const useGameConnections = create<{ connections: GameConnection[]; error: string; refreshing: boolean }>(() => ({
   connections: [],
   error: '',
   refreshing: false,
 }));
 
+function recordConnectionResponse(result: ConnectionResponse): ConnectionResponse {
+  if (result.connections) useGameConnections.setState({ connections: result.connections, error: '' });
+  else if (result.reading) {
+    const reading = result.reading;
+    useGameConnections.setState(({ connections }) => ({
+      connections: connections.map((entry) =>
+        entry.gameId === reading.gameId && entry.provider === reading.provider && entry.uid === reading.uid
+          ? { ...entry, lastCheckedAt: reading.observedAt }
+          : entry,
+      ),
+    }));
+  }
+  return result;
+}
+
 export async function connectionRequest(body?: Record<string, unknown>): Promise<ConnectionResponse> {
   if (isNativeApp) return nativeConnectionRequest(body);
+  if (body?.action === 'connect' && isDesktopApp() && window.memoriaDesktop?.hoyo) {
+    const result = await window.memoriaDesktop.hoyo.connectAccount({
+      gameId: String(body.gameId),
+      provider: body.provider as GameConnection['provider'],
+      uid: String(body.uid),
+      server: String(body.server),
+      autoRefresh: body.autoRefresh === true,
+    });
+    return recordConnectionResponse(result);
+  }
   const response = await launcherFetch(
     '/api/connections',
     body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {},
   );
   const result = (await response.json()) as ConnectionResponse;
   if (!response.ok) throw new Error(result.error || 'Game connections are unavailable.');
-  if (result.connections) useGameConnections.setState({ connections: result.connections, error: '' });
+  recordConnectionResponse(result);
+  if (
+    body?.action === 'disconnect' &&
+    result.connections?.length === 0 &&
+    isDesktopApp() &&
+    window.memoriaDesktop?.hoyo
+  )
+    await disconnectHoyo();
   return result;
 }
 
@@ -130,7 +163,7 @@ async function nativeConnectionRequest(body?: Record<string, unknown>): Promise<
 
 let polling = false;
 async function refreshConnectedGames() {
-  if (polling || document.hidden || !navigator.onLine || !useApp.getState().loaded) return;
+  if (polling || (document.hidden && !isDesktopApp()) || !navigator.onLine || !useApp.getState().loaded) return;
   polling = true;
   useGameConnections.setState({ refreshing: true });
   try {
@@ -144,8 +177,12 @@ async function refreshConnectedGames() {
       try {
         const result = await connectionRequest({ action: 'refresh', gameId: game.id });
         const current = useGameConnections.getState().connections.find((item) => item.gameId === game.id);
+        const currentGame = useApp.getState().state.games.find((item) => item.id === game.id);
         if (
           result.reading &&
+          currentGame &&
+          !currentGame.paused &&
+          !currentGame.deleted &&
           current?.autoRefresh &&
           current.uid === connection.uid &&
           current.provider === connection.provider &&

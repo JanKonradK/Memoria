@@ -9,7 +9,12 @@ Enter progress manually, import a screenshot, or connect a supported HoYoLAB acc
 Memoria does not play games or collect rewards for you.
 You do not need a Memoria account or any coding knowledge.
 
-## Version 2.0
+## Version 3.0
+
+- **Flexible layouts** adapt to phone screens, small PC windows, and large displays.
+- **Play mode** uses a PC shortcut to capture game readings for later review.
+- **Background checks** continue for connected PC accounts while Memoria is minimized or in the system tray.
+- **HoYoLAB sign-in** connects supported PC accounts through the official sign-in page.
 
 - **Today** shows approaching energy caps and unfinished routines within your sleep window.
 - **Games** keeps the complete game controls, account list, and Tonight summary.
@@ -36,6 +41,8 @@ See [Import game progress](docs/game-imports.md) for supported methods, setup st
 Memoria opens in its own desktop window. The download includes its own runtime.
 You do not need a browser or developer tools.
 Press **Alt** to show the desktop menu.
+To keep account checks and phone sync active after closing the window, enable **Keep Memoria in the system tray** in **Play mode**.
+Select **Quit Memoria** in the tray menu to stop the app.
 
 To install Memoria, close the app and double-click **Add Memoria to Start Menu.cmd**.
 The installer copies the app to `%LOCALAPPDATA%\Programs\Memoria` and creates Desktop and Start Menu shortcuts.
@@ -195,5 +202,11 @@ A screenshot can help. Remove any personal information before you share it.
 GitHub requires an account to post an issue.
 
 ## For developers
+
+Use Node.js 24.15 or later in version 24, or Node.js 26 or later.
+CI uses Node.js 24.21.0.
+The app and shared packages use the TypeScript 7.0.2 compiler.
+ESLint uses TypeScript 6.0.3 because its current TypeScript parser does not support version 7.
+The `xcode` dependency uses `uuid` 11.1.1 to remove a known security defect.
 
 For source code setup, tests, release commands, and technical details, see the [developer guide](docs/development.md).

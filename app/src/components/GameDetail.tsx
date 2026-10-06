@@ -87,8 +87,8 @@ export function GameDetailSheet({
       wide
       title={nickname ? `${game.name} · ${nickname}` : game.name}
       footer={
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-meta text-muted">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="min-w-0 flex-1 text-meta text-muted">
             {dirty ? 'Add or save your draft before closing' : 'Game settings save automatically'}
           </span>
           <Btn

@@ -48,7 +48,39 @@ describe('native window boundaries', () => {
     const displays = [{ workArea: { x: 0, y: 0, width: 1920, height: 1080 } }];
     const saved = { x: 100, y: 100, width: 1200, height: 800 };
     expect(windowBounds(saved, displays)).toEqual(saved);
-    expect(windowBounds({ ...saved, x: 4000 }, displays)).toEqual({ width: 1280, height: 900 });
-    expect(windowBounds({ ...saved, width: Infinity }, displays)).toEqual({ width: 1280, height: 900 });
+    expect(windowBounds({ ...saved, x: 4000 }, displays)).toEqual({ x: 320, y: 90, width: 1280, height: 900 });
+    expect(windowBounds({ ...saved, width: Infinity }, displays)).toEqual({ x: 320, y: 90, width: 1280, height: 900 });
+  });
+
+  it('fits the full window on a small or scaled display, including first launch', () => {
+    const displays = [{ workArea: { x: 0, y: 0, width: 800, height: 560 } }];
+    expect(windowBounds(undefined, displays)).toEqual({ x: 0, y: 0, width: 800, height: 560 });
+    expect(windowBounds({ x: 10, y: 20, width: 1920, height: 1080 }, displays)).toEqual({
+      x: 0,
+      y: 0,
+      width: 800,
+      height: 560,
+    });
+    expect(windowBounds({ x: 0, y: 200, width: 600, height: 350 }, displays)).toEqual({
+      x: 0,
+      y: 80,
+      width: 600,
+      height: 480,
+    });
+  });
+
+  it('retains compact sizes and clamps placement on a secondary display', () => {
+    const displays = [
+      { workArea: { x: 0, y: 0, width: 1920, height: 1040 } },
+      { workArea: { x: -1280, y: 0, width: 1280, height: 720 } },
+    ];
+    const compact = { x: 0, y: 0, width: 360, height: 480 };
+    expect(windowBounds(compact, displays)).toEqual(compact);
+    expect(windowBounds({ x: -1200, y: 600, width: 1000, height: 600 }, displays)).toEqual({
+      x: -1200,
+      y: 120,
+      width: 1000,
+      height: 600,
+    });
   });
 });

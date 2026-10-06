@@ -67,6 +67,7 @@ const UserGuide = lazy(() => import('./components/UserGuide').then((module) => (
 const ImportCenter = lazy(() =>
   import('./components/ImportCenter').then((module) => ({ default: module.ImportCenter })),
 );
+const PlayMode = lazy(() => import('./components/PlayMode').then((module) => ({ default: module.PlayMode })));
 
 type PagePosition = { page: number; board: number };
 
@@ -392,6 +393,7 @@ export default function App() {
       <AppSheets />
       <Suspense fallback={null}>
         <ImportCenter />
+        <PlayMode />
       </Suspense>
     </div>
   );

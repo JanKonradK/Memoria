@@ -6,7 +6,9 @@ import {
   planGameImport,
   type GameImportBatch,
 } from '@memoria/shared';
-import { useApp } from '../store';
+import { flushPersist, useApp } from '../store';
+import { flushSync } from '../sync';
+import type { CapturedReading } from '../desktop-play';
 import { launcherFetch, servedByLauncher } from '../launcher';
 import { isNativeApp } from '../native';
 import {
@@ -37,12 +39,13 @@ export function ImportCenter() {
   const [assignments, setAssignments] = useState<Record<string, string>>({});
   const [batch, setBatch] = useState<GameImportBatch>();
   const [incoming, setIncoming] = useState<ScreenshotText | null>(null);
+  const [captureId, setCaptureId] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
   const requestEpoch = useRef(0);
-  const selectedGame = games.some((game) => game.id === gameId) ? gameId : (games[0]?.id ?? '');
+  const selectedGame = games.some((game) => game.id === gameId) ? gameId : captureId ? '' : (games[0]?.id ?? '');
   const dirty = !!batch || !!text.trim();
   const currentDraft = useRef({ selectedGame, dirty, open });
   useLayoutEffect(() => {
@@ -53,21 +56,65 @@ export function ImportCenter() {
 
   useEffect(() => {
     const show = (event: Event) => {
-      const id = (event as CustomEvent<{ gameId?: string }>).detail?.gameId;
+      const detail = (event as CustomEvent<{ gameId?: string; tab?: 'accounts' }>).detail;
+      const id = detail?.gameId;
       if (id && id !== selectedGame) {
-        if (dirty && !window.confirm('Clear the current import draft and change game?')) return;
+        if (dirty && !window.confirm('Clear the current import draft and change game?')) {
+          event.preventDefault();
+          return;
+        }
         requestEpoch.current += 1;
         setBusy(false);
         setGameId(id);
         setBatch(undefined);
         setText('');
+        setCaptureId(undefined);
         setAssignments({});
       }
+      if (detail?.tab === 'accounts') setTab('accounts');
       setOpen(true);
     };
     document.addEventListener('memoria:open-import', show);
     return () => document.removeEventListener('memoria:open-import', show);
   }, [dirty, selectedGame]);
+  useEffect(() => {
+    const show = (event: Event) => {
+      const capture = (event as CustomEvent<CapturedReading>).detail;
+      if (
+        !capture ||
+        typeof capture.id !== 'string' ||
+        typeof capture.text !== 'string' ||
+        !Number.isFinite(capture.capturedAt) ||
+        capture.capturedAt < 0 ||
+        capture.capturedAt > 8.64e15
+      ) {
+        event.preventDefault();
+        return;
+      }
+      if (dirty && !window.confirm('Replace the current import draft with this capture?')) {
+        event.preventDefault();
+        return;
+      }
+      requestEpoch.current += 1;
+      setBusy(false);
+      // Deleted or unassigned game accounts need a fresh, explicit selection.
+      setGameId(capture.gameId || '');
+      setText(capture.text);
+      setCapturedAt(localDateTime(capture.capturedAt));
+      setCaptureId(capture.id);
+      setBatch(undefined);
+      setAssignments({});
+      setIncoming(null);
+      setTab('screenshot');
+      setError('');
+      setNotice(
+        'Check the game account and detected values. The capture stays in your inbox until these readings are saved.',
+      );
+      setOpen(true);
+    };
+    document.addEventListener('memoria:review-capture', show);
+    return () => document.removeEventListener('memoria:review-capture', show);
+  }, [dirty]);
   useEffect(() => {
     if (!isNativeApp) return;
     let active = true;
@@ -96,6 +143,7 @@ export function ImportCenter() {
   }, []);
 
   const acceptText = (result: ScreenshotText) => {
+    setCaptureId(undefined);
     setText(result.text);
     setCapturedAt(result.capturedAt ? localDateTime(result.capturedAt) : '');
     setBatch(undefined);
@@ -156,6 +204,10 @@ export function ImportCenter() {
   const review = () => {
     setError('');
     setNotice('');
+    if (!selectedGame || !useApp.getState().state.games.some((game) => game.id === selectedGame && !game.deleted)) {
+      setError('Choose a game account for this capture before reviewing its readings.');
+      return;
+    }
     const time = new Date(capturedAt).getTime();
     if (!Number.isFinite(time) || time > Date.now()) {
       setError('Enter the screenshot capture time. It cannot be in the future.');
@@ -188,6 +240,14 @@ export function ImportCenter() {
   };
   const apply = () => {
     if (!batch) return;
+    if (
+      batch.gameId !== selectedGame ||
+      !useApp.getState().state.games.some((game) => game.id === batch.gameId && !game.deleted)
+    ) {
+      setError('This game account is no longer available. Choose an account and review the readings again.');
+      setBatch(undefined);
+      return;
+    }
     const confirmed = {
       ...batch,
       resources: batch.resources?.map((item) => ({ ...item, confirmed: true })),
@@ -202,6 +262,17 @@ export function ImportCenter() {
         setBatch(undefined);
         setText('');
         setTab('history');
+        if (captureId && window.memoriaDesktop?.play) {
+          const id = captureId;
+          setCaptureId(undefined);
+          // Keep the inbox entry if either data store fails to save the review.
+          void flushPersist()
+            .then(flushSync)
+            .then(() => window.memoriaDesktop?.play?.remove(id))
+            .catch(() => {
+              setNotice('Readings were applied. The capture remains in the inbox until saving is confirmed.');
+            });
+        }
       }
     } catch (cause) {
       setError(message(cause));
@@ -232,6 +303,7 @@ export function ImportCenter() {
             setOpen(false);
             setBatch(undefined);
             setText('');
+            setCaptureId(undefined);
             setAssignments({});
             setError('');
             setNotice('');
@@ -274,15 +346,18 @@ export function ImportCenter() {
                   <Select
                     value={selectedGame}
                     onChange={(event) => {
-                      if (dirty && !window.confirm('Clear the current import draft and change game?')) return;
+                      if (captureId) {
+                        if (!window.confirm('Use this capture for the selected game account?')) return;
+                      } else if (dirty && !window.confirm('Clear the current import draft and change game?')) return;
                       setGameId(event.target.value);
                       setBatch(undefined);
-                      setText('');
+                      if (!captureId) setText('');
                       setAssignments({});
                       setNotice('');
                       setError('');
                     }}
                   >
+                    {!selectedGame && <option value="">Choose a game account</option>}
                     {games.map((game) => (
                       <option key={game.id} value={game.id}>
                         {game.name}
@@ -390,7 +465,11 @@ export function ImportCenter() {
                     >
                       Taken just now
                     </Btn>
-                    <Btn disabled={busy || !text.trim() || !capturedAt} kind="primary" onClick={review}>
+                    <Btn
+                      disabled={busy || !selectedGame || !text.trim() || !capturedAt}
+                      kind="primary"
+                      onClick={review}
+                    >
                       Review readings
                     </Btn>
                   </div>
@@ -408,6 +487,7 @@ export function ImportCenter() {
                       )
                         return;
                       setBatch(value);
+                      setCaptureId(undefined);
                       setError('');
                       setNotice(
                         value.resources?.length || value.tasks?.length

@@ -1,4 +1,4 @@
-/* global window */
+/* global window, document */
 import { _electron as electron, expect } from '@playwright/test';
 import { spawn, execFile } from 'node:child_process';
 import { once } from 'node:events';
@@ -125,9 +125,20 @@ async function launch() {
   return page.getByLabel('Archive energy current value', { exact: true });
 }
 
-async function closeWindow() {
+async function requestQuit() {
+  await desktop.evaluate(({ Menu }) => {
+    const item = Menu.getApplicationMenu()
+      ?.items.find((entry) => entry.label === 'File')
+      ?.submenu?.items.find((entry) => entry.label === 'Quit Memoria');
+    if (!item) throw new Error('The native Quit Memoria action is missing.');
+    item.click();
+  });
+}
+
+async function closeWindow(quit = false) {
   const closed = desktop.waitForEvent('close', { timeout: 30_000 });
-  await desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
+  if (quit) await requestQuit();
+  else await desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
   await closed;
   desktop = undefined;
 }
@@ -166,8 +177,48 @@ try {
       process: typeof window.process,
       bridge: Object.keys(window.memoriaDesktop ?? {}).sort(),
     })),
-  ).toEqual({ node: 'undefined', process: 'undefined', bridge: ['completeClose', 'onCloseRequested', 'version'] });
+  ).toEqual({
+    node: 'undefined',
+    process: 'undefined',
+    bridge: ['completeClose', 'hoyo', 'onCloseRequested', 'play', 'version'],
+  });
   expect(await page.evaluate(async () => (await window.navigator.serviceWorker.getRegistrations()).length)).toBe(0);
+  expect(await page.evaluate(async () => window.memoriaDesktop.play.status())).toMatchObject({
+    enabled: false,
+    background: false,
+    registered: false,
+    busy: false,
+    count: 0,
+    pending: [],
+  });
+  expect(
+    await page.evaluate(async () =>
+      (await window.memoriaDesktop.play.sources()).every(
+        (source) =>
+          source.id.startsWith('window:') && typeof source.name === 'string' && !Object.hasOwn(source, 'thumbnail'),
+      ),
+    ),
+  ).toBe(true);
+
+  // Resize the actual native frame, including the narrowest supported PC width.
+  // Its web contents must reflow while keeping the user's values intact.
+  for (const [width, height] of [
+    [360, 480],
+    [960, 600],
+    [1280, 900],
+  ]) {
+    await desktop.evaluate(
+      ({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0].setSize(...size),
+      [width, height],
+    );
+    await expect
+      .poll(() => desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getSize()))
+      .toEqual([width, height]);
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1))
+      .toBe(true);
+    await expect(energy).toHaveValue('31');
+  }
   // Check the renderer's copy permission without replacing the owner's system
   // clipboard, which is shared even when the app profile is isolated.
   expect(
@@ -206,13 +257,36 @@ try {
     )
     .toEqual({ windows: 1, minimized: false });
 
+  // Background account checks and phone sync do not require enabling capture.
+  expect(
+    await page.evaluate(async () =>
+      window.memoriaDesktop.play.configure({
+        enabled: false,
+        background: true,
+        hotkey: 'CommandOrControl+Shift+M',
+        sourceId: '',
+        gameId: '',
+      }),
+    ),
+  ).toMatchObject({ background: true, enabled: false, registered: false });
+  await desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
+  await expect
+    .poll(() => desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isVisible()))
+    .toBe(false);
+  expect(desktop.process().exitCode).toBeNull();
+  await desktop.evaluate(({ app }) => app.emit('activate'));
+  await expect
+    .poll(() => desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isVisible()))
+    .toBe(true);
+  await expect(energy).toHaveValue('42');
+
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByRole('button', { name: 'Game settings for Native archive', exact: true }).click();
   await page.getByRole('tab', { name: 'Tasks', exact: true }).click();
   const draft = page.getByRole('textbox', { name: 'New task name', exact: true });
   await draft.fill('Keep my unsaved task');
   const confirmation = page.waitForEvent('dialog');
-  await desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
+  await requestQuit();
   const dialog = await confirmation;
   expect(dialog.type()).toBe('confirm');
   expect(dialog.message()).toContain('unsaved changes');
@@ -298,14 +372,115 @@ try {
   expect(navigation).toEqual({ remote: true, file: true, internal: false });
   await expect(page.getByRole('heading', { name: 'Synced archive', exact: true })).toBeVisible();
   expect(new URL(page.url()).origin).toBe(origin);
+
+  // This synthetic native window is the sole source selected for OCR. Its own
+  // isolated renderer also proves an unrelated window cannot use privileged IPC.
+  const synthetic = await desktop.evaluate(
+    async ({ BrowserWindow }, preload) => {
+      const fixtureWindow = new BrowserWindow({
+        title: 'Memoria capture fixture',
+        width: 1150,
+        height: 520,
+        show: true,
+        webPreferences: { preload, sandbox: true, contextIsolation: true, nodeIntegration: false },
+      });
+      const html =
+        '<!doctype html><html><head><title>Memoria capture fixture</title></head><body style="margin:0;padding:40px;background:white;color:black;font-family:Arial,sans-serif"><p style="font-size:58px;font-weight:700;white-space:nowrap">Archive energy 123 / 200</p><p style="font-size:28px">Memoria synthetic game window</p></body></html>';
+      await fixtureWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+      fixtureWindow.show();
+      fixtureWindow.focus();
+      return { id: fixtureWindow.id, sourceId: fixtureWindow.getMediaSourceId() };
+    },
+    join(install, 'desktop/electron-preload.cjs'),
+  );
+  const sourceAuthorization = await desktop.evaluate(async ({ BrowserWindow }, id) => {
+    const contents = BrowserWindow.fromId(id).webContents;
+    return contents.executeJavaScript(
+      "window.memoriaDesktop.play.sources().then(() => 'unexpected access', error => error.message)",
+    );
+  }, synthetic.id);
+  expect(sourceAuthorization).toContain('only available in Memoria');
+  const available = await page.evaluate(
+    async (id) => (await window.memoriaDesktop.play.sources()).some((source) => source.id === id),
+    synthetic.sourceId,
+  );
+  expect(available).toBe(true);
+  expect(
+    await page.evaluate(
+      async (sourceId) =>
+        window.memoriaDesktop.play.configure({
+          enabled: true,
+          background: true,
+          hotkey: 'CommandOrControl+Shift+M',
+          sourceId,
+          gameId: 'native-archive-game',
+        }),
+      synthetic.sourceId,
+    ),
+  ).toMatchObject({ enabled: true, sourceId: synthetic.sourceId });
+  await desktop.evaluate(({ BrowserWindow }, id) => BrowserWindow.fromId(id).focus(), synthetic.id);
+  await expect
+    .poll(() => desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getFocusedWindow()?.id))
+    .toBe(synthetic.id);
+  let captureTimeout;
+  let captured;
+  try {
+    captured = await Promise.race([
+      page.evaluate(async () => window.memoriaDesktop.play.capture()),
+      new Promise((_, reject) => {
+        captureTimeout = setTimeout(
+          () => reject(new Error('The selected-window OCR check exceeded 30 seconds.')),
+          30_000,
+        );
+        captureTimeout.unref();
+      }),
+    ]);
+  } finally {
+    clearTimeout(captureTimeout);
+  }
+  expect(captured.count).toBe(1);
+  expect(captured.pending[0].text).toContain('123');
+  expect(captured.pending[0]).toMatchObject({ gameId: 'native-archive-game', name: 'Memoria capture fixture' });
+  expect(await desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getFocusedWindow()?.id)).toBe(synthetic.id);
+  const inboxFile = join(appdata, 'memoria/capture/state.json');
+  const durableInbox = JSON.parse(readFileSync(inboxFile, 'utf8'));
+  expect(durableInbox.pending[0].id).toBe(captured.pending[0].id);
+  expect(durableInbox.pending[0]).not.toHaveProperty('base64');
+  await desktop.evaluate(({ BrowserWindow }, id) => BrowserWindow.fromId(id).destroy(), synthetic.id);
+  await desktop.evaluate(({ app }) => app.emit('activate'));
+
+  await page.getByRole('button', { name: 'Play mode', exact: true }).click();
+  await page.getByRole('button', { name: 'Review capture', exact: true }).click();
+  const importDialog = page.getByRole('dialog', { name: 'Import game readings' });
+  await expect(importDialog.getByLabel('Text from the screenshot')).toHaveValue(/123/);
+  await importDialog.getByRole('button', { name: 'Review readings', exact: true }).click();
+  await importDialog.getByRole('button', { name: 'Apply reviewed readings', exact: true }).click();
+  await expect.poll(latestEnergy).toBe(123);
+  await expect.poll(async () => (await page.evaluate(async () => window.memoriaDesktop.play.status())).count).toBe(0);
+  await importDialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(importDialog).toBeHidden();
+  await expect(page.getByLabel('Archive energy current value', { exact: true })).toHaveValue('123');
+  // The source was closed; disable capture without altering tray behavior.
+  await page.evaluate(async () =>
+    window.memoriaDesktop.play.configure({
+      enabled: false,
+      background: true,
+      hotkey: 'CommandOrControl+Shift+M',
+      sourceId: '',
+      gameId: 'native-archive-game',
+    }),
+  );
   await page.screenshot({ path: join(root, 'dist/native-desktop.png') });
-  await closeWindow();
+  // Quit, unlike Close window, still flushes a focused editor while tray mode is on.
+  await page.getByLabel('Archive energy current value', { exact: true }).fill('124');
+  await closeWindow(true);
+  expect(latestEnergy()).toBe(124);
   checkExistingData();
   expect(errors).toEqual([]);
   console.log(
     JSON.stringify({
       native:
-        'PASS: bundled executable, isolated renderer, copy permission, existing PC data, close flush, relaunch, single instance, unsaved draft, backend recovery, phone pairing, disk sync, blocked remote navigation',
+        'PASS: bundled executable, isolated renderer, responsive native resizing, existing PC data, close and quit flush, relaunch, single instance, tray hide and reopen, unsaved draft, backend recovery, phone pairing, disk sync, blocked remote navigation, authenticated play mode, selected-window OCR without focus stealing, durable capture inbox, reviewed import',
       screenshot: 'dist/native-desktop.png',
     }),
   );
