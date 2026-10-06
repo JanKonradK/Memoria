@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
 async function addGames(page: Page) {
@@ -30,14 +31,6 @@ test('Tonight positions keep equal columns and persist after reload', async ({ p
       .click();
     await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
     await expect(page.locator('.nexus-stage')).toHaveAttribute('data-tonight', position.toLowerCase());
-    await page
-      .locator('.nexus-node')
-      .first()
-      .getByRole('button', { name: /^Expand/ })
-      .click();
-    await expect(page.locator('.nexus-node[data-expanded="true"]')).toHaveAttribute('data-settled', 'true');
-    // Inspect the resting columns after Motion has completed its position pass.
-    await page.waitForTimeout(350);
     const geometry = await page.evaluate(() => {
       const hub = document.querySelector('[aria-label="Across every game"]')!.getBoundingClientRect();
       const cards = [...document.querySelectorAll('.nexus-node')].map((node) => node.getBoundingClientRect());
@@ -61,7 +54,13 @@ test('Tonight positions keep equal columns and persist after reload', async ({ p
     }
     expect(geometry.document).toBeLessThanOrEqual(geometry.viewport);
     await page.screenshot({ path: testInfo.outputPath(`tonight-${position.toLowerCase()}.png`) });
-    await page.keyboard.press('Escape');
+    const open = page.locator('.nexus-summary').first();
+    const name = (await open.getAttribute('aria-label'))!;
+    await open.click();
+    await expect(page.locator('.focus-workspace')).toBeVisible();
+    await page.getByRole('button', { name: 'Back to dashboard', exact: true }).click();
+    await expect(page.getByRole('button', { name, exact: true })).toBeFocused();
+    await expect(page.locator('.nexus-stage')).toHaveAttribute('data-tonight', position.toLowerCase());
   }
   await page.reload();
   await expect(page.locator('.nexus-stage')).toHaveAttribute('data-tonight', 'middle');
@@ -69,10 +68,25 @@ test('Tonight positions keep equal columns and persist after reload', async ({ p
 
 test('shared game focus, event editing, and the guide work at every size', async ({ page }, testInfo) => {
   await addGames(page);
+  await expect(page.getByRole('combobox', { name: 'Focus game' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   const focus = page.getByRole('combobox', { name: 'Focus game' });
   await focus.click();
   await page.getByRole('option', { name: /Genshin Impact/ }).click();
-  await expect(page.getByRole('region', { name: 'Genshin Impact focus workspace' })).toBeVisible();
+  await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
+  const workspace = page.getByRole('region', { name: 'Genshin Impact focus workspace' });
+  await expect(workspace).toBeVisible();
+  await expect(workspace).not.toHaveClass(/\bcard-shell\b/);
+  await expect(page.getByRole('combobox', { name: 'Focus game' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Back to dashboard', exact: true })).toHaveCount(1);
+  await expect(workspace.getByRole('button', { name: 'Edit Genshin Impact', exact: true })).toHaveCount(1);
+  expect(
+    (await new AxeBuilder({ page }).analyze()).violations.filter((issue) =>
+      ['serious', 'critical'].includes(issue.impact ?? ''),
+    ),
+  ).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('game-page.png') });
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Focus game' })).toContainText('Genshin Impact');
   await page.getByRole('radiogroup', { name: 'Event view' }).getByRole('radio', { name: 'List', exact: true }).click();
@@ -80,7 +94,7 @@ test('shared game focus, event editing, and the guide work at every size', async
   await page.getByRole('menuitem', { name: 'Event', exact: true }).click();
   await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Review window');
   await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('Keep these notes.');
-  await page.getByRole('button', { name: '3d', exact: true }).click();
+  await page.getByRole('button', { name: 'End 3 days after start', exact: true }).click();
   await page.getByRole('button', { name: 'Add event', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Find events', exact: true }).click();
@@ -96,7 +110,7 @@ test('shared game focus, event editing, and the guide work at every size', async
   await page.getByLabel('Ends', { exact: true }).fill(start);
   await expect(page.getByRole('alert')).toContainText('end must be after');
   await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
-  await page.getByRole('button', { name: '7d', exact: true }).click();
+  await page.getByRole('button', { name: 'End 7 days after start', exact: true }).click();
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath('timeline-list.png') });
@@ -104,8 +118,12 @@ test('shared game focus, event editing, and the guide work at every size', async
   await expect(page.getByRole('combobox', { name: 'Focus game' })).toContainText('Genshin Impact');
   await page.getByRole('button', { name: 'User guide', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Your daily run starts here' })).toBeVisible();
-  await page.getByRole('button', { name: 'Let me cook', exact: true }).click();
+  await page.getByRole('button', { name: 'Skip tour', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
+  await page.getByRole('button', { name: 'Back to dashboard', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Genshin Impact focus workspace' })).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Focus game' })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
@@ -113,9 +131,10 @@ test('first launch opens a spotlight tour and skip persists', async ({ page }, t
   test.skip(!['desktop', 'mobile-390'].includes(testInfo.project.name), 'First-run guide at desktop and phone sizes');
   await page.goto('/');
   await expect(page.getByRole('dialog', { name: 'Your daily run starts here' })).toBeVisible();
-  await page.getByRole('button', { name: 'Let me cook', exact: true }).click();
+  await page.getByRole('button', { name: 'Skip tour', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByRole('combobox', { name: 'Focus game' })).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Focus game' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Add your first game' })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('button', { name: 'Add your first game' })).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);

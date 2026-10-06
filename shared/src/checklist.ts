@@ -115,7 +115,9 @@ function completionProgress(
     return { done: timerEndsAt != null && timerEndsAt > now, countDone, countTarget, timerEndsAt };
   }
   if (mode === 'count') {
-    const done = countDone >= countTarget || Boolean(row?.done);
+    // Count targets can change after completion. Only legacy checkbox rows lack
+    // an explicit count and still need their stored completion flag.
+    const done = row?.countDone == null ? Boolean(row?.done) : countDone >= countTarget;
     return { done, countDone, countTarget, timerEndsAt };
   }
   // Timer tasks fall through to the same rule as checkboxes, and that is the

@@ -4,7 +4,12 @@ import { emptyState, MAX_GAME_IMAGE_LENGTH } from './types';
 import { groupBy, objectRecord } from './internal';
 import { migrateState } from './migrations';
 import { inferLegacyResource, inferLegacyTask } from './tracking';
-import { APP_STATE_COLLECTION_LIMITS, AppStateSchema, FUTURE_CLOCK_SKEW_TOLERANCE_MS } from './validation';
+import {
+  APP_STATE_COLLECTION_LIMITS,
+  AppStateSchema,
+  FUTURE_CLOCK_SKEW_TOLERANCE_MS,
+  GameLayoutItemSchema,
+} from './validation';
 
 const SNAPSHOTS_KEPT_PER_RESOURCE = 200;
 export const TOMBSTONE_RETENTION_MS = 90 * 86_400_000;
@@ -161,6 +166,16 @@ function normalizeGame(raw: unknown): AppState['games'][number] | null {
     sort: finiteNumber(record.sort) ? record.sort : 0,
   };
   if (typeof game.image === 'string' && game.image.length > MAX_GAME_IMAGE_LENGTH) delete game.image;
+  // A damaged optional layout must not discard the game and its tracking data.
+  if (Array.isArray(game.cardLayout)) {
+    const seen = new Set<string>();
+    game.cardLayout = game.cardLayout.slice(0, 2000).flatMap((item) => {
+      const parsed = GameLayoutItemSchema.safeParse(item);
+      if (!parsed.success || seen.has(parsed.data.id)) return [];
+      seen.add(parsed.data.id);
+      return [parsed.data];
+    });
+  } else delete game.cardLayout;
   return parseRow(ROWS.games, game);
 }
 
@@ -267,11 +282,29 @@ function salvageRows<T>(raw: unknown, limit: number, normalize: (row: unknown) =
   return rows;
 }
 
+export class StateCapacityError extends Error {
+  constructor(collection: keyof typeof APP_STATE_COLLECTION_LIMITS) {
+    super(
+      `Sync paused: combined ${collection} exceed the ${APP_STATE_COLLECTION_LIMITS[collection]} item limit. Your data was kept. Export a backup from each device.`,
+    );
+    this.name = 'StateCapacityError';
+  }
+}
+
+/** Check before a storage or merge boundary can truncate valid user rows. */
+export function assertStateCapacity(state: AppState): void {
+  for (const collection of Object.keys(APP_STATE_COLLECTION_LIMITS) as (keyof typeof APP_STATE_COLLECTION_LIMITS)[]) {
+    if (state[collection].length > APP_STATE_COLLECTION_LIMITS[collection]) throw new StateCapacityError(collection);
+  }
+}
+
 /** Row-wise last-write-wins merge of two full states. Commutative and idempotent. */
 export function mergeState(a: AppState, b: AppState): AppState {
+  assertStateCapacity(a);
+  assertStateCapacity(b);
   const left = normalizeState(a);
   const right = normalizeState(b);
-  return normalizeState({
+  const merged: AppState = {
     schemaVersion: Math.max(left.schemaVersion, right.schemaVersion),
     games: mergeById(left.games, right.games),
     resources: mergeById(left.resources, right.resources),
@@ -283,7 +316,12 @@ export function mergeState(a: AppState, b: AppState): AppState {
     alertRules: mergeById(left.alertRules, right.alertRules),
     reminders: mergeById(left.reminders, right.reminders),
     settings: mergeSettings(left.settings, right.settings),
-  });
+  };
+  // Normalization salvages oversized imports by truncating collections. A sync
+  // merge must instead retain both devices' valid data or fail before writing.
+  // Snapshot retention has already run above; check its retained union here.
+  assertStateCapacity(merged);
+  return normalizeState(merged);
 }
 
 function normalizeSettings(raw: unknown): Settings {
@@ -323,13 +361,22 @@ function normalizeSettings(raw: unknown): Settings {
 
 const SETTINGS_FIELDS: SettingsField[] = ['quietStart', 'quietEnd', 'localTz', 'sleepHours'];
 
+/** Capture legacy fallback clocks before a writer advances the overall settings clock. */
+export function settingsFieldClocks(settings: Settings): Record<SettingsField, number> {
+  return Object.fromEntries(
+    SETTINGS_FIELDS.map((field) => [field, settings.fieldUpdatedAt?.[field] ?? settings.updatedAt]),
+  ) as Record<SettingsField, number>;
+}
+
 function mergeSettings(left: Partial<Settings> | undefined, right: Partial<Settings> | undefined): Settings {
   const a = normalizeSettings(left);
   const b = normalizeSettings(right);
+  const aClocks = settingsFieldClocks(a);
+  const bClocks = settingsFieldClocks(b);
   const merged = { ...a, fieldUpdatedAt: { ...a.fieldUpdatedAt } };
   for (const field of SETTINGS_FIELDS) {
-    const aTime = a.fieldUpdatedAt?.[field] ?? a.updatedAt;
-    const bTime = b.fieldUpdatedAt?.[field] ?? b.updatedAt;
+    const aTime = aClocks[field];
+    const bTime = bClocks[field];
     const useRight = bTime > aTime || (bTime === aTime && canonical(b[field]) > canonical(a[field]));
     merged[field] = (useRight ? b[field] : a[field]) as never;
     merged.fieldUpdatedAt![field] = Math.max(aTime, bTime);

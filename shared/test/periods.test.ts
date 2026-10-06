@@ -207,6 +207,17 @@ describe('custom interval periods', () => {
 });
 
 describe('DST-aware server timezone', () => {
+  it('uses one daily reset at the first repeated hour, including when looking ahead', () => {
+    const london = makeGame({ tz: 'Europe/London', dailyResetHour: 1 });
+    const boundary = utc('2026-10-25T00:00:00');
+    expect(nextDailyReset(london, utc('2026-10-24T02:30:00'))).toBe(boundary);
+    expect(nextDailyReset(london, boundary - 1)).toBe(boundary);
+    for (const now of [boundary, utc('2026-10-25T00:30:00'), utc('2026-10-25T01:30:00')]) {
+      expect(dailyPeriodKey(london, now)).toBe('D2026-10-25');
+      expect(nextDailyReset(london, now)).toBe(utc('2026-10-26T01:00:00'));
+    }
+  });
+
   it('uses the first repeated Sunday hour for the current weekly reset', () => {
     const london = makeGame({ tz: 'Europe/London', dailyResetHour: 1, weeklyResetDay: 7 });
     expect(lastWeeklyReset(london, utc('2026-10-25T01:30:00'))).toBe(utc('2026-10-25T00:00:00'));

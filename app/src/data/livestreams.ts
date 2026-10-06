@@ -31,49 +31,87 @@ export interface LivestreamRecap {
   sources: { label: string; url: string }[];
 }
 
-/** Upcoming broadcasts first, then newest recaps. See the September 17 source audits.
+export const LIVESTREAMS_CHECKED = '3 October 2026';
+
+/** Newest broadcasts first. See docs/game-news-review-2026-10-03.md.
  * This editorial feed does not modify the player's events or create alerts.
  */
 export const LIVESTREAMS: LivestreamRecap[] = [
-  {
-    id: 'wuwa-3.7',
-    game: 'wuwa',
-    gameName: 'Wuthering Waves',
-    version: '3.7',
-    title: 'Version 3.7 Preview Special Broadcast',
-    preview: true,
-    broadcast: '2026-09-19T11:00:00Z',
-    broadcastLabel: '19 September 2026 · 11:00 UTC / 12:00 UK',
-    releaseLabel: 'Schedule awaits the broadcast',
-    replay: 'https://www.youtube.com/watch?v=nMa_e5ChL6w',
-    image: wuwaArtwork,
-    imageAlt: 'Wuthering Waves Version 3.7 official special broadcast artwork',
-    publisher: 'Kuro Games',
-    highlights: [
-      'The official broadcast is scheduled for 19 September at 19:00 (UTC+8).',
-      'New content and reward codes will be added after they are announced and checked.',
-    ],
-    sources: [{ label: 'Official Twitch channel', url: 'https://www.twitch.tv/wuthering_waves' }],
-  },
   {
     id: 'hsr-4.6',
     game: 'hsr',
     gameName: 'Honkai: Star Rail',
     version: '4.6',
     title: 'Dance With the Beast Before Moonrise',
-    preview: true,
     broadcast: '2026-09-20T11:30:00Z',
     broadcastLabel: '20 September 2026 · 11:30 UTC / 12:30 UK',
-    releaseLabel: 'Schedule awaits the broadcast',
+    releaseLabel: '28 September 2026',
     replay: 'https://www.youtube.com/watch?v=drFgtruoPe8',
     image: hsrArtwork,
     imageAlt: 'Honkai: Star Rail Version 4.6 official special program artwork',
     publisher: 'HoYoverse',
     highlights: [
-      'The official program is scheduled for 20 September at 19:30 (UTC+8).',
-      'The program will introduce Pearl. The recap and codes will be added after the broadcast is checked.',
+      'Pearl joins as a five-star Ice character on the Path of Elation. Her character and Light Cone banners run throughout Version 4.6.',
+      'Evanescia returns in the first half; Mortenax Blade returns in the second half.',
+      'New workshop and combat events, Astral Imagea companions, and outfits for Hyacine and Evanescia are coming.',
     ],
-    sources: [],
+    note: 'Version 4.6 is live. Pearl and her Light Cone close November 10 at 15:00 server time; Evanescia closes October 21 at 11:59. Verified event deadlines are in Timeline.',
+    redemption: {
+      expiresAt: Date.parse('2026-09-21T23:59:00+08:00'),
+      expiryLabel: '21 September 2026, 23:59 (UTC+8)',
+      instructions:
+        'Open the official redemption page for each code. Select your server, redeem the code, then claim the reward from your in-game mail.',
+      source: {
+        label: 'Official code announcement',
+        url: 'https://www.reddit.com/r/HonkaiStarRail/comments/1wlfz4a/a_brief_on_the_version_46_special_program/',
+      },
+      codes: ['KA5SV3FJM7WX', '7S4AD2X35NE3', 'MALSV2F247FP'].map((code) => ({
+        code,
+        rewards: 'Special Program gift',
+        redeemUrl: `https://hsr.hoyoverse.com/gift?code=${code}`,
+      })),
+    },
+    sources: [
+      {
+        label: 'Official update and event notices',
+        url: 'https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
+      },
+      {
+        label: 'Publisher overview via Gematsu',
+        url: 'https://www.gematsu.com/2026/09/honkai-star-rail-version-4-6-update-dance-with-the-beast-before-moonrise-launches-september-28',
+      },
+    ],
+  },
+  {
+    id: 'wuwa-3.7',
+    game: 'wuwa',
+    gameName: 'Wuthering Waves',
+    version: '3.7',
+    title: 'Prism’s Illusion, Heart’s Illumination',
+    broadcast: '2026-09-19T11:00:00Z',
+    broadcastLabel: '19 September 2026 · 11:00 UTC / 12:00 UK',
+    releaseLabel: '30 September 2026 (UTC+8)',
+    replay: 'https://www.youtube.com/watch?v=nMa_e5ChL6w',
+    image: wuwaArtwork,
+    imageAlt: 'Wuthering Waves Version 3.7 official special broadcast artwork',
+    publisher: 'Kuro Games',
+    highlights: [
+      'Hsin and Suoming arrive with new weapons, Blooming Jadehaven and Unspoken Rue.',
+      'Continue the main story in the Simulacrum Nexus of Mengzhou. Blooms for the Shadow is permanent content.',
+      'Gifts of Singing Drizzle runs from 22 October at 10:00 to 11 November at 03:59, server time, with ten Radiant Tides to claim.',
+      'Main quest replay, Echo stacking, camera tools and twenty team slots are coming. Download quality options start as a limited test.',
+    ],
+    note: 'Version 3.7 is live. Chisa and Iuno reruns close October 22 at 09:59 server time. The dated patch notes now supply the event windows in Timeline. Reward codes remain unverified.',
+    sources: [
+      {
+        label: 'Official version preview',
+        url: 'https://wutheringwaves.kurogames.com/en/main/news/detail/5454',
+      },
+      {
+        label: 'Official 3.7 patch notes',
+        url: 'https://wutheringwaves.kurogames.com/en/main/news/detail/5571',
+      },
+    ],
   },
   {
     id: 'nte-1.4',

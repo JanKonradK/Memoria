@@ -49,26 +49,52 @@ function useHoldStep(onStep: (delta: number) => void) {
 
 function StepBtn({ delta, onStep, label }: { delta: number; onStep: (d: number) => void; label: string }) {
   const hold = useHoldStep(onStep);
+  const pending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const gesture = useRef<{ x: number; y: number; stepped: boolean; cancelled: boolean } | null>(null);
+  const stop = () => {
+    clearTimeout(pending.current);
+    hold.clear();
+  };
+  useEffect(() => () => clearTimeout(pending.current), []);
   return (
     <button
       type="button"
-      onMouseDown={(e) => {
-        e.preventDefault();
-        hold.start(delta);
+      onPointerDown={(e) => {
+        if (!e.isPrimary || e.button !== 0) return;
+        stop();
+        const press = { x: e.clientX, y: e.clientY, stepped: false, cancelled: false };
+        gesture.current = press;
+        if (e.pointerType === 'mouse') {
+          e.preventDefault();
+          press.stepped = true;
+          hold.start(delta);
+        } else {
+          // Let a scroll cancel the press before any stored value changes.
+          pending.current = setTimeout(() => {
+            press.stepped = true;
+            hold.start(delta);
+          }, 350);
+        }
       }}
-      onMouseUp={hold.clear}
-      onMouseLeave={hold.clear}
-      onTouchStart={(e) => {
-        e.preventDefault();
-        hold.start(delta);
+      onPointerMove={(e) => {
+        const press = gesture.current;
+        if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 10) {
+          press.cancelled = true;
+          stop();
+        }
       }}
-      onTouchEnd={hold.clear}
-      // detail === 0 means a keyboard-triggered click; mouse presses are already
-      // handled by mousedown (which does not suppress the trailing click event).
+      onPointerUp={stop}
+      onPointerLeave={stop}
+      onPointerCancel={() => {
+        if (gesture.current) gesture.current.cancelled = true;
+        stop();
+      }}
       onClick={(e) => {
-        if (e.detail === 0) onStep(delta);
+        const press = gesture.current;
+        if (e.detail === 0 || !press || (!press.stepped && !press.cancelled)) onStep(delta);
+        gesture.current = null;
       }}
-      className="flex h-9 min-w-8 items-center justify-center rounded-ui-md bg-fill-2 px-1.5 text-meta font-bold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 active:scale-90 sm:h-7 sm:min-w-7"
+      className="energy-step flex h-11 min-w-11 items-center justify-center rounded-ui-md bg-fill-2 px-1.5 text-meta font-bold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 active:scale-90 md:h-7 md:min-w-7"
       aria-label={`${delta > 0 ? 'Increase' : 'Decrease'} ${label}`}
     >
       {delta > 0 ? `+${delta}` : delta}
@@ -122,11 +148,11 @@ function ValueStepper({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   return (
-    <span className="ml-auto flex w-full items-center justify-end gap-1 sm:w-auto">
+    <span className="energy-value-stepper ml-auto flex w-full items-center justify-end gap-2 md:w-auto md:gap-1">
       <StepBtn delta={-1} onStep={onStep} label={label} />
       {/* One pill: editable value + "/ cap" together inside the same box. */}
       <span
-        className="focus-ring-group flex h-9 cursor-text items-center rounded-ui-md bg-fill-2 px-2 ring-1 ring-line-hairline transition focus-within:bg-fill-3 sm:h-7"
+        className="energy-value-box focus-ring-group flex h-11 cursor-text items-center rounded-ui-md bg-fill-2 px-3 ring-1 ring-line-hairline transition focus-within:bg-fill-3 md:h-7 md:px-2"
         onMouseDown={(e) => {
           if (e.target !== inputRef.current) {
             e.preventDefault();
@@ -139,6 +165,7 @@ function ValueStepper({
           value={value}
           placeholder={placeholder}
           inputMode="numeric"
+          enterKeyHint="done"
           onFocus={(e) => {
             onBeginEdit();
             e.target.select();
@@ -263,14 +290,13 @@ export const EnergyRow = memo(function EnergyRow({
   // Urgency is TIME based, not %: red when capping within 2h (or already full),
   // amber within 8h, green otherwise.
   const urgency =
-    !compact && proj.hasSnapshot && res.regenMinutes > 0
+    !compact && kind === 'regen' && proj.hasSnapshot && res.regenMinutes > 0
       ? proj.isFull || (proj.msToFull != null && proj.msToFull < 2 * 3_600_000)
         ? 'danger'
         : proj.msToFull != null && proj.msToFull < 8 * 3_600_000
           ? 'warn'
           : 'ok'
       : null;
-  const glow = kind === 'regen' && (proj.isFull || urgency === 'danger');
 
   let subtitle = '';
   if (compact || kind === 'weekly') {
@@ -288,9 +314,9 @@ export const EnergyRow = memo(function EnergyRow({
   let reserveSubtitle = '';
   if (res.reserveCap > 0) {
     if (reserveValue >= res.reserveCap) reserveSubtitle = 'FULL';
-    else if (proj.isFull) {
+    else if (proj.isFull && proj.reserveFullAt != null) {
       const reserveRegenMinutes = effectiveReserveRegenMinutes(res);
-      const reserveFullAt = now + (res.reserveCap - reserveValue) * reserveRegenMinutes * 60_000;
+      const reserveFullAt = proj.reserveFullAt;
       reserveSubtitle = `+1 / ${reserveRegenMinutes}m · full ${fmtClock(reserveFullAt, localTz)} · in ${fmtDur(reserveFullAt - now)}`;
     } else reserveSubtitle = `fills while ${res.name} is capped`;
   }
@@ -299,7 +325,7 @@ export const EnergyRow = memo(function EnergyRow({
     <div className="group/row">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         <span className="flex min-w-0 items-center">
-          <span className="truncate text-label font-semibold uppercase tracking-wider text-muted">{res.name}</span>
+          <span className="energy-resource-name truncate text-body font-semibold text-fg-soft">{res.name}</span>
         </span>
 
         <ValueStepper
@@ -347,7 +373,7 @@ export const EnergyRow = memo(function EnergyRow({
 
       {!compact && (
         <>
-          <ProgressBar value={pct / 100} color={color} glow={glow} segmented />
+          <ProgressBar value={pct / 100} color={color} />
 
           {/* The resource's own verdict, directly under its own tube. It used to
               be printed after the whole reserve block, so an open reserve read
@@ -355,7 +381,7 @@ export const EnergyRow = memo(function EnergyRow({
               lines about two different vessels, stacked as if they were one. */}
           <div
             className={`mt-1 text-meta tabular-nums ${
-              proj.isFull
+              proj.isFull && urgency === 'danger'
                 ? 'font-bold text-danger-fg'
                 : urgency === 'danger'
                   ? 'text-danger-fg'
@@ -375,7 +401,7 @@ export const EnergyRow = memo(function EnergyRow({
                 type="button"
                 aria-expanded={reserveIsOpen}
                 onClick={() => setReserveOpen(res.id, !reserveIsOpen)}
-                className="mt-1.5 flex min-h-8 w-full items-center gap-1 rounded-ui-md text-left text-caption font-semibold tabular-nums text-dim transition hover:text-fg-soft sm:min-h-6"
+                className="mt-1.5 flex min-h-11 w-full items-center gap-1 rounded-ui-md text-left text-caption font-semibold tabular-nums text-dim transition hover:text-fg-soft md:min-h-6"
               >
                 <svg
                   viewBox="0 0 20 20"
@@ -435,12 +461,7 @@ export const EnergyRow = memo(function EnergyRow({
                         }}
                       />
                     </div>
-                    <ProgressBar
-                      value={reservePct / 100}
-                      color={reserveAccent}
-                      glow={reserveValue >= res.reserveCap}
-                      segmented
-                    />
+                    <ProgressBar value={reservePct / 100} color={reserveAccent} />
                     <div
                       className={`mt-1 text-meta tabular-nums ${
                         reserveValue >= res.reserveCap

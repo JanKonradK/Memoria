@@ -6,6 +6,7 @@ import { duration, easing } from '../motion';
 const EXIT_BUFFER_MS = 40;
 
 export function Disclosure({
+  id,
   open,
   onOpenChange,
   title,
@@ -20,6 +21,7 @@ export function Disclosure({
   contentClassName = '',
   fill = false,
 }: {
+  id?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: ReactNode;
@@ -65,7 +67,7 @@ export function Disclosure({
   const Heading = headingLevel === 2 ? 'h2' : 'h3';
 
   return (
-    <section className={`min-h-0 ${fill ? 'flex flex-col' : ''} ${fill && open ? 'flex-1' : ''} ${className}`}>
+    <section id={id} className={`min-h-0 ${fill ? 'flex flex-col' : ''} ${fill && open ? 'flex-1' : ''} ${className}`}>
       <Heading className={headingClassName}>
         <button
           ref={triggerRef}

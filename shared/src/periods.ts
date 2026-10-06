@@ -18,9 +18,9 @@ function shiftedNow(game: ResetGame, now: number): DateTime {
   return dt.hour < game.dailyResetHour ? dt.minus({ days: 1 }) : dt;
 }
 
-/** Wall-clock `hour`:00 on the calendar day of `day` (DST-safe, unlike plus({hours})). */
+/** Resolve from midnight so the first repeated DST hour is the reset on every call. */
 function atHour(day: DateTime, hour: number): DateTime {
-  return day.set({ hour, minute: 0, second: 0, millisecond: 0 });
+  return day.startOf('day').set({ hour, minute: 0, second: 0, millisecond: 0 });
 }
 
 /** Persisted state can bypass validation; 1–28 gives every month the same reset date. */

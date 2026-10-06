@@ -1,4 +1,5 @@
 import { EventTags } from './EventTags';
+import { calendarSchedule } from '../event-schedule';
 import { useId, useMemo } from 'react';
 import { DateTime } from 'luxon';
 import type { Game, GameEvent } from '@memoria/shared';
@@ -57,16 +58,40 @@ export function partitionTimelineEvents(
 function countdownOf(event: GameEvent, now: number): { label: string; tone: string } {
   if (event.done) return { label: 'done', tone: 'var(--color-ok)' };
   if (event.end <= now) return { label: 'ended', tone: endTone(0) };
+  const calendar = calendarSchedule(event);
+  if (calendar) return { label: calendar.label, tone: 'var(--color-muted)' };
   const upcoming = event.start > now;
   const remaining = upcoming ? event.start - now : event.end - now;
   return { label: `${upcoming ? 'arrives' : 'ends'} ${fmtDur(remaining)}`, tone: endTone(remaining) };
 }
 
-/** A window that opens and closes on one day says its date once. */
-function scheduleLabel(event: GameEvent, localTz: string): string {
+/** Explicit endpoints stay readable when a window crosses a day or year. */
+function EventSchedule({ event, localTz, now }: { event: GameEvent; localTz: string; now: number }) {
+  const calendar = calendarSchedule(event);
+  if (calendar)
+    return (
+      <div className="timeline-event-schedule text-caption text-muted" title={calendar.description}>
+        <span>{calendar.label}</span>
+        <span>{calendar.zone}</span>
+      </div>
+    );
   const start = DateTime.fromMillis(event.start, { zone: localTz });
   const end = DateTime.fromMillis(event.end, { zone: localTz });
-  return `${start.toFormat('d LLL HH:mm')} → ${end.toFormat(start.hasSame(end, 'day') ? 'HH:mm' : 'd LLL HH:mm')}`;
+  const currentYear = DateTime.fromMillis(now, { zone: localTz }).year;
+  const showYear = start.year !== end.year || start.year !== currentYear || end.year !== currentYear;
+  const format = showYear ? 'd LLL yyyy HH:mm' : 'd LLL HH:mm';
+  return (
+    <div className="timeline-event-schedule text-caption text-muted">
+      <span className="timeline-schedule-endpoint">
+        <span>Starts</span>
+        <time dateTime={start.toISO() ?? undefined}>{start.toFormat(format)}</time>
+      </span>
+      <span className="timeline-schedule-endpoint">
+        <span>Ends</span>
+        <time dateTime={end.toISO() ?? undefined}>{end.toFormat(format)}</time>
+      </span>
+    </div>
+  );
 }
 
 /**
@@ -84,9 +109,8 @@ function gameLabel(game: Game): string {
  * line up. Phone drops to two columns: the name and its countdown on the first
  * line, the dates and the controls on the second.
  */
-const ROW_GRID =
-  'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[minmax(0,1fr)_12.5rem_6.5rem_6.5rem] sm:gap-x-4';
-const COLUMN_LABEL = 'hidden text-label font-semibold uppercase tracking-wider text-dim sm:block';
+const ROW_GRID = 'timeline-list-grid';
+const COLUMN_LABEL = 'timeline-column-label';
 
 export function TimelineList({
   games,
@@ -94,6 +118,7 @@ export function TimelineList({
   now,
   localTz,
   showFinished,
+  search = '',
   onOpenEvent,
   onToggleEvent,
 }: {
@@ -104,6 +129,7 @@ export function TimelineList({
   now: number;
   localTz: string;
   showFinished: boolean;
+  search?: string;
   onOpenEvent: (event: GameEvent) => void;
   onToggleEvent: (event: GameEvent) => void;
 }) {
@@ -122,7 +148,14 @@ export function TimelineList({
 
   // An event whose game is filtered out has nothing to identify it on the row,
   // so it leaves with its game rather than appearing under a blank badge.
-  const shown = useMemo(() => events.filter((event) => gamesById.has(event.gameId)), [events, gamesById]);
+  const shown = useMemo(
+    () =>
+      events.filter((event) => {
+        const game = gamesById.get(event.gameId);
+        return game && !game.paused;
+      }),
+    [events, gamesById],
+  );
   const buckets = useMemo(() => partitionTimelineEvents(shown, now), [shown, now]);
 
   const sections: Section[] = (['active', 'upcoming', 'finished'] as const)
@@ -133,26 +166,33 @@ export function TimelineList({
   const hiddenFinished = showFinished ? 0 : buckets.finished.length;
 
   return (
-    <div data-tour="timeline" className="timeline-board relative">
+    <div data-tour="timeline" className="timeline-board timeline-list-board relative">
       {sections.length === 0 ? (
-        <p className="px-1 py-10 text-center text-body text-muted">
-          {hiddenFinished > 0
-            ? `Nothing running or arriving. ${hiddenFinished} finished ${
-                hiddenFinished === 1 ? 'event is' : 'events are'
-              } hidden — use the history control to show them, or Add → Event to add one.`
-            : 'No events here yet. Use Add → Event to add one.'}
+        <p className="timeline-empty text-center text-body text-muted">
+          {games.length > 0 && games.every((game) => game.paused)
+            ? 'Events are hidden while tracking is paused.'
+            : hiddenFinished > 0
+              ? `Nothing running or arriving. ${hiddenFinished} finished ${
+                  hiddenFinished === 1 ? 'event is' : 'events are'
+                } hidden — use Show finished events to see them.`
+              : search
+                ? `No events match “${search}”. Clear the search to see all events.`
+                : 'No events here yet. Use Add → Event to add one.'}
         </p>
       ) : (
         sections.map((section) => (
-          <section key={section.status} aria-labelledby={`${headingId}-${section.status}`}>
-            <div
-              className={`${ROW_GRID} sticky top-0 z-20 items-baseline border-b border-line-hairline bg-surface-0 px-1 py-1.5`}
-            >
+          <section
+            key={section.status}
+            data-event-status={section.status}
+            className="timeline-list-section"
+            aria-labelledby={`${headingId}-${section.status}`}
+          >
+            <div className={`${ROW_GRID} timeline-list-heading`}>
               <h2
                 id={`${headingId}-${section.status}`}
-                className="flex items-baseline gap-2 text-label font-semibold uppercase tracking-wider text-muted"
+                className="flex items-center gap-2.5 text-body font-semibold text-fg-soft"
               >
-                {section.title} <span className="numeral text-caption text-dim">{section.events.length}</span>
+                {section.title} <span className="timeline-section-count tabular-nums">{section.events.length}</span>
               </h2>
               <span className={COLUMN_LABEL}>Schedule</span>
               <span className={COLUMN_LABEL}>Time left</span>
@@ -175,16 +215,19 @@ export function TimelineList({
                   <li
                     key={event.id}
                     data-list-event={event.id}
-                    className={`${ROW_GRID} items-start border-b border-line-hairline px-1 py-1.5 transition-colors duration-(--dur-fast) hover:bg-fill-1 motion-reduce:transition-none sm:items-center`}
+                    data-list-game={game.id}
+                    className={`${ROW_GRID} timeline-event-row transition-colors duration-(--dur-fast) motion-reduce:transition-none`}
                   >
-                    <div className="col-start-1 row-start-1 min-w-0">
+                    <div className="timeline-event-identity min-w-0">
                       {/* The full name wraps rather than truncating: an event you
                           cannot read is an event you cannot pick out of the list. */}
-                      <p className={`break-words text-body font-medium ${finished ? 'text-muted' : 'text-fg'}`}>
+                      <p
+                        className={`timeline-event-name break-words text-body font-medium ${finished ? 'text-muted' : 'text-fg'}`}
+                      >
                         {event.name}
                       </p>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-muted">
-                        <span className="font-semibold" style={{ color: gameTitleInk(colors, ground) }}>
+                      <div className="timeline-event-metadata flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-muted">
+                        <span className="font-semibold" style={{ color: gameTitleInk(colors, ground, 5.2) }}>
                           {game.name}
                         </span>
                         {account && <span className="text-fg-soft">{account}</span>}
@@ -198,29 +241,29 @@ export function TimelineList({
                       </div>
                     </div>
 
-                    <div className="numeral col-start-1 row-start-2 mt-1 text-caption text-muted sm:col-start-2 sm:row-start-1 sm:mt-0 sm:text-meta">
-                      <span className="sr-only">Runs </span>
-                      {scheduleLabel(event, localTz)}
-                    </div>
+                    <EventSchedule event={event} localTz={localTz} now={now} />
 
-                    <div className="col-start-2 row-start-1 justify-self-end sm:col-start-3 sm:row-start-1 sm:justify-self-start">
-                      <span className="numeral text-meta font-semibold" style={{ color: countdown.tone }}>
+                    <div className="timeline-event-deadline">
+                      <span
+                        className="timeline-countdown tabular-nums text-meta font-semibold"
+                        style={{ color: countdown.tone }}
+                      >
                         {countdown.label}
                       </span>
                     </div>
 
-                    <div className="col-start-2 row-start-2 flex items-center justify-end gap-2 sm:col-start-4 sm:row-start-1">
+                    <div className="timeline-event-actions flex items-center justify-end gap-2">
                       <button
                         type="button"
                         role="checkbox"
                         aria-checked={Boolean(event.done)}
-                        aria-label={`${event.done ? 'Restore' : 'Mark done'}: ${controlLabel} event ${event.name}`}
+                        aria-label={`${event.done ? 'Completed — Restore' : 'Mark done'}: ${controlLabel} event ${event.name}`}
                         onClick={() => onToggleEvent(event)}
-                        className="flex min-h-11 min-w-11 items-center justify-center rounded-ui-sm sm:min-h-9 sm:min-w-9"
+                        className="timeline-complete-control flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-ui-md px-3 text-meta font-medium text-fg-soft sm:min-h-9 sm:min-w-9"
                       >
                         <span
                           aria-hidden
-                          className={`flex h-5 w-5 items-center justify-center rounded-ui-sm border text-caption font-black transition-colors duration-(--dur-fast) motion-reduce:transition-none ${
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-ui-sm border text-caption font-black transition-colors duration-(--dur-fast) motion-reduce:transition-none ${
                             event.done
                               ? 'border-ok bg-ok text-fg-invert'
                               : 'border-line-strong text-transparent hover:bg-fill-2'
@@ -228,6 +271,7 @@ export function TimelineList({
                         >
                           ✓
                         </span>
+                        <span className="whitespace-nowrap">{event.done ? 'Completed' : 'Mark done'}</span>
                       </button>
                       {/* The name above is text, not a second button aimed at the
                           same sheet. One row, one way to open it. */}

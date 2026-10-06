@@ -2,18 +2,20 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { DateTime } from 'luxon';
 import { useNow, useReducedMotion } from '../hooks';
 import { useApp } from '../store';
-import { initSync } from '../sync';
+import { syncNow } from '../sync';
+import { cloudSyncNow } from '../cloud-sync';
+import { syncLanNow, useLanSync } from '../lan-sync';
 import { useUI, type Tab } from '../ui-store';
 import { AddMenu } from './AddMenu';
 import { HEADER_ACTIONS_SLOT } from './HeaderActions';
 import { Logo } from './Logo';
 import { GameScope } from './GameScope';
 
-const ROUTES: Array<{ id: Tab; label: string }> = [
-  { id: 'home', label: 'Dashboard' },
-  { id: 'timeline', label: 'Timeline' },
-  { id: 'livestreams', label: 'Livestreams' },
-  { id: 'settings', label: 'Settings' },
+const ROUTES: Array<{ id: Tab; label: string; icon: string }> = [
+  { id: 'home', label: 'Dashboard', icon: 'M3 3h5v5H3zM12 3h5v5h-5zM3 12h5v5H3zM12 12h5v5h-5z' },
+  { id: 'timeline', label: 'Timeline', icon: 'M3 5h14v12H3zM6 3v4M14 3v4M3 9h14M6 12h3M11 14h3' },
+  { id: 'livestreams', label: 'Livestreams', icon: 'M3 5h14v10H3zM7 18h6M10 15v3M8 8l4 2-4 2z' },
+  { id: 'settings', label: 'Settings', icon: 'M3 5h14M3 10h14M3 15h14M6 3v4M14 8v4M8 13v4' },
 ];
 
 /**
@@ -49,7 +51,7 @@ function useMeasuredBarHeight() {
 }
 
 const SYNC_ANNOUNCEMENT = {
-  idle: 'Not synced',
+  idle: 'Local mode',
   syncing: 'Syncing',
   ok: 'Synced',
   error: 'Sync failed',
@@ -68,6 +70,43 @@ function AppBarClock() {
   return (
     <span className="numeral text-meta text-muted">
       {DateTime.fromMillis(now, { zone: localTz }).toFormat('HH:mm')}
+    </span>
+  );
+}
+
+function SyncIndicator() {
+  const desktop = useApp((s) => s.syncStatus);
+  const desktopError = useApp((s) => s.syncError);
+  const cloud = useApp((s) => s.cloudStatus);
+  const cloudError = useApp((s) => s.cloudError);
+  const lan = useLanSync((s) => s.status);
+  const lanError = useLanSync((s) => s.error);
+  const issue =
+    desktop === 'error'
+      ? desktopError || 'PC sync failed'
+      : cloud === 'error' || cloud === 'needs-permission'
+        ? cloudError || 'Sync file needs attention'
+        : lan === 'error' || lan === 'offline'
+          ? lanError || 'Phone sync needs attention'
+          : '';
+  const statuses = [desktop, cloud, lan];
+  const status = issue
+    ? 'error'
+    : statuses.includes('syncing') || lan === 'pairing'
+      ? 'syncing'
+      : statuses.includes('ok')
+        ? 'ok'
+        : 'idle';
+
+  return (
+    <span
+      className="flex items-center gap-1.5"
+      role="status"
+      aria-live="polite"
+      title={issue || SYNC_ANNOUNCEMENT[status]}
+    >
+      <span className="sr-only">{issue || SYNC_ANNOUNCEMENT[status]}</span>
+      <span aria-hidden className={`h-1.5 w-1.5 rounded-ui-md ${SYNC_TONE[status]}`} />
     </span>
   );
 }
@@ -94,7 +133,9 @@ function RefreshButton() {
     setRefreshing(true);
     try {
       await load();
-      initSync();
+      const { loaded, loadError, saveError } = useApp.getState();
+      if (!loaded || loadError || saveError) return;
+      await Promise.all([syncNow(), cloudSyncNow(), syncLanNow()]);
       // Only after a successful load: a refresh that failed has nothing newer to
       // sort by, and reshuffling the cards anyway would look like a response.
       bumpOrderEpoch();
@@ -132,16 +173,6 @@ function RefreshButton() {
 }
 
 /**
- * The shell. One fixed row carrying the wordmark, the clock, the route control,
- * the urgency counts and the theme control — the same geometry on every route,
- * so the wordmark cluster cannot shift as the user moves between them.
- *
- * This replaces two separate pieces of chrome: an "Up next" hero band that
- * restated the countdown every card already carried, and a floating rail in the
- * bottom-left corner whose clearance the page had to reserve on every route.
- * Neither earned the vertical space it cost.
- */
-/**
  * Geometry of the active route button, so one pill can slide between them.
  *
  * useLayoutEffect, so the first paint already has the pill in the right place —
@@ -177,7 +208,6 @@ export function AppBar() {
   const { navRef, slider } = useRouteSlider(tab);
   const theme = useUI((s) => s.theme);
   const toggleTheme = useUI((s) => s.toggleTheme);
-  const syncStatus = useApp((s) => s.syncStatus);
   const barRef = useMeasuredBarHeight();
 
   return (
@@ -188,7 +218,7 @@ export function AppBar() {
       {/* Tabular clock digits keep the brand width stable while time changes. */}
       <div className="app-brand flex items-center gap-2.5">
         <Logo className="[&>svg]:h-4 [&>svg]:w-8" />
-        <span className="text-body font-semibold tracking-[0.12em] text-fg">MEMORIA</span>
+        <span className="text-body font-semibold tracking-[-0.02em] text-fg">Memoria</span>
         <span className="hidden sm:inline">
           <AppBarClock />
         </span>
@@ -198,7 +228,7 @@ export function AppBar() {
         ref={navRef}
         aria-label="Primary"
         data-tour="pages"
-        className="app-nav relative flex rounded-ui-full border border-line-hairline bg-inset p-px"
+        className="app-nav relative flex gap-1 rounded-ui-md p-px"
       >
         {/* One persistent element that slides between the tabs, rather than a
             highlight that blinks out of one button and into the next.
@@ -209,7 +239,7 @@ export function AppBar() {
         {slider && (
           <span
             aria-hidden
-            className="nav-slider absolute rounded-ui-full bg-surface-2 ring-1 ring-line-strong"
+            className="nav-slider absolute rounded-ui-md bg-fill-2"
             style={{
               transform: `translateX(${slider.x}px)`,
               width: slider.w,
@@ -227,11 +257,23 @@ export function AppBar() {
               type="button"
               onClick={() => setTab(route.id)}
               aria-current={active ? 'page' : undefined}
-              className={`relative z-10 min-h-11 min-w-0 flex-1 rounded-ui-full border border-transparent px-1.5 text-meta font-medium transition-colors sm:min-h-9 sm:flex-none sm:px-3 ${
+              className={`app-nav-button relative z-10 min-h-11 min-w-0 flex-1 rounded-ui-md border border-transparent px-1.5 text-meta font-medium transition-colors md:min-h-9 md:flex-none md:px-3 ${
                 active ? 'text-fg' : 'text-fg-soft hover:text-fg'
               }`}
             >
-              {route.label}
+              <svg
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+                className="h-5 w-5 md:hidden"
+              >
+                <path d={route.icon} />
+              </svg>
+              <span>{route.label}</span>
             </button>
           );
         })}
@@ -239,15 +281,12 @@ export function AppBar() {
 
       {/* Every route's actions land here — see HeaderActions. */}
       <div className="app-route-actions scrollbar-thin flex min-w-0 items-center gap-2 overflow-x-auto">
-        <GameScope />
+        {tab !== 'home' && <GameScope />}
         <div id={HEADER_ACTIONS_SLOT} className="min-w-0 shrink-0" />
       </div>
 
       <div className="app-utilities flex items-center justify-end gap-1 sm:gap-2">
-        <span className="flex items-center gap-1.5" role="status" aria-live="polite">
-          <span className="sr-only">{SYNC_ANNOUNCEMENT[syncStatus]}</span>
-          <span aria-hidden className={`h-1.5 w-1.5 rounded-ui-full ${SYNC_TONE[syncStatus]}`} />
-        </span>
+        <SyncIndicator />
         <AddMenu />
         <RefreshButton />
         <button

@@ -19,6 +19,8 @@ export interface EnergyProjection {
   weeklyResetAt?: number | null;
   /** Projected reserve level — grows while the bar sits at cap; null when the resource has no reserve. */
   reserve?: number | null;
+  /** Epoch ms when reserve reaches capacity; null when full, not regenerating, or unknown. */
+  reserveFullAt?: number | null;
 }
 
 type EnergyResource = Pick<Resource, 'cap' | 'regenMinutes' | 'kind'> & {
@@ -43,6 +45,7 @@ function steadyProjection(value: number, cap: number, hasSnapshot: boolean): Ene
     overflow: 0,
     hasSnapshot,
     reserve: null,
+    reserveFullAt: null,
   };
 }
 
@@ -68,12 +71,17 @@ export function projectEnergy(
 
   // Reserve (overflow) storage fills only while the bar sits at cap, at half
   // the main regen speed by default (2 × regenMinutes per point).
-  const reserveSince = (capSince: number): number | null => {
-    if (!res.reserveCap || res.reserveCap <= 0) return null;
+  const reserveSince = (capSince: number): Pick<EnergyProjection, 'reserve' | 'reserveFullAt'> => {
+    if (!res.reserveCap || res.reserveCap <= 0) return { reserve: null, reserveFullAt: null };
     const base = snap?.reserve ?? 0;
     const perPointMs = effectiveReserveRegenMinutes(res) * 60_000;
     const gained = perPointMs > 0 ? Math.floor(Math.max(0, now - capSince) / perPointMs) : 0;
-    return Math.min(res.reserveCap, base + gained);
+    const reserve = Math.min(res.reserveCap, base + gained);
+    return {
+      reserve,
+      reserveFullAt:
+        reserve < res.reserveCap && perPointMs > 0 ? capSince + (res.reserveCap - base) * perPointMs : null,
+    };
   };
 
   if (!snap) {
@@ -106,7 +114,7 @@ export function projectEnergy(
       msToFull: 0,
       overflow: Math.floor(Math.max(0, now - live.takenAt) / periodMs),
       hasSnapshot: true,
-      reserve: reserveSince(live.takenAt),
+      ...reserveSince(live.takenAt),
     };
   }
   const elapsed = Math.max(0, now - live.takenAt);
@@ -123,7 +131,7 @@ export function projectEnergy(
     msToFull,
     overflow: Math.max(0, raw - res.cap),
     hasSnapshot: true,
-    reserve: reserveSince(fullAt),
+    ...reserveSince(fullAt),
   };
 }
 
@@ -145,7 +153,8 @@ export function sleepCheck(
   const horizon = now + sleepHours * 3_600_000;
   let fullAt: number | null = null;
   for (const res of state.resources) {
-    if (res.gameId !== game.id || res.deleted || !(res.regenMinutes > 0)) continue;
+    if (res.gameId !== game.id || res.deleted || effectiveResourceKind(res) !== 'regen' || !(res.regenMinutes > 0))
+      continue;
     const proj = projectEnergy(res, snaps.get(res.id), now);
     if (!proj.hasSnapshot) continue;
     const at = proj.isFull ? now : proj.fullAt;

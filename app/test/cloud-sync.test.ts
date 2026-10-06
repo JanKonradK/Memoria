@@ -15,7 +15,7 @@ vi.mock('idb-keyval', () => ({
 }));
 
 import { useApp } from '../src/store';
-import { get as idbGet } from 'idb-keyval';
+import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import {
   cloudSyncNow,
   cloudSyncSupported,
@@ -102,9 +102,11 @@ beforeEach(() => {
 
 afterEach(() => {
   resetCloudSyncState();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
   Reflect.deleteProperty(window, 'showSaveFilePicker');
   Reflect.deleteProperty(window, 'showOpenFilePicker');
+  vi.useRealTimers();
 });
 
 describe('cloudSyncSupported', () => {
@@ -206,6 +208,37 @@ describe('mergeCloudDocument', () => {
 });
 
 describe('connecting a file', () => {
+  it('does not activate a file when saving its connection fails', async () => {
+    const { handle, store } = fakeFile();
+    Object.assign(window, { showSaveFilePicker: async () => handle });
+    vi.mocked(idbSet).mockRejectedValueOnce(new Error('Connection storage unavailable'));
+
+    await expect(connectNewCloudFile()).resolves.toBe(false);
+    await cloudSyncNow();
+
+    expect(store.writes).toHaveLength(0);
+    expect(useApp.getState().cloudFileName).toBe('');
+    expect(useApp.getState().cloudStatus).toBe('error');
+  });
+
+  it('keeps the previous file connected if saving a replacement fails', async () => {
+    const previous = fakeFile();
+    const picked = fakeFile();
+    picked.handle.name = 'replacement.json';
+    Object.assign(window, { showSaveFilePicker: async () => previous.handle });
+    await connectNewCloudFile();
+    Object.assign(window, { showSaveFilePicker: async () => picked.handle });
+    vi.mocked(idbSet).mockRejectedValueOnce(new Error('Connection storage unavailable'));
+
+    await expect(connectNewCloudFile()).resolves.toBe(false);
+    useApp.getState().updateSettings({ sleepHours: 9 });
+    await cloudSyncNow();
+
+    expect(picked.store.writes).toHaveLength(0);
+    expect(JSON.parse(previous.store.contents).settings.sleepHours).toBe(9);
+    expect(useApp.getState().cloudFileName).toBe(previous.handle.name);
+  });
+
   it.each([
     { settings: { theme: 'dark' } },
     { ...emptyState(), games: [{ id: 'broken' }] },
@@ -214,7 +247,7 @@ describe('connecting a file', () => {
     const original = JSON.stringify(document);
     const { store, handle } = fakeFile(original);
     Object.assign(window, { showSaveFilePicker: async () => handle });
-    await connectNewCloudFile();
+    await expect(connectNewCloudFile()).resolves.toBe(false);
     expect(store.contents).toBe(original);
     expect(store.writes).toEqual([]);
     expect(useApp.getState().cloudStatus).toBe('error');
@@ -228,6 +261,25 @@ describe('connecting a file', () => {
     await connectNewCloudFile();
     expect(read).not.toHaveBeenCalled();
     expect(store.writes).toEqual([]);
+    expect(useApp.getState().cloudError).toMatch(/10 MB/);
+  });
+
+  it('keeps the remote file readable when the merged document exceeds the size limit', async () => {
+    const original = JSON.stringify(withGames(game('remote', 'Remote', 1)));
+    const { handle, store } = fakeFile(original);
+    Object.assign(window, { showSaveFilePicker: async () => handle });
+    const games = Array.from({ length: 51 }, (_, index) => ({
+      ...game(`local-${index}`, `Local ${index}`, 1),
+      image: 'a'.repeat(200_000),
+    }));
+    useApp.setState({ state: withGames(...games) });
+
+    await connectNewCloudFile();
+
+    expect(store.writes).toHaveLength(0);
+    expect(store.contents).toBe(original);
+    expect(useApp.getState().state.games).toHaveLength(52);
+    expect(useApp.getState().cloudStatus).toBe('error');
     expect(useApp.getState().cloudError).toMatch(/10 MB/);
   });
 
@@ -285,6 +337,89 @@ describe('connecting a file', () => {
 });
 
 describe('cloudSyncNow', () => {
+  it('retries a failed write on the next poll even when the remote file has not changed', async () => {
+    vi.useFakeTimers();
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    const { handle, store } = fakeFile();
+    Object.assign(window, { showSaveFilePicker: async () => handle });
+    await connectNewCloudFile();
+    vi.spyOn(handle, 'createWritable').mockRejectedValueOnce(new Error('File temporarily locked'));
+    const local = useApp.getState().state;
+    useApp.setState({
+      state: {
+        ...local,
+        settings: { ...local.settings, sleepHours: 9, fieldUpdatedAt: { sleepHours: Date.now() } },
+      },
+    });
+    await cloudSyncNow();
+    expect(useApp.getState().cloudStatus).toBe('error');
+    expect(JSON.parse(store.contents).settings.sleepHours).toBe(8);
+
+    await vi.advanceTimersByTimeAsync(20_000);
+
+    expect(useApp.getState().cloudStatus).toBe('ok');
+    expect(JSON.parse(store.contents).settings.sleepHours).toBe(9);
+    hidden.mockRestore();
+  });
+
+  it('reports lost read permission during polling so the reconnect control becomes available', async () => {
+    vi.useFakeTimers();
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    const { handle } = fakeFile();
+    Object.assign(window, { showSaveFilePicker: async () => handle });
+    await connectNewCloudFile();
+    vi.spyOn(handle, 'getFile').mockRejectedValue(new DOMException('Permission revoked', 'NotAllowedError'));
+
+    await vi.advanceTimersByTimeAsync(20_000);
+
+    expect(useApp.getState().cloudStatus).toBe('needs-permission');
+    hidden.mockRestore();
+  });
+
+  it('waits for an active write and saves edits made during it in a follow-up', async () => {
+    vi.useFakeTimers();
+    const { store, handle } = fakeFile();
+    Object.assign(window, { showSaveFilePicker: async () => handle });
+    await connectNewCloudFile();
+    let release!: () => void;
+    let started!: () => void;
+    const writing = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const original = handle.createWritable.bind(handle);
+    vi.spyOn(handle, 'createWritable').mockImplementationOnce(async () => {
+      const stream = await original();
+      return {
+        ...stream,
+        write: async (chunk: string) => {
+          started();
+          await gate;
+          await stream.write(chunk);
+        },
+      };
+    });
+    useApp.getState().updateSettings({ sleepHours: 9 });
+    const first = cloudSyncNow();
+    await writing;
+    vi.setSystemTime(Date.now() + 1);
+    useApp.getState().updateSettings({ sleepHours: 10 });
+    const completed = vi.fn();
+    const concurrent = cloudSyncNow().then(completed);
+    await Promise.resolve();
+    expect(completed).not.toHaveBeenCalled();
+    release();
+    await Promise.all([first, concurrent]);
+    expect(completed).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(JSON.parse(store.contents).settings.sleepHours).toBe(10);
+    expect(store.writes).toHaveLength(3);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(store.writes).toHaveLength(3);
+  });
+
   it('restores the union when a peer replaces the file with an older subset', async () => {
     const { store, handle } = fakeFile('');
     Object.assign(window, { showSaveFilePicker: async () => handle });
@@ -376,6 +511,25 @@ describe('cloudSyncNow', () => {
     await disconnectCloudFile();
 
     expect(store.contents).toBe(written);
+    expect(useApp.getState().cloudStatus).toBe('off');
+    expect(idb.has('memoria-cloud-file')).toBe(false);
+  });
+
+  it('reports a failed saved-connection deletion and allows Stop syncing to be retried', async () => {
+    const { handle, store } = fakeFile();
+    Object.assign(window, { showSaveFilePicker: async () => handle });
+    await connectNewCloudFile();
+    vi.mocked(idbDel).mockRejectedValueOnce(new Error('Connection storage unavailable'));
+
+    await expect(disconnectCloudFile()).rejects.toThrow(/Stop syncing again/);
+    expect(useApp.getState().cloudStatus).toBe('error');
+    expect(useApp.getState().cloudFileName).toBe(handle.name);
+    expect(idb.has('memoria-cloud-file')).toBe(true);
+    useApp.getState().updateSettings({ sleepHours: 9 });
+    await cloudSyncNow();
+    expect(store.writes).toHaveLength(1);
+
+    await disconnectCloudFile();
     expect(useApp.getState().cloudStatus).toBe('off');
     expect(idb.has('memoria-cloud-file')).toBe(false);
   });

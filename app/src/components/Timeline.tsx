@@ -10,16 +10,19 @@ import { useUI } from '../ui-store';
 import { slideIn } from '../motion';
 import { endTone, fmtDur } from '../util';
 import { Disclosure } from './Disclosure';
-import { ProgressBar } from './primitives';
-import { useIdentityColors } from './roster';
-import { GameBadge, Page, ServerChip, Tooltip } from './ui';
+import { Pill, ProgressBar } from './primitives';
+import { rosterGames, useIdentityColors } from './roster';
+import { Btn, GameBadge, Page, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
 import { TimelineTools } from './TimelineTools';
 import { TimelineList } from './TimelineList';
 import { serverRegionLabel } from './NexusLayout';
 import { titleFont } from '../fonts';
 import { assignGameInks, gameRim, gameTitleInk, mix, onColor } from '../game-color';
-import { useGround, useInset } from '../theme';
+import { THEME_PANEL, useGround, useInset, useTheme } from '../theme';
 import { EventTags } from './EventTags';
+import { groupGameEvents } from '../event-category';
+import { calendarSchedule } from '../event-schedule';
+import '../timeline.css';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -30,6 +33,41 @@ const SPAN_PX = 116;
 const MIN_BAR_PX = 18;
 const BAR_TEXT_INSET_PX = 8;
 export const MIN_LABEL_PX = 40;
+
+/** Pausing keeps the account visible without exposing any of its event rows. */
+function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; onResume: () => void }) {
+  const ground = useGround();
+  const server = serverRegionLabel(game.tz, now);
+  const account = game.accountLabel?.trim();
+  return (
+    <section
+      data-paused-game={game.id}
+      aria-label={`${game.name}${account ? `, ${account}` : ''}, ${server}: tracking paused`}
+      className="relative z-20 flex min-h-11 items-center gap-3 py-2"
+    >
+      <div className="min-w-0 flex-1">
+        <h2
+          className="truncate text-body font-semibold"
+          style={{ fontFamily: titleFont(game.titleFont), color: gameTitleInk(game, ground, 4.5) }}
+        >
+          {game.name}
+        </h2>
+        <div className="mt-1 flex min-w-0 items-center gap-2 text-caption text-muted">
+          <ServerChip label={server} />
+          {account && <span className="min-w-0 truncate">{account}</span>}
+          <Pill variant="paused">Paused</Pill>
+        </div>
+      </div>
+      <Btn
+        className={`shrink-0 ${TOUCH_BUTTON}`}
+        aria-label={`Resume tracking for ${game.name}${account ? `, ${account}` : ''}, ${server}`}
+        onClick={onResume}
+      >
+        Resume
+      </Btn>
+    </section>
+  );
+}
 
 /**
  * The window the ruler shows, in days. This was a 7d/40d control in the app bar;
@@ -65,9 +103,12 @@ function useElementWidth() {
 
 function buildGridTicks(rangeStart: number, rangeEnd: number, width: number, localTz: string): DateTime[] {
   const rangeSpan = rangeEnd - rangeStart;
-  // Four-day ticks unless the lane is too narrow to keep them apart, then eight.
-  const wideTickGapPx = rangeSpan > 0 ? (4 * DAY * width) / rangeSpan : Number.POSITIVE_INFINITY;
-  const stepDays = width > 0 && wideTickGapPx < MIN_TICK_GAP_PX ? 8 : 4;
+  // Keep widening the interval until month labels have room. Eight-day ticks
+  // still collide in a 40-day window on narrow phones after panel padding.
+  let stepDays = 4;
+  if (width > 0 && rangeSpan > 0) {
+    while ((stepDays * DAY * width) / rangeSpan < MIN_TICK_GAP_PX) stepDays *= 2;
+  }
   const step = { days: stepDays } as const;
   let boundary = DateTime.fromMillis(rangeStart, { zone: localTz }).startOf('day');
   if (boundary.toMillis() < rangeStart) boundary = boundary.plus(step);
@@ -455,15 +496,22 @@ const EventRow = memo(function EventRow({
   const displayLeft =
     laneWidth > 0 ? Math.min(proportionalLeft, Math.max(0, 100 - (MIN_BAR_PX / laneWidth) * 100)) : proportionalLeft;
   const countdown = timelineCountdown(ev, now);
+  const calendar = calendarSchedule(ev);
+  const countdownLabel = calendar && !ev.done && ev.end > now ? calendar.label : countdown.label;
   const [countdownRef, countdownWidth] = useElementWidth();
   const { ended, remainingMs } = countdown;
   const maint = ev.type === 'maintenance';
   const banner = ev.type === 'banner';
   const cycle = ev.type === 'cycle';
   const stream = ev.type === 'livestream';
-  const endColor = endTone(remainingMs);
+  const endColor = calendar ? 'var(--color-later)' : endTone(remainingMs);
   const tone = endColor === 'var(--color-later)' ? 'var(--color-muted)' : endColor;
-  const spanLabel = `${DateTime.fromMillis(ev.start, { zone: localTz }).toFormat('dd LLL')} → ${DateTime.fromMillis(ev.end, { zone: localTz }).toFormat('dd LLL')}`;
+  const localStart = DateTime.fromMillis(ev.start, { zone: localTz });
+  const localEnd = DateTime.fromMillis(ev.end, { zone: localTz });
+  const spanLabel = calendar?.label ?? `${localStart.toFormat('dd LLL')} → ${localEnd.toFormat('dd LLL')}`;
+  const scheduleDescription =
+    calendar?.description ??
+    `Starts ${localStart.toFormat('d LLL yyyy HH:mm')}. Ends ${localEnd.toFormat('d LLL yyyy HH:mm')}. Dates in ${localTz}.`;
   // Computed once so the fill and the ink chosen for it can never disagree.
   // A livestream is a one-off marker only a few hours wide, so it carries the
   // least inset of any row: at that width a pale fill vanishes into the lane.
@@ -480,13 +528,14 @@ const EventRow = memo(function EventRow({
 
   // Measure the countdown when its size changes so text zoom and longer arrival
   // labels reserve their true width. ResizeObserver avoids reads on every tick.
-  const { barEndPct, tickFloats, showSpan, labelPlacement, barTextMaxWidth, clusterBefore } = timelineRowLayout(
-    displayLeft,
-    displayWidth,
-    laneWidth,
-    maint || stream ? 'outside' : 'auto',
-    Math.max(COUNTDOWN_PX, countdownWidth + 8),
-  );
+  const { barEndPct, tickFloats, showSpan, labelPlacement, barTextMaxWidth, clusterBefore, trailingClusterPx } =
+    timelineRowLayout(
+      displayLeft,
+      displayWidth,
+      laneWidth,
+      maint || stream ? 'outside' : 'auto',
+      Math.max(COUNTDOWN_PX, countdownWidth + 8),
+    );
 
   const tick = (
     <button
@@ -536,7 +585,7 @@ const EventRow = memo(function EventRow({
       animate="visible"
       data-timeline-event-row
       data-event-id={ev.id}
-      className="relative"
+      className="timeline-event-lane relative"
     >
       {reorderHandle}
       <div
@@ -549,8 +598,13 @@ const EventRow = memo(function EventRow({
           onClick={() => onOpenEvent(ev)}
           className="absolute inset-0 z-10 rounded-ui-lg"
           aria-label={`Open ${game.name} event: ${ev.name}`}
+          title={`${ev.name}. ${scheduleDescription}`}
+          aria-description={scheduleDescription}
+          style={
+            tickFloats ? undefined : clusterBefore ? { left: `${displayLeft}%` } : { right: trailingClusterPx + 4 }
+          }
         />
-        <div className="absolute inset-x-0 top-0 h-[var(--lane-bar-h)] rounded-ui-lg border border-line-hairline bg-fill-2" />
+        <div className="timeline-event-track absolute inset-x-0 top-0 h-[var(--lane-bar-h)] rounded-ui-lg border border-line-hairline bg-fill-2" />
         <ProgressBar
           variant="timeline"
           value={displayWidth / 100}
@@ -623,15 +677,13 @@ const EventRow = memo(function EventRow({
           style={clusterBefore ? { right: `calc(${100 - displayLeft}% + 8px)` } : undefined}
         >
           {!tickFloats && tick}
-          <Tooltip content="d = days · h = hours · m = minutes">
+          <Tooltip content={calendar?.description ?? 'd = days · h = hours · m = minutes'}>
             <span
               ref={countdownRef}
-              className={`whitespace-nowrap rounded-ui-sm bg-scrim-veil px-1.5 py-px text-caption font-bold tabular-nums ${
-                !ended && !ev.done && remainingMs < DAY ? 'warn-pulse' : ''
-              }`}
+              className="whitespace-nowrap rounded-ui-sm bg-scrim-veil px-1.5 py-px text-caption font-bold tabular-nums"
               style={{ color: ev.done ? 'var(--color-ok)' : tone }}
             >
-              {countdown.label}
+              {countdownLabel}
             </span>
           </Tooltip>
         </span>
@@ -774,15 +826,24 @@ export function TimelinePage({ now }: { now: number }) {
   const state = useApp((s) => s.state);
   const upsertEvent = useApp((s) => s.upsertEvent);
   const resetEventOrder = useApp((s) => s.resetEventOrder);
+  const updateGame = useApp((s) => s.updateGame);
   const openSheet = useUI((s) => s.openSheet);
   const ground = useGround();
+  const theme = useTheme();
+  const titleGround = THEME_PANEL[theme][0];
   const laneInset = useInset();
   const reducedMotion = useReducedMotionConfig();
   const [timelineScaleRef, timelineWidth] = useElementWidth();
   const focusedGameId = useUI((s) => s.focusedGameId);
-  const [search, setSearch] = useState('');
-  const [view, setView] = useState('lanes');
-  const [showFinished, setShowFinished] = useState(false);
+  const search = useUI((s) => s.timelineSearch);
+  const setSearch = useUI((s) => s.setTimelineSearch);
+  // Pick the initial view for the device; resizing must not undo a user's choice.
+  const [initialView] = useState(() => (window.matchMedia('(max-width: 767px)').matches ? 'list' : 'lanes'));
+  const chosenView = useUI((s) => s.timelineView);
+  const view = chosenView ?? initialView;
+  const setView = useUI((s) => s.setTimelineView);
+  const showFinished = useUI((s) => s.timelineShowFinished);
+  const setShowFinished = useUI((s) => s.setTimelineShowFinished);
   const openEvent = useCallback(
     (event: GameEvent) => openSheet({ kind: 'event', eventId: event.id, gameId: event.gameId }),
     [openSheet],
@@ -805,12 +866,15 @@ export function TimelinePage({ now }: { now: number }) {
       (event) => !event.deleted && event.name.toLowerCase().includes(search.trim().toLowerCase()),
     );
     const hasFocus = state.games.some((game) => !game.deleted && game.id === focusedGameId);
-    const activeGames = state.games.filter((game) => !game.deleted && (!hasFocus || game.id === focusedGameId));
+    const activeGames = rosterGames(state.games).filter((game) => !hasFocus || game.id === focusedGameId);
+    const gameIds = new Set(activeGames.filter((game) => !game.paused).map((game) => game.id));
     const byGame = new Map<string, GameEvent[]>(
       activeGames.map((game) => [
         game.id,
         sortTimelineEvents(
-          live.filter((event) => event.gameId === game.id && event.end > rangeStart && event.start < rangeEnd),
+          live.filter(
+            (event) => !game.paused && event.gameId === game.id && event.end > rangeStart && event.start < rangeEnd,
+          ),
         ),
       ]),
     );
@@ -820,7 +884,7 @@ export function TimelinePage({ now }: { now: number }) {
       games: activeGames,
       // The searched, undeleted set the list view shows. Both views read the
       // same filter so a search can never mean two different things.
-      events: live,
+      events: live.filter((event) => gameIds.has(event.gameId)),
       eventsByGame: byGame,
       ticks: gridTicks,
       ws: rangeStart,
@@ -842,51 +906,96 @@ export function TimelinePage({ now }: { now: number }) {
   // simply over: once an event ends there is nothing left to act on, so it stops
   // competing for the eye with the things that are still running.
   const [laneOpen, setLaneOpen] = useState<Record<string, boolean>>({});
+  const resumeGame = (id: string) => {
+    setLaneOpen((current) => ({ ...current, [id]: true }));
+    updateGame(id, { paused: false });
+    requestAnimationFrame(() => {
+      const lane = document.getElementById(`timeline-game-${id}`);
+      const row = [...document.querySelectorAll<HTMLElement>('[data-list-game]')].find(
+        (node) => node.dataset.listGame === id,
+      );
+      const control =
+        lane?.querySelector<HTMLButtonElement>('h2 button') ??
+        row?.querySelector<HTMLButtonElement>('button[aria-label^="Edit "]');
+      (control ?? document.querySelector<HTMLElement>('.timeline-page h1'))?.focus();
+    });
+  };
+  const pausedGames = games.filter((game) => game.paused);
+  const scopedEvents = view === 'lanes' ? [...eventsByGame.values()].flat() : events;
+  const visibleCount = scopedEvents.filter((event) => showFinished || (!event.done && event.end > now)).length;
+  const rangeStart = DateTime.fromMillis(ws, { zone: state.settings.localTz });
+  const rangeEnd = DateTime.fromMillis(we, { zone: state.settings.localTz });
+  const rangeFormat = rangeStart.year === rangeEnd.year ? 'd LLL' : 'd LLL yyyy';
+  const pausedRows = pausedGames.length > 0 && (
+    <div data-tour="timeline" className="mt-4 divide-y divide-line-hairline border-t border-line-edge">
+      {pausedGames.map((game) => (
+        <PausedTimelineGame
+          key={game.id}
+          game={{ ...game, ...identityColors[game.id] }}
+          now={now}
+          onResume={() => resumeGame(game.id)}
+        />
+      ))}
+    </div>
+  );
 
   return (
     <Page className="timeline-page">
-      {/* The lanes are the page, so the title only has to exist for the heading
-          outline and the landmark audit — a visible one spent a band of vertical
-          space restating the tab you already pressed. */}
-      <h1 className="sr-only">Event timeline</h1>
+      <div className="timeline-page-heading">
+        <h1 tabIndex={-1} className="text-heading font-semibold tracking-tight">
+          Event timeline
+        </h1>
+        <p className="text-body text-muted">See what is running, what is next, and when it ends.</p>
+      </div>
       <p id="event-reorder-help" className="sr-only">
-        Hold and drag the handle to reorder events within a game. Or focus a handle and press Arrow Up or Arrow Down.
+        Hold and drag the handle to reorder events within a section. Or focus a handle and press Arrow Up or Arrow Down.
       </p>
       <TimelineTools
         search={search}
         onSearch={setSearch}
         view={view}
-        onView={setView}
+        onView={(next) => {
+          if (next === 'list' || next === 'lanes') setView(next);
+        }}
         showFinished={showFinished}
         onShowFinished={setShowFinished}
       />
-      <div className="timeline-caption flex min-h-5 items-center gap-3 text-caption text-muted">
-        <span>
-          {view === 'lanes'
-            ? `${DateTime.fromMillis(ws, { zone: state.settings.localTz }).toFormat('d LLL')}–${DateTime.fromMillis(we, { zone: state.settings.localTz }).toFormat('d LLL')}`
-            : 'Event list'}{' '}
-          · {state.settings.localTz}
+      <div className="timeline-caption flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted">
+        <span className="timeline-range-label">
+          {view === 'lanes' ? `${rangeStart.toFormat(rangeFormat)}–${rangeEnd.toFormat(rangeFormat)}` : 'Event list'}
         </span>
-        {search && (
-          <button className="truncate text-accent-fg" onClick={() => setSearch('')} aria-label="Clear event search">
-            “{search}” ×
+        <span>
+          {visibleCount} {visibleCount === 1 ? 'event' : 'events'}
+        </span>
+        <span>Dates in {state.settings.localTz}</span>
+        {search.trim() && (
+          <button
+            type="button"
+            className="timeline-search-chip min-w-0 text-accent-fg"
+            onClick={() => setSearch('')}
+            aria-label="Clear event search"
+          >
+            <span className="truncate">“{search.trim()}”</span>
+            <span aria-hidden>×</span>
           </button>
         )}
         {showFinished && <span>Including finished</span>}
+        {pausedGames.length > 0 && <span>Resume a paused game to show its events.</span>}
       </div>
 
-      {view === 'list' ? (
+      {games.length > 0 && games.every((game) => game.paused) ? null : view === 'list' ? (
         <TimelineList
           games={games}
           events={events}
           now={now}
           localTz={state.settings.localTz}
           showFinished={showFinished}
+          search={search.trim()}
           onOpenEvent={openEvent}
           onToggleEvent={toggleEvent}
         />
       ) : (
-        <div data-tour="timeline" className="timeline-board relative">
+        <div data-tour="timeline" className="timeline-board timeline-lanes-board relative">
           <div ref={timelineScaleRef} data-timeline-scale className="ml-7">
             <div data-timeline-ruler className="relative h-5 text-caption text-muted">
               {ticks.map((tick, index) => {
@@ -903,7 +1012,7 @@ export function TimelinePage({ now }: { now: number }) {
                     }`}
                     style={{ left: `${((tick.toMillis() - ws) / span) * 100}%` }}
                   >
-                    <span className="numeral h-3 text-caption uppercase text-dim">
+                    <span className="numeral text-caption uppercase text-dim">
                       {showMonth ? tick.toFormat('LLL') : ''}
                     </span>
                     <span className="numeral text-caption text-muted">{tick.toFormat('d')}</span>
@@ -935,126 +1044,153 @@ export function TimelinePage({ now }: { now: number }) {
                 </p>
               )}
 
-              {games.map((game) => {
-                const colors = identityColors[game.id] ?? game;
-                const evs = eventsByGame.get(game.id) ?? [];
-                const open = laneOpen[game.id] ?? evs.length > 0;
-                const nextEnd = [...evs]
-                  .sort((a, b) => a.end - b.end)
-                  .find(
-                    (e) =>
-                      e.end > now &&
-                      !e.done &&
-                      e.type !== 'maintenance' &&
-                      e.type !== 'banner' &&
-                      e.type !== 'livestream',
-                  );
-                // `now` ticks, so a row leaves the lane the moment it ends without
-                // anyone having to press anything.
-                const running = evs.filter((event) => !event.done && event.end > now);
-                const finishedCount = evs.length - running.length;
-                const shown = showFinished ? evs : running;
-                const serverLabel = serverRegionLabel(game.tz, now);
-                const accountLabel = game.accountLabel?.trim();
-                // The lane's colour: assigned in one distinct-lanes pass, with
-                // the game's own primary as the fallback. Bars, connectors and
-                // the heading rule all take it from here so they cannot drift.
-                const ink = laneInk[game.id] ?? colors.color;
-                const rim = gameRim(colors, ground);
-                return (
-                  <Disclosure
-                    key={game.id}
-                    headingLevel={2}
-                    open={open}
-                    onOpenChange={(nextOpen) => setLaneOpen((current) => ({ ...current, [game.id]: nextOpen }))}
-                    title={
-                      <span className="flex min-w-0 items-center gap-2">
-                        <GameBadge short={game.short} {...colors} />
-                        <span
-                          className="min-w-0 truncate text-body font-semibold"
-                          style={{ fontFamily: titleFont(game.titleFont), color: gameTitleInk(colors, ground) }}
-                        >
-                          {game.name}
-                        </span>
-                        <ServerChip label={serverLabel} />
-                        {accountLabel && (
-                          <span className="min-w-0 max-w-[35%] shrink-0 truncate text-body font-semibold text-fg-soft">
-                            {accountLabel}
-                          </span>
-                        )}
-                        <span
-                          className="h-px flex-1"
-                          style={{
-                            background: `linear-gradient(90deg, ${mix(rim, ground, 0.3)}, ${mix(rim, ground, 0.08)})`,
-                          }}
-                        />
-                      </span>
-                    }
-                    summary={
-                      !open ? (
-                        <span className="numeral flex flex-col text-caption text-muted">
-                          <span>
-                            {running.length} {running.length === 1 ? 'event' : 'events'}
-                          </span>
-                          <span>
-                            {nextEnd ? (
-                              <span style={{ color: endTone(nextEnd.end - now) }}>
-                                next ends {fmtDur(nextEnd.end - now)}
-                              </span>
-                            ) : (
-                              'no upcoming deadline'
-                            )}
-                          </span>
-                        </span>
-                      ) : undefined
-                    }
-                    triggerLabel={`${open ? 'Collapse' : 'Expand'} ${game.name}, ${serverLabel}${accountLabel ? `, ${accountLabel}` : ''} lane`}
-                    className="relative"
-                    triggerClassName="timeline-game-heading relative z-20 rounded-ui-md px-1 transition hover:bg-fill-1"
-                    contentClassName="-ml-7 pb-1 pl-7"
-                  >
-                    {evs.length === 0 ? (
-                      <p className="py-1 text-label text-muted">Nothing in this window — import or add events.</p>
-                    ) : shown.length === 0 ? (
-                      <p className="py-1 text-label text-muted">
-                        Nothing running — {finishedCount} finished {finishedCount === 1 ? 'event' : 'events'}. Use the
-                        history button to show them.
-                      </p>
-                    ) : (
-                      <>
-                        {state.events.some(
-                          (event) => event.gameId === game.id && !event.deleted && event.sort !== undefined,
-                        ) && (
-                          <button
-                            type="button"
-                            className="mb-1 text-caption text-accent-fg hover:underline"
-                            onClick={() => resetEventOrder(game.id)}
+              {games
+                .filter((game) => !game.paused)
+                .map((game) => {
+                  const colors = identityColors[game.id] ?? game;
+                  const evs = eventsByGame.get(game.id) ?? [];
+                  const open = laneOpen[game.id] ?? evs.length > 0;
+                  const nextEnd = [...evs]
+                    .sort((a, b) => a.end - b.end)
+                    .find(
+                      (e) =>
+                        e.end > now &&
+                        !e.done &&
+                        e.type !== 'maintenance' &&
+                        e.type !== 'banner' &&
+                        e.type !== 'livestream',
+                    );
+                  // `now` ticks, so a row leaves the lane the moment it ends without
+                  // anyone having to press anything.
+                  const running = evs.filter((event) => !event.done && event.end > now);
+                  const finishedCount = evs.length - running.length;
+                  const shown = showFinished ? evs : running;
+                  const serverLabel = serverRegionLabel(game.tz, now);
+                  const accountLabel = game.accountLabel?.trim();
+                  // The lane's colour: assigned in one distinct-lanes pass, with
+                  // the game's own primary as the fallback. Bars, connectors and
+                  // the heading rule all take it from here so they cannot drift.
+                  const ink = laneInk[game.id] ?? colors.color;
+                  const rim = gameRim(colors, ground);
+                  return (
+                    <Disclosure
+                      key={game.id}
+                      id={`timeline-game-${game.id}`}
+                      headingLevel={2}
+                      open={open}
+                      onOpenChange={(nextOpen) => setLaneOpen((current) => ({ ...current, [game.id]: nextOpen }))}
+                      title={
+                        <span className="flex min-w-0 items-center gap-2">
+                          <GameBadge short={game.short} {...colors} />
+                          <span
+                            className="min-w-0 truncate text-body font-semibold"
+                            style={{
+                              fontFamily: titleFont(game.titleFont),
+                              color: gameTitleInk(colors, titleGround, 4.5),
+                            }}
                           >
-                            Reset automatic order
-                          </button>
-                        )}
-                        <ReorderableEventRows
-                          events={shown}
-                          game={game}
-                          ink={ink}
-                          inset={laneInset}
-                          now={now}
-                          ws={ws}
-                          we={we}
-                          onOpenEvent={openEvent}
-                          onToggleEvent={toggleEvent}
-                          laneWidth={timelineWidth}
-                          localTz={state.settings.localTz}
-                        />
-                      </>
-                    )}
-                  </Disclosure>
-                );
-              })}
+                            {game.name}
+                          </span>
+                          <ServerChip label={serverLabel} />
+                          {accountLabel && (
+                            <span className="min-w-0 max-w-[35%] shrink-0 truncate text-body font-semibold text-fg-soft">
+                              {accountLabel}
+                            </span>
+                          )}
+                          <span
+                            className="h-px flex-1"
+                            style={{
+                              background: `linear-gradient(90deg, ${mix(rim, ground, 0.3)}, ${mix(rim, ground, 0.08)})`,
+                            }}
+                          />
+                        </span>
+                      }
+                      summary={
+                        !open ? (
+                          <span className="numeral flex flex-col text-caption text-muted">
+                            <span>
+                              {running.length} {running.length === 1 ? 'event' : 'events'}
+                            </span>
+                            <span>
+                              {nextEnd ? (
+                                <span style={{ color: endTone(nextEnd.end - now) }}>
+                                  next ends {fmtDur(nextEnd.end - now)}
+                                </span>
+                              ) : (
+                                'no upcoming deadline'
+                              )}
+                            </span>
+                          </span>
+                        ) : undefined
+                      }
+                      triggerLabel={`${open ? 'Collapse' : 'Expand'} ${game.name}, ${serverLabel}${accountLabel ? `, ${accountLabel}` : ''} lane`}
+                      className="timeline-game-lane relative"
+                      triggerClassName="timeline-game-heading relative z-20 rounded-ui-md px-1 transition hover:bg-fill-1"
+                      contentClassName="timeline-lane-content -ml-7 pl-7"
+                    >
+                      {evs.length === 0 ? (
+                        <p className="py-1 text-label text-muted">
+                          {search.trim()
+                            ? 'No matching events in this window. Clear the search to see all events.'
+                            : 'Nothing in this window — import or add events.'}
+                        </p>
+                      ) : shown.length === 0 ? (
+                        <p className="py-1 text-label text-muted">
+                          Nothing running — {finishedCount} finished {finishedCount === 1 ? 'event' : 'events'}. Use the
+                          Show finished events control to show them.
+                        </p>
+                      ) : (
+                        <>
+                          {state.events.some(
+                            (event) => event.gameId === game.id && !event.deleted && event.sort !== undefined,
+                          ) && (
+                            <button
+                              type="button"
+                              className="mb-1 text-caption text-accent-fg hover:underline"
+                              onClick={() => resetEventOrder(game.id)}
+                            >
+                              Reset automatic order
+                            </button>
+                          )}
+                          {groupGameEvents(game, shown).map((group) => (
+                            <section
+                              key={group.key}
+                              data-timeline-event-group={group.key}
+                              className="mt-4 first:mt-0"
+                              aria-label={`${group.label} timeline for ${game.name}`}
+                            >
+                              {group.key !== 'events' && (
+                                <h3 className="mb-2 flex items-center gap-2 text-meta font-semibold text-muted">
+                                  {group.label}
+                                  <span aria-hidden className="h-px flex-1 bg-line-hairline" />
+                                </h3>
+                              )}
+                              <ReorderableEventRows
+                                events={group.events}
+                                game={game}
+                                ink={ink}
+                                inset={laneInset}
+                                now={now}
+                                ws={ws}
+                                we={we}
+                                onOpenEvent={openEvent}
+                                onToggleEvent={toggleEvent}
+                                laneWidth={timelineWidth}
+                                localTz={state.settings.localTz}
+                              />
+                            </section>
+                          ))}
+                        </>
+                      )}
+                    </Disclosure>
+                  );
+                })}
             </div>
           </div>
+          {pausedRows}
         </div>
       )}
+      {(view === 'list' || games.every((game) => game.paused)) && pausedRows}
     </Page>
   );
 }

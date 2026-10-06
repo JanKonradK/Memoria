@@ -30,6 +30,10 @@ test('event handles reorder with mouse, touch, and keyboard and persist across r
     .setInputFiles({ name: 'order.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page
+    .getByRole('radiogroup', { name: 'Event view' })
+    .getByRole('radio', { name: 'Timeline', exact: true })
+    .click();
   const order = () =>
     page
       .locator('[data-timeline-event-row]')
@@ -47,6 +51,10 @@ test('event handles reorder with mouse, touch, and keyboard and persist across r
   await expect(page.getByRole('button', { name: 'Reorder First', exact: true })).toBeFocused();
   // Chromium's real touch input exercises capture and touch-action, unlike synthetic pointer events.
   const cdp = await context.newCDPSession(page);
+  // Keep the drag origin clear of fixed navigation in short phone landscapes.
+  await page
+    .getByRole('button', { name: 'Reorder Third', exact: true })
+    .evaluate((node) => node.scrollIntoView({ block: 'center' }));
   const start = await page.getByRole('button', { name: 'Reorder Third', exact: true }).boundingBox();
   const end = await page.getByRole('button', { name: 'Reorder Second', exact: true }).boundingBox();
   const x = start!.x + start!.width / 2;
@@ -83,6 +91,10 @@ test('event handles reorder with mouse, touch, and keyboard and persist across r
     .toBe(0);
   await page.reload();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page
+    .getByRole('radiogroup', { name: 'Event view' })
+    .getByRole('radio', { name: 'Timeline', exact: true })
+    .click();
   await expect.poll(order).toEqual(['Third', 'Second', 'First']);
   await page.getByRole('button', { name: 'Mark Third done', exact: true }).click();
   await expect.poll(order).toEqual(['Second', 'First']);
@@ -93,7 +105,7 @@ test('event handles reorder with mouse, touch, and keyboard and persist across r
   await expect.poll(order).toEqual(['First', 'Second']);
 });
 
-test('seeded Genshin events reorder across MW and Teyvat and stay after a scrolled drag and reload', async ({
+test('seeded Genshin events reorder within Teyvat and keep world sections after a scrolled drag and reload', async ({
   page,
 }, info) => {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
@@ -124,20 +136,23 @@ test('seeded Genshin events reorder across MW and Teyvat and stay after a scroll
     .setInputFiles({ name: 'seeds.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page
+    .getByRole('radiogroup', { name: 'Event view' })
+    .getByRole('radio', { name: 'Timeline', exact: true })
+    .click();
   const rows = page.locator('[data-timeline-event-row]');
   const order = () => rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-event-id')));
   await expect.poll(async () => (await order()).length).toBeGreaterThan(10);
   await page.screenshot({ path: info.outputPath('seeded-tags.png'), fullPage: true });
   const original = await order();
-  const draggedId = [...original]
-    .reverse()
-    .find((id) => state.events.find((event) => event.id === id)?.category !== 'miliastra')!;
+  const sections = page.locator('[data-timeline-event-group]');
+  await expect
+    .poll(() => sections.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-timeline-event-group'))))
+    .toEqual(['teyvat', 'miliastra', 'banners']);
+  const teyvat = page.locator('[data-timeline-event-group="teyvat"] [data-timeline-event-row]');
+  const teyvatIds = await teyvat.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-event-id')));
+  const draggedId = teyvatIds.at(-1)!;
   expect(draggedId).toBeTruthy();
-  expect(
-    original
-      .slice(0, original.indexOf(draggedId))
-      .some((id) => state.events.find((event) => event.id === id)?.category === 'miliastra'),
-  ).toBe(true);
   const handle = page.locator(`[data-event-id="${draggedId}"] button[aria-label^="Reorder "]`);
   await handle.scrollIntoViewIfNeeded();
   const start = (await handle.boundingBox())!;
@@ -159,8 +174,16 @@ test('seeded Genshin events reorder across MW and Teyvat and stay after a scroll
   // Switch views before reloading so this checks committed state, not the drag preview.
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page
+    .getByRole('radiogroup', { name: 'Event view' })
+    .getByRole('radio', { name: 'Timeline', exact: true })
+    .click();
   await expect.poll(order).toEqual(expected);
   await page.reload();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page
+    .getByRole('radiogroup', { name: 'Event view' })
+    .getByRole('radio', { name: 'Timeline', exact: true })
+    .click();
   await expect.poll(order).toEqual(expected);
 });

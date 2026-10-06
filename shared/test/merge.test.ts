@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { compactState, mergeState, normalizeState, pruneCompletions } from '../src/merge';
+import { assertStateCapacity, compactState, mergeState, normalizeState, pruneCompletions } from '../src/merge';
 import { MAX_GAME_IMAGE_LENGTH } from '../src/types';
 import { FUTURE_CLOCK_SKEW_TOLERANCE_MS, safeParseAppState } from '../src/validation';
 import { makeEvent, makeGame, makeResource, makeSnapshot, makeState, makeTask } from './helpers';
 
 describe('mergeState', () => {
+  it('rejects an oversized local document before normalization can truncate it', () => {
+    const local = makeState({ games: Array.from({ length: 101 }, (_, i) => makeGame({ id: `g${i}` })) });
+    expect(() => assertStateCapacity(local)).toThrow('100 item limit');
+    expect(() => mergeState(local, makeState())).toThrow('100 item limit');
+    expect(local.games).toHaveLength(101);
+  });
+
   it('keeps the newer row per id (LWW)', () => {
     const a = makeState({ games: [makeGame({ name: 'Old', updatedAt: 1 })] });
     const b = makeState({ games: [makeGame({ name: 'New', updatedAt: 2 })] });
@@ -16,6 +23,31 @@ describe('mergeState', () => {
     const edited = makeState({ games: [makeGame({ name: 'Edited', updatedAt: 5 })] });
     const deleted = makeState({ games: [makeGame({ deleted: true, updatedAt: 9 })] });
     expect(mergeState(edited, deleted).games[0]!.deleted).toBe(true);
+  });
+
+  it('rejects a merged collection above capacity without losing existing rows', () => {
+    const pc = makeState({ games: Array.from({ length: 100 }, (_, i) => makeGame({ id: `z${i}` })) });
+    const phone = makeState({ games: [makeGame({ id: 'a-new' })] });
+    const beforePc = JSON.stringify(pc);
+    const beforePhone = JSON.stringify(phone);
+    expect(() => mergeState(pc, phone)).toThrow('combined games exceed the 100 item limit');
+    expect(() => mergeState(phone, pc)).toThrow('combined games exceed the 100 item limit');
+    expect(JSON.stringify(pc)).toBe(beforePc);
+    expect(JSON.stringify(phone)).toBe(beforePhone);
+  });
+
+  it('merges updates and tombstones at capacity without counting shared IDs twice', () => {
+    const pc = makeState({ games: Array.from({ length: 100 }, (_, i) => makeGame({ id: `g${i}`, updatedAt: 1 })) });
+    const phone = makeState({
+      games: [
+        makeGame({ id: 'g0', name: 'Updated', updatedAt: 2 }),
+        makeGame({ id: 'g1', deleted: true, updatedAt: 2 }),
+      ],
+    });
+    const merged = mergeState(pc, phone);
+    expect(merged.games).toHaveLength(100);
+    expect(merged.games.find((game) => game.id === 'g0')?.name).toBe('Updated');
+    expect(merged.games.find((game) => game.id === 'g1')?.deleted).toBe(true);
   });
 
   it('unions snapshots and trims to the most recent 200 per resource', () => {

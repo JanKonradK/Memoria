@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process';
 import { request } from 'node:http';
 import { createHmac, randomBytes } from 'node:crypto';
 import { once } from 'node:events';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import os from 'node:os';
 import { isolateLauncherPort } from '../../scripts/launcher-test-support.mjs';
@@ -39,13 +39,16 @@ beforeAll(async () => {
     '<!doctype html><html><head></head><body>Memoria</body></html>',
   );
   writeFileSync(join(install, 'app', 'dist-private', 'private.txt'), 'outside the public app');
-  for (const file of ['memoria.mjs', 'update.mjs', 'dist/shared-core.mjs']) {
+  for (const file of ['memoria.mjs', 'lan-sync.mjs', 'update.mjs', 'dist/shared-core.mjs']) {
     cpSync(join(root, 'desktop', file), join(install, 'desktop', file));
   }
   // Isolate the test server from all real Memoria ports and app data. The
   // production launcher remains fixed to its existing browser storage origins.
   const launcher = join(install, 'desktop', 'memoria.mjs');
   await isolateLauncherPort(launcher);
+  // Damaged optional phone metadata must not prevent the desktop from opening.
+  mkdirSync(join(appdata, 'memoria'), { recursive: true });
+  writeFileSync(join(appdata, 'memoria', 'devices.json'), '{ unreadable connections');
   child = spawn(process.execPath, [launcher], {
     cwd: install,
     windowsHide: true,
@@ -90,6 +93,26 @@ afterAll(async () => {
 });
 
 describe('launcher security boundary', () => {
+  it('opens with unreadable phone metadata and backs it up only on explicit recovery', async () => {
+    const file = join(appdata, 'memoria', 'devices.json');
+    expect((await fetch(`${origin}/api/state`, { headers: auth() })).status).toBe(200);
+    const status = await (await fetch(`${origin}/api/devices`, { headers: auth() })).json();
+    expect(status.enabled).toBe(false);
+    expect(status.error).toContain('Saved phone connections could not be read');
+    expect(readFileSync(file, 'utf8')).toBe('{ unreadable connections');
+    const reset = await fetch(`${origin}/api/devices`, {
+      method: 'POST',
+      headers: { ...auth(), origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'reset' }),
+    });
+    expect(reset.status).toBe(200);
+    expect((await reset.json()).error).toBeNull();
+    expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ enabled: false, devices: [] });
+    const backups = readdirSync(join(appdata, 'memoria')).filter((name) => name.startsWith('devices-unreadable-'));
+    expect(backups).toHaveLength(1);
+    expect(readFileSync(join(appdata, 'memoria', backups[0]), 'utf8')).toBe('{ unreadable connections');
+  });
+
   it('accepts a fresh signed ticket request once and rejects expired proofs', async () => {
     const master = readFileSync(join(appdata, 'memoria', 'launcher-token'), 'utf8');
     const ticketRequest = async (nonce, timestamp) => {
@@ -182,6 +205,20 @@ describe('launcher security boundary', () => {
     expect(status).toBe(421);
     expect((await post(emptyState(), { origin: 'https://attacker.invalid' })).status).toBe(403);
     expect((await post(emptyState(), { 'sec-fetch-site': 'cross-site' })).status).toBe(403);
+  });
+
+  it('keeps Wi-Fi controls behind the existing launcher authorization and origin checks', async () => {
+    expect((await fetch(`${origin}/api/devices`)).status).toBe(401);
+    const response = await fetch(`${origin}/api/devices`, { headers: auth() });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ enabled: false, devices: [], code: null });
+    const blocked = await fetch(`${origin}/api/devices`, {
+      method: 'POST',
+      headers: { ...auth(), origin: 'https://attacker.invalid', 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'start' }),
+    });
+    expect(blocked.status).toBe(403);
+    expect((await (await fetch(`${origin}/api/devices`, { headers: auth() })).json()).enabled).toBe(false);
   });
 
   it('blocks encoded traversal into sibling dist directories and malformed paths', async () => {

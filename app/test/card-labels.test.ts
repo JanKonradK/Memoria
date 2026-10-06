@@ -127,18 +127,14 @@ describe('game card account labels', () => {
         entries: [entry],
         displayIds: [game.id],
         now: Date.UTC(2026, 7, 5, 12),
-        gameControlActions: controls(),
-        onEditGame: () => {},
-        onOpenGameEvent: () => {},
         onOpenEvent: () => {},
-        onToggleEvent: () => {},
         onOpenTimeline: () => {},
       }),
     );
     expect(screen.getAllByRole('complementary')).toHaveLength(1);
-    expect(screen.getByRole('region', { name: 'Genshin Impact controls' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Open Genshin Impact controls' })).toBeVisible();
     expect(screen.queryByText('+ label')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: game.name }).parentElement?.querySelector('.bg-line-edge')).toBeNull();
+    expect(screen.getByText(game.name).parentElement?.querySelector('.bg-line-edge')).toBeNull();
     nexus.unmount();
 
     renderCard(
@@ -147,7 +143,6 @@ describe('game card account labels', () => {
         state,
         actions: controls(),
         now: Date.UTC(2026, 7, 5, 12),
-        onEditGame: () => {},
         onOpenEvent: () => {},
       }),
     );
@@ -167,7 +162,6 @@ describe('game card account labels', () => {
         state,
         actions: controls(),
         now: Date.UTC(2026, 7, 5, 12),
-        onEditGame: () => {},
         onOpenEvent: () => {},
       }),
     );
@@ -182,7 +176,7 @@ describe('reduced-motion card urgency', () => {
     [90, false, true],
     [120, false, false],
     [30, true, false],
-  ])('preserves the danger edge at %i minutes (paused: %s)', (minutes, paused, urgent) => {
+  ])('preserves the urgency indicator at %i minutes (paused: %s)', (minutes, paused, urgent) => {
     const now = Date.UTC(2026, 7, 5, 12);
     const trackedGame = { ...game, paused };
     useApp.setState({ state: { ...emptyState(), games: [trackedGame] } });
@@ -192,10 +186,10 @@ describe('reduced-motion card urgency', () => {
       actions: [],
     };
     const view = renderCard(createElement(GameCard, { entry, now }));
-    const ring = view.container.querySelector('[data-urgency-ring]');
+    const ring = view.container.querySelector('[data-urgency-indicator]');
     if (urgent) {
-      expect(ring).toHaveStyle({ boxShadow: 'inset 0 0 0 1px var(--color-danger)' });
-      expect(ring).not.toHaveClass('pulse-fade');
+      expect(ring).toHaveClass('attention-indicator');
+      expect(ring).not.toHaveAttribute('data-running', 'true');
     } else {
       expect(ring).toBeNull();
     }
@@ -220,7 +214,6 @@ describe('game card reset labels', () => {
         state: dublinState,
         actions: controls(),
         now,
-        onEditGame: () => {},
         onOpenEvent: () => {},
       }),
     );
@@ -235,7 +228,6 @@ describe('game card reset labels', () => {
         state: warsawState,
         actions: controls(),
         now,
-        onEditGame: () => {},
         onOpenEvent: () => {},
       }),
     );
@@ -262,7 +254,6 @@ describe('game card reset labels', () => {
         state,
         actions: controls(),
         now,
-        onEditGame: () => {},
         onOpenEvent: () => {},
       }),
     );

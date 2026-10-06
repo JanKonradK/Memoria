@@ -6,9 +6,16 @@ import { useDerived } from '../selectors';
 import { useApp } from '../store';
 import { utcOffsetLabel } from '../timezone';
 import { useUI } from '../ui-store';
-import { GameCard, GameControlsView } from './GameCard';
+import { GameControlsView } from './GameCard';
 import { NexusLayout } from './NexusLayout';
-import { Btn, Page } from './ui';
+import { MobileRoster } from './MobileRoster';
+import { gameShellVars, useTheme } from '../theme';
+import { useIdentityColors } from './roster';
+import { Btn, Page, Segmented } from './ui';
+import { NexusHub } from './nexus/NexusHub';
+import { navigateWorkspace, recordWorkspaceHistory } from '../workspace-navigation';
+import { isNativeApp } from '../native';
+import { useLanSync } from '../lan-sync';
 
 const PRESET_GAP_KEY = 'memoria-preset-gap-dismissed';
 /** The key this counter shipped under before the rename. */
@@ -58,14 +65,14 @@ function Notice({
         <button
           type="button"
           onClick={onAction}
-          className="min-h-8 shrink-0 rounded-ui-md border border-line-strong bg-inset px-3 py-1 text-meta font-medium text-fg transition-colors hover:border-line-strong hover:bg-surface-2"
+          className="min-h-11 shrink-0 rounded-ui-md border border-line-strong bg-inset px-3 py-1 text-meta font-medium text-fg transition-colors hover:border-line-strong hover:bg-surface-2"
         >
           {action}
         </button>
         <button
           type="button"
           onClick={onDismiss}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-ui-md text-muted transition-colors hover:text-fg"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-md text-muted transition-colors hover:text-fg"
           aria-label={dismissLabel}
         >
           ✕
@@ -76,6 +83,7 @@ function Notice({
 }
 
 export function DashboardPage({ now }: { now: number }) {
+  const linkedPc = useLanSync((connection) => connection.host);
   const derived = useDerived(now);
   const { state, order, entryById } = derived;
   // Individual selectors (zustand action refs are stable). Grouped into one
@@ -104,7 +112,6 @@ export function DashboardPage({ now }: { now: number }) {
   );
   const openSheet = useUI((s) => s.openSheet);
   const setTab = useUI((s) => s.setTab);
-  const editGame = useCallback((gameId: string) => openSheet({ kind: 'game', gameId }), [openSheet]);
   const openGameEvent = useCallback(
     (eventId: string, gameId: string) => openSheet({ kind: 'event', eventId, gameId }),
     [openSheet],
@@ -113,15 +120,25 @@ export function DashboardPage({ now }: { now: number }) {
     (event: GameEvent) => openSheet({ kind: 'event', gameId: event.gameId, eventId: event.id }),
     [openSheet],
   );
-  const toggleEvent = useCallback(
-    (event: GameEvent) => upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done }),
-    [upsertEvent],
-  );
   const openTimeline = useCallback(() => setTab('timeline'), [setTab]);
   const wide = useMediaQuery('(min-width: 1280px)');
+  const phone = useMediaQuery('(max-width: 767px)');
+  const [phoneView, setPhoneView] = useState('games');
   const focusColumns = useMediaQuery('(min-width: 900px)');
   const focusedGameId = useUI((s) => s.focusedGameId);
+  const setFocusedGameId = useUI((s) => s.setFocusedGameId);
   const focusedEntry = focusedGameId ? entryById.get(focusedGameId) : undefined;
+  const workspaceId = focusedEntry?.game.id;
+  const theme = useTheme();
+  const identityColors = useIdentityColors(state.games);
+
+  useEffect(() => {
+    if (workspaceId) recordWorkspaceHistory(workspaceId);
+  }, [workspaceId]);
+
+  useEffect(() => {
+    if (phone) window.scrollTo(0, 0);
+  }, [phone, phoneView]);
 
   // Card ORDER is frozen while you're on this page — live re-sorting made cards
   // jump away mid-entry. Values and timers stay live; position changes only when
@@ -169,10 +186,20 @@ export function DashboardPage({ now }: { now: number }) {
 
   return (
     <Page>
-      {/* The games themselves are the content, so this page has no visible title
-          — but every route still needs an h1 for the heading outline to start at
-          the top. Matches the nav label. */}
       <h1 className="sr-only">Dashboard</h1>
+      {phone && !focusedEntry && order.length > 0 && (
+        <div className="mb-2">
+          <Segmented
+            ariaLabel="Dashboard view"
+            value={phoneView}
+            onChange={setPhoneView}
+            options={[
+              { value: 'games', label: 'Games' },
+              { value: 'tonight', label: 'Tonight & reminders' },
+            ]}
+          />
+        </div>
+      )}
 
       {/* Adding a game is one of three things you can add, so it lives in the app
           bar's single "+" alongside the other two rather than in a per-route
@@ -220,9 +247,15 @@ export function DashboardPage({ now }: { now: number }) {
         <div className="fade-in mx-auto mt-20 flex max-w-md flex-col items-start gap-3">
           <h2 className="text-heading font-semibold text-fg">Nothing is being tracked yet</h2>
           <p className="text-body text-muted">
-            Add the games you actually play, then type in whatever energy each one is sitting on. Memoria projects it
-            forward and tells you when it caps.
+            {isNativeApp && !linkedPc
+              ? 'Already use Memoria on your PC? Bring your games and progress to this phone, or add your first game below.'
+              : 'Add the games you actually play, then type in whatever energy each one is sitting on. Memoria projects it forward and tells you when it caps.'}
           </p>
+          {isNativeApp && !linkedPc && (
+            <Btn kind="primary" onClick={() => setTab('settings')}>
+              Connect my PC
+            </Btn>
+          )}
           <Btn kind="ghost" onClick={() => openSheet({ kind: 'addGame' })} className="mt-1">
             Add your first game
           </Btn>
@@ -232,8 +265,8 @@ export function DashboardPage({ now }: { now: number }) {
           {focusedEntry ? (
             <section
               key={focusedEntry.game.id}
-              className="card-shell focus-workspace page-enter rounded-ui-card p-4 sm:p-5"
-              data-direction="1"
+              className="focus-workspace"
+              style={gameShellVars(focusedEntry.game, theme, identityColors[focusedEntry.game.id])}
               aria-label={`${focusedEntry.game.name} focus workspace`}
             >
               <GameControlsView
@@ -241,31 +274,29 @@ export function DashboardPage({ now }: { now: number }) {
                 state={state}
                 actions={dashboardStore}
                 now={now}
+                onBack={() => navigateWorkspace(null, focusedGameId, () => setFocusedGameId(null))}
                 layout="focus"
                 columns={focusColumns ? 2 : 1}
-                onEditGame={editGame}
                 onOpenEvent={openGameEvent}
               />
             </section>
+          ) : phone ? (
+            phoneView === 'tonight' ? (
+              <NexusHub state={state} entries={order} now={now} onOpenEvent={openEvent} onOpenTimeline={openTimeline} />
+            ) : (
+              <MobileRoster entries={displayIds.map((id) => entryById.get(id)!)} now={now} />
+            )
           ) : wide ? (
             <NexusLayout
               state={state}
               entries={order}
               displayIds={displayIds}
               now={now}
-              gameControlActions={dashboardStore}
-              onEditGame={editGame}
-              onOpenGameEvent={openGameEvent}
               onOpenEvent={openEvent}
-              onToggleEvent={toggleEvent}
               onOpenTimeline={openTimeline}
             />
           ) : (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {displayIds.map((id, index) => (
-                <GameCard key={id} entry={entryById.get(id)!} now={now} index={index} />
-              ))}
-            </div>
+            <MobileRoster entries={displayIds.map((id) => entryById.get(id)!)} now={now} />
           )}
         </>
       )}

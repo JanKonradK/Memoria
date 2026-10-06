@@ -1,4 +1,4 @@
-import { emptyState, PRESETS, type AppState, type Game, type GameEvent } from '@memoria/shared';
+import { emptyState, mergeState, PRESETS, type AppState, type Game, type GameEvent } from '@memoria/shared';
 import { describe, expect, it } from 'vitest';
 import { seedBundledEvents } from '../src/store';
 import { SEED_EVENTS, SEED_UPDATED } from '../src/data/seed-events';
@@ -50,6 +50,47 @@ function friendsDocument(): AppState {
 }
 
 describe('shipping a new bundle to an existing install', () => {
+  it('preserves legacy notes and alert preferences when correcting dates', () => {
+    const base = friendsDocument();
+    const original = base.events[0]!;
+    const legacy = {
+      ...original,
+      start: original.start + 1000,
+      notes: 'My saved plan',
+      notify: !original.notify,
+      dailyTouch: !original.dailyTouch,
+      done: true,
+    };
+    const before = { ...base, events: base.events.map((event) => (event.id === legacy.id ? legacy : event)) };
+    const after = seedBundledEvents(before, AT);
+    const corrected = after.events.find((event) => event.id === legacy.id)!;
+
+    expect(corrected.start).toBe(original.start);
+    expect(corrected).toMatchObject({
+      notes: legacy.notes,
+      notify: legacy.notify,
+      dailyTouch: legacy.dailyTouch,
+      done: true,
+    });
+    expect(corrected.seedHash).toBeDefined();
+    expect(corrected.seedHash).not.toBe(eventFingerprint(corrected));
+    expect(seedBundledEvents(after, AT).events.find((event) => event.id === legacy.id)).toEqual(corrected);
+  });
+
+  it('does not promote unchanged settings clocks when importing an event feed', () => {
+    const before = { ...emptyState(), games: [gameFor('genshin', 'gi-1')] };
+    before.settings = { ...before.settings, localTz: 'UTC', updatedAt: 1 };
+    const phone = {
+      ...before,
+      settings: { ...before.settings, localTz: 'Europe/Warsaw', updatedAt: 2 },
+    };
+    const desktop = seedBundledEvents(before, AT);
+
+    expect(desktop.events.length).toBeGreaterThan(0);
+    expect(mergeState(phone, desktop).settings.localTz).toBe('Europe/Warsaw');
+    expect(mergeState(desktop, phone).settings.localTz).toBe('Europe/Warsaw');
+  });
+
   it('corrects a same-day broadcast forecast but preserves edits and deletions', () => {
     const base = seedBundledEvents({ ...emptyState(), games: [gameFor('nte', 'nte-1')] }, AT);
     const broadcast = base.events.find((event) => event.sourceKey === 'seed:nte:1.4-livestream')!;

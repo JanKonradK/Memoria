@@ -1,9 +1,9 @@
 import type { BannerKind, EventType } from '@memoria/shared';
 
 /**
- * Bundled event feed — current banners/events per game, refreshed by asking
- * Claude after each patch (it reads the official HoYo announcement feeds and
- * patch notes, then rewrites this file). The store imports missing entries
+ * Bundled event feed — banners/events per game, reviewed against publisher
+ * announcements and patch notes. Each refresh records verified facts and source
+ * gaps in docs; forecasts remain labelled. The store imports missing entries
  * automatically whenever local state loads.
  *
  * Times are strings in the game's SERVER time and converted with the game's
@@ -178,8 +178,10 @@ import type { BannerKind, EventType } from '@memoria/shared';
  * saying so, so an approximate window never fires an alert as if it were fact.
  */
 
-/** When the bundled data was last refreshed. */
-export const SEED_UPDATED = '2026-09-17';
+/** Last bundle refresh, not a claim that every publisher supplied new dates.
+ * The per-game evidence and remaining gaps are in docs/game-news-review-2026-10-03.md.
+ */
+export const SEED_UPDATED = '2026-10-03';
 /** Invalid source windows withdrawn even from an earlier build on the same day. */
 export const SEED_WITHDRAWN_KEYS = ['seed:endfield:1.5-deep-cold-issue'];
 
@@ -208,6 +210,8 @@ export interface SeedEvent {
   /** 'yyyy-MM-dd HH:mm' in the game's server timezone. */
   start: string;
   end: string;
+  /** Confirmed calendar days; these boundaries draw the bar, not hourly deadlines. */
+  dateOnly?: boolean;
   /** A global broadcast uses one instant across every server. */
   timezone?: string;
   /** A global maintenance finish can open an event whose close is server-local. */
@@ -258,24 +262,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     notes: 'Long-running quest campaign — no rush yet.',
     sourceKey: 'seed:genshin:temper-journey',
   },
-  {
-    game: 'genshin',
-    name: 'Final Long-Range Sightlines',
-    type: 'event',
-    start: '2026-07-17 10:00',
-    end: '2026-07-27 03:59',
-    notes: 'Shooting minigame — 420 primos.',
-    sourceKey: 'seed:genshin:6.7-sightlines',
-  },
-  {
-    game: 'genshin',
-    name: 'Dance Dance Easy-Breezy Disco',
-    type: 'event',
-    start: '2026-07-24 10:00',
-    end: '2026-08-03 03:59',
-    notes: 'Dance minigame — 420 primos.',
-    sourceKey: 'seed:genshin:6.7-disco',
-  },
+
   {
     game: 'genshin',
     name: 'Ley Line Overflow — double Mora/EXP',
@@ -346,15 +333,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     notes: 'Resets the 16th, monthly.',
     sourceKey: 'seed:genshin:abyss-2026-08',
   },
-  {
-    game: 'genshin',
-    name: 'Imaginarium Theater',
-    type: 'cycle',
-    start: '2026-07-01 04:00',
-    end: '2026-08-01 04:00',
-    notes: 'Resets the 1st, monthly.',
-    sourceKey: 'seed:genshin:theater-2026-07',
-  },
+
   {
     game: 'genshin',
     name: 'Imaginarium Theater',
@@ -366,43 +345,6 @@ export const SEED_EVENTS: SeedEvent[] = [
     sourceKey: 'seed:genshin:theater-2026-08',
   },
   // --- banners
-  {
-    game: 'genshin',
-    name: 'Sandrone — To the Looking-Glass the Mademoiselle Said',
-    type: 'banner',
-    bannerKind: 'character',
-    start: '2026-07-01 04:00',
-    end: '2026-07-21 17:59',
-    sourceKey: 'genshin:21743',
-  },
-  {
-    game: 'genshin',
-    name: "Citlali — Starry Night's Whispers",
-    type: 'banner',
-    bannerKind: 'character',
-    start: '2026-07-01 04:00',
-    end: '2026-07-21 17:59',
-    sourceKey: 'genshin:21744',
-  },
-  {
-    game: 'genshin',
-    name: 'Epitome Invocation — Sandrone/Citlali weapons',
-    type: 'banner',
-    bannerKind: 'weapon',
-    start: '2026-07-01 04:00',
-    end: '2026-07-21 17:59',
-    sourceKey: 'genshin:21745',
-  },
-  {
-    game: 'genshin',
-    name: 'Lightrace Wish — Heavenlit Prophecy',
-    type: 'banner',
-    bannerKind: 'character',
-    start: '2026-07-01 04:00',
-    end: '2026-07-21 17:59',
-    notes: "New wish type (Witch's Revelation cast).",
-    sourceKey: 'genshin:21748',
-  },
   // Wishes close at 14:59, hours before the servers go down — an end set to the
   // maintenance hour would quietly promise pulls that are no longer buyable.
   {
@@ -654,7 +596,8 @@ export const SEED_EVENTS: SeedEvent[] = [
     notify: false,
     start: '2026-10-01 04:00',
     end: '2026-11-01 04:00',
-    notes: 'Resets the 1st, monthly. Cadence, not a notice — the October season has not been announced.',
+    notes:
+      'Notice 21946 confirms October 1 and November 1 seasons. The 04:00 boundaries follow the established monthly server reset. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
     sourceKey: 'seed:genshin:theater-2026-10',
   },
   {
@@ -701,24 +644,23 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'genshin',
     name: 'v7.1 update maintenance',
     type: 'maintenance',
-    start: '2026-09-22 23:00',
-    end: '2026-09-23 04:00',
+    start: '2026-09-23 06:00',
+    end: '2026-09-23 11:00',
+    timezone: 'UTC+8',
     notes:
-      'Derived the same way 7.0 was and from the same feed: every 7.0 notice expires 2026-09-22 23:00 on the Europe clock, and HoYo prints "estimated to take 5 hours" for every version update. The 7.1 notice itself is not out.',
+      'Official notice 21946: global start, with an estimated five-hour duration. Actual finish may vary. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
     sourceKey: 'seed:genshin:7.1-maint',
   },
-  // Official 7.1 calendar gives dates in UTC+8, without hours. These display
-  // whole calendar days until timed notices publish; they must not send alerts.
+  // Timed notices replace calendar-only placeholders under their existing keys.
+  // Later events still have calendar dates only and must not send alerts.
   {
     game: 'genshin',
     name: 'Silverwing in Pursuit of the Moon',
     type: 'event',
-    start: '2026-09-24 00:00',
-    end: '2026-10-12 23:59',
-    timezone: 'UTC+8',
-    notify: false,
+    start: '2026-09-24 10:00',
+    end: '2026-10-12 03:59',
     notes:
-      'Official calendar dates only; displayed hours are placeholders. Exact server schedule awaits its notice. Source: https://www.hoyolab.com/article/46673425',
+      'Official notice 21886: both boundaries are server-local (t_lc). Obtain Silver Light and its refinement materials. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
     sourceKey: 'seed:genshin:7.1-silverwing',
   },
   {
@@ -729,8 +671,9 @@ export const SEED_EVENTS: SeedEvent[] = [
     end: '2026-10-20 23:59',
     timezone: 'UTC+8',
     notify: false,
+    dateOnly: true,
     notes:
-      'Official calendar dates only; displayed hours are placeholders. Announcement period continues to October 23. Exact server schedule awaits its notice. Source: https://www.hoyolab.com/article/46673425',
+      'Official calendar: October 12–20 (UTC+8). Result announcement continues through October 23. Source: https://www.hoyolab.com/article/46673425',
     sourceKey: 'seed:genshin:7.1-predictive-victory',
   },
   {
@@ -741,8 +684,8 @@ export const SEED_EVENTS: SeedEvent[] = [
     end: '2026-11-02 23:59',
     timezone: 'UTC+8',
     notify: false,
-    notes:
-      'Official calendar dates only; displayed hours are placeholders. Exact server schedule awaits its notice. Source: https://www.hoyolab.com/article/46673425',
+    dateOnly: true,
+    notes: 'Official calendar: October 21–November 2 (UTC+8). Source: https://www.hoyolab.com/article/46673425',
     sourceKey: 'seed:genshin:7.1-snowball',
   },
   {
@@ -754,21 +697,30 @@ export const SEED_EVENTS: SeedEvent[] = [
     timezone: 'UTC+8',
     dailyTouch: true,
     notify: false,
-    notes:
-      'Official calendar dates only; displayed hours are placeholders. Exact server schedule awaits its notice. Source: https://www.hoyolab.com/article/46673425',
+    dateOnly: true,
+    notes: 'Official calendar: October 26–November 2 (UTC+8). Source: https://www.hoyolab.com/article/46673425',
     sourceKey: 'seed:genshin:7.1-overflowing-favor',
   },
   {
     game: 'genshin',
     name: 'Stygian Onslaught',
     type: 'cycle',
-    start: '2026-09-30 00:00',
-    end: '2026-11-03 23:59',
-    timezone: 'UTC+8',
-    notify: false,
+    start: '2026-09-30 10:00',
+    end: '2026-11-03 03:59',
     notes:
-      'v7.1 rotation. Official calendar dates only; displayed hours are placeholders. Exact server schedule awaits its notice. Source: https://www.hoyolab.com/article/46673425',
+      'v7.1 rotation. Official notice 21168: server-local boundaries. Disturbance Outbreak ends October 10 at 03:59 server time. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
     sourceKey: 'seed:genshin:7.1-stygian',
+  },
+  {
+    game: 'genshin',
+    name: 'Disturbance Outbreak — Resin reward deadline',
+    type: 'event',
+    start: '2026-09-30 10:00',
+    end: '2026-10-10 03:59',
+    category: 'teyvat',
+    notes:
+      'Notice 21168: Stygian Onslaught has a shorter Disturbance Outbreak phase. Spend Resin for selected Domain rewards and Dire Prestige before this deadline; extra Artifact and Dust of Enlightenment rewards also stop then. The full rotation continues until November 3 at 03:59. Both boundaries use server time. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'seed:genshin:7.1-disturbance-outbreak',
   },
 
   /* ================================================== HONKAI: STAR RAIL — v4.4 "In Ravages
@@ -849,9 +801,10 @@ export const SEED_EVENTS: SeedEvent[] = [
     type: 'event',
     notify: false,
     start: '2026-07-24 12:00',
-    end: '2026-11-17 23:00',
+    end: '2026-11-11 06:00',
+    endTimezone: 'UTC+8',
     notes:
-      'Notice says only "Before the end of Version 4.6", and 4.6 has no published end. 4.6 opens 09-28, so a 6-week run would close around 11-08 — this end is likely ~a week long. Left as the older estimate rather than swapped for a fresher guess.',
+      'Original notice says before the end of Version 4.6. Notice 1437 now gives that version boundary as November 11 at 06:00 UTC+8. No separate claim cutoff was verified; alerts remain disabled. Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
     sourceKey: 'seed:hsr:4.4-free-servant',
   },
   {
@@ -959,10 +912,11 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'hsr',
     name: 'v4.6 update maintenance',
     type: 'maintenance',
-    start: '2026-09-27 23:00',
-    end: '2026-09-28 04:00',
+    start: '2026-09-28 06:00',
+    end: '2026-09-28 11:00',
+    timezone: 'UTC+8',
     notes:
-      'Start is the officially printed end of 4.5 (t_gl 2026/09/28 06:00). Game8 projects 4.6 opening Sep 29 off a 6-week assumption — the first-party value wins.',
+      'Official notice 1437: global start, with an estimated five-hour duration. Actual finish may vary. Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
     sourceKey: 'seed:hsr:4.6-maint',
   },
   /* --- v4.5 "To Roll the Stars in Astropolis" (Aug 26 – Sep 27). The update notice has published, so the
@@ -1162,14 +1116,7 @@ export const SEED_EVENTS: SeedEvent[] = [
   },
   // --- banners
   // --- maintenance
-  {
-    game: 'zzz',
-    name: 'v3.1 update maintenance',
-    type: 'maintenance',
-    start: '2026-07-28 23:00',
-    end: '2026-07-29 04:00',
-    sourceKey: 'seed:zzz:3.1-maint',
-  },
+
   /* --- v3.1 "The Long Goodbye" (Jul 29 – Sep 8). The full update notice is out,
      so the game8 estimates this block used to carry are gone: 3.1 opened at
      04:00 on Jul 29 and the version ends 2026-09-08 23:00. Phase 2 flips Aug 19.
@@ -1760,12 +1707,36 @@ export const SEED_EVENTS: SeedEvent[] = [
   },
   {
     game: 'wuwa',
+    name: 'Chord Cleansing — double Echo drops',
+    type: 'event',
+    dailyTouch: true,
+    start: '2026-09-22 04:00',
+    end: '2026-09-29 03:59',
+    notes:
+      'Spend Waveplates on Tacet Suppression for double rewards. Requires Union Level 19. Exact server-local window printed on the official September 8 event overview, checked September 20. Source: https://wutheringwaves.kurogames.com/en/main/news/detail/5428',
+    sourceKey: 'seed:wuwa:3.6-chord',
+  },
+  {
+    game: 'wuwa',
+    name: 'Gifts of Singing Drizzle',
+    type: 'event',
+    dailyTouch: true,
+    start: '2026-10-22 10:00',
+    end: '2026-11-11 03:59',
+    notes:
+      'Log in on one and three cumulative days for five Radiant Tides each. Both boundaries use server time. Source: https://wutheringwaves.kurogames.com/en/main/news/detail/5571',
+    sourceKey: 'seed:wuwa:3.7-singing-drizzle',
+  },
+  {
+    game: 'wuwa',
     name: 'v3.7 update maintenance',
     type: 'maintenance',
     notify: false,
-    start: '2026-09-29 21:00',
-    end: '2026-09-30 04:00',
-    notes: 'No notice yet. Inferred from the official 3.6 close (09-29 11:59) and the usual Kuro overnight window.',
+    start: '2026-09-30 04:00',
+    end: '2026-09-30 11:00',
+    timezone: 'UTC+8',
+    notes:
+      'Official scheduled global maintenance window; actual finish may vary. Source: https://wutheringwaves.kurogames.com/en/main/news/detail/5476',
     sourceKey: 'seed:wuwa:3.7-maint',
   },
 
@@ -1890,24 +1861,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     sourceKey: 'seed:nte:1.3-rails-4',
   },
   // --- banners
-  {
-    game: 'nte',
-    name: 'Shinku — Before the Dawn',
-    type: 'banner',
-    bannerKind: 'character',
-    start: '2026-07-08 04:00',
-    end: '2026-07-29 03:59',
-    sourceKey: 'seed:nte:1.2-shinku',
-  },
-  {
-    game: 'nte',
-    name: 'Blushing Mirage — Arc banner',
-    type: 'banner',
-    bannerKind: 'weapon',
-    start: '2026-07-08 04:00',
-    end: '2026-07-29 03:59',
-    sourceKey: 'seed:nte:1.2-blushing-mirage',
-  },
+
   {
     game: 'nte',
     name: 'Iroi — The Lifeline (phase 2)',
@@ -2501,6 +2455,8 @@ export const SEED_EVENTS: SeedEvent[] = [
     start: '2026-09-23 22:00',
     end: '2026-10-04 21:59',
     sourceKey: 'seed:uma:scout-2026-09-23',
+    timezone: 'UTC',
+    notes: 'Exact publisher window, checked October 3. Source: https://umamusume.com/news/1052/',
   },
   {
     game: 'uma',
@@ -2511,6 +2467,8 @@ export const SEED_EVENTS: SeedEvent[] = [
     start: '2026-09-23 22:00',
     end: '2026-10-04 21:59',
     sourceKey: 'seed:uma:scout-2026-09-23:supports',
+    timezone: 'UTC',
+    notes: 'Exact publisher window, checked October 3. Source: https://umamusume.com/news/1052/',
   },
   {
     game: 'uma',
@@ -2521,6 +2479,8 @@ export const SEED_EVENTS: SeedEvent[] = [
     start: '2026-09-28 22:00',
     end: '2026-10-12 21:59',
     sourceKey: 'seed:uma:scout-2026-09-28',
+    timezone: 'UTC',
+    notes: 'Exact publisher window, checked October 3. Source: https://umamusume.com/news/1073/',
   },
   {
     game: 'uma',
@@ -2531,6 +2491,8 @@ export const SEED_EVENTS: SeedEvent[] = [
     start: '2026-09-28 22:00',
     end: '2026-10-12 21:59',
     sourceKey: 'seed:uma:scout-2026-09-28:supports',
+    timezone: 'UTC',
+    notes: 'Exact publisher window, checked October 3. Source: https://umamusume.com/news/1073/',
   },
   {
     game: 'uma',
@@ -2539,8 +2501,9 @@ export const SEED_EVENTS: SeedEvent[] = [
     notify: false,
     start: '2026-09-28 22:00',
     end: '2026-10-12 21:59',
-    notes: 'Holiday Celebration Part 1 opens alongside it; that campaign has no published close.',
+    notes: 'Exact publisher window, checked October 3. Source: https://umamusume.com/news/1077/',
     sourceKey: 'seed:uma:story-event-20',
+    timezone: 'UTC',
   },
 
   /* ================================================== GODDESS OF VICTORY: NIKKE — the
@@ -3111,6 +3074,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     type: 'livestream',
     start: '2026-10-07 12:30',
     end: '2026-10-11 14:30',
+    timezone: 'UTC+1',
     notes:
       'Not announced. This remains only a forecast window, not a confirmed broadcast. The official 3.2 broadcast was August 28 at 19:30 UTC+8 and offered one exclusive code; neither the next date nor code details are confirmed. Source: https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=4162040&count=30&maxlength=0',
     sourceKey: 'seed:zzz:3.3-livestream',
@@ -3133,7 +3097,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     start: '2026-09-20 11:30',
     end: '2026-09-20 12:30',
     notes:
-      'Official English program: September 20 at 19:30 UTC+8 (11:30 UTC / 12:30 BST). The one-hour display duration is estimated. Source: https://www.youtube.com/watch?v=drFgtruoPe8',
+      'Broadcast completed September 20. Official program start was 19:30 UTC+8 (11:30 UTC / 12:30 BST); the one-hour calendar span remains a display estimate. Version 4.6 releases September 28. Recap and verified codes are in Livestreams. Source: https://www.youtube.com/watch?v=drFgtruoPe8',
     timezone: 'UTC',
     sourceKey: 'seed:hsr:4.6-livestream',
   },
@@ -3145,7 +3109,7 @@ export const SEED_EVENTS: SeedEvent[] = [
     end: '2026-09-19 12:00',
     timezone: 'UTC',
     notes:
-      'Official English broadcast: September 19 at 19:00 UTC+8 (11:00 UTC / noon BST). One-hour display duration is estimated; no end was announced. Source: https://www.youtube.com/watch?v=nMa_e5ChL6w',
+      'Broadcast completed September 19. Official program start was 19:00 UTC+8 (11:00 UTC / noon BST); the one-hour calendar span remains a display estimate. Version 3.7 releases September 30. Recap is in Livestreams. Source: https://www.youtube.com/watch?v=nMa_e5ChL6w',
     sourceKey: 'seed:wuwa:3.7-livestream',
   },
   {
@@ -3877,22 +3841,18 @@ export const SEED_EVENTS: SeedEvent[] = [
   },
   {
     game: 'nte',
-    name: 'Pukaland Travelogue — after update',
+    name: 'Pukaland Travelogue',
     type: 'event',
-    notify: false,
-    start: '2026-09-30 05:00',
+    start: '2026-09-30 11:00',
     end: '2026-11-11 05:59',
     timezone: 'UTC+8',
     notes:
-      'Broadcast slide prints after update, September 30 05:00 through November 11 05:59 UTC+8. Opening depends on the update; this is not a verified maintenance finish. Alerts off pending the dated notice. Source slide: https://www.ntebuild.com/images/articles/nte-1-4-livestream-summary/pukaland-travelogue-event-dates.webp',
+      'Official global window. Opening uses the scheduled maintenance finish. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html',
     sourceKey: 'seed:nte:1.4-pukaland-travelogue',
   },
   ...[
-    ['coal-lump', 'Coal Lump’s Treasure', '2026-10-08', '2026-11-11'],
     ['golden-crackshot', 'Snap! Golden Crackshot', '2026-10-21', '2026-11-11'],
     ['puka-lucky-flip', 'Puka Lucky Flip', '2026-10-29', '2026-11-11'],
-    ['stamina-recharge', 'Stamina Recharge', '2026-10-05', '2026-10-19'],
-    ['pixel-surge', 'Pixel Surge', '2026-10-19', '2026-10-26'],
     ['gold-crash', 'Gold Crash', '2026-10-26', '2026-11-09'],
     ['sunset-circle', 'Beyond the Rails: Sunset Circle', '2026-10-08', '2026-10-22'],
   ].map(([key, name, start, end]): SeedEvent => ({
@@ -3909,23 +3869,805 @@ export const SEED_EVENTS: SeedEvent[] = [
   ...[
     [
       'limited-selector',
-      'Anniversary limited character selection',
-      'Complete the Version 7.1 Archon Quest. Choose one of Tartaglia, Nilou, Baizhu, Chiori, Clorinde or Varesa.',
+      'Tabletop Troupe: A Gathering on Adventure’s Eve — choose a limited 5★',
+      'Requires Adventure Rank 18 and Chapter VII Act IV. Choose one of Tartaglia, Nilou, Baizhu, Chiori, Clorinde or Varesa.',
     ],
     [
       'standard-selector',
-      'Anniversary standard character selection',
-      'Log in to choose one of eight standard five-star characters.',
+      'Across the Frozen Wilds, Honing One’s Edge — choose a standard 5★',
+      'Unlock Wishes, then log in to choose a standard five-star character.',
     ],
   ].map(([key, name, requirement]): SeedEvent => ({
     game: 'genshin',
     category: 'teyvat',
-    name: `${name} — time TBC`,
+    name,
     type: 'event',
-    start: '2026-09-23 00:00',
-    end: '2026-11-03 23:59',
-    notify: false,
-    notes: `${requirement} Official 7.1 Benefits Overview: after update through November 3, server time. Exact hours are not supplied; full-day placeholders shown without alerts. Source: https://sdk.hoyoverse.com/upload/ann/2026/09/12/503dbdabd59d6ff5aebd151d5011b7f7_3634289702927936987_transformed.jpg`,
+    start: '2026-09-23 11:00',
+    startTimezone: 'UTC+8',
+    end: '2026-11-03 14:59',
+    notes: `${requirement} Notices 21924 and 21885: after update through November 3 at 14:59 server time. Opening uses the scheduled global maintenance finish. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000`,
     sourceKey: `seed:genshin:7.1-${key}`,
   })),
+  // October 3 review. Exact windows and source gaps: docs/game-news-review-2026-10-03.md.
+  {
+    game: 'genshin',
+    name: 'When Warm Winds Cavort — Vesna',
+    type: 'banner',
+    start: '2026-09-23 11:00',
+    end: '2026-10-13 17:59',
+    startTimezone: 'UTC+8',
+    bannerKind: 'character',
+    notes:
+      'After the update until 17:59 server time. Opening uses the scheduled global maintenance finish. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'genshin:21876',
+  },
+  {
+    game: 'genshin',
+    name: 'Surging Ballad — Vodyanitsa',
+    type: 'banner',
+    start: '2026-09-23 11:00',
+    end: '2026-10-13 17:59',
+    startTimezone: 'UTC+8',
+    bannerKind: 'character',
+    notes:
+      'After the update until 17:59 server time. Opening uses the scheduled global maintenance finish. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'genshin:21877',
+  },
+  {
+    game: 'genshin',
+    name: 'Epitome Invocation — Beyond the Chrysalis / Hymn of the Maelstrom',
+    type: 'banner',
+    start: '2026-09-23 11:00',
+    end: '2026-10-13 17:59',
+    startTimezone: 'UTC+8',
+    bannerKind: 'weapon',
+    notes:
+      'After the update until 17:59 server time. Opening uses the scheduled global maintenance finish. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'genshin:21878',
+  },
+  {
+    game: 'genshin',
+    name: 'Resplendent Starlight — anniversary login rewards',
+    type: 'event',
+    start: '2026-10-01 04:00',
+    end: '2026-10-19 03:59',
+    dailyTouch: true,
+    notes:
+      'Notice 21879: seven login days give ten Intertwined Fates. Both boundaries use server time. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'seed:genshin:7.1-resplendent-starlight',
+  },
+  {
+    game: 'genshin',
+    name: 'Archon Quest "A Rekviem for the Underworld" — timed reward',
+    type: 'event',
+    start: '2026-09-23 11:00',
+    end: '2026-11-03 14:59',
+    startTimezone: 'UTC+8',
+    notes:
+      'Notice 21880: complete the Archon Quest for additional rewards before 14:59 server time. The time-limited epilogue must also be experienced before this deadline. Opening uses the scheduled maintenance finish. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'genshin:21880',
+  },
+  {
+    game: 'genshin',
+    name: 'Moontrace — Battle Pass',
+    type: 'event',
+    start: '2026-09-23 11:00',
+    end: '2026-11-02 03:59',
+    startTimezone: 'UTC+8',
+    notes:
+      'After update; opening uses the scheduled global maintenance finish. The closing time is server-local. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'genshin:21884',
+  },
+  {
+    game: 'genshin',
+    name: 'Raiment Collection: Warmth of a Sunny Day',
+    type: 'event',
+    start: '2026-09-23 11:00',
+    end: '2026-11-04 05:59',
+    startTimezone: 'UTC+8',
+    category: 'miliastra',
+    endTimezone: 'UTC+8',
+    notes:
+      'Notice 21899: rewards have a weekly limit, not a daily check-in. After update; opening uses the scheduled global maintenance finish. The closing time is global UTC+8. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'genshin:21899',
+  },
+  {
+    game: 'genshin',
+    name: 'Wonderland Treasures: Phantom Night Candlelight',
+    type: 'banner',
+    bannerKind: 'other',
+    start: '2026-09-23 11:00',
+    end: '2026-11-03 14:59',
+    startTimezone: 'UTC+8',
+    category: 'miliastra',
+    notes:
+      'Notice 21896: Event Ode II cosmetic draw, including Candlelit Revelry. After update; opening uses the scheduled global maintenance finish. The closing time is server-local. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'genshin:21896',
+  },
+  {
+    game: 'genshin',
+    name: 'Wonderland Treasures: Moonlight After the Rain',
+    type: 'banner',
+    bannerKind: 'other',
+    start: '2026-09-23 11:00',
+    end: '2026-11-03 14:59',
+    startTimezone: 'UTC+8',
+    category: 'miliastra',
+    notes:
+      'Notice 21895: Event Ode cosmetic draw, including Osmanthus in the Moonlight. After update; opening uses the scheduled global maintenance finish. The closing time is server-local. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'genshin:21895',
+  },
+  {
+    game: 'genshin',
+    name: 'Silvery Moonlight Chronicle — Miliastra Pass',
+    type: 'event',
+    start: '2026-09-23 11:00',
+    end: '2026-11-02 03:59',
+    startTimezone: 'UTC+8',
+    category: 'miliastra',
+    notes:
+      'Notice 21895: Miliastra Pass rewards close November 2 at 03:59 server time; purchases stop one hour earlier, at 02:59. Opening uses the scheduled global maintenance finish. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'seed:genshin:7.1-miliastra-chronicle',
+  },
+  {
+    game: 'genshin',
+    name: 'Miliastra Wonderland: Moonlit Season — Play Phase',
+    type: 'event',
+    start: '2026-09-24 10:00',
+    end: '2026-11-03 03:59',
+    category: 'miliastra',
+    notes:
+      'Play phase ends before the showcase phase. Both boundaries use server time. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'genshin:21900',
+  },
+  {
+    game: 'genshin',
+    name: 'Starlit Gala: Wonderland Selects',
+    type: 'event',
+    start: '2026-10-01 12:00',
+    end: '2026-10-22 03:59',
+    timezone: 'UTC+8',
+    category: 'miliastra',
+    notes:
+      'Notice 21897: play featured Wonderlands and complete Celebration Objectives. Both boundaries are global UTC+8. This is the in-game event; the web event is separate. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'seed:genshin:7.1-wonderland-selects',
+  },
+  {
+    game: 'hsr',
+    name: 'An Ocean in a Pearl — Pearl',
+    type: 'banner',
+    start: '2026-09-28 11:00',
+    end: '2026-11-10 15:00',
+    startTimezone: 'UTC+8',
+    bannerKind: 'character',
+    notes:
+      'Notice 1366: opening follows global maintenance; closing uses server time (t_lc). Pearl and her Light Cone run longer than the Evanescia rerun. Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
+    sourceKey: 'seed:hsr:4.6-pearl',
+  },
+  {
+    game: 'hsr',
+    name: 'Brilliant Fixation — Colors for Tomorrow',
+    type: 'banner',
+    start: '2026-09-28 11:00',
+    end: '2026-11-10 15:00',
+    startTimezone: 'UTC+8',
+    bannerKind: 'weapon',
+    notes:
+      'Notice 1366: opening follows global maintenance; closing uses server time (t_lc). Pearl and her Light Cone run longer than the Evanescia rerun. Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
+    sourceKey: 'seed:hsr:4.6-colors-for-tomorrow',
+  },
+  {
+    game: 'hsr',
+    name: 'The Demoiselle in Charge — Evanescia',
+    type: 'banner',
+    start: '2026-09-28 11:00',
+    end: '2026-10-21 11:59',
+    startTimezone: 'UTC+8',
+    bannerKind: 'character',
+    notes:
+      'Notice 1366: opening follows global maintenance; closing uses server time (t_lc). Pearl and her Light Cone run longer than the Evanescia rerun. Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
+    sourceKey: 'seed:hsr:4.6-evanescia',
+  },
+  {
+    game: 'hsr',
+    name: 'Brilliant Fixation — Until the Flowers Bloom Again',
+    type: 'banner',
+    start: '2026-09-28 11:00',
+    end: '2026-10-21 11:59',
+    startTimezone: 'UTC+8',
+    bannerKind: 'weapon',
+    notes:
+      'Notice 1366: opening follows global maintenance; closing uses server time (t_lc). Pearl and her Light Cone run longer than the Evanescia rerun. Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
+    sourceKey: 'seed:hsr:4.6-flowers-bloom',
+  },
+  {
+    game: 'hsr',
+    name: 'Love, Ghosts & Robots',
+    type: 'event',
+    start: '2026-09-28 11:00',
+    end: '2026-11-11 03:59',
+    startTimezone: 'UTC+8',
+    endTimezone: 'UTC+8',
+    notes:
+      'Notice 1437 and the event notice give this deadline. Opening uses the scheduled global maintenance finish. Closing is global UTC+8 (t_gl). Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
+    sourceKey: 'hsr:1364',
+  },
+  {
+    game: 'hsr',
+    name: 'Astral Imagea Park: Park Souvenir — free vouchers',
+    type: 'event',
+    start: '2026-09-28 11:00',
+    end: '2026-11-11 06:00',
+    startTimezone: 'UTC+8',
+    endTimezone: 'UTC+8',
+    notes:
+      'Notice 1437 and the event notice give this deadline. Opening uses the scheduled global maintenance finish. Closing is global UTC+8 (t_gl). Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
+    sourceKey: 'seed:hsr:4.6-park-souvenir',
+  },
+  {
+    game: 'hsr',
+    name: 'Astral Imagea Park: Astral Trendible',
+    type: 'event',
+    start: '2026-09-28 11:00',
+    end: '2026-11-11 06:00',
+    startTimezone: 'UTC+8',
+    endTimezone: 'UTC+8',
+    notes:
+      'Notice 1437 and the event notice give this deadline. Opening uses the scheduled global maintenance finish. Closing is global UTC+8 (t_gl). Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
+    sourceKey: 'seed:hsr:4.6-astral-trendible',
+  },
+  {
+    game: 'hsr',
+    name: 'Wishpower UP! Down with Voracity!',
+    type: 'event',
+    start: '2026-09-28 11:00',
+    end: '2026-11-11 06:00',
+    startTimezone: 'UTC+8',
+    endTimezone: 'UTC+8',
+    notes:
+      'Notice 1437 and the event notice give this deadline. Opening uses the scheduled global maintenance finish. Closing is global UTC+8 (t_gl). Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
+    sourceKey: 'hsr:1389',
+  },
+  {
+    game: 'hsr',
+    name: 'Nameless Honor — Battle Pass',
+    type: 'event',
+    start: '2026-09-28 11:00',
+    end: '2026-11-09 03:59',
+    startTimezone: 'UTC+8',
+    notes:
+      'Notice 1437 and the event notice give this deadline. Opening uses the scheduled global maintenance finish. Closing uses server time (t_lc). Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
+    sourceKey: 'hsr:1416',
+  },
+  {
+    game: 'hsr',
+    name: 'Interastral Peace Gala: One Take',
+    type: 'event',
+    start: '2026-10-21 12:00',
+    end: '2026-11-11 03:59',
+    endTimezone: 'UTC+8',
+    notes:
+      'Notice 1437: starts at 12:00 server time (t_lc), ends at 03:59 UTC+8 (t_gl). Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
+    sourceKey: 'seed:hsr:4.6-interastral-gala',
+  },
+  {
+    game: 'hsr',
+    name: 'Memory of Chaos',
+    type: 'cycle',
+    start: '2026-09-28 11:00',
+    end: '2026-11-02 03:59',
+    startTimezone: 'UTC+8',
+    notes:
+      'Crossing the Afterlife. Notice 1437 supplies the server-local close (t_lc); no season length was extrapolated. Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
+    sourceKey: 'seed:hsr:moc-4.6',
+  },
+  {
+    game: 'hsr',
+    name: 'Apocalyptic Shadow',
+    type: 'cycle',
+    start: '2026-10-05 04:00',
+    end: '2026-11-16 03:59',
+    notes:
+      'Dominance of Oblivion. Notice 1437 supplies the server-local close (t_lc); no season length was extrapolated. Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
+    sourceKey: 'seed:hsr:as-2026-10-05',
+  },
+  {
+    game: 'hsr',
+    name: 'Pure Fiction',
+    type: 'cycle',
+    start: '2026-10-19 04:00',
+    end: '2026-11-30 03:59',
+    notes:
+      'Imagined Words. Notice 1437 supplies the server-local close (t_lc); no season length was extrapolated. Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
+    sourceKey: 'seed:hsr:pf-2026-10-19',
+  },
+  {
+    game: 'hsr',
+    name: 'Memory of Chaos',
+    type: 'cycle',
+    start: '2026-11-02 04:00',
+    end: '2026-12-14 03:59',
+    notes:
+      'Survival of the Fittest. Notice 1437 supplies the server-local close (t_lc); no season length was extrapolated. Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
+    sourceKey: 'seed:hsr:moc-2026-11-02',
+  },
+  {
+    game: 'wuwa',
+    name: 'Chisa + Iuno — reruns',
+    type: 'banner',
+    start: '2026-09-30 11:00',
+    end: '2026-10-22 09:59',
+    startTimezone: 'UTC+8',
+    bannerKind: 'character',
+    notes:
+      'Official phase-one notice: opening uses scheduled global maintenance finish; closing uses server time. Source: https://wutheringwaves.kurogames.com/en/main/news/detail/5546',
+    sourceKey: 'seed:wuwa:3.7-p1',
+  },
+  {
+    game: 'wuwa',
+    name: 'Kumokiri / Moongazer’s Sigil',
+    type: 'banner',
+    start: '2026-09-30 11:00',
+    end: '2026-10-22 09:59',
+    startTimezone: 'UTC+8',
+    bannerKind: 'weapon',
+    notes:
+      'Official phase-one notice: opening uses scheduled global maintenance finish; closing uses server time. Source: https://wutheringwaves.kurogames.com/en/main/news/detail/5546',
+    sourceKey: 'seed:wuwa:3.7-p1-weapons',
+  },
+  {
+    game: 'wuwa',
+    name: 'Cubie Wars',
+    type: 'event',
+    start: '2026-09-30 11:00',
+    end: '2026-11-11 11:59',
+    startTimezone: 'UTC+8',
+    notes:
+      'Official 3.7 patch notes. Closing uses server time. Opening uses scheduled global maintenance finish. Source: https://wutheringwaves.kurogames.com/en/main/news/detail/5571',
+    sourceKey: 'seed:wuwa:3.7-cubie',
+  },
+  {
+    game: 'wuwa',
+    name: 'Dreams in the Capsule',
+    type: 'event',
+    start: '2026-09-30 11:00',
+    end: '2026-11-11 03:59',
+    startTimezone: 'UTC+8',
+    notes:
+      'Official 3.7 patch notes. Closing uses server time. Opening uses scheduled global maintenance finish. Source: https://wutheringwaves.kurogames.com/en/main/news/detail/5571',
+    sourceKey: 'seed:wuwa:3.7-capsule',
+  },
+  {
+    game: 'wuwa',
+    name: 'Artisan’s Search',
+    type: 'event',
+    start: '2026-10-08 04:00',
+    end: '2026-10-26 03:59',
+    notes:
+      'Official 3.7 patch notes. Closing uses server time. Opening uses server time. Source: https://wutheringwaves.kurogames.com/en/main/news/detail/5571',
+    sourceKey: 'seed:wuwa:3.7-artisan',
+  },
+  {
+    game: 'wuwa',
+    name: 'Echo Erase',
+    type: 'event',
+    start: '2026-10-22 10:00',
+    end: '2026-11-09 03:59',
+    notes:
+      'Official 3.7 patch notes. Closing uses server time. Opening uses server time. Source: https://wutheringwaves.kurogames.com/en/main/news/detail/5571',
+    sourceKey: 'seed:wuwa:3.7-echo-erase',
+  },
+  {
+    game: 'wuwa',
+    name: 'Beyond the Waves: Land of Xuanfang',
+    type: 'event',
+    start: '2026-10-29 04:00',
+    end: '2026-11-11 03:59',
+    dailyTouch: true,
+    notes:
+      'Official 3.7 patch notes. Closing uses server time. Opening uses server time. Source: https://wutheringwaves.kurogames.com/en/main/news/detail/5571',
+    sourceKey: 'seed:wuwa:3.7-beyond-waves',
+  },
+  {
+    game: 'wuwa',
+    name: 'Gifts of Waking Moon',
+    type: 'event',
+    start: '2026-09-30 11:00',
+    end: '2026-11-11 03:59',
+    startTimezone: 'UTC+8',
+    dailyTouch: true,
+    notes:
+      'Official 3.7 patch notes. Closing uses server time. Opening uses scheduled global maintenance finish. Source: https://wutheringwaves.kurogames.com/en/main/news/detail/5571',
+    sourceKey: 'seed:wuwa:3.7-login',
+  },
+  {
+    game: 'nte',
+    name: 'v1.4 update maintenance',
+    type: 'maintenance',
+    start: '2026-09-30 06:00',
+    end: '2026-09-30 11:00',
+    timezone: 'UTC+8',
+    notify: false,
+    notes:
+      'Scheduled global maintenance window. Actual finish may vary. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html',
+    sourceKey: 'seed:nte:1.4-maint',
+  },
+  {
+    game: 'nte',
+    name: 'Foretold Finale — Blackbird',
+    type: 'banner',
+    start: '2026-09-30 11:00',
+    end: '2026-10-21 05:59',
+    timezone: 'UTC+8',
+    bannerKind: 'character',
+    notes:
+      'Official first-half window. Opening uses the scheduled maintenance finish. Both boundaries are global UTC+8. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html',
+    sourceKey: 'seed:nte:1.4-blackbird',
+  },
+  {
+    game: 'nte',
+    name: 'Fading Reverie — Lacrimosa',
+    type: 'banner',
+    start: '2026-09-30 11:00',
+    end: '2026-10-21 05:59',
+    timezone: 'UTC+8',
+    bannerKind: 'character',
+    notes:
+      'Official first-half window. Opening uses the scheduled maintenance finish. Both boundaries are global UTC+8. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html',
+    sourceKey: 'seed:nte:1.4-lacrimosa',
+  },
+  {
+    game: 'nte',
+    name: 'Crime and Punishment — Roostfeather Special',
+    type: 'banner',
+    start: '2026-09-30 11:00',
+    end: '2026-10-21 05:59',
+    timezone: 'UTC+8',
+    bannerKind: 'weapon',
+    notes:
+      'Official first-half window. Opening uses the scheduled maintenance finish. Both boundaries are global UTC+8. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html',
+    sourceKey: 'seed:nte:1.4-roostfeather',
+  },
+  {
+    game: 'nte',
+    name: 'The Last Rose — Nocturne Special',
+    type: 'banner',
+    start: '2026-09-30 11:00',
+    end: '2026-10-21 05:59',
+    timezone: 'UTC+8',
+    bannerKind: 'weapon',
+    notes:
+      'Official first-half window. Opening uses the scheduled maintenance finish. Both boundaries are global UTC+8. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html',
+    sourceKey: 'seed:nte:1.4-nocturne',
+  },
+  {
+    game: 'nte',
+    name: 'Circle Gifts — login rewards',
+    type: 'event',
+    start: '2026-09-30 11:00',
+    end: '2026-11-11 05:59',
+    timezone: 'UTC+8',
+    dailyTouch: true,
+    notes:
+      'Official global window. Opening uses the scheduled maintenance finish. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html',
+    sourceKey: 'seed:nte:1.4-circle-gifts',
+  },
+  {
+    game: 'nte',
+    name: 'Terminal Depths',
+    type: 'cycle',
+    start: '2026-09-30 11:00',
+    end: '2026-11-11 05:59',
+    timezone: 'UTC+8',
+    notes:
+      'Official global window. Opening uses the scheduled maintenance finish. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html',
+    sourceKey: 'seed:nte:1.4-terminal-depths',
+  },
+  {
+    game: 'nte',
+    name: 'Born to Race — mystery boxes',
+    type: 'banner',
+    start: '2026-09-30 11:00',
+    end: '2026-11-11 05:59',
+    timezone: 'UTC+8',
+    bannerKind: 'other',
+    notes:
+      'Official global window. Opening uses the scheduled maintenance finish. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html',
+    sourceKey: 'seed:nte:1.4-born-to-race',
+  },
+  {
+    game: 'nte',
+    name: 'Everdriving — mystery boxes',
+    type: 'banner',
+    start: '2026-09-30 11:00',
+    end: '2026-11-11 05:59',
+    timezone: 'UTC+8',
+    bannerKind: 'other',
+    notes:
+      'Official global window. Opening uses the scheduled maintenance finish. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html',
+    sourceKey: 'seed:nte:1.4-everdriving',
+  },
+  {
+    game: 'nte',
+    name: 'Circle Bounty',
+    type: 'event',
+    start: '2026-09-30 11:00',
+    end: '2026-11-10 23:59',
+    timezone: 'UTC+8',
+    notes:
+      'Official global window. Opening uses the scheduled maintenance finish. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html',
+    sourceKey: 'seed:nte:1.4-circle-bounty',
+  },
+  {
+    game: 'nte',
+    name: 'Coal Lump’s Treasure',
+    type: 'event',
+    start: '2026-10-08 10:00',
+    end: '2026-11-11 05:59',
+    timezone: 'UTC+8',
+    notes: 'Official global window. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html',
+    sourceKey: 'seed:nte:1.4-coal-lump',
+  },
+  {
+    game: 'nte',
+    name: 'Stamina Recharge',
+    type: 'event',
+    start: '2026-10-05 05:00',
+    end: '2026-10-19 04:59',
+    notes:
+      'Official server-local window. City Stamina is consumed at twice the normal efficiency. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html',
+    sourceKey: 'seed:nte:1.4-stamina-recharge',
+  },
+  {
+    game: 'nte',
+    name: 'Pixel Surge',
+    type: 'event',
+    start: '2026-10-19 05:00',
+    end: '2026-10-26 04:59',
+    dailyTouch: true,
+    notes:
+      'Official server-local window. Double rewards for up to 120 Character Pixels each day; unused allowance carries over, up to 840 total. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html',
+    sourceKey: 'seed:nte:1.4-pixel-surge',
+  },
+  {
+    game: 'lads',
+    sourceKey: 'seed:lads:2026-09-night-that-never-ends',
+    name: 'A Night That Never Ends',
+    type: 'banner',
+    start: '2026-09-22 05:00',
+    end: '2026-10-10 04:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/Love_Deepspace/status/2101521776069226857',
+    bannerKind: 'memory',
+    dailyTouch: false,
+  },
+  {
+    game: 'lads',
+    sourceKey: 'seed:lads:2026-10-rafayel-into-the-canvas',
+    name: 'Rafayel — Into The Canvas rerun',
+    type: 'banner',
+    start: '2026-10-03 05:00',
+    end: '2026-10-10 04:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/Love_Deepspace/status/2105863397162250590',
+    bannerKind: 'memory',
+    dailyTouch: false,
+  },
+  {
+    game: 'nikke',
+    sourceKey: 'seed:nikke:union-raid-2026-10',
+    name: 'Union Raid',
+    type: 'cycle',
+    start: '2026-10-09 05:00',
+    end: '2026-10-15 04:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/NIKKE_en/status/2105930786863996955',
+    timezone: 'UTC+9',
+    dailyTouch: true,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:dream-team-2026-09',
+    name: 'Aim for the Stars! Dream Team',
+    type: 'event',
+    start: '2026-09-27 22:00',
+    end: '2026-10-04 21:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://umamusume.com/news/1055/',
+    timezone: 'UTC',
+    dailyTouch: true,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:dream-team-2026-09:rewards',
+    name: 'Aim for the Stars! Dream Team — reward collection',
+    type: 'event',
+    start: '2026-10-04 22:00',
+    end: '2026-10-07 21:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://umamusume.com/news/1055/',
+    timezone: 'UTC',
+    dailyTouch: false,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:story-event-20:rewards',
+    name: 'Illuminate the Heart — reward collection',
+    type: 'event',
+    start: '2026-10-12 22:00',
+    end: '2026-10-15 21:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://umamusume.com/news/1077/',
+    timezone: 'UTC',
+    dailyTouch: false,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:holiday-part-1-2026',
+    name: 'Holiday Celebration Part 1',
+    type: 'event',
+    start: '2026-09-28 22:00',
+    end: '2026-10-29 21:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://umamusume.com/news/1079/',
+    timezone: 'UTC',
+    dailyTouch: false,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:scout-2026-10-07',
+    name: 'Spotlight Scout — October 7',
+    type: 'banner',
+    start: '2026-10-07 22:00',
+    end: '2026-10-15 21:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/umamusume_eng/status/2105477975110258964',
+    timezone: 'UTC',
+    bannerKind: 'character',
+    dailyTouch: false,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:scout-2026-10-07:supports',
+    name: 'Spotlight Support Card Scout — October 7',
+    type: 'banner',
+    start: '2026-10-07 22:00',
+    end: '2026-10-15 21:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/umamusume_eng/status/2105477975110258964',
+    timezone: 'UTC',
+    bannerKind: 'support',
+    dailyTouch: false,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:scout-2026-10-14',
+    name: 'Spotlight Scout — October 14',
+    type: 'banner',
+    start: '2026-10-14 22:00',
+    end: '2026-10-23 21:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/umamusume_eng/status/2105477975110258964',
+    timezone: 'UTC',
+    bannerKind: 'character',
+    dailyTouch: false,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:scout-2026-10-14:supports',
+    name: 'Spotlight Support Card Scout — October 14',
+    type: 'banner',
+    start: '2026-10-14 22:00',
+    end: '2026-10-23 21:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/umamusume_eng/status/2105477975110258964',
+    timezone: 'UTC',
+    bannerKind: 'support',
+    dailyTouch: false,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:scout-2026-10-20',
+    name: 'Spotlight Scout — October 20',
+    type: 'banner',
+    start: '2026-10-20 22:00',
+    end: '2026-11-01 21:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/umamusume_eng/status/2105477975110258964',
+    timezone: 'UTC',
+    bannerKind: 'character',
+    dailyTouch: false,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:scout-2026-10-20:supports',
+    name: 'Spotlight Support Card Scout — October 20',
+    type: 'banner',
+    start: '2026-10-20 22:00',
+    end: '2026-11-01 21:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/umamusume_eng/status/2105477975110258964',
+    timezone: 'UTC',
+    bannerKind: 'support',
+    dailyTouch: false,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:scout-2026-10-24',
+    name: 'Spotlight Scout — October 24',
+    type: 'banner',
+    start: '2026-10-24 06:00',
+    end: '2026-11-06 21:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/umamusume_eng/status/2105477975110258964',
+    timezone: 'UTC',
+    bannerKind: 'character',
+    dailyTouch: false,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:scout-2026-10-27:supports',
+    name: 'Spotlight Support Card Scout — October 27',
+    type: 'banner',
+    start: '2026-10-27 22:00',
+    end: '2026-11-06 21:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/umamusume_eng/status/2105477975110258964',
+    timezone: 'UTC',
+    bannerKind: 'support',
+    dailyTouch: false,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:cm-sagittarius-2026-10',
+    name: 'Champions Meeting',
+    type: 'cycle',
+    start: '2026-10-07 22:00',
+    end: '2026-10-16 21:59',
+    notes:
+      'Sagittarius Cup. League selection opens October 7; Round 1 opens October 10 at 22:00 UTC. Nakayama Turf 2500m (Long), Right/Inner, Winter, Cloudy, Good. Source: https://x.com/umamusume_eng/status/2105477975110258964',
+    timezone: 'UTC',
+    dailyTouch: true,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:holiday-part-2-2026',
+    name: 'Holiday Celebration Part 2',
+    type: 'event',
+    start: '2026-10-08 15:00',
+    end: '2026-10-24 14:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/umamusume_eng/status/2105477975110258964',
+    timezone: 'UTC',
+    dailyTouch: false,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:sparkly-magic-show-2026-10',
+    name: 'Sparkly Magic Show',
+    type: 'event',
+    start: '2026-10-15 22:00',
+    end: '2026-10-18 21:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/umamusume_eng/status/2105477975110258964',
+    timezone: 'UTC',
+    dailyTouch: false,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:legend-races-2026-10',
+    name: 'Legend Races — October',
+    type: 'event',
+    start: '2026-10-19 22:00',
+    end: '2026-10-25 14:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/umamusume_eng/status/2105477975110258964',
+    timezone: 'UTC',
+    dailyTouch: true,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:story-event-21',
+    name: 'Happy New Future!',
+    type: 'event',
+    start: '2026-10-20 22:00',
+    end: '2026-11-01 21:59',
+    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/umamusume_eng/status/2105477975110258964',
+    timezone: 'UTC',
+    dailyTouch: false,
+  },
+  {
+    game: 'uma',
+    sourceKey: 'seed:uma:cm-capricorn-2026-10',
+    name: 'Champions Meeting',
+    type: 'cycle',
+    start: '2026-10-27 22:00',
+    end: '2026-11-06 21:59',
+    notes:
+      'Capricorn Cup. Chukyo Turf 1200m (Sprint), Left, Winter, Sunny, Firm. Full season window from the publisher roadmap. Source: https://x.com/umamusume_eng/status/2105477975110258964',
+    timezone: 'UTC',
+    dailyTouch: true,
+  },
 ];

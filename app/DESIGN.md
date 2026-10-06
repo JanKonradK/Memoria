@@ -1,655 +1,105 @@
----
-name: Memoria
-description: Jewelry on charcoal — chrome panels that recede so each game's own colour reads as an edge, a title and a tube.
-colors:
-  ground: '#000000'
-  surface-hi: '#131316'
-  surface-lo: '#0c0c0e'
-  surface-hover-hi: '#1a1a1e'
-  surface-hover-lo: '#121215'
-  inset: '#08080a'
-  line: '#232329'
-  line-strong: '#34343c'
-  text: '#f4f4f6'
-  text-dim: '#9a9aa4'
-  text-mute: '#63636d'
-  critical: '#ff5a48'
-  critical-bg: '#241009'
-  soon: '#f0a83c'
-  soon-bg: '#231a08'
-  ok: '#46c795'
-  later: '#74747e'
-  tag-event: '#5b8def'
-  tag-banner: '#c084fc'
-  tag-cycle: '#46c795'
-  tag-patch: '#938c7b'
-  tag-maintenance: '#ff5a48'
-  tag-daily: '#f0a83c'
-  tag-weekly: '#80f4ff'
-typography:
-  title:
-    fontFamily: "var(--game-title-font, 'DM Sans', system-ui, sans-serif)"
-    fontSize: '1.0625rem'
-    fontWeight: 600
-    lineHeight: '1.5rem'
-    letterSpacing: '-0.01em'
-  heading:
-    fontFamily: "'DM Sans', system-ui, sans-serif"
-    fontSize: '1.25rem'
-    fontWeight: 600
-    lineHeight: '1.75rem'
-  lead:
-    fontFamily: "'DM Sans', system-ui, sans-serif"
-    fontSize: '1rem'
-    fontWeight: 500
-    lineHeight: '1.5rem'
-  body:
-    fontFamily: "'DM Sans', system-ui, sans-serif"
-    fontSize: '0.8125rem'
-    fontWeight: 400
-    lineHeight: '1.125rem'
-  meta:
-    fontFamily: "'DM Sans', system-ui, sans-serif"
-    fontSize: '0.75rem'
-    fontWeight: 400
-    lineHeight: '1rem'
-  label:
-    fontFamily: "'DM Sans', system-ui, sans-serif"
-    fontSize: '0.625rem'
-    fontWeight: 500
-    lineHeight: '0.875rem'
-    letterSpacing: '0.09em'
-  numeral:
-    fontFamily: "'IBM Plex Mono', ui-monospace, monospace"
-    fontSize: '0.875rem'
-    fontWeight: 500
-    lineHeight: '1.125rem'
-    letterSpacing: '-0.01em'
-  numeral-lead:
-    fontFamily: "'IBM Plex Mono', ui-monospace, monospace"
-    fontSize: '1.75rem'
-    fontWeight: 500
-    lineHeight: '2rem'
-    letterSpacing: '-0.02em'
-rounded:
-  xs: '4px'
-  sm: '6px'
-  md: '10px'
-  lg: '14px'
-  game: '22px'
-  pill: '999px'
-spacing:
-  xs: '4px'
-  sm: '8px'
-  md: '12px'
-  lg: '16px'
-  xl: '24px'
-  xxl: '40px'
-components:
-  panel:
-    backgroundColor: 'linear-gradient(180deg, {colors.surface-hi}, {colors.surface-lo})'
-    textColor: '{colors.text}'
-    rounded: '{rounded.md}'
-    padding: '12px'
-  card:
-    backgroundColor: 'raking gradients from gameRim(trio) over gameWash(primary)'
-    borderColor: 'none — urgency only'
-    boxShadow: 'inset top highlight + neutral cast'
-    rounded: '{rounded.game}'
-    padding: '12px'
-  button-primary:
-    backgroundColor: '{colors.inset}'
-    textColor: '{colors.text}'
-    borderColor: '{colors.line-strong}'
-    rounded: '{rounded.sm}'
-    padding: '5px 12px'
-  button-ghost:
-    backgroundColor: 'transparent'
-    textColor: '{colors.text-dim}'
-    borderColor: '{colors.line}'
-    rounded: '{rounded.sm}'
-    padding: '5px 12px'
-  input:
-    backgroundColor: '{colors.inset}'
-    textColor: '{colors.text}'
-    borderColor: '{colors.line}'
-    rounded: '{rounded.sm}'
-    padding: '5px 8px'
-    typography: '{typography.numeral}'
-  chip:
-    backgroundColor: 'mix(tag-kind, {colors.inset}, 32%)'
-    textColor: 'mix(tag-kind, #ffffff, 78%)'
-    rounded: '{rounded.xs}'
-    padding: '2px 6px'
-    typography: '{typography.label}'
-  tube:
-    backgroundColor: '{colors.inset}'
-    rounded: '{rounded.pill}'
-    height: '10px'
----
-
-# Design System: Memoria
-
-## Overview
-
-**Creative North Star: "Jewelry on charcoal"**
-
-Memoria holds five, ten, fifteen games at once. Each one arrives with colours the
-owner chose, and those colours are the only way the eye finds the right card in
-under a second. The chrome's job is to be a machined charcoal housing that
-recedes against an OLED ground, so the identity reads as **an edge, a title, and
-a tube** — saturated and small — rather than as a painted wall.
-
-That is the whole discipline. A **panel** stays charcoal and lets the identity sit
-on its edge; a **game card** goes further and takes a raking cast from the game's
-own chromatic colour, because a card is a thing you pick out of a rail rather than
-a region of the page. Everything saturated is either a game asserting itself in
-one of three specific roles, or urgency telling the user something is about to be
-lost. Those two systems never occupy the same pixel job, and when
-they collide, **urgency wins**: a critical card takes a red ring even though it is
-otherwise the only thing in the product allowed to go unoutlined.
-
-Density is high and deliberate. This is an Operate surface for someone checking
-in at speed, several games deep, once or twice a day. Numbers are the content, so
-every number in the product is tabular mono, and nothing may animate in a way
-that delays reading one.
-
-**Key characteristics:**
-
-- OLED ground (`#000000`); chrome panels are a two-stop charcoal gradient with a
-  grain tile, never a flat fill
-- Depth from tone, gradient and grain; cards add a top highlight and a neutral cast
-- Identity is a trio per game: raking cast, title ink, top highlight
-- Two type voices only: DM Sans for language, IBM Plex Mono for every number
-- Per-game display faces are data, not decoration
-- Resources are containment tubes; completion is a ring, never a square
-
-## Colors
-
-### Ground and chrome
-
-- **Ground** (`#000000` dark / `#EFEAE0` light): the canvas. On dark this is
-  literal OLED black, which is also why a card's depth has to come from inside
-  it. On light it is cream paper, never white.
-- **Surface** (`#131316 → #0C0C0E` dark / `#F3EEE4 → #EBE4D6` light): every
-  chrome panel, as a two-stop vertical gradient. The gradient is what makes light
-  appear to fall from above; a flat fill at this size bands and reads plastic.
-- **Surface hovered** (`#1A1A1E → #121215`): one step up, gradient preserved.
-- **Inset** (`#08080A` dark / `#E4DDD0` light): flat fill for small parts that
-  should not carry their own light — inputs, tube tracks, chip backgrounds,
-  segmented-control wells.
-- **Line** (`#232329`) and **Line strong** (`#34343C`): the 1px vocabulary.
-  Hairline for resting edges, strong for selected controls and hovered chrome.
-
-### Text ramp
-
-**Text** (`#F4F4F6`) → **Text dim** (`#9A9AA4`) → **Text mute** (`#63636D`).
-Three steps, and every one of them is used on the card fill directly. The raking
-cast is strongest in the top-left corner and gone by the middle of the card, so
-running text never sits on the saturated part of it.
-
-### Urgency
-
-Urgency owns countdowns, critical edges, and capped tubes.
-
-- **Critical** (`#FF5A48` dark / `#C13A24` light): dying. Under the critical
-  window, or already overflowing.
-- **Soon** (`#F0A83C` dark / `#A2700D` light): capping. Attention, not alarm.
-- **Ok** (`#46C795` dark / `#2C7A57` light): done, healthy, sleep-safe.
-- **Later** (`#74747E` dark / `#8A8478` light): beyond the horizon; present but
-  not asking for anything.
-
-### Game identity
-
-A game carries up to three owner-supplied colours. They are **never replaced** —
-a pale primary stays pale jewelry rather than being dark-filtered into mud — but
-they are lifted toward a tinted variant of their own hue when the current ground
-would make them illegible. Never toward pure white or black, which bleaches an
-owner's colour into grey.
-
-| Role      | Job                                                                                                            |
-| --------- | -------------------------------------------------------------------------------------------------------------- |
-| Primary   | The base card wash and the timeline bar                                                                        |
-| Secondary | Title ink and the lead tube tone                                                                               |
-| Accent    | Icon rim and small highlights                                                                                  |
-| Rim       | The card's raking cast and its top highlight: accent → secondary → primary, skipping near-white and near-black |
-
-### Tag hues
-
-Every tag kind has a fixed hue so a chip is recognisable before it is read.
-Event `#5B8DEF`, banner `#C084FC`, cycle `#46C795`, patch `#938C7B`,
-maintenance `#FF5A48`, daily `#F0A83C`, weekly `#80F4FF`. A chip is that hue
-mixed 32% into inset for its fill and 78% toward white for its ink.
-
-### Named rules
-
-**The Two Systems Rule.** Colour means urgency or it means a game-trio role. It
-never means both on the same pixel job, and urgency outranks identity wherever
-they compete.
-
-**The Raking Light Rule.** A game card is lit from a corner, not filled in. Its
-cast comes from two raking gradients over the chrome — the identity colour at 32%
-from the top-left running out by 62%, and the secondary at 16% from the
-bottom-right — above a 7% base wash. One flat vertical tint at the same strength
-reads as a tinted rectangle; the two angles are what make it read as an object
-with light falling across it.
-
-**The Cast Comes From The Chromatic Member Rule.** The gradients are sourced from
-`gameRim`'s pick, never from the primary. Several games' primaries are near-white
-creams, and tinting charcoal with a cream lightens it without carrying any hue at
-all — which is exactly how two different games ended up looking like the same grey
-card. Whatever colour the card casts, it has to be a colour someone could name.
-
-**The Lift, Never Bleach Rule.** An illegible game colour walks toward a tinted
-lift of its own hue until it clears 3.2:1, retaining at least ~40% of the source.
-Substituting white, black or grey is a bug.
-
-**The Trio Answers Before The Lift Does Rule.** A lift is the second answer, not
-the first. `gameTitleInk` walks primary → secondary → accent for a member that
-already clears 3:1 against the current ground, and only lifts when none does.
-This is what a two-colour game is _for_: Wuthering Waves ships a pale `#d3dae0`
-and a navy `#27396f`, and each theme simply gets the one that was always right
-for it, unmodified. Lifting the pale one instead produced `#7a7e82` — a grey
-belonging to no game, which is the Bleach failure arriving by a different road.
-Games that supply no dark option still lift, and should.
-
-**The Ground Is An Argument Rule.** Legibility is a relationship, not a property,
-so every colour helper takes the surface it is being painted against. There is
-exactly one source for that hex — `THEME_GROUND` in `theme.ts`, reached through
-`useGround()`. A component that writes `#000000` or `#efeae0` inline has forked
-the stylesheet; `design-tokens.test.ts` asserts the JS mirror against `index.css`
-and against `index.html`'s pre-paint script, which cannot import and so must be
-checked.
-
-**The No Raw Palette Rule.** A component may not name a Tailwind palette class.
-Every colour arrives through a token or through a trio helper.
-
-**The Owner Palette Is Not A Token Rule.** A game's trio is data, not design
-system. Those hexes are sampled from someone else's app icon and logo — Genshin's
-Mora gold, NIKKE's accent red, Endfield's signal yellow — so they cannot be
-expressed as, or snapped to, our semantic scale without becoming a different
-game's colour. That is the whole failure `game-color.ts` exists to prevent.
-
-They live in exactly one place, `shared/src/presets.ts`, and they reach a pixel
-only through a trio helper that takes the ground as an argument. So the rules
-above still bind them: an owner colour is lifted, never bleached, and never
-painted raw.
-
-The design-colour detector is therefore scoped off for that one file in
-`.impeccable/config.json`. Scoped to the file, not waived per value — every game
-added later ships three more hexes, and a per-value list would need extending
-forever to say something the file already says. A raw hex anywhere else,
-including in `game-color.ts` itself, is still a finding.
-
-**The Stroke Weight Belongs To The Theme Rule.** The same 1.75px icon stroke
-reads a full weight heavier as dark-on-cream than as light-on-black, because the
-pale ground eats none of it. Weight comes from `--icon-stroke` via the `.icon`
-class, never from a `strokeWidth` attribute — an SVG presentation attribute
-cannot take a `var()`, only the CSS property can. Icons that looked overblown in
-light mode were never the wrong size.
-
-## Typography
-
-**Language:** DM Sans — 400, 500, 600 only.
-**Numbers:** IBM Plex Mono, tabular, everywhere without exception.
-**Game display faces**, stored on `Game.titleFont` and editable per game:
-Cinzel (fantasy serif), Orbitron (geometric sci-fi), Rajdhani (condensed urban
-tech), Exo 2 (wide modern sans), Space Grotesk (sharp contemporary). These are
-open-licence approximations, never ripped proprietary game faces.
-
-### Hierarchy
-
-- **Title** (600, 1.0625rem): a game's name on its card, set in that game's own
-  face. Its timeline lane uses the same step. The name is deliberately NOT display
-  size: a card has to be scannable at notification density, and a 30px name pushes
-  the reading and the deadline apart until they stop being one glance.
-- **Heading** (600, 1.25rem): page and panel headings.
-- **Lead** (500, 1rem): dialog and sheet titles.
-- **Body** (400, 0.8125rem): running text, task names, ticket names.
-- **Meta** (400, 0.75rem): secondary running text and helper lines.
-- **Label** (500, 0.625rem, 0.09em, uppercase): every field label and section
-  header. One rule, applied everywhere.
-- **Numeral** (mono, 500, 0.875rem) and **Numeral lead** (mono, 500, 1.75rem):
-  readings, caps, clocks, countdowns. The lead size is for the countdown that
-  owns a card's right side.
-
-### Named rules
-
-**The Mono Is For Measurement Rule.** IBM Plex Mono appears where there is a
-number, a clock or a duration. It is never a costume for "technical" — no mono
-labels, no mono headings, no mono body.
-
-**The One Display Face Per Card Rule.** A card shows exactly two families: the
-game's face on its name, DM Sans on everything else. A game face never leaks onto
-rows, chips or numerals.
-
-## Layout
-
-**The full window is the canvas.** There is no max-width column and no reserved
-floating-rail clearance — chrome lives at the top edge, so content owns
-everything below it.
-
-**Shell:** a single app bar carrying the wordmark, a live clock, the segmented
-route control, urgency counts, and the theme control. The wordmark cluster has a
-fixed width so it cannot shift between routes.
-
-**The desktop dashboard has three equal columns.** Tonight can sit on the left,
-middle or right. The device saves this choice in Settings. An expanded game fills
-one column. Its side stays fixed when another game opens. Cards keep their DOM
-nodes during these moves. Position and height change over 300ms with ease-out.
-The summary fades out before the controls fade in. Page tabs use a quiet 140ms
-fade with no lateral movement. Tonight stays in its chosen column.
-
-**Focus game** stays in the app bar on Dashboard, Timeline and Settings. The dashboard shows
-resources and tasks in two columns where space permits. Timeline has search and
-a compact list with full event names, dates, and explicit Edit controls. The event
-editor shows the home timezone, duration, notes, and invalid-date errors. Settings
-shows account summaries and section links inside the game editor.
-
-New users see a guide on first use. Each step has a dialogue box and an outline
-around the applicable control. Next changes the step after the control loads.
-Back returns to the previous step. “Let me cook” closes the guide.
-The device saves completion and skip choices. Settings can open the guide again.
-The guide restores the previous page and game focus when it closes.
-
-**Rhythm** is a six-step scale — `4 / 8 / 12 / 16 / 24 / 40px`. Gaps between
-cards take the top of the scale; padding inside them takes the bottom.
-
-### Named rules
-
-**The Stable Order Rule.** Card order never changes as a side effect of data
-changing. Re-sorting is an explicit control the user presses, because entry is
-the hot path and a layout that reflows under the cursor costs a keystroke.
-
-That control is Refresh. The dashboard used to grow a second "Sort by urgency"
-button whenever its order went stale, which is two buttons for one idea — bring
-what I am looking at up to date. Refresh bumps `orderEpoch` in the UI store and
-the dashboard reseals from an effect, so the two can live on opposite sides of
-the app without knowing about each other.
-
-## Elevation & Depth
-
-**No drop shadows.** Depth is tone, gradient, grain, and a 1px edge against the
-ground. On a true-black OLED canvas a soft shadow is invisible where it should be
-subtle and a grey smear where it is not.
-
-- **Panel** — the two-stop surface gradient plus grain, no border. Depth comes
-  from the wash sitting against black.
-- **Card** — the same gradient washed with the game's primary, plus a saturated
-  1px rim. The rim is the only reason a card has an outline at all.
-- **Float** — dialogs and popovers get `surface` plus a `line-strong` ring and a
-  real shadow, because they genuinely leave the page.
-
-### Named rules
-
-**The Card Is Lit, Not Outlined Rule.** A game card has NO saturated border. A
-1px ring all the way round reads as a fence — it separates the card from the page
-instead of raising it off it. Depth is: a highlight along the top edge in the
-game's own colour, a body that runs from lit at the top to shaded at the base,
-and a neutral cast shadow. Only urgency may draw a ring, and only critical.
-
-**The Shadow Is Neutral And Offset Rule.** Against an OLED ground a cast shadow
-has almost nothing to fall on, so most of the depth happens INSIDE the card. What
-shadow there is must carry a real y-offset and stay neutral. `0 0 Npx <colour>`
-is a halo — decoration wearing depth's clothes — and is banned outright;
-`0 0 0 1px <colour>` is a ring, which is a different thing and is allowed.
-
-## Shapes
-
-Six radii: `4px` chips and checkboxes, `6px` buttons and hover fills, `10px`
-panels, `14px` bands, `22px` **game cards and nothing else**, and pill for
-**meter tracks only**. A pill on anything that is not a track is a mistake — this
-system's parts should read as parts, not as lozenges.
-
-The game card's `22px` is deliberately the softest corner in the product. It is
-the one object a user thinks of as a discrete thing rather than as a region of
-the page, and the corner is most of what gives it that.
-
-## Components
-
-### Reserve counters
-
-An overflow reserve (HSR's Reserve TB Power, ZZZ's Backup Battery) is **one
-quiet summary line** — `Reserve TB Power 287/2400` — and opens only when the
-user opens it. That choice then persists.
-
-It used to unfold itself whenever the main bar capped or the reserve was
-non-empty, which for the games that have a reserve is most of the time: the card
-silently grew a second stepper, a second tube and a second subtitle nobody asked
-for. A disclosure that is open by default is not a disclosure.
-
-A resource's own verdict (`full Sat 10:10 · in 1d 3h`) sits directly under its
-own tube, above the reserve line. Printed after the reserve block it read as the
-reserve's line — two sentences about two different vessels, stacked as one.
-
-### Reactor tube (signature)
-
-A containment tube, not a progress bar. Progress bars say "a task is advancing";
-this reads as a vessel holding something that accumulates and can overflow, which
-is what energy actually is.
-
-Layers, bottom to top: a concave track, a shaded liquid with a meniscus at its
-leading edge, a travelling charge highlight, embossed containment ribs, and a
-glass lip. The level **glides** to a new reading over ~520ms rather than
-snapping, so a typed figure reads as the vessel filling to it.
-
-The highlight runs **only while the resource is still charging**. A full tube goes
-visually still, and that stillness is the signal that it is wasting.
-
-### Completion ring (signature)
-
-Completion is always a ring, never a square. The ring is segmented — one arc per
-item — with the gap specified in arc **length** rather than as a fraction of the
-sector, so it stays visually constant whether the ring has two segments or twelve.
-Butt caps, because round caps overhang by half the stroke and swallow the gap.
-
-The burst fires **only when the last segment lands**. Ticking three of four is
-progress; ticking the fourth is the moment worth marking.
-
-### Game card (signature)
-
-**Notification density: three bands and no more.**
-
-1. The game's name in its own face, the resource it measures beneath it, and the
-   expand chevron.
-2. The reading (`—/200`, tabular mono) beside the tube.
-3. A footer rule carrying the short-code badge, the next deadline, and its
-   countdown in urgency colour.
-
-Roughly 110px tall. The card must be readable in the half-second it takes to scan
-a rail, which is the whole argument for the density — a taller card with the same
-content reads as a panel, and you stop scanning panels.
-
-It wears the `22px` corner, the raking cast, a saturated 1px rim, and one more
-thing that does most of the work: a **2px glint along the top edge**, the game's
-two colours running out to nothing at both ends. Without it the card is filled in;
-with it the card is lit.
-
-The badge in the footer is how a user picks the right card out of a rail, so it
-takes the lifted identity colour rather than the raw one — a near-white primary
-drew an invisible badge on the cream ground.
-
-Expanded, the card carries everything for that game — resources, windows,
-cycles, tasks — in **bands**, each opened by a rule: a small-caps name, a
-hairline, and that band's own summary. `Daily 2/3 · 21h 15m`, `Weekly 0/2 · 2d
-21h`, `Cycle`, `Monthly`, then `Windows`.
-
-The rule is the same shape the hub uses for Closing / Just arrived / Arriving,
-so the card and the hub section themselves the same way.
-
-**The Band Owns The Shared Deadline Rule.** Every daily on a card resets at the
-same moment, so the countdown belongs to the band, not to each row. Stamping a
-`WEEKLY` chip and a countdown onto every weekly row said one thing seven times,
-pushed every task name right by the width of the longest tag, and — worse —
-made a reset every task shares look like one task's private timer. Cycles are
-the exception and keep per-row countdowns, because each cycle closes with its
-own Timeline window.
-
-### Task rows
-
-A row carries at most three things: the name, one piece of state, and the tick.
-
-**The Tick Means The Period Rule.** The tick answers exactly one question —
-_have I done this in the current period?_ — and it answers it the same way for
-checkboxes, counters and dispatches. Nothing else may claim that shape.
-
-Dispatch rows (expeditions, assignments, the Crystalfly trap) hold two facts
-that are not the same fact, and the row keeps them apart: the **tick** says
-whether you collected and resent this period; the **meta text** says when the
-current run comes back. They were once fused, and both were inverted — a
-returned dispatch rendered struck through with a filled tick, i.e. finished, at
-the one moment there was genuinely something to go and do, while a run still out
-rendered as an unfinished ring with an amber countdown, i.e. urgent, when there
-was nothing to do but wait. So the task was never seen complete and its number
-read as a lockout. Now: out → the name recedes and the meta reads `back 6h`;
-back → the name stays lit and the meta reads `Collect` in ok; collected → the
-tick fills like any other row.
-
-**What it does not carry:** no status dot, and no decorative field behind the
-content. Both were tried and both lost — the dot duplicated a countdown that was
-already coloured, and the field cost a per-frame repaint to say nothing.
-
-### Chips
-
-Fixed hue per kind, `4px` radius, uppercase label type. Section names
-(Closing, Arriving) are never chips.
-
-### Timeline
-
-A Gantt with a mono month/week ruler, **dashed** grid rules and a **solid** now-rule
-— the dashes read as scaffolding so the bars own the only continuous lines on the
-surface. Event names ride **inside** their bars.
-
-Lane titles use the game's display face at Body size, in the colour
-that lane was assigned. Bars take that same colour mixed into the track: an event
-at 62%, a banner at 28%, and a **cycle at 34% — the same hue, lighter**, because a
-cycle is the same game's window rather than a different kind of object. A grey
-treatment would have said the wrong thing. Maintenance is the exception and stays
-critical-coloured.
-
-A bar's label ink is chosen from the fill that was **actually painted**, not from
-the game's raw colour: the fill is the ink mixed into the track, so a pale primary
-lands mid-grey and a fixed white label would sit on it at roughly 2:1.
-
-Consecutive instances of the **same** cycle use a filled connector in the bar
-colour. It starts inside each rounded cap and tapers to a narrow middle. Its
-geometry follows measured row positions and bar heights. Only cycles connect.
-
-The timeline shows a 40-day window. Desktop rows are 26px high, with 22px bars
-and a 4px space between bars. A single game with 24 events fits at 1365 × 768 CSS pixels.
-Longer timelines scroll inside the board. The date ruler stays visible.
-Phones retain larger rows for touch input.
-
-Each recurring activity has consecutive rows in time order. Connectors stay
-between their time boundaries. Titles remain inside suitable bars, including
-future bars that extend past the window. Their countdown can use the empty space
-before the bar. Special programs and maintenance keep external titles.
-
-The app bar contains game focus, Timeline/List, event search, and the history
-button. Search opens a small dialog. The history button shows finished events.
-Add → Event is the single entry point for a new event.
-
-List view is a compact agenda with Active now, Upcoming, and optional Finished
-sections. Active events sort by close; upcoming events sort by opening. Each row
-shows its game, account, server, dates, countdown, completion control, and Edit.
-Phone rows wrap into two columns with touch targets.
-
-**The Distinct Lanes Rule.** Colours are assigned in one pass across all games so
-the timeline and the dashboard agree and no two lanes land in the same region of
-hue and lightness. At the ends of the lightness range hue stops being perceptible,
-so two near-whites are treated as clashing however far apart their hues measure —
-without that, a cream and a blush white draw two identical lanes.
-
-### App bar
-
-The app bar contains the wordmark, clock, route control, route actions, and utility
-controls. The clock shows hours and minutes. It updates at 30-second intervals.
-
-On phones, the wordmark and utility controls occupy the first row. The route
-control occupies the second row. Utility controls have 44px touch targets.
-Refresh and theme controls use icons with accessible names. Larger screens also
-show their text labels and the clock.
-
-Route actions have a separate horizontal scroll area below these controls until
-the viewport is at least 1280px wide. At that width, all groups occupy one row.
-The app bar measures its height and supplies that value to the dashboard.
-
-Routes publish their buttons into the bar through a portal rather than a store
-slice, so a page's controls cannot outlive the page. The bar carries no counts:
-"2 critical, 1 soon" restated what the cards already say in colour, and the space
-was worth more as the one place every action lives.
-
-### Attention rail (the hub)
-
-The stage's right column is a rail, not a stack of panels. One status line — how
-many dailies are done, and whether the night is safe — then three bands in a
-fixed order: **Closing**, **Just arrived**, **Arriving**. Only the last stretches.
-
-Every row below the status line is the same ticket: badge, name, countdown. The
-eye runs down one column instead of re-learning a layout per section, and a
-quiet evening costs three short bands rather than three collapsible panels each
-stretching to say "Nothing".
-
-## Motion
-
-Motion shows navigation, control feedback, or a change in state. Card expansion,
-resource updates, task completion, and page transitions retain their existing
-animations.
-
-Menus and selects open and close with a 140ms animation. The Add menu transfers
-focus to a dialog after its exit ends. Dialogs finish their exit on save and dismiss.
-Reserve controls expand and collapse with a height transition and a fade.
-The theme icon turns when the theme changes. The Add icon turns when its menu opens.
-These animations use the existing duration and easing tokens.
-
-Reduced-motion mode removes CSS animation delays and transitions, including those
-on pseudo-elements. Urgent cards retain a static red edge. Both dashboard layouts
-use the same urgency threshold: less than two hours before the next deadline.
-
-**The Entrance Is Laid Out, Not Blinked Rule.** Cards arrive down the rail on a
-40ms stagger, capped at eight steps. Without it every card in a nine-game
-dashboard began and ended on the same frame, which reads as one block of content
-appearing rather than as a set of objects being placed. The cap is the other
-half: someone tracking fifteen games would otherwise wait six tenths of a second
-for the last card, and a stagger that outlives the glance it decorates has
-stopped being motion and become latency.
-
-**The Completion Is One Gesture Rule.** `text-decoration: line-through` cannot
-be animated, so a finished task used to change in two unrelated ways on the same
-frame: the tick played its 180ms pop while the rule across the name simply
-appeared. The strike is drawn as a background instead, which gives it a width to
-animate, and the two now travel together.
-
-`prefers-reduced-motion` is honoured globally and must remain so.
-
-### One-game dashboard
-
-With one game, its controls open on entry. Tonight uses the saved column position.
-The third column is available for more games. The user can
-close and open the controls. Column widths stay the same as games are added.
-
-## Do's and Don'ts
-
-### Do
-
-- **Do** route every colour through a token or a trio helper.
-- **Do** let the rim, title and tube carry a game's identity, and keep the fill
-  charcoal.
-- **Do** set every number in tabular mono.
-- **Do** give urgency the win when it collides with identity.
-- **Do** express depth as tone, gradient, grain and a 1px edge.
-- **Do** lift an illegible game colour toward its own hue, never toward grey.
-- **Do** animate `grid-template-rows`, `opacity` and `transform`.
-
-### Don't
-
-- **Don't** flood a card with a game's colour. Seven percent, then stop.
-- **Don't** put a drop shadow on anything that does not overlay the page.
-- **Don't** use mono for anything that is not a number, a clock or a duration.
-- **Don't** use emoji, celestial motifs, or pure-white light-mode cards.
-- **Don't** let a game's display face escape onto rows, chips or numerals.
-- **Don't** use a pill radius on anything that is not a meter track.
-- **Don't** let a card re-order or reflow itself while the user may be typing.
-- **Don't** name a Tailwind palette colour in a component.
-
-Tonight marks character and weapon banners with an inline Banner tag. All rows keep their time order within each status band. Closing includes only the next 10 days; upcoming keeps its two-week preview.
+# Memoria design
+
+## Direction contract
+
+**Thesis:** A unified, softly rounded glass workspace for daily game progress and upcoming events.
+
+**Own world:** Game colors identify games and tint the light in each card. Urgency colors identify deadlines. Graphite chrome frames rounded, translucent game surfaces with a fine reflected edge and a soft shadow below.
+
+**Story:** Find the game that needs attention, update energy, complete tasks, then check upcoming events.
+
+**First viewport:** Desktop keeps game summaries beside Tonight. Phone presents readable game summaries, energy levels, and daily progress above a floating glass navigation dock.
+
+**Form:** DM Sans for language, IBM Plex Mono for compact measurements, and each game's saved title font. Standard cards and sheets use 32px corners with progressive continuous corner support. Compact overview cards use 24px corners. Controls use nested 10px, 16px and 24px curves; navigation and segmented controls use capsules. Glass light is static; motion follows presses, progress, and navigation.
+
+## Reference and composition
+
+The September 2026 card refinement adds rounder, more expressive glass surfaces at the owner's request. The owner's Apple navigation reference extends this material across the complete app: a floating translucent dock, sliding active capsule, curved panels and clear blue navigation selection. It does not add marketing sections to the application.
+
+The selected composition keeps top navigation on desktop and bottom navigation on phone. It fits the existing game controls and Tonight summary. Concept images are exploratory: invented data, portraits, search, feeds, and slogans are not product requirements. The implementation uses semantic HTML, CSS, existing SVG icons, and owner-supplied game images.
+
+## Tokens
+
+Use the semantic tokens in `src/index.css`. JS theme mirrors in `theme.ts`, `ui-store.ts`, and the pre-paint script must agree with CSS.
+
+- Dark: graphite ground, slightly raised neutral panels, soft white text.
+- Light: cool off-white ground, white panels, dark neutral text.
+- Four fill steps, four border steps, three scrims. No raw Tailwind palette colors.
+- Floating dialogs and popovers share one shadow token. Game surfaces add a soft, downward shadow and an inset top highlight through the shared card material.
+- Shared radii: 10px badges, 16px inputs and nested controls, 24px larger controls, 32px cards and sheets, 999px capsules. Continuous corner shaping is progressive; conventional curves remain the fallback.
+- Desktop body 16px, metadata 14px, labels and captions 13px. Phone body 17px, metadata 15px, labels 14px, captions 13px. Keep browser and system text scaling enabled.
+- Text contrast meets WCAG AA. Decorative colors never carry body text.
+
+## Identity
+
+Preserve each game's saved colors, title font, image, and account label. Use color in badges, titles, energy levels, and meaningful tags. A game's palette supplies the translucent card tint and reflected light. Keep text readable over the brightest part of that material. Urgency takes priority over game color for warnings.
+
+All font subsets remain available. Never remove non-Latin support to reduce a bundle.
+
+## Layout and interaction
+
+All features are available on Android, including the Samsung S23 Ultra. The phone overview opens the same complete game controls as desktop. A single back arrow returns to the overview. Tonight & reminders opens the full summary. Cards select a game on Dashboard; the game selector filters Timeline, Livestreams, and Settings.
+
+Phone cards lead with the game name, then server, account and daily progress on one line. A compact energy reading and bar lead to the next deadline. The whole card opens its workspace; a small arrow marks that action. Daily progress shows the completed and total counts. Its ring earns a check only when all dailies are complete. The overview has no visible page heading. Games and Tonight remain available through the view control.
+
+Use 8px gaps and compact padding in the overview. At default text size, four complete games fit on a 320×720 phone and five fit on a 412×915 phone above the navigation dock. Supporting labels can truncate; accessible descriptions retain their full text. Cards can grow with larger text. Smaller desktop windows use the same compact cards in two or three columns. Avoid repeating the game heading above the open card.
+
+Desktop retains the three-column stage with equal widths and the configurable Tonight position. Opening a game uses the same integrated page as mobile; Back restores the overview position. Card order stays fixed until Refresh. A clock tick must never move the control being edited.
+
+Alt+Left and browser Back follow the game back arrow. Forward reopens the game. Return restores the overview scroll and card focus. An open editor handles Back first and retains its unsaved-change guard. A typed energy value commits before return; Escape still cancels that field's draft.
+
+Task rows share one control and one state path. Names wrap on phones. Dailies, cycles, weekly and monthly tasks retain their group labels and reset countdowns. Energy projections and all time calculations use shared domain functions.
+
+The event page opens in List view on phones. Timeline remains available, including event reordering. Distinguish event categories and server/account scope. Long reminders remain readable.
+
+Primary phone targets are at least 44px. Content, notices, and sheets clear the bottom navigation and device safe areas. Phone landscape uses a compact header. Desktop controls can be denser.
+
+## Editors
+
+Phone and computer connection comes first in Settings. The primary flow is Connect my phone on the PC, then Scan PC code on Android. The QR code carries the temporary code and local addresses. Keep manual entry, connection management, and troubleshooting behind optional disclosures. Connected and offline states explain what happens to saved progress. A failed or cancelled replacement scan keeps the existing connection.
+
+Use existing shared inputs, buttons, tabs, and sheets. Fields use sentence-case labels and clear grouping. Event and reminder actions remain outside the scrolling form. Game edits save automatically and expose a Done button. Preserve validation, dirty drafts, cancel behavior, deletion safeguards, and account scope.
+
+The game editor opens on Energy, then exposes Tasks, Resets, Reminders, Quick spend, and Game identity. Resources and routines expand in place. Resource order is editable without changing readings. Priority tasks lead their group. Reset settings show the local daily reset time and all supported server zones. Game reminders can be added and edited in place; their draft survives tab changes. Appearance and deletion stay under Game.
+
+A short touch on an energy stepper changes it once. A long touch repeats after 350ms. A scroll or cancelled gesture changes nothing. Keyboard operation remains available.
+
+## Motion and performance
+
+Motion explains a state change. Use a short directional page transition and a brief task completion response. Energy bars use two elements and no perpetual sweep. Card highlights remain static; a touch gently compresses the card and its arrow responds to the same press. Route content is usable immediately; do not stagger access to controls.
+
+Urgent game cards use a small status dot with a 3.2-second breath. Borders stay neutral, and overview energy bars keep the game’s identity color. Status text remains readable without relying on color. The pulse pauses offscreen, in hidden tabs, on hover, and during keyboard interaction. Reduced motion shows a static dot. Game expansion uses one critically damped spring for its crop and content crossfade, with the same physics for card movement. Reversals preserve motion. Collapsing cards stay above resting cards until they settle. Navigation fades gently over 260ms. Energy levels glide with a transform, without a perpetual sweep. Dialogs use a small 8px arrival and a faster exit. Phone sheets use one transform for entrance, direct dragging, snap-back, and dismissal, so the surface follows the finger without a jump.
+
+Respect reduced motion. Lazy-load routes and motion features. Reuse the shared derived-data cache; do not duplicate domain calculations in components.
+
+At every width, a selected roster card opens a full game page with a plain identity heading and one Edit control. Do not nest that page inside another glass card. One back arrow restores the roster position and keyboard focus. Use a short transform/opacity transition on page content; full-card View Transition snapshots caused repeated layout and paint work on slower hardware. Keep the fixed header and navigation still. Reduced motion changes the view immediately. Rapid reversal must keep the final controls usable. Task completion stays close to its original control: a small check response and one fading outline, without particles over nearby rows.
+
+## Validation
+
+Run `npm run check` and relevant browser checks. Inspect desktop, phone, small phone, and light mode. Check overflow, keyboard focus, touch targets, form actions, contrast, and preservation of user edits. A design change does not change storage or add cross-device sync.
+
+### Per-game editing
+
+The dashboard has a visible Edit button. The game title is editable at the top. Each item has a separate Edit button and drag handle. Edit opens its settings, move buttons, hide, and delete actions. Task items expose cadence, checkbox/counter/timer mode, count targets, timer rules, timeline links, and priority. Settings uses the same task fields. Add item creates a task, manual counter, or energy resource without leaving the card; hidden items can also be restored there. Deletion uses the store's existing tombstones and offers Undo delete, preserving tracking history. Resets, reminders, and appearance remain in Settings.
+
+Hold anywhere on an item for 400 ms to lift it, then drag and release to place it. A quick touch swipe still scrolls normally. Mouse dragging and keyboard arrows offer the same movement. There is no bottom widget toolbar. A lifted item follows the pointer, and nearby items move into their new positions. The drag preview is inert, so moving an item never changes a value or completes a task. Reduced motion removes position animation.
+
+Changes save as you go. Done closes Edit. Undo layout restores only the arrangement from the start of the session; Reset restores the default grouped dashboard. Each game's layout travels through the existing backup and sync paths. Inactive tasks keep their positions. Each item occupies one full row on phone and desktop. Old backups keep their order and hidden items; obsolete width values are removed during normalization.
+
+### Navigation and timeline material
+
+Genshin card events appear in three sections: Teyvat, Miliastra Wonderland, then Banners. Each card section shows all active events and its next upcoming event. Cosmetic draws belong in Banners. Manage events and Timeline lanes use the same section order, including search results and finished events. Timeline reordering stays within a section and preserves the owner's order there. Other games keep their compact card summaries. Timeline keeps its inline world tags.
+
+Official calendar entries show confirmed date ranges in the publisher's calendar timezone. They do not show hourly countdowns or send deadline alerts without a published hour. Exact notices retain their clocks. Personal edits to the time fields retain the owner's chosen schedule.
+
+Navigation floats in a glass capsule with one persistent moving selection. On phones the dock clears the safe area and content reserves its full height; all four routes retain text labels and touch targets. Blue marks the selected route. Content and urgency retain their own colours. Settings and broadcasts use the same large curved surfaces. Inputs and nested controls use smaller curves.
+
+Timeline keeps the existing list and duration views, filters, completion actions and event editing. Its heading explains the visible range; rounded groups separate status and date information. Data bars retain accurate time geometry. Glass is concentrated in navigation and floating tools, with quiet legible content surfaces beneath it.
+
+Paused accounts keep a compact identity row with a Resume action. Their events are absent from both views, counts, search, and finished-event results until tracking resumes. Resume opens the lane and moves keyboard focus to the restored account. Saved events and other accounts are unchanged. Event editing groups details, schedule, and tracking rules; each tracking toggle explains its effect.
+
+### Route continuity and control clarity
+
+Returning to a tab restores its page or timeline-board scroll position for the current game scope. Timeline view, search and finished-event choices last for the current app session; they do not travel through sync or override another device's preferred layout. Lazy pages restore scroll after their content mounts. Workspace navigation still owns the card-to-controls transition and its return focus.
+
+Sheet drags recover if pointer capture is lost. Primary touch controls use 44px targets. Timeline list completion has a visible action label. Long selected game and account names truncate in the closed control and wrap in the open choice list, which stays inside the viewport. Import backup exposes keyboard focus on its visible label. Advanced shared-folder instructions are optional details beneath the direct sync actions.

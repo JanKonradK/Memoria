@@ -1,7 +1,20 @@
-import type { AppState, ChecklistItem, GameUrgency, SleepCheck, Snapshot } from '@memoria/shared';
-import { buildUrgencyContext, sleepCheck, urgencyOrder } from '@memoria/shared';
+import type {
+  AppState,
+  EnergyProjection,
+  Resource,
+  ChecklistItem,
+  GameUrgency,
+  SleepCheck,
+  Snapshot,
+} from '@memoria/shared';
+import { buildUrgencyContext, effectiveResourceKind, projectEnergy, sleepCheck, urgencyOrder } from '@memoria/shared';
 import { useApp } from './store';
 import { selectAgendaData, type AgendaData, type AgendaMode } from './agenda-data';
+
+interface PrimaryEnergy {
+  resource: Resource | undefined;
+  projection: EnergyProjection | null;
+}
 
 export interface Derived {
   state: AppState;
@@ -11,6 +24,7 @@ export interface Derived {
   entryById: Map<string, GameUrgency>;
   checklistByGame: Map<string, ChecklistItem[]>;
   sleepFor(gameId: string): SleepCheck;
+  primaryEnergy(gameId: string): PrimaryEnergy;
   agenda(mode: AgendaMode): AgendaData;
 }
 
@@ -22,6 +36,13 @@ function createDerived(state: AppState, now: number): Derived {
   const gameById = new Map(state.games.filter((game) => !game.deleted).map((game) => [game.id, game]));
   const order = urgencyOrder(state, now, urgencyContext);
   const entryById = new Map(order.map((entry) => [entry.game.id, entry]));
+  const energyByGame = new Map<string, PrimaryEnergy>();
+  const primaryByGame = new Map<string, Resource>();
+  for (const resource of state.resources) {
+    if (resource.deleted || effectiveResourceKind(resource) !== 'regen') continue;
+    const current = primaryByGame.get(resource.gameId);
+    if (!current || resource.sort < current.sort) primaryByGame.set(resource.gameId, resource);
+  }
   const sleepByGame = new Map<string, SleepCheck>();
   const agendaByMode = new Map<AgendaMode, AgendaData>();
 
@@ -32,6 +53,18 @@ function createDerived(state: AppState, now: number): Derived {
     order,
     entryById,
     checklistByGame,
+    primaryEnergy(gameId) {
+      const cached = energyByGame.get(gameId);
+      if (cached) return cached;
+      const resource = primaryByGame.get(gameId);
+      const game = gameById.get(gameId);
+      const result = {
+        resource,
+        projection: resource && game ? projectEnergy(resource, snaps.get(resource.id), now, game) : null,
+      };
+      energyByGame.set(gameId, result);
+      return result;
+    },
     sleepFor(gameId) {
       const cached = sleepByGame.get(gameId);
       if (cached) return cached;

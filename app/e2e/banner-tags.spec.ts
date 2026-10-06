@@ -29,19 +29,29 @@ test('banner tags distinguish rewards across games and can be edited', async ({ 
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page
+    .getByRole('radiogroup', { name: 'Event view' })
+    .getByRole('radio', { name: 'Timeline', exact: true })
+    .click();
+  // Narrow timeline bars omit tags to keep the event name readable.
+  const compact = (page.viewportSize()?.width ?? 0) <= 320;
+  if (compact) await page.getByRole('radio', { name: 'List', exact: true }).click();
+  const rowAttribute = compact ? 'data-list-event' : 'data-event-id';
   for (const event of events) {
-    await expect(page.locator(`[data-event-id="${event.id}"] [data-event-tag]`)).toHaveText(
+    await expect(page.locator(`[${rowAttribute}="${event.id}"] [data-event-tag]`)).toHaveText(
       event.bannerKind === 'character' ? 'Character' : 'Weapon',
     );
   }
   await page.screenshot({ path: info.outputPath('banner-tags.png') });
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.getByRole('button', { name: 'Open genshin event: character test', exact: true }).click();
+  await page
+    .getByRole('button', { name: `${compact ? 'Edit' : 'Open'} genshin event: character test`, exact: true })
+    .click();
   await page.getByRole('combobox', { name: 'Banner tag', exact: true }).click();
   await page.getByRole('option', { name: 'Weapon banner', exact: true }).click();
   await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.locator('[data-event-id="genshin-character"] [data-event-tag]')).toHaveText('Weapon');
+  await expect(page.locator(`[${rowAttribute}="genshin-character"] [data-event-tag]`)).toHaveText('Weapon');
   await page.getByRole('radio', { name: 'List', exact: true }).click();
   await expect(page.locator('[data-list-event="genshin-character"] [data-event-tag]')).toHaveText('Weapon');
 });

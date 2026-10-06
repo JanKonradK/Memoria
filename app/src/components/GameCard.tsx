@@ -1,7 +1,7 @@
 import { EventTags } from './EventTags';
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { AppState, ChecklistItem, Game, GameUrgency, Snapshot } from '@memoria/shared';
-import { effectiveResourceKind, projectEnergy } from '@memoria/shared';
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
+import type { AppState, ChecklistItem, Game, GameUrgency, GameLayoutItem, Snapshot } from '@memoria/shared';
+import { effectiveResourceKind, projectEnergy, resolveGameLayout } from '@memoria/shared';
 import { m } from 'motion/react';
 import { useDerived } from '../selectors';
 import { useApp, type AppStore } from '../store';
@@ -9,15 +9,24 @@ import { useUI } from '../ui-store';
 import { useMediaQuery, useReducedMotion } from '../hooks';
 import { cardEnter } from '../motion';
 import { titleFont } from '../fonts';
-import { gameAccent, gameInk, gameRim, gameSupport, gameTitleInk, mix } from '../game-color';
+import { gameInk, gameRim, gameSupport, gameTitleInk, mix } from '../game-color';
 import { gameShellVars, useGround, useTheme } from '../theme';
 
 import { endTone, fmtDur, localResetLabel, tint } from '../util';
 import { EnergyRow } from './EnergyRow';
+import { AttentionIndicator } from './AttentionIndicator';
 import { Pill, ProgressBar, Tick } from './primitives';
-import { ServerChip, Tooltip } from './ui';
+import { GameLayoutCanvas, type GameWidget } from './GameLayoutCanvas';
+import { GameEvents } from './GameEvents';
+import { TaskFields, taskSettingsSummary } from './settings/TaskFields';
+import { Btn, Field, TextInput, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
+import { useGameDraft } from './game-detail/useGameDraft';
 import { useIdentityColors } from './roster';
 import { serverRegionLabel } from './NexusLayout';
+import { groupGameEvents } from '../event-category';
+import { calendarSchedule } from '../event-schedule';
+
+const TITLE_FIELDS = ['name'] as const;
 
 const CADENCE_ORDER = ['daily', 'custom', 'weekly', 'monthly'] as const;
 const CADENCE_LABEL = { daily: 'Daily', custom: 'Cycle', weekly: 'Weekly', monthly: 'Monthly' } as const;
@@ -28,7 +37,7 @@ const TASK_WARN_MS = 120 * 60_000;
 
 /** Shared geometry for every task row, so the three modes read as one list. */
 const TASK_ROW =
-  'group flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-1 text-left transition duration-(--dur-fast) hover:bg-fill-2 sm:min-h-8';
+  'game-task-row group flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-1 text-left transition duration-(--dur-fast) hover:bg-fill-2 md:min-h-8';
 
 type TaskTone = 'done' | 'waiting' | 'idle' | 'warn' | 'danger';
 
@@ -37,7 +46,7 @@ const TASK_TONE: Record<Exclude<TaskTone, 'idle'>, string> = {
   // A dispatch is out and nothing can be done about it until it returns.
   // Neither owed nor finished, so neither bright nor struck through.
   waiting: 'text-dim',
-  danger: 'warn-pulse font-bold text-danger-fg',
+  danger: 'font-bold text-danger-fg',
   warn: 'text-warn-fg',
 };
 
@@ -63,7 +72,7 @@ function TaskName({ children, tone, core }: { children: string; tone: TaskTone; 
         : 'text-fg-soft'
       : TASK_TONE[tone];
   return (
-    <span className={`min-w-0 flex-1 truncate text-body transition duration-(--dur-fast) ${ink}`}>
+    <span data-task-name className={`min-w-0 flex-1 text-body transition duration-(--dur-fast) md:truncate ${ink}`}>
       <span className="task-strike" data-done={tone === 'done'}>
         {children}
       </span>
@@ -84,7 +93,7 @@ function TaskName({ children, tone, core }: { children: string; tone: TaskTone; 
 function BandRule({ label, children }: { label: string; children?: ReactNode }) {
   return (
     <div className="mt-3 flex items-center gap-2 first:mt-0">
-      <span className="shrink-0 text-label font-semibold uppercase tracking-wider text-muted">{label}</span>
+      <span className="shrink-0 text-meta font-semibold text-muted">{label}</span>
       <span aria-hidden className="h-px min-w-4 flex-1 bg-line-hairline" />
       {children}
     </div>
@@ -359,10 +368,8 @@ function TaskRow({
 }
 
 /**
- * The game's running events with real deadlines, soonest first — the ONLY
- * place events appear on the card (never as checkboxes). Daily-touch events
- * always show while active; other notify-flagged events fill up to 3 extra
- * rows. Quiet version-long filler stays on the Timeline.
+ * Active Genshin windows are grouped by world, then banners. Other games keep
+ * their compact summary. Each section includes its next upcoming window.
  */
 export function EventStrip({
   game,
@@ -379,46 +386,71 @@ export function EventStrip({
   // `notify` used to gate this list, which meant an event omitted from next
   // actions vanished from its own card — a ZZZ card could sit there showing
   // nothing while two of its events were live. Card visibility is independent.
-  const active = mine.filter((e) => e.start <= now && e.end > now).sort((a, b) => a.end - b.end);
-  // Banners count: which banner is running is exactly the kind of thing you open
-  // the card to check.
-  const shown = [...active.filter((e) => e.dailyTouch), ...active.filter((e) => !e.dailyTouch).slice(0, 4)].sort(
-    (a, b) => a.end - b.end,
-  );
-  // The next thing to start (a patch, usually) is worth a row of its own.
-  const next = mine
-    .filter((e) => e.start > now)
-    .sort((a, b) => a.start - b.start)
-    .slice(0, 1);
-  const events = [...shown, ...next];
-  if (events.length === 0) return null;
+  const sections = groupGameEvents(game, mine)
+    .map((section) => {
+      const active = section.events
+        .filter((event) => event.start <= now && event.end > now)
+        .sort((a, b) => a.end - b.end);
+      const shown =
+        section.key === 'events'
+          ? [
+              ...active.filter((event) => event.dailyTouch),
+              ...active.filter((event) => !event.dailyTouch).slice(0, 4),
+            ].sort((a, b) => a.end - b.end)
+          : active;
+      const next = section.events
+        .filter((event) => event.start > now)
+        .sort((a, b) => a.start - b.start)
+        .slice(0, 1);
+      return { ...section, events: [...shown, ...next] };
+    })
+    .filter((section) => section.events.length > 0);
+  if (sections.length === 0) return null;
   return (
     <div>
-      <BandRule label="Windows" />
-      <div className="mt-0.5 space-y-0.5">
-        {events.map((ev) => (
-          <button
-            key={ev.id}
-            type="button"
-            onClick={() => onOpenEvent(ev.id, game.id)}
-            className="flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-0.5 text-left text-body transition hover:bg-fill-2 sm:min-h-8"
-          >
-            {ev.type !== 'banner' && <Pill>{ev.type === 'cycle' || ev.type === 'livestream' ? ev.type : 'event'}</Pill>}
-            <EventTags game={game} event={ev} />
-            {ev.dailyTouch && <Pill variant="warn">daily</Pill>}
-            <span className="truncate text-fg-soft">{ev.name}</span>
-            <Tooltip content="d = days · h = hours · m = minutes">
-              {ev.start > now ? (
-                <span className="ml-auto shrink-0 font-bold tabular-nums text-muted">in {fmtDur(ev.start - now)}</span>
-              ) : (
-                <span className="ml-auto shrink-0 font-bold tabular-nums" style={{ color: endTone(ev.end - now) }}>
-                  {fmtDur(ev.end - now)}
-                </span>
-              )}
-            </Tooltip>
-          </button>
-        ))}
-      </div>
+      {sections.map((section) => (
+        <section key={section.key} className="mt-3 first:mt-0" aria-label={`${section.label} events for ${game.name}`}>
+          <BandRule label={section.label} />
+          <div className="mt-0.5 space-y-0.5">
+            {section.events.map((ev) => {
+              const calendar = calendarSchedule(ev);
+              return (
+                <button
+                  key={ev.id}
+                  type="button"
+                  onClick={() => onOpenEvent(ev.id, game.id)}
+                  className="flex min-h-11 w-full items-start gap-2 rounded-ui-md px-1.5 py-2 text-left text-body transition hover:bg-fill-2 md:min-h-8 md:items-center md:py-0.5"
+                >
+                  <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 md:flex-nowrap">
+                    {ev.type !== 'banner' && (
+                      <Pill>{ev.type === 'cycle' || ev.type === 'livestream' ? ev.type : 'event'}</Pill>
+                    )}
+                    <EventTags game={game} event={ev} />
+                    {ev.dailyTouch && <Pill variant="warn">daily</Pill>}
+                    <span className="w-full break-words text-fg-soft md:w-auto md:truncate">{ev.name}</span>
+                  </span>
+                  <Tooltip content={calendar?.description ?? 'd = days · h = hours · m = minutes'}>
+                    {calendar ? (
+                      <span className="ml-auto shrink-0 font-bold tabular-nums text-muted">{calendar.label}</span>
+                    ) : ev.start > now ? (
+                      <span className="ml-auto shrink-0 font-bold tabular-nums text-muted">
+                        in {fmtDur(ev.start - now)}
+                      </span>
+                    ) : (
+                      <span
+                        className="ml-auto shrink-0 font-bold tabular-nums"
+                        style={{ color: endTone(ev.end - now) }}
+                      >
+                        {fmtDur(ev.end - now)}
+                      </span>
+                    )}
+                  </Tooltip>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
@@ -484,10 +516,6 @@ function ResourceControls({
 }) {
   const resources = state.resources.filter((r) => r.gameId === game.id && !r.deleted).sort((a, b) => a.sort - b.sort);
   const cardResources = resources.filter((res) => ['regen', 'weekly'].includes(effectiveResourceKind(res)));
-  const primaryEnergy = cardResources.find((res) => effectiveResourceKind(res) === 'regen');
-  const quickChips = state.chips
-    .filter((chip) => chip.gameId === game.id && !chip.deleted)
-    .sort((a, b) => a.sort - b.sort);
 
   return (
     <>
@@ -506,6 +534,22 @@ function ResourceControls({
           ))}
         </div>
       )}
+      <QuickSpendControls game={game} state={state} actions={actions} />
+    </>
+  );
+}
+
+function QuickSpendControls({ game, state, actions }: { game: Game; state: AppState; actions: GameControlActions }) {
+  const resources = state.resources
+    .filter((item) => item.gameId === game.id && !item.deleted)
+    .sort((a, b) => a.sort - b.sort);
+  const primaryEnergy = resources.find((res) => effectiveResourceKind(res) === 'regen');
+  const quickChips = state.chips
+    .filter((chip) => chip.gameId === game.id && !chip.deleted)
+    .sort((a, b) => a.sort - b.sort);
+
+  return (
+    <>
       {!game.paused && primaryEnergy && quickChips.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5" aria-label={`${game.name} quick energy adjustments`}>
           {quickChips.map((chip) => (
@@ -554,6 +598,50 @@ function groupChecklist(checklist: ChecklistItem[]): Array<{
   }).filter((group) => group.items.length > 0);
 }
 
+function TaskControl({
+  item,
+  now,
+  actions,
+  color: tickColor,
+  showDeadline = true,
+}: {
+  item: ChecklistItem;
+  now: number;
+  actions: GameControlActions;
+  color: string;
+  showDeadline?: boolean;
+}) {
+  return item.mode === 'timer' ? (
+    <TimerTaskRow
+      item={item}
+      color={tickColor}
+      now={now}
+      onRestart={() => actions.restartTaskTimer(item.taskId, item.periodKey)}
+      onAdvance={() => actions.advanceTaskTimer(item.taskId, item.periodKey, item.timerStepMinutes ?? 0)}
+    />
+  ) : item.mode === 'count' ? (
+    <CountTaskRow
+      item={item}
+      color={tickColor}
+      onAdvance={() =>
+        actions.setTaskCount(
+          item.taskId,
+          item.periodKey,
+          item.done ? 0 : Math.min(item.countTarget, item.countDone + 1),
+        )
+      }
+    />
+  ) : (
+    <TaskRow
+      item={item}
+      color={tickColor}
+      now={now}
+      showDeadline={showDeadline}
+      onToggle={() => actions.setTaskDone(item.taskId, item.periodKey, !item.done)}
+    />
+  );
+}
+
 function ChecklistControls({
   game,
   checklist,
@@ -581,40 +669,16 @@ function ChecklistControls({
             now={now}
           />
           <div className="mt-0.5 space-y-0.5">
-            {group.items.map((item) =>
-              item.mode === 'timer' ? (
-                <TimerTaskRow
-                  key={`${item.taskId}|${item.periodKey}`}
-                  item={item}
-                  color={tickColor}
-                  now={now}
-                  onRestart={() => actions.restartTaskTimer(item.taskId, item.periodKey)}
-                  onAdvance={() => actions.advanceTaskTimer(item.taskId, item.periodKey, item.timerStepMinutes ?? 0)}
-                />
-              ) : item.mode === 'count' ? (
-                <CountTaskRow
-                  key={`${item.taskId}|${item.periodKey}`}
-                  item={item}
-                  color={tickColor}
-                  onAdvance={() =>
-                    actions.setTaskCount(
-                      item.taskId,
-                      item.periodKey,
-                      item.done ? 0 : Math.min(item.countTarget, item.countDone + 1),
-                    )
-                  }
-                />
-              ) : (
-                <TaskRow
-                  key={`${item.taskId}|${item.periodKey}`}
-                  item={item}
-                  color={tickColor}
-                  now={now}
-                  showDeadline={group.resetAt == null}
-                  onToggle={() => actions.setTaskDone(item.taskId, item.periodKey, !item.done)}
-                />
-              ),
-            )}
+            {group.items.map((item) => (
+              <TaskControl
+                key={`${item.taskId}|${item.periodKey}`}
+                item={item}
+                now={now}
+                actions={actions}
+                color={tickColor}
+                showDeadline={group.resetAt == null}
+              />
+            ))}
           </div>
         </section>
       ))}
@@ -628,6 +692,9 @@ function GameControlsHeader({
   now,
   localTz,
   onEdit,
+  onBack,
+  editRef,
+  urgent,
   layout = 'card',
 }: {
   game: Game;
@@ -635,36 +702,51 @@ function GameControlsHeader({
   now: number;
   localTz: string;
   onEdit: () => void;
+  onBack?: () => void;
+  editRef?: Ref<HTMLButtonElement>;
+  urgent: boolean;
   layout?: 'card' | 'focus';
 }) {
+  const TitleContainer = layout === 'focus' ? 'div' : 'button';
   const ground = useGround();
   const completed = dailies.filter((daily) => daily.done).length;
   const accountLabel = game.accountLabel?.trim();
   const resetLabel = localResetLabel(game, localTz, now);
   const regionLabel = serverRegionLabel(game.tz, now);
   return (
-    <div className="relative z-10 flex items-center gap-3">
-      <button
-        type="button"
-        onClick={onEdit}
-        className="group/title -ml-1 min-w-0 flex-1 cursor-pointer rounded-ui-md px-1 py-0.5 text-left transition hover:bg-fill-2"
-        aria-label={`Edit ${game.name}${accountLabel ? `, ${accountLabel}` : ''}`}
+    <div className="game-card-heading relative z-10 flex items-center gap-3">
+      {onBack && (
+        <button
+          type="button"
+          data-workspace-back
+          onClick={onBack}
+          aria-label="Back to dashboard"
+          aria-keyshortcuts="Alt+ArrowLeft"
+          title="Back to dashboard (Alt+Left)"
+          className="workspace-back shell-control shrink-0"
+        >
+          <svg viewBox="0 0 20 20" className="icon h-5 w-5" fill="none" stroke="currentColor" aria-hidden>
+            <path d="m11 4-6 6 6 6M5 10h11" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
+      <TitleContainer
+        type={layout === 'focus' ? undefined : 'button'}
+        onClick={layout === 'focus' ? undefined : onEdit}
+        className={`group/title min-w-0 flex-1 py-0.5 text-left ${layout === 'focus' ? '' : '-ml-1 cursor-pointer rounded-ui-md px-1 transition hover:bg-fill-2'}`}
+        aria-label={layout === 'focus' ? undefined : `Edit ${game.name}${accountLabel ? `, ${accountLabel}` : ''}`}
       >
         <div className="flex min-w-0 items-center gap-2">
-          <ServerChip label={regionLabel} className="max-w-20 truncate" />
           <h2
             className={`min-w-0 flex-1 ${layout === 'focus' ? 'text-title min-[1600px]:text-heading' : 'truncate text-heading'} font-semibold tracking-tight text-fg transition group-hover/title:text-fg`}
             style={{
               fontFamily: titleFont(game.titleFont),
-              color: gameTitleInk(game, ground),
-              // A 1px offset for legibility over the card's own gradient — not
-              // the coloured halo that used to sit behind it.
-              textShadow: 'var(--title-shadow)',
+              color: `var(--game-ink, ${gameTitleInk(game, ground, 4.5)})`,
             }}
           >
             {game.name}
           </h2>
-          {accountLabel && (
+          {accountLabel && layout !== 'focus' && (
             <>
               <span aria-hidden className="h-3 w-px shrink-0 bg-line-edge" />
               <span className="min-w-0 max-w-[40%] shrink-0 truncate text-body font-semibold text-fg-soft">
@@ -678,19 +760,20 @@ function GameControlsHeader({
             </Pill>
           )}
         </div>
-        <div className="mt-0.5 flex items-center gap-1.5 text-label text-dim">
-          <span className="h-[3px] w-8 rounded-ui-full" style={{ background: gameRim(game, ground) }} />
-          reset {resetLabel}
+        <div className="game-card-status mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-label text-muted">
+          <ServerChip label={regionLabel} className="max-w-20 truncate" />
+          {layout === 'focus' && accountLabel && <span className="[overflow-wrap:anywhere]">{accountLabel}</span>}
+          <span>reset {resetLabel}</span>
+          {urgent && <AttentionIndicator />}
         </div>
-      </button>
-      {/* The title above is clickable and always was, which is a fine hit area
-          and a terrible advertisement — nothing about a heading says "this
-          opens an editor". This is the affordance; the heading is the shortcut. */}
-      <Tooltip content={`Edit ${game.name} — resources, tasks, colours`}>
-        <button
+      </TitleContainer>
+      {/* The page has one edit control. Compact cards retain their title shortcut. */}
+      <Tooltip content={`Edit ${game.name} title, items, and layout`}>
+        <Btn
+          ref={editRef}
           type="button"
           onClick={onEdit}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-ui-md text-muted opacity-60 transition duration-(--dur-fast) hover:bg-fill-2 hover:text-fg-soft hover:opacity-100 focus-visible:opacity-100 group-hover:opacity-100 sm:h-8 sm:w-8"
+          className={`inline-flex shrink-0 items-center gap-2 ${TOUCH_BUTTON}`}
           aria-label={`Edit ${game.name}`}
         >
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" className="icon h-4 w-4" aria-hidden>
@@ -700,7 +783,8 @@ function GameControlsHeader({
               strokeLinejoin="round"
             />
           </svg>
-        </button>
+          <span>Edit</span>
+        </Btn>
       </Tooltip>
       {!game.paused && dailies.length > 0 && (
         <ProgressBar variant="ring" value={completed / dailies.length} color={gameInk(game, ground)}>
@@ -719,8 +803,8 @@ export function GameControlsView({
   now,
   layout = 'card',
   columns = 1,
-  onEditGame,
   onOpenEvent,
+  onBack,
 }: {
   entry: GameUrgency;
   state: AppState;
@@ -728,10 +812,55 @@ export function GameControlsView({
   now: number;
   layout?: 'card' | 'focus';
   columns?: 1 | 2;
-  onEditGame: (gameId: string) => void;
   onOpenEvent: (eventId: string, gameId: string) => void;
+  onBack?: () => void;
 }) {
   const { game } = entry;
+  const [editing, setEditing] = useState(false);
+  const [managingEvents, setManagingEvents] = useState(false);
+  const eventsPanelId = useId();
+  const originalLayout = useRef<GameLayoutItem[] | undefined>(undefined);
+  const editRef = useRef<HTMLButtonElement>(null);
+  const updateGame = useApp((store) => store.updateGame);
+  const openSheet = useUI((store) => store.openSheet);
+  const { draft: titleDraft, changeDraft: changeTitle } = useGameDraft(game, TITLE_FIELDS, editing, 0);
+  const beginEdit = () => {
+    if (editing) return;
+    originalLayout.current = game.cardLayout?.map((item) => ({ ...item }));
+    setManagingEvents(false);
+    setEditing(true);
+  };
+  const finishEdit = () => {
+    setEditing(false);
+    requestAnimationFrame(() => editRef.current?.focus());
+  };
+  useEffect(() => {
+    if (!onBack) return;
+    const returnToDashboard = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.isComposing || event.repeat) return;
+      const back = event.key === 'ArrowLeft' && event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey;
+      if (!back) return;
+      event.preventDefault();
+      // Let the top overlay keep its own dismissal and unsaved-change guard.
+      if (
+        useUI.getState().sheet ||
+        document.querySelector('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]')
+      ) {
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+        return;
+      }
+      // Match clicking Back: blur commits a typed energy value before unmount.
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      onBack();
+    };
+    document.addEventListener('keydown', returnToDashboard);
+    return () => document.removeEventListener('keydown', returnToDashboard);
+  }, [onBack]);
+  const saveLayout = (cardLayout: GameLayoutItem[] | undefined) => {
+    if (useApp.getState().state.games.some((item) => item.id === game.id && !item.deleted))
+      updateGame(game.id, { cardLayout });
+  };
+  const ground = useGround();
   const derived = useDerived(now);
   const identityColors = useIdentityColors(state.games);
   const visualGame = { ...game, ...(identityColors[game.id] ?? {}) };
@@ -748,6 +877,112 @@ export function GameControlsView({
     <EventStrip game={visualGame} events={state.events} now={now} onOpenEvent={onOpenEvent} />
   );
 
+  const custom = editing || game.cardLayout !== undefined;
+  const widgets = new Map<string, GameWidget>();
+  if (custom) {
+    for (const resource of state.resources.filter((item) => item.gameId === game.id && !item.deleted)) {
+      const rename = (name: string) => useApp.getState().upsertResource({ id: resource.id, gameId: game.id, name });
+      widgets.set(`resource:${resource.id}`, {
+        name: resource.name,
+        summary: `${resource.cap} capacity · ${effectiveResourceKind(resource) === 'regen' ? `${resource.regenMinutes} min / point` : effectiveResourceKind(resource) === 'weekly' ? 'Weekly refill' : 'Manual counter'}`,
+        available: true,
+        rename,
+        editor: (
+          <div className="space-y-3">
+            <Field label="Item title">
+              <TextInput maxLength={500} value={resource.name} onChange={(event) => rename(event.target.value)} />
+            </Field>
+            <Btn
+              className={TOUCH_BUTTON}
+              onClick={() => openSheet({ kind: 'game', gameId: game.id, section: 'resources' })}
+            >
+              Capacity and regeneration settings
+            </Btn>
+          </div>
+        ),
+        remove: () => {
+          useApp.getState().deleteResource(resource.id);
+          return () => useApp.getState().upsertResource({ id: resource.id, gameId: game.id, deleted: false });
+        },
+        content: (
+          <EnergyControlRow
+            game={visualGame}
+            res={resource}
+            snap={derived.snaps.get(resource.id)}
+            now={now}
+            localTz={state.settings.localTz}
+            setEnergy={actions.setEnergy}
+          />
+        ),
+      });
+    }
+    const byTask = new Map(checklist.map((item) => [item.taskId, item]));
+    for (const task of state.tasks.filter((item) => item.gameId === game.id && !item.deleted)) {
+      const item = byTask.get(task.id);
+      widgets.set(`task:${task.id}`, {
+        name: task.name,
+        summary: taskSettingsSummary(task),
+        rename: (name) => useApp.getState().updateTask(task.id, { name }),
+        editor: <TaskFields task={task} nameLabel="Item title" showSaveHint={false} />,
+        remove: () => {
+          useApp.getState().deleteTask(task.id);
+          return () => useApp.getState().updateTask(task.id, { deleted: false });
+        },
+        available: !game.paused && Boolean(item),
+        content: (
+          <>
+            <p className="mb-1 text-label text-muted">{CADENCE_LABEL[task.cadence]}</p>
+            {item ? (
+              <TaskControl item={item} now={now} actions={actions} color={gameInk(visualGame, ground)} />
+            ) : (
+              <p className="text-meta text-muted">{task.name} · not active right now</p>
+            )}
+          </>
+        ),
+      });
+    }
+    widgets.set('quick-spend', {
+      name: 'Quick spend',
+      summary: 'Resource shortcuts',
+      editor: (
+        <Btn className={TOUCH_BUTTON} onClick={() => openSheet({ kind: 'game', gameId: game.id, section: 'spend' })}>
+          Edit quick spends
+        </Btn>
+      ),
+      available:
+        !game.paused &&
+        state.chips.some((item) => item.gameId === game.id && !item.deleted) &&
+        state.resources.some(
+          (item) => item.gameId === game.id && !item.deleted && effectiveResourceKind(item) === 'regen',
+        ),
+      content: <QuickSpendControls game={visualGame} state={state} actions={actions} />,
+    });
+    widgets.set('events', {
+      name: 'Events',
+      summary: 'Current event preview',
+      editor: (
+        <Btn
+          className={TOUCH_BUTTON}
+          onClick={() => {
+            finishEdit();
+            setManagingEvents(true);
+            requestAnimationFrame(() =>
+              document.getElementById(eventsPanelId)?.querySelector<HTMLElement>('h3')?.focus(),
+            );
+          }}
+        >
+          Edit event details
+        </Btn>
+      ),
+      available:
+        !game.paused &&
+        state.events.some(
+          (item) => item.gameId === game.id && !item.deleted && !item.done && (item.end > now || item.start > now),
+        ),
+      content: events,
+    });
+  }
+
   return (
     <>
       <GameControlsHeader
@@ -755,16 +990,113 @@ export function GameControlsView({
         dailies={dailies}
         now={now}
         localTz={state.settings.localTz}
-        onEdit={() => onEditGame(game.id)}
+        onEdit={beginEdit}
+        onBack={onBack}
+        editRef={editRef}
+        urgent={!game.paused && entry.next != null && entry.next.at - now < 2 * 60 * 60_000}
         layout={layout}
       />
-      <div className={`relative z-10 flex flex-1 flex-col ${game.paused ? 'opacity-50' : ''}`}>
-        {layout === 'focus' ? (
+      <div
+        className="relative z-10 mt-3 flex flex-wrap items-center gap-2"
+        aria-label={`${game.name} tracking controls`}
+      >
+        <Btn
+          className={TOUCH_BUTTON}
+          aria-expanded={managingEvents}
+          aria-controls={eventsPanelId}
+          onClick={() => setManagingEvents((value) => !value)}
+        >
+          {managingEvents ? 'Close events' : 'Manage events'}
+        </Btn>
+        {!managingEvents && (
+          <Btn className={TOUCH_BUTTON} onClick={() => openSheet({ kind: 'event', gameId: game.id })}>
+            Add event
+          </Btn>
+        )}
+        <Btn className={`${TOUCH_BUTTON} ml-auto`} onClick={() => updateGame(game.id, { paused: !game.paused })}>
+          {game.paused ? 'Resume tracking' : 'Pause tracking'}
+        </Btn>
+      </div>
+      {game.paused && (
+        <p className="relative z-10 mt-2 text-meta text-muted">
+          Tracking paused. Your saved progress and events stay here.
+        </p>
+      )}
+      <div id={eventsPanelId} hidden={!managingEvents}>
+        {managingEvents && <GameEvents key={game.id} game={game} now={now} />}
+      </div>
+      {editing && (
+        <section
+          className="relative z-20 mt-4 border-y border-line-edge py-3"
+          aria-label={`Layout editor for ${game.name}`}
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-auto text-body font-semibold">Customize card</span>
+            <Btn kind="primary" onClick={finishEdit}>
+              Done
+            </Btn>
+            <Btn onClick={() => openSheet({ kind: 'game', gameId: game.id })}>Game settings</Btn>
+            <Btn aria-label="Reset layout" onClick={() => saveLayout(undefined)}>
+              Reset layout
+            </Btn>
+            <Btn
+              aria-label="Undo layout changes"
+              onClick={() => {
+                saveLayout(originalLayout.current);
+                finishEdit();
+              }}
+            >
+              Undo layout
+            </Btn>
+          </div>
+          <p className="mt-2 text-caption text-muted">
+            Title and item settings save automatically. Undo layout restores only item order and visibility.
+          </p>
+          <div className="mt-3">
+            <Field label="Game title">
+              <TextInput
+                maxLength={500}
+                value={titleDraft.name}
+                onChange={(event) => changeTitle('name', event.target.value)}
+              />
+            </Field>
+          </div>
+        </section>
+      )}
+      <div
+        className={`relative z-10 flex flex-1 flex-col ${game.paused && !editing ? 'opacity-50' : ''}`}
+        onKeyDown={(event) => {
+          if (editing && event.key === 'Escape') {
+            event.stopPropagation();
+            finishEdit();
+          }
+        }}
+      >
+        {custom ? (
+          <GameLayoutCanvas
+            key={`${game.id}:${editing}`}
+            gameId={game.id}
+            items={resolveGameLayout(game, state.resources, state.tasks)}
+            widgets={widgets}
+            editing={editing}
+            onChange={saveLayout}
+            onAdded={(id) => {
+              const latest = useApp.getState().state;
+              const currentGame = latest.games.find((item) => item.id === game.id && !item.deleted);
+              if (!currentGame) return;
+              const resolved = resolveGameLayout(currentGame, latest.resources, latest.tasks);
+              saveLayout([{ id, hidden: false }, ...resolved.filter((item) => item.id !== id)]);
+            }}
+          />
+        ) : layout === 'focus' ? (
           <div className="focus-bay-grid grid gap-x-6 gap-y-1" data-cols={columns}>
-            <div className="min-w-0">{resources}</div>
+            <div className="min-w-0">
+              {resources}
+              {columns === 2 && <div className="mt-6">{events}</div>}
+            </div>
             <div className="min-w-0">
               {tasks}
-              {events}
+              {columns === 1 && events}
             </div>
           </div>
         ) : (
@@ -814,7 +1146,6 @@ export function GameControls({
       now={now}
       layout={layout}
       columns={columns}
-      onEditGame={(gameId) => openSheet({ kind: 'game', gameId })}
       onOpenEvent={(eventId, gameId) => openSheet({ kind: 'event', eventId, gameId })}
     />
   );
@@ -830,22 +1161,14 @@ export const GameCard = memo(function GameCard({
   /** Position in the grid, so the rail lays itself out rather than blinking in. */
   index?: number;
 }) {
-  const { game, next } = entry;
+  const { game } = entry;
   const games = useApp((store) => store.state.games);
   const ground = useGround();
   const theme = useTheme();
-  const reduced = useReducedMotion();
-  const urgent = !game.paused && next != null && next.at - now < 2 * 60 * 60_000;
-  // Depth is the game's own inset ring plus the top-edge highlight — nothing
-  // outside the box. See the Shadows Float Only Rule in DESIGN.md: a card does
-  // not overlay the page, so it casts nothing.
+  // Identity and glass treatment share the same shell as the roster and focus view.
   const identityColors = useIdentityColors(games);
   const visualColors = identityColors[game.id] ?? game;
   const rim = gameRim(visualColors, ground);
-  const accent = gameAccent(visualColors, ground);
-  const cardShadows = [!urgent && `inset 0 0 0 1px ${tint(rim, 0.3)}`, 'inset 0 1px 0 var(--color-line-hairline)']
-    .filter(Boolean)
-    .join(', ');
 
   return (
     <m.div
@@ -853,22 +1176,15 @@ export const GameCard = memo(function GameCard({
       // No h-full: in the narrow grid the cell already stretches the card, and in
       // the Cards columns it made a lone card grow to the height of the tallest
       // column — the empty-card problem in a new place.
-      className="card-shell group relative flex flex-col overflow-hidden rounded-ui-card px-4 pb-6 pt-4"
+      className="card-shell game-card-surface group relative flex flex-col overflow-hidden rounded-ui-card px-4 pb-6 pt-4"
       variants={cardEnter}
       custom={index}
       initial="hidden"
       animate="visible"
       style={{
         ...gameShellVars(game, theme, visualColors),
-        boxShadow: cardShadows,
       }}
     >
-      <div
-        className="absolute inset-x-4 top-0 h-[3px] rounded-ui-full"
-        style={{
-          background: `linear-gradient(90deg, transparent, ${rim}, ${accent}, transparent)`,
-        }}
-      />
       {game.image && (
         <div className="pointer-events-none absolute inset-y-0 right-0 w-2/3 overflow-hidden rounded-r-ui-card">
           <img
@@ -887,14 +1203,6 @@ export const GameCard = memo(function GameCard({
             }}
           />
         </div>
-      )}
-      {urgent && (
-        <div
-          aria-hidden
-          data-urgency-ring
-          className={`pointer-events-none absolute inset-0 rounded-ui-card ${reduced ? '' : 'pulse-fade'}`}
-          style={{ boxShadow: 'inset 0 0 0 1px var(--color-danger)' }}
-        />
       )}
       <GameControls entry={entry} now={now} />
     </m.div>

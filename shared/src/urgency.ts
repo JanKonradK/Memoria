@@ -32,8 +32,7 @@ export function buildUrgencyContext(state: AppState, now: number, requestedGame?
     checklistByGame.set(requestedGame.id, checklistFor(state, requestedGame, now, checklistIndex));
   }
 
-  // Keep the same rows as the old gameActions scans. In particular, they checked
-  // deleted/notify/kind themselves but did not exclude done events.
+  // The readers apply visibility and completion filters to these shared indexes.
   return {
     snaps: latestSnapshots(state.snapshots),
     checklistByGame,
@@ -65,7 +64,7 @@ export function gameActions(state: AppState, game: Game, now: number, ctx?: Urge
   }
 
   for (const ev of context.eventsByGame.get(game.id) ?? []) {
-    if (ev.deleted || !ev.notify) continue;
+    if (ev.deleted || ev.done || !ev.notify) continue;
     if (ev.end > now && ev.start <= now) {
       actions.push({ kind: 'event', gameId: game.id, at: ev.end, label: `${ev.name} ends` });
     }

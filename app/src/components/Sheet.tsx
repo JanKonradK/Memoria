@@ -1,8 +1,8 @@
 import { useRef, type ReactNode } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { AnimatePresence, m, usePresence } from 'motion/react';
-import { useMediaQuery } from '../hooks';
-import { backdropFade, dialogEnter, sheetEnter } from '../motion';
+import { animate, AnimatePresence, m, useMotionValue, usePresence, type MotionValue } from 'motion/react';
+import { useMediaQuery, useReducedMotion } from '../hooks';
+import { backdropFade, dialogEnter, sheetEnter, sheetSpring } from '../motion';
 
 function CloseButton() {
   return (
@@ -20,37 +20,81 @@ function CloseButton() {
   );
 }
 
-/** Drag-to-dismiss for the mobile bottom sheet: grab the header, swipe down to close. */
-function useDragDismiss(dialogRef: React.RefObject<HTMLDivElement | null>, onClose: () => void) {
-  const drag = useRef<{ startY: number; lastY: number; lastT: number } | null>(null);
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    drag.current = { startY: e.clientY, lastY: e.clientY, lastT: e.timeStamp };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+/** Drag, entrance, return and exit all own the same transform. */
+function useDragDismiss(
+  dialogRef: React.RefObject<HTMLDivElement | null>,
+  y: MotionValue<string>,
+  reduced: boolean,
+  onClose: () => void | boolean,
+) {
+  const releaseVelocity = useRef(0);
+  const drag = useRef<{
+    startY: number;
+    startOffset: number;
+    height: number;
+    lastY: number;
+    lastT: number;
+    velocity: number;
+  } | null>(null);
+  const returnHome = () => animate(y, '0%', reduced ? { duration: 0 } : sheetSpring);
+  const onPointerDown = (event: React.PointerEvent) => {
+    if (event.button !== 0 || !event.isPrimary || (event.target as HTMLElement).closest('button') || !dialogRef.current)
+      return;
+    const height = dialogRef.current.getBoundingClientRect().height;
+    y.stop();
+    releaseVelocity.current = 0;
+    drag.current = {
+      startY: event.clientY,
+      startOffset: (parseFloat(y.get()) / 100) * height,
+      height,
+      lastY: event.clientY,
+      lastT: event.timeStamp,
+      velocity: 0,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
   };
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!drag.current || !dialogRef.current) return;
-    const offset = Math.max(0, e.clientY - drag.current.startY);
-    dialogRef.current.style.transform = `translateY(${offset}px)`;
-    dialogRef.current.style.transition = 'none';
-    drag.current.lastT = e.timeStamp;
-    drag.current.lastY = e.clientY;
+  const onPointerMove = (event: React.PointerEvent) => {
+    const current = drag.current;
+    if (!current) return;
+    const offset = Math.max(0, current.startOffset + event.clientY - current.startY);
+    y.set(`${(offset / Math.max(1, current.height)) * 100}%`);
+    const dt = event.timeStamp - current.lastT;
+    if (dt > 0) current.velocity = ((event.clientY - current.lastY) / dt) * 1000;
+    current.lastY = event.clientY;
+    current.lastT = event.timeStamp;
   };
-  const onPointerUp = (e: React.PointerEvent) => {
-    if (!drag.current || !dialogRef.current) return;
-    const offset = Math.max(0, e.clientY - drag.current.startY);
-    const dt = Math.max(1, e.timeStamp - drag.current.lastT);
-    const velocity = ((e.clientY - drag.current.lastY) / dt) * 1000;
+  const onPointerUp = (event: React.PointerEvent) => {
+    const current = drag.current;
+    if (!current) return;
     drag.current = null;
-    if (offset > 120 || velocity > 600) {
-      onClose();
-    } else {
-      dialogRef.current.style.transition = 'transform 0.2s ease-out';
-      dialogRef.current.style.transform = '';
-    }
+    const distance = event.clientY - current.startY;
+    const offset = Math.max(0, current.startOffset + distance);
+    const velocity = event.timeStamp - current.lastT < 100 ? current.velocity : 0;
+    if (distance > 10 && (offset > Math.min(120, current.height * 0.28) || velocity > 600)) {
+      releaseVelocity.current = velocity;
+      if (onClose() === false) {
+        releaseVelocity.current = 0;
+        returnHome();
+      }
+    } else returnHome();
   };
-
-  return { onPointerDown, onPointerMove, onPointerUp };
+  const onPointerCancel = () => {
+    if (!drag.current) return;
+    drag.current = null;
+    returnHome();
+  };
+  return {
+    handlers: {
+      onPointerDown,
+      onPointerMove,
+      onPointerUp,
+      onPointerCancel,
+      // Losing capture is not a release gesture. Restore the sheet if the
+      // browser or another surface takes over before pointerup arrives.
+      onLostPointerCapture: onPointerCancel,
+    },
+    releaseVelocity,
+  };
 }
 
 /**
@@ -64,11 +108,17 @@ export function Sheet({
   children,
   wide = false,
   hideTitle = false,
+  footer,
+  dirty = false,
 }: {
   open: boolean;
   onClose: () => void;
   title: ReactNode;
   children: ReactNode;
+  /** Keep the commit action reachable while a long editor scrolls. */
+  footer?: ReactNode;
+  /** Protect a draft from Back, Escape, backdrop and drag dismissal. */
+  dirty?: boolean;
   /** Use a wider desktop dialog for dense editors (game detail, add game). */
   wide?: boolean;
   /**
@@ -78,16 +128,23 @@ export function Sheet({
   hideTitle?: boolean;
 }) {
   const desktop = useMediaQuery('(min-width: 640px)');
+  const reduced = useReducedMotion();
+  const sheetY = useMotionValue(reduced ? '0%' : '100%');
   const dialogRef = useRef<HTMLDivElement>(null);
   // Every close updates the route first. Retain its portal until the inner
   // exit finishes, then release App's waiting presence boundary.
   const [present, safeToRemove] = usePresence();
-  const dragHandlers = useDragDismiss(dialogRef, onClose);
+  const close = () => {
+    if (dirty && !window.confirm('Discard your unsaved changes?')) return false;
+    onClose();
+    return true;
+  };
+  const { handlers: dragHandlers, releaseVelocity } = useDragDismiss(dialogRef, sheetY, reduced, close);
 
   return (
-    <DialogPrimitive.Root open={open && present} onOpenChange={(next) => !next && onClose()}>
+    <DialogPrimitive.Root open={open && present} onOpenChange={(next) => !next && close()}>
       <DialogPrimitive.Portal forceMount>
-        <AnimatePresence onExitComplete={safeToRemove ?? undefined}>
+        <AnimatePresence custom={releaseVelocity.current} onExitComplete={safeToRemove ?? undefined}>
           {open && present && (
             <m.div
               key={desktop ? 'dialog' : 'sheet'}
@@ -128,11 +185,24 @@ export function Sheet({
                       </DialogPrimitive.Title>
                       <CloseButton />
                     </div>
-                    <div className="scrollbar-thin overflow-y-auto px-6 pb-6">{children}</div>
+                    <div className="scrollbar-thin min-h-0 overflow-y-auto px-6 pb-6">{children}</div>
+                    {footer && <div className="shrink-0 border-t border-line px-6 py-4">{footer}</div>}
                   </DialogPrimitive.Content>
                 </m.div>
               ) : (
-                <m.div className="pointer-events-auto w-full max-w-xl" variants={sheetEnter}>
+                <m.div
+                  className="pointer-events-auto w-full max-w-xl"
+                  style={{ y: sheetY }}
+                  variants={
+                    reduced
+                      ? {
+                          hidden: { y: '0%', opacity: 0 },
+                          visible: { y: '0%', opacity: 1 },
+                          exit: { y: '0%', opacity: 0 },
+                        }
+                      : sheetEnter
+                  }
+                >
                   <DialogPrimitive.Content
                     forceMount
                     ref={dialogRef}
@@ -151,9 +221,16 @@ export function Sheet({
                         <CloseButton />
                       </div>
                     </div>
-                    <div className="scrollbar-thin overflow-y-auto px-5 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                    <div
+                      className={`scrollbar-thin min-h-0 overflow-y-auto px-5 ${footer ? 'pb-5' : 'pb-[calc(2rem+env(safe-area-inset-bottom))]'}`}
+                    >
                       {children}
                     </div>
+                    {footer && (
+                      <div className="shrink-0 border-t border-line px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3">
+                        {footer}
+                      </div>
+                    )}
                   </DialogPrimitive.Content>
                 </m.div>
               )}

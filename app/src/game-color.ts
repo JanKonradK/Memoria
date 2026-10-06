@@ -161,13 +161,9 @@ function hueAndLightness(hex: string): { hue: number | null; lightness: number }
   return { hue: (hue * 60 + 360) % 360, lightness };
 }
 
-/**
- * The card fill. The primary only *whispers* into the chrome — about 7% on dark,
- * 22% on the cream ground — so five cards stay pleasant charcoal panels wearing
- * jewelry, rather than five muddy painted walls. See The Whisper Rule.
- */
+/** A restrained game tint over the neutral panel. */
 export function gameWash(game: GameColors, surface: [string, string], theme: 'dark' | 'light'): [string, string] {
-  const amount = theme === 'dark' ? 0.07 : 0.22;
+  const amount = theme === 'dark' ? 0.035 : 0.045;
   const { primary } = trioOf(game);
   return [mix(primary, surface[0], amount), mix(primary, surface[1], amount * 0.75)];
 }

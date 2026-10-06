@@ -29,8 +29,9 @@ test('MW uses an inline tag and owner tag changes persist', async ({ page }) => 
         name: 'Miliastra test',
         type: 'event',
         category: 'miliastra',
-        start: now - 1000,
-        end: now + 86400000,
+        // Inline tags need room beside the title; short bars omit them by design.
+        start: now - 86400000 * 20,
+        end: now + 86400000 * 35,
         updatedAt: now,
       }),
       makeEvent({
@@ -51,6 +52,10 @@ test('MW uses an inline tag and owner tag changes persist', async ({ page }) => 
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page
+    .getByRole('radiogroup', { name: 'Event view' })
+    .getByRole('radio', { name: 'Timeline', exact: true })
+    .click();
   await expect(page.locator('[data-event-id="teyvat-test"] [data-event-tag]')).toHaveCount(0);
   await expect(page.locator('[data-event-id="mw-test"] [data-event-tag]')).toHaveText('MW');
   await expect(page.locator('[data-event-category]')).toHaveCount(0);
@@ -63,5 +68,9 @@ test('MW uses an inline tag and owner tag changes persist', async ({ page }) => 
   await page.waitForTimeout(400);
   await page.reload();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page
+    .getByRole('radiogroup', { name: 'Event view' })
+    .getByRole('radio', { name: 'Timeline', exact: true })
+    .click();
   await expect(page.locator('[data-event-id="mw-test"] [data-event-tag]')).toHaveCount(0);
 });

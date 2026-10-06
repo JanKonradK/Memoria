@@ -67,6 +67,46 @@ The provider's client transfers the file. Memoria reads it before each write and
 For conflicting rows, the later `updatedAt` value wins. Deleted rows retain tombstones.
 If a provider creates a conflict copy, import that copy through Settings to merge it.
 
+Optional Wi-Fi sync uses a separate listener on TCP port 17820.
+The user enables it in the Windows app and pairs the Android app with a temporary code.
+The launcher keeps its existing loopback access checks.
+Both listeners use the same merge rules and a serialized state writer.
+The Android app uses native HTTP requests. Browser pages cannot use the Wi-Fi listener.
+
+The PC displays a QR code with a temporary pairing code and private addresses.
+Android scans it through the native camera activity. Shared validation rejects unrelated codes and nonlocal addresses before any request.
+The app tries the supplied addresses until it reaches the PC. It does not scan the network.
+Manual entry remains available. A failed replacement scan keeps the previous connection.
+The camera permission request occurs only after the user selects Scan PC code. The scanner does not save images.
+
+Wi-Fi sync uses HTTP on a trusted private network. It does not encrypt network traffic.
+Keep the PC on and Memoria open. The phone syncs while its app is open and after it returns to the foreground.
+Offline edits stay on the phone until the PC becomes available.
+
+## Build the Android APK
+
+Install Android Studio with Android SDK 36 and JDK 21 or later.
+Then run:
+
+```sh
+npm ci
+npm run build:android
+```
+
+The output is `dist/release/Memoria-android-debug.apk`.
+The APK contains the app assets and supports offline startup. The minimum version is Android 7 (API 24).
+The build uses a local debug key. Keep that key to install later test builds as updates.
+A public release needs a separate release key and a signing process.
+
+Native Back closes the active editor through its normal cancel control.
+The Android backup command opens the system file picker.
+External web links open outside the app.
+
+The browser tests cover phone layouts and motion. They do not replace tests on a physical Android device.
+The [Capacitor Android documentation](https://capacitorjs.com/docs/android) describes the native project.
+The [View Transition API documentation](https://developer.mozilla.org/en-US/docs/Web/API/Document/startViewTransition)
+describes the optional card transition. Older browsers use immediate navigation.
+
 ## Desktop shortcut from source
 
 ```sh
