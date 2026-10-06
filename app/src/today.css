@@ -1,6 +1,5 @@
 .today-page {
-  max-width: 1600px;
-  margin-inline: auto;
+  container-type: inline-size;
 }
 
 .today-heading {
@@ -8,20 +7,26 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 1rem;
-  padding-block: 0.75rem 2rem;
+  gap: 0.75rem;
+  padding-block: 0.5rem clamp(1rem, 2.5vh, 2rem);
 }
 
 .today-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: 2rem;
+  gap: clamp(1rem, 2vw, 2rem);
 }
 
 .today-roster,
 .today-detail {
   display: none;
+  min-width: 0;
+}
+
+.today-detail,
+.today-priority-row {
+  overflow-wrap: anywhere;
 }
 
 .today-roster-button {
@@ -42,15 +47,18 @@
 }
 
 .today-priority-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   border-top: 1px solid var(--color-line);
 }
 
 .today-priority-row {
   display: flex;
   width: 100%;
+  height: 100%;
   align-items: flex-start;
   gap: 0.875rem;
-  padding: 1.25rem 0.5rem;
+  padding: clamp(0.875rem, 2vh, 1.25rem) 0.5rem;
   border-bottom: 1px solid var(--color-line);
   text-align: left;
   transition: background var(--dur-fast) var(--ease-out);
@@ -65,18 +73,43 @@
   margin-block: 1rem;
 }
 
-@media (min-width: 1100px) {
-  .today-page {
-    padding-inline: 2rem;
-  }
+/* A snapped PC window has room for the reading beside the priorities before
+   it has room for the optional roster. Keep the same controls at each size. */
+@media (min-width: 900px) {
   .today-layout {
-    grid-template-columns: minmax(10rem, 0.7fr) minmax(20rem, 1.7fr) minmax(17rem, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(17rem, 0.65fr);
   }
-  .today-roster,
   .today-detail {
     display: block;
+  }
+}
+
+@media (min-width: 1280px) {
+  .today-layout {
+    grid-template-columns: clamp(12rem, 18vw, 17rem) minmax(0, 1fr) clamp(18rem, 25vw, 25rem);
+  }
+  .today-roster {
+    display: block;
+  }
+}
+
+/* A short window keeps one document scroll. Taller windows can keep the
+   selected reading nearby, with all actions reachable inside the pane. */
+@media (min-width: 900px) and (min-height: 700px) {
+  .today-roster,
+  .today-detail {
     position: sticky;
     top: calc(var(--app-bar-h) + 1.5rem);
+    max-height: calc(100dvh - var(--app-bar-h) - 3rem);
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+}
+
+@container (min-width: 1800px) {
+  .today-priority-list {
+    grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+    column-gap: 1.5rem;
   }
 }
 

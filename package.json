@@ -1,7 +1,7 @@
 {
   "name": "memoria",
   "private": true,
-  "version": "2.0.1",
+  "version": "3.0.0",
   "workspaces": [
     "shared",
     "app"
@@ -37,18 +37,29 @@
     "predesktop": "node node_modules/electron/install.js"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.12.1",
-    "@capacitor/cli": "8.4.3",
+    "@axe-core/playwright": "^4.13.0",
+    "@capacitor/cli": "8.5.2",
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.61.1",
+    "@playwright/test": "^1.63.0",
     "electron": "44.5.1",
-    "eslint": "^10.7.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.12.0",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.3",
-    "globals": "^17.7.0",
-    "prettier": "^3.9.5",
-    "prettier-plugin-tailwindcss": "^0.8.0",
-    "typescript-eslint": "^8.63.0",
-    "vitest": "^4.1.11"
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.1",
+    "vite": "^8.3.3",
+    "vitest": "^5.0.3"
+  },
+  "engines": {
+    "node": "^24.15.0 || >=26.0.0"
+  },
+  "overrides": {
+    "xcode": {
+      "uuid": "11.1.1"
+    }
   }
 }

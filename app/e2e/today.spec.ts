@@ -48,7 +48,7 @@ test('a Today game opens complete controls and browser Back returns to Today', a
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  if (page.viewportSize()!.width >= 1100) {
+  if (page.viewportSize()!.width >= 900) {
     await page.getByRole('button', { name: 'Review Genshin Impact', exact: true }).click();
     await page.getByRole('button', { name: 'Open game', exact: true }).click();
   } else {

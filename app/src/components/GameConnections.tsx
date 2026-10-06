@@ -6,7 +6,7 @@ import { isNativeApp } from '../native';
 import { connectHoyo, listHoyoAccounts } from '../hoyo-native';
 import { useApp } from '../store';
 import { Btn, Field, Select, TextInput } from './ui';
-import { useUnsavedDraft } from '../desktop-host';
+import { isDesktopApp, useUnsavedDraft } from '../desktop-host';
 
 const SERVERS = {
   genshin: [
@@ -37,6 +37,8 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
   const key = game ? presetForGame(game)?.key : undefined;
   const provider = key && Object.hasOwn(SERVERS, key) ? (key as GameConnection['provider']) : undefined;
   const connected = connections.find((item) => item.gameId === gameId);
+  const desktop = isDesktopApp();
+  const nativeLogin = isNativeApp || (desktop && Boolean(window.memoriaDesktop?.hoyo));
   const [uid, setUid] = useState('');
   const [server, setServer] = useState('');
   const [cookie, setCookie] = useState('');
@@ -123,7 +125,7 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
         Read your HoYoLAB Real-Time Notes. This community connection imports supported readings. It does not play the
         game or claim rewards.
       </p>
-      {isNativeApp && (
+      {nativeLogin && (
         <div className="space-y-2">
           <Btn
             disabled={busy}
@@ -132,7 +134,9 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
               setError('');
               void connectHoyo()
                 .then((result) => {
-                  if (active.current && result.connected && !connected) return findAccounts();
+                  if (!active.current || !result.connected) return;
+                  if (desktop && connected) return run({ action: 'connect', ...connected });
+                  if (!connected) return findAccounts();
                 })
                 .catch((cause: unknown) => {
                   if (active.current) setError(cause instanceof Error ? cause.message : 'Sign-in could not open.');
@@ -145,8 +149,8 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
             Sign in with HoYoLAB
           </Btn>
           <p className="text-meta text-muted">
-            Sign in on the official page, then select Done. One HoYoLAB sign-in serves your linked games on this phone.
-            Your session stays here.
+            Sign in on the official page, then select Done. One sign-in serves your linked games on this{' '}
+            {desktop ? 'PC' : 'phone'}. Your session stays here.
           </p>
         </div>
       )}
@@ -162,8 +166,22 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
               disabled={busy}
               onChange={(event) => void run({ action: 'configure', gameId, autoRefresh: event.target.checked })}
             />
-            Refresh automatically every five minutes while Memoria is open
+            {desktop
+              ? 'Import readings every five minutes, including while playing'
+              : 'Refresh automatically every five minutes while Memoria is open'}
           </label>
+          {desktop && connected.autoRefresh && (
+            <p className="text-meta text-muted">
+              Enable Keep Memoria in the system tray in Play mode to continue after closing the window. Readings pause
+              when this game is paused, the PC is offline, or you quit Memoria.
+            </p>
+          )}
+          {connected.lastCheckedAt !== null && (
+            <p className="text-meta text-muted">
+              Last checked{' '}
+              {new Date(connected.lastCheckedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
             <Btn disabled={busy} kind="primary" onClick={() => void run({ action: 'refresh', gameId })}>
               {busy ? 'Checking…' : 'Fetch readings'}
@@ -189,7 +207,7 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
             });
           }}
         >
-          {isNativeApp && (
+          {nativeLogin && (
             <div className="space-y-2">
               <Btn disabled={busy} onClick={() => void findAccounts()}>
                 Find my accounts
@@ -256,7 +274,7 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
               </Select>
             </Field>
           </div>
-          {!isNativeApp && (
+          {!nativeLogin && (
             <details className="text-body text-muted">
               <summary className="min-h-11 cursor-pointer py-2 text-fg">Get a connection session</summary>
               <ol className="list-decimal space-y-2 pl-5">
@@ -276,7 +294,7 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
               </p>
             </details>
           )}
-          {!isNativeApp && (
+          {!nativeLogin && (
             <Field label="HoYoLAB session cookie">
               <TextInput
                 required

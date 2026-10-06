@@ -114,7 +114,7 @@ export function TodayPage({ now }: { now: number }) {
   const derived = useDerived(now);
   const { state, order } = derived;
   const colors = useIdentityColors(state.games);
-  const desktop = useMediaQuery('(min-width: 1100px)');
+  const desktop = useMediaQuery('(min-width: 900px)');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const openSheet = useUI((ui) => ui.openSheet);
   const setTab = useUI((ui) => ui.setTab);

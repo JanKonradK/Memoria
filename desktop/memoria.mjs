@@ -376,7 +376,9 @@ function respondJson(res, status, payload) {
 
 /**
  * Refuse a body that can never become a valid state document, then hang up.
- * Closing after the response keeps a sender from making us drain the rest of it.
+ * Connection: close lets HTTP finish the response before closing the socket.
+ * Destroying the request in the end callback can reset the connection while
+ * an upload is still in flight, losing the 413 response on Windows.
  */
 function respondTooLarge(req, res) {
   req.pause();
@@ -386,7 +388,7 @@ function respondTooLarge(req, res) {
     connection: 'close',
     ...MARKER_HEADERS,
   });
-  res.end(JSON.stringify({ error: `Request body exceeds ${MAX_SYNC_BYTES} bytes.` }), () => req.destroy());
+  res.end(JSON.stringify({ error: `Request body exceeds ${MAX_SYNC_BYTES} bytes.` }));
 }
 
 const stateAccess = createStateAccess({ loadCore: loadSharedCore, read: readStateRaw, write: writeState });

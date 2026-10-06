@@ -1,9 +1,24 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, screen, shell, utilityProcess } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  desktopCapturer,
+  dialog,
+  globalShortcut,
+  ipcMain,
+  Menu,
+  screen,
+  session,
+  shell,
+  Tray,
+  utilityProcess,
+} from 'electron';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { externalUrl, isAppUrl, launchOrigin, windowBounds } from './native-policy.mjs';
+import { createPlayMode } from './play-mode.mjs';
+import { createHoyoLogin } from './hoyo-login.mjs';
 
 const here = import.meta.dirname;
 const root = resolve(here, '..');
@@ -23,6 +38,9 @@ let healthTimer;
 let recovering = false;
 let recoveryErrorShown = false;
 let ready = false;
+let play;
+let hoyo;
+let tray;
 const boundsFile = join(data, 'desktop-window.json');
 // A restarted utility process retains this window's API session. It never goes to disk.
 const backendSession = randomBytes(32).toString('base64url');
@@ -32,6 +50,105 @@ function focusWindow() {
   if (window.isMinimized()) window.restore();
   window.show();
   window.focus();
+}
+
+function trustedSender(event) {
+  return (
+    window &&
+    !window.isDestroyed() &&
+    event.sender === window.webContents &&
+    event.senderFrame === window.webContents.mainFrame &&
+    isAppUrl(event.senderFrame.url, origin)
+  );
+}
+
+/** The session token stays in this app; account cookies never enter its renderer. */
+async function nativeApi(path, body) {
+  if (!window || window.isDestroyed() || !isAppUrl(window.webContents.getURL(), origin))
+    throw new Error('Wait for Memoria to open.');
+  const token = await window.webContents.executeJavaScript("sessionStorage.getItem('memoria-launcher-token')");
+  if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(token))
+    throw new Error('The local data service is reconnecting. Try again.');
+  const response = await fetch(`${origin}${path}`, {
+    method: body ? 'POST' : 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Origin: origin,
+      'sec-fetch-site': 'same-origin',
+      'content-type': 'application/json',
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+    redirect: 'error',
+    signal: AbortSignal.timeout(30000),
+  });
+  const result = await response.json();
+  if (!response.ok)
+    throw new Error(
+      typeof result?.error === 'string' ? result.error : 'The local data service could not complete this action.',
+    );
+  return result;
+}
+
+function openPlay() {
+  focusWindow();
+  if (ready) window.webContents.send('memoria:play-open');
+}
+
+function updatePlay() {
+  if (!play || quitting) return;
+  const status = play.status();
+  if (window && !window.isDestroyed()) {
+    window.webContents.setBackgroundThrottling(false);
+    if (isAppUrl(window.webContents.getURL(), origin)) window.webContents.send('memoria:play-changed');
+  }
+  if (!tray) return;
+  tray.setToolTip(
+    status.error
+      ? `Memoria — ${status.error}`.slice(0, 127)
+      : `Memoria — ${status.count} captures to review${status.busy ? ' · Reading…' : ''}`,
+  );
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: 'Open Memoria', click: focusWindow },
+      { label: status.count ? `Review ${status.count} captures` : 'Play mode', click: openPlay },
+      {
+        label: 'Capture selected game window',
+        enabled: status.enabled && !status.busy && Boolean(status.sourceId),
+        click: () => void play.capture().catch(updatePlay),
+      },
+      { type: 'separator' },
+      { label: 'Quit Memoria', click: requestClose },
+    ]),
+  );
+}
+
+for (const [channel, action] of Object.entries({
+  'memoria:play-status': () => play.status(),
+  'memoria:play-sources': () => play.sources(),
+  'memoria:play-configure': async (config) => {
+    const result = await play.configure(config);
+    if (!result.background) focusWindow();
+    updatePlay();
+    return result;
+  },
+  'memoria:play-capture': async () => {
+    await play.capture();
+    return play.status();
+  },
+  'memoria:play-remove': async (id) => {
+    await play.remove(id);
+    return play.status();
+  },
+  'memoria:hoyo-connect': () => hoyo.connect(),
+  'memoria:hoyo-disconnect': () => hoyo.disconnect(),
+  'memoria:hoyo-accounts': (options) => hoyo.listAccounts(options),
+  'memoria:hoyo-link': (options) => hoyo.connectAccount(options),
+})) {
+  ipcMain.handle(channel, (event, argument) => {
+    if (!trustedSender(event) || !play || !hoyo || quitting)
+      throw new Error('This action is only available in Memoria.');
+    return action(argument);
+  });
 }
 
 function saveBounds() {
@@ -79,6 +196,7 @@ function allowPhoneSync() {
 
 function requestClose() {
   if (!window || window.isDestroyed() || pendingClose) return;
+  focusWindow();
   if (!ready) {
     quitting = true;
     window.destroy();
@@ -128,8 +246,10 @@ ipcMain.on('memoria:close-result', (event, requestId, result) => {
     saveBounds();
     quitting = true;
     // The renderer has checked drafts and awaited both storage layers.
-    window.destroy();
-    app.quit();
+    void Promise.resolve(play?.stop()).finally(() => {
+      window?.destroy();
+      app.quit();
+    });
   } else if (typeof result.error === 'string' && result.error) {
     void dialog.showMessageBox(window, {
       type: 'warning',
@@ -251,8 +371,8 @@ async function createWindow() {
   }
   window = new BrowserWindow({
     ...windowBounds(saved, screen.getAllDisplays()),
-    minWidth: 800,
-    minHeight: 600,
+    minWidth: Math.min(360, screen.getPrimaryDisplay().workArea.width),
+    minHeight: Math.min(480, screen.getPrimaryDisplay().workArea.height),
     title: 'Memoria',
     icon: join(here, 'memoria.ico'),
     backgroundColor: '#101015',
@@ -266,6 +386,7 @@ async function createWindow() {
       webSecurity: true,
       webviewTag: false,
       spellcheck: false,
+      backgroundThrottling: false,
     },
   });
   const contents = window.webContents;
@@ -354,6 +475,11 @@ async function createWindow() {
   window.on('close', (event) => {
     if (quitting) return;
     event.preventDefault();
+    if (ready && tray && play?.status().background && !pendingClose) {
+      saveBounds();
+      window.hide();
+      return;
+    }
     requestClose();
   });
   window.on('closed', () => {
@@ -361,7 +487,14 @@ async function createWindow() {
   });
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
-      { label: 'File', submenu: [{ label: 'Close Memoria', accelerator: 'Alt+F4', click: requestClose }] },
+      {
+        label: 'File',
+        submenu: [
+          { label: 'Play mode', click: openPlay },
+          { label: 'Close window', accelerator: 'Alt+F4', click: () => window.close() },
+          { label: 'Quit Memoria', accelerator: 'CommandOrControl+Q', click: requestClose },
+        ],
+      },
       {
         label: 'Edit',
         submenu: [
@@ -405,6 +538,35 @@ async function createWindow() {
     ]),
   );
   await window.loadURL(url);
+  play = createPlayMode({
+    dataDir: data,
+    desktopCapturer,
+    globalShortcut,
+    getWindow: () => window,
+    getGames: async () => (await nativeApi('/api/state')).state.games.filter((game) => !game.deleted),
+    onChange: updatePlay,
+  });
+  hoyo = createHoyoLogin({
+    BrowserWindow,
+    session,
+    Menu,
+    dialog,
+    screen,
+    getParent: () => window,
+    connectAccount: (body) => nativeApi('/api/connections', body),
+  });
+  await play.start();
+  tray = new Tray(join(here, 'memoria.ico'));
+  tray.on('double-click', focusWindow);
+  updatePlay();
+  const fitDisplay = () => {
+    if (!window || window.isDestroyed() || window.isMaximized() || window.isFullScreen()) return;
+    const display = screen.getDisplayMatching(window.getBounds());
+    window.setMinimumSize(Math.min(360, display.workArea.width), Math.min(480, display.workArea.height));
+    window.setBounds(windowBounds(window.getBounds(), screen.getAllDisplays()));
+  };
+  screen.on('display-removed', fitDisplay);
+  screen.on('display-metrics-changed', fitDisplay);
   watchBackend();
   if (saved?.maximized) window.maximize();
   window.show();
@@ -425,6 +587,9 @@ if (!app.requestSingleInstanceLock()) {
     quitting = true;
     clearTimeout(closeTimer);
     clearInterval(healthTimer);
+    globalShortcut.unregisterAll();
+    hoyo?.dispose();
+    tray?.destroy();
     backend?.kill();
   });
   app.on('window-all-closed', () => app.quit());

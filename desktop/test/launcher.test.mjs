@@ -270,7 +270,40 @@ describe('launcher security boundary', () => {
       body: 'x'.repeat(1_000_001),
     });
     expect(response.status).toBe(413);
+    expect(response.headers.get('connection')).toBe('close');
+    expect(await response.json()).toEqual({ error: 'Request body exceeds 1000000 bytes.' });
     expect((await post({ ...emptyState(), schemaVersion: 999 })).status).toBe(400);
+  });
+
+  it('returns a complete 413 for a chunked upload without saving its body', async () => {
+    const before = readFileSync(stateFile, 'utf8');
+    const response = await new Promise((resolve, reject) => {
+      const req = request(
+        `${origin}/api/sync`,
+        {
+          method: 'POST',
+          headers: { ...auth(), origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' },
+        },
+        (res) => {
+          const chunks = [];
+          res.on('data', (chunk) => chunks.push(chunk));
+          res.on('error', reject);
+          res.on('end', () => {
+            req.end();
+            resolve({ status: res.statusCode, body: Buffer.concat(chunks).toString('utf8') });
+          });
+        },
+      );
+      req.on('error', reject);
+      // No Content-Length and no end marker: reject on the received limit
+      // without waiting for the sender to finish the upload.
+      req.write('x'.repeat(500_000));
+      req.write('x'.repeat(500_001));
+    });
+    expect(response.status).toBe(413);
+    expect(JSON.parse(response.body)).toEqual({ error: 'Request body exceeds 1000000 bytes.' });
+    expect(readFileSync(stateFile, 'utf8')).toBe(before);
+    expect((await post()).status).toBe(200);
   });
 
   it.each(['{ corrupt', JSON.stringify({ ...emptyState(), schemaVersion: 999 })])(

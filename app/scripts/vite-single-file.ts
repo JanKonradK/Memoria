@@ -33,7 +33,7 @@ export function singleFile(): Plugin {
           // deletes everything it did not inline.
           copyPublicDir: true,
           modulePreload: { polyfill: false },
-          rollupOptions: {
+          rolldownOptions: {
             output: {
               // Every lazy route and the deferred motion feature set folds back
               // into the entry chunk — a dynamic import has nothing to fetch.

@@ -1,15 +1,31 @@
 import { useLayoutEffect } from 'react';
 import { flushPersist, useApp } from './store';
 import { flushSync } from './sync';
+import type { DesktopPlay } from './desktop-play';
+import type { HoyoNativeAccount, HoyoNativeReading } from './hoyo-native';
+import type { ConnectionResponse } from './game-connections';
 
 export interface DesktopCloseResult {
   allow: boolean;
   error?: string;
 }
 
-/** The preload exposes only the close handshake, never Node or arbitrary IPC. */
+/** Narrow native actions only, never Node, cookies or arbitrary IPC. */
 export interface DesktopHost {
   version: 1;
+  play?: DesktopPlay;
+  hoyo?: {
+    connect(): Promise<{ connected: boolean }>;
+    disconnect(): Promise<{ connected: boolean }>;
+    listAccounts(options: { provider: HoyoNativeReading['provider'] }): Promise<{ accounts: HoyoNativeAccount[] }>;
+    connectAccount(options: {
+      gameId: string;
+      provider: HoyoNativeReading['provider'];
+      uid: string;
+      server: string;
+      autoRefresh: boolean;
+    }): Promise<ConnectionResponse>;
+  };
   onCloseRequested(listener: (requestId: string) => void): () => void;
   completeClose(requestId: string, result: DesktopCloseResult): void;
 }

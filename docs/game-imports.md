@@ -1,6 +1,6 @@
 # Import game progress
 
-Memoria 2.0 has three input methods: manual entry, screenshot import, and supported account connections.
+Memoria 3.0 supports manual entry, screenshot import, game-window capture, and supported account connections.
 All methods use the same resource and task controls.
 An energy estimate is a calculation from the last reading, not a live measurement from the game.
 
@@ -11,6 +11,7 @@ An energy estimate is a calculation from the last reading, not a live measuremen
 | Manual entry       | All versions                | All resources and tasks                                                         |
 | Screenshot text    | All versions                | Recognized resource names and values for the selected game                      |
 | Image recognition  | Windows app and Android app | Text visible in a selected screenshot                                           |
+| Capture shortcut   | Standalone Windows app      | Text visible in the selected game window                                        |
 | HoYoLAB connection | Windows and Android apps    | Supported readings for Genshin Impact, Honkai: Star Rail, and Zenless Zone Zero |
 
 Account connections require an active HoYoLAB session and access to Real-Time Notes.
@@ -47,18 +48,48 @@ The app reads selected images on the device. It does not continuously record the
 3. Select **Game connections and imports**.
 4. Select the correct **Game account**.
 5. Select **Accounts**.
-6. Enter the **In-game UID**.
-7. Select the **Game server**.
-8. Expand **Get a connection session**.
-9. Follow the instructions to get the HoYoLAB session cookie.
-10. Paste the cookie into **HoYoLAB session cookie**.
+6. Select **Sign in with HoYoLAB**.
+7. Sign in on the official page in the separate window.
+8. Select **Done** in that window, or press **Ctrl + Enter**.
+9. If necessary, select **Find my accounts**.
+10. Select the correct **Linked HoYoLAB account**.
 11. Select **Connect and review**.
 12. Compare the readings with the game before you apply them.
 
-Windows encrypts the session for the current Windows user.
-Keep the session cookie private. Use **Disconnect** to remove the connection.
+If Memoria cannot find the account, enter the **In-game UID** and select the **Game server** manually.
+Windows encrypts the connection session for the current Windows user.
+The official sign-in page uses a separate session on this PC.
+Session cookies do not enter the Memoria interface, backups, or device sync.
+Use **Disconnect** to remove the connection.
+After you disconnect the last account, Memoria removes its HoYoLAB sign-in session on this PC.
 If the session expires, connect the account again.
-The Windows app does not have a built-in sign-in browser.
+The legacy browser launcher still supports manual session setup.
+
+## Capture readings while you play on PC
+
+1. Open your game and Memoria.
+2. In the Memoria header, select **Play mode**.
+3. Select **Use the capture shortcut**.
+4. Select the **Game account for captures**.
+5. Select the **Game window**.
+6. If the game window is missing, select **Refresh windows**.
+7. Select a **Capture shortcut**.
+8. Select **Save play mode**.
+9. In the game, open a screen with the resource values.
+10. Press the shortcut. The default is **Ctrl + Shift + M**.
+11. When convenient, open **Play mode** in Memoria.
+12. In **Capture inbox**, select **Review capture**.
+13. Check the game account, capture time, and detected text.
+14. Select **Review readings**.
+15. Check the values, then select **Apply reviewed readings**.
+
+The shortcut does not bring Memoria to the front.
+Memoria reads the selected window and keeps only detected text and capture details on this PC.
+The inbox holds up to 20 captures. It retains captures after you close and reopen Memoria.
+The inbox removes a capture after its reviewed readings save, or when you select **Discard**.
+Select the game window again after each Memoria restart or game restart.
+Windowed or borderless mode gives the best capture results. Some games block screen capture.
+Memoria does not continuously record the screen or read game memory.
 
 ## Connect a HoYoLAB account on Android
 
@@ -83,9 +114,22 @@ Account connections remain separate from your progress backup.
 ## Enable automatic checks
 
 Automatic import is optional. Enable it for each account that you want Memoria to check.
-Memoria checks enabled, active games every five minutes while the Windows or Android app is open, visible, and online.
+Memoria checks enabled, active games every five minutes while the app is online.
+The Windows app continues checks when minimized.
+The Android app must remain visible for these checks.
 Supported fields depend on the game and the account response.
 Missing fields remain unchanged. Memoria does not infer that every daily task is complete from an incomplete response.
+
+To continue PC checks after you close the window:
+
+1. Open **Play mode**.
+2. Select **Keep Memoria in the system tray**.
+3. Select **Save play mode**.
+
+The tray option also keeps the capture shortcut and phone sync available.
+The PC must remain awake. Memoria does not start automatically with Windows.
+To stop Memoria, open its tray menu and select **Quit Memoria**.
+The PC and phone need separate HoYoLAB sign-in sessions. Device sync transfers progress, not credentials.
 
 ## Review or undo an import
 

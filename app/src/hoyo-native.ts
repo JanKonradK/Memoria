@@ -1,4 +1,5 @@
 import { registerPlugin } from '@capacitor/core';
+import { isDesktopApp } from './desktop-host';
 
 export interface HoyoNativeReading {
   provider: 'genshin' | 'hsr' | 'zzz';
@@ -31,12 +32,16 @@ interface HoyoConnectionPlugin {
 /** Cookies never cross this bridge. Game account IDs may be stored separately on this device. */
 export const HoyoConnection = registerPlugin<HoyoConnectionPlugin>('HoyoConnection');
 
-export const connectHoyo = () => HoyoConnection.connect();
+export const connectHoyo = () =>
+  isDesktopApp() && window.memoriaDesktop?.hoyo ? window.memoriaDesktop.hoyo.connect() : HoyoConnection.connect();
 export const getHoyoStatus = () => HoyoConnection.status();
 export const listHoyoAccounts = (options: Parameters<HoyoConnectionPlugin['listAccounts']>[0]) =>
-  HoyoConnection.listAccounts(options);
+  isDesktopApp() && window.memoriaDesktop?.hoyo
+    ? window.memoriaDesktop.hoyo.listAccounts(options)
+    : HoyoConnection.listAccounts(options);
 export const fetchHoyoNotes = (options: Parameters<HoyoConnectionPlugin['fetchNotes']>[0]) =>
   HoyoConnection.fetchNotes(options);
 export async function disconnectHoyo(): Promise<void> {
-  await HoyoConnection.disconnect();
+  if (isDesktopApp() && window.memoriaDesktop?.hoyo) await window.memoriaDesktop.hoyo.disconnect();
+  else await HoyoConnection.disconnect();
 }
