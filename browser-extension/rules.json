@@ -1,0 +1,54 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [{ "header": "Referer", "operation": "set", "value": "https://act.hoyolab.com/" }]
+    },
+    "condition": {
+      "regexFilter": "^https://api-account-os\\.hoyolab\\.com/binding/api/getUserGameRolesByCookie\\?game_biz=(hk4e_global|hkrpg_global|nap_global)$",
+      "initiatorDomains": ["fonifgaeglmfmakjocdjembgclppgcfe"],
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [{ "header": "Referer", "operation": "set", "value": "https://act.hoyolab.com/" }]
+    },
+    "condition": {
+      "regexFilter": "^https://sg-public-api\\.hoyolab\\.com/event/game_record/genshin/api/dailyNote\\?role_id=[0-9]{8,12}&server=os_(euro|usa|asia|cht)$",
+      "initiatorDomains": ["fonifgaeglmfmakjocdjembgclppgcfe"],
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  },
+  {
+    "id": 3,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [{ "header": "Referer", "operation": "set", "value": "https://act.hoyolab.com/" }]
+    },
+    "condition": {
+      "regexFilter": "^https://bbs-api-os\\.hoyolab\\.com/game_record/hkrpg/api/note\\?role_id=[0-9]{8,12}&server=prod_official_(eur|usa|asia|cht)$",
+      "initiatorDomains": ["fonifgaeglmfmakjocdjembgclppgcfe"],
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  },
+  {
+    "id": 4,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [{ "header": "Referer", "operation": "set", "value": "https://act.hoyolab.com/" }]
+    },
+    "condition": {
+      "regexFilter": "^https://sg-act-public-api\\.hoyolab\\.com/event/game_record_zzz/api/zzz/note\\?role_id=[0-9]{8,12}&server=prod_gf_(eu|us|jp|sg)$",
+      "initiatorDomains": ["fonifgaeglmfmakjocdjembgclppgcfe"],
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  }
+]

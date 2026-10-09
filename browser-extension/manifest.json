@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Memoria browser connector",
+  "version": "3.0.1",
+  "description": "Read HoYoLAB game notes in your signed-in Chrome or Edge browser and send them to your local Memoria app.",
+  "minimum_chrome_version": "120",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqIVCIg+k0bp/eEFmmAKzoEWO+eJR5z0MdawvAf6P391RnDIzVk53uTb27AxO8hRkVMTtFXpHRVXzr2p1aUs3FA24GNgW1Q/U4+JKoa2YoU0eZo9jljj4iFzBtR810Ez1MfjtMNNZDyXkfSUDomPUB1JOCWo/G9MUtX5/d4xxGKjNGtFppf2KhoLqW3j6L9V/MCjiZ/R22NxOkWbuHd158c6A7UaMocYVZFBXXbb/NUCrdKn/yeP6Zhy9lKTDuSeQ4MizL2oaMUWTF7G+arsJm0SicNombHaCfOFNQT4pTFcDHsN+xVYOCstMj7gllzLdMcMH/kF+qPaEkaPRxtLFKwIDAQAB",
+  "permissions": ["nativeMessaging", "storage", "alarms", "declarativeNetRequestWithHostAccess"],
+  "host_permissions": [
+    "https://api-account-os.hoyolab.com/*",
+    "https://sg-public-api.hoyolab.com/*",
+    "https://bbs-api-os.hoyolab.com/*",
+    "https://sg-act-public-api.hoyolab.com/*"
+  ],
+  "background": {
+    "service_worker": "background.mjs",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Memoria browser connector",
+    "default_icon": "icon.png"
+  },
+  "icons": {
+    "128": "icon.png"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "hoyolab_referer",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; script-src 'self'; object-src 'none'; connect-src https://api-account-os.hoyolab.com https://sg-public-api.hoyolab.com https://bbs-api-os.hoyolab.com https://sg-act-public-api.hoyolab.com; base-uri 'none'; frame-src 'none'"
+  }
+}

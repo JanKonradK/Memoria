@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Memoria browser connector</title>
+    <link rel="stylesheet" href="popup.css" />
+    <script type="module" src="popup.mjs"></script>
+  </head>
+  <body>
+    <header>
+      <img src="icon.png" width="40" height="40" alt="" />
+      <h1>Memoria</h1>
+    </header>
+    <main>
+      <h2>Read from HoYoLAB</h2>
+      <p>Sign in with this browser to read Genshin, Star Rail, and ZZZ.</p>
+      <div class="actions">
+        <a href="https://www.hoyolab.com/" target="_blank" rel="noopener noreferrer">Open HoYoLAB</a>
+        <button id="read" type="button">Read accounts</button>
+      </div>
+      <label class="automatic">
+        <input id="automatic" type="checkbox" />
+        <span>Read every five minutes</span>
+      </label>
+      <p class="support">
+        Keep Chrome or Edge open for automatic readings. Review and connect each account in Memoria.
+      </p>
+      <p id="status" role="status" aria-live="polite">No readings yet.</p>
+      <ul id="accounts" aria-label="Linked game accounts"></ul>
+      <p class="privacy">
+        Your sign-in stays in this browser. The connector sends game readings, UID, server, and nickname to Memoria.
+      </p>
+    </main>
+  </body>
+</html>

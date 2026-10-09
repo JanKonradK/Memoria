@@ -298,6 +298,12 @@ export function PlayMode() {
                   ? `${automatic.length} connected account${automatic.length === 1 ? '' : 's'} checked every five minutes while Memoria is running.`
                   : 'Connect Genshin, Star Rail, or ZZZ through HoYoLAB, then enable automatic readings for each account.'}
               </p>
+              {automatic.some((connection) => connection.transport === 'browser') && (
+                <p className="text-meta text-muted">
+                  Browser accounts also need Chrome or Edge open with automatic readings enabled in the Memoria
+                  connector.
+                </p>
+              )}
               <Btn
                 onClick={() => {
                   if (dirty && !window.confirm('Discard unsaved Play mode settings and open Accounts?')) return;

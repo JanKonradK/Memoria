@@ -14,11 +14,12 @@ import {
 } from 'electron';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, watch, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { externalUrl, isAppUrl, launchOrigin, windowBounds } from './native-policy.mjs';
 import { createPlayMode } from './play-mode.mjs';
 import { createHoyoLogin } from './hoyo-login.mjs';
+import { createBrowserConnections } from './browser-bridge.mjs';
 
 const here = import.meta.dirname;
 const root = resolve(here, '..');
@@ -41,15 +42,63 @@ let ready = false;
 let play;
 let hoyo;
 let tray;
+let browserConnections;
+let browserWatch;
+let browserUpdateTimer;
+let requestedVisibility;
+let visibilityTimer;
+let visibilityRevision = 0;
+let focusPending = false;
 const boundsFile = join(data, 'desktop-window.json');
 // A restarted utility process retains this window's API session. It never goes to disk.
 const backendSession = randomBytes(32).toString('base64url');
 
+function cancelWindowVisibility() {
+  requestedVisibility = undefined;
+  focusPending = false;
+  ++visibilityRevision;
+  clearTimeout(visibilityTimer);
+}
+
+function setWindowVisible(visible, focus = false) {
+  if (!window || window.isDestroyed() || quitting) return;
+  requestedVisibility = visible;
+  if (focus) focusPending = true;
+  else if (!visible) focusPending = false;
+  const target = window;
+  const revision = ++visibilityRevision;
+  const deadline = Date.now() + 1000;
+  clearTimeout(visibilityTimer);
+  const apply = () => {
+    if (target !== window || target.isDestroyed() || quitting || revision !== visibilityRevision) return;
+    if (visible) {
+      if (target.isMinimized()) target.restore();
+      target.showInactive();
+      if (focusPending && target.isVisible()) {
+        focusPending = false;
+        target.focus();
+      }
+    } else target.hide();
+    if (target.isVisible() !== visible && Date.now() < deadline) visibilityTimer = setTimeout(apply, 50);
+  };
+  // Windows can finish a prior native restore after close or activate returns.
+  // Keep the latest visibility request, without repeated focus changes.
+  setImmediate(apply);
+}
+
+function reconcileWindowVisibility() {
+  if (
+    requestedVisibility !== undefined &&
+    window &&
+    !window.isDestroyed() &&
+    !window.isMinimized() &&
+    window.isVisible() !== requestedVisibility
+  )
+    setWindowVisible(requestedVisibility);
+}
+
 function focusWindow() {
-  if (!window || window.isDestroyed()) return;
-  if (window.isMinimized()) window.restore();
-  window.show();
-  window.focus();
+  setWindowVisible(true, true);
 }
 
 function trustedSender(event) {
@@ -92,6 +141,64 @@ async function nativeApi(path, body) {
 function openPlay() {
   focusWindow();
   if (ready) window.webContents.send('memoria:play-open');
+}
+
+async function setupBrowserConnector() {
+  await new Promise((resolveSetup, reject) => {
+    const installer = spawn(
+      'powershell.exe',
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        join(here, 'Register-Browser-Connector.ps1'),
+      ],
+      { windowsHide: true, stdio: 'ignore' },
+    );
+    installer.once('error', () =>
+      reject(
+        new Error(
+          'Windows could not set up the browser connector. Install the latest Memoria Windows package and try again.',
+        ),
+      ),
+    );
+    installer.once('exit', (code) =>
+      code === 0
+        ? resolveSetup()
+        : reject(
+            new Error(
+              'The browser connector could not be registered. Install the latest Memoria Windows package and try again.',
+            ),
+          ),
+    );
+  });
+  const folder = join(root, 'browser-extension');
+  const error = await shell.openPath(folder);
+  if (error)
+    throw new Error(
+      'The connector is registered, but Windows could not open its folder. Open the browser-extension folder inside your Memoria installation.',
+    );
+  return { folder };
+}
+
+function watchBrowserReadings() {
+  try {
+    browserWatch = watch(data, { persistent: false }, (_event, filename) => {
+      if (String(filename) !== 'browser-readings.json' || quitting) return;
+      clearTimeout(browserUpdateTimer);
+      browserUpdateTimer = setTimeout(() => {
+        if (window && !window.isDestroyed() && isAppUrl(window.webContents.getURL(), origin)) {
+          window.webContents.send('memoria:browser-readings');
+        }
+      }, 100);
+    });
+    // Five-minute polling remains available if the OS stops file notifications.
+    browserWatch.on('error', () => browserWatch?.close());
+  } catch {
+    /* The next scheduled account check reads the same saved snapshot. */
+  }
 }
 
 function updatePlay() {
@@ -143,9 +250,13 @@ for (const [channel, action] of Object.entries({
   'memoria:hoyo-disconnect': () => hoyo.disconnect(),
   'memoria:hoyo-accounts': (options) => hoyo.listAccounts(options),
   'memoria:hoyo-link': (options) => hoyo.connectAccount(options),
+  'memoria:browser-setup': () => setupBrowserConnector(),
+  'memoria:browser-status': () => browserConnections.status(),
+  'memoria:browser-accounts': (options) => browserConnections.listAccounts(options),
+  'memoria:browser-request': (body) => browserConnections.request(body),
 })) {
   ipcMain.handle(channel, (event, argument) => {
-    if (!trustedSender(event) || !play || !hoyo || quitting)
+    if (!trustedSender(event) || !play || !hoyo || !browserConnections || quitting)
       throw new Error('This action is only available in Memoria.');
     return action(argument);
   });
@@ -390,6 +501,9 @@ async function createWindow() {
     },
   });
   const contents = window.webContents;
+  window.on('focus', reconcileWindowVisibility);
+  window.on('blur', reconcileWindowVisibility);
+  window.on('minimize', cancelWindowVisibility);
   await contents.session.clearStorageData({ storages: ['serviceworkers', 'cachestorage'] });
   const fileGrants = new Set();
   const grantKey = (details) => `${details.fileAccessType}:${details.filePath}`;
@@ -477,12 +591,13 @@ async function createWindow() {
     event.preventDefault();
     if (ready && tray && play?.status().background && !pendingClose) {
       saveBounds();
-      window.hide();
+      setWindowVisible(false);
       return;
     }
     requestClose();
   });
   window.on('closed', () => {
+    cancelWindowVisibility();
     window = undefined;
   });
   Menu.setApplicationMenu(
@@ -555,6 +670,11 @@ async function createWindow() {
     getParent: () => window,
     connectAccount: (body) => nativeApi('/api/connections', body),
   });
+  browserConnections = createBrowserConnections({
+    directory: data,
+    getGames: async () => (await nativeApi('/api/state')).state.games.filter((game) => !game.deleted),
+  });
+  watchBrowserReadings();
   await play.start();
   tray = new Tray(join(here, 'memoria.ico'));
   tray.on('double-click', focusWindow);
@@ -585,8 +705,11 @@ if (!app.requestSingleInstanceLock()) {
   });
   app.on('will-quit', () => {
     quitting = true;
+    cancelWindowVisibility();
     clearTimeout(closeTimer);
     clearInterval(healthTimer);
+    clearTimeout(browserUpdateTimer);
+    browserWatch?.close();
     globalShortcut.unregisterAll();
     hoyo?.dispose();
     tray?.destroy();

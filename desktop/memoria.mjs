@@ -29,6 +29,7 @@ import { dirname, join, normalize, extname, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { applyPendingUpdate, checkForUpdate, isPackagedInstall, paths, updateStatus } from './update.mjs';
 import { createLanSync, createStateAccess, readJson } from './lan-sync.mjs';
+import { rejectRequestBody } from './http-response.mjs';
 import { createGameConnections } from './game-connections.mjs';
 import { recognizeScreenshot } from './screenshot-ocr.mjs';
 
@@ -374,21 +375,11 @@ function respondJson(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
-/**
- * Refuse a body that can never become a valid state document, then hang up.
- * Connection: close lets HTTP finish the response before closing the socket.
- * Destroying the request in the end callback can reset the connection while
- * an upload is still in flight, losing the 413 response on Windows.
- */
 function respondTooLarge(req, res) {
-  req.pause();
-  res.writeHead(413, {
-    'content-type': 'application/json; charset=utf-8',
-    'cache-control': 'no-store',
-    connection: 'close',
-    ...MARKER_HEADERS,
+  rejectRequestBody(req, res, `Request body exceeds ${MAX_SYNC_BYTES} bytes.`, {
+    headers: MARKER_HEADERS,
+    limit: MAX_SYNC_BYTES,
   });
-  res.end(JSON.stringify({ error: `Request body exceeds ${MAX_SYNC_BYTES} bytes.` }));
 }
 
 const stateAccess = createStateAccess({ loadCore: loadSharedCore, read: readStateRaw, write: writeState });
@@ -399,14 +390,18 @@ async function handleGameConnections(req, res) {
       req.method === 'GET' ? gameConnections.status() : await gameConnections.control(await readJson(req, 20000));
     respondJson(res, 200, result);
   } catch (error) {
-    respondJson(res, error.status ?? 500, { error: error.message });
+    if (error.status === 413 && !req.readableEnded)
+      rejectRequestBody(req, res, error.message, { headers: MARKER_HEADERS });
+    else respondJson(res, error.status ?? 500, { error: error.message });
   }
 }
 async function handleOcr(req, res) {
   try {
     respondJson(res, 200, await recognizeScreenshot(await readJson(req, 12 * 1024 * 1024)));
   } catch (error) {
-    respondJson(res, error.status ?? 500, { error: error.message });
+    if (error.status === 413 && !req.readableEnded)
+      rejectRequestBody(req, res, error.message, { headers: MARKER_HEADERS });
+    else respondJson(res, error.status ?? 500, { error: error.message });
   }
 }
 let calendarCache;
@@ -462,7 +457,9 @@ async function handleDevices(req, res) {
     const result = req.method === 'GET' ? lanSync.status() : await lanSync.control(await readJson(req, 1024));
     respondJson(res, 200, result);
   } catch (error) {
-    respondJson(res, error.status ?? 500, { error: error.message });
+    if (error.status === 413 && !req.readableEnded)
+      rejectRequestBody(req, res, error.message, { headers: MARKER_HEADERS });
+    else respondJson(res, error.status ?? 500, { error: error.message });
   }
 }
 

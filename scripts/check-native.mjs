@@ -143,6 +143,32 @@ async function closeWindow(quit = false) {
   desktop = undefined;
 }
 
+async function sendBrowserMessage(message) {
+  const body = Buffer.from(JSON.stringify(message));
+  const header = Buffer.alloc(4);
+  header.writeUInt32LE(body.length);
+  const child = spawn(
+    join(install, 'node/node.exe'),
+    [join(install, 'desktop/browser-host.mjs'), 'chrome-extension://fonifgaeglmfmakjocdjembgclppgcfe/'],
+    { env, windowsHide: true, stdio: 'pipe' },
+  );
+  const output = [];
+  child.stdout.on('data', (chunk) => output.push(chunk));
+  const closed = once(child, 'close');
+  child.stdin.end(Buffer.concat([header, body]));
+  const timeout = setTimeout(() => child.kill(), 10000);
+  try {
+    const [code] = await closed;
+    expect(code).toBe(0);
+    const response = Buffer.concat(output);
+    expect(response.length).toBeGreaterThan(4);
+    expect(response.readUInt32LE(0)).toBe(response.length - 4);
+    return JSON.parse(response.subarray(4).toString('utf8'));
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 try {
   let energy = await launch();
   await expect(energy).toHaveValue('31');
@@ -180,8 +206,80 @@ try {
   ).toEqual({
     node: 'undefined',
     process: 'undefined',
-    bridge: ['completeClose', 'hoyo', 'onCloseRequested', 'play', 'version'],
+    bridge: ['browser', 'completeClose', 'hoyo', 'onCloseRequested', 'play', 'version'],
   });
+  // Exercise the packaged host and its private app bridge without installing
+  // an extension in the owner's browser or accessing a real sign-in session.
+  expect(await page.evaluate(async () => window.memoriaDesktop.browser.status())).toEqual({
+    receivedAt: null,
+    accounts: 0,
+  });
+  const browserObservedAt = Date.now() - 1000;
+  expect(
+    await sendBrowserMessage({
+      action: 'publish',
+      snapshot: {
+        version: 1,
+        fetchedAt: Date.now(),
+        accounts: [
+          {
+            provider: 'genshin',
+            uid: '700000001',
+            server: 'os_euro',
+            nickname: 'Synthetic browser account',
+            reading: { observedAt: browserObservedAt, data: { current_resin: 100 } },
+          },
+        ],
+      },
+    }),
+  ).toMatchObject({ ok: true, accounts: 1 });
+  const browserReview = await page.evaluate(async () =>
+    window.memoriaDesktop.browser.request({
+      action: 'connect',
+      gameId: 'native-archive-game',
+      provider: 'genshin',
+      uid: '700000001',
+      server: 'os_euro',
+      autoRefresh: false,
+    }),
+  );
+  expect(browserReview.connections[0]).toMatchObject({
+    transport: 'browser',
+    autoRefresh: false,
+    lastCheckedAt: browserObservedAt,
+  });
+  expect(browserReview.reading).toMatchObject({ observedAt: browserObservedAt, data: { current_resin: 100 } });
+  expect(
+    await page.evaluate(async () =>
+      window.memoriaDesktop.browser.request({ action: 'refresh', gameId: 'native-archive-game' }),
+    ),
+  ).toMatchObject({ reading: { observedAt: browserObservedAt } });
+  expect(latestEnergy()).toBe(31);
+  await page.evaluate(() => {
+    window.browserReadingsChangedForCheck = false;
+    document.addEventListener(
+      'memoria:refresh-accounts',
+      () => {
+        window.browserReadingsChangedForCheck = true;
+      },
+      { once: true },
+    );
+  });
+  expect(
+    await sendBrowserMessage({ action: 'publish', snapshot: { version: 1, fetchedAt: Date.now(), accounts: [] } }),
+  ).toMatchObject({ ok: true, accounts: 0 });
+  await expect.poll(() => page.evaluate(() => window.browserReadingsChangedForCheck)).toBe(true);
+  expect(
+    await page.evaluate(async () =>
+      window.memoriaDesktop.browser.request({ action: 'refresh', gameId: 'native-archive-game' }).then(
+        () => 'unexpected success',
+        (error) => error.message,
+      ),
+    ),
+  ).toContain('read accounts again');
+  await page.evaluate(async () =>
+    window.memoriaDesktop.browser.request({ action: 'disconnect', gameId: 'native-archive-game' }),
+  );
   expect(await page.evaluate(async () => (await window.navigator.serviceWorker.getRegistrations()).length)).toBe(0);
   expect(await page.evaluate(async () => window.memoriaDesktop.play.status())).toMatchObject({
     enabled: false,
@@ -480,11 +578,29 @@ try {
   console.log(
     JSON.stringify({
       native:
-        'PASS: bundled executable, isolated renderer, responsive native resizing, existing PC data, close and quit flush, relaunch, single instance, tray hide and reopen, unsaved draft, backend recovery, phone pairing, disk sync, blocked remote navigation, authenticated play mode, selected-window OCR without focus stealing, durable capture inbox, reviewed import',
+        'PASS: bundled executable, browser connector host and IPC, original browser observation time, publication notifications, isolated renderer, responsive native resizing, existing PC data, close and quit flush, relaunch, single instance, tray hide and reopen, unsaved draft, backend recovery, phone pairing, disk sync, blocked remote navigation, authenticated play mode, selected-window OCR without focus stealing, durable capture inbox, reviewed import',
       screenshot: 'dist/native-desktop.png',
     }),
   );
 } catch (error) {
+  if (desktop) {
+    console.error(
+      JSON.stringify(
+        await desktop
+          .evaluate(({ app, BrowserWindow }) => ({
+            nativeFailure: BrowserWindow.getAllWindows().map((item) => ({
+              id: item.id,
+              title: item.getTitle(),
+              visible: item.isVisible(),
+              minimized: item.isMinimized(),
+              destroyed: item.isDestroyed(),
+            })),
+            activateHandlers: app.listeners('activate').map((handler) => handler.name),
+          }))
+          .catch(() => ({ nativeFailure: 'The isolated app stopped.' })),
+      ),
+    );
+  }
   await page?.screenshot({ path: join(root, 'dist/native-failure.png') }).catch(() => undefined);
   throw error;
 } finally {

@@ -35,6 +35,11 @@ Game passwords and session cookies do not enter progress backups or device sync.
 On Android, you can also share a screenshot to Memoria from another app.
 Select **Review shared screenshot** when Memoria receives the image.
 
+In the Windows app, you can also drop a screenshot anywhere in Memoria.
+The Screenshot tab has a drop area and a **Choose screenshot** button.
+Drop one PNG or JPEG file, up to 8 MB. Review the text and capture time before you save its readings.
+Memoria asks before it replaces an import draft.
+
 Recognition uses a resource name and its value. For example, `Original Resin 120 / 200` identifies a resin reading.
 If an image only shows a ratio, expand **Assign values without a label** and select its resource before review.
 Unclear text, unsupported labels, and fields absent from the image do not become confirmed progress.
@@ -48,22 +53,32 @@ The app reads selected images on the device. It does not continuously record the
 3. Select **Game connections and imports**.
 4. Select the correct **Game account**.
 5. Select **Accounts**.
-6. Select **Sign in with HoYoLAB**.
-7. Sign in on the official page in the separate window.
-8. Select **Done** in that window, or press **Ctrl + Enter**.
-9. If necessary, select **Find my accounts**.
-10. Select the correct **Linked HoYoLAB account**.
-11. Select **Connect and review**.
-12. Compare the readings with the game before you apply them.
+6. Select **Set up browser connector**.
+7. In Chrome, open `chrome://extensions`. In Edge, open `edge://extensions`.
+8. Enable **Developer mode**.
+9. Select **Load unpacked**.
+10. Select the **browser-extension** folder that Memoria opened.
+11. In your browser, open [HoYoLAB](https://www.hoyolab.com/).
+12. Sign in on the official page.
+13. Open the **Memoria Browser Connector** from the browser toolbar.
+14. Select **Read accounts**.
+15. In Memoria, select **Find my accounts**.
+16. Select the correct **Linked HoYoLAB account**.
+17. Select **Connect and review**.
+18. Compare the readings with the game before you apply them.
 
-If Memoria cannot find the account, enter the **In-game UID** and select the **Game server** manually.
-Windows encrypts the connection session for the current Windows user.
-The official sign-in page uses a separate session on this PC.
-Session cookies do not enter the Memoria interface, backups, or device sync.
-Use **Disconnect** to remove the connection.
-After you disconnect the last account, Memoria removes its HoYoLAB sign-in session on this PC.
-If the session expires, connect the account again.
-The legacy browser launcher still supports manual session setup.
+Do the connector installation once for each browser profile that you use.
+After a Memoria update, select **Reload** for the connector on your browser's extensions page.
+Memoria uses your normal Chrome or Edge session. Your password and session cookies stay in the browser.
+The connector sends game account details and readings to the Windows app.
+Keep Chrome or Edge open when you want automatic browser readings.
+Enable automatic checks in the connector and automatic imports for each Memoria account.
+If a reading fails, open HoYoLAB and complete its verification, then select **Read accounts** again.
+Use **Disconnect** in Memoria to remove a game connection. This does not sign you out of HoYoLAB in your browser.
+To stop browser checks, disable them in the connector or remove the extension.
+
+Existing connections from Memoria's separate sign-in window remain available.
+The legacy browser launcher also retains its manual session setup.
 
 ## Capture readings while you play on PC
 
@@ -116,6 +131,7 @@ Account connections remain separate from your progress backup.
 Automatic import is optional. Enable it for each account that you want Memoria to check.
 Memoria checks enabled, active games every five minutes while the app is online.
 The Windows app continues checks when minimized.
+Browser connections also require Chrome or Edge with connector checks enabled.
 The Android app must remain visible for these checks.
 Supported fields depend on the game and the account response.
 Missing fields remain unchanged. Memoria does not infer that every daily task is complete from an incomplete response.

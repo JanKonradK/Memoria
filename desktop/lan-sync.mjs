@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { networkInterfaces } from 'node:os';
+import { rejectRequestBody } from './http-response.mjs';
 
 export const LAN_PORT = 17820;
 const MAX_BYTES = 1_000_000;
@@ -65,12 +66,16 @@ export async function readJson(req, limit = MAX_BYTES) {
   if (Number(req.headers['content-length']) > limit) throw fail(413, 'Request exceeds the sync size limit.');
   const chunks = [];
   let size = 0;
+  let settled = false;
   // Do not use a for-await iterator here: its early exit destroys the socket,
   // preventing the caller from receiving the helpful 413 response.
   await new Promise((resolve, reject) => {
     req.on('data', (chunk) => {
+      if (settled) return;
       size += chunk.length;
       if (size > limit) {
+        settled = true;
+        chunks.length = 0;
         req.pause();
         reject(fail(413, 'Request exceeds the sync size limit.'));
       } else chunks.push(chunk);
@@ -203,9 +208,13 @@ export function createLanSync({
       json(res, 200, { state: merged });
     } catch (error) {
       if (!res.headersSent) {
-        if (error.status === 413) res.setHeader('connection', 'close');
+        const message = error.status ? error.message : 'PC sync could not save data. Check the PC and try again.';
+        if (error.status === 413) {
+          rejectRequestBody(req, res, message);
+          return;
+        }
         json(res, error.status ?? 500, {
-          error: error.status ? error.message : 'PC sync could not save data. Check the PC and try again.',
+          error: message,
         });
       }
     }

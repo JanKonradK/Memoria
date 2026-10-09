@@ -53,6 +53,7 @@ jobs:
       - run: npm exec -- playwright install chromium
       - run: npm run check:release
       - run: npm run check:native
+      - run: npm run check:browser
 
       - name: Add the single-file build to the checksums
         shell: bash

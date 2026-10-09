@@ -14,6 +14,12 @@ export interface DesktopCloseResult {
 export interface DesktopHost {
   version: 1;
   play?: DesktopPlay;
+  browser?: {
+    setup(): Promise<{ folder: string }>;
+    status(): Promise<{ receivedAt: number | null; accounts: number; error?: string }>;
+    listAccounts(options: { provider: HoyoNativeReading['provider'] }): Promise<{ accounts: HoyoNativeAccount[] }>;
+    request(body?: Record<string, unknown>): Promise<ConnectionResponse>;
+  };
   hoyo?: {
     connect(): Promise<{ connected: boolean }>;
     disconnect(): Promise<{ connected: boolean }>;
