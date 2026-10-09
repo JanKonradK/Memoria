@@ -35,10 +35,14 @@ export const HoyoConnection = registerPlugin<HoyoConnectionPlugin>('HoyoConnecti
 export const connectHoyo = () =>
   isDesktopApp() && window.memoriaDesktop?.hoyo ? window.memoriaDesktop.hoyo.connect() : HoyoConnection.connect();
 export const getHoyoStatus = () => HoyoConnection.status();
-export const listHoyoAccounts = (options: Parameters<HoyoConnectionPlugin['listAccounts']>[0]) =>
-  isDesktopApp() && window.memoriaDesktop?.hoyo
-    ? window.memoriaDesktop.hoyo.listAccounts(options)
-    : HoyoConnection.listAccounts(options);
+export const listHoyoAccounts = (options: Parameters<HoyoConnectionPlugin['listAccounts']>[0]) => {
+  if (isDesktopApp()) {
+    if (window.memoriaDesktop?.browser) return window.memoriaDesktop.browser.listAccounts(options);
+    if (window.memoriaDesktop?.hoyo) return window.memoriaDesktop.hoyo.listAccounts(options);
+    return Promise.reject(new Error('Update the Windows app to use the browser connector.'));
+  }
+  return HoyoConnection.listAccounts(options);
+};
 export const fetchHoyoNotes = (options: Parameters<HoyoConnectionPlugin['fetchNotes']>[0]) =>
   HoyoConnection.fetchNotes(options);
 export async function disconnectHoyo(): Promise<void> {

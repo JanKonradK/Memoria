@@ -6,11 +6,21 @@ ipcRenderer.on('memoria:launcher-session', (_event, session) => {
   globalThis.dispatchEvent(new Event('memoria-launcher-restored'));
 });
 
+ipcRenderer.on('memoria:browser-readings', () => {
+  globalThis.document.dispatchEvent(new Event('memoria:refresh-accounts'));
+});
+
 // Keep the renderer sandboxed. No filesystem, credentials, shell or generic IPC.
 contextBridge.exposeInMainWorld(
   'memoriaDesktop',
   Object.freeze({
     version: 1,
+    browser: Object.freeze({
+      setup: () => ipcRenderer.invoke('memoria:browser-setup'),
+      status: () => ipcRenderer.invoke('memoria:browser-status'),
+      listAccounts: (options) => ipcRenderer.invoke('memoria:browser-accounts', options),
+      request: (body) => ipcRenderer.invoke('memoria:browser-request', body),
+    }),
     play: Object.freeze({
       status: () => ipcRenderer.invoke('memoria:play-status'),
       sources: () => ipcRenderer.invoke('memoria:play-sources'),

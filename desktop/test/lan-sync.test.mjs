@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import * as core from '@memoria/shared';
 import { createLanSync, createStateAccess } from '../lan-sync.mjs';
+import { request } from 'node:http';
+import { createConnection } from 'node:net';
 
 let service;
 let origin;
@@ -213,6 +215,104 @@ describe('paired LAN listener', () => {
     expect(response.status).toBe(200);
     expect(disk.games.find((item) => item.id === 'deleted').deleted).toBe(true);
     expect(disk.games.some((item) => item.id === 'new')).toBe(true);
+  });
+
+  it('returns complete 413 responses during repeated oversized phone uploads', async () => {
+    const { token } = await credentials();
+    const before = structuredClone(disk);
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const response = await post('/sync', { state: 'x'.repeat(1_000_001) }, { authorization: `Bearer ${token}` });
+      expect(response.status).toBe(413);
+      expect(response.headers.get('connection')).toBe('close');
+      expect(await response.json()).toEqual({ error: 'Request exceeds the sync size limit.' });
+    }
+    expect(disk).toEqual(before);
+    expect(writes).toBe(0);
+    expect((await post('/sync', { state: disk }, { authorization: `Bearer ${token}` })).status).toBe(200);
+  });
+
+  it.each(['declared', 'chunked'])('returns a complete 413 before an oversized %s phone upload ends', async (kind) => {
+    const { token } = await credentials();
+    const before = structuredClone(disk);
+    const response = await new Promise((resolve, reject) => {
+      const req = request(
+        `${origin}/sync`,
+        {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json',
+            ...(kind === 'declared' ? { 'content-length': 1_000_001 } : {}),
+          },
+        },
+        (res) => {
+          const chunks = [];
+          res.on('data', (chunk) => chunks.push(chunk));
+          res.on('error', reject);
+          res.on('end', () => {
+            const uploadEnded = req.writableEnded;
+            if (kind === 'declared') req.destroy();
+            else req.end();
+            resolve({
+              status: res.statusCode,
+              body: Buffer.concat(chunks).toString('utf8'),
+              complete: res.complete,
+              uploadEnded,
+            });
+          });
+        },
+      );
+      req.on('error', reject);
+      req.setTimeout(2000, () => req.destroy(new Error('Oversized phone upload response timed out.')));
+      if (kind === 'declared') req.flushHeaders();
+      else {
+        req.write('x'.repeat(500_000));
+        req.write('x'.repeat(500_001));
+      }
+    });
+    expect(response.status).toBe(413);
+    expect(JSON.parse(response.body)).toEqual({ error: 'Request exceeds the sync size limit.' });
+    expect(response.complete).toBe(true);
+    expect(response.uploadEnded).toBe(false);
+    expect(disk).toEqual(before);
+    expect(writes).toBe(0);
+    expect((await post('/sync', { state: disk }, { authorization: `Bearer ${token}` })).status).toBe(200);
+  });
+
+  it('closes a rejected phone upload when the sender never finishes it', async () => {
+    const { token } = await credentials();
+    const before = structuredClone(disk);
+    const response = await new Promise((resolve, reject) => {
+      const socket = createConnection({ host: '127.0.0.1', port: Number(new URL(origin).port) });
+      let result = '';
+      socket.on('data', (chunk) => {
+        result += chunk.toString('utf8');
+      });
+      socket.once('error', reject);
+      socket.setTimeout(2000, () => socket.destroy(new Error('Rejected phone upload was not closed.')));
+      socket.once('connect', () => {
+        socket.write(
+          [
+            'POST /sync HTTP/1.1',
+            `Host: ${new URL(origin).host}`,
+            `Authorization: Bearer ${token}`,
+            'Content-Type: application/json',
+            'Content-Length: 1000001',
+            '',
+            '',
+          ].join('\r\n'),
+        );
+      });
+      socket.once('end', () => {
+        socket.end();
+        resolve(result);
+      });
+    });
+    expect(response).toMatch(/^HTTP\/1\.1 413 /);
+    expect(JSON.parse(response.split('\r\n\r\n')[1])).toEqual({ error: 'Request exceeds the sync size limit.' });
+    expect(disk).toEqual(before);
+    expect(writes).toBe(0);
+    expect((await post('/sync', { state: disk }, { authorization: `Bearer ${token}` })).status).toBe(200);
   });
 
   it('stops the LAN listener and retains devices for later opt-in', async () => {

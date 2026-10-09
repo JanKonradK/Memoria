@@ -38,7 +38,10 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
   const provider = key && Object.hasOwn(SERVERS, key) ? (key as GameConnection['provider']) : undefined;
   const connected = connections.find((item) => item.gameId === gameId);
   const desktop = isDesktopApp();
-  const nativeLogin = isNativeApp || (desktop && Boolean(window.memoriaDesktop?.hoyo));
+  const browser = desktop ? window.memoriaDesktop?.browser : undefined;
+  const browserLogin = Boolean(browser) && (!connected || connected.transport === 'browser');
+  const nativeLogin = isNativeApp || (desktop && !browserLogin && Boolean(window.memoriaDesktop?.hoyo));
+  const conflicts = connections.filter((item) => item.gameId === gameId);
   const [uid, setUid] = useState('');
   const [server, setServer] = useState('');
   const [cookie, setCookie] = useState('');
@@ -50,6 +53,8 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
     { provider: GameConnection['provider']; uid: string; server: string; nickname: string }[]
   >([]);
   const [accountNotice, setAccountNotice] = useState('');
+  const [browserStatus, setBrowserStatus] = useState<{ receivedAt: number | null; accounts: number; error?: string }>();
+  const [connectorNotice, setConnectorNotice] = useState('');
   const active = useRef(true);
   useLayoutEffect(() => {
     active.current = true;
@@ -58,11 +63,28 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
     };
   }, []);
   useEffect(() => {
-    if (servedByLauncher() || isNativeApp)
+    if (servedByLauncher() || isNativeApp || desktop)
       void connectionRequest().catch((cause: unknown) => {
         if (active.current) setError(cause instanceof Error ? cause.message : 'Connections could not load.');
       });
-  }, []);
+  }, [desktop]);
+  useEffect(() => {
+    if (!browserLogin || !browser) return;
+    let current = true;
+    const check = () =>
+      void browser
+        .status()
+        .then((status) => {
+          if (current) setBrowserStatus(status);
+        })
+        .catch(() => undefined);
+    check();
+    document.addEventListener('memoria:refresh-accounts', check);
+    return () => {
+      current = false;
+      document.removeEventListener('memoria:refresh-accounts', check);
+    };
+  }, [browser, browserLogin]);
   const run = async (body: Record<string, unknown>) => {
     setBusy(true);
     setError('');
@@ -105,7 +127,7 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
       if (active.current) setBusy(false);
     }
   };
-  if (!servedByLauncher() && !isNativeApp)
+  if (!servedByLauncher() && !isNativeApp && !desktop)
     return (
       <p className="text-body text-muted">
         Connect game accounts in the Windows app. Account readings reach this phone through device sync. Screenshot
@@ -125,6 +147,75 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
         Read your HoYoLAB Real-Time Notes. This community connection imports supported readings. It does not play the
         game or claim rewards.
       </p>
+      {browserLogin && (
+        <section className="space-y-3" aria-label="Chrome or Edge connection">
+          <h3 className="text-heading font-semibold">Use Chrome or Edge</h3>
+          <ol className="list-decimal space-y-3 pl-5 text-body text-muted">
+            <li>
+              <Btn
+                disabled={busy}
+                onClick={() => {
+                  setBusy(true);
+                  setError('');
+                  void browser!
+                    .setup()
+                    .then(() => {
+                      if (active.current)
+                        setConnectorNotice('Connector folder opened. Load that folder in Chrome or Edge.');
+                    })
+                    .catch((cause: unknown) => {
+                      if (active.current)
+                        setError(cause instanceof Error ? cause.message : 'The connector could not open. Try again.');
+                    })
+                    .finally(() => {
+                      if (active.current) setBusy(false);
+                    });
+                }}
+              >
+                Set up browser connector
+              </Btn>
+              <p className="mt-2">
+                One time: open <code>chrome://extensions</code> or <code>edge://extensions</code>. Enable Developer
+                mode, select Load unpacked, and choose the folder that Memoria opens. Pin the Memoria connector to the
+                toolbar.
+              </p>
+            </li>
+            <li>
+              <a
+                className="underline underline-offset-2"
+                href="https://www.hoyolab.com/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open HoYoLAB in your browser
+              </a>{' '}
+              and sign in. Enable Real-Time Notes for each game.
+            </li>
+            <li>
+              Open the Memoria connector in the browser toolbar and select Read accounts. Return here and select Find my
+              accounts, then Connect and review.
+            </li>
+          </ol>
+          <p className="text-meta text-muted">
+            Sign-in stays in your browser. The connector sends account IDs and readings to this PC.
+          </p>
+          {connectorNotice && (
+            <p role="status" className="text-body text-muted">
+              {connectorNotice}
+            </p>
+          )}
+          {browserStatus?.receivedAt !== null && browserStatus?.receivedAt !== undefined && (
+            <p className="text-meta text-muted">
+              Browser readings received {new Date(browserStatus.receivedAt).toLocaleString()}.
+            </p>
+          )}
+          {browserStatus?.error && (
+            <p role="alert" className="text-body text-danger-fg">
+              {browserStatus.error}
+            </p>
+          )}
+        </section>
+      )}
       {nativeLogin && (
         <div className="space-y-2">
           <Btn
@@ -154,6 +245,30 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
           </p>
         </div>
       )}
+      {conflicts.length > 1 && (
+        <section className="space-y-2" aria-label="Connection conflict">
+          <p role="alert" className="text-body text-danger-fg">
+            This game has two connection methods. Disconnect one to resume account readings.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {conflicts.map((connection) => (
+              <Btn
+                key={connection.transport || 'legacy'}
+                disabled={busy}
+                onClick={() =>
+                  void run({
+                    action: 'disconnect',
+                    gameId,
+                    transport: connection.transport || 'legacy',
+                  })
+                }
+              >
+                Disconnect {connection.transport === 'browser' ? 'browser' : 'protected PC'} account
+              </Btn>
+            ))}
+          </div>
+        </section>
+      )}
       {connected ? (
         <div className="space-y-3">
           <p className="text-body text-fg">
@@ -163,7 +278,7 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
             <input
               type="checkbox"
               checked={connected.autoRefresh}
-              disabled={busy}
+              disabled={busy || conflicts.length > 1}
               onChange={(event) => void run({ action: 'configure', gameId, autoRefresh: event.target.checked })}
             />
             {desktop
@@ -172,21 +287,27 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
           </label>
           {desktop && connected.autoRefresh && (
             <p className="text-meta text-muted">
+              {connected.transport === 'browser' &&
+                'Keep Chrome or Edge open and enable automatic readings in the browser connector. '}
               Enable Keep Memoria in the system tray in Play mode to continue after closing the window. Readings pause
               when this game is paused, the PC is offline, or you quit Memoria.
             </p>
           )}
           {connected.lastCheckedAt !== null && (
             <p className="text-meta text-muted">
-              Last checked{' '}
-              {new Date(connected.lastCheckedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {connected.transport === 'browser' ? 'Reading captured' : 'Last checked'}{' '}
+              {new Date(connected.lastCheckedAt).toLocaleString()}
             </p>
           )}
           <div className="flex flex-wrap gap-2">
-            <Btn disabled={busy} kind="primary" onClick={() => void run({ action: 'refresh', gameId })}>
+            <Btn
+              disabled={busy || conflicts.length > 1}
+              kind="primary"
+              onClick={() => void run({ action: 'refresh', gameId })}
+            >
               {busy ? 'Checking…' : 'Fetch readings'}
             </Btn>
-            <Btn disabled={busy} onClick={() => void run({ action: 'disconnect', gameId })}>
+            <Btn disabled={busy || conflicts.length > 1} onClick={() => void run({ action: 'disconnect', gameId })}>
               Disconnect
             </Btn>
           </div>
@@ -204,10 +325,11 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
               server: server || SERVERS[provider][0][0],
               cookie,
               autoRefresh: automatic,
+              ...(browserLogin ? { transport: 'browser' } : {}),
             });
           }}
         >
-          {nativeLogin && (
+          {(nativeLogin || browserLogin) && (
             <div className="space-y-2">
               <Btn disabled={busy} onClick={() => void findAccounts()}>
                 Find my accounts
@@ -274,7 +396,7 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
               </Select>
             </Field>
           </div>
-          {!nativeLogin && (
+          {!nativeLogin && !browserLogin && (
             <details className="text-body text-muted">
               <summary className="min-h-11 cursor-pointer py-2 text-fg">Get a connection session</summary>
               <ol className="list-decimal space-y-2 pl-5">
@@ -294,7 +416,7 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
               </p>
             </details>
           )}
-          {!nativeLogin && (
+          {!nativeLogin && !browserLogin && (
             <Field label="HoYoLAB session cookie">
               <TextInput
                 required
@@ -317,6 +439,11 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
             />
             Automatically import supported readings every five minutes
           </label>
+          {browserLogin && (
+            <p className="text-meta text-muted">
+              For automatic readings, also enable the browser connector's automatic option and keep Chrome or Edge open.
+            </p>
+          )}
           <Btn type="submit" kind="primary" disabled={busy}>
             {busy ? 'Checking account…' : 'Connect and review'}
           </Btn>

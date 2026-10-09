@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import {
   extractScreenshotRatios,
@@ -43,10 +43,13 @@ export function ImportCenter() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const dragDepth = useRef(0);
+  const recognitionBusy = useRef(false);
   const requestEpoch = useRef(0);
   const selectedGame = games.some((game) => game.id === gameId) ? gameId : captureId ? '' : (games[0]?.id ?? '');
-  const dirty = !!batch || !!text.trim();
+  const dirty = !!batch || !!text.trim() || !!incoming || !!captureId;
   const currentDraft = useRef({ selectedGame, dirty, open });
   useLayoutEffect(() => {
     currentDraft.current = { selectedGame, dirty, open };
@@ -64,6 +67,7 @@ export function ImportCenter() {
           return;
         }
         requestEpoch.current += 1;
+        recognitionBusy.current = false;
         setBusy(false);
         setGameId(id);
         setBatch(undefined);
@@ -96,6 +100,7 @@ export function ImportCenter() {
         return;
       }
       requestEpoch.current += 1;
+      recognitionBusy.current = false;
       setBusy(false);
       // Deleted or unassigned game accounts need a fresh, explicit selection.
       setGameId(capture.gameId || '');
@@ -142,8 +147,9 @@ export function ImportCenter() {
     };
   }, []);
 
-  const acceptText = (result: ScreenshotText) => {
+  const acceptText = useCallback((result: ScreenshotText) => {
     setCaptureId(undefined);
+    setIncoming(null);
     setText(result.text);
     setCapturedAt(result.capturedAt ? localDateTime(result.capturedAt) : '');
     setBatch(undefined);
@@ -155,52 +161,114 @@ export function ImportCenter() {
         ? 'Choose the game and confirm when this screenshot was taken.'
         : 'No text was found. Try a clearer screenshot or paste its text.',
     );
-  };
-  const recognize = async (file?: File) => {
-    if (dirty && !window.confirm('Replace the current import draft?')) {
-      if (fileInput.current) fileInput.current.value = '';
-      return;
-    }
-    const epoch = ++requestEpoch.current;
-    const requestedGame = selectedGame;
-    const stillCurrent = () =>
-      requestEpoch.current === epoch &&
-      currentDraft.current.open &&
-      currentDraft.current.selectedGame === requestedGame;
-    setBusy(true);
-    setError('');
-    setNotice('');
-    try {
-      if (isNativeApp) {
-        const result = await chooseScreenshot();
-        if (stillCurrent()) acceptText(result);
-      } else if (file && servedByLauncher()) {
-        if (!['image/png', 'image/jpeg'].includes(file.type) || file.size > 8 * 1024 * 1024)
-          throw new Error('Choose a PNG or JPEG image smaller than 8 MB.');
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result).split(',')[1]);
-          reader.onerror = () => reject(new Error('The image could not be read.'));
-          reader.readAsDataURL(file);
-        });
-        const response = await launcherFetch('/api/ocr', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ base64, mimeType: file.type }),
-        });
-        const result = (await response.json()) as ScreenshotText & { error?: string };
-        if (!response.ok) throw new Error(result.error || 'Text recognition failed.');
-        if (stillCurrent()) acceptText(result);
+  }, []);
+  const recognize = useCallback(
+    async (file?: File) => {
+      if (recognitionBusy.current) {
+        setError('Wait for the current screenshot to finish reading, then try again.');
+        return;
       }
-    } catch (cause) {
-      if (stillCurrent()) setError(message(cause));
-    } finally {
-      if (requestEpoch.current === epoch) {
-        setBusy(false);
+      if (file && (!['image/png', 'image/jpeg'].includes(file.type) || !file.size || file.size > 8 * 1024 * 1024)) {
+        setError('Choose one PNG or JPEG image, up to 8 MB. The image must not be empty.');
         if (fileInput.current) fileInput.current.value = '';
+        return;
       }
-    }
-  };
+      if (file && !servedByLauncher()) {
+        setError('Open the Windows app to read this image, or paste its text below.');
+        return;
+      }
+      if (dirty && !window.confirm('Replace the current import draft?')) {
+        if (fileInput.current) fileInput.current.value = '';
+        return;
+      }
+      const epoch = ++requestEpoch.current;
+      recognitionBusy.current = true;
+      const requestedGame = selectedGame;
+      const stillCurrent = () =>
+        requestEpoch.current === epoch &&
+        currentDraft.current.open &&
+        currentDraft.current.selectedGame === requestedGame;
+      setBusy(true);
+      setError('');
+      setNotice('');
+      try {
+        if (isNativeApp) {
+          const result = await chooseScreenshot();
+          if (stillCurrent()) acceptText(result);
+        } else if (file && servedByLauncher()) {
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result).split(',')[1]);
+            reader.onerror = () => reject(new Error('The image could not be read.'));
+            reader.readAsDataURL(file);
+          });
+          if (!stillCurrent()) return;
+          const response = await launcherFetch('/api/ocr', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ base64, mimeType: file.type }),
+          });
+          const result = (await response.json()) as ScreenshotText & { error?: string };
+          if (!response.ok) throw new Error(result.error || 'Text recognition failed.');
+          if (stillCurrent()) acceptText(result);
+        }
+      } catch (cause) {
+        if (stillCurrent()) setError(message(cause));
+      } finally {
+        if (requestEpoch.current === epoch) {
+          recognitionBusy.current = false;
+          setBusy(false);
+          if (fileInput.current) fileInput.current.value = '';
+        }
+      }
+    },
+    [acceptText, dirty, selectedGame],
+  );
+  const receiveFiles = useCallback(
+    (files: File[]) => {
+      dragDepth.current = 0;
+      setDragging(false);
+      setOpen(true);
+      setTab('screenshot');
+      if (recognitionBusy.current) {
+        setError('Wait for the current screenshot to finish reading, then try again.');
+        return;
+      }
+      if (files.length !== 1) {
+        setError('Drop one screenshot at a time. Choose one PNG or JPEG image, up to 8 MB.');
+        return;
+      }
+      void recognize(files[0]);
+    },
+    [recognize],
+  );
+  useEffect(() => {
+    if (isNativeApp) return;
+    const over = (event: DragEvent) => {
+      if (!event.dataTransfer?.types.includes('Files')) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = recognitionBusy.current ? 'none' : 'copy';
+    };
+    const drop = (event: DragEvent) => {
+      if (!event.dataTransfer?.types.includes('Files')) return;
+      event.preventDefault();
+      receiveFiles(Array.from(event.dataTransfer.files));
+    };
+    const reset = () => {
+      dragDepth.current = 0;
+      setDragging(false);
+    };
+    document.addEventListener('dragover', over);
+    document.addEventListener('drop', drop);
+    document.addEventListener('dragend', reset);
+    window.addEventListener('blur', reset);
+    return () => {
+      document.removeEventListener('dragover', over);
+      document.removeEventListener('drop', drop);
+      document.removeEventListener('dragend', reset);
+      window.removeEventListener('blur', reset);
+    };
+  }, [receiveFiles]);
   const review = () => {
     setError('');
     setNotice('');
@@ -299,6 +367,9 @@ export function ImportCenter() {
           dirty={dirty}
           onClose={() => {
             requestEpoch.current += 1;
+            recognitionBusy.current = false;
+            dragDepth.current = 0;
+            setDragging(false);
             setBusy(false);
             setOpen(false);
             setBatch(undefined);
@@ -381,17 +452,66 @@ export function ImportCenter() {
                       type="file"
                       accept="image/png,image/jpeg"
                       onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) void recognize(file);
+                        const files = Array.from(event.target.files ?? []);
+                        if (files.length) receiveFiles(files);
                       }}
                     />
-                    {(isNativeApp || servedByLauncher()) && (
-                      <Btn
-                        disabled={busy}
-                        onClick={() => (isNativeApp ? void recognize() : fileInput.current?.click())}
+                    {servedByLauncher() && !isNativeApp ? (
+                      <div
+                        role="group"
+                        aria-label="Screenshot upload"
+                        aria-busy={busy}
+                        className={`space-y-3 rounded-ui-lg border border-dashed p-4 ${dragging ? 'border-accent bg-accent/10' : 'border-line-edge bg-fill-1'}`}
+                        onDragEnter={(event) => {
+                          if (!event.dataTransfer.types.includes('Files')) return;
+                          event.preventDefault();
+                          event.stopPropagation();
+                          if (recognitionBusy.current) return;
+                          dragDepth.current += 1;
+                          setDragging(true);
+                        }}
+                        onDragOver={(event) => {
+                          if (!event.dataTransfer.types.includes('Files')) return;
+                          event.preventDefault();
+                          event.stopPropagation();
+                          event.dataTransfer.dropEffect = busy ? 'none' : 'copy';
+                        }}
+                        onDragLeave={(event) => {
+                          if (!event.dataTransfer.types.includes('Files')) return;
+                          event.preventDefault();
+                          event.stopPropagation();
+                          dragDepth.current = Math.max(0, dragDepth.current - 1);
+                          if (!dragDepth.current) setDragging(false);
+                        }}
+                        onDrop={(event) => {
+                          if (!event.dataTransfer.types.includes('Files')) return;
+                          event.preventDefault();
+                          event.stopPropagation();
+                          receiveFiles(Array.from(event.dataTransfer.files));
+                        }}
                       >
-                        {busy ? 'Reading image…' : 'Choose screenshot'}
-                      </Btn>
+                        <div>
+                          <p className="text-body font-medium">
+                            {busy
+                              ? 'Reading image…'
+                              : dragging
+                                ? 'Release screenshot to read it'
+                                : 'Drop screenshot here'}
+                          </p>
+                          <p className="text-meta text-muted">
+                            One PNG or JPEG, up to 8 MB. You can also drop it anywhere in Memoria.
+                          </p>
+                        </div>
+                        <Btn disabled={busy} onClick={() => fileInput.current?.click()}>
+                          Choose screenshot
+                        </Btn>
+                      </div>
+                    ) : (
+                      isNativeApp && (
+                        <Btn disabled={busy} onClick={() => void recognize()}>
+                          {busy ? 'Reading image…' : 'Choose screenshot'}
+                        </Btn>
+                      )
                     )}
                     <p className="text-meta text-muted">
                       Images are read on this device. Review the detected text below.{' '}

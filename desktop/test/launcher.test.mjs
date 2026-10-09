@@ -42,6 +42,7 @@ beforeAll(async () => {
   for (const file of [
     'memoria.mjs',
     'lan-sync.mjs',
+    'http-response.mjs',
     'update.mjs',
     'game-connections.mjs',
     'screenshot-ocr.mjs',
@@ -262,46 +263,84 @@ describe('launcher security boundary', () => {
     expect(index.headers.get('content-security-policy')).toContain("frame-ancestors 'none'");
   });
 
-  it('rejects invalid content types, oversized bodies and newer schemas', async () => {
+  it('rejects invalid content types without saving their body', async () => {
+    const before = readFileSync(stateFile, 'utf8');
     expect((await post(emptyState(), { 'content-type': 'text/plain' })).status).toBe(415);
-    const response = await fetch(`${origin}/api/sync`, {
-      method: 'POST',
-      headers: { ...auth(), origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' },
-      body: 'x'.repeat(1_000_001),
-    });
-    expect(response.status).toBe(413);
-    expect(response.headers.get('connection')).toBe('close');
-    expect(await response.json()).toEqual({ error: 'Request body exceeds 1000000 bytes.' });
-    expect((await post({ ...emptyState(), schemaVersion: 999 })).status).toBe(400);
+    expect(readFileSync(stateFile, 'utf8')).toBe(before);
   });
 
-  it('returns a complete 413 for a chunked upload without saving its body', async () => {
+  it('returns complete 413 responses for oversized fetch uploads without saving their body', async () => {
+    const before = readFileSync(stateFile, 'utf8');
+    // The Windows reset races the upload. Repeating it catches the transport
+    // failure without accepting a reset in place of the required response.
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const response = await fetch(`${origin}/api/sync`, {
+        method: 'POST',
+        headers: { ...auth(), origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' },
+        body: 'x'.repeat(1_000_001),
+      });
+      expect(response.status).toBe(413);
+      expect(response.headers.get('connection')).toBe('close');
+      expect(await response.json()).toEqual({ error: 'Request body exceeds 1000000 bytes.' });
+    }
+    expect(readFileSync(stateFile, 'utf8')).toBe(before);
+    expect((await post()).status).toBe(200);
+  });
+
+  it('rejects newer schemas without saving their body', async () => {
+    const before = readFileSync(stateFile, 'utf8');
+    expect((await post({ ...emptyState(), schemaVersion: 999 })).status).toBe(400);
+    expect(readFileSync(stateFile, 'utf8')).toBe(before);
+  });
+
+  it.each(['declared', 'chunked'])('returns a complete 413 before an oversized %s upload ends', async (kind) => {
     const before = readFileSync(stateFile, 'utf8');
     const response = await new Promise((resolve, reject) => {
       const req = request(
         `${origin}/api/sync`,
         {
           method: 'POST',
-          headers: { ...auth(), origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json' },
+          headers: {
+            ...auth(),
+            origin,
+            'sec-fetch-site': 'same-origin',
+            'content-type': 'application/json',
+            ...(kind === 'declared' ? { 'content-length': 1_000_001 } : {}),
+          },
         },
         (res) => {
           const chunks = [];
           res.on('data', (chunk) => chunks.push(chunk));
           res.on('error', reject);
           res.on('end', () => {
-            req.end();
-            resolve({ status: res.statusCode, body: Buffer.concat(chunks).toString('utf8') });
+            const uploadEnded = req.writableEnded;
+            if (kind === 'declared') req.destroy();
+            else req.end();
+            resolve({
+              status: res.statusCode,
+              body: Buffer.concat(chunks).toString('utf8'),
+              complete: res.complete,
+              uploadEnded,
+            });
           });
         },
       );
       req.on('error', reject);
-      // No Content-Length and no end marker: reject on the received limit
-      // without waiting for the sender to finish the upload.
-      req.write('x'.repeat(500_000));
-      req.write('x'.repeat(500_001));
+      req.setTimeout(2000, () => req.destroy(new Error('Oversized upload response timed out.')));
+      if (kind === 'declared') {
+        // Headers alone must be enough to reject an oversized declared body.
+        req.flushHeaders();
+      } else {
+        // No Content-Length and no end marker: reject on the received limit
+        // without waiting for the sender to finish the upload.
+        req.write('x'.repeat(500_000));
+        req.write('x'.repeat(500_001));
+      }
     });
     expect(response.status).toBe(413);
     expect(JSON.parse(response.body)).toEqual({ error: 'Request body exceeds 1000000 bytes.' });
+    expect(response.complete).toBe(true);
+    expect(response.uploadEnded).toBe(false);
     expect(readFileSync(stateFile, 'utf8')).toBe(before);
     expect((await post()).status).toBe(200);
   });
