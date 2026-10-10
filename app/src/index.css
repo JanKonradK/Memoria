@@ -1095,6 +1095,35 @@ input[type='number'] {
   animation: loaderSpin 1.6s linear infinite;
 }
 
+/* A game's actions sit at the foot of its page or pane, within reach, and stay
+   there while the controls scroll above them. */
+.game-actions-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  margin-top: 1.5rem;
+  padding: 0.75rem 0;
+  flex-wrap: wrap;
+  background: var(--color-surface-0);
+  border-top: 1px solid var(--color-line);
+}
+/* Opened from the foot, shown at the top: clear the sticky app bar on arrival. */
+.game-panel {
+  scroll-margin-top: calc(var(--app-bar-h) + 1rem);
+}
+@media (max-width: 767px) {
+  /* One row above the dock that scrolls sideways, rather than three rows of buttons. */
+  /* Its ground runs on behind the floating dock, so no row shows through the gap. */
+  .game-actions-bar {
+    padding-bottom: calc(var(--mobile-nav-h, 0px) + 0.25rem);
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .game-actions-bar > * {
+    flex-shrink: 0;
+  }
+}
 .focus-bay-grid {
   grid-template-columns: minmax(0, 1fr);
 }
