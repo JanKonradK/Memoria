@@ -101,7 +101,7 @@
   --lane-row-h: 3.25rem;
 
   /* ── Type scale ────────────────────────────────────────────────────────────
-     DM Sans for language and numbers; a game's name in the script title face.
+     DM Sans for language and numbers; a game's name in that game's title face.
      Body text starts at 16px;
      supporting text stays at 13px or above. Phone task text uses 17px.
      Use weight and spacing to distinguish labels from metadata.
@@ -141,8 +141,6 @@
   --shadow-float: 0 18px 44px -22px rgba(0, 0, 0, 0.92);
 
   --font-body: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  /* A game's name, and nothing else. Falls back to the body face, never to a system script. */
-  --font-title: 'Vujahday Script', 'DM Sans', system-ui, sans-serif;
 }
 
 :root {
@@ -289,18 +287,6 @@ body {
    tick. This class marks a measurement; it is set in the body face. */
 .numeral {
   font-variant-numeric: tabular-nums;
-}
-
-/* A game's name in the one script face. The face has a single weight and a low
-   x-height, so it is never emboldened and is sized up to read at the same
-   height as the text around it. */
-.game-title {
-  font-family: var(--font-title);
-  font-weight: 400;
-  font-size-adjust: 0.44;
-  letter-spacing: 0;
-  /* Room for the slant and the last letter's tail where the name truncates. */
-  padding-inline: 0.08em 0.35em;
 }
 
 /* The quiet voice: secondary detail is lighter and slanted rather than bold. */
