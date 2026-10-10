@@ -173,6 +173,44 @@ try {
   let energy = await launch();
   await expect(energy).toHaveValue('31');
   checkExistingData();
+  // Send keys through Electron; CDP key presses bypass native input handling.
+  const zoomLevel = () =>
+    desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.getZoomLevel());
+  const zoomShortcut = (input) =>
+    desktop.evaluate(({ BrowserWindow }, key) => {
+      const target = BrowserWindow.getAllWindows()[0];
+      target.focus();
+      target.webContents.focus();
+      target.webContents.sendInputEvent({ type: 'keyDown', ...key });
+      target.webContents.sendInputEvent({ type: 'keyUp', ...key });
+    }, input);
+  await zoomShortcut({ keyCode: '0', modifiers: ['control'] });
+  await expect.poll(zoomLevel).toBe(0);
+  await zoomShortcut({ keyCode: '-', modifiers: ['control'] });
+  await expect.poll(zoomLevel).toBe(-0.5);
+  for (const shortcut of [
+    { keyCode: '=', modifiers: ['control'] },
+    { keyCode: '+', modifiers: ['control', 'shift'] },
+    { keyCode: 'numadd', modifiers: ['control'] },
+  ]) {
+    await zoomShortcut(shortcut);
+    await expect.poll(zoomLevel, { message: `${JSON.stringify(shortcut)} must zoom in once` }).toBe(0);
+    await zoomShortcut(shortcut);
+    await expect
+      .poll(zoomLevel, { message: `${JSON.stringify(shortcut)} must enlarge the app above actual size` })
+      .toBe(0.5);
+    await zoomShortcut({ keyCode: '0', modifiers: ['control'] });
+    await expect.poll(zoomLevel).toBe(0);
+    await zoomShortcut({ keyCode: '-', modifiers: ['control'] });
+    await expect.poll(zoomLevel).toBe(-0.5);
+  }
+  await zoomShortcut({ keyCode: '0', modifiers: ['control'] });
+  await expect.poll(zoomLevel).toBe(0);
+  await zoomShortcut({ keyCode: '+', modifiers: ['control', 'alt'] });
+  await zoomShortcut({ keyCode: '=', modifiers: [] });
+  await expect.poll(zoomLevel).toBe(0);
+  await expect(energy).toHaveValue('31');
+  console.log('PASS: Ctrl+Plus, Ctrl+Equal, number-pad Plus, Ctrl+Minus, and Ctrl+0');
   const security = await desktop.evaluate(({ BrowserWindow, app }) => {
     const windows = BrowserWindow.getAllWindows();
     const preferences = windows[0].webContents.getLastWebPreferences();

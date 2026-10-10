@@ -2,7 +2,7 @@ import { SERVER_TZ_OPTIONS } from '@memoria/shared';
 import { useState } from 'react';
 import { useApp } from '../store';
 import { useUI, type GameEditorSection } from '../ui-store';
-import { serverRegionLabel } from './NexusLayout';
+import { serverRegionLabel } from '../server-region';
 import { useGameDraft } from './game-detail/useGameDraft';
 import { GameEditor } from './settings/GameEditor';
 import { Sheet } from './Sheet';

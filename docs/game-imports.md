@@ -22,50 +22,49 @@ Game passwords and session cookies do not enter progress backups or device sync.
 ## Import a screenshot
 
 1. Take a screenshot of the game screen that shows the resource name and value.
-2. In Memoria, select **Import readings** on **Today**.
-3. Select the correct **Game account**.
-4. Select **Screenshot**.
-5. Select **Choose screenshot**, or paste the text into **Text from the screenshot**.
-6. Enter the **Screenshot capture time** in this device's local time.
-7. Select **Review readings**.
-8. Compare the detected values with the screenshot.
-9. Correct a detected value if necessary.
-10. Select **Apply reviewed readings**.
+2. In the Windows app, drop or paste the screenshot anywhere in Memoria.
+   On Android, share the screenshot to Memoria from another app.
+3. Memoria reads the image and saves the readings it is sure about.
+4. Select **Undo** in the notice if a saved value is wrong.
 
-On Android, you can also share a screenshot to Memoria from another app.
-Select **Review shared screenshot** when Memoria receives the image.
+You can also start from a game's card. Select **Readings**, then **Read a screenshot**.
+In a browser, select **Readings**, then **Enter screenshot text**, and paste the text.
+Drop one PNG or JPEG file, up to 8 MB.
 
-In the Windows app, you can also drop a screenshot anywhere in Memoria.
-The Screenshot tab has a drop area and a **Choose screenshot** button.
-Drop one PNG or JPEG file, up to 8 MB. Review the text and capture time before you save its readings.
-Memoria asks before it replaces an import draft.
+Memoria saves a value without a question when its name sits beside its own maximum.
+For example, `Original Resin 120 / 200` identifies a resin reading for one tracked game.
+Memoria asks you to check a reading in the game's card in these cases:
 
-Recognition uses a resource name and its value. For example, `Original Resin 120 / 200` identifies a resin reading.
-If an image only shows a ratio, expand **Assign values without a label** and select its resource before review.
-Unclear text, unsupported labels, and fields absent from the image do not become confirmed progress.
-Use manual entry when recognition cannot identify a value.
+- The value has no maximum, such as `Original Resin 120`.
+- The image only shows a ratio, such as `120 / 200`. Select its resource under **Values without a label**.
+- No readings were recognized. Correct the text under **Screenshot text**.
+
+If two tracked accounts could own the screenshot, Memoria asks which game it belongs to.
+In the card, check the values and the **Taken** time, then select **Save**.
+Memoria asks before a new screenshot replaces a reading that you are still checking.
+An older screenshot does not replace a newer reading.
 The app reads selected images on the device. It does not continuously record the game screen.
 
 ## Connect a HoYoLAB account on Windows
 
 1. Open the Windows app.
-2. Select **Settings**.
-3. Select **Game connections and imports**.
-4. Select the correct **Game account**.
-5. Select **Accounts**.
-6. Select **Set up browser connector**.
-7. In Chrome, open `chrome://extensions`. In Edge, open `edge://extensions`.
-8. Enable **Developer mode**.
-9. Select **Load unpacked**.
-10. Select the **browser-extension** folder that Memoria opened.
-11. In your browser, open [HoYoLAB](https://www.hoyolab.com/).
-12. Sign in on the official page.
-13. Open the **Memoria Browser Connector** from the browser toolbar.
-14. Select **Read accounts**.
-15. In Memoria, select **Find my accounts**.
-16. Select the correct **Linked HoYoLAB account**.
-17. Select **Connect and review**.
-18. Compare the readings with the game before you apply them.
+2. Open the game's card. On **Today**, select the game.
+3. Select **Readings**, then **Connect account**.
+4. Select **Set up browser connector**.
+5. In Chrome, open `chrome://extensions`. In Edge, open `edge://extensions`.
+6. Enable **Developer mode**.
+7. Select **Load unpacked**.
+8. Select the **browser-extension** folder that Memoria opened.
+9. In your browser, open [HoYoLAB](https://www.hoyolab.com/).
+10. Sign in on the official page.
+11. Open the **Memoria Browser Connector** from the browser toolbar.
+12. Select **Read accounts**.
+13. In Memoria, select **Find my accounts**.
+14. Select the correct **Linked HoYoLAB account**.
+15. Select **Connect**.
+
+Memoria saves the account's readings to the card. Select **Undo** in the notice to restore the earlier values.
+**Settings** also has a **Game accounts** button that opens the same panel.
 
 Do the connector installation once for each browser profile that you use.
 After a Memoria update, select **Reload** for the connector on your browser's extensions page.
@@ -93,32 +92,29 @@ The legacy browser launcher also retains its manual session setup.
 9. In the game, open a screen with the resource values.
 10. Press the shortcut. The default is **Ctrl + Shift + M**.
 11. When convenient, open **Play mode** in Memoria.
-12. In **Capture inbox**, select **Review capture**.
-13. Check the game account, capture time, and detected text.
-14. Select **Review readings**.
-15. Check the values, then select **Apply reviewed readings**.
+12. In **Capture inbox**, select **Use capture**.
 
+Memoria saves the readings it is sure about. It opens the game's card when a value needs a check.
 The shortcut does not bring Memoria to the front.
 Memoria reads the selected window and keeps only detected text and capture details on this PC.
 The inbox holds up to 20 captures. It retains captures after you close and reopen Memoria.
-The inbox removes a capture after its reviewed readings save, or when you select **Discard**.
+The inbox removes a capture after its readings save, or when you select **Discard**.
 Select the game window again after each Memoria restart or game restart.
 Windowed or borderless mode gives the best capture results. Some games block screen capture.
 Memoria does not continuously record the screen or read game memory.
 
 ## Connect a HoYoLAB account on Android
 
-1. Open **Import readings**.
-2. Select the correct **Game account**.
-3. Select **Accounts**.
-4. Select **Sign in with HoYoLAB**.
-5. Sign in on the official page.
-6. Select **Done** to return to Memoria.
-7. Select **Find my accounts** if Memoria did not find your account after sign-in.
-8. If Memoria finds multiple accounts, select the correct **Linked HoYoLAB account**.
-9. Select **Connect and review**.
-10. Check the readings before you apply them.
+1. Open the game from **Today**.
+2. Select **Readings**, then **Connect account**.
+3. Select **Sign in with HoYoLAB**.
+4. Sign in on the official page.
+5. Select **Done** to return to Memoria.
+6. Select **Find my accounts** if Memoria did not find your account after sign-in.
+7. If Memoria finds multiple accounts, select the correct **Linked HoYoLAB account**.
+8. Select **Connect**.
 
+Memoria saves the account's readings to the card.
 If Memoria cannot find the account, enter the **In-game UID** and select the **Game server** manually.
 
 The phone supports one HoYoLAB sign-in identity at a time.
@@ -149,22 +145,35 @@ The PC and phone need separate HoYoLAB sign-in sessions. Device sync transfers p
 
 ## Review or undo an import
 
-1. Select **Import readings**.
-2. Select **History**.
+1. Open the game's card.
+2. Select **Readings**, then **Recent imports**.
 3. Find the import by its source and time.
-4. If necessary, select **Undo import**.
+4. If necessary, select **Undo**.
 
-History contains recent imports on this device.
+Recent imports contains the imports on this device.
 Undo preserves later edits. An older import does not replace a newer manual correction.
 Duplicate imports do not add the same readings again.
 
 ## Read the status
 
-**Manual**, **Account**, and **Screenshot** identify the source of a reading.
+Each game's card names the source of its last reading: **Manual**, **Account**, or **Screenshot**.
 **Starting estimate** identifies an initial value that did not come from the game.
-The time describes when the reading was observed.
-**Estimated** identifies a value that Memoria calculates from that reading.
+The time describes when the reading was observed. Memoria calculates the current value from that reading.
+**auto** identifies an account that Memoria checks every five minutes.
 
 The header reports device sync separately.
 A successful device sync does not confirm that the game connection is current.
-Open **Accounts** to check a connection or fetch its readings again.
+Select **Readings**, then **Fetch from account**, to read a connected account again.
+
+## Start a game from Memoria
+
+The Windows app can start a tracked game.
+
+1. Open the game's card.
+2. Select **Set up launch**.
+3. Select the game's program or launcher, or a shortcut to it.
+4. Select **Launch** to start it.
+
+To change or remove the program, select **Edit** on the card, then **Change** or **Remove**.
+Memoria stores the choice on this PC. It does not enter backups or device sync.
+Browsers and the Android app do not show **Launch**.

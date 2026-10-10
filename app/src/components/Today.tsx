@@ -1,13 +1,23 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { DateTime } from 'luxon';
-import type { Game, GameUrgency, Snapshot } from '@memoria/shared';
+import type { GameEvent, GameUrgency } from '@memoria/shared';
 import { useDerived, type Derived } from '../selectors';
 import { useUI } from '../ui-store';
 import { useMediaQuery } from '../hooks';
 import { fmtDur } from '../util';
+import { gameInk } from '../game-color';
+import { gameShellVars, useGround, useTheme } from '../theme';
 import { navigateWorkspace } from '../workspace-navigation';
+import { readingSource } from '../reading-source';
+import { useReadings } from '../readings';
 import { useIdentityColors } from './roster';
-import { Btn, GameBadge, Page } from './ui';
+import { GameControls } from './GameCard';
+import { GamePage } from './GamePage';
+import { SourceIcon } from './GameReadings';
+import { NexusHub } from './nexus/NexusHub';
+import { TodayNotices } from './TodayNotices';
+import { ProgressBar } from './primitives';
+import { Btn, GameBadge, Page, Tooltip } from './ui';
 import '../today.css';
 
 function openGame(gameId: string) {
@@ -18,94 +28,137 @@ function openGame(gameId: string) {
   });
 }
 
-function openImport(gameId?: string) {
-  document.dispatchEvent(new CustomEvent('memoria:open-import', { detail: { gameId } }));
-}
+const URGENT_MS = 2 * 60 * 60_000;
 
-function readingLabel(snapshot: Snapshot | undefined, now: number): string {
-  if (!snapshot) return 'No reading yet';
-  const provenance = snapshot.provenance;
-  const source =
-    provenance?.kind === 'account'
-      ? 'Account'
-      : provenance?.kind === 'screenshot'
-        ? 'Screenshot'
-        : provenance?.kind === 'estimate'
-          ? 'Starting estimate'
-          : 'Manual';
-  const age = Math.max(0, now - (provenance?.observedAt ?? snapshot.takenAt));
-  return `${source} · ${age < 60_000 ? 'just recorded' : `${fmtDur(age)} ago`}`;
-}
+function PriorityRow({
+  entry,
+  derived,
+  selected,
+  desktop,
+  onSelect,
+}: {
+  entry: GameUrgency;
+  derived: Derived;
+  selected: boolean;
+  desktop: boolean;
+  onSelect: () => void;
+}) {
+  const { game, next } = entry;
+  const { now } = derived;
+  const ground = useGround();
+  const colors = useIdentityColors(derived.state.games)[game.id] ?? game;
+  const { resource, projection } = derived.primaryEnergy(game.id);
+  const source = readingSource(resource ? derived.snaps.get(resource.id) : undefined, now);
+  const known = Boolean(resource && projection?.hasSnapshot);
+  const dailies = (derived.checklistByGame.get(game.id) ?? []).filter((item) => item.cadence === 'daily');
+  const done = dailies.filter((item) => item.done).length;
+  const left = next ? next.at - now : null;
+  const tone = left == null ? 'idle' : left <= 0 ? 'danger' : left < URGENT_MS ? 'warn' : 'calm';
+  const compact = useMediaQuery('(max-width: 479px)');
+  const descriptionId = `today-priority-${encodeURIComponent(game.id)}`;
+  const summary = [
+    next ? `${next.label}${left! > 0 ? ` in ${fmtDur(left!)}` : ' now'}` : 'No upcoming deadlines',
+    resource &&
+      (known && source
+        ? `Estimated ${projection!.value} of ${resource.cap} ${resource.name} from ${source.label.toLowerCase()} reading ${source.age}`
+        : `No ${resource.name} reading yet`),
+    dailies.length > 0 && `${done} of ${dailies.length} dailies done`,
+  ]
+    .filter(Boolean)
+    .join('. ');
 
-function accountLabel(game: Game): string {
-  return [game.accountLabel, game.tz].filter(Boolean).join(' · ');
-}
-
-function ActionSummary({ entry, now }: { entry: GameUrgency; now: number }) {
-  const action = entry.next;
   return (
-    <>
-      {entry.game.paused
-        ? 'Tracking paused'
-        : action
-          ? `${action.label}${action.at > now ? ` in ${fmtDur(action.at - now)}` : ''}`
-          : 'No upcoming deadlines'}
-    </>
+    <li>
+      <button
+        type="button"
+        className="today-priority-row"
+        data-roster-game={game.id}
+        aria-label={`${desktop ? 'Review' : 'Open'} ${game.name}${game.accountLabel ? ` ${game.accountLabel}` : ''}`}
+        aria-describedby={descriptionId}
+        aria-pressed={desktop ? selected : undefined}
+        onClick={onSelect}
+      >
+        <span id={descriptionId} className="sr-only">
+          {summary}
+        </span>
+        <span className="today-row-badge">
+          <GameBadge short={game.short} {...colors} size={compact ? 'sm' : 'md'} />
+        </span>
+        <span className="today-row-name">
+          <span className="today-row-title text-body font-semibold text-fg">{game.name}</span>
+          {game.accountLabel && <span className="today-row-account truncate text-meta">{game.accountLabel}</span>}
+        </span>
+        <span className="today-row-time numeral" data-tone={tone}>
+          {left == null ? '—' : left <= 0 ? 'Now' : fmtDur(left)}
+        </span>
+        <span className="today-row-reading">
+          {resource && (
+            <>
+              <span
+                className="today-meter"
+                data-known={known || undefined}
+                style={
+                  {
+                    '--level': known ? Math.min(1, projection!.precise / resource.cap) : 0,
+                    '--meter-ink': gameInk(colors, ground),
+                  } as CSSProperties
+                }
+              >
+                <span />
+              </span>
+              <span className="today-row-value numeral text-caption text-fg-soft">
+                {known ? projection!.value : '—'}
+                <span className="text-muted">/{resource.cap}</span>
+              </span>
+              {known && source && (
+                <Tooltip content={`Estimated from your ${source.label.toLowerCase()} reading, ${source.age}`}>
+                  <span className="today-row-source numeral text-caption">
+                    <SourceIcon kind={source.kind} />
+                    {source.shortAge}
+                  </span>
+                </Tooltip>
+              )}
+            </>
+          )}
+          <span className="today-row-what truncate text-caption">{next?.label ?? 'No deadlines'}</span>
+        </span>
+        <span className="today-row-ring">
+          {dailies.length > 0 && (
+            <ProgressBar
+              variant="ring"
+              size={34}
+              stroke={3.5}
+              value={done / dailies.length}
+              color={gameInk(colors, ground)}
+            >
+              {done === dailies.length ? (
+                <svg viewBox="0 0 20 20" aria-hidden className="icon h-3.5 w-3.5" fill="none" stroke="currentColor">
+                  <path d="m5 10.5 3.5 3.5L15 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <span className="numeral">
+                  {done}/{dailies.length}
+                </span>
+              )}
+            </ProgressBar>
+          )}
+        </span>
+      </button>
+    </li>
   );
 }
 
-function ReadingDetail({ entry, derived }: { entry: GameUrgency; derived: Derived }) {
-  const { resource, projection } = derived.primaryEnergy(entry.game.id);
-  const snapshot = resource ? derived.snaps.get(resource.id) : undefined;
+function Group({ id, label, note, children }: { id: string; label: string; note?: string; children: ReactNode }) {
   return (
-    <section className="today-detail panel rounded-ui-card p-5" aria-label={`${entry.game.name} next check-in`}>
-      <h2 className="text-heading font-semibold text-fg">{entry.game.name}</h2>
-      <p className="mt-1 break-words text-meta text-muted">{accountLabel(entry.game)}</p>
-      {resource && (
-        <div className="my-6">
-          <div className="flex items-baseline justify-between gap-3">
-            <h3 className="text-body font-medium text-fg-soft">{resource.name}</h3>
-            <p className="numeral text-heading font-semibold text-fg">
-              {projection?.hasSnapshot ? projection.value : '—'}{' '}
-              <span className="text-meta font-normal text-muted">/ {resource.cap}</span>
-            </p>
-          </div>
-          <p className="mt-2 text-meta text-muted">{readingLabel(snapshot, derived.now)}</p>
-          {projection?.hasSnapshot && (
-            <p className="mt-1 text-meta text-muted">Estimated now from your last reading.</p>
-          )}
-        </div>
-      )}
-      <div className="mb-5 border-t border-line pt-4">
-        <h3 className="text-meta font-semibold text-fg-soft">Next up</h3>
-        {entry.actions.length ? (
-          <ul className="mt-2 space-y-3">
-            {entry.actions.slice(0, 3).map((action, index) => (
-              <li
-                key={`${action.kind}-${index}`}
-                className="flex flex-wrap items-baseline justify-between gap-x-3 text-meta"
-              >
-                <span className="text-fg-soft">{action.label}</span>
-                <span className="numeral text-muted">
-                  {action.at <= derived.now ? 'Now' : `in ${fmtDur(action.at - derived.now)}`}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-2 text-meta text-muted">
-            {entry.game.paused
-              ? 'Resume tracking in the game controls when you are ready.'
-              : 'No tracked deadlines. Open the game to check your routines.'}
-          </p>
-        )}
+    <section className="today-group" aria-labelledby={id}>
+      <div className="today-group-rule">
+        <h2 id={id} className="text-meta font-semibold text-fg-soft">
+          {label}
+        </h2>
+        <span aria-hidden />
+        {note && <span className="numeral text-caption text-muted">{note}</span>}
       </div>
-      <div className="flex flex-wrap gap-2">
-        <Btn kind="primary" onClick={() => openGame(entry.game.id)}>
-          Open game
-        </Btn>
-        <Btn onClick={() => openImport(entry.game.id)}>Import readings</Btn>
-      </div>
+      {children}
     </section>
   );
 }
@@ -114,76 +167,59 @@ export function TodayPage({ now }: { now: number }) {
   const derived = useDerived(now);
   const { state, order } = derived;
   const colors = useIdentityColors(state.games);
+  const theme = useTheme();
   const desktop = useMediaQuery('(min-width: 900px)');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedId = useUI((ui) => ui.todayGameId);
+  const setSelectedId = useUI((ui) => ui.setTodayGameId);
+  // A window snapped narrower loses the pane. Anything open in that card follows
+  // the player to the game's own page instead of disappearing with it.
+  const wasDesktop = useRef(desktop);
+  useEffect(() => {
+    const open = useReadings.getState().panel?.gameId;
+    if (wasDesktop.current && !desktop && open) openGame(open);
+    wasDesktop.current = desktop;
+  }, [desktop]);
   const openSheet = useUI((ui) => ui.openSheet);
   const setTab = useUI((ui) => ui.setTab);
+  const openEvent = useCallback(
+    (event: GameEvent) => openSheet({ kind: 'event', gameId: event.gameId, eventId: event.id }),
+    [openSheet],
+  );
+  const openTimeline = useCallback(() => setTab('timeline'), [setTab]);
   const active = order.filter((entry) => !entry.game.paused);
+  const paused = order.filter((entry) => entry.game.paused);
   const attentionUntil = now + state.settings.sleepHours * 3_600_000;
   const attention = active.filter((entry) => entry.next && entry.next.at <= attentionUntil);
   const canWait = active.filter((entry) => !entry.next || entry.next.at > attentionUntil);
   const selected = order.find((entry) => entry.game.id === selectedId) ?? attention[0] ?? active[0] ?? order[0];
   const date = DateTime.fromMillis(now, { zone: state.settings.localTz }).toFormat('cccc, d LLLL');
 
-  const row = (entry: GameUrgency) => {
-    const { resource, projection } = derived.primaryEnergy(entry.game.id);
-    const snapshot = resource ? derived.snaps.get(resource.id) : undefined;
-    const descriptionId = `today-priority-${encodeURIComponent(entry.game.id)}`;
-    return (
-      <li key={entry.game.id}>
-        <button
-          type="button"
-          className="today-priority-row"
-          data-roster-game={entry.game.id}
-          aria-label={`${desktop ? 'Review' : 'Open'} ${entry.game.name}${entry.game.accountLabel ? ` ${entry.game.accountLabel}` : ''}`}
-          aria-describedby={descriptionId}
-          aria-pressed={desktop ? selected?.game.id === entry.game.id : undefined}
-          onClick={() => (desktop ? setSelectedId(entry.game.id) : openGame(entry.game.id))}
-        >
-          <GameBadge short={entry.game.short} {...(colors[entry.game.id] ?? entry.game)} size="lg" />
-          <span id={descriptionId} className="min-w-0 flex-1">
-            <span className="block text-body font-semibold text-fg">{entry.game.name}</span>
-            {entry.game.accountLabel && <span className="block text-meta text-muted">{entry.game.accountLabel}</span>}
-            <span className="mt-1 block text-meta text-fg-soft">
-              <ActionSummary entry={entry} now={now} />
-            </span>
-            {resource && (
-              <span className="mt-1 block text-caption text-muted">
-                {readingLabel(snapshot, now)}
-                {projection?.hasSnapshot ? ` · Estimated ${projection.value}/${resource.cap}` : ''}
-              </span>
-            )}
-          </span>
-          <svg
-            aria-hidden
-            viewBox="0 0 20 20"
-            className="h-4 w-4 shrink-0 text-muted"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          >
-            <path d="m7 4 6 6-6 6" />
-          </svg>
-        </button>
-      </li>
-    );
-  };
+  const rows = (entries: GameUrgency[]) => (
+    <ul className="today-priority-list">
+      {entries.map((entry) => (
+        <PriorityRow
+          key={entry.game.id}
+          entry={entry}
+          derived={derived}
+          desktop={desktop}
+          selected={selected?.game.id === entry.game.id}
+          onSelect={() => (desktop ? setSelectedId(entry.game.id) : openGame(entry.game.id))}
+        />
+      ))}
+    </ul>
+  );
 
   return (
     <Page className="today-page">
       <div className="today-heading">
-        <div>
-          <h1 className="text-title font-semibold tracking-[-0.02em] text-fg">Today</h1>
-          <p className="mt-1 text-body text-muted">{date}</p>
-        </div>
-        {order.length > 0 && <Btn onClick={() => openImport()}>Import readings</Btn>}
+        <h1 className="text-title font-semibold tracking-[-0.02em] text-fg">Today</h1>
+        <p className="text-meta text-muted">{date}</p>
       </div>
+      <TodayNotices now={now} />
       {order.length === 0 ? (
-        <section className="today-empty panel rounded-ui-card p-6">
-          <h2 className="text-heading font-semibold text-fg">Your next check-in starts here</h2>
-          <p className="mt-3 max-w-prose text-body text-muted">
-            Add a game to see energy estimates, unfinished routines, and approaching deadlines together.
-          </p>
+        <section className="today-empty">
+          <h2 className="text-heading font-semibold text-fg">Nothing tracked yet</h2>
+          <p className="mt-2 text-body text-muted">Add a game to see what caps or resets next.</p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Btn kind="primary" onClick={() => openSheet({ kind: 'addGame' })}>
               Add your first game
@@ -193,70 +229,64 @@ export function TodayPage({ now }: { now: number }) {
         </section>
       ) : (
         <div className="today-layout">
-          <aside className="today-roster" aria-label="Your games">
-            <h2 className="mb-3 px-2 text-meta font-semibold text-muted">Your games</h2>
-            <ul className="space-y-1">
-              {order.map(({ game }) => (
-                <li key={game.id}>
-                  <button
-                    type="button"
-                    className="today-roster-button"
-                    onClick={() => openGame(game.id)}
-                    aria-label={`Open ${game.name} controls${game.accountLabel ? ` for ${game.accountLabel}` : ''}`}
-                  >
-                    <GameBadge short={game.short} {...(colors[game.id] ?? game)} />
-                    <span className="min-w-0">
-                      <span className="block truncate text-meta font-medium text-fg-soft">{game.name}</span>
-                      <span className="block truncate text-caption text-muted">
-                        {game.paused ? 'Paused' : game.accountLabel || 'Open controls'}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <button
-              type="button"
-              className="mt-4 min-h-11 px-2 text-meta text-muted hover:text-fg"
-              onClick={() => setTab('home')}
-            >
-              View all game controls
-            </button>
-          </aside>
-          <div className="min-w-0">
-            <section aria-labelledby="today-attention">
-              <h2 id="today-attention" className="text-heading font-semibold text-fg">
-                Needs attention
-              </h2>
-              <p className="mb-3 mt-1 text-meta text-muted">
-                Caps and unfinished routines due in the next {state.settings.sleepHours} hours.
-              </p>
-              {attention.length ? (
-                <ul className="today-priority-list">{attention.map(row)}</ul>
-              ) : (
-                <p className="py-5 text-body text-fg-soft">
-                  No tracked deadlines in this window. You have room to choose.
-                </p>
-              )}
-            </section>
+          <div className="today-list">
+            <Group id="today-attention" label="Needs attention" note={`next ${state.settings.sleepHours}h`}>
+              {attention.length ? rows(attention) : <p className="today-clear text-meta text-muted">Nothing due.</p>}
+            </Group>
             {canWait.length > 0 && (
-              <section className="mt-8" aria-labelledby="today-can-wait">
-                <h2 id="today-can-wait" className="mb-3 text-heading font-semibold text-fg">
-                  Can wait
-                </h2>
-                <ul className="today-priority-list">{canWait.map(row)}</ul>
-              </section>
+              <Group id="today-can-wait" label="Can wait">
+                {rows(canWait)}
+              </Group>
             )}
-            {active.length === 0 && (
-              <p className="mt-3 text-body text-muted">All your games are paused. Open Games to resume tracking.</p>
+            {paused.length > 0 && (
+              <Group id="today-paused" label="Paused">
+                <ul className="today-paused">
+                  {paused.map(({ game }) => (
+                    <li key={game.id}>
+                      <button
+                        type="button"
+                        className="today-paused-game"
+                        aria-label={`${desktop ? 'Review' : 'Open'} ${game.name}, paused`}
+                        aria-pressed={desktop ? selected?.game.id === game.id : undefined}
+                        onClick={() => (desktop ? setSelectedId(game.id) : openGame(game.id))}
+                      >
+                        <GameBadge short={game.short} {...(colors[game.id] ?? game)} size="sm" />
+                        <span className="truncate text-meta">{game.name}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </Group>
             )}
-            <p className="mt-6 text-meta text-muted">
-              Readings describe your game progress. The header status shows device sync.
-            </p>
+            {/* What closes and arrives across every game, after what each game needs. */}
+            <NexusHub state={state} entries={order} now={now} onOpenEvent={openEvent} onOpenTimeline={openTimeline} />
           </div>
-          {selected && <ReadingDetail entry={selected} derived={derived} />}
+          {desktop && selected && (
+            <div className="today-detail">
+              <div className="today-detail-bar">
+                <Btn onClick={() => openGame(selected.game.id)}>Open full page</Btn>
+              </div>
+              <section
+                key={selected.game.id}
+                className="today-card card-shell game-card-surface"
+                style={gameShellVars(selected.game, theme, colors[selected.game.id])}
+                aria-label={`${selected.game.name} card`}
+              >
+                <GameControls entry={selected} now={now} layout="focus" />
+              </section>
+            </div>
+          )}
         </div>
       )}
     </Page>
   );
+}
+
+/**
+ * Today and the game page it opens load as one chunk. Opening a game then
+ * renders in the same pass as the click, so focus and the arrival motion land
+ * on a page that is already there.
+ */
+export function TodayRoute({ tab, now }: { tab: 'today' | 'home'; now: number }) {
+  return tab === 'home' ? <GamePage now={now} /> : <TodayPage now={now} />;
 }

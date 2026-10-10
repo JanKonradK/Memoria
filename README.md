@@ -16,11 +16,11 @@ You do not need a Memoria account or any coding knowledge.
 - **Background checks** continue for connected PC accounts while Memoria is minimized or in the system tray.
 - **Chrome/Edge sign-in** uses a browser connector for supported HoYoLAB accounts.
 
-- **Today** shows approaching energy caps and unfinished routines within your sleep window.
-- **Games** keeps the complete game controls, account list, and Tonight summary.
+- **Today** shows approaching energy caps and unfinished routines within your sleep window, then the Tonight summary across every game. Select a game for its complete controls.
 - **Calendar** shows events, banners, resets, and livestreams. Select **Livestreams** for broadcast details.
-- **Import readings** accepts game screenshots and supported account data. Review detected values before you apply them.
-  In the Windows app, drop a PNG or JPEG screenshot anywhere to start a review.
+- **Readings** on each game's card accepts screenshots and supported account data.
+  In the Windows app, drop or paste a PNG or JPEG screenshot anywhere. Memoria saves what it is sure about and asks about the rest.
+- **Launch** starts a game from its card in the Windows app.
 
 Each energy estimate shows the source and age of its last reading.
 The header status refers to device sync. It does not mean that Memoria just checked your game account.

@@ -81,7 +81,7 @@ test('paused accounts stay compact in both views and resume their saved events',
     ],
   };
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page
     .locator('input[type="file"]')
@@ -140,7 +140,7 @@ test('paused accounts stay compact in both views and resume their saved events',
     [...state.events].sort((a, b) => a.id.localeCompare(b.id)),
   );
   await page.reload();
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await view.getByRole('radio', { name: 'Timeline', exact: true }).click();
   await expect(page.locator('[data-event-id^="alt-"]')).toHaveCount(2);

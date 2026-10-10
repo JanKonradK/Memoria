@@ -12,15 +12,18 @@ import { useNow, useOnline } from './hooks';
 import { applyPwaUpdate } from './pwa';
 import { servedByLauncher } from './launcher';
 import { isNativeApp } from './native';
-import { initWorkspaceHistory } from './workspace-navigation';
+import { closeWorkspace, initWorkspaceHistory } from './workspace-navigation';
 import { initDesktopHost } from './desktop-host';
+import { initGameLaunch } from './game-launch';
 import { easing, duration } from './motion';
 import { useTabSwipe } from './gestures';
 import { AppBar } from './components/AppBar';
 import { Btn } from './components/ui';
 
 /** Primary pages lead their secondary and utility views in transition order. */
-const TAB_ORDER = ['today', 'home', 'timeline', 'livestreams', 'settings'] as const;
+const TAB_ORDER = ['today', 'timeline', 'livestreams', 'settings'] as const;
+/** A game's page sits just past Today: forward from it, and before Calendar. */
+const tabRank = (tab: Tab) => (tab === 'home' ? 0.5 : TAB_ORDER.indexOf(tab));
 
 const ONBOARDING_KEY = 'memoria-onboarding';
 /** The key this flag shipped under before the rename; still honoured on read. */
@@ -46,10 +49,7 @@ const toastMotion = {
   },
 };
 
-const TodayPage = lazy(() => import('./components/Today').then((module) => ({ default: module.TodayPage })));
-const DashboardPage = lazy(() =>
-  import('./components/Dashboard').then((module) => ({ default: module.DashboardPage })),
-);
+const TodayRoute = lazy(() => import('./components/Today').then((module) => ({ default: module.TodayRoute })));
 const TimelinePage = lazy(() => import('./components/Timeline').then((module) => ({ default: module.TimelinePage })));
 const SettingsPage = lazy(() => import('./components/Settings').then((module) => ({ default: module.SettingsPage })));
 const LivestreamsPage = lazy(() =>
@@ -64,8 +64,8 @@ const ReminderSheet = lazy(() =>
   import('./components/ReminderSheet').then((module) => ({ default: module.ReminderSheet })),
 );
 const UserGuide = lazy(() => import('./components/UserGuide').then((module) => ({ default: module.UserGuide })));
-const ImportCenter = lazy(() =>
-  import('./components/ImportCenter').then((module) => ({ default: module.ImportCenter })),
+const ReadingIntake = lazy(() =>
+  import('./components/ReadingIntake').then((module) => ({ default: module.ReadingIntake })),
 );
 const PlayMode = lazy(() => import('./components/PlayMode').then((module) => ({ default: module.PlayMode })));
 
@@ -115,13 +115,7 @@ function PageFrame({
 /** Keep countdown updates inside the active page, away from editors and the shell. */
 function LivePage({ tab }: { tab: 'today' | 'home' | 'timeline' }) {
   const now = useNow(30_000);
-  return tab === 'today' ? (
-    <TodayPage now={now} />
-  ) : tab === 'home' ? (
-    <DashboardPage now={now} />
-  ) : (
-    <TimelinePage now={now} />
-  );
+  return tab === 'timeline' ? <TimelinePage now={now} /> : <TodayRoute tab={tab} now={now} />;
 }
 
 function AppSheets() {
@@ -166,14 +160,27 @@ export default function App() {
   // a ref it would be a write during render.
   const [nav, setNav] = useState<{ tab: Tab; direction: 1 | -1 }>({ tab, direction: 1 });
   if (nav.tab !== tab) {
-    setNav({ tab, direction: TAB_ORDER.indexOf(tab) > TAB_ORDER.indexOf(nav.tab) ? 1 : -1 });
+    setNav({ tab, direction: tabRank(tab) > tabRank(nav.tab) ? 1 : -1 });
   }
   const direction = nav.tab === tab ? nav.direction : 1;
 
   const swipe = useTabSwipe((towards) => {
+    if (tab === 'home') {
+      if (towards === 1) setTab('timeline');
+      else closeWorkspace();
+      return;
+    }
     const next = TAB_ORDER[TAB_ORDER.indexOf(tab) + towards];
     if (next) setTab(next);
   });
+
+  // The game page is the only thing on the internal `home` route. A deleted
+  // game, or a route restored without one, has nothing to show there.
+  const focusedGameId = useUI((s) => s.focusedGameId);
+  const hasFocusedGame = useApp((s) => s.state.games.some((game) => !game.deleted && game.id === focusedGameId));
+  useEffect(() => {
+    if (loaded && tab === 'home' && !hasFocusedGame) setTab('today');
+  }, [loaded, tab, hasFocusedGame, setTab]);
   const online = useOnline();
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const autoTourStarted = useRef(false);
@@ -187,6 +194,7 @@ export default function App() {
 
   useEffect(initWorkspaceHistory, []);
   useEffect(initDesktopHost, []);
+  useEffect(initGameLaunch, []);
 
   useEffect(() => {
     if (loaded) return initGameConnections();
@@ -392,7 +400,7 @@ export default function App() {
 
       <AppSheets />
       <Suspense fallback={null}>
-        <ImportCenter />
+        <ReadingIntake />
         <PlayMode />
       </Suspense>
     </div>

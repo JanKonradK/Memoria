@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { detectLocalTz, normalizeState, safeParseAppState } from '@memoria/shared';
 import { useApp } from '../store';
-import { useUI, type TonightPosition } from '../ui-store';
+import { useUI } from '../ui-store';
 import { servedByLauncher } from '../launcher';
 import { syncNow } from '../sync';
 import { DeviceSync } from './settings/DeviceSync';
@@ -23,7 +23,7 @@ import { fmtClock, intOr, localResetLabel } from '../util';
 import { HomeTimeZoneField } from './HomeTimeZoneField';
 import { Pill } from './primitives';
 import { rosterGames, useIdentityColors } from './roster';
-import { Btn, GameBadge, NumInput, Page, Segmented, TOUCH_BUTTON } from './ui';
+import { Btn, GameBadge, NumInput, Page, TOUCH_BUTTON } from './ui';
 
 export function SettingsPage() {
   const state = useApp((store) => store.state);
@@ -40,8 +40,6 @@ export function SettingsPage() {
   const openSheet = useUI((state) => state.openSheet);
   const launcher = servedByLauncher();
   const settings = state.settings;
-  const tonightPosition = useUI((s) => s.tonightPosition);
-  const setTonightPosition = useUI((s) => s.setTonightPosition);
   const focusedGameId = useUI((s) => s.focusedGameId);
   const detectedTz = detectLocalTz();
   const games = rosterGames(state.games);
@@ -121,29 +119,12 @@ export function SettingsPage() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-heading font-semibold tracking-tight text-fg">Settings</h1>
           <div className="flex flex-wrap gap-2">
-            <Btn onClick={() => document.dispatchEvent(new CustomEvent('memoria:open-import'))}>
-              Game connections and imports
-            </Btn>
+            <Btn onClick={() => document.dispatchEvent(new CustomEvent('memoria:open-accounts'))}>Game accounts</Btn>
             <Btn onClick={() => openSheet({ kind: 'guide' })}>User guide</Btn>
           </div>
         </div>
         <DeviceSync />
         <DeviceNotifications />
-        <div className="mb-5 hidden flex-wrap items-center justify-between gap-3 border-b border-line-hairline pb-4 xl:flex">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-meta text-muted">Tonight position</span>
-            <Segmented
-              ariaLabel="Tonight position"
-              value={tonightPosition}
-              onChange={(value) => setTonightPosition(value as TonightPosition)}
-              options={[
-                { value: 'left', label: 'Left' },
-                { value: 'middle', label: 'Middle' },
-                { value: 'right', label: 'Right' },
-              ]}
-            />
-          </div>
-        </div>
 
         <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <section className="settings-section min-w-0" aria-labelledby="settings-games-heading">

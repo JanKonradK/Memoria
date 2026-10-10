@@ -31,13 +31,13 @@ export function UserGuide({ open }: { open: boolean }) {
         title: 'Your daily run starts here',
         body: 'I’m Memoria. I keep your games, energy and deadlines in one place. Let’s take a quick look around.',
         target: '[data-tour="pages"]',
-        tab: 'home',
+        tab: 'today',
       },
       {
         title: 'Build your roster',
         body: 'Use Add to choose a game from its preset. This is also where you add events and reminders. Each account can have its own server and nickname.',
         target: '[data-tour="add"]',
-        tab: 'home',
+        tab: 'today',
       },
       {
         title: 'Find events for one game',

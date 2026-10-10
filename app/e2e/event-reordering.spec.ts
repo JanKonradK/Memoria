@@ -6,7 +6,7 @@ import { planSeedImport } from '../src/data/seed-events';
 test('event handles reorder with mouse, touch, and keyboard and persist across reload', async ({ page, context }) => {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const now = Date.now();
   const game = makeGame({ name: 'Ordering', updatedAt: now });
@@ -91,7 +91,7 @@ test('event handles reorder with mouse, touch, and keyboard and persist across r
     )
     .toBe(0);
   await page.reload();
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
@@ -132,7 +132,7 @@ test('seeded Genshin events reorder within Teyvat and keep world sections after 
       updatedAt: now,
     }));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page
     .locator('input[type="file"]')
@@ -183,7 +183,7 @@ test('seeded Genshin events reorder within Teyvat and keep world sections after 
     .click();
   await expect.poll(order).toEqual(expected);
   await page.reload();
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })

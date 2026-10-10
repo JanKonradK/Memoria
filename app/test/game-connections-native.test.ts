@@ -70,7 +70,7 @@ describe('native game account connection races', () => {
     native.fetch.mockReturnValueOnce(pending.promise);
     const onReview = vi.fn();
     const view = render(createElement(GameConnections, { gameId: 'g1', onReview }));
-    fireEvent.click(screen.getByRole('button', { name: 'Fetch readings' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Fetch now' }));
     view.unmount();
     await act(async () => {
       pending.resolve(reading());

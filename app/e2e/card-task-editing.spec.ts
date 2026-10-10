@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { openGame } from './support';
 
 async function frameTaskEditor(page: Page) {
   await page.getByLabel('Item title', { exact: true }).evaluate((node) => {
@@ -21,21 +22,24 @@ test('daily task rules can change on the card, including Tacet counts and new ta
   test.skip(!['desktop', 'android-s23', 'mobile-320'].includes(info.project.name), 'Card editing sizes');
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Wuthering Waves/ }).click();
   await page.getByRole('button', { name: 'Add WuWa', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  const card = page.locator('.game-card-surface').first();
-  await expect(card).toBeVisible();
-  expect(
-    await card.evaluate(
-      (node) => getComputedStyle(node).cornerShape === getComputedStyle(node, '::before').cornerShape,
-    ),
-  ).toBe(true);
   await page.screenshot({ path: info.outputPath('game-cards.png') });
-  await card.screenshot({ path: info.outputPath('card-edge.png') });
-  await page.getByRole('button', { name: 'Open Wuthering Waves controls', exact: true }).click();
+  // Only a wide window has the card beside Today's list.
+  if (page.viewportSize()!.width >= 900) {
+    const card = page.locator('.game-card-surface').first();
+    await expect(card).toBeVisible();
+    expect(
+      await card.evaluate(
+        (node) => getComputedStyle(node).cornerShape === getComputedStyle(node, '::before').cornerShape,
+      ),
+    ).toBe(true);
+    await card.screenshot({ path: info.outputPath('card-edge.png') });
+  }
+  await openGame(page, 'Wuthering Waves');
   await page.getByRole('button', { name: 'Tacet Fields ×5: 0 of 5 done, click to mark one more', exact: true }).click();
   await page.getByRole('button', { name: 'Edit Wuthering Waves', exact: true }).last().click();
   await page.getByRole('button', { name: 'Edit item Tacet Fields ×5', exact: true }).click();
@@ -94,8 +98,8 @@ test('daily task rules can change on the card, including Tacet counts and new ta
     )
     .toBe(5);
   await page.reload();
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
-  await page.getByRole('button', { name: 'Open Wuthering Waves controls', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
+  await openGame(page, 'Wuthering Waves');
   await expect(nests).toHaveAccessibleName('Tacet Discord Nests: 5 of 5 done, complete — click to reset');
   await expect(
     page.getByRole('button', { name: 'My Tacet fields: 1 of 6 done, click to mark one more', exact: true }),

@@ -3,7 +3,6 @@ import { emptyState, type Game, type GameEvent } from '@memoria/shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GameEvents } from '../src/components/GameEvents';
 import { EventStrip, GameControls } from '../src/components/GameCard';
-import { MobileRoster } from '../src/components/MobileRoster';
 import { GameEditor } from '../src/components/settings/GameEditor';
 import { TooltipProvider } from '../src/components/ui';
 import { useDerived } from '../src/selectors';
@@ -225,18 +224,5 @@ describe('taking a break', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Resume tracking', exact: true }));
     expect(useApp.getState().state.games[0]?.paused).toBe(false);
     expect(useApp.getState().state.events).toEqual(events);
-  });
-
-  it('offers a direct resume from the phone roster and opens the saved workspace', () => {
-    load([event('Personal window')], { paused: true });
-    function Roster() {
-      const { order } = useDerived(NOW);
-      return <MobileRoster entries={order} now={NOW} />;
-    }
-    render(<Roster />);
-    fireEvent.click(screen.getByRole('button', { name: 'Resume My game tracking' }));
-    expect(useApp.getState().state.games[0]?.paused).toBe(false);
-    expect(useUI.getState().focusedGameId).toBe(game.id);
-    expect(useApp.getState().state.events).toHaveLength(1);
   });
 });

@@ -48,7 +48,7 @@
   --color-accent-2: var(--color-fg-soft);
   --color-accent-fg: var(--color-fg);
   --color-gold: #d9b871; /* the app mark's own metal, and nothing else */
-  --color-rose: #ff6fa5; /* the timeline's now-marker */
+  --color-rose: #ff6fa5; /* the under-a-day countdown tone (see endTone in util.ts) */
 
   /* ── Tag hues ──────────────────────────────────────────────────────────────
      Fixed per kind so a chip is recognisable before it is read. Never
@@ -159,15 +159,11 @@
   --dur-base: 260ms;
   --dur-slow: 420ms;
   --stagger: 40ms;
-  --nexus-card-h: 8rem;
-  /* The stage fills what the app bar leaves, minus the page's own padding
-     (0.75rem top + 2rem bottom).
-     --app-bar-h is MEASURED and written by AppBar, never guessed. A guess was
+  /* --app-bar-h is MEASURED and written by AppBar, never guessed. A guess was
      wrong twice: the route control changed the measured height, and the bar
      wraps to two rows below the lg breakpoint, where no single constant holds.
      The fallback only has to be sane for the first paint before the measure lands. */
   --app-bar-h: 3rem;
-  --stage-h: calc(100dvh - var(--app-bar-h) - 2.75rem);
 
   /* A ring, not a glow: on charcoal the bright text step is the only thing that
      reads at 2px against both the panel and the graphite ground. */
@@ -342,8 +338,84 @@ body {
 }
 .app-game-scope {
   width: max-content;
+  /* The label truncates; the control never shrinks to its caret. */
+  min-width: min(10rem, 100%);
   max-width: 100%;
   flex: 0 1 auto;
+}
+
+/* Calendar's own controls: one capsule family that wraps instead of scrolling. */
+.calendar-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+.calendar-toolbar,
+.timeline-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.calendar-toolbar {
+  justify-content: flex-end;
+}
+.calendar-toolbar .ui-segmented {
+  display: inline-flex;
+  border: 1px solid var(--color-line-hairline);
+}
+.calendar-views button {
+  min-height: 32px;
+  padding-inline: 12px;
+  border: 1px solid transparent;
+  color: var(--color-muted);
+  font-size: var(--text-meta);
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+.calendar-views button:hover {
+  color: var(--color-fg-soft);
+}
+.calendar-views button[aria-current='page'] {
+  border-color: var(--color-line-strong);
+  background: var(--color-surface-2);
+  color: var(--color-fg);
+}
+/* A width, not a flex-basis: the row's own max-content must include it, or
+   the toolbar measures itself too narrow and wraps with room to spare. */
+.calendar-toolbar .app-game-scope {
+  width: 15rem;
+}
+@media (max-width: 899px) {
+  .calendar-toolbar .app-game-scope {
+    width: 11rem;
+  }
+}
+.calendar-toolbar .app-game-scope button,
+.calendar-toolbar .shell-control {
+  min-height: 42px;
+  border: 1px solid var(--color-line-hairline);
+  background: var(--color-fill-2);
+  box-shadow: none;
+}
+.calendar-toolbar .shell-control {
+  padding-inline: 14px;
+  font-weight: 600;
+}
+.calendar-toolbar .shell-control:hover {
+  background: var(--color-fill-3);
+}
+.calendar-toolbar .shell-control[data-active],
+.calendar-toolbar .shell-control[aria-pressed='true'] {
+  border-color: var(--color-line-strong);
+  background: var(--color-surface-2);
+  color: var(--color-fg);
 }
 .timeline-page {
   padding-top: 4px;
@@ -365,10 +437,7 @@ body {
   z-index: 40;
   background: var(--color-surface-0);
 }
-.app-route-actions:not(:has(.app-game-scope, #app-bar-actions > *)) {
-  display: none;
-}
-.app-bar:not(:has(.app-game-scope, #app-bar-actions > *)) {
+.app-bar:not(:has(.app-game-scope)) {
   grid-template-areas: 'brand utilities' 'nav nav';
 }
 
@@ -411,13 +480,13 @@ body {
     grid-template-columns: auto auto minmax(0, 1fr);
     grid-template-areas: 'brand nav utilities' 'actions actions actions';
   }
-  .app-bar:not(:has(.app-game-scope, #app-bar-actions > *)) {
+  .app-bar:not(:has(.app-game-scope)) {
     grid-template-areas: 'brand nav utilities';
   }
 }
 @media (min-width: 1280px) {
   .app-bar,
-  .app-bar:not(:has(.app-game-scope, #app-bar-actions > *)) {
+  .app-bar:not(:has(.app-game-scope)) {
     grid-template-columns: auto auto minmax(0, 1fr) auto;
     grid-template-areas: 'brand nav actions utilities';
   }
@@ -456,7 +525,7 @@ body {
     overflow-anchor: none;
   }
   .app-bar,
-  .app-bar:not(:has(.app-game-scope, #app-bar-actions > *)) {
+  .app-bar:not(:has(.app-game-scope)) {
     grid-template-areas: 'brand utilities' 'actions actions';
     padding-top: max(0.5rem, env(safe-area-inset-top));
     background: var(--color-surface-0);
@@ -497,12 +566,24 @@ body {
     flex-wrap: wrap;
     overflow: visible;
   }
-  .app-game-scope,
-  #app-bar-actions {
+  .app-game-scope {
     width: 100%;
   }
-  #app-bar-actions:empty {
-    display: none;
+  .calendar-toolbar {
+    justify-content: flex-start;
+    width: 100%;
+  }
+  .calendar-toolbar .app-game-scope {
+    width: auto;
+    min-width: 8rem;
+    flex: 1 1 8rem;
+  }
+  .calendar-toolbar .ui-segmented {
+    padding: 2px;
+  }
+  .calendar-toolbar .app-game-scope button,
+  .calendar-toolbar .shell-control {
+    min-height: 50px;
   }
   .shell-control,
   .btn-compact,
@@ -561,9 +642,6 @@ body {
   .app-game-scope {
     width: auto;
     flex: 1;
-  }
-  #app-bar-actions {
-    width: auto;
   }
   .app-page {
     padding-top: 0.75rem;
@@ -713,89 +791,6 @@ input[type='number'] {
   box-shadow: inset 0 1px 0 var(--game-glint);
 }
 
-.mobile-game-roster {
-  display: grid;
-  gap: 8px;
-}
-.mobile-game-row {
-  min-width: 0;
-  padding: 10px 14px;
-  border-radius: var(--radius-ui-xl);
-  touch-action: pan-y;
-  transition:
-    transform var(--dur-base) var(--ease-out),
-    border-color var(--dur-base) var(--ease-out),
-    box-shadow var(--dur-base) var(--ease-out);
-}
-.mobile-game-row:active {
-  transform: scale(0.985);
-  transition-duration: var(--dur-fast);
-}
-.mobile-game-row[data-paused='true'] {
-  --game-tint: 3%;
-}
-.mobile-game-title {
-  color: var(--game-ink);
-  font-size: var(--text-body);
-  line-height: 1.25;
-  letter-spacing: -0.015em;
-}
-.mobile-game-meta {
-  margin-top: 2px;
-  line-height: 1.25;
-}
-.mobile-game-region {
-  color: var(--color-fg-soft);
-  border: 1px solid color-mix(in srgb, var(--game-ink) 16%, transparent);
-  border-radius: var(--radius-ui-full);
-  padding: 0 6px;
-  font-size: var(--text-caption);
-  line-height: 1.25;
-}
-.mobile-game-energy {
-  margin-top: 4px;
-}
-.mobile-game-energy .game-energy-track {
-  margin-top: 4px;
-}
-.mobile-game-value {
-  color: var(--color-fg);
-  font-size: 1.375rem;
-  font-weight: 650;
-  letter-spacing: -0.035em;
-  line-height: 1;
-  white-space: nowrap;
-}
-.mobile-game-cap {
-  font-size: var(--text-caption);
-  font-weight: 450;
-  letter-spacing: 0;
-}
-.mobile-game-next {
-  margin-top: 4px;
-  line-height: 1.35;
-}
-.mobile-game-deadline {
-  font-weight: 600;
-}
-.mobile-game-cta {
-  display: inline-flex;
-  align-items: center;
-  color: var(--game-ink);
-  font-size: var(--text-caption);
-  font-weight: 600;
-}
-.mobile-game-cta > svg {
-  transition: transform var(--dur-base) var(--ease-out);
-}
-.mobile-game-row:active .mobile-game-cta > svg {
-  transform: translateX(2px);
-}
-@media (max-width: 359px) {
-  .mobile-game-row {
-    padding-block: 6px;
-  }
-}
 /* A selected game is a page, with one identity header and ordinary document scroll. */
 .focus-workspace {
   position: relative;
@@ -894,13 +889,6 @@ input[type='number'] {
   [role='option'],
   [role='tab']
 ):focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
-}
-
-/* An expanded card takes focus programmatically (the control that opened it is
-   gone), so it needs the same ring as a real control. */
-.nexus-node:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
@@ -1102,86 +1090,12 @@ input[type='number'] {
   animation: loaderSpin 1.6s linear infinite;
 }
 
-/* Two game columns and Tonight at the right, with equal widths in every state.
-   The scroll area spans two columns; its own grid repeats the same gap. */
-.nexus-stage {
-  --stage-h: calc(100dvh - var(--app-bar-h) - 2.75rem);
-  --nexus-gap: clamp(0.75rem, 1.4vw, 1.5rem);
-  height: var(--stage-h);
-  min-height: 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--nexus-gap);
-}
 .focus-bay-grid {
   grid-template-columns: minmax(0, 1fr);
 }
 .focus-bay-grid[data-cols='2'] {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
-.nexus-games-scroll {
-  grid-column: 1 / span 3;
-  grid-row: 1;
-  overflow-x: clip;
-}
-.nexus-stage .nexus-hub {
-  position: sticky;
-  top: 0;
-  height: var(--stage-h);
-  z-index: 30;
-  grid-column: 3;
-  grid-row: 1 / -1;
-}
-.nexus-stage[data-tonight='left'] .nexus-hub {
-  grid-column: 1;
-}
-.nexus-stage[data-tonight='middle'] .nexus-hub {
-  grid-column: 2;
-}
-.nexus-games {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: repeat(var(--nexus-rows), var(--nexus-card-h));
-  gap: var(--nexus-gap);
-  height: max(var(--stage-h), calc(var(--nexus-rows) * (var(--nexus-card-h) + var(--nexus-gap)) - var(--nexus-gap)));
-  position: relative;
-  align-items: start;
-}
-.nexus-node {
-  contain: layout;
-  height: var(--nexus-card-h);
-  min-height: 0;
-}
-.nexus-node[data-expanded='true'] {
-  height: var(--stage-h);
-  position: sticky;
-  top: 0;
-  z-index: 20;
-}
-/* One spring drives crop and crossfade. Text always stays at its real size. */
-.nexus-node[data-collapsing='true'] {
-  z-index: 15;
-  pointer-events: none;
-}
-.nexus-summary {
-  position: absolute;
-  inset: 0 0 auto;
-  height: var(--nexus-card-h);
-}
-.nexus-node-body {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.nexus-node[data-expanded='true'] .nexus-node-body {
-  pointer-events: auto;
-}
-.nexus-node-body > * {
-  overflow: hidden;
-}
-.nexus-node[data-settled='true'] .nexus-node-body > * {
-  overflow-y: auto;
-}
-
 /* The route pill. Transform and width only — both are cheap, and the pill sits
    under the labels rather than reflowing them. */
 .nav-slider {
@@ -1213,8 +1127,6 @@ input[type='number'] {
     animation: none !important;
     opacity: 0.45;
   }
-  .nexus-stage,
-  .nexus-node-body,
   .nav-slider {
     transition-duration: 0.001ms !important;
   }
@@ -1345,13 +1257,91 @@ input[type='number'] {
   }
 }
 
-@media (min-width: 768px) and (max-width: 1279px) {
-  .mobile-game-roster {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+/* Readings arriving from outside a card: a drop target for the whole window,
+   one line saying what happened, and a short list when two accounts could own
+   the same screenshot. */
+.reading-drop {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--color-surface-0) 72%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.reading-drop p {
+  padding: 20px 28px;
+  border: 1px dashed var(--color-line-strong);
+  border-radius: var(--radius-ui-card);
+  background: var(--color-surface-1);
+  color: var(--color-fg);
+  font-size: var(--text-lead);
+  font-weight: 600;
+  box-shadow: var(--shadow-float);
+}
+.reading-notice {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 8px 8px 16px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-ui-xl);
+  background: var(--color-popover);
+  color: var(--color-fg-soft);
+  font-size: var(--text-meta);
+  font-weight: 500;
+  box-shadow: var(--shadow-float);
+}
+p.reading-notice {
+  min-height: 52px;
+}
+.reading-notice[data-tone='error'] {
+  border-color: color-mix(in srgb, var(--color-danger) 35%, var(--color-line-strong));
+  color: var(--color-danger-fg);
+}
+.reading-notice-action {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 12px;
+  border-radius: var(--radius-ui-full);
+  color: var(--color-fg);
+  font-weight: 600;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.reading-notice-action:hover {
+  background: var(--color-fill-2);
+}
+.reading-choice {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-ui-lg);
+  text-align: left;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.reading-choice:hover {
+  background: var(--color-fill-2);
+}
+@media (min-width: 640px) {
+  .reading-notice-action {
+    min-width: 36px;
+    min-height: 36px;
   }
 }
-@media (min-width: 1024px) and (max-width: 1279px) {
-  .mobile-game-roster {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+@media (prefers-reduced-transparency: reduce) {
+  .reading-drop {
+    background: var(--color-surface-0);
+    backdrop-filter: none;
   }
 }

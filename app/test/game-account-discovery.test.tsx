@@ -32,12 +32,12 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('native account discovery', () => {
-  it('fills the only linked account but waits for Connect and review', async () => {
+  it('fills the only linked account but waits for Connect', async () => {
     native.list.mockResolvedValue({ accounts: [account] });
     const onReview = vi.fn();
     render(<GameConnections gameId="g1" onReview={onReview} />);
     fireEvent.click(screen.getByRole('button', { name: 'Find my accounts' }));
-    await screen.findByText('Account found. Select Connect and review to check its readings.');
+    await screen.findByText('Account found. Select Connect.');
     expect(screen.getByRole('textbox', { name: 'In-game UID' })).toHaveValue(account.uid);
     expect(onReview).not.toHaveBeenCalled();
     expect(native.list).toHaveBeenCalledWith({ provider: 'genshin' });
@@ -73,7 +73,7 @@ describe('native account discovery', () => {
     native.list.mockResolvedValue({ accounts: [account] });
     render(<GameConnections gameId="g1" onReview={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: 'Sign in with HoYoLAB' }));
-    await screen.findByText('Account found. Select Connect and review to check its readings.');
+    await screen.findByText('Account found. Select Connect.');
     expect(native.list).toHaveBeenCalledOnce();
   });
 

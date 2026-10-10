@@ -40,6 +40,13 @@ contextBridge.exposeInMainWorld(
         return () => ipcRenderer.removeListener('memoria:play-open', handler);
       },
     }),
+    // A game is named by id only. Paths are chosen in a native dialog and stay in the main process.
+    launch: Object.freeze({
+      list: () => ipcRenderer.invoke('memoria:launch-list'),
+      choose: (gameId) => ipcRenderer.invoke('memoria:launch-choose', gameId),
+      clear: (gameId) => ipcRenderer.invoke('memoria:launch-clear', gameId),
+      start: (gameId) => ipcRenderer.invoke('memoria:launch-start', gameId),
+    }),
     hoyo: Object.freeze({
       connect: () => ipcRenderer.invoke('memoria:hoyo-connect'),
       disconnect: () => ipcRenderer.invoke('memoria:hoyo-disconnect'),

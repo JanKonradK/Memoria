@@ -50,7 +50,6 @@ function show(view: 'lanes' | 'list', options: { focus?: string; search?: string
   });
   return render(
     <TooltipProvider>
-      <div id="app-bar-actions" />
       <TimelinePage now={NOW} />
     </TooltipProvider>,
   );

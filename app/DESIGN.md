@@ -8,7 +8,7 @@
 
 **Story:** Find the game that needs attention, update energy, complete tasks, then check upcoming events.
 
-**First viewport:** Today leads with approaching caps and unfinished routines. Desktop places the game list on the left and selected game details on the right. Phone places priorities above three primary tabs. Games retains the complete game controls and Tonight summary.
+**First viewport:** Today leads with approaching caps and unfinished routines. Desktop places one ranked list on the left and the selected game's real, editable card on the right. Phone shows the list above two primary tabs. The Tonight summary closes the list at every width.
 
 **Form:** DM Sans for language, IBM Plex Mono for compact measurements, and each game's saved title font. Standard cards and sheets use 32px corners with progressive continuous corner support. Compact overview cards use 24px corners. Controls use nested 10px, 16px and 24px curves; navigation and segmented controls use capsules. Glass light is static; motion follows presses, progress, and navigation.
 
@@ -38,29 +38,45 @@ All font subsets remain available. Never remove non-Latin support to reduce a bu
 
 ## Layout and interaction
 
-Today, Games, and Calendar are the three primary routes. Settings is a header utility.
-Calendar contains Events and Livestreams controls. The Calendar tab stays selected for both views.
-Today opens by default. Existing game controls remain on the internal `home` route.
+Today and Calendar are the two primary routes. Settings is a header utility. There is no separate Games overview: Today is the one list of games, and each game has its own page.
+Calendar contains Events and Livestreams. The Calendar tab stays selected for both views.
+Calendar's controls sit in one toolbar at the top of its page, not in the app bar: the Events and Livestreams switch, the game filter, the view switch, Find, and Finished.
+They share one capsule style and one height. In a narrow window the toolbar wraps; no control shrinks below its label and the row never scrolls sideways.
+The app bar holds the brand, the two routes, and the utilities. Settings keeps the game filter there.
+Today opens by default. A game's page lives on the internal `home` route, which holds nothing else; without a game it returns to Today. The Today tab stays selected on a game's page and selecting it goes back.
 
 Today uses the existing urgency and energy calculations. The configured sleep window sets the attention interval.
-Paused games remain in the desktop game list but do not enter priority groups.
-Select a priority on desktop to inspect its next actions. Select Open game to use complete controls.
-On a phone, a priority opens the game directly. Browser Back returns to its original page.
+Each row is two lines: the game and its countdown, then an energy meter, the value, and what the countdown is for. A ring shows daily progress.
+What the countdown is for gives way last. A narrower list drops the reading's age, then the account name; a phone-width list moves that label to a line of its own, wrapped to two lines at most.
+Meters share one track length so fill levels compare down the list. The meter keeps the game's color; the countdown carries urgency in amber or red, always with its number.
+The list is one column at every width. The pair is capped and centered on very wide windows.
+Paused games sit in a compact Paused group below the priority groups.
+Select a row on desktop to put that game's card beside the list. The card is the complete control surface. Open full page above it gives the same controls the whole window.
+On a phone, a row opens the game's page. Browser Back returns to Today.
+If a window narrows while a card panel is open, the game's page opens so the panel stays in view.
+Tonight follows the groups in the list column: daily progress, the sleep check, and what closes, has arrived, or arrives across every game. It is as tall as its tickets and scrolls with the page.
+Notices about a home timezone correction or new preset routines appear above the list.
+Today carries no explainer sentences. A heading states its window once, as in "next 9h".
 
-Each reading shows its source and observation age. Calculated energy explicitly says Estimated.
+Readings live in the game card. Its status line names the source and observation age of the last reading, and marks an automatically checked account.
+A Today row shows the same source as a small icon and age; its accessible description says Estimated in full.
 Device sync status does not represent a new game reading.
-Import readings is available on Today. Settings exposes Game connections and imports.
-The import sheet protects drafts, requires review of detected values, and exposes import history with undo.
+One Readings menu on the card holds every way in: fetch from a connected account, read a screenshot, enter screenshot text, connect an account, and recent imports with undo.
+The menu opens a panel inside the card. There is no import sheet.
+A screenshot dropped, pasted, shared, or captured in Play mode saves without a form when each value names a tracked resource beside its own maximum, for exactly one game. A notice reports it and offers Undo.
+Memoria asks in the card when a value has no maximum, a meter has no label, or nothing was recognized. A short dialog asks which game when two accounts could own the screenshot.
+Account readings save directly. A reading still being checked is protected from replacement and from app exit.
+Settings exposes Game accounts, which opens the same card panel.
+
+The Windows app shows Launch on each card. It starts the program or shortcut the owner picked in a native file dialog. The choice stays on that PC. Other platforms show no such control, and no control that only opens a card may be labelled as opening a game.
 Calendar shows the public feed status beside its date range. A failed check keeps saved events and exposes Retry update.
 Android Settings exposes Phone reminders and its permission control. No permission request occurs before the user enables reminders.
 
-All features are available on Android, including the Samsung S23 Ultra. The phone overview opens the same complete game controls as desktop. A single back arrow returns to the overview. Tonight & reminders opens the full summary. Cards select a game on Dashboard; the game selector filters Timeline, Livestreams, and Settings.
+All features are available on Android, including the Samsung S23 Ultra. A Today row opens the same complete game controls as desktop. A single back arrow returns to Today. The game selector filters Timeline, Livestreams, and Settings.
 
-Phone cards lead with the game name, then server, account and daily progress on one line. A compact energy reading and bar lead to the next deadline. The whole card opens its workspace; a small arrow marks that action. Daily progress shows the completed and total counts. Its ring earns a check only when all dailies are complete. The overview has no visible page heading. Games and Tonight remain available through the view control.
+At default text size, three complete rows fit on a 320×720 phone, where long names wrap to two lines, and five fit on a 412×915 phone above the navigation dock. Supporting labels can truncate; accessible descriptions retain their full text. Rows grow with larger text, and at twice the default size each row stacks its name, countdown and reading. Avoid repeating the game heading above the open card.
 
-Use 8px gaps and compact padding in the overview. At default text size, four complete games fit on a 320×720 phone and five fit on a 412×915 phone above the navigation dock. Supporting labels can truncate; accessible descriptions retain their full text. Cards can grow with larger text. Smaller desktop windows use the same compact cards in two or three columns. Avoid repeating the game heading above the open card.
-
-Desktop retains the three-column stage with equal widths and the configurable Tonight position. Opening a game uses the same integrated page as mobile; Back restores the overview position. Card order stays fixed until Refresh. A clock tick must never move the control being edited.
+Opening a game's full page on desktop uses the same integrated page as mobile; Back restores the Today scroll position. A clock tick must never move the control being edited.
 
 Alt+Left and browser Back follow the game back arrow. Forward reopens the game. Return restores the overview scroll and card focus. An open editor handles Back first and retains its unsaved-change guard. A typed energy value commits before return; Escape still cancels that field's draft.
 
@@ -88,7 +104,7 @@ Urgent game cards use a small status dot with a 3.2-second breath. Borders stay 
 
 Respect reduced motion. Lazy-load routes and motion features. Reuse the shared derived-data cache; do not duplicate domain calculations in components.
 
-At every width, a selected roster card opens a full game page with a plain identity heading and one Edit control. Do not nest that page inside another glass card. One back arrow restores the roster position and keyboard focus. Use a short transform/opacity transition on page content; full-card View Transition snapshots caused repeated layout and paint work on slower hardware. Keep the fixed header and navigation still. Reduced motion changes the view immediately. Rapid reversal must keep the final controls usable. Task completion stays close to its original control: a small check response and one fading outline, without particles over nearby rows.
+At every width, a game opens a full page with a plain identity heading and one Edit control. Do not nest that page inside another glass card. One back arrow restores the Today position and keyboard focus. Use a short transform/opacity transition on page content; full-card View Transition snapshots caused repeated layout and paint work on slower hardware. Keep the fixed header and navigation still. Reduced motion changes the view immediately. Rapid reversal must keep the final controls usable. Task completion stays close to its original control: a small check response and one fading outline, without particles over nearby rows.
 
 ## Validation
 
@@ -110,7 +126,7 @@ Official calendar entries show confirmed date ranges in the publisher's calendar
 
 Navigation floats in a glass capsule with one persistent moving selection. On phones the dock clears the safe area and content reserves its full height. All three primary routes retain text labels and touch targets. Blue marks the selected route. Content and urgency retain their own colours. Settings and broadcasts use the same large curved surfaces. Inputs and nested controls use smaller curves.
 
-Timeline keeps the existing list and duration views, filters, completion actions and event editing. Its heading explains the visible range; rounded groups separate status and date information. Data bars retain accurate time geometry. Glass is concentrated in navigation and floating tools, with quiet legible content surfaces beneath it.
+Timeline keeps the existing list and duration views, filters, completion actions and event editing. Its heading explains the visible range; rounded groups separate status and date information. Data bars retain accurate time geometry. A neutral line marks the present, under a Today capsule in the ruler; red and amber stay reserved for deadlines. A ruler date that would touch the capsule is hidden. Glass is concentrated in navigation and floating tools, with quiet legible content surfaces beneath it.
 
 Paused accounts keep a compact identity row with a Resume action. Their events are absent from both views, counts, search, and finished-event results until tracking resumes. Resume opens the lane and moves keyboard focus to the restored account. Saved events and other accounts are unchanged. Event editing groups details, schedule, and tracking rules; each tracking toggle explains its effect.
 

@@ -1,10 +1,9 @@
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { Select } from './ui';
-import { serverRegionLabel } from './NexusLayout';
-import { navigateWorkspace } from '../workspace-navigation';
+import { serverRegionLabel } from '../server-region';
 
-/** One selection follows the player across Dashboard, Timeline and Settings. */
+/** One selection follows the player across Calendar, Livestreams and Settings. */
 export function GameScope() {
   const games = useApp((s) => s.state.games);
   const focused = useUI((s) => s.focusedGameId);
@@ -18,11 +17,7 @@ export function GameScope() {
         aria-label="Focus game"
         className="!min-h-11 !w-full min-w-0 !py-1 md:!min-h-9"
         value={value}
-        onChange={(event) => {
-          const next = event.target.value || null;
-          if (useUI.getState().tab === 'home') navigateWorkspace(next, focused, () => setFocused(next));
-          else setFocused(next);
-        }}
+        onChange={(event) => setFocused(event.target.value || null)}
       >
         <option value="">All games</option>
         {active.map((game) => (

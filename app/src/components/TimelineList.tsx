@@ -8,7 +8,7 @@ import { useGround } from '../theme';
 import { endTone, fmtDur } from '../util';
 import { useIdentityColors } from './roster';
 import { Btn, serverLabelClass } from './ui';
-import { serverRegionLabel } from './NexusLayout';
+import { serverRegionLabel } from '../server-region';
 
 /** Events grouped by status, with the nearest deadline first. */
 export type TimelineListStatus = 'active' | 'upcoming' | 'finished';

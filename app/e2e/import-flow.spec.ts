@@ -27,29 +27,28 @@ async function stored(page: Page): Promise<AppState> {
   );
 }
 
-async function openImport(page: Page) {
+/** The game's card: beside Today's list on a wide window, its own page on a phone. */
+async function openCard(page: Page, name: string) {
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today' }).click();
-  await page.getByRole('button', { name: 'Import readings', exact: true }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Import game readings', exact: true });
-  await expect(dialog).toBeVisible();
-  return dialog;
+  const desktop = page.viewportSize()!.width >= 900;
+  await page.getByRole('button', { name: `${desktop ? 'Review' : 'Open'} ${name}`, exact: true }).click();
 }
 
-async function review(page: Page, value: number, at = NOW) {
-  const dialog = page.getByRole('dialog', { name: 'Import game readings', exact: true });
-  await dialog.getByRole('button', { name: 'Screenshot', exact: true }).click();
-  await dialog.getByLabel('Text from the screenshot', { exact: true }).fill(`Original Resin ${value} / 200`);
-  const local = await page.evaluate((time) => {
-    const date = new Date(time);
-    return new Date(time - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
-  }, at);
-  await dialog.getByLabel('Screenshot capture time', { exact: false }).fill(local);
-  await dialog.getByRole('button', { name: 'Review readings', exact: true }).click();
-  return dialog;
+/** Type a reading into the card. The browser version cannot read images, so this is its path. */
+async function enterText(page: Page, name: string, text: string) {
+  await openCard(page, name);
+  await page.getByRole('button', { name: 'Readings', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Enter screenshot text', exact: true }).click();
+  const review = page.getByRole('region', { name: `Check this reading for ${name}`, exact: true });
+  await review.getByRole('textbox', { name: 'Screenshot text', exact: true }).fill(text);
+  return review;
 }
+
+const latest = async (page: Page, resourceId: string) =>
+  latestSnapshots((await stored(page)).snapshots).get(resourceId);
 
 test.beforeEach(async ({ page }, info) => {
-  test.skip(!['android-s23', 'mobile-320', 'desktop'].includes(info.project.name), 'Import phone and desktop flows');
+  test.skip(!['android-s23', 'mobile-320', 'desktop'].includes(info.project.name), 'Readings on phone and desktop');
   await page.clock.setFixedTime(new Date(NOW));
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
@@ -71,98 +70,93 @@ test.beforeEach(async ({ page }, info) => {
     buffer: Buffer.from(JSON.stringify(state)),
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await openImport(page);
 });
 
-test('reviewed screenshots record their source and undo restores the prior reading', async ({ page }, info) => {
-  const dialog = await review(page, 123);
-  await expect(
-    dialog.getByRole('region', { name: 'Review imported values' }).getByLabel('Original Resin', { exact: true }),
-  ).toHaveValue('123');
+test('a reading saved from the card records its source and undo restores the prior one', async ({ page }, info) => {
+  const review = await enterText(page, 'Import primary', 'Original Resin 123 / 200');
+  await expect(review.getByRole('spinbutton', { name: 'Original Resin / 200', exact: true })).toHaveValue('123');
   expect(
     (await new AxeBuilder({ page }).analyze()).violations.filter((issue) =>
       ['serious', 'critical'].includes(issue.impact ?? ''),
     ),
   ).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.screenshot({ path: info.outputPath('import-review.png') });
-  await dialog.getByRole('button', { name: 'Apply reviewed readings', exact: true }).click();
-  await expect(dialog.getByRole('region', { name: 'Import history' })).toContainText('Screenshot · 1 saved');
-  await expect
-    .poll(async () => latestSnapshots((await stored(page)).snapshots).get('resin-primary')?.provenance?.kind)
-    .toBe('screenshot');
-  await dialog.getByRole('button', { name: 'Undo import', exact: true }).click();
-  await expect(dialog.getByRole('status')).toContainText('1 readings restored.');
-  await expect(dialog.getByRole('button', { name: 'Undo import', exact: true })).toBeDisabled();
-  await expect.poll(async () => latestSnapshots((await stored(page)).snapshots).get('resin-primary')?.value).toBe(21);
+  await page.screenshot({ path: info.outputPath('reading-review.png') });
+  await review.getByRole('button', { name: 'Save 1 reading', exact: true }).click();
+  await expect(review).toHaveCount(0);
+  const notice = page.getByRole('status').filter({ hasText: 'Saved 1 reading to Import primary.' });
+  await expect(notice).toBeVisible();
+  await expect.poll(async () => (await latest(page, 'resin-primary'))?.provenance?.kind).toBe('screenshot');
+  await expect(page.locator('[data-reading-status]')).toContainText('Screenshot · just now');
+  await page.screenshot({ path: info.outputPath('reading-saved.png') });
+  await notice.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Restored 1 reading.' })).toBeVisible();
+  await expect.poll(async () => (await latest(page, 'resin-primary'))?.value).toBe(21);
+  await page.getByRole('button', { name: 'Readings', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Recent imports', exact: true }).click();
+  const history = page.getByRole('region', { name: 'Recent imports for Import primary', exact: true });
+  await expect(history).toContainText('Screenshot · 1 saved');
+  await expect(history.getByRole('button', { name: /^Undo import/ })).toBeDisabled();
 });
 
-test('an older screenshot cannot replace a newer reading', async ({ page }) => {
-  const dialog = await review(page, 90, NOW - 1_200_000);
-  await expect(dialog.getByText('A newer reading or resource edit is already saved.', { exact: true })).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Apply reviewed readings', exact: true })).toBeDisabled();
-  expect(latestSnapshots((await stored(page)).snapshots).get('resin-primary')?.value).toBe(20);
+test('an older reading cannot replace a newer one', async ({ page }) => {
+  const review = await enterText(page, 'Import primary', 'Original Resin 90 / 200');
+  const local = await page.evaluate((time) => {
+    const date = new Date(time);
+    return new Date(time - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+  }, NOW - 1_200_000);
+  await review.getByLabel('Taken', { exact: true }).fill(local);
+  await expect(review.getByText('A newer reading or resource edit is already saved.', { exact: true })).toBeVisible();
+  await expect(review.getByRole('button', { name: /^Save/ })).toBeDisabled();
+  expect((await latest(page, 'resin-primary'))?.value).toBe(20);
 });
 
 test('an unnamed ratio requires an explicit resource and preserves capture seconds', async ({ page }, info) => {
   await page.clock.setFixedTime(new Date(NOW + 30_456));
-  const dialog = page.getByRole('dialog', { name: 'Import game readings', exact: true });
-  await dialog.getByRole('textbox', { name: 'Text from the screenshot', exact: true }).fill('88 / 200');
-  await dialog.getByRole('button', { name: 'Taken just now', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Review readings', exact: true }).click();
-  await expect(dialog.getByRole('button', { name: 'Apply reviewed readings', exact: true })).toHaveCount(0);
-  await dialog.getByText('Assign values without a label', { exact: true }).click();
-  await dialog.getByRole('combobox', { name: '88 / 200', exact: true }).click();
+  const review = await enterText(page, 'Import primary', '88 / 200');
+  await review.getByRole('button', { name: 'Just now', exact: true }).click();
+  await expect(review.getByRole('button', { name: /^Save/ })).toBeDisabled();
+  await review.getByRole('combobox', { name: '88 / 200', exact: true }).click();
   await page.getByRole('option', { name: 'Original Resin', exact: true }).click();
   await expect(page.getByRole('listbox')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.screenshot({ path: info.outputPath('import-assignment.png') });
-  await dialog.getByRole('button', { name: 'Review readings', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Apply reviewed readings', exact: true }).click();
-  await expect
-    .poll(async () => latestSnapshots((await stored(page)).snapshots).get('resin-primary')?.takenAt)
-    .toBe(NOW + 30_456);
-  expect(latestSnapshots((await stored(page)).snapshots).get('resin-primary')?.value).toBe(88);
+  await page.screenshot({ path: info.outputPath('reading-assignment.png') });
+  await review.getByRole('button', { name: 'Save 1 reading', exact: true }).click();
+  await expect.poll(async () => (await latest(page, 'resin-primary'))?.takenAt).toBe(NOW + 30_456);
+  expect((await latest(page, 'resin-primary'))?.value).toBe(88);
 });
 
-test('the selected game owns the imported reading', async ({ page }) => {
-  const dialog = page.getByRole('dialog', { name: 'Import game readings', exact: true });
-  await dialog.getByRole('combobox', { name: 'Game account', exact: true }).click();
-  await page.getByRole('option', { name: 'Import secondary', exact: true }).click();
-  await review(page, 88);
-  await dialog.getByRole('button', { name: 'Apply reviewed readings', exact: true }).click();
-  await expect.poll(async () => latestSnapshots((await stored(page)).snapshots).get('resin-secondary')?.value).toBe(88);
-  expect(latestSnapshots((await stored(page)).snapshots).get('resin-primary')?.value).toBe(20);
+test('the card a reading is entered in owns it', async ({ page }) => {
+  const review = await enterText(page, 'Import secondary', 'Original Resin 88 / 200');
+  await review.getByRole('button', { name: 'Save 1 reading', exact: true }).click();
+  await expect.poll(async () => (await latest(page, 'resin-secondary'))?.value).toBe(88);
+  expect((await latest(page, 'resin-primary'))?.value).toBe(20);
 });
 
 test('undo preserves a later manual correction', async ({ page }) => {
-  const dialog = await review(page, 123);
-  await dialog.getByRole('button', { name: 'Apply reviewed readings', exact: true }).click();
-  await expect(dialog.getByRole('region', { name: 'Import history' })).toContainText('Screenshot · 1 saved');
-  await page.keyboard.press('Escape');
-  await expect(dialog).toHaveCount(0);
+  const review = await enterText(page, 'Import primary', 'Original Resin 123 / 200');
+  await review.getByRole('button', { name: 'Save 1 reading', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Saved 1 reading' })).toBeVisible();
   await page.clock.setFixedTime(new Date(NOW + 120_000));
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games' }).click();
-  await page.getByRole('button', { name: 'Open Import primary controls', exact: true }).click();
   const energy = page.getByLabel('Original Resin current value', { exact: true });
   await energy.fill('66');
   await energy.press('Enter');
-  await openImport(page);
-  await dialog.getByRole('button', { name: 'History', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Undo import', exact: true }).click();
-  await expect(dialog.getByRole('status')).toContainText('0 readings restored. 1 kept unchanged.');
-  await expect.poll(async () => latestSnapshots((await stored(page)).snapshots).get('resin-primary')?.value).toBe(66);
+  await page.getByRole('button', { name: 'Readings', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Recent imports', exact: true }).click();
+  await page.getByRole('button', { name: /^Undo import/ }).click();
+  await expect(page.getByRole('alert')).toContainText('This resource changed after the import.');
+  await expect.poll(async () => (await latest(page, 'resin-primary'))?.value).toBe(66);
 });
 
-test('dismissal preserves a rejected screenshot draft', async ({ page }) => {
-  const dialog = page.getByRole('dialog', { name: 'Import game readings', exact: true });
-  await dialog.getByLabel('Text from the screenshot', { exact: true }).fill('Original Resin 74 / 200');
-  page.once('dialog', (confirmation) => confirmation.dismiss());
-  await page.keyboard.press('Escape');
-  await expect(dialog.getByRole('textbox', { name: 'Text from the screenshot', exact: true })).toHaveValue(
-    'Original Resin 74 / 200',
-  );
-  page.once('dialog', (confirmation) => confirmation.accept());
-  await page.keyboard.press('Escape');
-  await expect(dialog).toHaveCount(0);
+test('a reading being checked survives leaving the card and goes only when discarded', async ({ page }) => {
+  const review = await enterText(page, 'Import primary', 'Original Resin 74');
+  const primary = page.getByRole('navigation', { name: 'Primary' });
+  await primary.getByRole('button', { name: 'Calendar' }).click();
+  await expect(review).toHaveCount(0);
+  await openCard(page, 'Import primary');
+  // The typed text is kept with the draft; its detected value is what the card shows first.
+  await expect(review.getByRole('spinbutton', { name: 'Original Resin / 200', exact: true })).toHaveValue('74');
+  await review.getByRole('button', { name: 'Discard', exact: true }).click();
+  await expect(review).toHaveCount(0);
+  expect((await latest(page, 'resin-primary'))?.value).toBe(20);
 });

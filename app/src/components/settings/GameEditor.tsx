@@ -10,7 +10,7 @@ import { fileToImageDataUrl, intOr, localResetLabel } from '../../util';
 import { ResourceEditor } from '../game-detail/ResourceEditor';
 import { GameEvents } from '../GameEvents';
 import { useGameDraft } from '../game-detail/useGameDraft';
-import { serverRegionLabel } from '../NexusLayout';
+import { serverRegionLabel } from '../../server-region';
 import { TrackingItem } from './TrackingItem';
 import { TASK_CADENCES as CADENCES, TaskFields, taskSettingsSummary } from './TaskFields';
 import { createReminderDraft, GameReminders, reminderDraftChanged } from './GameReminders';

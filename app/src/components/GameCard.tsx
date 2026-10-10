@@ -22,9 +22,11 @@ import { TaskFields, taskSettingsSummary } from './settings/TaskFields';
 import { Btn, Field, TextInput, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
 import { useGameDraft } from './game-detail/useGameDraft';
 import { useIdentityColors } from './roster';
-import { serverRegionLabel } from './NexusLayout';
+import { serverRegionLabel } from '../server-region';
 import { groupGameEvents } from '../event-category';
 import { calendarSchedule } from '../event-schedule';
+import { ReadingStatus, ReadingsMenu, ReadingsPanel } from './GameReadings';
+import { LaunchButton, LaunchSettings } from './GameLaunch';
 
 const TITLE_FIELDS = ['name'] as const;
 
@@ -720,9 +722,9 @@ function GameControlsHeader({
           type="button"
           data-workspace-back
           onClick={onBack}
-          aria-label="Back to dashboard"
+          aria-label="Back to Today"
           aria-keyshortcuts="Alt+ArrowLeft"
-          title="Back to dashboard (Alt+Left)"
+          title="Back to Today (Alt+Left)"
           className="workspace-back shell-control shrink-0"
         >
           <svg viewBox="0 0 20 20" className="icon h-5 w-5" fill="none" stroke="currentColor" aria-hidden>
@@ -764,6 +766,7 @@ function GameControlsHeader({
           <ServerChip label={regionLabel} className="max-w-20 truncate" />
           {layout === 'focus' && accountLabel && <span className="[overflow-wrap:anywhere]">{accountLabel}</span>}
           <span>reset {resetLabel}</span>
+          {!game.paused && <ReadingStatus game={game} now={now} />}
           {urgent && <AttentionIndicator />}
         </div>
       </TitleContainer>
@@ -836,7 +839,7 @@ export function GameControlsView({
   };
   useEffect(() => {
     if (!onBack) return;
-    const returnToDashboard = (event: KeyboardEvent) => {
+    const returnToToday = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.isComposing || event.repeat) return;
       const back = event.key === 'ArrowLeft' && event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey;
       if (!back) return;
@@ -853,8 +856,8 @@ export function GameControlsView({
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       onBack();
     };
-    document.addEventListener('keydown', returnToDashboard);
-    return () => document.removeEventListener('keydown', returnToDashboard);
+    document.addEventListener('keydown', returnToToday);
+    return () => document.removeEventListener('keydown', returnToToday);
   }, [onBack]);
   const saveLayout = (cardLayout: GameLayoutItem[] | undefined) => {
     if (useApp.getState().state.games.some((item) => item.id === game.id && !item.deleted))
@@ -1000,6 +1003,8 @@ export function GameControlsView({
         className="relative z-10 mt-3 flex flex-wrap items-center gap-2"
         aria-label={`${game.name} tracking controls`}
       >
+        <LaunchButton game={game} />
+        {!game.paused && <ReadingsMenu game={game} />}
         <Btn
           className={TOUCH_BUTTON}
           aria-expanded={managingEvents}
@@ -1025,6 +1030,7 @@ export function GameControlsView({
       <div id={eventsPanelId} hidden={!managingEvents}>
         {managingEvents && <GameEvents key={game.id} game={game} now={now} />}
       </div>
+      <ReadingsPanel game={game} />
       {editing && (
         <section
           className="relative z-20 mt-4 border-y border-line-edge py-3"
@@ -1052,6 +1058,7 @@ export function GameControlsView({
           <p className="mt-2 text-caption text-muted">
             Title and item settings save automatically. Undo layout restores only item order and visibility.
           </p>
+          <LaunchSettings game={game} />
           <div className="mt-3">
             <Field label="Game title">
               <TextInput

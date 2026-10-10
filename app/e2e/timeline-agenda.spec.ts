@@ -5,7 +5,7 @@ import { makeGame } from '../../shared/test/helpers';
 test('agenda keeps full titles, actions and route-return choices usable at every width', async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const now = Date.now();
   const day = 86_400_000;

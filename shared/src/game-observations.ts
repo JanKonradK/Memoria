@@ -146,9 +146,14 @@ function escaped(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/** A label beside "value / cap" where the cap is the tracked one. Nothing else in OCR text is this specific. */
+const EXACT_CONFIDENCE = 0.95;
+/** A label beside a bare value. Plausible, and still below the review threshold in planGameImport. */
+const LABEL_CONFIDENCE = 0.85;
+
 /** Require a label and an adjacent value, never route a bare ratio to a game. */
-function labeledReading(text: string, aliases: string[], cap: number): number | undefined {
-  const candidates = new Set<number>();
+function labeledReading(text: string, aliases: string[], cap: number): { value: number; exact: boolean } | undefined {
+  const candidates = new Map<number, boolean>();
   for (const alias of aliases) {
     // Keep the label at a line boundary: "Reserve Trailblaze Power" must never
     // be mistaken for the main "Trailblaze Power" meter.
@@ -159,13 +164,19 @@ function labeledReading(text: string, aliases: string[], cap: number): number | 
     for (const match of text.matchAll(pattern)) {
       const value = Number(match[1]!.replaceAll(',', ''));
       const denominator = match[2] == null ? undefined : Number(match[2].replaceAll(',', ''));
-      if (value <= cap && (denominator == null || denominator === cap)) candidates.add(value);
+      if (value <= cap && (denominator == null || denominator === cap))
+        candidates.set(value, (candidates.get(value) ?? true) && denominator === cap);
     }
   }
-  return candidates.size === 1 ? [...candidates][0] : undefined;
+  if (candidates.size !== 1) return undefined;
+  const [[value, exact]] = [...candidates] as [[number, boolean]];
+  return { value, exact };
 }
 
-/** OCR is advisory: every detected value still needs the user's review. */
+/**
+ * OCR is advisory. A reading whose label sits beside the tracked cap is specific
+ * enough to save by itself; anything looser stays below the review threshold.
+ */
 export function parseScreenshotReadings(
   state: AppState,
   gameId: string,
@@ -188,9 +199,9 @@ export function parseScreenshotReadings(
     const name = resource.name.trim().toLocaleLowerCase();
     const aliases = RESOURCE_ALIASES[name] ?? (resource.name.trim() ? [resource.name.trim()] : []);
     if (!aliases.length || rows.filter((row) => sameName(row.name, resource.name)).length !== 1) continue;
-    const value = labeledReading(text, aliases, resource.cap);
-    if (value == null) continue;
-    let reserve: number | undefined;
+    const reading = labeledReading(text, aliases, resource.cap);
+    if (!reading) continue;
+    let reserve: { value: number; exact: boolean } | undefined;
     if (name === 'trailblaze power')
       reserve = labeledReading(
         text,
@@ -199,7 +210,12 @@ export function parseScreenshotReadings(
       );
     if (name === 'battery charge') reserve = labeledReading(text, ['Backup Battery'], resource.reserveCap);
     if (name === 'waveplates') reserve = labeledReading(text, ['Waveplate Crystals'], resource.reserveCap);
-    resources.push({ resourceId: resource.id, value, ...(reserve == null ? {} : { reserve }), confidence: 0.85 });
+    resources.push({
+      resourceId: resource.id,
+      value: reading.value,
+      ...(reserve ? { reserve: reserve.value } : {}),
+      confidence: reading.exact && (reserve?.exact ?? true) ? EXACT_CONFIDENCE : LABEL_CONFIDENCE,
+    });
   }
   return finish(batch);
 }
