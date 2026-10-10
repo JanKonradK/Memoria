@@ -51,10 +51,11 @@ What the countdown is for gives way last. A narrower list drops the reading's ag
 Meters share one track length so fill levels compare down the list. The meter keeps the game's color; the countdown carries urgency in amber or red, always with its number.
 The list is one column at every width. The pair is capped and centered on very wide windows.
 Paused games sit in a compact Paused group below the priority groups.
-Select a row on desktop to put that game's card beside the list. The card is the complete control surface. Open full page above it gives the same controls the whole window.
+Select a row on desktop to put that game's controls beside the list, on the same flat ground and separated by one hairline; there is no tinted card. Open full page sits in a bar at the foot of that pane and stays in view while the controls scroll.
 On a phone, a row opens the game's page. Browser Back returns to Today.
 If a window narrows while a card panel is open, the game's page opens so the panel stays in view.
-Tonight follows the groups in the list column: daily progress, the sleep check, and what closes, has arrived, or arrives across every game. It is as tall as its tickets and scrolls with the page.
+Each row and each game heading leads with the game's round logo: a ring in the two colours of that game's logo, turning slowly, around the game's short name in its title face. Only the ring moves, and it is still under reduced motion. The full two-line name needs about 150px to read, so it is not used at these sizes.
+Tonight follows the groups in the list column, flat like the list with a hairline heading and no card: daily progress, the sleep check, and what closes, has arrived, or arrives across every game. It is as tall as its tickets and scrolls with the page.
 Notices about a home timezone correction or new preset routines appear above the list.
 Today carries no explainer sentences. A heading states its window once, as in "next 9h".
 

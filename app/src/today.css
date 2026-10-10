@@ -49,13 +49,12 @@
 }
 
 /* Two lines: who and when on the first, how full and what on the second. The
-   badge column is a fixed width so every name starts on the same edge whether
-   the badge reads HSR or Genshin. */
+   logo column is a fixed width so every name starts on the same edge. */
 .today-priority-row {
   --meter-w: 9rem;
   display: grid;
   width: 100%;
-  grid-template-columns: 4.5rem minmax(0, 1fr) auto 2.125rem;
+  grid-template-columns: 4.25rem minmax(0, 1fr) auto 2.125rem;
   grid-template-areas:
     'badge name time ring'
     'badge reading reading ring';
@@ -195,11 +194,6 @@
   color: var(--color-fg-soft);
 }
 
-/* Tonight closes the list at the list's own width, as tall as its tickets. */
-.today-list > .nexus-hub {
-  height: auto;
-}
-
 .today-notices {
   max-width: 108rem;
   margin-inline: auto;
@@ -209,16 +203,23 @@
   display: none;
   min-width: 0;
 }
+/* The pane's one action stays at its foot while the controls scroll above it. */
 .today-detail-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
   display: flex;
   justify-content: flex-end;
-  padding-bottom: 0.5rem;
+  padding: 0.75rem 0 0.25rem;
+  background: var(--color-surface-0);
+  border-top: 1px solid var(--color-line);
 }
+/* The same flat ground as the list: the game is in its name, its bars and its
+   ink, with no tinted panel behind them. */
 .today-card {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  padding: 1.25rem 1.25rem 1.5rem;
+  padding: 0.25rem 0 1.5rem;
 }
 .today-card > .game-card-heading {
   align-items: flex-start;
@@ -302,8 +303,11 @@
   .today-layout {
     grid-template-columns: clamp(23rem, 42vw, 40rem) minmax(0, 1fr);
   }
+  /* One hairline separates the list from the selected game. */
   .today-detail {
     display: block;
+    padding-left: clamp(1rem, 2vw, 2rem);
+    border-left: 1px solid var(--color-line);
   }
   .today-paused-game {
     min-height: 36px;
@@ -316,9 +320,9 @@
   .today-detail {
     position: sticky;
     top: calc(var(--app-bar-h) + 1rem);
-    max-height: calc(100dvh - var(--app-bar-h) - 2rem);
+    /* Less the heading above the layout, so the foot of the pane is on screen before any scroll. */
+    max-height: calc(100dvh - var(--app-bar-h) - 6.5rem);
     overflow-y: auto;
-    border-radius: var(--radius-ui-card);
     scrollbar-width: thin;
   }
 }
