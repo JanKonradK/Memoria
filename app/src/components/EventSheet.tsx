@@ -1,5 +1,12 @@
 import { useEffect, useId, useState } from 'react';
-import { presetForGame, type EventType, type BannerKind } from '@memoria/shared';
+import {
+  MAX_EVENT_PARTS,
+  eventPartsDone,
+  inferEventParts,
+  presetForGame,
+  type EventType,
+  type BannerKind,
+} from '@memoria/shared';
 import { eventCategory, eventBannerKind } from '../event-category';
 import { calendarSchedule } from '../event-schedule';
 import { useApp } from '../store';
@@ -7,7 +14,7 @@ import { useUI } from '../ui-store';
 import { fmtDateTimeLocalInput, fmtDur, parseDateTimeLocalInput } from '../util';
 import { rosterGames } from './roster';
 import { Sheet } from './Sheet';
-import { Btn, Field, Select, TextArea, TextInput, Toggle } from './ui';
+import { Btn, Field, NumInput, Select, TextArea, TextInput, Toggle } from './ui';
 
 const DAY = 86_400_000;
 const TYPES: EventType[] = ['banner', 'event', 'cycle', 'maintenance', 'livestream', 'custom'];
@@ -41,6 +48,8 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
     notify: true,
     done: false,
     notes: '',
+    // Empty leaves the count to be inferred from the event's own name and notes.
+    parts: '',
   });
   const [dateInputs, setDateInputs] = useState(() => ({
     start: fmtDateTimeLocalInput(draft.start, draftZone),
@@ -93,6 +102,7 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
         notify: existing.notify,
         done: existing.done ?? false,
         notes: existing.notes ?? '',
+        parts: existing.parts ? String(existing.parts) : '',
       };
       setDraft(nextDraft);
       setSavedDraft(JSON.stringify({ draft: nextDraft, dateInputs: nextDates }));
@@ -109,6 +119,7 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
         notify: true,
         done: false,
         notes: '',
+        parts: '',
       };
       setDraft(nextDraft);
       setSavedDraft(JSON.stringify({ draft: nextDraft, dateInputs: nextDates }));
@@ -116,11 +127,24 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, eventId]);
 
+  const inferredParts = inferEventParts(draft);
+  const typedParts = Number(draft.parts);
+  const statedParts =
+    draft.parts.trim() !== '' && Number.isFinite(typedParts)
+      ? Math.min(MAX_EVENT_PARTS, Math.max(1, Math.round(typedParts)))
+      : null;
+
   const save = (asNew = false) => {
     if (!validDraft || (unavailable && !asNew)) return;
+    const parts = statedParts ?? undefined;
+    const total = parts ?? inferredParts;
+    // Parts already ticked are kept, short of all of them unless the event is marked done.
+    const ticked = existing && !asNew ? eventPartsDone({ ...existing, parts, done: false }) : 0;
     upsertEvent({
       ...(existing && !asNew ? { id: existing.id } : {}),
       ...draft,
+      parts,
+      partsDone: draft.done ? total : Math.min(ticked, total - 1),
       category: selectedGame && presetForGame(selectedGame)?.key === 'genshin' ? draft.category : undefined,
       bannerKind: draft.type === 'banner' ? draft.bannerKind || undefined : undefined,
       name: draft.name.trim(),
@@ -340,6 +364,21 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
             />
             <p id={`${trackingHelp}-next`} className="mt-1 text-caption text-muted">
               Use its end time when choosing the game’s next action.
+            </p>
+          </div>
+          <div>
+            <Field label="Parts">
+              <NumInput
+                min={1}
+                max={MAX_EVENT_PARTS}
+                value={draft.parts}
+                onChange={(e) => setDraft({ ...draft, parts: e.target.value })}
+                placeholder={`Automatic (${inferredParts})`}
+                aria-describedby={`${trackingHelp}-parts`}
+              />
+            </Field>
+            <p id={`${trackingHelp}-parts`} className="mt-1 text-caption text-muted">
+              How many steps you tick this event off in. Leave empty to use a guess from its name and notes.
             </p>
           </div>
           <div>

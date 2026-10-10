@@ -1,7 +1,14 @@
 import { EventTags } from './EventTags';
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
 import type { AppState, ChecklistItem, Game, GameEvent, GameUrgency, GameLayoutItem, Snapshot } from '@memoria/shared';
-import { effectiveResourceKind, projectEnergy, resolveGameLayout } from '@memoria/shared';
+import {
+  effectiveResourceKind,
+  eventParts,
+  eventPartsDone,
+  projectEnergy,
+  resolveGameLayout,
+  setEventPartsDone,
+} from '@memoria/shared';
 import { m } from 'motion/react';
 import { useDerived } from '../selectors';
 import { useApp, type AppStore } from '../store';
@@ -197,6 +204,22 @@ function useCompletionSweep(done: boolean): {
   };
 }
 
+/** An event's tick: a plain circle for one part, a ring of sectors that fill as its parts are ticked. */
+function EventTick({ ticked, total, color }: { ticked: number; total: number; color: string }) {
+  const done = ticked >= total;
+  const { sweep, checkEnter, end } = useCompletionSweep(done);
+  return (
+    <Tick
+      checked={done}
+      segments={total > 1 ? { current: ticked, total } : undefined}
+      color={color}
+      sweep={sweep}
+      checkEnter={checkEnter}
+      onSweepEnd={end}
+    />
+  );
+}
+
 /** Circular tick box at the right edge of a row: sweep plays, then the tick pops. */
 function CompletionTick({ done, color, danger = false }: { done: boolean; color: string; danger?: boolean }) {
   const { sweep, checkEnter, end } = useCompletionSweep(done);
@@ -376,7 +399,9 @@ function TaskRow({
  *
  * With `onToggleDone` this is the game page's event list rather than a card's
  * summary: every active window is listed, each with a tick, and a finished one
- * stays in place, struck through, so the tick can be taken back.
+ * stays in place, struck through, so the tick can be taken back. With
+ * `onSetParts` as well, an event played in several parts shows one segment per
+ * part under its name, ticked off in order.
  */
 export function EventStrip({
   game,
@@ -384,6 +409,7 @@ export function EventStrip({
   now,
   onOpenEvent,
   onToggleDone,
+  onSetParts,
   emptyLabel,
 }: {
   game: Game;
@@ -391,6 +417,8 @@ export function EventStrip({
   now: number;
   onOpenEvent: (eventId: string, gameId: string) => void;
   onToggleDone?: (event: GameEvent, done: boolean) => void;
+  /** Called with how many parts are now ticked, counted from the first. */
+  onSetParts?: (event: GameEvent, ticked: number) => void;
   /** Said in place of the list when the game has nothing running or coming. */
   emptyLabel?: string;
 }) {
@@ -467,19 +495,42 @@ export function EventStrip({
                 </button>
               );
               if (!onToggleDone) return open;
+              const total = onSetParts ? eventParts(ev) : 1;
+              const ticked = onSetParts ? eventPartsDone(ev) : Number(Boolean(ev.done));
               return (
-                <div key={ev.id} className="flex items-center gap-1">
-                  {open}
-                  <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={Boolean(ev.done)}
-                    aria-label={`${ev.name}: done`}
-                    onClick={() => onToggleDone(ev, !ev.done)}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-md transition hover:bg-fill-2 md:h-8 md:w-8"
-                  >
-                    <CompletionTick done={Boolean(ev.done)} color={gameInk(game, ground)} />
-                  </button>
+                <div key={ev.id}>
+                  <div className="flex items-center gap-1">
+                    {open}
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={Boolean(ev.done)}
+                      aria-label={`${ev.name}: done`}
+                      onClick={() => onToggleDone(ev, !ev.done)}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-md transition hover:bg-fill-2 md:h-8 md:w-8"
+                    >
+                      <EventTick ticked={ticked} total={total} color={gameInk(game, ground)} />
+                    </button>
+                  </div>
+                  {onSetParts && total > 1 && (
+                    <div
+                      role="group"
+                      aria-label={`${ev.name}: ${ticked} of ${total} parts done`}
+                      className="event-parts"
+                    >
+                      {Array.from({ length: total }, (_, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          aria-pressed={index < ticked}
+                          aria-label={`${ev.name}: part ${index + 1} of ${total}`}
+                          // Ticking a part ticks those before it; the last ticked part unticks itself.
+                          onClick={() => onSetParts(ev, index + 1 === ticked ? index : index + 1)}
+                          className="event-part"
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -915,15 +966,16 @@ export function GameControlsView({
   );
   const tasks = <ChecklistControls game={visualGame} checklist={checklist} now={now} actions={actions} />;
   const focus = layout === 'focus';
+  const setParts = (event: GameEvent, ticked: number) =>
+    useApp.getState().upsertEvent({ id: event.id, gameId: event.gameId, ...setEventPartsDone(event, ticked) });
   const events = !game.paused && (
     <EventStrip
       game={visualGame}
       events={state.events}
       now={now}
       onOpenEvent={onOpenEvent}
-      onToggleDone={
-        focus ? (event, done) => useApp.getState().upsertEvent({ id: event.id, gameId: event.gameId, done }) : undefined
-      }
+      onToggleDone={focus ? (event, done) => setParts(event, done ? eventParts(event) : 0) : undefined}
+      onSetParts={focus ? setParts : undefined}
       emptyLabel={focus ? 'No events running or coming up.' : undefined}
     />
   );

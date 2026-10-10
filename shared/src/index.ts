@@ -16,3 +16,4 @@ export * from './automation';
 export * from './game-observations';
 export * from './event-feed';
 export * from './notification-plan';
+export * from './event-parts';
