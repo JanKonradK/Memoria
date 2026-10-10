@@ -108,7 +108,7 @@ export interface GamePreset {
   color2?: string;
   /** Third accent — small highlights, and the first candidate for the card rim. */
   color3?: string;
-  /** CSS font-family evoking the game's own logo/identity (bundled via @fontsource in the app). */
+  /** Retired: the app no longer reads a per-game face. Still written to new games for older clients that do. */
   titleFont?: string;
   icon: string;
   platform: 'pc' | 'mobile' | 'both';

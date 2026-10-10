@@ -86,7 +86,7 @@ function PriorityRow({
         </span>
         <span className="today-row-name">
           <span className="today-row-title text-body font-semibold text-fg">{game.name}</span>
-          {game.accountLabel && <span className="today-row-account truncate text-meta">{game.accountLabel}</span>}
+          {game.accountLabel && <span className="today-row-account aside truncate text-meta">{game.accountLabel}</span>}
         </span>
         <span className="today-row-time numeral" data-tone={tone}>
           {left == null ? '—' : left <= 0 ? 'Now' : fmtDur(left)}
@@ -120,7 +120,7 @@ function PriorityRow({
               )}
             </>
           )}
-          <span className="today-row-what truncate text-caption">{next?.label ?? 'No deadlines'}</span>
+          <span className="today-row-what aside truncate text-caption">{next?.label ?? 'No deadlines'}</span>
         </span>
         <span className="today-row-ring">
           {dailies.length > 0 && (
@@ -156,7 +156,7 @@ function Group({ id, label, note, children }: { id: string; label: string; note?
           {label}
         </h2>
         <span aria-hidden />
-        {note && <span className="numeral text-caption text-muted">{note}</span>}
+        {note && <span className="numeral aside text-caption text-muted">{note}</span>}
       </div>
       {children}
     </section>
@@ -213,7 +213,7 @@ export function TodayPage({ now }: { now: number }) {
     <Page className="today-page">
       <div className="today-heading">
         <h1 className="text-title font-semibold tracking-[-0.02em] text-fg">Today</h1>
-        <p className="text-meta text-muted">{date}</p>
+        <p className="aside text-meta text-muted">{date}</p>
       </div>
       <TodayNotices now={now} />
       {order.length === 0 ? (

@@ -10,7 +10,7 @@
 
 **First viewport:** Today leads with approaching caps and unfinished routines. Desktop places one ranked list on the left and the selected game's real, editable card on the right. Phone shows the list above two primary tabs. The Tonight summary closes the list at every width.
 
-**Form:** DM Sans for language, IBM Plex Mono for compact measurements, and each game's saved title font. Standard cards and sheets use 32px corners with progressive continuous corner support. Compact overview cards use 24px corners. Controls use nested 10px, 16px and 24px curves; navigation and segmented controls use capsules. Glass light is static; motion follows presses, progress, and navigation.
+**Form:** DM Sans for language and numbers, with tabular figures wherever a value can change. Secondary detail is light italic, not bold. A game's name is set in Vujahday Script and nothing else is; the face has one weight, so a name is never emboldened. Standard cards and sheets use 32px corners with progressive continuous corner support. Compact overview cards use 24px corners. Controls use nested 10px, 16px and 24px curves; navigation and segmented controls use capsules. Glass light is static; motion follows presses, progress, and navigation.
 
 ## Reference and composition
 
@@ -32,9 +32,9 @@ Use the semantic tokens in `src/index.css`. JS theme mirrors in `theme.ts`, `ui-
 
 ## Identity
 
-Preserve each game's saved colors, title font, image, and account label. Use color in badges, titles, energy levels, and meaningful tags. A game's palette supplies the translucent card tint and reflected light. Keep text readable over the brightest part of that material. Urgency takes priority over game color for warnings.
+Preserve each game's saved colors, image, and account label. Use color in badges, titles, energy levels, and meaningful tags. A game's palette supplies the translucent card tint and reflected light. Keep text readable over the brightest part of that material. Urgency takes priority over game color for warnings.
 
-All font subsets remain available. Never remove non-Latin support to reduce a bundle.
+DM Sans and Vujahday Script ship Latin and Latin Extended. A name in another script falls back to the system face.
 
 ## Layout and interaction
 

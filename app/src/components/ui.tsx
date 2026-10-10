@@ -62,8 +62,7 @@ export function GameBadge({
 
 /**
  * A server label is `numeral` only when it is a real UTC offset. Those digits
- * are a measurement; `NA`, `EU`, `ASIA` and `UTC` are words. See The Mono Is For
- * Measurement Rule.
+ * are a measurement; `NA`, `EU`, `ASIA` and `UTC` are words.
  */
 export function serverLabelClass(label: string): string {
   return label.startsWith('UTC') && label !== 'UTC' ? 'numeral' : '';
