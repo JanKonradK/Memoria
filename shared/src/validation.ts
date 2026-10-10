@@ -168,6 +168,8 @@ const event = z.object({
   dailyTouch: z.boolean(),
   notify: z.boolean(),
   done: z.boolean().optional(),
+  parts: z.number().int().min(1).max(60).optional(),
+  partsDone: z.number().int().min(0).max(60).optional(),
   notes: longText,
   sourceKey: z.string().max(300).optional(),
   seedHash: z.string().max(64).optional(),

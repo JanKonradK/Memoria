@@ -187,6 +187,10 @@ export interface GameEvent extends Syncable {
   notify: boolean;
   /** User marked it complete — collapsed on the timeline and off the card. */
   done?: boolean;
+  /** How many parts the event is ticked off in. Absent means the count is inferred — see eventParts. */
+  parts?: number;
+  /** How many parts are ticked, in order from the first. Absent is none. */
+  partsDone?: number;
   notes: string;
   /** Stable id of the imported source (e.g. "genshin:21788") — used to dedupe re-imports. */
   sourceKey?: string;
