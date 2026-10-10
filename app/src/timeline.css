@@ -112,15 +112,20 @@
   border-radius: 999px;
   background: var(--color-surface-1);
 }
+/* Sections sit on the page ground like the Today groups: no card, no rule box. */
 .timeline-list-board {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 0 2px 8px;
+  gap: 1.75rem;
+  padding: 0 0 0.5rem;
 }
 .timeline-list-section {
   overflow: clip;
   flex: 0 0 auto;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
 }
 .timeline-list-grid {
   display: grid;
@@ -128,15 +133,11 @@
   column-gap: 16px;
   align-items: center;
 }
+/* The heading row keeps the rows' grid, so its labels line up with the columns
+   beneath. Its rule is the hairline under it; the padding matches the rows. */
 .timeline-list-heading {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  padding: 16px 20px;
-  background: var(--glass-bg, var(--color-surface-1));
-  border-bottom: 1px solid var(--color-line-hairline);
-  -webkit-backdrop-filter: blur(var(--glass-blur, 24px));
-  backdrop-filter: blur(var(--glass-blur, 24px));
+  padding: 0 0.5rem 0.5rem;
+  border-bottom: 1px solid var(--color-line);
 }
 .timeline-section-count {
   display: inline-flex;
@@ -320,9 +321,6 @@
   }
   .timeline-lanes-board {
     padding: 12px 8px 16px;
-  }
-  .timeline-list-heading {
-    padding: 15px 16px;
   }
   .timeline-event-row {
     padding: 16px;

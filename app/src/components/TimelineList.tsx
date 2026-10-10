@@ -9,6 +9,7 @@ import { endTone, fmtDur } from '../util';
 import { useIdentityColors } from './roster';
 import { Btn, serverLabelClass } from './ui';
 import { serverRegionLabel } from '../server-region';
+import '../calendar-list.css';
 
 /** Events grouped by status, with the nearest deadline first. */
 export type TimelineListStatus = 'active' | 'upcoming' | 'finished';
@@ -70,7 +71,7 @@ function EventSchedule({ event, localTz, now }: { event: GameEvent; localTz: str
   const calendar = calendarSchedule(event);
   if (calendar)
     return (
-      <div className="timeline-event-schedule text-caption text-muted" title={calendar.description}>
+      <div className="timeline-event-schedule aside text-caption text-muted" title={calendar.description}>
         <span>{calendar.label}</span>
         <span>{calendar.zone}</span>
       </div>
@@ -81,7 +82,7 @@ function EventSchedule({ event, localTz, now }: { event: GameEvent; localTz: str
   const showYear = start.year !== end.year || start.year !== currentYear || end.year !== currentYear;
   const format = showYear ? 'd LLL yyyy HH:mm' : 'd LLL HH:mm';
   return (
-    <div className="timeline-event-schedule text-caption text-muted">
+    <div className="timeline-event-schedule aside text-caption text-muted">
       <span className="timeline-schedule-endpoint">
         <span>Starts</span>
         <time dateTime={start.toISO() ?? undefined}>{start.toFormat(format)}</time>
@@ -190,7 +191,7 @@ export function TimelineList({
             <div className={`${ROW_GRID} timeline-list-heading`}>
               <h2
                 id={`${headingId}-${section.status}`}
-                className="flex items-center gap-2.5 text-body font-semibold text-fg-soft"
+                className="flex items-center gap-2.5 text-meta font-semibold text-fg-soft"
               >
                 {section.title} <span className="timeline-section-count tabular-nums">{section.events.length}</span>
               </h2>
@@ -199,7 +200,7 @@ export function TimelineList({
               <span className={COLUMN_LABEL}>Actions</span>
             </div>
 
-            <ul>
+            <ul className="timeline-list-rows">
               {section.events.map((event) => {
                 const game = gamesById.get(event.gameId)!;
                 const colors = identityColors[game.id] ?? game;
@@ -232,9 +233,7 @@ export function TimelineList({
                         </span>
                         {account && <span className="text-fg-soft">{account}</span>}
                         <EventTags game={game} event={event} />
-                        <span className={`font-semibold text-fg-soft ${serverLabelClass(serverLabel)}`}>
-                          {serverLabel}
-                        </span>
+                        <span className={`aside ${serverLabelClass(serverLabel)}`}>{serverLabel}</span>
                         <span className="capitalize">
                           {event.type === 'livestream' ? 'Special program' : event.type}
                         </span>
@@ -245,7 +244,7 @@ export function TimelineList({
 
                     <div className="timeline-event-deadline">
                       <span
-                        className="timeline-countdown tabular-nums text-meta font-semibold"
+                        className="timeline-countdown aside tabular-nums text-meta"
                         style={{ color: countdown.tone }}
                       >
                         {countdown.label}

@@ -6,6 +6,7 @@ import { servedByLauncher } from '../launcher';
 import { syncNow } from '../sync';
 import { DeviceSync } from './settings/DeviceSync';
 import { DeviceNotifications } from './settings/DeviceNotifications';
+import { GameLogo } from './GameLogo';
 import { disconnectLanSync } from '../lan-sync';
 import { exportNativeBackup, isNativeApp } from '../native';
 import { useUnsavedDraft } from '../desktop-host';
@@ -23,7 +24,10 @@ import { fmtClock, intOr, localResetLabel } from '../util';
 import { HomeTimeZoneField } from './HomeTimeZoneField';
 import { Pill } from './primitives';
 import { rosterGames, useIdentityColors } from './roster';
-import { Btn, GameBadge, NumInput, Page, TOUCH_BUTTON } from './ui';
+import { Btn, NumInput, Page, TOUCH_BUTTON } from './ui';
+// Today is lazy-loaded, so its heading rule is brought in here as well.
+import '../today.css';
+import '../settings.css';
 
 export function SettingsPage() {
   const state = useApp((store) => store.state);
@@ -128,19 +132,20 @@ export function SettingsPage() {
 
         <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <section className="settings-section min-w-0" aria-labelledby="settings-games-heading">
-            <div className="flex items-center justify-between gap-3 border-b border-line-hairline pb-2">
-              <h2 id="settings-games-heading" className="text-heading font-semibold text-fg-soft">
+            <div className="today-group-rule">
+              <h2 id="settings-games-heading" className="text-meta font-semibold text-fg-soft">
                 Games
               </h2>
+              <span aria-hidden />
               <Btn className={TOUCH_BUTTON} onClick={() => openSheet({ kind: 'addGame' })}>
                 + Add game
               </Btn>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line-hairline py-3">
+            <div className="mx-2 flex flex-wrap items-center justify-between gap-3 border-b border-line py-3">
               <div>
                 <p className="text-meta font-semibold text-fg-soft">Sleep window</p>
-                <p className="text-label text-dim">Used by the hub's overnight check.</p>
+                <p className="aside text-label text-muted">Used by the hub's overnight check.</p>
               </div>
               <div className="flex items-center gap-2">
                 <NumInput
@@ -159,10 +164,10 @@ export function SettingsPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line-hairline py-3">
+            <div className="mx-2 flex flex-wrap items-center justify-between gap-3 border-b border-line py-3">
               <div>
                 <p className="text-meta font-semibold text-fg-soft">Home timezone</p>
-                <p className="text-label text-dim">Used for every local clock and date.</p>
+                <p className="aside text-label text-muted">Used for every local clock and date.</p>
               </div>
               <HomeTimeZoneField
                 value={settings.localTz === detectedTz ? SYSTEM_TIMEZONE_VALUE : settings.localTz}
@@ -173,7 +178,7 @@ export function SettingsPage() {
             </div>
 
             {games.length > 0 ? (
-              <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+              <div className="settings-game-list mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                 {listedGames.map((game) => {
                   const colors = identityColors[game.id] ?? game;
                   return (
@@ -185,9 +190,10 @@ export function SettingsPage() {
                       type="button"
                       aria-label={`Game settings for ${game.name}${game.accountLabel ? `, ${game.accountLabel}` : ''}`}
                       onClick={() => openSheet({ kind: 'game', gameId: game.id })}
-                      className="settings-game-row group flex min-h-14 w-full items-center gap-3 rounded-ui-md bg-fill-1 px-3 py-2 text-left ring-1 ring-line-hairline transition duration-(--dur-fast) hover:bg-fill-2 hover:ring-line-strong"
+                      className="settings-game-row group flex min-h-14 w-full items-center rounded-ui-lg text-left transition duration-(--dur-fast) hover:bg-fill-1"
                     >
-                      <GameBadge short={game.short} {...colors} size="lg" />
+                      {/* The identity trio is merged in so two accounts of one game draw one ring. */}
+                      <GameLogo game={{ ...game, ...colors }} size={48} label="short" className="shrink-0" />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="min-w-0 text-body font-semibold text-fg-soft [overflow-wrap:anywhere]">
@@ -195,11 +201,11 @@ export function SettingsPage() {
                           </span>
                           {game.paused && <Pill variant="paused">paused</Pill>}
                         </div>
-                        <span className="text-label text-dim [overflow-wrap:anywhere]">
+                        <span className="aside text-label text-muted [overflow-wrap:anywhere]">
                           {game.accountLabel ? `${game.accountLabel} · ` : ''}reset{' '}
                           {localResetLabel(game, settings.localTz, Date.now())}
                         </span>
-                        <p className="text-label text-dim">
+                        <p className="aside numeral text-label text-muted">
                           {state.resources.filter((r) => r.gameId === game.id && !r.deleted).length} resources ·{' '}
                           {state.tasks.filter((t) => t.gameId === game.id && !t.deleted).length} tasks
                         </p>
@@ -228,20 +234,25 @@ export function SettingsPage() {
                 })}
               </div>
             ) : (
-              <p className="mt-4 text-body text-dim">No games yet. Add one to start tracking resources and tasks.</p>
+              <p className="mx-2 mt-4 text-body text-dim">
+                No games yet. Add one to start tracking resources and tasks.
+              </p>
             )}
           </section>
 
-          <section className="settings-section min-w-0" aria-labelledby="settings-data-heading">
-            <h2
-              id="settings-data-heading"
-              className="border-b border-line-hairline pb-2 text-heading font-semibold text-fg-soft"
-            >
-              Data
-            </h2>
+          <section
+            className="settings-section min-w-0 xl:border-l xl:border-line xl:pl-8"
+            aria-labelledby="settings-data-heading"
+          >
+            <div className="today-group-rule">
+              <h2 id="settings-data-heading" className="text-meta font-semibold text-fg-soft">
+                Data
+              </h2>
+              <span aria-hidden />
+            </div>
 
             {launcher && (
-              <div className="space-y-3 border-b border-line-hairline py-4">
+              <div className="mx-2 space-y-3 border-b border-line py-4">
                 <p className="text-meta text-muted">
                   Your changes save automatically on this PC. Every open Memoria window uses the same progress.
                 </p>
@@ -257,7 +268,7 @@ export function SettingsPage() {
                   </span>
                 </div>
                 {syncSizeWarning && (
-                  <p className="rounded-ui-lg bg-warn/10 p-3 text-meta text-warn-fg" role="status">
+                  <p className="border-l-2 border-warn/60 pl-3 text-meta text-warn-fg" role="status">
                     {syncError}
                   </p>
                 )}
@@ -267,7 +278,7 @@ export function SettingsPage() {
             {/* Shared-folder sync uses desktop browser file handles. Android
                 uses Wi-Fi pairing above and the native backup picker below. */}
             {!isNativeApp && (
-              <div className="space-y-3 border-b border-line-hairline py-4">
+              <div className="mx-2 space-y-3 border-b border-line py-4">
                 <div>
                   <p className="text-meta font-semibold text-fg-soft">Shared-folder sync</p>
                   <details className="mt-1 text-meta text-muted">
@@ -316,7 +327,7 @@ export function SettingsPage() {
                         Use existing file…
                       </Btn>
                     </div>
-                    <p className="text-label text-dim">
+                    <p className="aside text-label text-muted">
                       First device: create <code className="text-fg-soft">{CLOUD_FILE_SUGGESTED_NAME}</code> inside the
                       synced folder. Every device after that: pick the file the first one made.
                     </p>
@@ -364,14 +375,14 @@ export function SettingsPage() {
                   </>
                 )}
                 {(cloudStatus === 'error' || cloudStatus === 'needs-permission') && cloudError && (
-                  <p className="rounded-ui-lg bg-warn/10 p-3 text-meta text-warn-fg" role="status">
+                  <p className="border-l-2 border-warn/60 pl-3 text-meta text-warn-fg" role="status">
                     {cloudError}
                   </p>
                 )}
               </div>
             )}
 
-            <div className="pt-4">
+            <div className="mx-2 pt-4">
               <div className="flex flex-wrap items-center gap-2 pb-1">
                 <Btn className={TOUCH_BUTTON} onClick={exportJson}>
                   Export backup
@@ -392,7 +403,7 @@ export function SettingsPage() {
                     }}
                   />
                 </label>
-                <span className="text-label text-dim">
+                <span className="numeral aside text-label text-muted">
                   {games.length} games · {state.events.filter((e) => !e.deleted).length} events
                 </span>
               </div>
@@ -402,7 +413,7 @@ export function SettingsPage() {
                 </p>
               )}
               {importDraft && (
-                <div className="mt-3 rounded-ui-md bg-warn/10 p-4 ring-1 ring-warn/25">
+                <div className="mt-3 border-l-2 border-warn/60 pl-3">
                   <p className="text-body font-semibold text-warn-fg">
                     Merge backup with {importDraft.games} game{importDraft.games === 1 ? '' : 's'} and{' '}
                     {importDraft.events} event
@@ -429,7 +440,7 @@ export function SettingsPage() {
                   </div>
                 </div>
               )}
-              <div className="mt-5 border-t border-danger/15 pt-4">
+              <div className="mt-5 border-t border-line pt-4">
                 <p className="text-meta text-muted">
                   Clearing wipes this browser's Memoria database.{' '}
                   {launcher ? 'The desktop state file is left untouched. ' : ''}

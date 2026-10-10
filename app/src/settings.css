@@ -1,0 +1,16 @@
+/* Settings sits on the page ground like Today. The game list is a list of rows
+   with no fill at rest; the fill appears on hover. Scoped under the list so these
+   win over the phone padding for .settings-game-row in index.css. */
+.settings-game-list {
+  gap: 2px;
+}
+.settings-game-list .settings-game-row {
+  gap: 0.75rem;
+  padding: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-game-row {
+    transition: none;
+  }
+}

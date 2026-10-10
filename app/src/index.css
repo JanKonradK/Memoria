@@ -1261,7 +1261,6 @@ input[type='number'] {
   border-radius: var(--radius-ui-full);
   padding-inline: 16px;
 }
-.settings-section,
 .broadcast-story {
   border-radius: var(--radius-ui-card);
   background: var(--color-surface-1);
@@ -1274,14 +1273,12 @@ input[type='number'] {
 @supports (corner-shape: superellipse(1.5)) {
   .game-card-surface,
   .card-shell,
-  .settings-section,
   .broadcast-story,
   .glass {
     corner-shape: superellipse(1.5);
   }
 }
 @media (max-width: 767px) {
-  .settings-section,
   .broadcast-story {
     padding: 20px;
   }
