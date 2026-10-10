@@ -69,6 +69,7 @@ const required = [
   ['desktop/native-policy.mjs', 'desktop/native-policy.mjs'],
   ['desktop/game-capture.mjs', 'desktop/game-capture.mjs'],
   ['desktop/play-mode.mjs', 'desktop/play-mode.mjs'],
+  ['desktop/game-launch.mjs', 'desktop/game-launch.mjs'],
   ['desktop/hoyo-login.mjs', 'desktop/hoyo-login.mjs'],
   ['desktop/browser-bridge.mjs', 'desktop/browser-bridge.mjs'],
   ['desktop/browser-host.mjs', 'desktop/browser-host.mjs'],

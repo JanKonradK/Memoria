@@ -1,7 +1,7 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { flushPersist } from './store';
 import { useUI } from './ui-store';
-import { navigateWorkspace } from './workspace-navigation';
+import { closeWorkspace } from './workspace-navigation';
 
 export const isNativeApp = Capacitor.isNativePlatform();
 let initialized = false;
@@ -39,7 +39,7 @@ export async function initNative(): Promise<void> {
     if (state.sheet) {
       state.closeSheet();
     } else if (state.focusedGameId) {
-      navigateWorkspace(null, state.focusedGameId, () => state.setFocusedGameId(null));
+      closeWorkspace();
     } else if (state.tab !== 'today') {
       state.setTab('today');
     } else {

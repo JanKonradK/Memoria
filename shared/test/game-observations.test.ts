@@ -188,7 +188,7 @@ describe('screenshot text suggestions', () => {
     const state = stateFor('wuwa');
     state.resources[0]!.name = 'Training Points';
     expect(parseScreenshotReadings(state, 'g1', 'Training Points: 123/240', observedAt).resources).toEqual([
-      { resourceId: 'r1', value: 123, confidence: 0.85 },
+      { resourceId: 'r1', value: 123, confidence: 0.95 },
     ]);
     state.resources.push({ ...state.resources[0]!, id: 'duplicate' });
     expect(parseScreenshotReadings(state, 'g1', 'Training Points: 123/240', observedAt).resources).toEqual([]);
@@ -200,11 +200,26 @@ describe('screenshot text suggestions', () => {
     ]);
     expect(extractScreenshotRatios('-5/100 1.5/200 1O/200 100/0 3/2147483648')).toEqual([]);
   });
-  it('reads a labeled resource ratio and always requests review', () => {
+  it('saves a labeled ratio that states the tracked cap without review', () => {
     const state = stateFor('wuwa');
     const batch = parseScreenshotReadings(state, 'g1', 'Waveplates\n123 / 240', observedAt);
+    expect(batch.resources).toEqual([{ resourceId: 'r1', value: 123, confidence: 0.95 }]);
+    const plan = planGameImport(state, batch, observedAt);
+    expect(plan.issues).toEqual([]);
+    expect(plan.resources).toEqual([{ resourceId: 'r1', value: 123 }]);
+  });
+
+  it('requests review for a labeled value that does not state its cap', () => {
+    const state = stateFor('wuwa');
+    const batch = parseScreenshotReadings(state, 'g1', 'Waveplates: 123', observedAt);
     expect(batch.resources).toEqual([{ resourceId: 'r1', value: 123, confidence: 0.85 }]);
     expect(planGameImport(state, batch, observedAt).issues[0]?.reason).toBe('needs-review');
+  });
+
+  it('requests review when the same value appears both with and without its cap', () => {
+    const state = stateFor('wuwa');
+    const batch = parseScreenshotReadings(state, 'g1', 'Waveplates: 123\nWaveplates 123/240', observedAt);
+    expect(batch.resources).toEqual([{ resourceId: 'r1', value: 123, confidence: 0.85 }]);
   });
 
   it('does not guess what a bare ratio, number or unrelated text means', () => {
@@ -224,6 +239,11 @@ describe('screenshot text suggestions', () => {
         'Trailblaze Power: 201/300\nReserve Trailblaze Power: 1,234/2,400',
         observedAt,
       ).resources,
+    ).toEqual([{ resourceId: 'r1', value: 201, reserve: 1234, confidence: 0.95 }]);
+    // A reserve read without its cap pulls the whole reading back to review.
+    expect(
+      parseScreenshotReadings(state, 'g1', 'Trailblaze Power: 201/300\nReserve Trailblaze Power: 1,234', observedAt)
+        .resources,
     ).toEqual([{ resourceId: 'r1', value: 201, reserve: 1234, confidence: 0.85 }]);
   });
 

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { gameRow } from './support';
 
 test('failed local saves keep edits available for retry and backup', async ({ page }, info) => {
   test.skip(!['android-s23', 'desktop'].includes(info.project.name), 'Phone and desktop storage recovery');
@@ -11,12 +12,12 @@ test('failed local saves keep edits available for retry and backup', async ({ pa
     };
   });
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  const open = page.getByRole('button', { name: /^(Open|Expand) Genshin Impact controls$/ });
+  const open = gameRow(page, 'Genshin Impact');
   const energy = page.getByLabel('Original Resin current value');
   const openControls = async () => {
     await expect.poll(async () => (await energy.isVisible()) || (await open.isVisible())).toBe(true);
@@ -42,8 +43,7 @@ test('failed local saves keep edits available for retry and backup', async ({ pa
   await page.getByRole('button', { name: 'Try saving again' }).click();
   await expect(page.getByRole('alert')).toHaveCount(0);
   await page.reload();
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
-  await page.getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await openControls();
   await expect(energy).toHaveValue('37');
 });

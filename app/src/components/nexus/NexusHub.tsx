@@ -6,7 +6,7 @@ import { gameIdentityKey, type GameColors } from '../../game-color';
 import { ENDING_SOON_DAYS, type AgendaRow } from '../../timeline-sort';
 import { useDerived } from '../../selectors';
 import { fmtDur } from '../../util';
-import { serverRegionLabel } from '../NexusLayout';
+import { serverRegionLabel } from '../../server-region';
 import { ProgressBar } from '../primitives';
 import { useIdentityColors } from '../roster';
 import { GameBadge, ServerChip } from '../ui';

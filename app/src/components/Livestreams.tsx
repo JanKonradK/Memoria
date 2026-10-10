@@ -6,6 +6,7 @@ import { upcomingBroadcasts } from '../data/upcoming-broadcasts';
 import { useNow } from '../hooks';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
+import { CalendarToolbar } from './CalendarToolbar';
 import { LivestreamCodes } from './LivestreamCodes';
 import { Btn } from './ui';
 import { Pill } from './primitives';
@@ -94,16 +95,17 @@ export function LivestreamsPage() {
     DateTime.fromMillis(at, { zone: state.settings.localTz }).toFormat('ccc d LLL yyyy · HH:mm');
   return (
     <section className="app-page mx-auto max-w-6xl px-4 py-6 sm:px-6" aria-labelledby="livestream-heading">
-      <h1 id="livestream-heading" className="text-heading font-semibold text-fg">
-        Livestreams
-      </h1>
-      <p className="mt-2 max-w-prose text-body text-muted">
-        What was announced, with official replays and artwork. Dated events stay in the Timeline.
-      </p>
-      <p className="mt-2 text-caption text-muted">
-        Calendar updated {DateTime.fromISO(SEED_UPDATED).toFormat('d LLLL yyyy')} · Recaps checked {LIVESTREAMS_CHECKED}
-        . Dates and summaries update with Memoria.
-      </p>
+      <div className="calendar-heading">
+        <div className="min-w-0">
+          <h1 id="livestream-heading" className="text-heading font-semibold text-fg">
+            Livestreams
+          </h1>
+          <p className="mt-1 text-caption text-muted">
+            Calendar {DateTime.fromISO(SEED_UPDATED).toFormat('d LLL yyyy')} · Recaps {LIVESTREAMS_CHECKED}
+          </p>
+        </div>
+        <CalendarToolbar view="livestreams" />
+      </div>
       <section aria-labelledby="upcoming-broadcasts-heading" className="broadcast-story mt-6">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 id="upcoming-broadcasts-heading" className="text-lead font-semibold text-fg">

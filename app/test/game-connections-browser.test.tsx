@@ -258,7 +258,7 @@ describe('Chrome and Edge account transport', () => {
       expect(apply).not.toHaveBeenCalled();
       render(<GameConnections gameId="g1" onReview={vi.fn()} />);
       expect(screen.getByRole('region', { name: 'Connection conflict' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Fetch readings' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Fetch now' })).toBeDisabled();
       expect(screen.getByRole('button', { name: 'Disconnect browser account' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Disconnect protected PC account' })).toBeInTheDocument();
     } finally {
@@ -287,9 +287,7 @@ describe('Chrome and Edge account transport', () => {
       connections: [browserAccount],
       reading,
     });
-    await act(async () =>
-      fireEvent.submit(screen.getByRole('button', { name: 'Connect and review' }).closest('form')!),
-    );
+    await act(async () => fireEvent.submit(screen.getByRole('button', { name: 'Connect' }).closest('form')!));
     expect(window.memoriaDesktop!.browser!.request).toHaveBeenLastCalledWith({
       action: 'connect',
       gameId: 'g1',

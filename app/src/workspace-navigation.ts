@@ -3,7 +3,6 @@ import { useUI } from './ui-store';
 
 let active: Animation | undefined;
 let rosterScroll = 0;
-let gamesScroll = 0;
 let historyReady = false;
 
 /** Browser Back owns the same game-to-overview transition as the back arrow. */
@@ -37,7 +36,7 @@ export function initWorkspaceHistory(): () => void {
       state.focusedGameId,
       () => {
         state.setFocusedGameId(gameId);
-        state.setTab(gameId === null && route.memoriaTab === 'today' ? 'today' : 'home');
+        state.setTab(gameId === null ? 'today' : 'home');
       },
       true,
     );
@@ -52,6 +51,15 @@ export function initWorkspaceHistory(): () => void {
 export function recordWorkspaceHistory(gameId: string): void {
   if (historyReady && history.state?.memoriaWorkspace !== gameId)
     history.pushState({ ...history.state, memoriaWorkspace: gameId, memoriaTab: 'home' }, '');
+}
+
+/** Leave a game's page for Today. Elsewhere this only clears the game filter. */
+export function closeWorkspace(): void {
+  const ui = useUI.getState();
+  navigateWorkspace(null, ui.focusedGameId, () => {
+    ui.setFocusedGameId(null);
+    if (ui.tab === 'home') ui.setTab('today');
+  });
 }
 
 /** Open a workspace without capturing and resizing the whole page. */
@@ -73,7 +81,6 @@ export function navigateWorkspace(
     if (historyReady)
       history.replaceState({ ...history.state, memoriaTab: useUI.getState().tab, memoriaWorkspace: null }, '');
     rosterScroll = window.scrollY;
-    gamesScroll = document.querySelector<HTMLElement>('.nexus-games-scroll')?.scrollTop ?? 0;
   }
   if (toRoster && document.activeElement instanceof HTMLElement) document.activeElement.blur();
   if (toRoster && historyReady && !fromHistory && history.state?.memoriaWorkspace === previousId) {
@@ -87,8 +94,6 @@ export function navigateWorkspace(
   const restoreFocus = document.activeElement === originalFocus || document.activeElement === document.body;
   if (toRoster) {
     window.scrollTo({ top: rosterScroll, behavior: 'instant' });
-    const games = document.querySelector<HTMLElement>('.nexus-games-scroll');
-    if (games) games.scrollTop = gamesScroll;
     if (restoreFocus) {
       const target =
         findRow() ?? document.querySelector<HTMLElement>('nav[aria-label="Primary"] button[aria-current="page"]');
@@ -103,9 +108,7 @@ export function navigateWorkspace(
     return;
   }
 
-  const destination = document.querySelector<HTMLElement>(
-    toRoster ? '.mobile-game-roster, .nexus-stage, .today-page' : '.focus-workspace',
-  );
+  const destination = document.querySelector<HTMLElement>(toRoster ? '.today-page' : '.focus-workspace');
   if (!destination?.animate) return;
   // A short directional arrival explains forward/back navigation. Only the
   // content moves; the fixed dock and header never enter a snapshot or layer.

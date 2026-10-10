@@ -1,13 +1,14 @@
 import { expect, test } from '@playwright/test';
 import { emptyState, PRESETS } from '@memoria/shared';
 import { makeGame } from '../../shared/test/helpers';
+import { gameRow, openGame } from './support';
 
 test('saved sheets animate out and lazy editors can open after dismissal', async ({ page }, testInfo) => {
   test.skip(!['desktop', 'mobile-390'].includes(testInfo.project.name), 'Desktop dialog and mobile sheet');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   const add = page.getByRole('button', { name: 'Add', exact: true });
   await add.click();
   await page.getByRole('menuitem', { name: 'Reminder', exact: true }).click();
@@ -44,14 +45,12 @@ test('saved sheets animate out and lazy editors can open after dismissal', async
   await page.screenshot({ path: testInfo.outputPath('light-dashboard.png') });
 });
 
-test('desktop summaries open an integrated page and return to the same overview geometry', async ({
-  page,
-}, testInfo) => {
+test('a desktop row opens an integrated page and returns to the same Today geometry', async ({ page }, testInfo) => {
   test.skip((page.viewportSize()?.width ?? 0) < 1280, 'Desktop stage');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   for (const [index, name, short] of [
     [0, 'Genshin Impact', 'Genshin'],
     [1, 'Honkai: Star Rail', 'HSR'],
@@ -66,54 +65,53 @@ test('desktop summaries open an integrated page and return to the same overview 
     await page.getByRole('button', { name: `Add ${short}`, exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   }
-  await expect(page.locator('.nexus-node')).toHaveCount(3);
+  const rows = page.locator('.today-priority-row');
+  await expect(rows).toHaveCount(3);
   const readGeometry = () =>
-    page.evaluate(() => {
-      const hub = document.querySelector('[aria-label="Across every game"]')!.getBoundingClientRect();
-      return [...document.querySelectorAll<HTMLElement>('.nexus-node')].map((card) => {
-        const bounds = card.getBoundingClientRect();
+    rows.evaluateAll((nodes) =>
+      nodes.map((row) => {
+        const bounds = row.getBoundingClientRect();
         return {
-          id: card.dataset.gameId,
+          id: (row as HTMLElement).dataset.rosterGame,
           x: bounds.x,
           y: bounds.y,
           width: bounds.width,
           height: bounds.height,
-          hubWidth: hub.width,
         };
-      });
-    });
-  const before = await readGeometry();
-  for (const card of before) expect(Math.abs(card.width - card.hubWidth)).toBeLessThan(2);
-  const open = page.getByRole('button', { name: 'Open Honkai: Star Rail controls', exact: true });
+      }),
+    );
+  const open = gameRow(page, 'Honkai: Star Rail');
   await open.click();
+  const before = await readGeometry();
+  await page.getByRole('button', { name: 'Open full page' }).click();
   const workspace = page.getByRole('region', { name: 'Honkai: Star Rail focus workspace' });
   await expect(workspace).toBeVisible();
   await expect(workspace).not.toHaveClass(/\bcard-shell\b/);
-  await expect(page.locator('.nexus-stage')).toHaveCount(0);
-  const back = page.getByRole('button', { name: 'Back to dashboard', exact: true });
+  await expect(page.locator('.today-page')).toHaveCount(0);
+  const back = page.getByRole('button', { name: 'Back to Today', exact: true });
   await expect(back).toBeFocused();
   // Reverse while the content arrives; navigation and controls stay usable.
   await back.click();
   await expect(open).toBeFocused();
-  await expect(page.locator('.nexus-stage')).toHaveCSS('transform', 'none');
+  await expect(page.locator('.today-page')).toHaveCSS('transform', 'none');
   const after = await readGeometry();
-  expect(after.map((card) => card.id)).toEqual(before.map((card) => card.id));
+  expect(after.map((row) => row.id)).toEqual(before.map((row) => row.id));
   for (let index = 0; index < before.length; index++) {
     for (const key of ['x', 'y', 'width', 'height'] as const) {
       expect(after[index]![key]).toBeCloseTo(before[index]![key], 0);
     }
   }
-  await open.press('Enter');
+  await openGame(page, 'Honkai: Star Rail');
   await expect(back).toBeFocused();
   await expect(workspace.getByRole('button', { name: 'Edit Honkai: Star Rail', exact: true })).toHaveCount(1);
   await page.screenshot({ path: testInfo.outputPath('integrated-game-page.png') });
 });
 
-test('a long desktop roster restores its scroll and supports repeated page visits', async ({ page }, testInfo) => {
+test('a long desktop Today list restores its scroll and supports repeated page visits', async ({ page }, testInfo) => {
   test.skip(!['desktop', 'wide-short'].includes(testInfo.project.name), 'Long roster at two desktop heights');
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   const games = Array.from({ length: 24 }, (_, index) => {
     const preset = PRESETS[index % PRESETS.length]!;
     return makeGame({
@@ -132,45 +130,32 @@ test('a long desktop roster restores its scroll and supports repeated page visit
     buffer: Buffer.from(JSON.stringify({ ...emptyState(), games })),
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('button', { name: 'Today', exact: true }).click();
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await expect(page.locator('.nexus-node')).toHaveCount(24);
-  const area = page.getByRole('complementary', { name: 'Game controls' });
-  const trigger = page.locator('.nexus-summary').last();
+  const rows = page.locator('.today-priority-row');
+  await expect(rows).toHaveCount(24);
+  const trigger = rows.last();
   const triggerName = (await trigger.getAttribute('aria-label'))!;
-  await trigger.scrollIntoViewIfNeeded();
-  const savedScroll = await area.evaluate((node) => node.scrollTop);
-  expect(savedScroll).toBeGreaterThan(0);
-  const order = await page
-    .locator('.nexus-node')
-    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-game-id')));
+  const order = await rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-roster-game')));
+  const full = page.getByRole('button', { name: 'Open full page' });
   for (let visit = 0; visit < 3; visit++) {
     await page.getByRole('button', { name: triggerName, exact: true }).click();
-    const back = page.getByRole('button', { name: 'Back to dashboard', exact: true });
+    // A short window has the card at the top of the document, so read the
+    // scroll the page is left from rather than where the row was.
+    await full.scrollIntoViewIfNeeded();
+    const savedScroll = await page.evaluate(() => scrollY);
+    await full.click();
+    const back = page.getByRole('button', { name: 'Back to Today', exact: true });
     await expect(back).toBeFocused();
     await expect(page.locator('.focus-workspace')).toBeVisible();
     await back.click();
     await expect(page.getByRole('button', { name: triggerName, exact: true })).toBeFocused();
-    await expect.poll(() => area.evaluate((node) => node.scrollTop)).toBeCloseTo(savedScroll, 0);
-    expect(
-      await page.locator('.nexus-node').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-game-id'))),
-    ).toEqual(order);
+    await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(savedScroll, 0);
+    expect(await rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-roster-game')))).toEqual(
+      order,
+    );
   }
-  const geometry = await page.evaluate(() => {
-    const card = document.querySelector('.nexus-node')!.getBoundingClientRect();
-    const hub = document.querySelector('[aria-label="Across every game"]')!.getBoundingClientRect();
-    const area = document.querySelector('.nexus-games-scroll')!.getBoundingClientRect();
-    return {
-      cardWidth: card.width,
-      hubWidth: hub.width,
-      hubTop: hub.top,
-      areaTop: area.top,
-      overflow: document.documentElement.scrollWidth > innerWidth,
-    };
-  });
-  expect(Math.abs(geometry.cardWidth - geometry.hubWidth)).toBeLessThan(2);
-  expect(Math.abs(geometry.hubTop - geometry.areaTop)).toBeLessThan(2);
-  expect(geometry.overflow).toBe(false);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
 });
 
 test('a phone sheet follows its drag, returns smoothly, and dismisses from the release point', async ({
@@ -180,7 +165,7 @@ test('a phone sheet follows its drag, returns smoothly, and dismisses from the r
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Reminder', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'New reminder' });

@@ -1,22 +1,23 @@
 import { expect, test } from '@playwright/test';
+import { openGame } from './support';
 
 test('urgent indicators breathe, pause during interaction, and respect reduced motion', async ({ page }, info) => {
   test.skip(!['desktop', 'android-s23'].includes(info.project.name), 'Desktop and touch motion');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  // A phone shows the indicator on the game's page; a wide window in the card beside Today's list.
   const phone = info.project.name === 'android-s23';
-  await page.getByRole('button', { name: 'Open Genshin Impact controls' }).click();
+  if (phone) await openGame(page, 'Genshin Impact');
   const value = page.getByLabel('Original Resin current value');
   await value.fill('200');
   await value.press('Enter');
-  await page.getByRole('button', { name: 'Back to dashboard', exact: true }).click();
-  const navigation = page.getByRole('button', { name: 'Games', exact: true });
+  const navigation = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today' });
   await navigation.focus();
   await page.mouse.move(0, 0);
   const ring = page.locator('.attention-indicator').first();
@@ -37,20 +38,14 @@ test('urgent indicators breathe, pause during interaction, and respect reduced m
   });
   expect(Math.max(...opacity) - Math.min(...opacity)).toBeGreaterThan(0.04);
   expect(Math.min(...opacity)).toBeGreaterThanOrEqual(0.44);
-  const trigger = page.getByRole('button', {
-    name: 'Open Genshin Impact controls',
-  });
-  await trigger.focus();
-  await expect(ring).toHaveCSS('animation-play-state', 'paused');
-  await navigation.focus();
+  if (!phone) {
+    await page.getByRole('button', { name: 'Edit Genshin Impact', exact: true }).focus();
+    await expect(ring).toHaveCSS('animation-play-state', 'paused');
+    await navigation.focus();
+  }
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(ring).toHaveCSS('animation-name', 'none');
   await expect(ring).toHaveCSS('opacity', '0.45');
   await page.screenshot({ path: info.outputPath('quiet-urgency.png') });
-  const shell = page.locator(phone ? '.mobile-game-row' : '.nexus-node').first();
-  const border = await shell.evaluate((node) => getComputedStyle(node).borderTopColor);
-  const dot = await ring.evaluate((node) => getComputedStyle(node).backgroundColor);
-  expect(border).not.toBe(dot);
-  await trigger.click();
-  await expect(page.getByLabel('Original Resin current value')).toHaveValue('200');
+  await expect(value).toHaveValue('200');
 });

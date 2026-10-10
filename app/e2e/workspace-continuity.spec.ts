@@ -4,9 +4,11 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
   test(`phone check-in preserves its origin, scroll and focus (${reducedMotion})`, async ({ page }, info) => {
     test.skip(info.project.name !== 'android-s23', 'Phone workspace continuity');
     await page.emulateMedia({ reducedMotion });
+    // Short enough that the last of seven rows sits below the fold.
+    await page.setViewportSize({ width: 412, height: 520 });
     await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
     await page.goto('/');
-    await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+    await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
     for (const [name, short] of [
       ['Genshin Impact', 'Genshin'],
       ['Honkai: Star Rail', 'HSR'],
@@ -31,7 +33,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     const scroll = await page.evaluate(() => scrollY);
     expect(scroll).toBeGreaterThan(0);
     await row.click();
-    const back = page.getByRole('button', { name: 'Back to dashboard', exact: true });
+    const back = page.getByRole('button', { name: 'Back to Today', exact: true });
     await expect(back).toBeFocused();
     await expect(page.locator('.focus-workspace')).toBeVisible();
     if (reducedMotion === 'no-preference') {
@@ -59,8 +61,8 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     const returned = page.getByRole('button', { name: rowName!, exact: true });
     await expect(returned).toBeFocused();
     await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(scroll, 0);
-    await expect(page.locator('.mobile-game-roster')).toHaveCSS('transform', 'none');
-    await expect(page.locator('.mobile-game-roster')).toHaveCSS('opacity', '1');
+    await expect(page.locator('.today-page')).toHaveCSS('transform', 'none');
+    await expect(page.locator('.today-page')).toHaveCSS('opacity', '1');
     await returned.press('Enter');
     await expect(back).toBeFocused();
     await expect(page.locator('.focus-workspace')).toBeVisible();

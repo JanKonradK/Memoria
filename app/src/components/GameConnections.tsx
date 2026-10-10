@@ -114,11 +114,11 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
       if (result.accounts.length === 1) {
         setUid(result.accounts[0].uid);
         setServer(result.accounts[0].server);
-        setAccountNotice('Account found. Select Connect and review to check its readings.');
+        setAccountNotice('Account found. Select Connect.');
       } else if (result.accounts.length === 0) {
         setAccountNotice('No linked account was found for this game. You can enter its UID and server below.');
       } else {
-        setAccountNotice('Choose a linked account, then select Connect and review.');
+        setAccountNotice('Choose a linked account, then select Connect.');
       }
     } catch (cause) {
       if (active.current)
@@ -193,7 +193,7 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
             </li>
             <li>
               Open the Memoria connector in the browser toolbar and select Read accounts. Return here and select Find my
-              accounts, then Connect and review.
+              accounts, then Connect.
             </li>
           </ol>
           <p className="text-meta text-muted">
@@ -305,7 +305,7 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
               kind="primary"
               onClick={() => void run({ action: 'refresh', gameId })}
             >
-              {busy ? 'Checking…' : 'Fetch readings'}
+              {busy ? 'Checking…' : 'Fetch now'}
             </Btn>
             <Btn disabled={busy || conflicts.length > 1} onClick={() => void run({ action: 'disconnect', gameId })}>
               Disconnect
@@ -445,7 +445,7 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
             </p>
           )}
           <Btn type="submit" kind="primary" disabled={busy}>
-            {busy ? 'Checking account…' : 'Connect and review'}
+            {busy ? 'Checking account…' : 'Connect'}
           </Btn>
         </form>
       )}

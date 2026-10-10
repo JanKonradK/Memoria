@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { AppBar } from '../src/components/AppBar';
+import { CalendarToolbar } from '../src/components/CalendarToolbar';
 import { useApp } from '../src/store';
 import { useUI } from '../src/ui-store';
 import { syncNow } from '../src/sync';
@@ -29,21 +30,28 @@ beforeEach(() => {
     load: vi.fn().mockResolvedValue(undefined),
   });
   useLanSync.setState({ status: 'off', error: '' });
-  useUI.setState({ tab: 'home', orderEpoch: 0 });
+  useUI.setState({ tab: 'today', focusedGameId: null });
 });
 
 afterEach(() => useApp.setState({ load: originalLoad }));
 
-it('keeps three primary routes and makes calendar livestreams and settings reachable', () => {
+it('keeps two primary routes and makes calendar livestreams and settings reachable', () => {
   useUI.setState({ tab: 'today' });
-  render(<AppBar />);
+  render(
+    <>
+      <AppBar />
+      <CalendarToolbar view="timeline" />
+    </>,
+  );
   const nav = screen.getByRole('navigation', { name: 'Primary' });
   expect(
     within(nav)
       .getAllByRole('button')
       .map((button) => button.textContent),
-  ).toEqual(['Today', 'Games', 'Calendar']);
+  ).toEqual(['Today', 'Calendar']);
   fireEvent.click(within(nav).getByRole('button', { name: 'Calendar' }));
+  // Calendar's own views sit on the page, outside the app bar.
+  expect(within(screen.getByRole('banner')).queryByRole('button', { name: 'Livestreams' })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Livestreams' }));
   expect(useUI.getState().tab).toBe('livestreams');
   expect(within(nav).getByRole('button', { name: 'Calendar' })).toHaveAttribute('aria-current', 'page');
@@ -64,7 +72,7 @@ it('shows a connection error ahead of another successful connection', () => {
   expect(screen.getByRole('status')).toHaveAttribute('title', 'Reconnect the sync file.');
 });
 
-it('refreshes connected devices after local loading and waits before reordering', async () => {
+it('refreshes connected devices after local loading', async () => {
   let finishLoad!: () => void;
   useApp.setState({
     load: vi.fn(
@@ -91,13 +99,11 @@ it('refreshes connected devices after local loading and waits before reordering'
   expect(cloudSyncNow).toHaveBeenCalledOnce();
   expect(syncLanNow).toHaveBeenCalledOnce();
   expect(refresh).toBeDisabled();
-  expect(useUI.getState().orderEpoch).toBe(0);
   await act(async () => finishSync());
   expect(refresh).toBeEnabled();
-  expect(useUI.getState().orderEpoch).toBe(1);
 });
 
-it.each(['loadError', 'saveError'] as const)('keeps the current order and avoids sync after %s', async (field) => {
+it.each(['loadError', 'saveError'] as const)('avoids sync after %s', async (field) => {
   useApp.setState({
     load: vi.fn(async () => {
       useApp.setState({ [field]: 'Storage is unavailable.' });
@@ -110,5 +116,14 @@ it.each(['loadError', 'saveError'] as const)('keeps the current order and avoids
   expect(syncNow).not.toHaveBeenCalled();
   expect(cloudSyncNow).not.toHaveBeenCalled();
   expect(syncLanNow).not.toHaveBeenCalled();
-  expect(useUI.getState().orderEpoch).toBe(0);
+});
+
+it('keeps Today selected on a game page and returns to Today from it', () => {
+  useUI.setState({ tab: 'home', focusedGameId: 'game' });
+  render(<AppBar />);
+  const today = within(screen.getByRole('navigation', { name: 'Primary' })).getByRole('button', { name: 'Today' });
+  expect(today).toHaveAttribute('aria-current', 'page');
+  fireEvent.click(today);
+  expect(useUI.getState().tab).toBe('today');
+  expect(useUI.getState().focusedGameId).toBeNull();
 });

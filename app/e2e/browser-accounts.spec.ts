@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { emptyState } from '@memoria/shared';
 import { makeGame, makeResource } from '../../shared/test/helpers';
 
-test('normal browser setup discovers an account and sends readings into review', async ({ page }, info) => {
+test('normal browser setup discovers an account and saves its readings to the card', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'Native PC bridge flow');
   const now = Date.UTC(2026, 9, 8, 12, 0);
   await page.clock.setFixedTime(new Date(now));
@@ -66,22 +66,23 @@ test('normal browser setup discovers an account and sends readings into review',
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await page.evaluate(() =>
-    document.dispatchEvent(new CustomEvent('memoria:open-import', { detail: { gameId: 'g1', tab: 'accounts' } })),
+    document.dispatchEvent(new CustomEvent('memoria:open-accounts', { detail: { gameId: 'g1' } })),
   );
-  const dialog = page.getByRole('dialog', { name: 'Import game readings', exact: true });
-  const setup = dialog.getByRole('region', { name: 'Chrome or Edge connection' });
+  // Accounts open inside the game's card, not in a separate dialog.
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  const panel = page.getByRole('region', { name: 'Account for Genshin browser', exact: true });
+  const setup = panel.getByRole('region', { name: 'Chrome or Edge connection' });
   await expect(setup).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Sign in with HoYoLAB' })).toHaveCount(0);
-  await expect(dialog.getByRole('textbox', { name: 'HoYoLAB session cookie' })).toHaveCount(0);
+  await expect(panel.getByRole('button', { name: 'Sign in with HoYoLAB' })).toHaveCount(0);
+  await expect(panel.getByRole('textbox', { name: 'HoYoLAB session cookie' })).toHaveCount(0);
   await expect(setup.getByRole('link', { name: 'Open HoYoLAB in your browser' })).toHaveAttribute(
     'href',
     'https://www.hoyolab.com/',
   );
   await setup.getByRole('button', { name: 'Set up browser connector' }).click();
-  await expect(dialog.getByRole('status')).toContainText('Connector folder opened');
+  await expect(panel.getByRole('status')).toContainText('Connector folder opened');
   await page.setViewportSize({ width: 512, height: 600 });
-  await expect(page.locator('[role="dialog"]')).toHaveCount(1);
-  await expect(dialog.locator('..')).toHaveCSS('opacity', '1');
+  await expect(panel).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(
     (await new AxeBuilder({ page }).analyze()).violations.filter((issue) =>
@@ -89,9 +90,10 @@ test('normal browser setup discovers an account and sends readings into review',
     ),
   ).toEqual([]);
   await page.screenshot({ path: info.outputPath('browser-account-setup.png') });
-  await dialog.getByRole('button', { name: 'Find my accounts', exact: true }).click();
-  await expect(dialog.getByRole('textbox', { name: 'In-game UID', exact: true })).toHaveValue('700000002');
-  await dialog.getByRole('button', { name: 'Connect and review', exact: true }).click();
-  await expect(dialog.getByRole('spinbutton', { name: 'Original Resin', exact: true })).toHaveValue('123');
-  await expect(dialog.getByRole('button', { name: 'Apply reviewed readings', exact: true })).toBeEnabled();
+  await panel.getByRole('button', { name: 'Find my accounts', exact: true }).click();
+  await expect(panel.getByRole('textbox', { name: 'In-game UID', exact: true })).toHaveValue('700000002');
+  await panel.getByRole('button', { name: 'Connect', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Saved 1 reading to Genshin browser.' })).toBeVisible();
+  await expect(page.getByLabel('Original Resin current value', { exact: true })).toHaveValue('123');
+  await expect(page.locator('[data-reading-status]')).toContainText('Account ·');
 });

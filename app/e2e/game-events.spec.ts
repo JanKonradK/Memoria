@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { openGame } from './support';
 
 async function stored(page: Page) {
   return page.evaluate(
@@ -24,7 +25,7 @@ async function stored(page: Page) {
 }
 
 async function openWorkspace(page: Page) {
-  await page.getByRole('button', { name: 'Open Genshin Impact controls', exact: true }).click();
+  await openGame(page, 'Genshin Impact');
   await expect(page.getByRole('button', { name: 'Manage events', exact: true })).toBeVisible();
 }
 
@@ -32,7 +33,7 @@ test.beforeEach(async ({ page }, info) => {
   test.skip(!['android-s23', 'mobile-320', 'desktop'].includes(info.project.name), 'Game management sizes');
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
@@ -98,7 +99,7 @@ test('cards add, rename, change behavior, and delete finished events from Edit l
     .toBe(true);
 });
 
-test('pause survives reload and resumes saved daily progress from the dashboard', async ({ page }, info) => {
+test('pause survives reload and resumes saved daily progress from the game page', async ({ page }) => {
   const value = page.getByLabel('Original Resin current value');
   await value.fill('99');
   await value.press('Enter');
@@ -120,15 +121,11 @@ test('pause survives reload and resumes saved daily progress from the dashboard'
   await edit.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(edit).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Resume tracking', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Back to dashboard', exact: true }).click();
+  await page.getByRole('button', { name: 'Back to Today', exact: true }).click();
   await page.reload();
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
-  if (info.project.name === 'desktop') {
-    await openWorkspace(page);
-    await page.getByRole('button', { name: 'Resume tracking', exact: true }).click();
-  } else {
-    await page.getByRole('button', { name: 'Resume Genshin Impact tracking', exact: true }).click();
-  }
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
+  await openWorkspace(page);
+  await page.getByRole('button', { name: 'Resume tracking', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Pause tracking', exact: true })).toBeVisible();
   await expect(value).toHaveValue('99');
   await expect(page.getByRole('button', { name: /Daily Commissions/ })).toHaveAttribute('aria-pressed', 'true');

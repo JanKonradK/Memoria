@@ -46,7 +46,6 @@ function show(events: GameEvent[], gameOverrides: Partial<Game> = {}) {
   // Event rows carry countdown tooltips, which the real app supplies at the root.
   return render(
     <TooltipProvider>
-      <div id="app-bar-actions" />
       <TimelinePage now={NOW} />
     </TooltipProvider>,
   );

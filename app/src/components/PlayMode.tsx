@@ -242,7 +242,7 @@ export function PlayMode() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-heading font-semibold">Capture inbox</h2>
                 <span className="text-meta text-muted" role="status">
-                  {status?.busy ? 'Reading game window…' : `${status?.count ?? 0} to review`}
+                  {status?.busy ? 'Reading game window…' : `${status?.count ?? 0} waiting`}
                 </span>
               </div>
               {!status?.pending.length && (
@@ -264,7 +264,7 @@ export function PlayMode() {
                       disabled={working}
                       kind="primary"
                       onClick={() => {
-                        if (dirty && !window.confirm('Discard unsaved Play mode settings and review this capture?'))
+                        if (dirty && !window.confirm('Discard unsaved Play mode settings and use this capture?'))
                           return;
                         if (
                           document.dispatchEvent(
@@ -274,7 +274,7 @@ export function PlayMode() {
                           close();
                       }}
                     >
-                      Review capture
+                      Use capture
                     </Btn>
                     <Btn
                       disabled={working}
@@ -309,8 +309,8 @@ export function PlayMode() {
                   if (dirty && !window.confirm('Discard unsaved Play mode settings and open Accounts?')) return;
                   if (
                     document.dispatchEvent(
-                      new CustomEvent('memoria:open-import', {
-                        detail: { tab: 'accounts', gameId: config.gameId || undefined },
+                      new CustomEvent('memoria:open-accounts', {
+                        detail: { gameId: config.gameId || undefined },
                         cancelable: true,
                       }),
                     )

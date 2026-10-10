@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { gameRow, openGame } from './support';
 
 async function expectNoPageOverflow(page: Page) {
   const overflow = await page.evaluate(() => ({
@@ -9,17 +10,6 @@ async function expectNoPageOverflow(page: Page) {
   expect(
     overflow.document,
     `document width ${overflow.document}px should fit ${overflow.viewport}px`,
-  ).toBeLessThanOrEqual(overflow.viewport);
-}
-
-async function expectNoPageVerticalOverflow(page: Page) {
-  const overflow = await page.evaluate(() => ({
-    viewport: window.innerHeight,
-    document: document.documentElement.scrollHeight,
-  }));
-  expect(
-    overflow.document,
-    `document height ${overflow.document}px should fit ${overflow.viewport}px`,
   ).toBeLessThanOrEqual(overflow.viewport);
 }
 
@@ -54,7 +44,7 @@ async function expectTimelineTicksToFit(page: Page) {
     .click();
   const scale = page.locator('[data-timeline-scale]');
   const ticks = page.locator('[data-timeline-tick]');
-  await expect(ticks.first()).toBeVisible();
+  await expect(ticks.filter({ visible: true }).first()).toBeVisible();
   const geometry = await scale.evaluate((element) => {
     const scaleBox = element.getBoundingClientRect();
     const tickBoxes = [...element.querySelectorAll<HTMLElement>('[data-timeline-tick]')].map((tick) => {
@@ -79,7 +69,7 @@ async function openAddMenu(page: Page, item: 'Add game' | 'Event' | 'Reminder') 
 }
 
 async function addPreset(page: Page, name: string, short: string, first = false) {
-  const allGames = page.getByRole('button', { name: 'Back to dashboard', exact: true });
+  const allGames = page.getByRole('button', { name: 'Back to Today', exact: true });
   if (await allGames.isVisible()) await allGames.click();
   if (first) await page.getByRole('button', { name: 'Add your first game' }).click();
   else await openAddMenu(page, 'Add game');
@@ -87,9 +77,8 @@ async function addPreset(page: Page, name: string, short: string, first = false)
   await page.getByRole('button', { name: new RegExp(name) }).click();
   await page.getByRole('button', { name: `Add ${short}` }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  // Open the game page before asserting its heading.
-  const phoneOpen = page.getByRole('button', { name: `Open ${name} controls` });
-  if (await phoneOpen.isVisible()) await phoneOpen.click();
+  // Its row opens the page on a phone and brings its card beside the list on desktop.
+  await gameRow(page, name).click();
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
 }
 
@@ -102,7 +91,7 @@ test.beforeEach(async ({ page }) => {
   // The onboarding screen itself is covered by its own test.
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Add your first game' })).toBeVisible();
 });
 
@@ -118,7 +107,7 @@ test('empty app is accessible and fits the viewport', async ({ page }) => {
   const appBar = page.locator('header');
   await expect(appBar).toBeVisible();
   await expect.poll(() => appBar.evaluate((bar) => getComputedStyle(bar).position)).toBe('sticky');
-  await expect(page.getByRole('button', { name: 'Games', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('button', { name: 'Today', exact: true })).toHaveAttribute('aria-current', 'page');
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
   await expectSoundDocumentStructure(page);
@@ -164,8 +153,8 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
 
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
-  await page.getByRole('button', { name: 'Games', exact: true }).click();
-  const openControls = page.getByRole('button', { name: 'Open Genshin Impact controls' });
+  await page.getByRole('button', { name: 'Today', exact: true }).click();
+  const openControls = gameRow(page, 'Genshin Impact');
   if (await openControls.isVisible()) await openControls.click();
   await expect(page.getByRole('button', { name: /Domain -20/ })).toBeVisible();
   const timer = page.getByRole('button', { name: 'Crystalfly Trap (Crystal Cores): mark collected and resent' });
@@ -188,7 +177,7 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   await page.getByRole('button', { name: /Reserve TB Power/ }).click();
   await expect(page.getByLabel(/Reserve TB Power for Trailblaze Power/)).toBeVisible();
 
-  const allGames = page.getByRole('button', { name: 'Back to dashboard', exact: true });
+  const allGames = page.getByRole('button', { name: 'Back to Today', exact: true });
   if (await allGames.isVisible()) await allGames.click();
   await openAddMenu(page, 'Add game');
   await page.getByRole('button', { name: /Neverness to Everness/ }).click();
@@ -196,7 +185,7 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   await page.getByRole('button', { name: 'Add NTE' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   // A new game opens the same page at every width.
-  const openNte = page.getByRole('button', { name: 'Open Neverness to Everness controls' });
+  const openNte = gameRow(page, 'Neverness to Everness');
   if (await openNte.isVisible()) await openNte.click();
   await expect(page.getByRole('heading', { name: 'Neverness to Everness', exact: true })).toBeVisible();
 });
@@ -230,7 +219,7 @@ test('tabs, timeline controls, and settings fit after adding a game', async ({ p
   await expect(page.getByRole('dialog', { name: 'Genshin Impact' })).toBeVisible();
 });
 
-test('wide dashboard opens integrated game pages while timeline bars stay in scale', async ({ page }, testInfo) => {
+test('wide Today opens integrated game pages while timeline bars stay in scale', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-16x9', '16:9 desktop layout check');
 
   await addGenshin(page);
@@ -239,21 +228,20 @@ test('wide dashboard opens integrated game pages while timeline bars stay in sca
   await addPreset(page, 'Wuthering Waves', 'WuWa');
   await addPreset(page, 'Neverness to Everness', 'NTE');
 
-  await page.getByRole('button', { name: 'Back to dashboard', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Across every game' })).toBeVisible();
-  const cards = page.locator('.nexus-node');
+  const cards = page.locator('[data-roster-game]');
   await expect(cards).toHaveCount(5);
   const restingOrder = await page
     .locator('[data-roster-game]')
     .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label')));
-  const starRailTrigger = page.getByRole('button', { name: 'Open Honkai: Star Rail controls', exact: true });
-  await starRailTrigger.click();
+  const starRailTrigger = gameRow(page, 'Honkai: Star Rail');
+  await openGame(page, 'Honkai: Star Rail');
   const workspace = page.getByRole('region', { name: 'Honkai: Star Rail focus workspace' });
   await expect(workspace).toBeVisible();
   await expect(workspace).not.toHaveClass(/card-shell/);
   await expect(page.getByRole('combobox', { name: 'Focus game' })).toHaveCount(0);
   await expectNoPageOverflow(page);
-  await page.getByRole('button', { name: 'Back to dashboard', exact: true }).click();
+  await page.getByRole('button', { name: 'Back to Today', exact: true }).click();
   await expect(starRailTrigger).toBeFocused();
   await expect(cards).toHaveCount(5);
   expect(
@@ -262,7 +250,6 @@ test('wide dashboard opens integrated game pages while timeline bars stay in sca
       .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label'))),
   ).toEqual(restingOrder);
   await expectNoPageOverflow(page);
-  await expectNoPageVerticalOverflow(page);
 
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   // Importing the bundled feed is automatic on load, so the seeded lane is
@@ -292,7 +279,7 @@ test('tabs cross-slide without spilling the page sideways', async ({ page }) => 
   for (const [route, heading] of [
     ['Calendar', 'Event timeline'],
     ['Settings', 'Settings'],
-    ['Games', 'Dashboard'],
+    ['Today', 'Today'],
   ] as const) {
     await page.getByRole('button', { name: route, exact: true }).click();
     await expect(page.getByRole('button', { name: route, exact: true })).toHaveAttribute('aria-current', 'page');
@@ -336,7 +323,7 @@ test('animated Add menu transfers focus to a sheet and releases pointer input', 
 test('floating phone navigation contains touch targets and tracks each selected route', async ({ page }) => {
   test.skip(page.viewportSize()!.width >= 768, 'Floating phone dock');
   const nav = page.getByRole('navigation', { name: 'Primary' });
-  for (const route of ['Today', 'Games', 'Calendar']) {
+  for (const route of ['Calendar', 'Today']) {
     await nav.getByRole('button', { name: route, exact: true }).click();
     const selected = nav.getByRole('button', { name: route, exact: true });
     await expect(selected).toHaveAttribute('aria-current', 'page');

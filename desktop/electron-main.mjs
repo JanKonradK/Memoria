@@ -20,6 +20,7 @@ import { externalUrl, isAppUrl, launchOrigin, windowBounds } from './native-poli
 import { createPlayMode } from './play-mode.mjs';
 import { createHoyoLogin } from './hoyo-login.mjs';
 import { createBrowserConnections } from './browser-bridge.mjs';
+import { createGameLaunch, LAUNCH_EXTENSIONS } from './game-launch.mjs';
 
 const here = import.meta.dirname;
 const root = resolve(here, '..');
@@ -41,6 +42,7 @@ let recoveryErrorShown = false;
 let ready = false;
 let play;
 let hoyo;
+let launch;
 let tray;
 let browserConnections;
 let browserWatch;
@@ -254,9 +256,13 @@ for (const [channel, action] of Object.entries({
   'memoria:browser-status': () => browserConnections.status(),
   'memoria:browser-accounts': (options) => browserConnections.listAccounts(options),
   'memoria:browser-request': (body) => browserConnections.request(body),
+  'memoria:launch-list': () => launch.list(),
+  'memoria:launch-choose': (gameId) => launch.choose(gameId),
+  'memoria:launch-clear': (gameId) => launch.clear(gameId),
+  'memoria:launch-start': (gameId) => launch.start(gameId),
 })) {
   ipcMain.handle(channel, (event, argument) => {
-    if (!trustedSender(event) || !play || !hoyo || !browserConnections || quitting)
+    if (!trustedSender(event) || !play || !hoyo || !browserConnections || !launch || quitting)
       throw new Error('This action is only available in Memoria.');
     return action(argument);
   });
@@ -501,6 +507,18 @@ async function createWindow() {
     },
   });
   const contents = window.webContents;
+  contents.on('before-input-event', (event, input) => {
+    // The main keyboard and number pad report different keys for zoom in.
+    if (
+      input.type === 'keyDown' &&
+      (input.control || input.meta) &&
+      !input.alt &&
+      (input.key === '+' || input.key === '=')
+    ) {
+      event.preventDefault();
+      contents.setZoomLevel(contents.getZoomLevel() + 0.5);
+    }
+  });
   window.on('focus', reconcileWindowVisibility);
   window.on('blur', reconcileWindowVisibility);
   window.on('minimize', cancelWindowVisibility);
@@ -673,6 +691,20 @@ async function createWindow() {
   browserConnections = createBrowserConnections({
     directory: data,
     getGames: async () => (await nativeApi('/api/state')).state.games.filter((game) => !game.deleted),
+  });
+  launch = createGameLaunch({
+    dataDir: data,
+    // The only source of a launch path: a file the player picks in a native dialog.
+    pick: async () => {
+      const result = await dialog.showOpenDialog(window, {
+        title: 'Choose the game or its launcher',
+        buttonLabel: 'Use this',
+        properties: ['openFile'],
+        filters: [{ name: 'Programs and shortcuts', extensions: LAUNCH_EXTENSIONS }],
+      });
+      return result.canceled ? undefined : result.filePaths[0];
+    },
+    open: (path) => shell.openPath(path),
   });
   watchBrowserReadings();
   await play.start();

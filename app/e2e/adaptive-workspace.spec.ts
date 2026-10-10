@@ -67,23 +67,23 @@ test('Today and game controls adapt while a PC window is resized', async ({ page
           return rect.left >= 0 && rect.right <= innerWidth + 1 && rect.bottom <= innerHeight;
         }),
         priorityColumns: new Set(rows.map((row) => Math.round(row.left))).size,
+        rowsInside: rows.every((row) => row.left >= 0 && row.right <= innerWidth + 1),
       };
     });
     expect(geometry.pageWidth).toBe(viewport.width);
     expect(geometry.controlsFit).toBe(true);
-    if (viewport.width >= 1920) expect(geometry.priorityColumns).toBeGreaterThan(1);
+    // One ranked column at every width, so fill levels and countdowns compare down the list.
+    expect(geometry.priorityColumns).toBe(1);
+    expect(geometry.rowsInside).toBe(true);
     await expect(page.locator('.today-detail')).toBeVisible({ visible: viewport.width >= 900 });
     await page.screenshot({ path: info.outputPath(`today-${viewport.width}.png`) });
   }
 
-  // A snapped PC window must not lose the Tonight controls between phone and desktop layouts.
+  // A snapped PC window keeps Tonight under the list, and a game's page keeps a typed value while it resizes.
   await page.setViewportSize({ width: 960, height: 650 });
-  await primary.getByRole('button', { name: 'Games', exact: true }).click();
-  const view = page.getByRole('radiogroup', { name: 'Dashboard view', exact: true });
-  await view.getByRole('radio', { name: 'Tonight & reminders', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Across every game', exact: true })).toBeVisible();
-  await view.getByRole('radio', { name: 'Games', exact: true }).click();
   await page.locator('[data-roster-game="adaptive-0"]').click();
+  await page.getByRole('button', { name: 'Open full page' }).click();
   const energy = page.getByLabel('Energy current value', { exact: true });
   await energy.fill('83');
   await page.setViewportSize({ width: 360, height: 600 });

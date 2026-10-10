@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { createLanSync, createStateAccess } from '../../desktop/lan-sync.mjs';
 import * as core from '../../desktop/dist/shared-core.mjs';
 import AxeBuilder from '@axe-core/playwright';
+import { gameRow, openGame } from './support';
 
 for (const method of ['scan', 'manual']) {
   test(`Android ${method} pairing merges PC and phone edits and recovers after an outage`, async ({ page }, info) => {
@@ -76,7 +77,7 @@ for (const method of ['scan', 'manual']) {
       await page.goto('/');
       await page
         .getByRole('navigation', { name: 'Primary' })
-        .getByRole('button', { name: 'Games', exact: true })
+        .getByRole('button', { name: 'Today', exact: true })
         .click();
       await expect(page.getByRole('dialog')).toHaveCount(0);
       await page.getByRole('button', { name: 'Connect my PC', exact: true }).click();
@@ -109,7 +110,7 @@ for (const method of ['scan', 'manual']) {
           ['serious', 'critical'].includes(item.impact ?? ''),
         ),
       ).toEqual([]);
-      await page.getByRole('button', { name: 'Games', exact: true }).click();
+      await page.getByRole('button', { name: 'Today', exact: true }).click();
       await page.getByRole('button', { name: 'Add your first game' }).click();
       await page.getByRole('button', { name: /Genshin Impact/ }).click();
       await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
@@ -120,9 +121,9 @@ for (const method of ['scan', 'manual']) {
       remote.games[0] = { ...remote.games[0], name: 'PC edited game', updatedAt: Date.now() + 10 };
       await access.merge(remote);
       await page.evaluate(() => window.dispatchEvent(new Event('online')));
-      await expect(page.getByRole('button', { name: 'Open PC edited game controls', exact: true })).toBeVisible();
+      await expect(gameRow(page, 'PC edited game')).toBeVisible();
       offline = true;
-      await page.getByRole('button', { name: 'Open PC edited game controls', exact: true }).click();
+      await openGame(page, 'PC edited game');
       const energy = page.getByLabel('Original Resin current value');
       await energy.fill('77');
       await energy.press('Enter');
@@ -140,7 +141,8 @@ for (const method of ['scan', 'manual']) {
       await page.getByText('Connection options', { exact: true }).click();
       await page.getByRole('button', { name: 'Disconnect', exact: true }).click();
       await expect(page.getByRole('button', { name: 'Scan PC code', exact: true })).toBeVisible();
-      await page.getByRole('button', { name: 'Games', exact: true }).click();
+      await page.getByRole('button', { name: 'Today', exact: true }).click();
+      await openGame(page, 'PC edited game');
       await expect(energy).toHaveValue('77');
     } finally {
       await server.control({ action: 'stop' });

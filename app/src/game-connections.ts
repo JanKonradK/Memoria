@@ -141,7 +141,7 @@ export async function connectionRequest(body?: Record<string, unknown>): Promise
     result = await browser.request(safeBody);
   } else result = await legacyConnectionRequest(body, false);
   if (id && generation !== (desktopGenerations.get(id) ?? 0))
-    throw new Error('The account connection changed. Fetch readings again.');
+    throw new Error('The account connection changed. Fetch again.');
   return recordConnectionResponse(result, isDesktopApp() ? transport : undefined, id || undefined);
 }
 
@@ -241,7 +241,7 @@ async function nativeConnectionRequest(body?: Record<string, unknown>): Promise<
   const generation = nativeGenerations.get(account.gameId) ?? 0;
   const fetched = await fetchHoyoNotes({ provider: account.provider, uid: account.uid, server: account.server });
   if (generation !== (nativeGenerations.get(account.gameId) ?? 0))
-    throw new Error('The account connection changed. Fetch readings again.');
+    throw new Error('The account connection changed. Fetch again.');
   const reading: AccountReading = { ...fetched, gameId: account.gameId };
   const latest = nativeConnections();
   const current = latest.find((item) => item.gameId === account.gameId);
@@ -253,7 +253,7 @@ async function nativeConnectionRequest(body?: Record<string, unknown>): Promise<
       current.server !== account.server ||
       current.provider !== account.provider)
   )
-    throw new Error('The account connection changed. Fetch readings again.');
+    throw new Error('The account connection changed. Fetch again.');
   const next = [
     ...latest.filter((item) => item.gameId !== account.gameId),
     { ...(body.action === 'refresh' ? current! : account), lastCheckedAt: reading.observedAt },

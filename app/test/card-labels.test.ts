@@ -4,7 +4,7 @@ import { emptyState, type Game, type GameUrgency } from '@memoria/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 import { GameCard, GameControlsView, type GameControlActions } from '../src/components/GameCard';
 import { TooltipProvider } from '../src/components/ui';
-import { formatCardTimeLeft, NexusLayout, serverRegionLabel } from '../src/components/NexusLayout';
+import { serverRegionLabel } from '../src/server-region';
 import { useApp } from '../src/store';
 
 /**
@@ -17,7 +17,6 @@ function renderCard(element: ReactElement) {
 }
 
 const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
 
 const game: Game = {
   id: 'genshin-eu',
@@ -50,36 +49,6 @@ function controls(): GameControlActions {
 }
 
 afterEach(() => useApp.setState({ state: emptyState() }));
-
-describe('formatCardTimeLeft', () => {
-  // The owner's rule: hours while inside 100 hours, days and hours beyond it.
-  // fmtDur in util.ts switches to days at 24h and has many other callers, so
-  // this card needs its own formatter rather than a change to that one.
-  it('counts in hours right up to the boundary', () => {
-    expect(formatCardTimeLeft(2 * HOUR)).toBe('2h');
-    expect(formatCardTimeLeft(48 * HOUR)).toBe('48h');
-    expect(formatCardTimeLeft(99 * HOUR)).toBe('99h');
-  });
-
-  it('switches to days and hours AT one hundred hours, not before', () => {
-    // 99h is the last hours-only value; 100h is the first day value. An
-    // off-by-one here is invisible in a screenshot and wrong every fifth day.
-    expect(formatCardTimeLeft(99 * HOUR + 59 * MINUTE)).toBe('99h');
-    expect(formatCardTimeLeft(100 * HOUR)).toBe('4d 4h');
-    expect(formatCardTimeLeft(101 * HOUR)).toBe('4d 5h');
-  });
-
-  it('drops to minutes below an hour, and never shows a bare zero', () => {
-    expect(formatCardTimeLeft(59 * MINUTE)).toBe('59m');
-    expect(formatCardTimeLeft(MINUTE)).toBe('1m');
-    expect(formatCardTimeLeft(30_000)).toBe('<1m');
-  });
-
-  it('says now once the moment has passed', () => {
-    expect(formatCardTimeLeft(0)).toBe('now');
-    expect(formatCardTimeLeft(-5 * HOUR)).toBe('now');
-  });
-});
 
 describe('serverRegionLabel', () => {
   // A fixed August instant: the reference servers use fixed offsets, but the
@@ -120,22 +89,6 @@ describe('game card account labels', () => {
     const state = { ...emptyState(), games: [game] };
     const entry: GameUrgency = { game, next: null, actions: [] };
     useApp.setState({ state });
-
-    const nexus = renderCard(
-      createElement(NexusLayout, {
-        state,
-        entries: [entry],
-        displayIds: [game.id],
-        now: Date.UTC(2026, 7, 5, 12),
-        onOpenEvent: () => {},
-        onOpenTimeline: () => {},
-      }),
-    );
-    expect(screen.getAllByRole('complementary')).toHaveLength(1);
-    expect(screen.getByRole('button', { name: 'Open Genshin Impact controls' })).toBeVisible();
-    expect(screen.queryByText('+ label')).not.toBeInTheDocument();
-    expect(screen.getByText(game.name).parentElement?.querySelector('.bg-line-edge')).toBeNull();
-    nexus.unmount();
 
     renderCard(
       createElement(GameControlsView, {

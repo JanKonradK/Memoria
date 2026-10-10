@@ -14,6 +14,13 @@ export interface DesktopCloseResult {
 export interface DesktopHost {
   version: 1;
   play?: DesktopPlay;
+  /** Start a tracked game. Targets are picked in a native dialog and never leave this PC. */
+  launch?: {
+    list(): Promise<LaunchTargets>;
+    choose(gameId: string): Promise<LaunchTargets>;
+    clear(gameId: string): Promise<LaunchTargets>;
+    start(gameId: string): Promise<{ started: string }>;
+  };
   browser?: {
     setup(): Promise<{ folder: string }>;
     status(): Promise<{ receivedAt: number | null; accounts: number; error?: string }>;
@@ -34,6 +41,11 @@ export interface DesktopHost {
   };
   onCloseRequested(listener: (requestId: string) => void): () => void;
   completeClose(requestId: string, result: DesktopCloseResult): void;
+}
+
+/** Game id to the file name of what starts it. */
+export interface LaunchTargets {
+  targets: Record<string, string>;
 }
 
 declare global {

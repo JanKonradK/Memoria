@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { gameRow, openGame } from './support';
 
 test.beforeEach(async ({ page }, info) => {
   test.skip(!['android-s23', 'mobile-320', 'mobile-390'].includes(info.project.name), 'Phone check-in flow');
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
@@ -13,7 +14,7 @@ test.beforeEach(async ({ page }, info) => {
 });
 
 test('phone roster opens full controls and keeps edits across navigation', async ({ page }, info) => {
-  await expect(page.getByRole('button', { name: 'Open Genshin Impact controls' })).toBeVisible();
+  await expect(gameRow(page, 'Genshin Impact')).toBeVisible();
   const nav = page.getByRole('navigation', { name: 'Primary' });
   const box = await nav.boundingBox();
   // The glass dock floats above the safe area instead of touching the edge.
@@ -26,7 +27,7 @@ test('phone roster opens full controls and keeps edits across navigation', async
     expect(bounds!.width).toBeGreaterThanOrEqual(44);
   }
   await page.screenshot({ path: info.outputPath('phone-roster.png') });
-  await page.getByRole('button', { name: 'Open Genshin Impact controls' }).click();
+  await openGame(page, 'Genshin Impact');
   const value = page.getByLabel('Original Resin current value');
   await value.fill('100');
   await value.press('Enter');
@@ -35,18 +36,17 @@ test('phone roster opens full controls and keeps edits across navigation', async
   const task = page.getByRole('button', { name: /Daily Commissions/ });
   await task.click();
   await expect(task).toHaveAttribute('aria-pressed', 'true');
-  await page.getByRole('button', { name: 'Back to dashboard', exact: true }).click();
-  await expect(page.getByText('1/6 dailies', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Open Genshin Impact controls' })).toContainText(/99\s*\/\s*200/);
-  await page.getByRole('button', { name: 'Open Genshin Impact controls' }).click();
+  await page.getByRole('button', { name: 'Back to Today', exact: true }).click();
+  await expect(gameRow(page, 'Genshin Impact')).toHaveAccessibleDescription(/1 of 6 dailies done/);
+  await expect(gameRow(page, 'Genshin Impact')).toContainText(/99\s*\/\s*200/);
+  await openGame(page, 'Genshin Impact');
   await expect(value).toHaveValue('99');
   await expect(task).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Edit Genshin Impact', exact: true }).last().click();
   await expect(page.getByRole('region', { name: 'Layout editor for Genshin Impact' })).toBeVisible();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Back to dashboard', exact: true }).click();
-  await page.getByRole('radio', { name: 'Tonight & reminders' }).click();
+  await page.getByRole('button', { name: 'Back to Today', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Across every game' })).toBeVisible();
   await expect(page.getByText(/Sleep safe|caps overnight/)).toBeVisible();
   await page.getByRole('button', { name: 'Add', exact: true }).click();
@@ -61,7 +61,6 @@ test('phone roster opens full controls and keeps edits across navigation', async
   await page.getByRole('button', { name: 'Switch to light theme' }).click();
   // Scan the settled theme rather than an intermediate color transition.
   await expect(page.getByRole('button', { name: 'Calendar', exact: true })).toHaveCSS('color', 'rgb(53, 55, 64)');
-  await expect(page.getByRole('radio', { name: 'Games', exact: true })).toHaveCSS('color', 'rgb(91, 94, 105)');
   expect(
     (await new AxeBuilder({ page }).analyze()).violations.filter((v) =>
       ['serious', 'critical'].includes(v.impact ?? ''),
@@ -71,7 +70,7 @@ test('phone roster opens full controls and keeps edits across navigation', async
 });
 
 test('touch scroll on an energy button does not change the value', async ({ page }) => {
-  await page.getByRole('button', { name: 'Open Genshin Impact controls' }).click();
+  await openGame(page, 'Genshin Impact');
   const value = page.getByLabel('Original Resin current value');
   await value.fill('100');
   await value.press('Enter');

@@ -8,7 +8,7 @@ const native = vi.hoisted(() => ({
   save: vi.fn().mockResolvedValue(undefined),
   scan: vi.fn(),
   flush: vi.fn().mockResolvedValue(undefined),
-  navigate: vi.fn((_id: string | null, _previous: string | null, update: () => void) => update()),
+  close: vi.fn(),
 }));
 vi.mock('@capacitor/core', () => ({
   Capacitor: { isNativePlatform: () => true },
@@ -23,7 +23,7 @@ vi.mock('@capacitor/app', () => ({
     exitApp: native.exit,
   },
 }));
-vi.mock('../src/workspace-navigation', () => ({ navigateWorkspace: native.navigate }));
+vi.mock('../src/workspace-navigation', () => ({ closeWorkspace: native.close }));
 vi.mock('../src/store', () => ({ flushPersist: native.flush }));
 
 beforeAll(async () => initNative());
@@ -47,10 +47,11 @@ describe('Android back navigation', () => {
     expect(native.exit).not.toHaveBeenCalled();
   });
 
-  it('returns from game to roster, then to Today, before exiting', async () => {
+  it('clears the game, then returns to Today, before exiting', async () => {
     useUI.setState({ focusedGameId: 'game', tab: 'timeline' });
+    native.close.mockImplementationOnce(() => useUI.getState().setFocusedGameId(null));
     native.back?.();
-    expect(native.navigate).toHaveBeenCalledWith(null, 'game', expect.any(Function));
+    expect(native.close).toHaveBeenCalledOnce();
     expect(useUI.getState().focusedGameId).toBeNull();
     expect(native.exit).not.toHaveBeenCalled();
     native.back?.();

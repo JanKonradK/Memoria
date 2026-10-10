@@ -31,7 +31,6 @@ migrateLegacyUiStorage();
 
 export type Tab = 'today' | 'home' | 'timeline' | 'livestreams' | 'settings';
 export type Theme = 'dark' | 'light';
-export type TonightPosition = 'left' | 'middle' | 'right';
 export type TimelineView = 'list' | 'lanes';
 
 /**
@@ -73,8 +72,10 @@ interface UIStore {
   sheet: SheetRoute;
   reserveOpen: Record<string, boolean>;
   theme: Theme;
-  tonightPosition: TonightPosition;
   focusedGameId: string | null;
+  /** The game whose card sits beside Today's list. Null follows the most urgent game. */
+  todayGameId: string | null;
+  setTodayGameId(gameId: string | null): void;
   /** Session-only route controls survive navigation, without entering backups. */
   timelineView: TimelineView | null;
   timelineSearch: string;
@@ -84,20 +85,8 @@ interface UIStore {
   setTimelineShowFinished(show: boolean): void;
   tourSeenVersion: number;
   finishTour(): void;
-  setTonightPosition(position: TonightPosition): void;
   setFocusedGameId(gameId: string | null): void;
-  /**
-   * Bumped whenever the dashboard is asked to reseal its card order. Card order
-   * is frozen while you are looking at it — live re-sorting made cards jump away
-   * mid-interaction — so re-sorting is an explicit act. Refresh is that act, and
-   * it lives in the app bar while the frozen order lives in DashboardPage, so
-   * the two speak through this counter rather than through each other.
-   *
-   * Session-only: a stale sort order is not a preference worth persisting.
-   */
-  orderEpoch: number;
   setTab(tab: Tab): void;
-  bumpOrderEpoch(): void;
   openSheet(sheet: NonNullable<SheetRoute>): void;
   closeSheet(): void;
   setReserveOpen(id: string, open: boolean | undefined): void;
@@ -112,7 +101,6 @@ export const useUI = create<UIStore>()(
       sheet: null,
       reserveOpen: {},
       theme: 'dark',
-      tonightPosition: 'right',
       focusedGameId: null,
       timelineView: null,
       timelineSearch: '',
@@ -122,11 +110,10 @@ export const useUI = create<UIStore>()(
       setTimelineShowFinished: (timelineShowFinished) => set({ timelineShowFinished }),
       tourSeenVersion: 0,
       finishTour: () => set({ tourSeenVersion: 1, sheet: null }),
-      setTonightPosition: (tonightPosition) => set({ tonightPosition }),
       setFocusedGameId: (focusedGameId) => set({ focusedGameId }),
-      orderEpoch: 0,
+      todayGameId: null,
+      setTodayGameId: (todayGameId) => set({ todayGameId }),
       setTab: (tab) => set({ tab }),
-      bumpOrderEpoch: () => set((state) => ({ orderEpoch: state.orderEpoch + 1 })),
       openSheet: (sheet) => set({ sheet }),
       closeSheet: () => set({ sheet: null }),
       setReserveOpen: (id, open) =>
@@ -151,15 +138,15 @@ export const useUI = create<UIStore>()(
       partialize: (state) => ({
         theme: state.theme,
         reserveOpen: state.reserveOpen,
-        tonightPosition: state.tonightPosition,
         tourSeenVersion: state.tourSeenVersion,
       }),
       merge: (persisted, current) => {
         // Rebuilt from a whitelist rather than spread over the defaults. This
         // store has retired several knobs (text size, focus columns, the Cards
-        // layout, the timeline view and range), and a spread carries every one
-        // of them forward as inert junk on the devices that still have them
-        // persisted. Only what is named here survives a reload.
+        // layout, the Tonight position, the timeline view and range), and a
+        // spread carries every one of them forward as inert junk on the devices
+        // that still have them persisted. Only what is named here survives a
+        // reload.
         const stored = (persisted ?? {}) as Partial<UIStore>;
         const reserveOpen =
           stored.reserveOpen && typeof stored.reserveOpen === 'object'
@@ -168,9 +155,6 @@ export const useUI = create<UIStore>()(
         return {
           ...current,
           theme: stored.theme === 'dark' || stored.theme === 'light' ? stored.theme : current.theme,
-          tonightPosition: ['left', 'middle', 'right'].includes(stored.tonightPosition ?? '')
-            ? stored.tonightPosition!
-            : 'right',
           reserveOpen,
           tourSeenVersion: typeof stored.tourSeenVersion === 'number' ? stored.tourSeenVersion : 0,
         };

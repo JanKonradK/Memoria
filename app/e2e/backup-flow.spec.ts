@@ -1,15 +1,16 @@
 import { expect, test } from '@playwright/test';
+import { gameRow } from './support';
 
 test('backup export and merge preview stay within the viewport', async ({ page }) => {
   // Start past first-run onboarding: this flow is about the dashboard and Settings.
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Add your first game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  const phoneOpen = page.getByRole('button', { name: 'Open Genshin Impact controls' });
+  const phoneOpen = gameRow(page, 'Genshin Impact');
   if (await phoneOpen.isVisible()) await phoneOpen.click();
   await expect(page.getByRole('heading', { name: 'Genshin Impact', exact: true })).toBeVisible();
 

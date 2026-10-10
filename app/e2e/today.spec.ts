@@ -11,7 +11,7 @@ test.beforeEach(async ({ page }, info) => {
 
 test('Today starts a new roster and keeps all navigation reachable', async ({ page }, info) => {
   const primary = page.getByRole('navigation', { name: 'Primary', exact: true });
-  await expect(primary.getByRole('button')).toHaveText(['Today', 'Games', 'Calendar']);
+  await expect(primary.getByRole('button')).toHaveText(['Today', 'Calendar']);
   await expect(primary.getByRole('button', { name: 'Today' })).toHaveAttribute('aria-current', 'page');
   await page.getByRole('button', { name: 'Add your first game', exact: true }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
@@ -28,7 +28,7 @@ test('Today starts a new roster and keeps all navigation reachable', async ({ pa
   ).toEqual([]);
   await page.getByRole('button', { name: 'Switch to light theme' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-  await expect(primary.getByRole('button', { name: 'Games' })).toHaveCSS('color', 'rgb(53, 55, 64)');
+  await expect(primary.getByRole('button', { name: 'Calendar' })).toHaveCSS('color', 'rgb(53, 55, 64)');
   expect(
     (await new AxeBuilder({ page }).analyze()).violations.filter((issue) =>
       ['serious', 'critical'].includes(issue.impact ?? ''),
@@ -43,23 +43,32 @@ test('Today starts a new roster and keeps all navigation reachable', async ({ pa
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
 });
 
-test('a Today game opens complete controls and browser Back returns to Today', async ({ page }) => {
+test('a Today game is edited in its card on desktop and on its own page on a phone', async ({ page }) => {
   await page.getByRole('button', { name: 'Add your first game', exact: true }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  if (page.viewportSize()!.width >= 900) {
-    await page.getByRole('button', { name: 'Review Genshin Impact', exact: true }).click();
-    await page.getByRole('button', { name: 'Open game', exact: true }).click();
+  const desktop = page.viewportSize()!.width >= 900;
+  const row = page.getByRole('button', { name: `${desktop ? 'Review' : 'Open'} Genshin Impact`, exact: true });
+  await expect(page.getByRole('button', { name: 'Open game', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Import readings', exact: true })).toHaveCount(0);
+  if (desktop) {
+    await expect(row).toHaveAttribute('aria-pressed', 'true');
+    const card = page.getByRole('region', { name: 'Genshin Impact card', exact: true });
+    const energy = card.getByLabel('Original Resin current value', { exact: true });
+    await energy.fill('91');
+    await energy.press('Enter');
+    await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   } else {
-    await page.getByRole('button', { name: 'Open Genshin Impact', exact: true }).click();
+    await row.click();
+    const energy = page.getByLabel('Original Resin current value', { exact: true });
+    await energy.fill('91');
+    await energy.press('Enter');
+    await page.goBack();
+    await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   }
-  const energy = page.getByLabel('Original Resin current value', { exact: true });
-  await energy.fill('91');
-  await energy.press('Enter');
-  await page.goBack();
-  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
-  await expect(page.getByText(/Estimated 91\/200/)).toBeVisible();
+  await expect(row).toHaveAccessibleDescription(/Estimated 91 of 200 Original Resin/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 test('browser Back restores a scrolled Today roster', async ({ page }, info) => {

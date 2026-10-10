@@ -7,10 +7,10 @@ import { cloudSyncNow } from '../cloud-sync';
 import { syncLanNow, useLanSync } from '../lan-sync';
 import { useUI, type Tab } from '../ui-store';
 import { AddMenu } from './AddMenu';
-import { HEADER_ACTIONS_SLOT } from './HeaderActions';
 import { Logo } from './Logo';
 import { GameScope } from './GameScope';
 import { isDesktopApp } from '../desktop-host';
+import { closeWorkspace } from '../workspace-navigation';
 
 const ROUTES: Array<{ id: Tab; label: string; icon: string }> = [
   {
@@ -18,7 +18,6 @@ const ROUTES: Array<{ id: Tab; label: string; icon: string }> = [
     label: 'Today',
     icon: 'M10 2v2m0 12v2M2 10h2m12 0h2M4.3 4.3l1.4 1.4m8.6 8.6 1.4 1.4M4.3 15.7l1.4-1.4m8.6-8.6 1.4-1.4M14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
   },
-  { id: 'home', label: 'Games', icon: 'M3 3h5v5H3zM12 3h5v5h-5zM3 12h5v5H3zM12 12h5v5h-5z' },
   { id: 'timeline', label: 'Calendar', icon: 'M3 5h14v12H3zM6 3v4M14 3v4M3 9h14M6 12h3M11 14h3' },
 ];
 
@@ -115,21 +114,9 @@ function SyncIndicator() {
   );
 }
 
-/**
- * Bring what you are looking at up to date.
- *
- * This also reseals the dashboard's card order, which used to be a second button
- * ("↻ Sort by urgency") that the dashboard grew whenever the frozen order went
- * stale. Two controls for one idea. Card order stays frozen while you work —
- * live re-sorting threw cards away mid-interaction — and this is the moment you
- * have asked for it to catch up.
- *
- * The bump goes through ui-store's orderEpoch rather than a prop, because the
- * frozen order is local to DashboardPage and this button is in the app bar.
- */
+/** Bring what you are looking at up to date. */
 function RefreshButton() {
   const load = useApp((s) => s.load);
-  const bumpOrderEpoch = useUI((s) => s.bumpOrderEpoch);
   const reducedMotion = useReducedMotion();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -140,9 +127,6 @@ function RefreshButton() {
       const { loaded, loadError, saveError } = useApp.getState();
       if (!loaded || loadError || saveError) return;
       await Promise.all([syncNow(), cloudSyncNow(), syncLanNow()]);
-      // Only after a successful load: a refresh that failed has nothing newer to
-      // sort by, and reshuffling the cards anyway would look like a response.
-      bumpOrderEpoch();
     } catch (error) {
       useApp.setState({ loadError: error instanceof Error ? error.message : 'Local data operation failed.' });
     } finally {
@@ -258,12 +242,16 @@ export function AppBar() {
           />
         )}
         {ROUTES.map((route) => {
-          const active = tab === route.id || (route.id === 'timeline' && tab === 'livestreams');
+          // A game's page belongs to Today, the same way Livestreams belongs to Calendar.
+          const active =
+            tab === route.id ||
+            (route.id === 'today' && tab === 'home') ||
+            (route.id === 'timeline' && tab === 'livestreams');
           return (
             <button
               key={route.id}
               type="button"
-              onClick={() => setTab(route.id)}
+              onClick={() => (route.id === 'today' && tab === 'home' ? closeWorkspace() : setTab(route.id))}
               aria-current={active ? 'page' : undefined}
               className={`app-nav-button relative z-10 min-h-11 min-w-0 flex-1 rounded-ui-md border border-transparent px-1.5 text-meta font-medium transition-colors md:min-h-9 md:flex-none md:px-3 ${
                 active ? 'text-fg' : 'text-fg-soft hover:text-fg'
@@ -287,31 +275,12 @@ export function AppBar() {
         })}
       </nav>
 
-      {/* Every route's actions land here — see HeaderActions. */}
-      <div className="app-route-actions scrollbar-thin flex min-w-0 items-center gap-2 overflow-x-auto">
-        {(tab === 'timeline' || tab === 'livestreams') && (
-          <nav aria-label="Calendar views" className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              className="shell-control"
-              aria-current={tab === 'timeline' ? 'page' : undefined}
-              onClick={() => setTab('timeline')}
-            >
-              Events
-            </button>
-            <button
-              type="button"
-              className="shell-control"
-              aria-current={tab === 'livestreams' ? 'page' : undefined}
-              onClick={() => setTab('livestreams')}
-            >
-              Livestreams
-            </button>
-          </nav>
-        )}
-        {tab !== 'home' && tab !== 'today' && <GameScope />}
-        <div id={HEADER_ACTIONS_SLOT} className="min-w-0 shrink-0" />
-      </div>
+      {/* Calendar's controls live on its page. Settings keeps the game filter here. */}
+      {tab === 'settings' && (
+        <div className="app-route-actions flex min-w-0 items-center">
+          <GameScope />
+        </div>
+      )}
 
       <div className="app-utilities flex items-center justify-end gap-1 sm:gap-2">
         <SyncIndicator />

@@ -1,9 +1,11 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import { emptyState, type AppState, type Game } from '@memoria/shared';
-import { beforeEach, expect, it, vi } from 'vitest';
+import { beforeEach, expect, it } from 'vitest';
 import { TodayPage } from '../src/components/Today';
 import { useApp } from '../src/store';
 import { useUI } from '../src/ui-store';
+import { TooltipProvider } from '../src/components/ui';
 
 const NOW = Date.UTC(2026, 9, 6, 12);
 const game = (id: string, sort: number): Game => ({
@@ -54,26 +56,39 @@ function fixture(): AppState {
   return state;
 }
 
+// Rows and the embedded card carry tooltips, which the real app supplies at the root.
+const show = (ui: ReactElement) => render(<TooltipProvider>{ui}</TooltipProvider>);
+const row = (name: string) => screen.getByRole('button', { name: `Review ${name}`, exact: true });
+
 beforeEach(() => {
   useApp.setState({ state: fixture(), loaded: true });
-  useUI.setState({ tab: 'today', sheet: null, focusedGameId: null });
+  useUI.setState({ tab: 'today', sheet: null, focusedGameId: null, todayGameId: null });
 });
 
 it('groups real deadlines and keeps paused games out of the priority lists', () => {
-  render(<TodayPage now={NOW} />);
+  show(<TodayPage now={NOW} />);
   const attention = screen.getByRole('region', { name: 'Needs attention' });
   const rest = screen.getByRole('region', { name: 'Can wait' });
   expect(within(attention).getByText('Near cap')).toBeInTheDocument();
   expect(within(attention).queryByText('Paused game')).not.toBeInTheDocument();
   expect(within(rest).getByText('Can rest')).toBeInTheDocument();
   expect(within(rest).getByText('Unknown reading')).toBeInTheDocument();
-  expect(within(rest).getByText('No reading yet')).toBeInTheDocument();
+  expect(row('Unknown reading')).toHaveAccessibleDescription(/No Energy reading yet/);
+  expect(within(screen.getByRole('region', { name: 'Paused' })).getByText('Paused game')).toBeInTheDocument();
+});
+
+it('says the attention window once and carries no explainer copy', () => {
+  show(<TodayPage now={NOW} />);
+  expect(screen.getByRole('region', { name: 'Needs attention' })).toHaveTextContent('next 8h');
+  expect(screen.queryByText(/Caps and unfinished routines/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/header status shows device sync/)).not.toBeInTheDocument();
+  expect(screen.queryByText('Your games')).not.toBeInTheDocument();
 });
 
 it('uses the observation time and labels current projections as estimates', () => {
-  render(<TodayPage now={NOW} />);
-  const attention = screen.getByRole('region', { name: 'Needs attention' });
-  expect(within(attention).getByText('Account · 2m ago · Estimated 195/200')).toBeInTheDocument();
+  show(<TodayPage now={NOW} />);
+  expect(row('Near cap')).toHaveAccessibleDescription(/Estimated 195 of 200 Energy from account reading 2m ago/);
+  expect(within(row('Near cap')).getByText('195')).toBeInTheDocument();
   expect(screen.queryByText(/live/i)).not.toBeInTheDocument();
 });
 
@@ -85,36 +100,50 @@ it('distinguishes starting estimates and clamps age when the device clock moves 
     importedAt: NOW,
   };
   useApp.setState({ state });
-  render(<TodayPage now={NOW} />);
-  expect(
-    within(screen.getByRole('region', { name: 'Needs attention' })).getByText(
-      'Starting estimate · just recorded · Estimated 195/200',
-    ),
-  ).toBeInTheDocument();
+  show(<TodayPage now={NOW} />);
+  expect(row('Near cap')).toHaveAccessibleDescription(
+    /Estimated 195 of 200 Energy from starting estimate reading just now/,
+  );
 });
 
-it('opens complete controls from a priority and emits a scoped import request', () => {
-  render(<TodayPage now={NOW} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Review Near cap', exact: true }));
-  fireEvent.click(screen.getByRole('button', { name: 'Open game', exact: true }));
-  expect(useUI.getState().tab).toBe('home');
-  expect(useUI.getState().focusedGameId).toBe('Near cap');
-  const listener = vi.fn();
-  document.addEventListener('memoria:open-import', listener);
-  fireEvent.click(
-    within(screen.getByRole('region', { name: 'Near cap next check-in' })).getByRole('button', {
-      name: 'Import readings',
-    }),
-  );
-  expect((listener.mock.calls[0]![0] as CustomEvent).detail).toEqual({ gameId: 'Near cap' });
-  document.removeEventListener('memoria:open-import', listener);
+it('puts the real, editable card beside the list instead of a link to it', () => {
+  show(<TodayPage now={NOW} />);
+  expect(screen.getByRole('region', { name: 'Near cap card' })).toBeInTheDocument();
+  fireEvent.click(row('Can rest'));
+  expect(row('Can rest')).toHaveAttribute('aria-pressed', 'true');
+  const card = screen.getByRole('region', { name: 'Can rest card' });
+  expect(within(card).getByLabelText('Energy current value')).toHaveValue('10');
+  expect(within(card).getByRole('button', { name: 'Edit Can rest' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Open game' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Import readings' })).not.toBeInTheDocument();
+  // Selecting stays on Today; the card is already here.
+  expect(useUI.getState().tab).toBe('today');
+});
+
+it('selects a paused game so tracking can be resumed from its card', () => {
+  show(<TodayPage now={NOW} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Review Paused game, paused' }));
+  expect(
+    within(screen.getByRole('region', { name: 'Paused game card' })).getByRole('button', { name: 'Resume tracking' }),
+  ).toBeInTheDocument();
 });
 
 it('offers a first game and PC connection for an empty roster', () => {
   useApp.setState({ state: emptyState() });
-  render(<TodayPage now={NOW} />);
+  show(<TodayPage now={NOW} />);
   fireEvent.click(screen.getByRole('button', { name: 'Add your first game' }));
   expect(useUI.getState().sheet).toEqual({ kind: 'addGame' });
   fireEvent.click(screen.getByRole('button', { name: 'Connect my PC' }));
   expect(useUI.getState().tab).toBe('settings');
+});
+
+it('closes the list with the Tonight summary and opens the selected game on its own page', () => {
+  show(<TodayPage now={NOW} />);
+  expect(screen.getByRole('region', { name: 'Across every game' })).toBeInTheDocument();
+  fireEvent.click(row('Can rest'));
+  fireEvent.click(screen.getByRole('button', { name: 'Open full page' }));
+  expect(useUI.getState().tab).toBe('home');
+  expect(useApp.getState().state.games.find((game) => game.id === useUI.getState().focusedGameId)?.name).toBe(
+    'Can rest',
+  );
 });

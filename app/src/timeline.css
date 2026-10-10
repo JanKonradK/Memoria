@@ -12,7 +12,8 @@
 }
 .timeline-page-heading {
   display: flex;
-  align-items: baseline;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
   gap: 12px 24px;
   padding: 0 4px;
@@ -58,6 +59,34 @@
   height: 28px;
   background: var(--color-surface-1);
   border-radius: var(--radius-ui-sm, 10px);
+}
+/* The Today marker is ink, not urgency: red means a deadline under a day away. */
+.timeline-today-label {
+  position: absolute;
+  /* The same 20px band the tick labels sit in. */
+  top: 0;
+  display: flex;
+  height: 20px;
+  align-items: center;
+  padding: 0 8px;
+  transform: translateX(-50%);
+  border-radius: var(--radius-ui-full, 999px);
+  background: var(--color-fg);
+  color: var(--color-surface-0);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.timeline-today-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 10;
+  width: 1px;
+  background: color-mix(in srgb, var(--color-fg) 60%, transparent);
+  pointer-events: none;
 }
 .timeline-game-lane + .timeline-game-lane {
   margin-top: 12px;
@@ -258,8 +287,8 @@
   .timeline-page-heading {
     display: block;
   }
-  .timeline-page-heading p {
-    margin-top: 5px;
+  .timeline-page-heading h1 {
+    margin-bottom: 10px;
   }
   .timeline-page .timeline-board {
     max-height: none;
@@ -268,16 +297,17 @@
   .timeline-page:has(.timeline-lanes-board) {
     display: flex;
     flex-direction: column;
-    height: calc(100dvh - var(--app-bar-h));
-    min-height: 0;
+    min-height: calc(100dvh - var(--app-bar-h));
   }
   .timeline-page:has(.timeline-lanes-board) .timeline-page-heading,
   .timeline-page:has(.timeline-lanes-board) .timeline-caption {
     flex-shrink: 0;
   }
   .timeline-page .timeline-lanes-board {
-    flex: 1;
-    min-height: 0;
+    /* Fills a tall phone; on a short one the page scrolls rather than the
+       toolbar squeezing the board away. */
+    flex: 1 1 0;
+    min-height: min(24rem, 70dvh);
     overflow: auto;
     scroll-padding-top: 32px;
     scroll-padding-bottom: 12px;
@@ -298,13 +328,6 @@
     padding: 16px;
   }
 }
-/* Keep named filters in view when the desktop header has less room. */
-@media (min-width: 1280px) and (max-width: 1535px) {
-  .app-bar:has(.timeline-tools) {
-    grid-template-columns: auto auto minmax(0, 1fr);
-    grid-template-areas: 'brand nav utilities' 'actions actions actions';
-  }
-}
 @media (max-width: 539px) {
   .timeline-tools {
     gap: 4px;
@@ -323,9 +346,6 @@
   }
   .timeline-page:has(.timeline-lanes-board) {
     padding-bottom: calc(var(--mobile-nav-h) + 8px);
-  }
-  .timeline-page-heading p {
-    display: none;
   }
   .timeline-caption {
     padding-top: 4px;

@@ -5,7 +5,7 @@ test('upcoming broadcasts show estimates and keep expired codes collapsed', asyn
   await page.clock.setFixedTime(new Date('2026-10-03T12:00:00Z'));
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page.getByRole('button', { name: 'Livestreams', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Upcoming broadcasts', exact: true })).toBeVisible();
@@ -24,7 +24,7 @@ test('livestream recaps have readable artwork, working navigation and accessible
   await page.clock.setFixedTime(new Date('2026-10-03T12:00:00Z'));
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page.getByRole('button', { name: 'Livestreams', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Livestreams', exact: true })).toBeVisible();
@@ -49,7 +49,7 @@ test('codes copy, show official destinations and expire while the page stays ope
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Games', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page.getByRole('button', { name: 'Livestreams', exact: true }).click();
   const nte = page.getByRole('article', { name: 'For Whom the Verses Mourn' });

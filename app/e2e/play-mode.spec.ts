@@ -202,18 +202,15 @@ test('play setup preserves drafts on native reopen and shows explicit background
   );
 });
 
-test('capture inbox keeps data pending until review and saves only its selected account', async ({ page }) => {
+test('a capture that states its cap saves to its own account and leaves the inbox', async ({ page }) => {
   await queueCapture(page, 'secondary');
   const panel = await openPlay(page);
-  await expect(panel.getByRole('region', { name: 'Capture inbox' })).toContainText('1 to review');
-  await panel.getByRole('button', { name: 'Review capture', exact: true }).click();
-  const review = page.getByRole('dialog', { name: 'Import game readings', exact: true });
-  await expect(review.getByRole('combobox', { name: 'Game account', exact: true })).toHaveText('Second account');
+  await expect(panel.getByRole('region', { name: 'Capture inbox' })).toContainText('1 waiting');
   expect(latestSnapshots((await stored(page)).snapshots).get('resin-secondary')?.value).toBe(20);
   expect(await page.evaluate(() => window.__playTest.removed)).toEqual([]);
-  await review.getByRole('button', { name: 'Review readings', exact: true }).click();
-  await expect(review.getByRole('spinbutton', { name: 'Original Resin', exact: true })).toHaveValue('88');
-  await review.getByRole('button', { name: 'Apply reviewed readings', exact: true }).click();
+  await panel.getByRole('button', { name: 'Use capture', exact: true }).click();
+  await expect(panel).toHaveCount(0);
+  await expect(page.getByRole('status').filter({ hasText: 'Saved 1 reading to Second account.' })).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.__playTest.removed)).toEqual(['capture-secondary']);
   const saved = latestSnapshots((await stored(page)).snapshots);
   expect(saved.get('resin-primary')?.value).toBe(20);
@@ -221,26 +218,20 @@ test('capture inbox keeps data pending until review and saves only its selected 
   expect(saved.get('resin-secondary')?.takenAt).toBe(NOW);
 });
 
-test('a capture from a removed account requires explicit reassignment and keeps its text', async ({ page }) => {
+test('a capture from a removed account asks which game it belongs to and stays until answered', async ({ page }) => {
   await queueCapture(page, 'removed-account');
-  const panel = await openPlay(page);
-  await panel.getByRole('button', { name: 'Review capture', exact: true }).click();
-  const review = page.getByRole('dialog', { name: 'Import game readings', exact: true });
-  const account = review.getByRole('combobox', { name: 'Game account', exact: true });
-  await expect(account).toHaveText('Choose a game account');
-  await expect(review.getByRole('button', { name: 'Review readings', exact: true })).toBeDisabled();
-  await account.click();
-  page.once('dialog', (confirmation) => confirmation.dismiss());
-  await page.getByRole('option', { name: 'Primary game', exact: true }).click();
-  await expect(account).toHaveText('Choose a game account');
-  await account.click();
-  page.once('dialog', (confirmation) => confirmation.accept());
-  await page.getByRole('option', { name: 'Second account', exact: true }).click();
-  await expect(review.getByRole('textbox', { name: 'Text from the screenshot', exact: true })).toHaveValue(
-    'Original Resin 88 / 200',
-  );
-  await review.getByRole('button', { name: 'Review readings', exact: true }).click();
-  await review.getByRole('button', { name: 'Apply reviewed readings', exact: true }).click();
+  let panel = await openPlay(page);
+  await panel.getByRole('button', { name: 'Use capture', exact: true }).click();
+  const chooser = page.getByRole('dialog', { name: 'Which game is this?', exact: true });
+  await expect(chooser).toBeVisible();
+  await chooser.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(chooser).toHaveCount(0);
+  expect(await page.evaluate(() => window.__playTest.removed)).toEqual([]);
+  expect(latestSnapshots((await stored(page)).snapshots).get('resin-secondary')?.value).toBe(20);
+
+  panel = await openPlay(page);
+  await panel.getByRole('button', { name: 'Use capture', exact: true }).click();
+  await chooser.getByRole('button', { name: 'Second account' }).click();
   await expect.poll(() => page.evaluate(() => window.__playTest.removed)).toEqual(['capture-removed-account']);
   const saved = latestSnapshots((await stored(page)).snapshots);
   expect(saved.get('resin-primary')?.value).toBe(20);
@@ -248,22 +239,21 @@ test('a capture from a removed account requires explicit reassignment and keeps 
   expect(saved.get('resin-secondary')?.takenAt).toBe(NOW);
 });
 
-test('reviewing a capture cannot replace a declined import draft', async ({ page }) => {
+test('using a capture cannot replace a reading still being checked', async ({ page }) => {
   await queueCapture(page, 'secondary');
-  await page.evaluate(() =>
-    document.dispatchEvent(new CustomEvent('memoria:open-import', { detail: { gameId: 'primary' } })),
-  );
-  const review = page.getByRole('dialog', { name: 'Import game readings', exact: true });
-  await review.getByRole('textbox', { name: 'Text from the screenshot', exact: true }).fill('Original Resin 77 / 200');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today' }).click();
+  await page.getByRole('button', { name: 'Review Primary game', exact: true }).click();
+  await page.getByRole('button', { name: 'Readings', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Enter screenshot text', exact: true }).click();
+  const review = page.getByRole('region', { name: 'Check this reading for Primary game', exact: true });
+  await review.getByRole('textbox', { name: 'Screenshot text', exact: true }).fill('Original Resin 77');
   await page.evaluate(() => window.__playTest.open());
   const panel = page.getByRole('dialog', { name: 'Play mode', exact: true });
   await expect(panel).toBeVisible();
   page.once('dialog', (confirmation) => confirmation.dismiss());
-  await panel.getByRole('button', { name: 'Review capture', exact: true }).click();
+  await panel.getByRole('button', { name: 'Use capture', exact: true }).click();
   await expect(panel).toBeVisible();
   await panel.getByRole('button', { name: 'Close', exact: true }).click();
-  await expect(review.getByRole('textbox', { name: 'Text from the screenshot', exact: true })).toHaveValue(
-    'Original Resin 77 / 200',
-  );
+  await expect(review.getByRole('spinbutton', { name: 'Original Resin / 200', exact: true })).toHaveValue('77');
   expect(await page.evaluate(() => window.__playTest.removed)).toEqual([]);
 });
