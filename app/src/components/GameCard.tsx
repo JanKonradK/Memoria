@@ -9,6 +9,7 @@ import { useUI } from '../ui-store';
 import { useMediaQuery, useReducedMotion } from '../hooks';
 import { cardEnter } from '../motion';
 import { titleStyle } from '../fonts';
+import { GameLogo } from './GameLogo';
 import { gameInk, gameRim, gameSupport, gameTitleInk, mix } from '../game-color';
 import { gameShellVars, useGround, useTheme } from '../theme';
 
@@ -732,6 +733,7 @@ function GameControlsHeader({
           </svg>
         </button>
       )}
+      {layout === 'focus' && <GameLogo game={game} size={72} label="short" />}
       <TitleContainer
         type={layout === 'focus' ? undefined : 'button'}
         onClick={layout === 'focus' ? undefined : onEdit}

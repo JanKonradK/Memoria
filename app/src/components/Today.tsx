@@ -12,6 +12,7 @@ import { readingSource } from '../reading-source';
 import { useReadings } from '../readings';
 import { useIdentityColors } from './roster';
 import { GameControls } from './GameCard';
+import { GameLogo } from './GameLogo';
 import { GamePage } from './GamePage';
 import { SourceIcon } from './GameReadings';
 import { NexusHub } from './nexus/NexusHub';
@@ -82,7 +83,7 @@ function PriorityRow({
           {summary}
         </span>
         <span className="today-row-badge">
-          <GameBadge short={game.short} {...colors} size={compact ? 'sm' : 'md'} />
+          <GameLogo game={game} size={compact ? 56 : 64} label="short" />
         </span>
         <span className="today-row-name">
           <span className="today-row-title text-body font-semibold text-fg">{game.name}</span>
@@ -263,17 +264,18 @@ export function TodayPage({ now }: { now: number }) {
           </div>
           {desktop && selected && (
             <div className="today-detail">
-              <div className="today-detail-bar">
-                <Btn onClick={() => openGame(selected.game.id)}>Open full page</Btn>
-              </div>
               <section
                 key={selected.game.id}
-                className="today-card card-shell game-card-surface"
+                className="today-card"
                 style={gameShellVars(selected.game, theme, colors[selected.game.id])}
                 aria-label={`${selected.game.name} card`}
               >
                 <GameControls entry={selected} now={now} layout="focus" />
               </section>
+              {/* The way out sits at the foot of the pane, under the thumb and out of the reading order. */}
+              <div className="today-detail-bar">
+                <Btn onClick={() => openGame(selected.game.id)}>Open full page</Btn>
+              </div>
             </div>
           )}
         </div>

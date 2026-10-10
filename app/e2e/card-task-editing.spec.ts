@@ -30,13 +30,8 @@ test('daily task rules can change on the card, including Tacet counts and new ta
   await page.screenshot({ path: info.outputPath('game-cards.png') });
   // Only a wide window has the card beside Today's list.
   if (page.viewportSize()!.width >= 900) {
-    const card = page.locator('.game-card-surface').first();
+    const card = page.locator('.today-card');
     await expect(card).toBeVisible();
-    expect(
-      await card.evaluate(
-        (node) => getComputedStyle(node).cornerShape === getComputedStyle(node, '::before').cornerShape,
-      ),
-    ).toBe(true);
     await card.screenshot({ path: info.outputPath('card-edge.png') });
   }
   await openGame(page, 'Wuthering Waves');

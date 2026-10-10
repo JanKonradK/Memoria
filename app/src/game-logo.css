@@ -1,0 +1,35 @@
+/* Round game logo: the ring turns slowly, the name stays put. */
+.game-logo {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+}
+
+.game-logo-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: gameLogoSpin 24s linear infinite;
+}
+
+@keyframes gameLogoSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Laid out at its natural width so it can be measured, then scaled to fit. */
+.game-logo-name {
+  position: relative;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-logo-ring {
+    animation: none;
+  }
+}

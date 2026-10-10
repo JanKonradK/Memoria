@@ -1,3 +1,4 @@
+import '../../tonight.css';
 import { EventTags } from '../EventTags';
 import { eventCategory } from '../../event-category';
 import { DateTime } from 'luxon';
@@ -116,8 +117,8 @@ function ticketsFrom(rows: AgendaRow[], useStart: boolean): Ticket[] {
 /**
  * One band of the attention rail.
  *
- * The complete band stack shares one scroll area. The three collapsible sections
- * this replaced were each `fill`, so on a quiet evening the hub spent six hundred
+ * The complete band stack sits in one column on the page. The three collapsible
+ * sections this replaced were each `fill`, so on a quiet evening the hub spent six hundred
  * vertical pixels saying "Nothing" three times — the panel was mostly an empty
  * state with headings on it.
  */
@@ -158,7 +159,7 @@ function Band({
       {tickets.length === 0 ? (
         <p className="px-1 text-caption text-muted">—</p>
       ) : (
-        <div className="flex flex-col gap-px">
+        <div className="flex flex-col gap-0.5">
           {tickets.map((ticket) => {
             const game = games.get(ticket.gameId);
             const colors = game ? (identityColors[game.id] ?? game) : undefined;
@@ -180,7 +181,7 @@ function Band({
                 disabled={!ticket.event}
                 onClick={() => ticket.event && onOpenEvent(ticket.event)}
                 aria-label={accessibleName}
-                className="flex min-h-11 items-center gap-2 rounded-ui-sm px-1 py-1 text-left transition-colors enabled:hover:bg-fill-2 disabled:cursor-default md:min-h-8"
+                className="tonight-ticket flex min-h-11 items-center gap-2 rounded-ui-lg px-2 py-1 text-left enabled:hover:bg-fill-1 disabled:cursor-default md:min-h-8"
               >
                 {game && (
                   <span className="flex shrink-0 items-center gap-1">
@@ -289,23 +290,18 @@ export function NexusHub({
   };
 
   return (
-    <section
-      className="nexus-hub card-shell relative z-10 flex h-full min-h-0 min-w-0 flex-col gap-3 overflow-hidden rounded-ui-card p-4"
-      aria-label="Across every game"
-    >
-      {/* This column is the answer to "what do I do now", so it gets to be the
-          loudest thing on the stage. It was set at the same size as a card
-          heading, which made the most important panel read as one of five. */}
-      <header className="flex items-baseline justify-between gap-2">
-        <h2 className="text-heading font-semibold text-fg">Tonight</h2>
-        <span className="numeral text-meta text-muted">
+    <section className="nexus-hub tonight relative min-w-0" aria-label="Across every game">
+      {/* Same heading treatment as the Today group rules, so this reads as the list's last group. */}
+      <header className="today-group-rule">
+        <h2 className="text-meta font-semibold text-fg-soft">Tonight</h2>
+        <span aria-hidden />
+        <span className="numeral aside text-caption text-muted">
           {DateTime.fromMillis(now, { zone: state.settings.localTz }).toFormat('ccc dd LLL')}
         </span>
       </header>
 
-      {/* One status line, not two bordered boxes. Both facts are yes/no, and a
-          yes/no deserves a sentence and a colour rather than a card. */}
-      <div className="flex flex-col gap-2 border-y border-line-hairline py-2.5">
+      {/* One status line, flat on the page. Both facts are yes/no, so each is a sentence and a colour. */}
+      <div className="tonight-status flex flex-col gap-2 px-2 py-2.5">
         <div className="flex items-center gap-2.5">
           <ProgressBar
             variant="ring"
@@ -342,9 +338,9 @@ export function NexusHub({
         </div>
       </div>
 
-      <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+      <div className="flex flex-col gap-5">
         {closing.length + arrived.length + arriving.length === 0 ? (
-          <p className="pt-6 text-body text-muted">
+          <p className="px-2 pt-6 text-body text-muted">
             Nothing closes in the next 10 days or arrives in the next two weeks.
           </p>
         ) : (
@@ -372,7 +368,7 @@ export function NexusHub({
       {/* Adding a reminder used to sit here as well. It is one of three things
           you can add, and it now lives with the other two under the app bar's
           "+", so this footer is only the way out of the panel. */}
-      <div className="flex shrink-0 gap-2">
+      <div className="flex shrink-0 gap-2 px-2 pt-4">
         <button
           type="button"
           onClick={onOpenTimeline}

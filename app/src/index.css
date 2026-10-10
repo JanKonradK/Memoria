@@ -934,11 +934,13 @@ input[type='number'] {
 .attention-indicator[data-running='true'] {
   animation-play-state: running;
 }
-.card-shell:focus-within .attention-indicator {
+.card-shell:focus-within .attention-indicator,
+.today-card:focus-within .attention-indicator {
   animation-play-state: paused;
 }
 @media (hover: hover) {
-  .card-shell:hover .attention-indicator {
+  .card-shell:hover .attention-indicator,
+  .today-card:hover .attention-indicator {
     animation-play-state: paused;
   }
 }
