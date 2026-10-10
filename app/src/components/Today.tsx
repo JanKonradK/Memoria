@@ -270,12 +270,13 @@ export function TodayPage({ now }: { now: number }) {
                 style={gameShellVars(selected.game, theme, colors[selected.game.id])}
                 aria-label={`${selected.game.name} card`}
               >
-                <GameControls entry={selected} now={now} layout="focus" />
+                <GameControls
+                  entry={selected}
+                  now={now}
+                  layout="focus"
+                  actionsEnd={<Btn onClick={() => openGame(selected.game.id)}>Open full page</Btn>}
+                />
               </section>
-              {/* The way out sits at the foot of the pane, under the thumb and out of the reading order. */}
-              <div className="today-detail-bar">
-                <Btn onClick={() => openGame(selected.game.id)}>Open full page</Btn>
-              </div>
             </div>
           )}
         </div>

@@ -203,23 +203,12 @@
   display: none;
   min-width: 0;
 }
-/* The pane's one action stays at its foot while the controls scroll above it. */
-.today-detail-bar {
-  position: sticky;
-  bottom: 0;
-  z-index: 20;
-  display: flex;
-  justify-content: flex-end;
-  padding: 0.75rem 0 0.25rem;
-  background: var(--color-surface-0);
-  border-top: 1px solid var(--color-line);
-}
 /* The same flat ground as the list: the game is in its name, its bars and its
    ink, with no tinted panel behind them. */
 .today-card {
   display: flex;
   flex-direction: column;
-  padding: 0.25rem 0 1.5rem;
+  padding: 0.25rem 0 0;
 }
 .today-card > .game-card-heading {
   align-items: flex-start;

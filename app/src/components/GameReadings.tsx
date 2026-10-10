@@ -442,13 +442,17 @@ function ReadingHistory({ game }: { game: Game }) {
 const PANEL_TITLE = { review: 'Check this reading', account: 'Account', history: 'Recent imports' } as const;
 
 /** Opens inside the card, under its controls: a review, the account, or past imports. */
+/** The menu that opens a panel can sit at the foot of the page, so a new panel is brought into view. */
+const reveal = (node: HTMLElement | null) => node?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+
 export function ReadingsPanel({ game }: { game: Game }) {
   const panel = useReadings((store) => (store.panel?.gameId === game.id ? store.panel : null));
   const draft = useReadings((store) => (store.draft?.gameId === game.id ? store.draft : null));
   if (!panel || (panel.view === 'review' && !draft)) return null;
   return (
     <section
-      className="relative z-20 mt-4 border-y border-line-edge py-4"
+      ref={reveal}
+      className="game-panel relative z-20 mt-4 border-y border-line-edge py-4"
       aria-label={`${PANEL_TITLE[panel.view]} for ${game.name}`}
     >
       <div className="mb-3 flex items-center justify-between gap-3">

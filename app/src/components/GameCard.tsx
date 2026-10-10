@@ -1,6 +1,6 @@
 import { EventTags } from './EventTags';
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
-import type { AppState, ChecklistItem, Game, GameUrgency, GameLayoutItem, Snapshot } from '@memoria/shared';
+import type { AppState, ChecklistItem, Game, GameEvent, GameUrgency, GameLayoutItem, Snapshot } from '@memoria/shared';
 import { effectiveResourceKind, projectEnergy, resolveGameLayout } from '@memoria/shared';
 import { m } from 'motion/react';
 import { useDerived } from '../selectors';
@@ -373,19 +373,29 @@ function TaskRow({
 /**
  * Active Genshin windows are grouped by world, then banners. Other games keep
  * their compact summary. Each section includes its next upcoming window.
+ *
+ * With `onToggleDone` this is the game page's event list rather than a card's
+ * summary: every active window is listed, each with a tick, and a finished one
+ * stays in place, struck through, so the tick can be taken back.
  */
 export function EventStrip({
   game,
   events: allEvents,
   now,
   onOpenEvent,
+  onToggleDone,
+  emptyLabel,
 }: {
   game: Game;
   events: AppState['events'];
   now: number;
   onOpenEvent: (eventId: string, gameId: string) => void;
+  onToggleDone?: (event: GameEvent, done: boolean) => void;
+  /** Said in place of the list when the game has nothing running or coming. */
+  emptyLabel?: string;
 }) {
-  const mine = allEvents.filter((e) => !e.deleted && !e.done && e.gameId === game.id);
+  const ground = useGround();
+  const mine = allEvents.filter((e) => !e.deleted && (onToggleDone || !e.done) && e.gameId === game.id);
   // `notify` used to gate this list, which meant an event omitted from next
   // actions vanished from its own card — a ZZZ card could sit there showing
   // nothing while two of its events were live. Card visibility is independent.
@@ -394,8 +404,10 @@ export function EventStrip({
       const active = section.events
         .filter((event) => event.start <= now && event.end > now)
         .sort((a, b) => a.end - b.end);
-      const shown =
-        section.key === 'events'
+      const shown = onToggleDone
+        ? // Unfinished first, so what is left to do leads each section.
+          [...active].sort((a, b) => Number(Boolean(a.done)) - Number(Boolean(b.done)) || a.end - b.end)
+        : section.key === 'events'
           ? [
               ...active.filter((event) => event.dailyTouch),
               ...active.filter((event) => !event.dailyTouch).slice(0, 4),
@@ -408,7 +420,7 @@ export function EventStrip({
       return { ...section, events: [...shown, ...next] };
     })
     .filter((section) => section.events.length > 0);
-  if (sections.length === 0) return null;
+  if (sections.length === 0) return emptyLabel ? <p className="aside py-2 text-meta text-muted">{emptyLabel}</p> : null;
   return (
     <div>
       {sections.map((section) => (
@@ -417,12 +429,12 @@ export function EventStrip({
           <div className="mt-0.5 space-y-0.5">
             {section.events.map((ev) => {
               const calendar = calendarSchedule(ev);
-              return (
+              const open = (
                 <button
                   key={ev.id}
                   type="button"
                   onClick={() => onOpenEvent(ev.id, game.id)}
-                  className="flex min-h-11 w-full items-start gap-2 rounded-ui-md px-1.5 py-2 text-left text-body transition hover:bg-fill-2 md:min-h-8 md:items-center md:py-0.5"
+                  className={`flex min-h-11 w-full min-w-0 items-start gap-2 rounded-ui-md px-1.5 py-2 text-left text-body transition hover:bg-fill-2 md:min-h-8 md:items-center md:py-0.5`}
                 >
                   <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 md:flex-nowrap">
                     {ev.type !== 'banner' && (
@@ -430,7 +442,11 @@ export function EventStrip({
                     )}
                     <EventTags game={game} event={ev} />
                     {ev.dailyTouch && <Pill variant="warn">daily</Pill>}
-                    <span className="w-full break-words text-fg-soft md:w-auto md:truncate">{ev.name}</span>
+                    <span
+                      className={`w-full break-words md:w-auto md:truncate ${ev.done ? 'text-muted line-through' : 'text-fg-soft'}`}
+                    >
+                      {ev.name}
+                    </span>
                   </span>
                   <Tooltip content={calendar?.description ?? 'd = days · h = hours · m = minutes'}>
                     {calendar ? (
@@ -449,6 +465,22 @@ export function EventStrip({
                     )}
                   </Tooltip>
                 </button>
+              );
+              if (!onToggleDone) return open;
+              return (
+                <div key={ev.id} className="flex items-center gap-1">
+                  {open}
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={Boolean(ev.done)}
+                    aria-label={`${ev.name}: done`}
+                    onClick={() => onToggleDone(ev, !ev.done)}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-md transition hover:bg-fill-2 md:h-8 md:w-8"
+                  >
+                    <CompletionTick done={Boolean(ev.done)} color={gameInk(game, ground)} />
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -712,6 +744,9 @@ function GameControlsHeader({
 }) {
   const TitleContainer = layout === 'focus' ? 'div' : 'button';
   const ground = useGround();
+  // A game's own page has room for the logo to carry the whole name.
+  const wide = useMediaQuery('(min-width: 900px)');
+  const fullLogo = Boolean(onBack) && wide;
   const completed = dailies.filter((daily) => daily.done).length;
   const accountLabel = game.accountLabel?.trim();
   const resetLabel = localResetLabel(game, localTz, now);
@@ -733,7 +768,8 @@ function GameControlsHeader({
           </svg>
         </button>
       )}
-      {layout === 'focus' && <GameLogo game={game} size={72} label="short" />}
+      {layout === 'focus' &&
+        (fullLogo ? <GameLogo game={game} size={136} /> : <GameLogo game={game} size={72} label="short" />)}
       <TitleContainer
         type={layout === 'focus' ? undefined : 'button'}
         onClick={layout === 'focus' ? undefined : onEdit}
@@ -807,6 +843,7 @@ export function GameControlsView({
   columns = 1,
   onOpenEvent,
   onBack,
+  actionsEnd,
 }: {
   entry: GameUrgency;
   state: AppState;
@@ -816,6 +853,8 @@ export function GameControlsView({
   columns?: 1 | 2;
   onOpenEvent: (eventId: string, gameId: string) => void;
   onBack?: () => void;
+  /** Joins the end of the action bar, after the game's own actions. */
+  actionsEnd?: ReactNode;
 }) {
   const { game } = entry;
   const [editing, setEditing] = useState(false);
@@ -875,9 +914,25 @@ export function GameControlsView({
     <ResourceControls game={visualGame} state={state} snaps={derived.snaps} now={now} actions={actions} />
   );
   const tasks = <ChecklistControls game={visualGame} checklist={checklist} now={now} actions={actions} />;
+  const focus = layout === 'focus';
   const events = !game.paused && (
-    <EventStrip game={visualGame} events={state.events} now={now} onOpenEvent={onOpenEvent} />
+    <EventStrip
+      game={visualGame}
+      events={state.events}
+      now={now}
+      onOpenEvent={onOpenEvent}
+      onToggleDone={
+        focus ? (event, done) => useApp.getState().upsertEvent({ id: event.id, gameId: event.gameId, done }) : undefined
+      }
+      emptyLabel={focus ? 'No events running or coming up.' : undefined}
+    />
   );
+  // On a game's page the panels open at the top while the bar that opens them
+  // sits at the foot, so an opened panel is brought into view.
+  useEffect(() => {
+    if (focus && managingEvents)
+      document.getElementById(eventsPanelId)?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+  }, [eventsPanelId, focus, managingEvents]);
 
   const custom = editing || game.cardLayout !== undefined;
   const widgets = new Map<string, GameWidget>();
@@ -985,6 +1040,34 @@ export function GameControlsView({
     });
   }
 
+  const actionBar = (
+    <div
+      className={`relative z-10 flex items-center gap-2 ${focus ? 'game-actions-bar' : 'mt-3 flex-wrap'}`}
+      aria-label={`${game.name} tracking controls`}
+    >
+      <LaunchButton game={game} />
+
+      {!game.paused && <ReadingsMenu game={game} />}
+      <Btn
+        className={TOUCH_BUTTON}
+        aria-expanded={managingEvents}
+        aria-controls={eventsPanelId}
+        onClick={() => setManagingEvents((value) => !value)}
+      >
+        {managingEvents ? 'Close events' : 'Manage events'}
+      </Btn>
+      {!managingEvents && (
+        <Btn className={TOUCH_BUTTON} onClick={() => openSheet({ kind: 'event', gameId: game.id })}>
+          Add event
+        </Btn>
+      )}
+      <Btn className={`${TOUCH_BUTTON} ml-auto`} onClick={() => updateGame(game.id, { paused: !game.paused })}>
+        {game.paused ? 'Resume tracking' : 'Pause tracking'}
+      </Btn>
+      {actionsEnd}
+    </div>
+  );
+
   return (
     <>
       <GameControlsHeader
@@ -998,35 +1081,13 @@ export function GameControlsView({
         urgent={!game.paused && entry.next != null && entry.next.at - now < 2 * 60 * 60_000}
         layout={layout}
       />
-      <div
-        className="relative z-10 mt-3 flex flex-wrap items-center gap-2"
-        aria-label={`${game.name} tracking controls`}
-      >
-        <LaunchButton game={game} />
-        {!game.paused && <ReadingsMenu game={game} />}
-        <Btn
-          className={TOUCH_BUTTON}
-          aria-expanded={managingEvents}
-          aria-controls={eventsPanelId}
-          onClick={() => setManagingEvents((value) => !value)}
-        >
-          {managingEvents ? 'Close events' : 'Manage events'}
-        </Btn>
-        {!managingEvents && (
-          <Btn className={TOUCH_BUTTON} onClick={() => openSheet({ kind: 'event', gameId: game.id })}>
-            Add event
-          </Btn>
-        )}
-        <Btn className={`${TOUCH_BUTTON} ml-auto`} onClick={() => updateGame(game.id, { paused: !game.paused })}>
-          {game.paused ? 'Resume tracking' : 'Pause tracking'}
-        </Btn>
-      </div>
+      {!focus && actionBar}
       {game.paused && (
         <p className="relative z-10 mt-2 text-meta text-muted">
           Tracking paused. Your saved progress and events stay here.
         </p>
       )}
-      <div id={eventsPanelId} hidden={!managingEvents}>
+      <div id={eventsPanelId} className="game-panel" hidden={!managingEvents}>
         {managingEvents && <GameEvents key={game.id} game={game} now={now} />}
       </div>
       <ReadingsPanel game={game} />
@@ -1095,15 +1156,13 @@ export function GameControlsView({
             }}
           />
         ) : layout === 'focus' ? (
-          <div className="focus-bay-grid grid gap-x-6 gap-y-1" data-cols={columns}>
+          // What you track on the left, what is running on the right.
+          <div className="focus-bay-grid grid gap-x-8 gap-y-4" data-cols={columns}>
             <div className="min-w-0">
               {resources}
-              {columns === 2 && <div className="mt-6">{events}</div>}
-            </div>
-            <div className="min-w-0">
               {tasks}
-              {columns === 1 && events}
             </div>
+            <div className="min-w-0">{events}</div>
           </div>
         ) : (
           <>
@@ -1113,6 +1172,7 @@ export function GameControlsView({
           </>
         )}
       </div>
+      {focus && actionBar}
     </>
   );
 }
@@ -1122,10 +1182,12 @@ export function GameControls({
   entry,
   now,
   layout = 'card',
+  actionsEnd,
 }: {
   entry: GameUrgency;
   now: number;
   layout?: 'card' | 'focus';
+  actionsEnd?: ReactNode;
 }) {
   const state = useApp((s) => s.state);
   const setTaskDone = useApp((s) => s.setTaskDone);
@@ -1153,6 +1215,7 @@ export function GameControls({
       layout={layout}
       columns={columns}
       onOpenEvent={(eventId, gameId) => openSheet({ kind: 'event', eventId, gameId })}
+      actionsEnd={actionsEnd}
     />
   );
 }
