@@ -21,7 +21,7 @@ type Devices = {
   devices: { id: string; name: string; pairedAt: number }[];
 };
 const DETAILS =
-  'border-t border-line-hairline text-body text-muted [&>summary]:min-h-11 [&>summary]:cursor-pointer [&>summary]:rounded-ui-sm [&>summary]:py-3 [&>summary]:font-medium [&>summary]:text-fg-soft';
+  'border-t border-line text-body text-muted [&>summary]:min-h-11 [&>summary]:cursor-pointer [&>summary]:rounded-ui-sm [&>summary]:py-3 [&>summary]:font-medium [&>summary]:text-fg-soft';
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 function PairingQr({ addresses, code }: { addresses: string[]; code: string }) {
@@ -410,24 +410,30 @@ export function DeviceSync() {
   const native = isNativeDevice();
   if (!desktop && !native) return null;
   return (
-    <section id="device-sync" className="settings-section mb-5 min-w-0 space-y-3" aria-labelledby="wifi-sync-heading">
-      <div className="space-y-1">
-        <h2 id="wifi-sync-heading" className="text-heading font-semibold text-fg-soft">
+    <section id="device-sync" className="settings-section mb-5 min-w-0" aria-labelledby="wifi-sync-heading">
+      <div className="today-group-rule">
+        <h2 id="wifi-sync-heading" className="text-meta font-semibold text-fg-soft">
           Phone & computer
         </h2>
-        <p className="text-body text-muted">Keep the same progress on both devices.</p>
+        <span aria-hidden />
       </div>
-      {desktop ? <DesktopConnection /> : <PhoneConnection />}
-      <details className={DETAILS}>
-        <summary>Need help connecting?</summary>
-        <ul className="list-disc space-y-2 pb-3 pl-5">
-          <li>Connect your phone and PC to the same Wi-Fi.</li>
-          <li>Keep Memoria open on your PC.</li>
-          <li>If Windows asks to allow Memoria through its firewall, allow it on your private network.</li>
-          <li>If a code has expired, show a new code on your PC and scan it again.</li>
-        </ul>
-        <p className="pb-3 text-meta text-muted">Use your own trusted Wi-Fi. This local connection is not encrypted.</p>
-      </details>
+      {/* Inset to the heading's text, so the body and its hairlines line up with the rule. */}
+      <div className="mx-2 space-y-3">
+        <p className="text-body text-muted">Keep the same progress on both devices.</p>
+        {desktop ? <DesktopConnection /> : <PhoneConnection />}
+        <details className={DETAILS}>
+          <summary>Need help connecting?</summary>
+          <ul className="list-disc space-y-2 pb-3 pl-5">
+            <li>Connect your phone and PC to the same Wi-Fi.</li>
+            <li>Keep Memoria open on your PC.</li>
+            <li>If Windows asks to allow Memoria through its firewall, allow it on your private network.</li>
+            <li>If a code has expired, show a new code on your PC and scan it again.</li>
+          </ul>
+          <p className="pb-3 text-meta text-muted">
+            Use your own trusted Wi-Fi. This local connection is not encrypted.
+          </p>
+        </details>
+      </div>
     </section>
   );
 }

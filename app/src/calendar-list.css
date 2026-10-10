@@ -1,0 +1,65 @@
+/* The calendar list and the livestream pages share the Today language: content
+   on the page ground, a heading row per section, and flat list rows. The rules
+   below reach past the lane board's shared glass rules, so each one is scoped to
+   the list it flattens. */
+
+/* Rows stack with a 2px gap and no rule between them. */
+.timeline-list-rows {
+  display: grid;
+  gap: 2px;
+}
+.timeline-list-board .timeline-event-row {
+  padding: 0.75rem 0.5rem;
+  border-radius: var(--radius-ui-lg);
+}
+.timeline-list-board .timeline-event-row + .timeline-event-row {
+  border-top: 0;
+}
+@media (hover: hover) {
+  .timeline-list-board .timeline-event-row:hover {
+    background: var(--color-fill-1);
+  }
+}
+
+/* The countdown is a readout, not a pill: it reads like the Today row's time. */
+.timeline-list-board .timeline-countdown {
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.timeline-list-board .timeline-empty {
+  padding: 1rem 0.5rem;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* Livestream rows, the code rows and the recap blocks, all on the page ground. */
+.livestream-row {
+  border-radius: var(--radius-ui-lg);
+  transition: background var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .livestream-row:hover {
+    background: var(--color-fill-1);
+  }
+}
+
+/* Each recap sits on the ground and is separated from the last by one hairline. */
+.livestream-recap {
+  padding-inline: 0.5rem;
+}
+.livestream-recap + .livestream-recap {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .livestream-row {
+    transition: none;
+  }
+}

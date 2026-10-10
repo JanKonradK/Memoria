@@ -6,6 +6,10 @@ import { upcomingBroadcasts } from '../data/upcoming-broadcasts';
 import { useNow } from '../hooks';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
+import '../calendar-list.css';
+// The section heading row is Today's group rule. Today is a lazy chunk, so this
+// page loads the rule itself rather than relying on Today having loaded first.
+import '../today.css';
 import { CalendarToolbar } from './CalendarToolbar';
 import { LivestreamCodes } from './LivestreamCodes';
 import { Btn } from './ui';
@@ -15,7 +19,7 @@ function Recap({ recap }: { recap: LivestreamRecap }) {
   return (
     <article
       aria-labelledby={recap.id}
-      className="broadcast-story grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] md:gap-8"
+      className="livestream-recap grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] md:gap-8"
     >
       <figure className="min-w-0">
         <a
@@ -34,7 +38,9 @@ function Recap({ recap }: { recap: LivestreamRecap }) {
             className="aspect-video w-full rounded-ui-md object-contain bg-inset"
           />
         </a>
-        <figcaption className="mt-2 text-caption text-muted">Official broadcast artwork · {recap.publisher}</figcaption>
+        <figcaption className="aside mt-2 text-caption text-muted">
+          Official broadcast artwork · {recap.publisher}
+        </figcaption>
       </figure>
       <div className="min-w-0">
         <p className="text-meta text-muted">
@@ -43,7 +49,7 @@ function Recap({ recap }: { recap: LivestreamRecap }) {
         <h3 id={recap.id} className="mt-1 text-heading font-semibold text-fg">
           {recap.title}
         </h3>
-        <p className="mt-2 text-meta text-muted">
+        <p className="aside mt-2 text-meta text-muted">
           Broadcast <time dateTime={recap.broadcast}>{recap.broadcastLabel}</time>
           {!recap.preview && <> · Update {recap.releaseLabel}</>}
         </p>
@@ -106,21 +112,25 @@ export function LivestreamsPage() {
         </div>
         <CalendarToolbar view="livestreams" />
       </div>
-      <section aria-labelledby="upcoming-broadcasts-heading" className="broadcast-story mt-6">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="upcoming-broadcasts-heading" className="text-lead font-semibold text-fg">
+      <section aria-labelledby="upcoming-broadcasts-heading" className="mt-6">
+        <div className="today-group-rule">
+          <h2 id="upcoming-broadcasts-heading" className="text-meta font-semibold text-fg-soft">
             Upcoming broadcasts
           </h2>
-          <span className="text-caption text-muted">Times use {state.settings.localTz}</span>
+          <span aria-hidden />
+          <span className="aside text-caption text-muted">Times use {state.settings.localTz}</span>
         </div>
         {broadcasts.length > 0 ? (
-          <ul className="mt-3 divide-y divide-line">
+          <ul className="mt-2 grid gap-0.5">
             {broadcasts.map((broadcast) => (
-              <li key={broadcast.id} className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 py-3">
+              <li
+                key={broadcast.id}
+                className="livestream-row flex flex-wrap items-center justify-between gap-x-5 gap-y-3 px-2 py-3"
+              >
                 <div className="min-w-0 flex-1 basis-64">
-                  <p className="text-caption text-muted">{broadcast.gameName}</p>
+                  <p className="aside text-caption text-muted">{broadcast.gameName}</p>
                   <p className="mt-1 break-words text-body font-semibold text-fg">{broadcast.name}</p>
-                  <p className="mt-1 text-meta text-muted">
+                  <p className="aside mt-1 text-meta text-muted">
                     <time dateTime={new Date(broadcast.start).toISOString()}>{dateLabel(broadcast.start)}</time>
                     {broadcast.predicted && (
                       <>
@@ -130,7 +140,7 @@ export function LivestreamsPage() {
                     )}
                   </p>
                   {broadcast.predicted && (
-                    <p className="mt-1 text-caption text-muted">
+                    <p className="aside mt-1 text-caption text-muted">
                       The publisher has not confirmed the date. This range is an estimate.
                     </p>
                   )}
@@ -153,18 +163,21 @@ export function LivestreamsPage() {
             ))}
           </ul>
         ) : (
-          <p className="mt-3 text-body text-muted">
+          <p className="mt-3 px-2 text-body text-muted">
             No upcoming broadcasts in this view{focused ? ` for ${focused.name}` : ''}.
           </p>
         )}
       </section>
-      <h2 className="mt-8 text-lead font-semibold text-fg">Recent broadcasts</h2>
+      <div className="today-group-rule mt-8">
+        <h2 className="text-meta font-semibold text-fg-soft">Recent broadcasts</h2>
+        <span aria-hidden />
+      </div>
       <div className="mt-4">
         {recaps.map((recap) => (
           <Recap key={recap.id} recap={recap} />
         ))}
         {recaps.length === 0 && (
-          <div className="broadcast-story">
+          <div className="px-2">
             <p className="text-body text-muted">No livestream recap for {focused?.name} yet.</p>
             <Btn onClick={() => useUI.getState().setFocusedGameId(null)} className="mt-4 !min-h-11 text-meta">
               Show all livestreams
