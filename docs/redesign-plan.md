@@ -25,3 +25,7 @@ While working, run the browser suite on `desktop` and `mobile-390` only, then al
 - The script face has one weight and thin strokes. Check game names stay readable at list-row size in phase 2; if not, the name moves beside the ring at that size.
 - The bundled feed has no reward field. Reward amounts appear only in some events' notes text, so the inferred part count is a starting guess the user can change.
 - Ring colours for preset games are picked by hand from each game's branding. Custom games use the two colours the user chose.
+
+## Status
+
+All six phases are built on `merge-games-into-today`. Still to do by hand: check motion on the Galaxy Tab S7+ (opening and closing a game, scrolling Today with the logos turning, ticking event parts).

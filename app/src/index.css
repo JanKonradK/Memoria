@@ -1168,6 +1168,18 @@ input[type='number'] {
 .focus-bay-grid[data-cols='2'] {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
+/* Opening a game: only its logo is carried between the row and the page
+   heading. The page is not cross-faded; its content has its own short arrival. */
+::view-transition-old(root) {
+  display: none;
+}
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-group(game-logo) {
+  animation-duration: 320ms;
+  animation-timing-function: var(--ease-out);
+}
 /* The route pill. Transform and width only — both are cheap, and the pill sits
    under the labels rather than reflowing them. */
 .nav-slider {

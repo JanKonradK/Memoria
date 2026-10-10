@@ -2,6 +2,7 @@ import { flushSync } from 'react-dom';
 import { useUI } from './ui-store';
 
 let active: Animation | undefined;
+let morph: ViewTransition | undefined;
 let rosterScroll = 0;
 let historyReady = false;
 
@@ -71,6 +72,8 @@ export function navigateWorkspace(
 ): void {
   active?.cancel();
   active = undefined;
+  morph?.skipTransition();
+  morph = undefined;
   const id = gameId ?? previousId;
   const findRow = () => (id ? document.querySelector<HTMLElement>(`[data-roster-game="${CSS.escape(id)}"]`) : null);
   const row = findRow();
@@ -88,9 +91,47 @@ export function navigateWorkspace(
     return;
   }
 
-  flushSync(update);
   // Clearing a filter on Timeline or Settings is not a roster navigation.
-  if (!fromRoster && !toRoster) return;
+  if (!fromRoster && !toRoster) {
+    flushSync(update);
+    return;
+  }
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const commit = () => arrive(update, toRoster, findRow, originalFocus, reducedMotion);
+  if (reducedMotion || typeof document.startViewTransition !== 'function') {
+    commit();
+    return;
+  }
+  // The game's logo travels between its row and its page heading, so the eye
+  // keeps hold of which game opened. Everything else arrives as before.
+  const logoIn = (scope: Element | null) => scope?.querySelector<HTMLElement>('[data-game-logo]') ?? null;
+  const source = logoIn(toRoster ? document.querySelector('.focus-workspace') : row);
+  if (source) source.style.viewTransitionName = 'game-logo';
+  let landed: HTMLElement | null = null;
+  const transition = document.startViewTransition(() => {
+    if (source) source.style.viewTransitionName = '';
+    commit();
+    landed = logoIn(toRoster ? findRow() : document.querySelector('.focus-workspace'));
+    if (landed) landed.style.viewTransitionName = 'game-logo';
+  });
+  morph = transition;
+  void transition.finished
+    .catch(() => undefined)
+    .finally(() => {
+      if (landed) landed.style.viewTransitionName = '';
+      if (morph === transition) morph = undefined;
+    });
+}
+
+/** Commits the route change, then puts scroll, focus and the content's arrival where the new page needs them. */
+function arrive(
+  update: () => void,
+  toRoster: boolean,
+  findRow: () => HTMLElement | null,
+  originalFocus: Element | null,
+  reducedMotion: boolean,
+): void {
+  flushSync(update);
   const restoreFocus = document.activeElement === originalFocus || document.activeElement === document.body;
   if (toRoster) {
     window.scrollTo({ top: rosterScroll, behavior: 'instant' });
@@ -104,9 +145,7 @@ export function navigateWorkspace(
     if (restoreFocus) document.querySelector<HTMLElement>('[data-workspace-back]')?.focus({ preventScroll: true });
   }
 
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    return;
-  }
+  if (reducedMotion) return;
 
   const destination = document.querySelector<HTMLElement>(toRoster ? '.today-page' : '.focus-workspace');
   if (!destination?.animate) return;

@@ -4,6 +4,7 @@ import type { GameEvent, GameUrgency } from '@memoria/shared';
 import { useDerived, type Derived } from '../selectors';
 import { useUI } from '../ui-store';
 import { useMediaQuery } from '../hooks';
+import { useFlip } from '../flip';
 import { fmtDur } from '../util';
 import { gameInk } from '../game-color';
 import { gameShellVars, useGround, useTheme } from '../theme';
@@ -194,6 +195,7 @@ export function TodayPage({ now }: { now: number }) {
   const canWait = active.filter((entry) => !entry.next || entry.next.at > attentionUntil);
   const selected = order.find((entry) => entry.game.id === selectedId) ?? attention[0] ?? active[0] ?? order[0];
   const date = DateTime.fromMillis(now, { zone: state.settings.localTz }).toFormat('cccc, d LLLL');
+  const listRef = useFlip<HTMLDivElement>('[data-roster-game]', (node) => node.dataset.rosterGame ?? null);
 
   const rows = (entries: GameUrgency[]) => (
     <ul className="today-priority-list">
@@ -230,7 +232,7 @@ export function TodayPage({ now }: { now: number }) {
         </section>
       ) : (
         <div className="today-layout">
-          <div className="today-list">
+          <div className="today-list" ref={listRef}>
             <Group id="today-attention" label="Needs attention" note={`next ${state.settings.sleepHours}h`}>
               {attention.length ? rows(attention) : <p className="today-clear text-meta text-muted">Nothing due.</p>}
             </Group>
