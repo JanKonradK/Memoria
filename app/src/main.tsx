@@ -21,8 +21,17 @@ import '@fontsource/dm-sans/300-italic.css';
 import '@fontsource/dm-sans/400.css';
 import '@fontsource/dm-sans/500.css';
 import '@fontsource/dm-sans/600.css';
-// One script face, for a game's name and nothing else (see fonts.ts).
+// Per-game title faces (see fonts.ts), one weight each: the weight that game's
+// logo sets its name in.
+import '@fontsource/cinzel/600.css';
+import '@fontsource/orbitron/600.css';
+import '@fontsource/rajdhani/700.css';
 import '@fontsource/vujahday-script/400.css';
+import '@fontsource/space-grotesk/700.css';
+import '@fontsource/jost/300.css';
+import '@fontsource/fredoka/600.css';
+import '@fontsource/chakra-petch/500.css';
+import '@fontsource/saira/700.css';
 
 /** Loaded after first paint — see motion-features.ts. */
 const loadMotionFeatures = () => import('./motion-features').then((module) => module.default);

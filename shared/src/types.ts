@@ -57,7 +57,7 @@ export interface Game extends Syncable {
   notes?: string;
   /** Executable names (no .exe, case-insensitive) the TUI matches against running processes. */
   processNames?: string[];
-  /** Retired: every game's name now uses one title face. Kept so stored and synced games still validate. */
+  /** CSS font-family for the game's name, matching its logo — each game keeps its own personality. */
   titleFont?: string;
   /** Absent uses the grouped default card. Stored with the game for backup/sync. */
   cardLayout?: GameLayoutItem[];

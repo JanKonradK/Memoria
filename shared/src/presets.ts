@@ -108,7 +108,7 @@ export interface GamePreset {
   color2?: string;
   /** Third accent — small highlights, and the first candidate for the card rim. */
   color3?: string;
-  /** Retired: the app no longer reads a per-game face. Still written to new games for older clients that do. */
+  /** CSS font-family the game's logo sets its name in (bundled via @fontsource in the app). */
   titleFont?: string;
   icon: string;
   platform: 'pc' | 'mobile' | 'both';
@@ -392,7 +392,7 @@ export const PRESETS: GamePreset[] = [
     color2: '#27396f',
     color3: '#27396f',
     // Wide sleek tech — WuWa's minimal futurism.
-    titleFont: "'Exo 2', sans-serif",
+    titleFont: "'Vujahday Script', 'DM Sans', sans-serif",
     icon: '',
     platform: 'both',
     tz: 'Etc/GMT-1',

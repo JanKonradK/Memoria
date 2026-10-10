@@ -237,7 +237,7 @@
       "Achromatic chrome; all saturated color is either a game's identity or a warning",
       "Depth by tonal step and 1px hairline, never by drop shadow (except what floats)",
       "Small, tight, tabular type; numerals are the content",
-      "Per-game accents are load-bearing, not ornament; every game name shares one script title face",
+      "Per-game title fonts and accents are load-bearing, not ornament",
       "Nothing re-sorts, reflows, or animates while the user is entering a number"
     ],
     "rules": [
@@ -263,7 +263,7 @@
       },
       {
         "name": "The One Family Per Card Rule",
-        "body": "A card may show exactly two families: the script title face on the game's name, and the UI font on everything else. The title face never leaks into rows, pills, or numerals.",
+        "body": "A card may show exactly two families: the game's title font on its name, and the UI font on everything else. Game fonts never leak into rows, pills, or numerals.",
         "section": "typography"
       },
       {
@@ -297,7 +297,7 @@
       "Do use -fg status values for text and base status values for fills.",
       "Do express depth as one tonal step plus a line-hairline ring.",
       "Do keep numerals tabular anywhere a value can change.",
-      "Do let the game's accent and cover art carry the personality of a card; keep the card's own chrome grey.",
+      "Do let the game's accent, cover art and title font carry the personality of a card; keep the card's own chrome grey.",
       "Do reserve Shelf Gold for genuinely cross-game surfaces.",
       "Do animate grid-template-rows, opacity and transform — properties the compositor can handle — and put pulses on pseudo-elements.",
       "Do honour prefers-reduced-motion on every new animation."
@@ -309,7 +309,7 @@
       "Don't introduce a fifth overlay alpha, a fourth border alpha, or a ninth type step. The ladders are closed; if something needs a value between two steps, one of the two is wrong.",
       "Don't use a native title attribute for tooltips — the browser leaves them on screen after the element is gone. Use the Radix Tooltip.",
       "Don't let a card re-order, reflow or resize itself in response to data arriving while the user may be typing.",
-      "Don't let the script title face escape onto rows, pills or numerals.",
+      "Don't let a game's title font escape onto rows, pills or numerals.",
       "Don't wash the canvas with an ambient gradient. It is #000000."
     ]
   }

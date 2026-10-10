@@ -5,7 +5,7 @@ While working, run the browser suite on `desktop` and `mobile-390` only, then al
 
 ## Decisions
 
-- **Type:** DM Sans for everything. Secondary text uses a light italic instead of bold. Game names use Vujahday Script. The nine per-game title faces, the mono numeral face, and the per-game font picker are removed.
+- **Type:** DM Sans for everything. Secondary text uses a light italic instead of bold. Each game's name uses the face its round logo in `docs/logos` uses, in the same weight, case and spacing (Wuthering Waves is Vujahday Script). The mono numeral face is removed.
 - **Game icon:** the game's full name on two lines (Genshin / Impact, Honkai: / Star Rail, Zenless / Zone Zero, Wuthering / Waves, Neverness / To Everness) inside an outer ring. The ring is two colours taken from the game's logo, interlocked like yin and yang, rotating. Only the ring moves.
 - **Event parts:** inferred from the kind of event, editable per event. A 7-day login is 7 parts. A roughly 420-primogem event is 5 to 6. A 1000+ primogem event is the 3 story parts plus the free character, weapon or skin.
 - **Buttons:** primary actions such as Open full page sit at the bottom of their surface, not the top.
