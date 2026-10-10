@@ -8,7 +8,7 @@ import { useApp, type AppStore } from '../store';
 import { useUI } from '../ui-store';
 import { useMediaQuery, useReducedMotion } from '../hooks';
 import { cardEnter } from '../motion';
-import { titleFont } from '../fonts';
+import { GAME_TITLE } from '../fonts';
 import { gameInk, gameRim, gameSupport, gameTitleInk, mix } from '../game-color';
 import { gameShellVars, useGround, useTheme } from '../theme';
 
@@ -740,11 +740,8 @@ function GameControlsHeader({
       >
         <div className="flex min-w-0 items-center gap-2">
           <h2
-            className={`min-w-0 flex-1 ${layout === 'focus' ? 'text-title min-[1600px]:text-heading' : 'truncate text-heading'} font-semibold tracking-tight text-fg transition group-hover/title:text-fg`}
-            style={{
-              fontFamily: titleFont(game.titleFont),
-              color: `var(--game-ink, ${gameTitleInk(game, ground, 4.5)})`,
-            }}
+            className={`${GAME_TITLE} min-w-0 flex-1 ${layout === 'focus' ? 'text-title min-[1600px]:text-heading' : 'truncate text-heading'} text-fg transition group-hover/title:text-fg`}
+            style={{ color: `var(--game-ink, ${gameTitleInk(game, ground, 4.5)})` }}
           >
             {game.name}
           </h2>
@@ -762,7 +759,7 @@ function GameControlsHeader({
             </Pill>
           )}
         </div>
-        <div className="game-card-status mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-label text-muted">
+        <div className="game-card-status aside mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-label text-muted">
           <ServerChip label={regionLabel} className="max-w-20 truncate" />
           {layout === 'focus' && accountLabel && <span className="[overflow-wrap:anywhere]">{accountLabel}</span>}
           <span>reset {resetLabel}</span>

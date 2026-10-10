@@ -9,30 +9,20 @@ import { initNative, isNativeApp } from './native';
 import { applyTheme, useUI } from './ui-store';
 import { isDesktopApp } from './desktop-host';
 import './index.css';
-// Per-game title fonts (see fonts.ts). These aggregate weight files are the ONLY
-// @fontsource entry points that carry `unicode-range` per subset — the per-subset
-// files (latin-400.css, latin-ext-400.css) declare identical @font-face descriptors
-// with no range, so importing both makes latin-ext win for every character and
-// basic ASCII silently falls back to the system font. unicode-range also means the
-// browser never downloads the devanagari/vietnamese faces; they are emitted to
-// dist/ but excluded from the service-worker precache in vite.config.ts.
-// The shell: DM Sans carries every word, IBM Plex Mono carries every number.
+// These aggregate weight files are the ONLY @fontsource entry points that carry
+// `unicode-range` per subset — the per-subset files (latin-400.css,
+// latin-ext-400.css) declare identical @font-face descriptors with no range, so
+// importing both makes latin-ext win for every character and basic ASCII
+// silently falls back to the system font. unicode-range also means the browser
+// never downloads the vietnamese faces; they are emitted to dist/ but excluded
+// from the service-worker precache in vite.config.ts.
+// DM Sans carries every word and number. The light italic is the quiet voice.
+import '@fontsource/dm-sans/300-italic.css';
 import '@fontsource/dm-sans/400.css';
 import '@fontsource/dm-sans/500.css';
 import '@fontsource/dm-sans/600.css';
-import '@fontsource/ibm-plex-mono/400.css';
-import '@fontsource/ibm-plex-mono/500.css';
-// All three game-title surfaces use 600. Keep every character subset, but
-// omit unused 500-weight faces from the download and offline cache.
-import '@fontsource/cinzel/600.css';
-import '@fontsource/orbitron/600.css';
-import '@fontsource/rajdhani/600.css';
-import '@fontsource/exo-2/600.css';
-import '@fontsource/space-grotesk/600.css';
-import '@fontsource/jost/600.css';
-import '@fontsource/fredoka/600.css';
-import '@fontsource/chakra-petch/600.css';
-import '@fontsource/saira/600.css';
+// One script face, for a game's name and nothing else (see fonts.ts).
+import '@fontsource/vujahday-script/400.css';
 
 /** Loaded after first paint — see motion-features.ts. */
 const loadMotionFeatures = () => import('./motion-features').then((module) => module.default);

@@ -43,7 +43,9 @@ export function LivestreamCodes({ redemption, gameName }: { redemption: CodeSet;
           {redemption.codes.map(({ code, rewards, redeemUrl }) => (
             <li key={code} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2">
               <div className="min-w-0 flex-1 basis-48">
-                <code className="select-all break-all font-mono text-body font-semibold text-fg">{code}</code>
+                <code className="numeral select-all break-all text-body font-semibold tracking-wide text-fg">
+                  {code}
+                </code>
                 <p className="mt-1 text-meta text-muted">{rewards}</p>
               </div>
               <div className="flex flex-wrap items-center gap-3">

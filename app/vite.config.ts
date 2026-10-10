@@ -74,12 +74,12 @@ export default defineConfig(({ mode }) => {
                 ],
               },
               workbox: {
-                // Workbox's default omits woff2, which is why the title fonts were never
+                // Workbox's default omits woff2, which is why the fonts were never
                 // actually offline-capable. Precache only the subsets the UI can render:
-                // devanagari/vietnamese ship in dist/ but unicode-range keeps them from
-                // ever being requested, so precaching them would cost ~590 KB for nothing.
+                // vietnamese ships in dist/ but unicode-range keeps it from ever being
+                // requested, so precaching it would cost weight for nothing.
                 globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,webmanifest,woff2}'],
-                // hebrew and thai arrived with Fredoka and Chakra Petch; same reasoning.
+                // The other scripts stay listed in case a face that carries them returns.
                 globIgnores: ['**/*-{devanagari,vietnamese,cyrillic,cyrillic-ext,hebrew,thai,greek,greek-ext}-*'],
                 navigateFallback: '/index.html',
                 navigateFallbackDenylist: [/^\/api\//],

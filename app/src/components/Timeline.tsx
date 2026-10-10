@@ -17,7 +17,7 @@ import { CalendarToolbar } from './CalendarToolbar';
 import { CalendarFeedStatus } from './CalendarFeedStatus';
 import { TimelineList } from './TimelineList';
 import { serverRegionLabel } from '../server-region';
-import { titleFont } from '../fonts';
+import { GAME_TITLE } from '../fonts';
 import { assignGameInks, gameRim, gameTitleInk, mix, onColor } from '../game-color';
 import { THEME_PANEL, useGround, useInset, useTheme } from '../theme';
 import { EventTags } from './EventTags';
@@ -51,10 +51,7 @@ function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; 
       className="relative z-20 flex min-h-11 items-center gap-3 py-2"
     >
       <div className="min-w-0 flex-1">
-        <h2
-          className="truncate text-body font-semibold"
-          style={{ fontFamily: titleFont(game.titleFont), color: gameTitleInk(game, ground, 4.5) }}
-        >
+        <h2 className={`${GAME_TITLE} truncate text-body`} style={{ color: gameTitleInk(game, ground, 4.5) }}>
           {game.name}
         </h2>
         <div className="mt-1 flex min-w-0 items-center gap-2 text-caption text-muted">
@@ -1103,11 +1100,8 @@ export function TimelinePage({ now }: { now: number }) {
                         <span className="flex min-w-0 items-center gap-2">
                           <GameBadge short={game.short} {...colors} />
                           <span
-                            className="min-w-0 truncate text-body font-semibold"
-                            style={{
-                              fontFamily: titleFont(game.titleFont),
-                              color: gameTitleInk(colors, titleGround, 4.5),
-                            }}
+                            className={`${GAME_TITLE} min-w-0 truncate text-body`}
+                            style={{ color: gameTitleInk(colors, titleGround, 4.5) }}
                           >
                             {game.name}
                           </span>

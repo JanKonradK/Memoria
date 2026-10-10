@@ -143,8 +143,8 @@ Current state, recorded as incumbent evidence rather than as commitment:
 - The interface voice is terse, second-person and unceremonious ("what am I
   about to waste"), with lowercase status phrases like "sleep safe".
 - **Per-game identity is a product feature, not decoration**: every game carries
-  its own accent colour, gradient partner colour, emoji or cover image, and its
-  own CSS title font (five bundled options spanning fantasy serif to wide tech).
+  its own accent colour, gradient partner colour, and emoji or cover image. Every
+  game's name shares one script title face.
   Any design system must host that variability rather than flatten it.
 
 ## Evidence on Hand

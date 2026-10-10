@@ -2,7 +2,7 @@ import { useId, useLayoutEffect, useState, type ReactNode } from 'react';
 import type { GameEditorSection } from '../../ui-store';
 import type { Cadence, Game } from '@memoria/shared';
 import { missingPresetTasks, presetForGame } from '@memoria/shared';
-import { FONT_OPTIONS, titleFont } from '../../fonts';
+import { GAME_TITLE } from '../../fonts';
 import { gameTitleInk, trioOf, type GameColors } from '../../game-color';
 import { useApp } from '../../store';
 import { useGround } from '../../theme';
@@ -92,10 +92,7 @@ function GamePreview({ game, name, short }: { game: Game; name: string; short: s
     <div className="flex items-center gap-3 rounded-ui-lg bg-fill-1 px-3 py-2 ring-1 ring-line-hairline">
       <GameBadge short={displayShort} color={game.color} color2={game.color2} color3={game.color3} size="lg" />
       <div className="min-w-0 flex-1">
-        <p
-          className="truncate text-title font-semibold"
-          style={{ fontFamily: titleFont(game.titleFont), color: gameTitleInk(colors, ground) }}
-        >
+        <p className={`${GAME_TITLE} truncate text-title`} style={{ color: gameTitleInk(colors, ground) }}>
           {displayName}
         </p>
         <p className="text-label text-muted">
@@ -310,23 +307,6 @@ export function GameEditor({
                 )}
               </div>
 
-              <Field label="Title font">
-                <Select
-                  className={COMPACT_INPUT}
-                  value={game.titleFont ?? ''}
-                  onChange={(event) => updateGame(game.id, { titleFont: event.target.value || undefined })}
-                >
-                  <option value="">Default</option>
-                  {FONT_OPTIONS.map((font) => (
-                    <option key={font.css} value={font.css}>
-                      {font.label}
-                    </option>
-                  ))}
-                  {game.titleFont && !FONT_OPTIONS.some((font) => font.css === game.titleFont) && (
-                    <option value={game.titleFont}>{game.titleFont}</option>
-                  )}
-                </Select>
-              </Field>
               <div className="sm:col-span-2">
                 <span className="mb-1 block text-label font-semibold uppercase tracking-wider text-muted">
                   Card artwork
