@@ -1,7 +1,12 @@
 /* The Tonight rail sits on the page ground like the Today list: no card, only
    hairline rules. Its tickets fade in the same time as the list rows. */
 .tonight-ticket {
-  transition: background var(--dur-fast) var(--ease-out);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    scale var(--dur-fast) var(--ease-out);
+}
+.tonight-ticket:enabled:active {
+  scale: 0.985;
 }
 
 @media (prefers-reduced-motion: reduce) {

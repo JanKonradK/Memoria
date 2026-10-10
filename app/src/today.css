@@ -63,7 +63,14 @@
   padding: 0.75rem 0.5rem;
   border-radius: var(--radius-ui-lg);
   text-align: left;
-  transition: background var(--dur-fast) var(--ease-out);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    scale var(--dur-fast) var(--ease-out);
+}
+/* A press is felt before anything else happens. `scale`, so it never fights a
+   row that is gliding to a new place on `transform`. */
+.today-priority-row:active {
+  scale: 0.985;
 }
 .today-priority-row:hover {
   background: var(--color-fill-1);
