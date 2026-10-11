@@ -19,6 +19,7 @@ import { EditorTabPanel, EditorTabs, type EditorTab } from './EditorTabs';
 import {
   Btn,
   COMPACT_INPUT,
+  ConfirmAction,
   ConfirmDelete,
   Field,
   NumInput,
@@ -344,18 +345,19 @@ export function GameEditor({
                 ))}
               </div>
               {preset && presetTrio && !onPresetTrio && (
-                <Btn
-                  className={`mt-2 ${TOUCH_BUTTON}`}
-                  onClick={() =>
+                <ConfirmAction
+                  className="mt-2"
+                  label={`Restore ${preset.name} colours`}
+                  confirmLabel="Confirm: replace my colours"
+                  cancelLabel="Keep my colours"
+                  onConfirm={() =>
                     updateGame(game.id, {
                       color: presetTrio.primary,
                       color2: presetTrio.secondary,
                       color3: presetTrio.accent,
                     })
                   }
-                >
-                  Restore {preset.name} colours
-                </Btn>
+                />
               )}
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Field label="Title font">
@@ -403,15 +405,15 @@ export function GameEditor({
                       />
                     </label>
                     {game.image && (
-                      <Btn
-                        className={TOUCH_BUTTON}
-                        onClick={() => {
+                      <ConfirmAction
+                        label="Remove image"
+                        confirmLabel="Confirm remove"
+                        cancelLabel="Keep image"
+                        onConfirm={() => {
                           setImageError('');
                           updateGame(game.id, { image: undefined });
                         }}
-                      >
-                        Remove image
-                      </Btn>
+                      />
                     )}
                   </div>
                   {imageError && (

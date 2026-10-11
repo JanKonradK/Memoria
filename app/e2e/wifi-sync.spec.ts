@@ -81,7 +81,7 @@ for (const method of ['scan', 'manual']) {
         .click();
       await expect(page.getByRole('dialog')).toHaveCount(0);
       await page.getByRole('button', { name: 'Connect my PC', exact: true }).click();
-      await expect(page.getByRole('heading', { name: 'Phone & computer', exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Device sync', exact: true })).toBeVisible();
       await expect(page.getByLabel('PC address', { exact: true })).not.toBeVisible();
       if (method === 'manual') {
         await page.getByText('Enter a code instead', { exact: true }).click();

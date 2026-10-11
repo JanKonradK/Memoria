@@ -4648,4 +4648,102 @@ export const SEED_EVENTS: SeedEvent[] = [
       'Invite-link web event. Official global window. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html',
     sourceKey: 'seed:nte:1.4-blackbird-invitation',
   },
+  {
+    game: 'wuwa',
+    name: 'Waking Moon Fishing — web event',
+    type: 'event',
+    start: '2026-10-15 10:00',
+    end: '2026-11-01 09:59',
+    timezone: 'UTC+8',
+    notes:
+      'Web event with Astrite rewards. Official 3.7 patch notes give the window in UTC+8. Source: https://wutheringwaves.kurogames.com/en/main/news/detail/5571',
+    sourceKey: 'seed:wuwa:3.7-waking-moon-fishing',
+  },
+  {
+    game: 'nikke',
+    name: 'Belorta: Pumpkin Witch Pick Up',
+    type: 'banner',
+    bannerKind: 'character',
+    start: '2026-10-08 15:00',
+    end: '2026-10-28 23:59',
+    timezone: 'UTC+9',
+    dailyTouch: false,
+    notes:
+      'The publisher states October 8 after maintenance through October 28 at 23:59 UTC+9, with no opening hour. The opening shown is the planned maintenance finish reported by nikke.gg. Source: https://x.com/NIKKE_en/status/2105825095868625288',
+    sourceKey: 'seed:nikke:2026-10-belorta',
+  },
+  {
+    game: 'endfield',
+    name: 'Rejuvenation — Si',
+    type: 'banner',
+    bannerKind: 'character',
+    start: '2026-10-15 07:00',
+    end: '2026-11-05 11:59',
+    startTimezone: 'UTC+8',
+    notes:
+      'Opens after the version 1.6 update on October 15 at 07:00 UTC+8. Closes November 5 at 11:59 server time. Source: the publisher’s version briefing data, https://endfield.gryphline.com/en-us/news/7014',
+    sourceKey: 'seed:endfield:1.6-si',
+  },
+  {
+    game: 'endfield',
+    name: 'Yuanyuan’s Blazing Stoves',
+    type: 'event',
+    start: '2026-10-15 07:00',
+    end: '2026-11-26 06:00',
+    timezone: 'UTC+8',
+    notes:
+      'Opens after the version 1.6 update on October 15 at 07:00 UTC+8. Runs until the next version update, listed as November 26 at 06:00 UTC+8. Source: the publisher’s version briefing data, https://endfield.gryphline.com/en-us/news/7014',
+    sourceKey: 'seed:endfield:1.6-blazing-stoves',
+  },
+  {
+    game: 'endfield',
+    name: 'All the Inky Hues',
+    type: 'event',
+    start: '2026-10-15 07:00',
+    end: '2026-11-05 12:00',
+    startTimezone: 'UTC+8',
+    notes:
+      'Opens after the version 1.6 update on October 15 at 07:00 UTC+8. Closes November 5 at 12:00 server time. Source: the publisher’s version briefing data, https://endfield.gryphline.com/en-us/news/7014',
+    sourceKey: 'seed:endfield:1.6-inky-hues',
+  },
+  {
+    game: 'endfield',
+    name: 'Carly’s Verdant Anthology',
+    type: 'event',
+    start: '2026-10-22 12:00',
+    end: '2026-11-05 04:00',
+    notes:
+      'Server-local window. Source: the publisher’s version briefing data, https://endfield.gryphline.com/en-us/news/7014',
+    sourceKey: 'seed:endfield:1.6-carly-anthology',
+  },
+  {
+    game: 'endfield',
+    name: 'Monumental Etching: Forest of Maras',
+    type: 'event',
+    start: '2026-10-22 12:00',
+    end: '2026-11-05 04:00',
+    notes:
+      'Server-local window. Source: the publisher’s version briefing data, https://endfield.gryphline.com/en-us/news/7014',
+    sourceKey: 'seed:endfield:1.6-forest-of-maras',
+  },
+  {
+    game: 'endfield',
+    name: 'Arena of Games',
+    type: 'event',
+    start: '2026-10-29 12:00',
+    end: '2026-11-19 04:00',
+    notes:
+      'Server-local window. Source: the publisher’s version briefing data, https://endfield.gryphline.com/en-us/news/7014',
+    sourceKey: 'seed:endfield:1.6-arena-of-games',
+  },
+  {
+    game: 'endfield',
+    name: 'New Era for the Myriad Souls — web event',
+    type: 'event',
+    start: '2026-10-31 12:00',
+    end: '2026-11-14 04:00',
+    notes:
+      'Server-local window. Source: the publisher’s version briefing data, https://endfield.gryphline.com/en-us/news/7014',
+    sourceKey: 'seed:endfield:1.6-myriad-souls',
+  },
 ];

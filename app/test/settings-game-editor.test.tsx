@@ -158,7 +158,7 @@ describe('Settings game editor identity', () => {
     expect(updateGame).toHaveBeenLastCalledWith(game.id, { color3: '#334455' });
   });
 
-  it('restores the whole preset trio in one press', () => {
+  it('restores the whole preset trio once confirmed', () => {
     const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
     const { updateGame } = renderEditor({
       ...game,
@@ -171,6 +171,8 @@ describe('Settings game editor identity', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: `Restore ${genshin.name} colours` }));
+    // The colours the owner picked are only replaced on the second press.
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm: replace my colours' }));
     expect(updateGame).toHaveBeenLastCalledWith(game.id, {
       color: genshin.color,
       color2: genshin.color2,

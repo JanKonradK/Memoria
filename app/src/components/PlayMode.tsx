@@ -224,8 +224,8 @@ export function PlayMode() {
                 onChange={(background) => setConfig({ ...config, background })}
               />
               <p className="text-meta text-muted">
-                When enabled, closing the window keeps account checks, the capture shortcut, and phone sync running. Use
-                Quit Memoria in the tray menu to stop them. Your PC must be awake.
+                When enabled, closing the window keeps account checks, the capture shortcut, and device sync running.
+                Use Quit Memoria in the tray menu to stop them. Your PC must be awake.
               </p>
             </fieldset>
             {(error || status?.error) && (

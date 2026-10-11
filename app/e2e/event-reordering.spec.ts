@@ -104,6 +104,7 @@ test('event handles reorder with mouse, touch, and keyboard and persist across r
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Reset automatic order' }).click();
+  await page.getByRole('button', { name: 'Confirm: drop my order' }).click();
   await expect.poll(order).toEqual(['First', 'Second']);
 });
 

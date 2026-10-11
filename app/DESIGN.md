@@ -74,7 +74,7 @@ Settings exposes Game accounts, which opens the same card panel.
 
 The Windows app shows Launch on each card. It starts the program or shortcut the owner picked in a native file dialog. The choice stays on that PC. Other platforms show no such control, and no control that only opens a card may be labelled as opening a game.
 Calendar shows the public feed status beside its date range. A failed check keeps saved events and exposes Retry update.
-Android Settings exposes Phone reminders and its permission control. No permission request occurs before the user enables reminders.
+Android Settings exposes Reminders on this device and its permission control. No permission request occurs before the user enables reminders.
 
 All features are available on Android, including the Samsung S23 Ultra. A Today row opens the same complete game controls as desktop. A single back arrow returns to Today. The game selector filters Timeline, Livestreams, and Settings.
 
@@ -92,7 +92,7 @@ Primary phone targets are at least 44px. Content, notices, and sheets clear the 
 
 ## Editors
 
-Phone and computer connection comes first in Settings. The primary flow is Connect my phone on the PC, then Scan PC code on Android. The QR code carries the temporary code and local addresses. Keep manual entry, connection management, and troubleshooting behind optional disclosures. Connected and offline states explain what happens to saved progress. A failed or cancelled replacement scan keeps the existing connection.
+Device sync comes first in Settings. The primary flow is Connect my phone or tablet on the PC, then Scan PC code on Android. The QR code carries the temporary code and local addresses. Keep manual entry, connection management, and troubleshooting behind optional disclosures. Connected and offline states explain what happens to saved progress. A failed or cancelled replacement scan keeps the existing connection.
 
 Use existing shared inputs, buttons, tabs, and sheets. Fields use sentence-case labels and clear grouping. Event and reminder actions remain outside the scrolling form. Game edits save automatically and expose a Done button. Preserve validation, dirty drafts, cancel behavior, deletion safeguards, and account scope.
 

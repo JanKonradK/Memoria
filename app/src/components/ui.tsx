@@ -401,25 +401,65 @@ export function ConfirmDelete({
   className?: string;
   disabled?: boolean;
 }) {
+  return (
+    <ConfirmAction
+      kind="danger"
+      label={label}
+      confirmLabel="Confirm delete"
+      ariaLabel={`Delete ${what}`}
+      confirmAriaLabel={`Confirm delete ${what}`}
+      cancelAriaLabel={`Keep ${what}`}
+      onConfirm={onConfirm}
+      className={className}
+      disabled={disabled}
+    />
+  );
+}
+
+/** The same ask-first step for anything else that discards what the owner set up. */
+export function ConfirmAction({
+  label,
+  confirmLabel,
+  cancelLabel = 'Keep',
+  ariaLabel,
+  confirmAriaLabel,
+  cancelAriaLabel,
+  kind = 'ghost',
+  onConfirm,
+  className = '',
+  disabled,
+}: {
+  label: string;
+  confirmLabel: string;
+  cancelLabel?: string;
+  ariaLabel?: string;
+  confirmAriaLabel?: string;
+  cancelAriaLabel?: string;
+  /** How the button looks before it is pressed. The question is always the danger style. */
+  kind?: 'ghost' | 'danger';
+  onConfirm: () => void;
+  className?: string;
+  disabled?: boolean;
+}) {
   const [asking, setAsking] = useState(false);
   return (
     <span className={`inline-flex flex-wrap items-center gap-2 ${className}`}>
       <Btn
-        kind="danger"
+        kind={asking ? 'danger' : kind}
         className={TOUCH_BUTTON}
         disabled={disabled}
-        aria-label={asking ? `Confirm delete ${what}` : `Delete ${what}`}
+        aria-label={asking ? confirmAriaLabel : ariaLabel}
         onClick={() => {
           if (!asking) return setAsking(true);
           setAsking(false);
           onConfirm();
         }}
       >
-        {asking ? 'Confirm delete' : label}
+        {asking ? confirmLabel : label}
       </Btn>
       {asking && (
-        <Btn className={TOUCH_BUTTON} aria-label={`Keep ${what}`} onClick={() => setAsking(false)}>
-          Keep
+        <Btn className={TOUCH_BUTTON} aria-label={cancelAriaLabel} onClick={() => setAsking(false)}>
+          {cancelLabel}
         </Btn>
       )}
     </span>

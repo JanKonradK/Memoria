@@ -112,7 +112,7 @@ Memoria estimates energy from your last entry. Enter a new value after you spend
 Task resets use each game's server time. Dates and clocks use your **Home timezone** in **Settings**.
 
 Some games include event dates with the app. These dates can change, so check important deadlines in your game.
-The Android app can schedule optional phone reminders. Enable **Phone reminders** in **Settings** and allow Android notifications.
+The Android app can schedule optional reminders. Enable **Reminders on this device** in **Settings** and allow Android notifications.
 The schedule covers the next 24 hours, with custom reminders and one approaching deadline per game.
 Quiet hours apply. Android can delay delivery. Open Memoria regularly to update the schedule.
 
@@ -133,17 +133,18 @@ The one-file version keeps its data in your browser. Clearing browser data can r
 
 ## Use your phone and computer
 
-### Sync a PC and Android phone over Wi-Fi
+### Sync a PC and an Android phone or tablet over Wi-Fi
 
 Connect the PC and phone to the same Wi-Fi. Open Memoria on both devices.
 
-1. On the PC, open **Settings** and select **Connect my phone**.
+1. On the PC, open **Settings** and select **Connect my phone or tablet**.
 2. On the phone, open **Settings** and tap **Scan PC code**.
 3. Point the phone camera at the code on the PC.
 
 Memoria connects the devices. You do not need to type an address or code.
-If the phone and the PC both already have games, the phone asks before it syncs.
+If the phone or tablet and the PC both already have games, it asks before it syncs.
 Select **Use my PC's data** for a new phone or tablet. Select **Combine both** to keep every game from both devices.
+Select **Cancel and disconnect** to change nothing.
 If Android requests camera access, allow it to scan the code. Memoria does not save a photo.
 
 If you cannot use the camera, select **Enter a code instead** on both devices.
@@ -160,7 +161,7 @@ For conflicting changes to the same item, the later change wins.
 Connection options are below the connection status. You can check the connection or scan a new PC code there.
 If you move the PC to another network, scan a new code. Your saved progress stays on both devices.
 Use **Pause sync** on the PC to stop sync temporarily. **Resume sync** connects your saved devices again.
-Use **Disconnect** on the phone or **Disconnect phone** on the PC to remove a connection.
+Use **Disconnect** on the phone or **Disconnect device** on the PC to remove a connection.
 These actions keep your saved data.
 
 If an older PC launcher remains active after an update, restart Windows and open the updated app.

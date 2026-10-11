@@ -9,9 +9,9 @@ export function DeviceNotifications() {
   const [message, setMessage] = useState('');
   if (!isNativeApp) return null;
   return (
-    <section className="mb-5 min-w-0" aria-label="Phone reminders">
+    <section className="mb-5 min-w-0" aria-label="Reminders on this device">
       <div className="today-group-rule">
-        <h2 className="text-meta font-semibold text-fg-soft">Phone reminders</h2>
+        <h2 className="text-meta font-semibold text-fg-soft">Reminders on this device</h2>
         <span aria-hidden />
       </div>
       {/* Inset to the heading's text, so the body lines up with the rule. */}
@@ -35,9 +35,9 @@ export function DeviceNotifications() {
               .finally(() => setBusy(false));
           }}
         >
-          {busy ? 'Updating…' : enabled ? 'Turn phone reminders off' : 'Enable phone reminders'}
+          {busy ? 'Updating…' : enabled ? 'Turn reminders off' : 'Enable reminders'}
         </Btn>
-        {enabled && <p className="text-meta text-muted">{scheduled} reminders scheduled on this phone.</p>}
+        {enabled && <p className="text-meta text-muted">{scheduled} reminders scheduled on this device.</p>}
         {(message || error) && (
           <p role="alert" className="text-body text-danger-fg">
             {message || error}
