@@ -37,7 +37,7 @@ test('saved sheets animate out and lazy editors can open after dismissal', async
   await add.click();
   await page.getByRole('menuitem', { name: 'Add game', exact: true }).click();
   await page.getByPlaceholder('Custom game name…').fill('Motion preview');
-  await page.getByRole('button', { name: '+ Custom', exact: true }).click();
+  await page.getByRole('button', { name: 'Add custom game', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Motion preview' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);

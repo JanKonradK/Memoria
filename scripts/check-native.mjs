@@ -475,11 +475,11 @@ try {
   ).toBe(200);
   expect(await page.evaluate(() => window.performance.timeOrigin)).toBe(startedAt);
   await expect(draft).toHaveValue('Keep my unsaved task');
-  await page.getByRole('button', { name: '+ Task', exact: true }).click();
+  await page.getByRole('button', { name: 'Add task', exact: true }).click();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect.poll(() => readState().tasks.some((task) => task.name === 'Keep my unsaved task')).toBe(true);
 
-  await page.getByRole('button', { name: 'Connect my phone', exact: true }).click();
+  await page.getByRole('button', { name: 'Connect my phone or tablet', exact: true }).click();
   await expect(page.getByRole('img', { name: 'Scan this code with Memoria on your phone to connect' })).toBeVisible();
   await page.getByRole('button', { name: 'Games', exact: true }).click();
   // External changes take the same path used by an already paired phone.

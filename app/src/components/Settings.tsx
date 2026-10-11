@@ -138,7 +138,7 @@ export function SettingsPage() {
               </h2>
               <span aria-hidden />
               <Btn className={TOUCH_BUTTON} onClick={() => openSheet({ kind: 'addGame' })}>
-                + Add game
+                Add game
               </Btn>
             </div>
 
@@ -227,7 +227,7 @@ export function SettingsPage() {
                           />
                           <path d="M12.6 4.6l2.5 2.5" strokeLinecap="round" />
                         </svg>
-                        <span className="hidden sm:inline">Settings</span>
+                        Edit
                       </span>
                     </button>
                   );

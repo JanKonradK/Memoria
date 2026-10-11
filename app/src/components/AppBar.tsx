@@ -90,7 +90,7 @@ function SyncIndicator() {
       : cloud === 'error' || cloud === 'needs-permission'
         ? cloudError || 'Sync file needs attention'
         : lan === 'error' || lan === 'offline'
-          ? lanError || 'Phone sync needs attention'
+          ? lanError || 'Device sync needs attention'
           : '';
   const statuses = [desktop, cloud, lan];
   const status = issue

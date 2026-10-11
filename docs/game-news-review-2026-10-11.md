@@ -1,7 +1,7 @@
 # Game news review — October 11, 2026
 
 This review adds to the [October 3 review](game-news-review-2026-10-03.md). It covers the nine game presets.
-The bundle date is `2026-10-11`. The bundle gains seven events and banners and corrects four records.
+The bundle date is `2026-10-11`. The bundle gains 16 events and banners and corrects four records.
 A record entered the bundle only after a direct read of the publisher's own text.
 Eight Genshin rows ended before August 12. The bundle removes them under its 60-day retention rule.
 
@@ -14,6 +14,19 @@ Eight Genshin rows ended before August 12. The bundle removes them under its 60-
 | Zenless Zone Zero     | [Publisher Steam API](https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=4162040&count=30&maxlength=0)                                                                                                              | The 3.3 Special Program aired October 9 at 19:30 UTC+8. The forecast window is now that broadcast.                                                     |
 | Neverness to Everness | [September 29 patch notes](https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html)                                                                                                                           | Added Blackbird's Invitation, September 30 at 11:00 through November 11 at 05:59 UTC+8.                                                                |
 | Umamusume             | Notice 1089 from the [notice API](https://umamusume.com/news/)                                                                                                                                                                   | The October 7 scouts have names: [Heroic Author] Zenno Rob Roy, and the support cards Light Hello and Mayano Top Gun.                                  |
+
+A second pass read more publisher text directly:
+
+- Wuthering Waves: the Kuro article feed has no post about version 3.7 phase-two banners. Its newest article is 5603.
+  The 3.7 patch notes give Waking Moon Fishing a window of October 15 at 10:00 through November 1 at 09:59 UTC+8. The bundle adds it.
+- NIKKE: the publisher's post gives Belorta: Pumpkin Witch a window of October 8 after maintenance through October 28 at 23:59 UTC+9.
+  The bundle adds it. Its opening hour is the planned maintenance finish that nikke.gg reports, not a publisher statement.
+
+- Arknights: Endfield: the developer note states that Sanctuary of Ink launches October 15.
+  The publisher's version briefing page lists seven version 1.6 windows through October 31. The bundle adds them.
+  Its data gives one clock time for every server for scheduled events, so those rows use server time.
+  Rows that open after the update use October 15 at 07:00 UTC+8. No notice gives a maintenance start.
+  The four windows that begin November 5 are left for the next review.
 
 ## Time rules
 
@@ -40,10 +53,9 @@ The research found these items only on fan sites or without a complete window. T
 - Umamusume: names for the October 14, 20, 24, and 27 scouts, and ends for New Beginnings Parts 1 and 2.
   Notice 1093 dates Holiday Celebration Part 2 from October 7 at 22:00 UTC. The roadmap dates it from October 8 at 15:00 UTC.
   The record keeps the roadmap window.
-- NIKKE: the publisher states that Belorta's recruitment opens after the October 8 maintenance and ends October 28 at 23:59 UTC+9.
-  It gives no opening hour, so the bundle has no record. Solo Raid 42 and the anniversary broadcast time rest on fan sites.
-- Arknights: Endfield: press reports date the Sanctuary of Ink update to October 15. No publisher text with a maintenance hour was read.
-  Six records keep a placeholder close of October 14 at 17:00.
+- NIKKE: Solo Raid 42, the story event, and the anniversary broadcast time rest on fan sites.
+- Arknights: Endfield: no notice gives the October 15 maintenance start.
+  Six version 1.5 records keep a placeholder close of October 14 at 17:00.
 
 Redemption codes from fan sites were not added. No publisher post confirmed a code or an expiry.
 

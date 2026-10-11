@@ -50,7 +50,7 @@ function PairingQr({ addresses, code }: { addresses: string[]; code: string }) {
       width={256}
       height={256}
       className="h-auto w-64 max-w-full rounded-ui-lg"
-      alt="Scan this code with Memoria on your phone to connect"
+      alt="Scan this code with Memoria on your phone or tablet to connect"
     />
   ) : (
     <p className="flex min-h-64 items-center text-body text-muted" role="status">
@@ -144,11 +144,11 @@ function DesktopConnection() {
             {devices.error}
           </p>
           <p className="text-muted">
-            Reset the connection, then scan a new code on your phone. Your games and progress stay saved. A copy of the
-            old connection file is kept.
+            Reset the connection, then scan a new code on your phone or tablet. Your games and progress stay saved. A
+            copy of the old connection file is kept.
           </p>
           <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => void control('reset')}>
-            Reset phone connection
+            Reset device connection
           </Btn>
         </div>
       ) : (
@@ -156,7 +156,7 @@ function DesktopConnection() {
           {paired && !pairingVisible && (
             <div role="status" className="space-y-1">
               <p className="text-body font-semibold text-ok-fg">
-                {devices.enabled ? 'Your phone is connected' : 'Sync is paused'}
+                {devices.enabled ? 'Your device is connected' : 'Sync is paused'}
               </p>
               <p className="text-body text-muted">
                 {devices.enabled
@@ -176,9 +176,9 @@ function DesktopConnection() {
                 ? 'Preparing…'
                 : paired
                   ? devices.enabled
-                    ? 'Connect another phone'
+                    ? 'Connect another device'
                     : 'Resume sync'
-                  : 'Connect my phone'}
+                  : 'Connect my phone or tablet'}
             </Btn>
           )}
           {pairingVisible && (
@@ -200,9 +200,9 @@ function DesktopConnection() {
                 )}
               </div>
               <div className="space-y-3">
-                <p className="text-lead font-semibold text-fg">Now pick up your phone</p>
+                <p className="text-lead font-semibold text-fg">Now pick up your phone or tablet</p>
                 <ol className="list-decimal space-y-2 pl-5 text-body text-muted">
-                  <li>Open Memoria on your phone.</li>
+                  <li>Open Memoria on it.</li>
                   <li>
                     Open Settings and tap <strong className="font-medium text-fg">Scan PC code</strong>.
                   </li>
@@ -212,12 +212,12 @@ function DesktopConnection() {
                   Use the same Wi-Fi on both devices. Your existing progress will be kept.
                 </p>
                 <p role="status" className="text-meta text-muted">
-                  Waiting for your phone…
+                  Waiting for your device…
                 </p>
                 <details className={DETAILS}>
                   <summary>Enter a code instead</summary>
                   <div className="space-y-2 pb-3">
-                    <p>On your phone, tap Enter a code instead.</p>
+                    <p>On your phone or tablet, tap Enter a code instead.</p>
                     <p className="font-medium text-fg">PC address</p>
                     {devices.addresses.map((address) => (
                       <p key={address} className="select-all break-all">
@@ -237,7 +237,7 @@ function DesktopConnection() {
             <details className={DETAILS}>
               <summary>Manage connection</summary>
               <div className="space-y-3 pb-3">
-                <p>Sync works while Memoria is open on the PC and phone. You can keep using either app offline.</p>
+                <p>Sync works while Memoria is open on both devices. You can keep using either app offline.</p>
                 {devices.devices.map((device) => (
                   <div key={device.id} className="flex flex-wrap items-center justify-between gap-2">
                     <span className="min-w-0 [overflow-wrap:anywhere]">{device.name}</span>
@@ -247,14 +247,14 @@ function DesktopConnection() {
                       aria-label={`Disconnect ${device.name} ${device.id}`}
                       onClick={() => void control('revoke', device.id)}
                     >
-                      Disconnect phone
+                      Disconnect device
                     </Btn>
                   </div>
                 ))}
                 <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => void control('stop')}>
                   Pause sync
                 </Btn>
-                <p className="text-meta">This keeps your saved progress and remembers your phone.</p>
+                <p className="text-meta">This keeps your saved progress and remembers your device.</p>
               </div>
             </details>
           )}
@@ -302,7 +302,7 @@ function FirstSyncChoice({ deviceGames, pcGames }: { deviceGames: number; pcGame
           </Btn>
           {confirming && (
             <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => setConfirming(false)}>
-              Go back
+              Keep this device’s games
             </Btn>
           )}
         </div>
@@ -349,7 +349,7 @@ function PhoneConnection() {
     <>
       {!connection.host ? (
         <>
-          <p className="text-body text-muted">On your PC, open Memoria → Settings → Connect my phone.</p>
+          <p className="text-body text-muted">On your PC, open Memoria → Settings → Connect my phone or tablet.</p>
           <Btn kind="primary" className={TOUCH_BUTTON} disabled={busy} onClick={() => void scan()}>
             {busy ? 'Connecting…' : 'Scan PC code'}
           </Btn>
@@ -414,7 +414,7 @@ function PhoneConnection() {
                   ? 'Updating your progress…'
                   : connection.status === 'offline'
                     ? 'Waiting for your PC'
-                    : 'Your progress is saved on this phone'}
+                    : 'Your progress is saved on this device'}
             </p>
             <p className="text-body text-muted">
               {connection.status === 'offline'
@@ -475,7 +475,7 @@ export function DeviceSync() {
     <section id="device-sync" className="settings-section mb-5 min-w-0" aria-labelledby="wifi-sync-heading">
       <div className="today-group-rule">
         <h2 id="wifi-sync-heading" className="text-meta font-semibold text-fg-soft">
-          Phone & computer
+          Device sync
         </h2>
         <span aria-hidden />
       </div>
@@ -486,7 +486,7 @@ export function DeviceSync() {
         <details className={DETAILS}>
           <summary>Need help connecting?</summary>
           <ul className="list-disc space-y-2 pb-3 pl-5">
-            <li>Connect your phone and PC to the same Wi-Fi.</li>
+            <li>Connect both devices to the same Wi-Fi.</li>
             <li>Keep Memoria open on your PC.</li>
             <li>If Windows asks to allow Memoria through its firewall, allow it on your private network.</li>
             <li>If a code has expired, show a new code on your PC and scan it again.</li>

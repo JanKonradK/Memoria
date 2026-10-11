@@ -11,7 +11,7 @@ import { endTone, fmtDur } from '../util';
 import { Disclosure } from './Disclosure';
 import { Pill, ProgressBar } from './primitives';
 import { rosterGames, useIdentityColors } from './roster';
-import { Btn, Page, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
+import { Btn, ConfirmAction, Page, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
 import { GameLogo } from './GameLogo';
 import { TimelineTools } from './TimelineTools';
 import { CalendarToolbar } from './CalendarToolbar';
@@ -1167,13 +1167,13 @@ export function TimelinePage({ now }: { now: number }) {
                           {state.events.some(
                             (event) => event.gameId === game.id && !event.deleted && event.sort !== undefined,
                           ) && (
-                            <button
-                              type="button"
-                              className="mb-1 text-caption text-accent-fg hover:underline"
-                              onClick={() => resetEventOrder(game.id)}
-                            >
-                              Reset automatic order
-                            </button>
+                            <ConfirmAction
+                              className="mb-1"
+                              label="Reset automatic order"
+                              confirmLabel="Confirm: drop my order"
+                              cancelLabel="Keep my order"
+                              onConfirm={() => resetEventOrder(game.id)}
+                            />
                           )}
                           {groupGameEvents(game, shown).map((group) => (
                             <section

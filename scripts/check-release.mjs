@@ -95,7 +95,7 @@ try {
   expect(await second.evaluate(() => window.auditCsp)).toEqual([]);
   await page.screenshot({ path: join(root, 'dist/security-desktop.png') });
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByRole('button', { name: 'Connect my phone', exact: true }).click();
+  await page.getByRole('button', { name: 'Connect my phone or tablet', exact: true }).click();
   await expect(page.getByRole('img', { name: 'Scan this code with Memoria on your phone to connect' })).toBeVisible();
   await expect(page.getByText('Waiting for your phone…', { exact: true })).toBeVisible();
   await expect(page.getByText('PC address', { exact: true })).not.toBeVisible();
@@ -116,13 +116,13 @@ try {
     body: JSON.stringify({ code: wifi.code, name: 'Test phone' }),
   });
   expect(paired.status).toBe(200);
-  await expect(page.getByText('Your phone is connected', { exact: true })).toBeVisible();
+  await expect(page.getByText('Your device is connected', { exact: true })).toBeVisible();
   await expect(page.getByRole('img', { name: 'Scan this code with Memoria on your phone to connect' })).toHaveCount(0);
   await page.getByText('Manage connection', { exact: true }).click();
   await page.getByRole('button', { name: 'Pause sync', exact: true }).click();
   await expect(page.getByText('Sync is paused', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Resume sync', exact: true }).click();
-  await expect(page.getByText('Your phone is connected', { exact: true })).toBeVisible();
+  await expect(page.getByText('Your device is connected', { exact: true })).toBeVisible();
   await expect(page.getByRole('img', { name: 'Scan this code with Memoria on your phone to connect' })).toHaveCount(0);
   await page.getByText('Manage connection', { exact: true }).click();
   await page.getByRole('button', { name: 'Pause sync', exact: true }).click();

@@ -77,7 +77,7 @@ export function UserGuide({ open }: { open: boolean }) {
       },
       {
         title: 'Make yourself at home',
-        body: 'Edit your games, connect your phone and PC, or export a backup here. You can open User guide to see this tour again.',
+        body: 'Edit your games, connect your phone or tablet to your PC, or export a backup here. You can open User guide to see this tour again.',
         target: '[data-tour="settings"]',
         tab: 'settings',
       },

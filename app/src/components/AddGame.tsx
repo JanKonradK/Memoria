@@ -146,7 +146,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
               onChange={(e) => setCustomName(e.target.value)}
             />
             <Btn onClick={createCustom} className="shrink-0">
-              + Custom
+              Add custom game
             </Btn>
           </div>
         </>
@@ -163,10 +163,10 @@ export function AddGameSheet({ open }: { open: boolean }) {
                 Shown next to the game name so you can tell your accounts apart.
               </span>
             </Field>
-            <Field label="Badge">
+            <Field label="Short name">
               <TextInput maxLength={4} value={short} onChange={(event) => setShort(event.target.value)} />
               <span className="mt-1 block text-meta text-dim">
-                Two to four characters. Give this account its own badge.
+                Shown where space is tight. Give each account its own.
               </span>
             </Field>
             <Field label="Server timezone">

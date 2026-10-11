@@ -160,7 +160,7 @@ export function GameDetailSheet({
             ) : (
               <>
                 <p className="mb-2 text-label text-danger-fg">
-                  This also deletes this game's resources, tasks, quick spends, and events.
+                  This also deletes this game's resources, tasks, quick spends, events, and reminders.
                 </p>
                 <div className="flex gap-2">
                   <Btn

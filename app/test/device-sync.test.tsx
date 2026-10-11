@@ -29,7 +29,7 @@ it('keeps an expired additional-phone code visible until a new phone connects', 
     render(<DeviceSync />);
   });
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Connect another phone' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Connect another device' }));
   });
   expect(screen.getByRole('img')).toBeVisible();
   status = { ...status, code: null, expiresAt: null };
@@ -50,7 +50,7 @@ it('keeps an expired additional-phone code visible until a new phone connects', 
   await act(async () => {
     await vi.advanceTimersByTimeAsync(2000);
   });
-  expect(screen.getByText('Your phone is connected')).toBeVisible();
+  expect(screen.getByText('Your device is connected')).toBeVisible();
   expect(screen.queryByRole('img')).toBeNull();
 });
 
@@ -71,8 +71,8 @@ it('offers explicit recovery when saved phone connection settings cannot be read
   });
   expect(screen.getByRole('alert')).toHaveTextContent('could not be read');
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Reset phone connection' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset device connection' }));
   });
-  expect(screen.getByRole('button', { name: 'Connect my phone' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Connect my phone or tablet' })).toBeVisible();
   expect(screen.queryByRole('alert')).toBeNull();
 });

@@ -5,7 +5,7 @@ import { servedByLauncher } from '../launcher';
 import { isNativeApp } from '../native';
 import { connectHoyo, listHoyoAccounts } from '../hoyo-native';
 import { useApp } from '../store';
-import { Btn, Field, Select, TextInput } from './ui';
+import { Btn, ConfirmAction, Field, Select, TextInput } from './ui';
 import { isDesktopApp, useUnsavedDraft } from '../desktop-host';
 
 const SERVERS = {
@@ -170,7 +170,7 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
   if (!servedByLauncher() && !isNativeApp && !desktop)
     return (
       <p className="text-body text-muted">
-        Connect game accounts in the Windows app. Account readings reach this phone through device sync. Screenshot
+        Connect game accounts in the Windows app. Account readings reach this device through device sync. Screenshot
         import works on this device.
       </p>
     );
@@ -298,7 +298,7 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
           </Btn>
           <p className="text-meta text-muted">
             Sign in on the official page, then select Done. One sign-in serves your linked games on this{' '}
-            {desktop ? 'PC' : 'phone'}. Your session stays here.
+            {desktop ? 'PC' : 'device'}. Your session stays here.
           </p>
           {desktop && (
             <p className="text-meta text-muted">
@@ -375,9 +375,13 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
             >
               {busy ? 'Checking…' : 'Fetch now'}
             </Btn>
-            <Btn disabled={busy || conflicts.length > 1} onClick={() => void run({ action: 'disconnect', gameId })}>
-              Disconnect
-            </Btn>
+            <ConfirmAction
+              label="Disconnect"
+              confirmLabel="Confirm disconnect"
+              cancelLabel="Stay connected"
+              disabled={busy || conflicts.length > 1}
+              onConfirm={() => void run({ action: 'disconnect', gameId })}
+            />
           </div>
         </div>
       ) : (
