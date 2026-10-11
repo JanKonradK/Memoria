@@ -14,6 +14,7 @@ import { useReadings } from '../readings';
 import { useIdentityColors } from './roster';
 import { GameControls } from './GameCard';
 import { GameLogo } from './GameLogo';
+import { TickNumber } from './TickNumber';
 import { GamePage } from './GamePage';
 import { SourceIcon } from './GameReadings';
 import { NexusHub } from './nexus/NexusHub';
@@ -109,7 +110,7 @@ function PriorityRow({
                 <span />
               </span>
               <span className="today-row-value numeral text-caption text-fg-soft">
-                {known ? projection!.value : '—'}
+                {known ? <TickNumber value={projection!.value} /> : '—'}
                 <span className="text-muted">/{resource.cap}</span>
               </span>
               {known && source && (
@@ -139,7 +140,7 @@ function PriorityRow({
                 </svg>
               ) : (
                 <span className="numeral">
-                  {done}/{dailies.length}
+                  <TickNumber value={done} />/{dailies.length}
                 </span>
               )}
             </ProgressBar>

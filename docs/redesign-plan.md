@@ -28,4 +28,10 @@ While working, run the browser suite on `desktop` and `mobile-390` only, then al
 
 ## Status
 
-All six phases are built on `merge-games-into-today`. Still to do by hand: check motion on the Galaxy Tab S7+ (opening and closing a game, scrolling Today with the logos turning, ticking event parts).
+All six phases are built on `merge-games-into-today`, including the follow-up restyle of the Calendar timeline, the Add game picker, the layout editor and the notices.
+
+Left for a person:
+
+- Check motion on the Galaxy Tab S7+: open and close a game repeatedly, scroll Today with the logos turning, tick event parts on a game's page.
+- The root package stays on TypeScript 6.0 until `typescript-eslint` supports 7; `app` and `shared` already compile with 7.0.
+- `tonight-banners.spec.ts` fails on a count that depends on today's date and the bundled feed. It predates this work.
