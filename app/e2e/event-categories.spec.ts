@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { emptyState } from '@memoria/shared';
 import { makeGame, makeEvent } from '../../shared/test/helpers';
+import { editFromQuickView } from './support';
 
 test('MW uses an inline tag and owner tag changes persist', async ({ page }) => {
   const now = Date.parse('2026-09-17T12:00:00Z');
@@ -62,6 +63,7 @@ test('MW uses an inline tag and owner tag changes persist', async ({ page }) => 
   await expect(page.locator('[data-event-category]')).toHaveCount(0);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole('button', { name: 'Open Genshin category test event: Miliastra test', exact: true }).click();
+  await editFromQuickView(page);
   await page.getByRole('combobox', { name: 'Genshin world' }).click();
   await page.getByRole('option', { name: 'Teyvat', exact: true }).click();
   await page.getByRole('button', { name: 'Save', exact: true }).click();

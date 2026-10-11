@@ -9,6 +9,7 @@ import { endTone, fmtDur } from '../util';
 import { useIdentityColors } from './roster';
 import { Btn, serverLabelClass } from './ui';
 import { serverRegionLabel } from '../server-region';
+import { PinMark, togglePinned } from './EventPeek';
 import '../calendar-list.css';
 
 /** Events grouped by status, with the nearest deadline first. */
@@ -225,6 +226,7 @@ export function TimelineList({
                       <p
                         className={`timeline-event-name break-words text-body font-medium ${finished ? 'text-muted' : 'text-fg'}`}
                       >
+                        {event.pinned && <PinMark className="mr-1.5 inline h-3.5 w-3.5 align-[-0.1em]" />}
                         {event.name}
                       </p>
                       <div className="timeline-event-metadata flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-muted">
@@ -274,6 +276,15 @@ export function TimelineList({
                       </button>
                       {/* The name above is text, not a second button aimed at the
                           same sheet. One row, one way to open it. */}
+                      <button
+                        type="button"
+                        aria-pressed={Boolean(event.pinned)}
+                        aria-label={`Pin ${controlLabel} event: ${event.name}`}
+                        onClick={() => togglePinned(event)}
+                        className={`timeline-complete-control flex min-h-11 min-w-11 items-center justify-center rounded-ui-md sm:min-h-9 sm:min-w-9 ${event.pinned ? '' : 'text-muted'}`}
+                      >
+                        <PinMark className={`h-4 w-4 ${event.pinned ? '' : '!text-current'}`} />
+                      </button>
                       <Btn onClick={() => onOpenEvent(event)} aria-label={`Edit ${controlLabel} event: ${event.name}`}>
                         Edit
                       </Btn>

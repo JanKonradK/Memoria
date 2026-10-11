@@ -16,8 +16,10 @@
   border-radius: var(--radius-ui-lg);
   transition: background var(--dur-fast) var(--ease-out);
 }
-.surface-row:hover {
-  background: var(--color-fill-1);
+@media (hover: hover) {
+  .surface-row:hover {
+    background: var(--color-fill-1);
+  }
 }
 /* A press is felt on the button only, not on a field inside the row. */
 button.surface-row:active {

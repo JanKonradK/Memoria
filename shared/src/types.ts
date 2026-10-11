@@ -187,6 +187,8 @@ export interface GameEvent extends Syncable {
   notify: boolean;
   /** User marked it complete — collapsed on the timeline and off the card. */
   done?: boolean;
+  /** Marked as one you mean to do: highlighted and listed first. */
+  pinned?: boolean;
   /** How many parts the event is ticked off in. Absent means the count is inferred — see eventParts. */
   parts?: number;
   /** How many parts are ticked, in order from the first. Absent is none. */

@@ -1,0 +1,38 @@
+/* The quick view of one event: who, how long, the parts, the notes. */
+.event-peek {
+  display: grid;
+  gap: 1rem;
+}
+.event-peek-time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+/* In the sheet the segments run edge to edge; there is no tick beside them. */
+.event-peek .event-parts {
+  padding: 0 0 0.25rem;
+}
+.event-peek-notes {
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--color-line-strong);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* Edit sits apart on the left; the two things you came to do are on the right, under the thumb. */
+.event-peek-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* A pinned event, wherever it is listed: the pin in gold beside its name. */
+.pin-mark {
+  color: var(--color-gold);
+}
+/* On the timeline the bar itself carries the mark, since its name may be clipped. */
+[data-event-bar][data-pinned] {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 1px;
+}

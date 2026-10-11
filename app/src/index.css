@@ -382,8 +382,10 @@ body {
     background-color var(--dur-fast) var(--ease-out),
     color var(--dur-fast) var(--ease-out);
 }
-.calendar-views button:hover {
-  color: var(--color-fg-soft);
+@media (hover: hover) {
+  .calendar-views button:hover {
+    color: var(--color-fg-soft);
+  }
 }
 .calendar-views button[aria-current='page'] {
   border-color: var(--color-line-strong);
@@ -411,8 +413,10 @@ body {
   padding-inline: 14px;
   font-weight: 600;
 }
-.calendar-toolbar .shell-control:hover {
-  background: var(--color-fill-3);
+@media (hover: hover) {
+  .calendar-toolbar .shell-control:hover {
+    background: var(--color-fill-3);
+  }
 }
 .calendar-toolbar .shell-control[data-active],
 .calendar-toolbar .shell-control[aria-pressed='true'] {
@@ -461,10 +465,15 @@ body {
     color var(--dur-fast) var(--ease-out),
     transform var(--dur-fast) var(--ease-out);
 }
-.shell-control:hover,
 .shell-control[data-state='open'] {
   background: var(--color-fill-2);
   color: var(--color-fg);
+}
+@media (hover: hover) {
+  .shell-control:hover {
+    background: var(--color-fill-2);
+    color: var(--color-fg);
+  }
 }
 .shell-control:active:not(:disabled) {
   transform: scale(0.96);
@@ -683,8 +692,10 @@ input[type='number'] {
   background: var(--color-surface-1);
   border: 1px solid var(--color-line);
 }
-.panel-hover:hover {
-  background: var(--color-surface-2);
+@media (hover: hover) {
+  .panel-hover:hover {
+    background: var(--color-surface-2);
+  }
 }
 
 /* One neutral material for the attention hub and every game card. Game identity
@@ -1133,8 +1144,10 @@ input[type='number'] {
   background: color-mix(in srgb, var(--game-ink, var(--color-fg)) 20%, transparent);
   transition: background var(--dur-fast) var(--ease-out);
 }
-.event-part:hover::before {
-  background: color-mix(in srgb, var(--game-ink, var(--color-fg)) 45%, transparent);
+@media (hover: hover) {
+  .event-part:hover::before {
+    background: color-mix(in srgb, var(--game-ink, var(--color-fg)) 45%, transparent);
+  }
 }
 .event-part[aria-pressed='true']::before {
   background: var(--game-ink, var(--color-fg));
@@ -1386,8 +1399,10 @@ p.reading-notice {
   font-weight: 600;
   transition: background-color var(--dur-fast) var(--ease-out);
 }
-.reading-notice-action:hover {
-  background: var(--color-fill-2);
+@media (hover: hover) {
+  .reading-notice-action:hover {
+    background: var(--color-fill-2);
+  }
 }
 @media (min-width: 640px) {
   .reading-notice-action {

@@ -17,6 +17,7 @@ import { useMediaQuery, useReducedMotion } from '../hooks';
 import { cardEnter } from '../motion';
 import { titleStyle } from '../fonts';
 import { GameLogo } from './GameLogo';
+import { PinMark } from './EventPeek';
 import { gameInk, gameRim, gameSupport, gameTitleInk, mix } from '../game-color';
 import { gameShellVars, useGround, useTheme } from '../theme';
 
@@ -433,8 +434,13 @@ export function EventStrip({
         .filter((event) => event.start <= now && event.end > now)
         .sort((a, b) => a.end - b.end);
       const shown = onToggleDone
-        ? // Unfinished first, so what is left to do leads each section.
-          [...active].sort((a, b) => Number(Boolean(a.done)) - Number(Boolean(b.done)) || a.end - b.end)
+        ? // Pinned first, then unfinished, so what you mean to do leads each section.
+          [...active].sort(
+            (a, b) =>
+              Number(Boolean(b.pinned && !b.done)) - Number(Boolean(a.pinned && !a.done)) ||
+              Number(Boolean(a.done)) - Number(Boolean(b.done)) ||
+              a.end - b.end,
+          )
         : section.key === 'events'
           ? [
               ...active.filter((event) => event.dailyTouch),
@@ -470,6 +476,7 @@ export function EventStrip({
                     )}
                     <EventTags game={game} event={ev} />
                     {ev.dailyTouch && <Pill variant="warn">daily</Pill>}
+                    {ev.pinned && <PinMark className="h-3.5 w-3.5" />}
                     <span
                       className={`w-full break-words md:w-auto md:truncate ${ev.done ? 'text-muted line-through' : 'text-fg-soft'}`}
                     >
@@ -1263,7 +1270,7 @@ export function GameControls({
       now={now}
       layout={layout}
       columns={columns}
-      onOpenEvent={(eventId, gameId) => openSheet({ kind: 'event', eventId, gameId })}
+      onOpenEvent={(eventId) => openSheet({ kind: 'eventPeek', eventId })}
       actionsEnd={actionsEnd}
     />
   );
