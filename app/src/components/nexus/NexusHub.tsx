@@ -10,6 +10,7 @@ import { useDerived } from '../../selectors';
 import { fmtDur } from '../../util';
 import { serverRegionLabel } from '../../server-region';
 import { ProgressBar } from '../primitives';
+import { TickNumber } from '../TickNumber';
 import { useIdentityColors } from '../roster';
 import { GameBadge, ServerChip } from '../ui';
 
@@ -325,7 +326,7 @@ export function NexusHub({
           />
           <span className="min-w-0 flex-1 text-body text-fg-soft">
             <span className="numeral text-fg">
-              {dailiesDone}/{dailyItems.length}
+              <TickNumber value={dailiesDone} />/{dailyItems.length}
             </span>{' '}
             dailies done
           </span>
