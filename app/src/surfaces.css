@@ -14,7 +14,9 @@
 .surface-row {
   padding: 0.5rem;
   border-radius: var(--radius-ui-lg);
-  transition: background var(--dur-fast) var(--ease-out);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    scale var(--dur-fast) var(--ease-out);
 }
 @media (hover: hover) {
   .surface-row:hover {

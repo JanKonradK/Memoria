@@ -71,6 +71,7 @@ test('normal browser setup discovers an account and saves its readings to the ca
   // Accounts open inside the game's card, not in a separate dialog.
   await expect(page.getByRole('dialog')).toHaveCount(0);
   const panel = page.getByRole('region', { name: 'Account for Genshin browser', exact: true });
+  // This fixture has no sign-in window of its own, so the browser setup is the way in.
   const setup = panel.getByRole('region', { name: 'Chrome or Edge connection' });
   await expect(setup).toBeVisible();
   await expect(panel.getByRole('button', { name: 'Sign in with HoYoLAB' })).toHaveCount(0);

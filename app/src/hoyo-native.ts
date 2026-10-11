@@ -35,10 +35,15 @@ export const HoyoConnection = registerPlugin<HoyoConnectionPlugin>('HoyoConnecti
 export const connectHoyo = () =>
   isDesktopApp() && window.memoriaDesktop?.hoyo ? window.memoriaDesktop.hoyo.connect() : HoyoConnection.connect();
 export const getHoyoStatus = () => HoyoConnection.status();
-export const listHoyoAccounts = (options: Parameters<HoyoConnectionPlugin['listAccounts']>[0]) => {
+/** On the PC, `source` names where to look: Memoria's own sign-in, or the browser connector. */
+export const listHoyoAccounts = (
+  options: Parameters<HoyoConnectionPlugin['listAccounts']>[0],
+  source?: 'pc' | 'browser',
+) => {
   if (isDesktopApp()) {
-    if (window.memoriaDesktop?.browser) return window.memoriaDesktop.browser.listAccounts(options);
-    if (window.memoriaDesktop?.hoyo) return window.memoriaDesktop.hoyo.listAccounts(options);
+    const { browser, hoyo } = window.memoriaDesktop ?? {};
+    if (browser && source !== 'pc') return browser.listAccounts(options);
+    if (hoyo && source !== 'browser') return hoyo.listAccounts(options);
     return Promise.reject(new Error('Update the Windows app to use the browser connector.'));
   }
   return HoyoConnection.listAccounts(options);

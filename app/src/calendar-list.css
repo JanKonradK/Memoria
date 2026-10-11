@@ -21,6 +21,29 @@
   }
 }
 
+/* A row's three actions are one family: flat, the same weight and height, with a
+   fill only under the pointer. Edit no longer sits in a capsule beside two that do not. */
+.timeline-list-board .timeline-event-actions {
+  gap: 2px;
+}
+.timeline-list-board .timeline-event-actions > button {
+  background: none;
+  box-shadow: none;
+  font-size: var(--text-meta);
+  font-weight: 500;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    scale var(--dur-fast) var(--ease-out);
+}
+.timeline-list-board .timeline-event-actions > button:active {
+  scale: 0.97;
+}
+@media (hover: hover) {
+  .timeline-list-board .timeline-event-actions > button:hover {
+    background: var(--color-fill-2);
+  }
+}
+
 /* The countdown is a readout, not a pill: it reads like the Today row's time. */
 .timeline-list-board .timeline-countdown {
   min-height: 0;
@@ -59,6 +82,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .timeline-list-board .timeline-event-actions > button,
   .livestream-row {
     transition: none;
   }

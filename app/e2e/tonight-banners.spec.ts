@@ -11,7 +11,8 @@ test('Tonight tags banners and limits Closing to ten days', async ({ page }, inf
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const now = Date.now();
   const day = 86_400_000;
-  const game = makeGame({ name: 'NTE example', short: 'NTE', updatedAt: now });
+  // A name no preset claims, so the bundled feed adds nothing to Closing.
+  const game = makeGame({ name: 'Example game', short: 'EX', updatedAt: now });
   const state = {
     ...emptyState(),
     games: [game],
