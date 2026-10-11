@@ -28,7 +28,7 @@ const NOTICE_MS = 10_000;
 const noticeMotion = {
   hidden: { opacity: 0, y: 12 },
   visible: { opacity: 1, y: 0, transition: { duration: duration.fast, ease: easing.out } },
-  exit: { opacity: 0, y: 8, transition: { duration: duration.fast, ease: easing.out } },
+  exit: { opacity: 0, y: 8, transition: { duration: duration.fast, ease: easing.exit } },
 };
 
 function validCapture(capture: CapturedReading | undefined): capture is CapturedReading {

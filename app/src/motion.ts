@@ -69,5 +69,5 @@ export const sheetEnter: Variants = {
 export const backdropFade: Variants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { duration: duration.fast, ease: easing.out } },
-  exit: { opacity: 0, transition: { duration: duration.fast, ease: easing.out } },
+  exit: { opacity: 0, transition: { duration: duration.fast, ease: easing.exit } },
 };

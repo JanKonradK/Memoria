@@ -50,21 +50,38 @@ The app reads selected images on the device. It does not continuously record the
 1. Open the Windows app.
 2. Open the game's card. On **Today**, select the game.
 3. Select **Readings**, then **Connect account**.
-4. Select **Set up browser connector**.
-5. In Chrome, open `chrome://extensions`. In Edge, open `edge://extensions`.
-6. Enable **Developer mode**.
-7. Select **Load unpacked**.
-8. Select the **browser-extension** folder that Memoria opened.
-9. In your browser, open [HoYoLAB](https://www.hoyolab.com/).
-10. Sign in on the official page.
-11. Open the **Memoria Browser Connector** from the browser toolbar.
-12. Select **Read accounts**.
-13. In Memoria, select **Find my accounts**.
-14. Select the correct **Linked HoYoLAB account**.
-15. Select **Connect**.
+4. Select **Sign in with HoYoLAB**.
+5. Sign in on the official page with your HoYoverse email and password.
+6. Select **Done** to return to Memoria.
+7. If Memoria finds multiple accounts, select the correct **Linked HoYoLAB account**.
+8. Select **Connect**.
 
 Memoria saves the account's readings to the card. Select **Undo** in the notice to restore the earlier values.
 **Settings** also has a **Game accounts** button that opens the same panel.
+
+Memoria then reads the account itself every five minutes. It needs no browser and no extension.
+One sign-in serves all your linked games on this PC. For each other game, select **Find my accounts**, then **Connect**.
+Windows protects the session for your user account. It stays on this PC and does not enter backups or device sync.
+If a reading fails, select **Sign in with HoYoLAB** again and complete any verification that HoYoLAB shows.
+Use **Disconnect** in Memoria to remove a game connection.
+
+### Use Chrome or Edge instead
+
+The sign-in window does not support Google, Apple, or other third-party sign-in.
+For those accounts, select **Use Chrome or Edge instead** in the same panel.
+
+1. Select **Set up browser connector**.
+2. In Chrome, open `chrome://extensions`. In Edge, open `edge://extensions`.
+3. Enable **Developer mode**.
+4. Select **Load unpacked**.
+5. Select the **browser-extension** folder that Memoria opened.
+6. In your browser, open [HoYoLAB](https://www.hoyolab.com/).
+7. Sign in on the official page.
+8. Open the **Memoria Browser Connector** from the browser toolbar.
+9. Select **Read accounts**.
+10. In Memoria, select **Find my accounts**.
+11. Select the correct **Linked HoYoLAB account**.
+12. Select **Connect**.
 
 Do the connector installation once for each browser profile that you use.
 After a Memoria update, select **Reload** for the connector on your browser's extensions page.
@@ -73,11 +90,12 @@ The connector sends game account details and readings to the Windows app.
 Keep Chrome or Edge open when you want automatic browser readings.
 Enable automatic checks in the connector and automatic imports for each Memoria account.
 If a reading fails, open HoYoLAB and complete its verification, then select **Read accounts** again.
-Use **Disconnect** in Memoria to remove a game connection. This does not sign you out of HoYoLAB in your browser.
 To stop browser checks, disable them in the connector or remove the extension.
 
-Existing connections from Memoria's separate sign-in window remain available.
-The legacy browser launcher also retains its manual session setup.
+To stop using the browser, open the account's panel and select **Sign in and switch**.
+Memoria keeps the browser connection until its own sign-in shows the same game account.
+
+The legacy browser launcher retains its manual session setup.
 
 ## Capture readings while you play on PC
 
@@ -124,10 +142,10 @@ Account connections remain separate from your progress backup.
 
 ## Enable automatic checks
 
-Automatic import is optional. Enable it for each account that you want Memoria to check.
+Automatic import is optional for each account. A new Windows sign-in connection starts with it enabled.
 Memoria checks enabled, active games every five minutes while the app is online.
 The Windows app continues checks when minimized.
-Browser connections also require Chrome or Edge with connector checks enabled.
+Only browser connections also require Chrome or Edge with connector checks enabled.
 The Android app must remain visible for these checks.
 Supported fields depend on the game and the account response.
 Missing fields remain unchanged. Memoria does not infer that every daily task is complete from an incomplete response.

@@ -85,6 +85,8 @@ for (const method of ['drop', 'paste'] as const) {
     await expect(review.getByRole('spinbutton', { name: 'Original Resin / 200', exact: true })).toHaveValue('140');
 
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    // Scan the settled card, not a frame of the Reading notice fading out.
+    await expect(page.getByText('Reading…', { exact: true })).toHaveCount(0);
     const accessibility = await new AxeBuilder({ page }).analyze();
     expect(accessibility.violations.filter((item) => ['serious', 'critical'].includes(item.impact ?? ''))).toEqual([]);
     await page.screenshot({ path: info.outputPath(`screenshot-${method}-check.png`) });

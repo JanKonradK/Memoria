@@ -61,6 +61,8 @@ test('MW uses an inline tag and owner tag changes persist', async ({ page }) => 
   await expect(page.locator('[data-event-id="teyvat-test"] [data-event-tag]')).toHaveCount(0);
   await expect(page.locator('[data-event-id="mw-test"] [data-event-tag]')).toHaveText('MW');
   await expect(page.locator('[data-event-category]')).toHaveCount(0);
+  // Scan the settled lanes, not a frame of their entrance animation.
+  await page.waitForTimeout(400);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole('button', { name: 'Open Genshin category test event: Miliastra test', exact: true }).click();
   await editFromQuickView(page);

@@ -14,7 +14,7 @@ You do not need a Memoria account or any coding knowledge.
 - **Flexible layouts** adapt to phone screens, small PC windows, and large displays.
 - **Play mode** uses a PC shortcut to capture game readings for later review.
 - **Background checks** continue for connected PC accounts while Memoria is minimized or in the system tray.
-- **Chrome/Edge sign-in** uses a browser connector for supported HoYoLAB accounts.
+- **HoYoLAB sign-in** in the Windows app reads supported accounts without a browser. A Chrome/Edge connector covers Google and other third-party sign-ins.
 
 - **Today** shows approaching energy caps and unfinished routines within your sleep window, then the Tonight summary across every game. Select a game for its complete controls.
 - **Calendar** shows events, banners, resets, and livestreams. Select **Livestreams** for broadcast details.

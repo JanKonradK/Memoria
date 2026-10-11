@@ -39,14 +39,19 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
   const connected = connections.find((item) => item.gameId === gameId);
   const desktop = isDesktopApp();
   const browser = desktop ? window.memoriaDesktop?.browser : undefined;
-  const browserLogin = Boolean(browser) && (!connected || connected.transport === 'browser');
-  const nativeLogin = isNativeApp || (desktop && !browserLogin && Boolean(window.memoriaDesktop?.hoyo));
+  const pc = desktop ? window.memoriaDesktop?.hoyo : undefined;
+  // Memoria's own sign-in reads without a browser, so it is offered first. The connector stays one step away.
+  const [method, setMethod] = useState<'pc' | 'browser'>(pc ? 'pc' : 'browser');
+  const browserLogin = Boolean(browser) && (connected ? connected.transport === 'browser' : method === 'browser');
+  const nativeLogin = isNativeApp || (desktop && !browserLogin && Boolean(pc));
   const conflicts = connections.filter((item) => item.gameId === gameId);
   const [uid, setUid] = useState('');
   const [server, setServer] = useState('');
   const [cookie, setCookie] = useState('');
   useUnsavedDraft(!connected && Boolean(uid || server || cookie));
-  const [automatic, setAutomatic] = useState(false);
+  const [chosenAutomatic, setAutomatic] = useState<boolean>();
+  // A PC sign-in exists to be left alone, so its readings start out automatic.
+  const automatic = chosenAutomatic ?? (desktop && nativeLogin);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [accounts, setAccounts] = useState<
@@ -108,7 +113,10 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
     setAccountNotice('');
     setAccounts([]);
     try {
-      const result = await listHoyoAccounts({ provider });
+      const result = await listHoyoAccounts(
+        { provider },
+        ...(desktop ? ([browserLogin ? 'browser' : 'pc'] as const) : []),
+      );
       if (!active.current) return;
       setAccounts(result.accounts);
       if (result.accounts.length === 1) {
@@ -123,6 +131,38 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
     } catch (cause) {
       if (active.current)
         setError(cause instanceof Error ? cause.message : 'Accounts could not load. Enter the UID and server below.');
+    } finally {
+      if (active.current) setBusy(false);
+    }
+  };
+  /** Move a browser connection to Memoria's own sign-in. The browser connection stays until the sign-in is proven. */
+  const readWithoutBrowser = async () => {
+    if (!provider || !connected) return;
+    const { uid: currentUid, server: currentServer } = connected;
+    setBusy(true);
+    setError('');
+    try {
+      if (!(await connectHoyo()).connected) return;
+      const { accounts: linked } = await listHoyoAccounts({ provider }, 'pc');
+      if (!linked.some((account) => account.uid === currentUid && account.server === currentServer))
+        throw new Error('That HoYoLAB sign-in does not have this game account. Your browser connection is unchanged.');
+      await connectionRequest({ action: 'disconnect', gameId, transport: 'browser' });
+      if (!active.current) return;
+      // If the first reading fails, the form is left ready to connect again.
+      setMethod('pc');
+      setUid(currentUid);
+      setServer(currentServer);
+      await run({
+        action: 'connect',
+        gameId,
+        provider,
+        uid: currentUid,
+        server: currentServer,
+        autoRefresh: true,
+        transport: 'legacy',
+      });
+    } catch (cause) {
+      if (active.current) setError(cause instanceof Error ? cause.message : 'Sign-in could not open.');
     } finally {
       if (active.current) setBusy(false);
     }
@@ -214,6 +254,23 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
               {browserStatus.error}
             </p>
           )}
+          {pc && !connected && (
+            <Btn disabled={busy} onClick={() => setMethod('pc')}>
+              Sign in inside Memoria instead
+            </Btn>
+          )}
+        </section>
+      )}
+      {browserLogin && pc && connected && conflicts.length === 1 && (
+        <section className="space-y-2" aria-label="Read without a browser">
+          <h3 className="text-heading font-semibold">Read without a browser</h3>
+          <p className="text-body text-muted">
+            Sign in once inside Memoria. It then reads this account itself every five minutes, with Chrome and Edge
+            closed.
+          </p>
+          <Btn disabled={busy} onClick={() => void readWithoutBrowser()}>
+            Sign in and switch
+          </Btn>
         </section>
       )}
       {nativeLogin && (
@@ -243,6 +300,17 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
             Sign in on the official page, then select Done. One sign-in serves your linked games on this{' '}
             {desktop ? 'PC' : 'phone'}. Your session stays here.
           </p>
+          {desktop && (
+            <p className="text-meta text-muted">
+              Memoria then reads your accounts itself. No browser or extension is needed. This window takes a HoYoverse
+              email and password; a Google, Apple or other sign-in needs Chrome or Edge.
+            </p>
+          )}
+          {browser && !connected && (
+            <Btn disabled={busy} onClick={() => setMethod('browser')}>
+              Use Chrome or Edge instead
+            </Btn>
+          )}
         </div>
       )}
       {conflicts.length > 1 && (
@@ -325,7 +393,7 @@ export function GameConnections({ gameId, onReview }: { gameId: string; onReview
               server: server || SERVERS[provider][0][0],
               cookie,
               autoRefresh: automatic,
-              ...(browserLogin ? { transport: 'browser' } : {}),
+              ...(browserLogin ? { transport: 'browser' } : desktop && pc ? { transport: 'legacy' } : {}),
             });
           }}
         >

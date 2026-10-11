@@ -14,17 +14,28 @@
   border: 1px solid color-mix(in srgb, var(--color-gold) 55%, transparent);
   border-radius: var(--radius-ui-full);
   background: color-mix(in srgb, var(--color-gold) 10%, transparent);
-  transition: background var(--dur-fast) var(--ease-out);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    scale var(--dur-fast) var(--ease-out);
+}
+.pinned-chip:active {
+  scale: 0.97;
 }
 @media (hover: hover) {
   .pinned-chip:hover {
     background: color-mix(in srgb, var(--color-gold) 18%, transparent);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .pinned-chip {
-    transition: none;
-  }
+/* Pinning and unpinning wash the gold in and out, so the change is seen where it lands. */
+.timeline-event-track {
+  transition:
+    background var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out);
+}
+[data-event-bar] {
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
 }
 
 /* The whole lane row takes the wash, so a pinned event is findable while a long
@@ -64,5 +75,13 @@
 @media (hover: hover) {
   .timeline-list-board .timeline-event-row[data-pinned]:hover {
     background: color-mix(in srgb, var(--color-gold) 16%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pinned-chip,
+  .timeline-event-track,
+  [data-event-bar] {
+    transition: none;
   }
 }

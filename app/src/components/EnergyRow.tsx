@@ -407,7 +407,7 @@ export const EnergyRow = memo(function EnergyRow({
                   viewBox="0 0 20 20"
                   fill="none"
                   stroke="currentColor"
-                  className={`icon h-3 w-3 shrink-0 transition-transform duration-(--dur-fast) ${reserveIsOpen ? 'rotate-90' : ''}`}
+                  className={`icon h-3 w-3 shrink-0 transition-transform duration-(--dur-base) ease-(--ease-out) ${reserveIsOpen ? 'rotate-90' : ''}`}
                   aria-hidden
                 >
                   <path d="m7 5 5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />

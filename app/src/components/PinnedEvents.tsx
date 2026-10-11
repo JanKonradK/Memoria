@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { Game, GameEvent } from '@memoria/shared';
+import { useFlip } from '../flip';
 import { gameTitleInk } from '../game-color';
 import { useGround } from '../theme';
 import { fmtDur } from '../util';
@@ -41,6 +42,8 @@ export function PinnedEvents({ events, games, now, onOpen }: PinnedEventsProps) 
   const identityColors = useIdentityColors(games);
   const gamesById = useMemo(() => new Map(games.map((game) => [game.id, game])), [games]);
   const pinned = useMemo(() => pinnedEventsNeedingYou(events, games, now), [events, games, now]);
+  // A chip that joins or leaves moves the rest; they glide over as Today's rows do.
+  const chipsRef = useFlip<HTMLDivElement>('[data-pinned-chip]', (node) => node.dataset.pinnedChip ?? null);
   if (pinned.length === 0) return null;
 
   return (
@@ -53,7 +56,7 @@ export function PinnedEvents({ events, games, now, onOpen }: PinnedEventsProps) 
         <span aria-hidden />
         <span className="numeral aside text-caption text-muted">{pinned.length}</span>
       </div>
-      <div className="flex flex-wrap gap-2 px-2">
+      <div ref={chipsRef} className="flex flex-wrap gap-2 px-2">
         {pinned.map((event) => {
           const game = gamesById.get(event.gameId);
           if (!game) return null;
@@ -64,6 +67,7 @@ export function PinnedEvents({ events, games, now, onOpen }: PinnedEventsProps) 
             <button
               key={event.id}
               type="button"
+              data-pinned-chip={event.id}
               aria-label={`Open pinned ${game.name} event: ${event.name}`}
               onClick={() => onOpen(event)}
               className="pinned-chip inline-flex min-h-11 min-w-0 max-w-full items-center gap-2 px-3 text-meta md:min-h-8"

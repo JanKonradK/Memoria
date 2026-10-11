@@ -319,12 +319,8 @@
   }
 }
 @media (max-width: 539px) {
-  .timeline-tools {
-    gap: 4px;
-  }
-  .timeline-tools .ui-segmented button,
-  .timeline-tool-button {
-    padding-inline: 8px;
+  .timeline-tools .ui-segmented {
+    margin-right: 4px;
   }
   .timeline-tool-icon {
     display: none;

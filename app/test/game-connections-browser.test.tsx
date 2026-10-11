@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { emptyState } from '@memoria/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeGame } from '../../shared/test/helpers';
@@ -89,6 +89,7 @@ beforeEach(() => {
   Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
 });
 afterEach(() => {
+  cleanup();
   delete window.memoriaDesktop;
   vi.restoreAllMocks();
 });
@@ -266,11 +267,68 @@ describe('Chrome and Edge account transport', () => {
     }
   });
 
-  it('defaults new connections to normal browser setup and explains both automatic options', async () => {
+  it('offers the sign-in that needs no browser first and reads automatically from it', async () => {
+    launcher.fetch.mockImplementation(async () => new Response(JSON.stringify({ connections: [] })));
+    vi.mocked(window.memoriaDesktop!.browser!.request).mockResolvedValue({ connections: [] });
+    const linked = { provider: 'genshin' as const, uid: '700000004', server: 'os_usa', nickname: 'Traveler' };
+    vi.mocked(window.memoriaDesktop!.hoyo!.listAccounts).mockResolvedValue({ accounts: [linked] });
+    render(<GameConnections gameId="g1" onReview={vi.fn()} />);
+    expect(screen.queryByRole('region', { name: 'Chrome or Edge connection' })).not.toBeInTheDocument();
+    expect(screen.getByText(/No browser or extension is needed/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in with HoYoLAB' }));
+    await vi.waitFor(() => expect(screen.getByLabelText('In-game UID')).toHaveValue(linked.uid));
+    expect(window.memoriaDesktop!.browser!.listAccounts).not.toHaveBeenCalled();
+    await act(async () => fireEvent.submit(screen.getByRole('button', { name: 'Connect' }).closest('form')!));
+    expect(window.memoriaDesktop!.hoyo!.connectAccount).toHaveBeenCalledWith({
+      gameId: 'g1',
+      provider: 'genshin',
+      uid: linked.uid,
+      server: 'os_usa',
+      autoRefresh: true,
+    });
+    expect(window.memoriaDesktop!.browser!.request).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'connect' }),
+    );
+  });
+
+  it('moves a browser connection to the PC sign-in only after that sign-in shows the account', async () => {
+    launcher.fetch.mockImplementation(async () => new Response(JSON.stringify({ connections: [] })));
+    useGameConnections.setState({ connections: [browserAccount] });
+    const { hoyo, browser } = window.memoriaDesktop!;
+    render(<GameConnections gameId="g1" onReview={vi.fn()} />);
+    const section = screen.getByRole('region', { name: 'Read without a browser' });
+    fireEvent.click(within(section).getByRole('button', { name: 'Sign in and switch' }));
+    await vi.waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('browser connection is unchanged'));
+    expect(browser!.request).not.toHaveBeenCalledWith(expect.objectContaining({ action: 'disconnect' }));
+    expect(hoyo!.connectAccount).not.toHaveBeenCalled();
+
+    vi.mocked(hoyo!.listAccounts).mockResolvedValue({
+      accounts: [{ provider: 'genshin', uid: browserAccount.uid, server: browserAccount.server, nickname: '' }],
+    });
+    vi.mocked(browser!.request).mockImplementation(async (body) => ({
+      connections: body?.action === 'disconnect' ? [] : [browserAccount],
+    }));
+    const moved = { ...browserAccount, autoRefresh: true, transport: undefined };
+    vi.mocked(hoyo!.connectAccount).mockResolvedValue({ connections: [moved] });
+    fireEvent.click(within(section).getByRole('button', { name: 'Sign in and switch' }));
+    await vi.waitFor(() => expect(hoyo!.connectAccount).toHaveBeenCalledOnce());
+    expect(browser!.request).toHaveBeenCalledWith({ action: 'disconnect', gameId: 'g1' });
+    expect(hoyo!.connectAccount).toHaveBeenCalledWith({
+      gameId: 'g1',
+      provider: 'genshin',
+      uid: browserAccount.uid,
+      server: 'os_euro',
+      autoRefresh: true,
+    });
+    await vi.waitFor(() => expect(useGameConnections.getState().connections).toEqual([moved]));
+  });
+
+  it('keeps the browser setup one step away and explains both automatic options', async () => {
     launcher.fetch.mockImplementation(async () => new Response(JSON.stringify({ connections: [] })));
     vi.mocked(window.memoriaDesktop!.browser!.request).mockResolvedValue({ connections: [] });
     const review = vi.fn();
     render(<GameConnections gameId="g1" onReview={review} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Use Chrome or Edge instead' }));
     expect(screen.queryByRole('button', { name: 'Sign in with HoYoLAB' })).not.toBeInTheDocument();
     expect(screen.queryByLabelText('HoYoLAB session cookie')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open HoYoLAB in your browser' })).toHaveAttribute(
