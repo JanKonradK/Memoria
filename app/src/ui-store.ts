@@ -73,6 +73,9 @@ interface UIStore {
   tab: Tab;
   sheet: SheetRoute;
   reserveOpen: Record<string, boolean>;
+  /** Game logos turned to their short-name side, by logo key. Remembered on this device. */
+  logoFlipped: Record<string, true>;
+  flipLogo(key: string): void;
   theme: Theme;
   focusedGameId: string | null;
   /** The game whose card sits beside Today's list. Null follows the most urgent game. */
@@ -102,6 +105,14 @@ export const useUI = create<UIStore>()(
       tab: 'today',
       sheet: null,
       reserveOpen: {},
+      logoFlipped: {},
+      flipLogo: (key) =>
+        set((state) => {
+          const logoFlipped = { ...state.logoFlipped };
+          if (logoFlipped[key]) delete logoFlipped[key];
+          else logoFlipped[key] = true;
+          return { logoFlipped };
+        }),
       theme: 'dark',
       focusedGameId: null,
       timelineView: null,
@@ -140,6 +151,7 @@ export const useUI = create<UIStore>()(
       partialize: (state) => ({
         theme: state.theme,
         reserveOpen: state.reserveOpen,
+        logoFlipped: state.logoFlipped,
         tourSeenVersion: state.tourSeenVersion,
       }),
       merge: (persisted, current) => {
@@ -158,6 +170,14 @@ export const useUI = create<UIStore>()(
           ...current,
           theme: stored.theme === 'dark' || stored.theme === 'light' ? stored.theme : current.theme,
           reserveOpen,
+          logoFlipped:
+            stored.logoFlipped && typeof stored.logoFlipped === 'object'
+              ? Object.fromEntries(
+                  Object.keys(stored.logoFlipped)
+                    .filter((key) => stored.logoFlipped![key] === true)
+                    .map((key) => [key, true as const]),
+                )
+              : current.logoFlipped,
           tourSeenVersion: typeof stored.tourSeenVersion === 'number' ? stored.tourSeenVersion : 0,
         };
       },

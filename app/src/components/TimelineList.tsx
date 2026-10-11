@@ -11,6 +11,7 @@ import { Btn, serverLabelClass } from './ui';
 import { serverRegionLabel } from '../server-region';
 import { PinMark, togglePinned } from './EventPeek';
 import '../calendar-list.css';
+import '../pinned.css';
 
 /** Events grouped by status, with the nearest deadline first. */
 export type TimelineListStatus = 'active' | 'upcoming' | 'finished';
@@ -218,6 +219,7 @@ export function TimelineList({
                     key={event.id}
                     data-list-event={event.id}
                     data-list-game={game.id}
+                    data-pinned={event.pinned || undefined}
                     className={`${ROW_GRID} timeline-event-row transition-colors duration-(--dur-fast) motion-reduce:transition-none`}
                   >
                     <div className="timeline-event-identity min-w-0">

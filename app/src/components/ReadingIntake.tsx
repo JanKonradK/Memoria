@@ -240,12 +240,7 @@ export function ReadingIntake() {
                     className="surface-row flex min-h-11 w-full items-center gap-3 text-left"
                     onClick={() => assignScreenshot(game.id)}
                   >
-                    <GameLogo
-                      game={{ ...game, ...(colors[game.id] ?? game) }}
-                      size={36}
-                      label="short"
-                      className="shrink-0"
-                    />
+                    <GameLogo game={{ ...game, ...(colors[game.id] ?? game) }} size={36} className="shrink-0" />
                     <span className="min-w-0 flex-1 truncate text-body font-medium text-fg">{game.name}</span>
                     {game.accountLabel && (
                       <span className="aside max-w-[40%] truncate text-meta text-muted">{game.accountLabel}</span>

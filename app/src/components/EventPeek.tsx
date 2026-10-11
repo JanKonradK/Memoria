@@ -104,7 +104,7 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
     >
       <div className="event-peek" style={{ '--game-ink': ink } as React.CSSProperties}>
         <div className="flex min-w-0 items-center gap-3">
-          <GameLogo game={visualGame} size={44} label="short" />
+          <GameLogo game={visualGame} size={56} flippable />
           <div className="min-w-0">
             <p className="truncate text-body" style={{ ...titleStyle(game.titleFont), color: ink }}>
               {game.name}

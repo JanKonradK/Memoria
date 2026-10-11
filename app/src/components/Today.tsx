@@ -85,7 +85,7 @@ function PriorityRow({
           {summary}
         </span>
         <span className="today-row-badge">
-          <GameLogo game={game} size={compact ? 56 : 64} label="short" />
+          <GameLogo game={game} size={compact ? 56 : 64} />
         </span>
         <span className="today-row-name">
           <span className="today-row-title text-body font-semibold text-fg">{game.name}</span>
