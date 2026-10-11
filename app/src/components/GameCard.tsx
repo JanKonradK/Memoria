@@ -826,8 +826,7 @@ function GameControlsHeader({
           </svg>
         </button>
       )}
-      {layout === 'focus' &&
-        (fullLogo ? <GameLogo game={game} size={136} /> : <GameLogo game={game} size={72} label="short" />)}
+      {layout === 'focus' && <GameLogo game={game} size={fullLogo ? 136 : 72} flippable />}
       <TitleContainer
         type={layout === 'focus' ? undefined : 'button'}
         onClick={layout === 'focus' ? undefined : onEdit}

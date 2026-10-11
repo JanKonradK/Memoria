@@ -193,7 +193,7 @@ export function SettingsPage() {
                       className="settings-game-row group flex min-h-14 w-full items-center rounded-ui-lg text-left transition duration-(--dur-fast) hover:bg-fill-1"
                     >
                       {/* The identity trio is merged in so two accounts of one game draw one ring. */}
-                      <GameLogo game={{ ...game, ...colors }} size={48} label="short" className="shrink-0" />
+                      <GameLogo game={{ ...game, ...colors }} size={48} className="shrink-0" />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="min-w-0 text-body font-semibold text-fg-soft [overflow-wrap:anywhere]">

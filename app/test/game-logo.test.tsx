@@ -1,81 +1,118 @@
-import { render } from '@testing-library/react';
-import type { Game } from '@memoria/shared';
-import { describe, expect, it } from 'vitest';
-import { GameLogo, logoLines, logoRing } from '../src/components/GameLogo';
-import { RING_A, RING_B } from '../src/game-logo-ring';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { makeGame } from '../../shared/test/helpers';
+import { GameLogo, logoKey, logoLines, logoRing } from '../src/components/GameLogo';
+import { LOGO_ART } from '../src/game-logo-art';
+import { useUI } from '../src/ui-store';
 
-type LogoGame = Pick<Game, 'name' | 'short' | 'presetKey' | 'color' | 'color2' | 'color3' | 'titleFont'>;
+const genshin = makeGame({ id: 'eu', name: 'Genshin Impact', short: 'Genshin', presetKey: 'genshin' });
+const custom = makeGame({ id: 'mine', name: 'My Custom Game', short: 'MCG', color: '#112233', color2: '#445566' });
 
-const logoGame = (overrides: Partial<LogoGame> = {}): LogoGame => ({
-  name: 'Custom Game',
-  short: 'CG',
-  color: '#112233',
-  ...overrides,
-});
+const coins = (container: HTMLElement) => [...container.querySelectorAll('.game-logo-coin')];
+
+beforeEach(() => useUI.setState({ logoFlipped: {} }));
 
 describe('logoLines', () => {
-  it('breaks a colon name after the colon', () => {
+  it('breaks after a colon, else after the first word', () => {
     expect(logoLines('Honkai: Star Rail')).toEqual(['Honkai:', 'Star Rail']);
-  });
-
-  it('breaks other names after the first word', () => {
     expect(logoLines('Genshin Impact')).toEqual(['Genshin', 'Impact']);
     expect(logoLines('Zenless Zone Zero')).toEqual(['Zenless', 'Zone Zero']);
     expect(logoLines('Neverness to Everness')).toEqual(['Neverness', 'To Everness']);
+    expect(logoLines('  Wuthering Waves ')).toEqual(['Wuthering', 'Waves']);
   });
 
-  it('keeps a single word on one line', () => {
-    expect(logoLines('  Lads  ')).toEqual(['Lads']);
+  it('keeps a single word, or a name that ends in a colon, on one line', () => {
+    expect(logoLines('Nikke')).toEqual(['Nikke']);
+    expect(logoLines('Honkai:')).toEqual(['Honkai:']);
   });
 });
 
 describe('logoRing', () => {
-  it('uses the preset pair for a preset game, ahead of its own colours', () => {
-    expect(logoRing(logoGame({ presetKey: 'genshin', color: '#000000', color2: '#ffffff' }))).toEqual([
-      '#e8c77a',
-      '#2f4078',
-    ]);
+  it("uses a preset's logo colours", () => {
+    expect(logoRing(genshin)).toEqual(['#e8c77a', '#2f4078']);
   });
 
-  it('uses color and color2 for a custom game that has both', () => {
-    expect(logoRing(logoGame({ color2: '#222222' }))).toEqual(['#112233', '#222222']);
+  it("uses a custom game's own accents, with a pale partner when it has one colour", () => {
+    expect(logoRing(custom)).toEqual(['#112233', '#445566']);
+    expect(logoRing({ color: '#112233' })).toEqual(['#112233', '#f2f4f6']);
+  });
+});
+
+describe('logoKey', () => {
+  it('is the preset for a preset game, so every account of it turns together', () => {
+    expect(logoKey(genshin)).toBe('genshin');
+    expect(logoKey(makeGame({ id: 'asia', name: 'Genshin Impact', presetKey: 'genshin' }))).toBe('genshin');
   });
 
-  it('falls back to color3, then the default ground, for a custom game', () => {
-    expect(logoRing(logoGame({ color3: '#333333' }))).toEqual(['#112233', '#333333']);
-    expect(logoRing(logoGame())).toEqual(['#112233', '#f2f4f6']);
+  it("is a custom game's own id", () => {
+    expect(logoKey(custom)).toBe('mine');
   });
 });
 
 describe('GameLogo', () => {
-  it('draws the two ring paths in the ring colours', () => {
-    const { container } = render(<GameLogo game={logoGame({ presetKey: 'hsr', name: 'Honkai: Star Rail' })} />);
-    const paths = container.querySelectorAll('svg.game-logo-ring path');
-    expect(paths).toHaveLength(2);
-    expect(paths[0]).toHaveAttribute('d', RING_A);
-    expect(paths[0]).toHaveAttribute('fill', '#5aa9ff');
-    expect(paths[1]).toHaveAttribute('d', RING_B);
-    expect(paths[1]).toHaveAttribute('fill', '#ff8fc0');
+  it('draws the ring in the two colours at the asked size', () => {
+    const { container } = render(<GameLogo game={genshin} size={64} />);
+    const logo = container.querySelector<HTMLElement>('[data-game-logo]')!;
+    expect(logo).toHaveStyle({ width: '64px', height: '64px' });
+    const fills = [...container.querySelectorAll('.game-logo-ring path')].map((path) => path.getAttribute('fill'));
+    expect(fills).toEqual(['#e8c77a', '#2f4078']);
   });
 
-  it('sets the two-line name by default', () => {
-    const { container } = render(<GameLogo game={logoGame({ name: 'Honkai: Star Rail', short: 'HSR' })} />);
-    const lines = Array.from(container.querySelectorAll('.game-logo-name > span.block'), (line) => line.textContent);
-    expect(lines).toEqual(['Honkai:', 'Star Rail']);
+  it("carries a preset's outlined full name on the front and short name on the back", () => {
+    const { container } = render(<GameLogo game={genshin} />);
+    expect(container.querySelector('.game-logo-front path')).toHaveAttribute('d', LOGO_ART.genshin!.front);
+    expect(container.querySelector('.game-logo-back path')).toHaveAttribute('d', LOGO_ART.genshin!.back);
   });
 
-  it('sets the short name for the short label', () => {
+  it('sets a custom game in text: two lines in front, its short name behind', () => {
+    const { container } = render(<GameLogo game={custom} />);
+    const front = [...container.querySelectorAll('.game-logo-front .game-logo-name > span')];
+    expect(front.map((line) => line.textContent)).toEqual(['My', 'Custom Game']);
+    expect(container.querySelector('.game-logo-back .game-logo-name')).toHaveTextContent('MCG');
+  });
+
+  it('shows the full name until it is flipped, and is decorative unless it can be', () => {
+    const { container } = render(<GameLogo game={genshin} />);
+    expect(coins(container)[0]).not.toHaveAttribute('data-flipped');
+    expect(container.querySelector('[data-game-logo]')).toHaveAttribute('aria-hidden');
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('flips every logo of that game, wherever it is drawn, and remembers it', () => {
     const { container } = render(
-      <GameLogo game={logoGame({ name: 'Honkai: Star Rail', short: 'HSR' })} label="short" />,
+      <>
+        <GameLogo game={genshin} flippable />
+        <GameLogo game={genshin} size={40} />
+        <GameLogo game={makeGame({ id: 'asia', name: 'Genshin Impact', presetKey: 'genshin' })} />
+        <GameLogo game={custom} />
+      </>,
     );
-    expect(container.querySelector('.game-logo-name')?.textContent).toBe('HSR');
-    expect(container.querySelectorAll('.game-logo-name .block')).toHaveLength(0);
+    const flip = screen.getByRole('button', { name: 'Flip the Genshin Impact logo to its short name' });
+    expect(flip).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(flip);
+    expect(coins(container).map((coin) => coin.hasAttribute('data-flipped'))).toEqual([true, true, true, false]);
+    // Each one spins to its back; a logo that was already showing that side would not.
+    expect(coins(container).map((coin) => coin.getAttribute('data-spin'))).toEqual(['back', 'back', 'back', null]);
+    expect(useUI.getState().logoFlipped).toEqual({ genshin: true });
+    expect(screen.getByRole('button', { name: 'Flip the Genshin Impact logo to its full name' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
-  it('sets width and height from size, and is hidden from assistive tech', () => {
-    const { container } = render(<GameLogo game={logoGame()} size={72} />);
-    const root = container.querySelector('[data-game-logo]');
-    expect(root).toHaveStyle({ width: '72px', height: '72px' });
-    expect(root).toHaveAttribute('aria-hidden', 'true');
+  it('comes up already flipped, without spinning, when the flip was made earlier', () => {
+    useUI.setState({ logoFlipped: { genshin: true } });
+    const { container } = render(<GameLogo game={genshin} />);
+    expect(coins(container)[0]).toHaveAttribute('data-flipped');
+    expect(coins(container)[0]).not.toHaveAttribute('data-spin');
+  });
+
+  it('flips back to the full name', () => {
+    useUI.setState({ logoFlipped: { genshin: true } });
+    const { container } = render(<GameLogo game={genshin} flippable />);
+    fireEvent.click(screen.getByRole('button'));
+    expect(coins(container)[0]).not.toHaveAttribute('data-flipped');
+    expect(coins(container)[0]).toHaveAttribute('data-spin', 'front');
+    expect(useUI.getState().logoFlipped).toEqual({});
   });
 });

@@ -30,7 +30,8 @@ it('names the event and its game, and offers done, pin and edit without the edit
   seed([event('Story', { notes: 'Bring the new character.' })]);
   show(<EventPeek open eventId="Story" />);
   const dialog = screen.getByRole('dialog', { name: 'Story' });
-  expect(within(dialog).getByText('Testland')).toBeInTheDocument();
+  // The name is also set inside the logo's coin, so ask for the line that names the game.
+  expect(within(dialog).getByText('Testland', { selector: 'p' })).toBeInTheDocument();
   expect(within(dialog).getByText('Bring the new character.')).toBeInTheDocument();
   expect(within(dialog).getByRole('button', { name: 'Mark done' })).toHaveAttribute('aria-pressed', 'false');
   expect(within(dialog).getByRole('button', { name: 'Pin' })).toHaveAttribute('aria-pressed', 'false');

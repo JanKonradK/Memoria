@@ -1,10 +1,13 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import type { Game } from '@memoria/shared';
 import { titleStyle } from '../fonts';
+import { LOGO_ART } from '../game-logo-art';
 import { RING_A, RING_B } from '../game-logo-ring';
+import { useUI } from '../ui-store';
 import '../game-logo.css';
 
-type LogoGame = Pick<Game, 'name' | 'short' | 'presetKey' | 'color' | 'color2' | 'color3' | 'titleFont'>;
+type LogoGame = Pick<Game, 'name' | 'short' | 'color' | 'color2' | 'color3' | 'titleFont'> &
+  Partial<Pick<Game, 'id' | 'presetKey'>>;
 
 /** Ring colours per preset, as [colour of RING_A, colour of RING_B] in docs/logos. */
 const PRESET_RINGS = new Map<string, [string, string]>([
@@ -19,8 +22,12 @@ const PRESET_RINGS = new Map<string, [string, string]>([
   ['endfield', ['#f0b900', '#f2f2f0']],
 ]);
 
+/** The coin sits inside the ring: its disc in the artwork's 1024 box, and that disc as a share of the logo. */
+const COIN_BOX = '116 116 792 792';
+const COIN_SHARE = 792 / 1024;
+
 /** The two ring colours for a game: its preset's pair, else its own accents. */
-export function logoRing(game: Pick<Game, 'presetKey' | 'color' | 'color2' | 'color3'>): [string, string] {
+export function logoRing(game: Pick<LogoGame, 'presetKey' | 'color' | 'color2' | 'color3'>): [string, string] {
   const preset = game.presetKey ? PRESET_RINGS.get(game.presetKey) : undefined;
   return preset ?? [game.color, game.color2 ?? game.color3 ?? '#f2f4f6'];
 }
@@ -44,35 +51,38 @@ export function logoLines(name: string): [string] | [string, string] {
 }
 
 /**
- * The round game logo: a two-colour ring that turns slowly, with the name
- * inside it. Decorative, so the caller always writes the game's name beside it.
+ * What a flip is remembered against. Every account of one preset game is the
+ * same coin, so they turn together wherever that game is drawn.
  */
-export function GameLogo({
-  game,
-  size = 56,
-  label = 'full',
-  className = '',
+export function logoKey(game: Pick<LogoGame, 'presetKey' | 'id' | 'name'>): string {
+  return game.presetKey ?? game.id ?? game.name;
+}
+
+/**
+ * A name set in the game's face for a coin with no artwork (a custom game).
+ * Faces differ too much in width to size a name by its letter count, so it is
+ * set at the largest size that suits the coin and scaled down to the room inside.
+ */
+function FaceText({
+  lines,
+  font,
+  room,
+  size,
 }: {
-  game: LogoGame;
-  /** Rendered diameter in CSS pixels. */
-  size?: number;
-  /** 'full' sets the two-line name; 'short' sets game.short, for sizes too small to read a name. */
-  label?: 'full' | 'short';
-  className?: string;
+  lines: string[];
+  font: string | undefined;
+  room: number;
+  size: number;
 }) {
-  const [ringA, ringB] = logoRing(game);
-  const lines: string[] = label === 'full' ? logoLines(game.name) : [game.short];
-  const text = lines.join(' ');
-  // Faces differ too much in width to size a name by its letter count. Set it at
-  // the largest size that suits the ring, then scale it down to the room inside.
-  const nameRef = useRef<HTMLSpanElement>(null);
+  const ref = useRef<HTMLSpanElement>(null);
   const [fit, setFit] = useState(1);
+  const text = lines.join(' ');
   useLayoutEffect(() => {
-    const node = nameRef.current;
+    const node = ref.current;
     if (!node) return;
     let live = true;
     const measure = () => {
-      if (live && node.offsetWidth > 0) setFit(Math.min(1, (size * 0.66) / node.offsetWidth));
+      if (live && node.offsetWidth > 0) setFit(Math.min(1, room / node.offsetWidth));
     };
     measure();
     // The first measure can land before the game's face has loaded.
@@ -80,33 +90,114 @@ export function GameLogo({
     return () => {
       live = false;
     };
-  }, [size, text, game.titleFont]);
-  const nameStyle: CSSProperties = {
-    ...titleStyle(game.titleFont),
+  }, [room, text, font, size]);
+  const style: CSSProperties = {
+    ...titleStyle(font),
     paddingInline: 0,
-    fontSize: size * (label === 'full' ? 0.2 : 0.28),
+    fontSize: size,
     lineHeight: 1.05,
-    color: 'var(--color-fg)',
     textAlign: 'center',
     whiteSpace: 'nowrap',
     transform: `scale(${fit})`,
   };
-
   return (
-    <span data-game-logo className={`game-logo ${className}`} style={{ width: size, height: size }} aria-hidden>
+    <span ref={ref} className="game-logo-name" style={style}>
+      {lines.map((line, index) => (
+        <span key={index} className="block">
+          {line}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * The round game logo: a two-colour ring that turns slowly around a coin. The
+ * coin's front carries the game's full name and its back the short one; a flip
+ * is remembered and shown everywhere that game's logo appears.
+ *
+ * Decorative unless `flippable`, where it is the button that turns the coin.
+ * Rows and other buttons draw it plain, since a button cannot hold a button.
+ */
+export function GameLogo({
+  game,
+  size = 56,
+  flippable = false,
+  className = '',
+}: {
+  game: LogoGame;
+  /** Rendered diameter in CSS pixels. */
+  size?: number;
+  /** Lets this logo be pressed to turn the coin. */
+  flippable?: boolean;
+  className?: string;
+}) {
+  const key = logoKey(game);
+  const flipped = useUI((ui) => Boolean(ui.logoFlipped[key]));
+  const flipLogo = useUI((ui) => ui.flipLogo);
+  // Which way the coin is spinning to reach its side. Null at rest, and on first render.
+  const [side, setSide] = useState(flipped);
+  const [spin, setSpin] = useState<'back' | 'front' | null>(null);
+  if (side !== flipped) {
+    setSide(flipped);
+    setSpin(flipped ? 'back' : 'front');
+  }
+
+  const [ringA, ringB] = logoRing(game);
+  const art = game.presetKey ? LOGO_ART[game.presetKey] : undefined;
+  const coin = size * COIN_SHARE;
+  const face = (which: 'front' | 'back') => (
+    <span className={`game-logo-face game-logo-${which}`}>
+      {art ? (
+        <svg viewBox={COIN_BOX} className="game-logo-art">
+          <path d={art[which]} fill="currentColor" />
+        </svg>
+      ) : (
+        <FaceText
+          lines={which === 'front' ? logoLines(game.name) : [game.short]}
+          font={game.titleFont}
+          room={coin * 0.82}
+          size={coin * (which === 'front' ? 0.24 : 0.34)}
+        />
+      )}
+    </span>
+  );
+  const body = (
+    <>
       <svg viewBox="0 0 1024 1024" className="game-logo-ring">
         <path d={RING_A} fill={ringA} />
         <path d={RING_B} fill={ringB} />
       </svg>
-      <span ref={nameRef} className="game-logo-name" style={nameStyle}>
-        {label === 'full'
-          ? lines.map((line, index) => (
-              <span key={index} className="block">
-                {line}
-              </span>
-            ))
-          : game.short}
+      <span
+        className="game-logo-coin"
+        data-flipped={flipped || undefined}
+        data-spin={spin ?? undefined}
+        onAnimationEnd={() => setSpin(null)}
+      >
+        {face('front')}
+        {face('back')}
       </span>
-    </span>
+    </>
+  );
+  const style = { width: size, height: size, '--logo-size': `${size}px` } as CSSProperties;
+
+  if (!flippable)
+    return (
+      <span data-game-logo className={`game-logo ${className}`} style={style} aria-hidden>
+        {body}
+      </span>
+    );
+  return (
+    <button
+      type="button"
+      data-game-logo
+      className={`game-logo game-logo-button ${className}`}
+      style={style}
+      aria-pressed={flipped}
+      aria-label={`Flip the ${game.name} logo to its ${flipped ? 'full' : 'short'} name`}
+      onClick={() => flipLogo(key)}
+    >
+      {body}
+    </button>
   );
 }

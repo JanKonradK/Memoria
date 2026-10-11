@@ -1,0 +1,68 @@
+/* Pinned events: the strip above the Calendar, the gold on a pinned lane and bar,
+   and the gold rule on a pinned list row. Every colour is the gold token mixed into
+   what lies beneath it, so the wash reads as a tint, never as a new colour. */
+
+.pinned-events {
+  flex-shrink: 0;
+  padding-bottom: 1rem;
+}
+
+/* A chip is a gold pill, the pin's own colour, so it reads as a shortcut to the
+   pin rather than another button in the toolbar. */
+.pinned-chip {
+  max-width: 100%;
+  border: 1px solid color-mix(in srgb, var(--color-gold) 55%, transparent);
+  border-radius: var(--radius-ui-full);
+  background: color-mix(in srgb, var(--color-gold) 10%, transparent);
+  transition: background var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .pinned-chip:hover {
+    background: color-mix(in srgb, var(--color-gold) 18%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pinned-chip {
+    transition: none;
+  }
+}
+
+/* The whole lane row takes the wash, so a pinned event is findable while a long
+   lane scrolls past, not only once its bar is in view. */
+[data-event-id]:has([data-event-bar][data-pinned]) .timeline-event-track {
+  background: color-mix(in srgb, var(--color-gold) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-gold) 45%, transparent);
+}
+/* The bar's ink is an inline style, so the gold border has to win over it. The
+   halo sits outside the bar, so the bar keeps its geometry. */
+[data-event-bar][data-pinned] {
+  border-width: 2px;
+  border-color: var(--color-gold) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-gold) 28%, transparent);
+}
+
+/* A pinned list row: a gold rule down its left edge, the same wash, and its name in
+   full ink so it stands out from the rows beside it. */
+.timeline-list-board .timeline-event-row[data-pinned] {
+  position: relative;
+  background: color-mix(in srgb, var(--color-gold) 10%, transparent);
+}
+.timeline-list-board .timeline-event-row[data-pinned]::before {
+  content: '';
+  position: absolute;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  left: 0;
+  width: 2px;
+  border-radius: var(--radius-ui-full);
+  background: var(--color-gold);
+}
+.timeline-list-board .timeline-event-row[data-pinned] .timeline-event-name {
+  color: var(--color-fg);
+  font-weight: 600;
+}
+@media (hover: hover) {
+  .timeline-list-board .timeline-event-row[data-pinned]:hover {
+    background: color-mix(in srgb, var(--color-gold) 16%, transparent);
+  }
+}

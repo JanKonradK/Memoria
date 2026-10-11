@@ -104,7 +104,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
                       }}
                       className="surface-row flex min-h-11 w-full items-center gap-3 text-left"
                     >
-                      <GameLogo game={{ ...game, ...colors }} size={48} label="short" className="shrink-0" />
+                      <GameLogo game={{ ...game, ...colors }} size={48} className="shrink-0" />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-body font-bold text-fg-soft">{game.name}</span>
                         {game.accountLabel && (
@@ -129,7 +129,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
                 }}
                 className="surface-row flex min-h-11 w-full items-center gap-3 text-left"
               >
-                <GameLogo game={{ ...p, presetKey: p.key }} size={48} label="short" className="shrink-0" />
+                <GameLogo game={{ ...p, presetKey: p.key }} size={48} className="shrink-0" />
                 <span className="min-w-0 flex-1">
                   <span className="block text-body font-bold text-fg-soft">{p.name}</span>
                   <span className="aside block text-label text-muted">

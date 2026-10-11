@@ -17,6 +17,8 @@ import { TimelineTools } from './TimelineTools';
 import { CalendarToolbar } from './CalendarToolbar';
 import { CalendarFeedStatus } from './CalendarFeedStatus';
 import { TimelineList } from './TimelineList';
+import { PinnedEvents } from './PinnedEvents';
+import { PinMark } from './EventPeek';
 import { serverRegionLabel } from '../server-region';
 import { titleStyle } from '../fonts';
 import { assignGameInks, gameTitleInk, mix, onColor } from '../game-color';
@@ -25,6 +27,7 @@ import { EventTags } from './EventTags';
 import { groupGameEvents } from '../event-category';
 import { calendarSchedule } from '../event-schedule';
 import '../timeline.css';
+import '../pinned.css';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -51,7 +54,7 @@ function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; 
       aria-label={`${game.name}${account ? `, ${account}` : ''}, ${server}: tracking paused`}
       className="relative z-20 flex min-h-11 items-center gap-3 py-2"
     >
-      <GameLogo game={game} size={36} label="short" />
+      <GameLogo game={game} size={36} />
       <div className="min-w-0 flex-1">
         <h2
           className="truncate text-body"
@@ -632,6 +635,7 @@ const EventRow = memo(function EventRow({
               style={{ color: barInk, maxWidth: barTextMaxWidth }}
             >
               <EventTags game={game} event={ev} inherit availableWidth={barTextMaxWidth} />
+              {ev.pinned && <PinMark className="h-3.5 w-3.5 shrink-0" />}
               <span data-event-title className="min-w-0 truncate">
                 {ev.name}
               </span>
@@ -668,6 +672,7 @@ const EventRow = memo(function EventRow({
           >
             <span className="flex min-w-0 items-center gap-1">
               <EventTags game={game} event={ev} inherit availableWidth={barTextMaxWidth} />
+              {ev.pinned && <PinMark className="h-3.5 w-3.5 shrink-0" />}
               <span data-event-title className="min-w-0 truncate">
                 {ev.name}
               </span>
@@ -1012,6 +1017,8 @@ export function TimelinePage({ now }: { now: number }) {
         {pausedGames.length > 0 && <span>Resume a paused game to show its events.</span>}
       </div>
 
+      <PinnedEvents events={events} games={games} now={now} onOpen={peekEvent} />
+
       {games.length > 0 && games.every((game) => game.paused) ? null : view === 'list' ? (
         <TimelineList
           games={games}
@@ -1105,7 +1112,7 @@ export function TimelinePage({ now }: { now: number }) {
                       onOpenChange={(nextOpen) => setLaneOpen((current) => ({ ...current, [game.id]: nextOpen }))}
                       title={
                         <span className="flex min-w-0 items-center gap-2">
-                          <GameLogo game={{ ...game, ...colors }} size={36} label="short" />
+                          <GameLogo game={{ ...game, ...colors }} size={36} />
                           <span
                             className="min-w-0 truncate text-body"
                             style={{ ...titleStyle(game.titleFont), color: gameTitleInk(colors, titleGround, 4.5) }}

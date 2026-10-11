@@ -31,8 +31,3 @@
 .pin-mark {
   color: var(--color-gold);
 }
-/* On the timeline the bar itself carries the mark, since its name may be clipped. */
-[data-event-bar][data-pinned] {
-  outline: 2px solid var(--color-gold);
-  outline-offset: 1px;
-}

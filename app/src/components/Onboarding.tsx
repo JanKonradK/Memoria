@@ -92,7 +92,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
                 className="flex min-h-11 w-full items-center gap-3 rounded-ui-lg text-left"
                 aria-pressed={active}
               >
-                <GameLogo game={{ ...game, presetKey: game.key }} size={48} label="short" className="shrink-0" />
+                <GameLogo game={{ ...game, presetKey: game.key }} size={48} className="shrink-0" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-heading font-black text-fg-soft">{game.name}</span>
                   <span className="aside block text-meta text-muted">{active ? 'Selected' : 'Add game'}</span>
