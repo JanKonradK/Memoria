@@ -1,0 +1,50 @@
+/* The flat language for surfaces outside Today and Settings: a list of choices is
+   a list of rows, a notice is a rule with a line of text, and a game is its logo.
+   Nothing here sits in a box. */
+
+/* Rows sit two pixels apart, as the Today priority list does. */
+.surface-list {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* No fill at rest. Hover shows where the pointer is; the chosen row keeps the
+   same fill and inset edge as a pressed Today priority row. */
+.surface-row {
+  padding: 0.5rem;
+  border-radius: var(--radius-ui-lg);
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.surface-row:hover {
+  background: var(--color-fill-1);
+}
+/* A press is felt on the button only, not on a field inside the row. */
+button.surface-row:active {
+  scale: 0.985;
+}
+.surface-row:has([aria-pressed='true']) {
+  background: var(--color-fill-2);
+  box-shadow: inset 0 0 0 1px var(--color-line-edge);
+}
+
+/* A quiet line: a rule in its colour, then the ordinary ink. Neutral by default. */
+.surface-notice {
+  padding: 0.25rem 0 0.25rem 0.75rem;
+  border-left: 2px solid var(--color-line-strong);
+}
+.surface-notice-warn {
+  border-left-color: var(--color-warn);
+}
+
+/* Toasts float over the page, so they keep their solid ground and shadow. The
+   outline is decoration, and it goes. */
+.reading-notice.surface-toast {
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .surface-row {
+    transition: none;
+  }
+}

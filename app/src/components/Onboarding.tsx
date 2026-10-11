@@ -1,12 +1,14 @@
 import { detectLocalTz, PRESETS } from '@memoria/shared';
 import { useState } from 'react';
 import { useApp } from '../store';
+import '../surfaces.css';
 import { gameShellVars } from '../theme';
 import { resolveHomeTimeZone, SYSTEM_TIMEZONE_VALUE } from '../timezone';
 import { useUI } from '../ui-store';
 import { intOr } from '../util';
+import { GameLogo } from './GameLogo';
 import { HomeTimeZoneField } from './HomeTimeZoneField';
-import { Btn, GameBadge, NumInput } from './ui';
+import { Btn, NumInput } from './ui';
 
 export function Onboarding({ onComplete }: { onComplete: () => void }) {
   const addGameFromPreset = useApp((store) => store.addGameFromPreset);
@@ -46,13 +48,13 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
         Choose the games you actively play and enter the current value of their main energy. Server clocks and default
         resets are filled from the presets and can be changed later.
       </p>
-      <section className="panel grain mt-7 rounded-ui-card p-4" aria-labelledby="onboarding-timezone-heading">
+      <section className="mt-7" aria-labelledby="onboarding-timezone-heading">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="max-w-2xl">
             <h2 id="onboarding-timezone-heading" className="text-heading font-semibold text-fg-soft">
               Home timezone
             </h2>
-            <p className="mt-1 text-meta text-muted">
+            <p className="aside mt-1 text-meta text-muted">
               Memoria uses it to convert each game’s server reset into your own clock.
             </p>
           </div>
@@ -64,17 +66,17 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
           />
         </div>
       </section>
-      <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="surface-list mt-7 sm:grid-cols-2 lg:grid-cols-3">
         {PRESETS.map((game) => {
           const active = selected.includes(game.key);
           return (
             <section
               key={game.key}
               // min-w-0 because a grid item's default `min-width: auto` refuses
-              // to shrink below its content: at 320px the badge, gap and padding
-              // set a floor of 311px against a 288px column, and the whole page
+              // to shrink below its content: at 320px the logo, gap and padding
+              // set a floor wider than a 288px column, and the whole page
               // scrolled sideways. The name inside already truncates.
-              className={`card-shell min-w-0 rounded-ui-card p-4 ring-1 ${active ? 'ring-line-strong' : 'ring-line-hairline'}`}
+              className="surface-row min-w-0"
               style={gameShellVars(game, theme)}
             >
               <button
@@ -84,17 +86,16 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
                     items.includes(game.key) ? items.filter((item) => item !== game.key) : [...items, game.key],
                   )
                 }
-                // The visible corner belongs to the section around this button.
-                // The radius here is for the focus ring, which follows the
-                // element's own corner — without it a keyboard user gets a square
-                // outline drawn inside a round card.
+                // The row's own corner is on the section around this button. The
+                // radius here is for the focus ring, which follows the element's
+                // own corner, so a keyboard user does not get a square outline.
                 className="flex min-h-11 w-full items-center gap-3 rounded-ui-lg text-left"
                 aria-pressed={active}
               >
-                <GameBadge short={game.short} color={game.color} color2={game.color2} color3={game.color3} size="lg" />
+                <GameLogo game={{ ...game, presetKey: game.key }} size={48} label="short" className="shrink-0" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-heading font-black text-fg-soft">{game.name}</span>
-                  <span className="text-meta text-dim">{active ? 'Selected' : 'Add game'}</span>
+                  <span className="aside block text-meta text-muted">{active ? 'Selected' : 'Add game'}</span>
                 </span>
               </button>
               {active && (

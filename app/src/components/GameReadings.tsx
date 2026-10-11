@@ -452,7 +452,7 @@ export function ReadingsPanel({ game }: { game: Game }) {
   return (
     <section
       ref={reveal}
-      className="game-panel relative z-20 mt-4 border-y border-line-edge py-4"
+      className="game-panel relative z-20 border-b border-line py-4"
       aria-label={`${PANEL_TITLE[panel.view]} for ${game.name}`}
     >
       <div className="mb-3 flex items-center justify-between gap-3">

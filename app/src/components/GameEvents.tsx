@@ -1,3 +1,4 @@
+import '../today.css';
 import { useState } from 'react';
 import { DateTime } from 'luxon';
 import type { Game } from '@memoria/shared';
@@ -72,21 +73,26 @@ export function GameEvents({ game, now, onBeforeOpen }: { game: Game; now: numbe
         ) : (
           groupGameEvents(game, shown).map((group) => (
             <section key={group.key} className="mt-4 first:mt-0" aria-label={`${group.label} event management`}>
-              {group.key !== 'events' && <h4 className="mb-1 text-meta font-semibold text-muted">{group.label}</h4>}
-              <ul className="divide-y divide-line-hairline">
+              {group.key !== 'events' && (
+                <div className="today-group-rule">
+                  <h4 className="text-meta font-semibold text-fg-soft">{group.label}</h4>
+                  <span aria-hidden />
+                </div>
+              )}
+              <ul className="grid gap-0.5">
                 {group.events.map((event) => {
                   const calendar = calendarSchedule(event);
                   return (
                     <li key={event.id}>
                       <button
                         type="button"
-                        className="flex min-h-11 w-full items-center gap-3 rounded-ui-md px-2 py-3 text-left transition hover:bg-fill-2"
+                        className="flex min-h-11 w-full items-center gap-3 rounded-ui-lg px-2 py-3 text-left transition hover:bg-fill-1"
                         aria-label={`Edit ${game.name} event: ${event.name}`}
                         onClick={() => openEvent(event.id)}
                       >
                         <span className="min-w-0 flex-1">
                           <span className="block break-words text-body font-semibold text-fg-soft">{event.name}</span>
-                          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-label text-muted">
+                          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 aside text-label text-muted">
                             <span>{event.type}</span>
                             <EventTags game={game} event={event} />
                             <span>
@@ -101,7 +107,7 @@ export function GameEvents({ game, now, onBeforeOpen }: { game: Game; now: numbe
                             {event.dailyTouch && <span>Daily check-in</span>}
                             {!event.notify && <span>Next actions off</span>}
                           </span>
-                          <span className="mt-1 block text-label text-muted">
+                          <span className="mt-1 block aside text-label text-muted">
                             {calendar ? (
                               `${calendar.label} (${calendar.zone})`
                             ) : (

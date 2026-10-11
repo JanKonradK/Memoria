@@ -1144,10 +1144,7 @@ export function GameControlsView({
       </div>
       <ReadingsPanel game={game} />
       {editing && (
-        <section
-          className="relative z-20 mt-4 border-y border-line-edge py-3"
-          aria-label={`Layout editor for ${game.name}`}
-        >
+        <section className="relative z-20 border-b border-line py-3" aria-label={`Layout editor for ${game.name}`}>
           <div className="flex flex-wrap items-center gap-2">
             <span className="mr-auto text-body font-semibold">Customize card</span>
             <Btn kind="primary" onClick={finishEdit}>

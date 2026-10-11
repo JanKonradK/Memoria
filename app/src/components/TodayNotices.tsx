@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { detectLocalTz, missingPresetTasks } from '@memoria/shared';
+import '../surfaces.css';
 import { useApp } from '../store';
 import { utcOffsetLabel } from '../timezone';
 
@@ -42,11 +43,11 @@ function Notice({
   onDismiss: () => void;
 }) {
   return (
-    <section className="panel grain mb-3 rounded-ui-card p-3" aria-label={label}>
+    <section className="surface-notice mb-3" aria-label={label}>
       <div className="flex flex-wrap items-center gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-body font-medium text-fg">{title}</p>
-          <p className="mt-0.5 text-meta text-muted">{detail}</p>
+          <p className="aside mt-0.5 text-meta text-muted">{detail}</p>
         </div>
         <button
           type="button"

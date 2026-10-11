@@ -802,8 +802,10 @@ input[type='number'] {
   margin-inline: auto;
   padding: 8px 0 24px;
 }
+/* The heading's own rule is the only line above an opened panel, and its
+   text sits level with the middle of the logo beside it. */
 .focus-workspace > .game-card-heading {
-  align-items: flex-start;
+  align-items: center;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--color-line);
 }
@@ -1273,27 +1275,14 @@ input[type='number'] {
   border-radius: var(--radius-ui-full);
   padding-inline: 16px;
 }
-.broadcast-story {
-  border-radius: var(--radius-ui-card);
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-line);
-  padding: 24px;
-}
-.broadcast-story + .broadcast-story {
-  margin-top: 20px;
-}
 @supports (corner-shape: superellipse(1.5)) {
   .game-card-surface,
   .card-shell,
-  .broadcast-story,
   .glass {
     corner-shape: superellipse(1.5);
   }
 }
 @media (max-width: 767px) {
-  .broadcast-story {
-    padding: 20px;
-  }
   .app-nav-button {
     font-size: var(--text-caption);
     font-weight: 600;
@@ -1398,20 +1387,6 @@ p.reading-notice {
   transition: background-color var(--dur-fast) var(--ease-out);
 }
 .reading-notice-action:hover {
-  background: var(--color-fill-2);
-}
-.reading-choice {
-  display: flex;
-  width: 100%;
-  min-height: 52px;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border-radius: var(--radius-ui-lg);
-  text-align: left;
-  transition: background-color var(--dur-fast) var(--ease-out);
-}
-.reading-choice:hover {
   background: var(--color-fill-2);
 }
 @media (min-width: 640px) {
