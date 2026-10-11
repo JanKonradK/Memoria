@@ -618,6 +618,7 @@ const EventRow = memo(function EventRow({
           start={displayLeft / 100}
           color={ink}
           data-event-bar
+          data-pinned={ev.pinned || undefined}
           className="absolute top-0 z-[2] flex h-[var(--lane-bar-h)] items-center overflow-hidden rounded-ui-lg border px-2"
           style={{
             backgroundColor: barFill,
@@ -854,6 +855,8 @@ export function TimelinePage({ now }: { now: number }) {
     (event: GameEvent) => openSheet({ kind: 'event', eventId: event.id, gameId: event.gameId }),
     [openSheet],
   );
+  // A bar opens the quick view; the list's Edit button goes straight to the editor.
+  const peekEvent = useCallback((event: GameEvent) => openSheet({ kind: 'eventPeek', eventId: event.id }), [openSheet]);
   const toggleEvent = useCallback(
     (event: GameEvent) => upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done }),
     [upsertEvent],
@@ -1186,7 +1189,7 @@ export function TimelinePage({ now }: { now: number }) {
                                 now={now}
                                 ws={ws}
                                 we={we}
-                                onOpenEvent={openEvent}
+                                onOpenEvent={peekEvent}
                                 onToggleEvent={toggleEvent}
                                 laneWidth={timelineWidth}
                                 localTz={state.settings.localTz}

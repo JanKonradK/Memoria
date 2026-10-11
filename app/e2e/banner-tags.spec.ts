@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { emptyState } from '@memoria/shared';
 import { makeGame, makeEvent } from '../../shared/test/helpers';
+import { editFromQuickView } from './support';
 
 test('banner tags distinguish rewards across games and can be edited', async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
@@ -49,6 +50,8 @@ test('banner tags distinguish rewards across games and can be edited', async ({ 
   await page
     .getByRole('button', { name: `${compact ? 'Edit' : 'Open'} genshin event: character test`, exact: true })
     .click();
+  // The list's Edit button goes straight to the editor; a timeline bar opens the quick view first.
+  if (!compact) await editFromQuickView(page);
   await page.getByRole('combobox', { name: 'Banner tag', exact: true }).click();
   await page.getByRole('option', { name: 'Weapon banner', exact: true }).click();
   await page.getByRole('button', { name: 'Save', exact: true }).click();

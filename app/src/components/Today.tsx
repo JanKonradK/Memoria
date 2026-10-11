@@ -184,10 +184,7 @@ export function TodayPage({ now }: { now: number }) {
   }, [desktop]);
   const openSheet = useUI((ui) => ui.openSheet);
   const setTab = useUI((ui) => ui.setTab);
-  const openEvent = useCallback(
-    (event: GameEvent) => openSheet({ kind: 'event', gameId: event.gameId, eventId: event.id }),
-    [openSheet],
-  );
+  const openEvent = useCallback((event: GameEvent) => openSheet({ kind: 'eventPeek', eventId: event.id }), [openSheet]);
   const openTimeline = useCallback(() => setTab('timeline'), [setTab]);
   const active = order.filter((entry) => !entry.game.paused);
   const paused = order.filter((entry) => entry.game.paused);

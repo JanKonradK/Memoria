@@ -36,10 +36,7 @@ export function GamePage({ now }: { now: number }) {
     [adjustEnergy, advanceTaskTimer, restartTaskTimer, setEnergy, setTaskCount, setTaskDone, state, upsertEvent],
   );
   const openSheet = useUI((s) => s.openSheet);
-  const openGameEvent = useCallback(
-    (eventId: string, gameId: string) => openSheet({ kind: 'event', eventId, gameId }),
-    [openSheet],
-  );
+  const openGameEvent = useCallback((eventId: string) => openSheet({ kind: 'eventPeek', eventId }), [openSheet]);
   const focusColumns = useMediaQuery('(min-width: 900px)');
   const focusedGameId = useUI((s) => s.focusedGameId);
   const focusedEntry = focusedGameId ? entryById.get(focusedGameId) : undefined;

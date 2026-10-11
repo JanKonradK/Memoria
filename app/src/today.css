@@ -72,8 +72,10 @@
 .today-priority-row:active {
   scale: 0.985;
 }
-.today-priority-row:hover {
-  background: var(--color-fill-1);
+@media (hover: hover) {
+  .today-priority-row:hover {
+    background: var(--color-fill-1);
+  }
 }
 .today-priority-row[aria-pressed='true'] {
   background: var(--color-fill-2);
@@ -195,10 +197,15 @@
     background var(--dur-fast) var(--ease-out),
     color var(--dur-fast) var(--ease-out);
 }
-.today-paused-game:hover,
 .today-paused-game[aria-pressed='true'] {
   background: var(--color-fill-2);
   color: var(--color-fg-soft);
+}
+@media (hover: hover) {
+  .today-paused-game:hover {
+    background: var(--color-fill-2);
+    color: var(--color-fg-soft);
+  }
 }
 
 .today-notices {

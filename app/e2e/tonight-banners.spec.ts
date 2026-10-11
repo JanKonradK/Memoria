@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { emptyState } from '@memoria/shared';
 import { makeGame } from '../../shared/test/helpers';
+import { editFromQuickView } from './support';
 
 test('Tonight tags banners and limits Closing to ten days', async ({ page }, info) => {
   test.skip(!['desktop', 'wide-short'].includes(info.project.name), 'Tonight is part of the desktop dashboard');
@@ -46,5 +47,6 @@ test('Tonight tags banners and limits Closing to ten days', async ({ page }, inf
   await closing.scrollIntoViewIfNeeded();
   await page.screenshot({ path: info.outputPath('banner-separation.png') });
   await closing.getByRole('button', { name: /Character or weapon banner 1/ }).click();
+  await editFromQuickView(page);
   await expect(page.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Character or weapon banner 1');
 });

@@ -63,6 +63,8 @@ export type SheetRoute =
   | { kind: 'game'; gameId: string; section?: GameEditorSection }
   | { kind: 'addGame' }
   | { kind: 'event'; gameId?: string; eventId?: string }
+  /** The quick view of an existing event; its editor is the `event` route. */
+  | { kind: 'eventPeek'; eventId: string }
   | { kind: 'reminder' }
   | { kind: 'guide' }
   | null;

@@ -34,8 +34,10 @@
   border-radius: var(--radius-ui-full, 999px);
   background: var(--color-fill-2);
 }
-.timeline-search-chip:hover {
-  background: var(--color-fill-3);
+@media (hover: hover) {
+  .timeline-search-chip:hover {
+    background: var(--color-fill-3);
+  }
 }
 .timeline-page .timeline-board {
   max-height: calc(100dvh - var(--app-bar-h) - 112px);
@@ -202,8 +204,10 @@
 .timeline-event-actions > button {
   border-radius: 999px;
 }
-.timeline-complete-control:hover {
-  background: var(--color-fill-2);
+@media (hover: hover) {
+  .timeline-complete-control:hover {
+    background: var(--color-fill-2);
+  }
 }
 /* Flat, like the list: the message sits on the page ground with no box. */
 .timeline-empty {
