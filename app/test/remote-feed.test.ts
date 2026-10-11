@@ -20,12 +20,12 @@ import { flushPersist, useApp } from '../src/store';
 import { planSeedImport } from '../src/data/seed-events';
 import { refreshRemoteFeed, useRemoteFeed, PUBLIC_EVENT_FEED_URL } from '../src/data/remote-feed';
 
-const now = Date.parse('2026-10-06T12:00:00Z');
+const now = Date.parse('2026-10-16T12:00:00Z');
 function feed(over: Partial<RemoteEventFeed> = {}): RemoteEventFeed {
   return {
     version: 2,
-    generatedAt: '2026-10-06T10:00:00Z',
-    seedUpdated: '2026-10-06',
+    generatedAt: '2026-10-16T10:00:00Z',
+    seedUpdated: '2026-10-16',
     revision: 'review-1',
     events: [
       {
@@ -33,8 +33,8 @@ function feed(over: Partial<RemoteEventFeed> = {}): RemoteEventFeed {
         sourceKey: 'public:genshin:test',
         name: 'Reviewed event',
         type: 'event',
-        start: '2026-10-07 10:00',
-        end: '2026-10-10 03:59',
+        start: '2026-10-17 10:00',
+        end: '2026-10-20 03:59',
         notes: 'Publisher-reviewed date.',
       },
     ],
@@ -68,15 +68,15 @@ describe('reviewed public calendar imports', () => {
     const original = useApp.getState().state.events[0]!;
     useApp.getState().upsertEvent({ ...original, done: true });
     const updated = feed({
-      generatedAt: '2026-10-06T11:00:00Z',
+      generatedAt: '2026-10-16T11:00:00Z',
       revision: 'review-2',
-      events: [{ ...feed().events[0]!, end: '2026-10-11 03:59' }],
+      events: [{ ...feed().events[0]!, end: '2026-10-21 03:59' }],
     });
     expect(useApp.getState().importRemoteEvents(updated).applied).toBe(1);
     expect(useApp.getState().state.events[0]?.done).toBe(true);
     useApp.getState().upsertEvent({ ...useApp.getState().state.events[0]!, notes: 'My plan' });
     const newer = feed({
-      generatedAt: '2026-10-06T11:30:00Z',
+      generatedAt: '2026-10-16T11:30:00Z',
       revision: 'review-3',
       events: [{ ...updated.events[0]!, name: 'Renamed upstream' }],
     });
@@ -89,13 +89,13 @@ describe('reviewed public calendar imports', () => {
     useApp.getState().importRemoteEvents(feed());
     const original = useApp.getState().state.events[0]!;
     useApp.getState().deleteEvent(original.id);
-    useApp.getState().importRemoteEvents(feed({ generatedAt: '2026-10-06T11:00:00Z', revision: 'review-2' }));
+    useApp.getState().importRemoteEvents(feed({ generatedAt: '2026-10-16T11:00:00Z', revision: 'review-2' }));
     expect(useApp.getState().state.events).toHaveLength(1);
     expect(useApp.getState().state.events[0]?.deleted).toBe(true);
     useApp.setState({
       state: { ...useApp.getState().state, events: [{ ...original, seedHash: undefined, name: 'My imported title' }] },
     });
-    useApp.getState().importRemoteEvents(feed({ generatedAt: '2026-10-06T11:30:00Z', revision: 'review-3' }));
+    useApp.getState().importRemoteEvents(feed({ generatedAt: '2026-10-16T11:30:00Z', revision: 'review-3' }));
     expect(useApp.getState().state.events[0]?.name).toBe('My imported title');
   });
 
@@ -103,11 +103,11 @@ describe('reviewed public calendar imports', () => {
     useApp.getState().importRemoteEvents(feed());
     useApp
       .getState()
-      .importRemoteEvents(feed({ generatedAt: '2026-10-06T11:00:00Z', revision: 'review-2', events: [] }));
+      .importRemoteEvents(feed({ generatedAt: '2026-10-16T11:00:00Z', revision: 'review-2', events: [] }));
     expect(useApp.getState().state.events[0]?.deleted).not.toBe(true);
     useApp.getState().importRemoteEvents(
       feed({
-        generatedAt: '2026-10-06T11:30:00Z',
+        generatedAt: '2026-10-16T11:30:00Z',
         revision: 'review-3',
         events: [],
         withdrawn: ['public:genshin:test'],
@@ -132,9 +132,9 @@ describe('reviewed public calendar imports', () => {
     useApp.getState().importRemoteEvents(feed());
     const before = useApp.getState().state;
     const inputs: unknown[] = [
-      feed({ generatedAt: '2026-10-06T09:00:00Z', revision: 'old' }),
+      feed({ generatedAt: '2026-10-16T09:00:00Z', revision: 'old' }),
       feed({ revision: 'different-content-same-publication-time' }),
-      feed({ generatedAt: '2026-10-07T10:00:00Z' }),
+      feed({ generatedAt: '2026-10-17T10:00:00Z' }),
       feed({ events: [{ ...feed().events[0]!, start: '2026-02-31 10:00' }] }),
       { ...feed(), extra: 'x'.repeat(530_000) },
       { ...feed(), version: 100 },
@@ -149,14 +149,14 @@ describe('reviewed public calendar imports', () => {
     const left = emptyState();
     const right = emptyState();
     left.settings.remoteFeedVersion = {
-      generatedAt: '2026-10-06T10:00:00Z',
-      seedUpdated: '2026-10-06',
+      generatedAt: '2026-10-16T10:00:00Z',
+      seedUpdated: '2026-10-16',
       revision: 'new-facts',
       receivedAt: now,
     };
     right.settings.remoteFeedVersion = {
-      generatedAt: '2026-10-06T11:00:00Z',
-      seedUpdated: '2026-10-05',
+      generatedAt: '2026-10-16T11:00:00Z',
+      seedUpdated: '2026-10-15',
       revision: 'old-facts-later-package',
       receivedAt: now,
     };

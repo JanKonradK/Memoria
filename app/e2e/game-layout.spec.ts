@@ -79,10 +79,11 @@ test('each widget stays full width and can be moved, hidden, restored, and saved
   await page.getByRole('button', { name: 'Edit item Quick spend', exact: true }).click();
   await page.getByRole('button', { name: 'Edit quick spends', exact: true }).click();
   const quickSettings = page.getByRole('dialog', { name: 'Genshin Impact', exact: true });
-  await expect(quickSettings.getByRole('tab', { name: 'Quick spend', exact: true })).toHaveAttribute(
+  await expect(quickSettings.getByRole('tab', { name: 'Energy', exact: true })).toHaveAttribute(
     'aria-selected',
     'true',
   );
+  await expect(quickSettings.getByRole('heading', { name: 'Quick spend' })).toBeInViewport();
   await quickSettings.getByRole('button', { name: 'Done', exact: true }).click();
   await page.getByRole('button', { name: 'Edit item Original Resin', exact: true }).click();
   await expect(page.getByRole('button', { name: /Half width|Full width|Resize/ })).toHaveCount(0);
@@ -223,10 +224,14 @@ test('Edit changes the game title and creates, renames, deletes, and restores re
   await expect(page.getByRole('button', { name: 'Move Claim mail', exact: true })).toBeVisible();
   await page.getByLabel('Item title', { exact: true }).fill('Collect mail');
   await page.getByRole('button', { name: 'Delete Collect mail', exact: true }).click();
+  // One press only asks; the item is still there until the delete is confirmed.
+  await expect(page.getByRole('button', { name: 'Move Collect mail', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Confirm delete Collect mail', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Move Collect mail', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Undo delete', exact: true }).click();
   await page.getByRole('button', { name: 'Edit item Collect mail', exact: true }).click();
   await page.getByRole('button', { name: 'Delete Collect mail', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirm delete Collect mail', exact: true }).click();
   await page.getByRole('button', { name: 'Add item', exact: true }).click();
   await page.getByRole('combobox', { name: 'New item type' }).click();
   await page.getByRole('option', { name: 'Counter', exact: true }).click();
@@ -239,6 +244,7 @@ test('Edit changes the game title and creates, renames, deletes, and restores re
   await page.getByRole('button', { name: 'Edit Evening check-in', exact: true }).last().click();
   await page.getByRole('button', { name: 'Edit item Tickets', exact: true }).click();
   await page.getByRole('button', { name: 'Delete Tickets', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirm delete Tickets', exact: true }).click();
   await page.getByRole('button', { name: 'Undo delete', exact: true }).click();
   await page.getByRole('button', { name: 'Add item', exact: true }).click();
   await page.getByRole('combobox', { name: 'New item type' }).click();

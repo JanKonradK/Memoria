@@ -141,7 +141,9 @@ Connect the PC and phone to the same Wi-Fi. Open Memoria on both devices.
 2. On the phone, open **Settings** and tap **Scan PC code**.
 3. Point the phone camera at the code on the PC.
 
-Memoria connects the devices and keeps your existing progress. You do not need to type an address or code.
+Memoria connects the devices. You do not need to type an address or code.
+If the phone and the PC both already have games, the phone asks before it syncs.
+Select **Use my PC's data** for a new phone or tablet. Select **Combine both** to keep every game from both devices.
 If Android requests camera access, allow it to scan the code. Memoria does not save a photo.
 
 If you cannot use the camera, select **Enter a code instead** on both devices.

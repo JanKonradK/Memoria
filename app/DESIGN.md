@@ -96,7 +96,7 @@ Phone and computer connection comes first in Settings. The primary flow is Conne
 
 Use existing shared inputs, buttons, tabs, and sheets. Fields use sentence-case labels and clear grouping. Event and reminder actions remain outside the scrolling form. Game edits save automatically and expose a Done button. Preserve validation, dirty drafts, cancel behavior, deletion safeguards, and account scope.
 
-The game editor opens on Energy, then exposes Tasks, Resets, Reminders, Quick spend, and Game identity. Resources and routines expand in place. Resource order is editable without changing readings. Priority tasks lead their group. Reset settings show the local daily reset time and all supported server zones. Game reminders can be added and edited in place; their draft survives tab changes. Appearance and deletion stay under Game.
+The game editor has five tabs: Energy, Tasks, Events, Reminders and Game. Quick spends sit under Energy; the server, resets, appearance, notes, pause and delete sit under Game. The sheet keeps one height across tabs. A row that opens a panel has a named Delete button; a one-line row ends in a ✕. Resources and routines expand in place. Resource order is editable without changing readings. Priority tasks lead their group. Reset settings show the local daily reset time and all supported server zones. Game reminders can be added and edited in place; their draft survives tab changes.
 
 A short touch on an energy stepper changes it once. A long touch repeats after 350ms. A scroll or cancelled gesture changes nothing. Keyboard operation remains available.
 

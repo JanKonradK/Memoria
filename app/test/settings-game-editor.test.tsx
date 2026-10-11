@@ -67,7 +67,7 @@ describe('Settings game editor text drafts', () => {
   it('commits the short label without waiting out a debounce', () => {
     vi.useFakeTimers();
     const { updateGame } = renderEditor();
-    const short = screen.getByLabelText("Short label (shown as the game's badge)");
+    const short = screen.getByLabelText('Short name');
 
     fireEvent.change(short, { target: { value: 'NEW' } });
     expect(updateGame).toHaveBeenCalledWith(game.id, { short: 'NEW' });
@@ -75,7 +75,7 @@ describe('Settings game editor text drafts', () => {
 
   it('flushes the latest notes when the editor unmounts', () => {
     const { unmount, updateGame } = renderEditor();
-    openTab('Resets');
+    openTab('Game');
     const notes = screen.getByLabelText('Notes');
 
     fireEvent.change(notes, { target: { value: 'Live notes' } });
@@ -106,13 +106,15 @@ describe('Settings game editor tabs', () => {
     expect(gameTab).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', gameTab.id);
     expect(gameTab).toHaveAttribute('aria-controls', screen.getByRole('tabpanel').id);
-    // The other four sections are not merely scrolled away — they are gone.
-    expect(screen.queryByRole('heading', { name: 'Quick spend' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Tasks' })).not.toBeInTheDocument();
-
-    openTab('Quick spend');
+    // Quick spends adjust energy, so they share its tab.
     expect(screen.getByRole('heading', { name: 'Quick spend' })).toBeInTheDocument();
+    // The other tabs are not merely scrolled away — they are gone.
+    expect(screen.queryByLabelText('New task name')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Name', { selector: 'input' })).not.toBeInTheDocument();
+
+    openTab('Game');
+    expect(screen.getByRole('heading', { name: 'Server and resets' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Quick spend' })).not.toBeInTheDocument();
   });
 
   it('keeps one tab stop and moves selection with the arrow keys', () => {
@@ -174,5 +176,26 @@ describe('Settings game editor identity', () => {
       color2: genshin.color2,
       color3: genshin.color3,
     });
+  });
+});
+
+describe('Settings game editor deletes', () => {
+  it('asks before deleting a task and keeps it when the question is declined', () => {
+    const task = { id: 't1', gameId: game.id, name: 'Daily run', cadence: 'daily' as const, sort: 0, updatedAt: 1 };
+    const originalDeleteTask = useApp.getState().deleteTask;
+    const deleteTask = vi.fn();
+    useApp.setState({ state: { ...emptyState(), games: [game], tasks: [task as never] }, deleteTask });
+    render(<GameEditor game={game} initialSection="tasks" />);
+    fireEvent.click(screen.getByRole('button', { name: /^Daily run/ }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete task Daily run' }));
+    expect(deleteTask).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Keep task Daily run' }));
+    expect(screen.getByRole('button', { name: 'Delete task Daily run' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete task Daily run' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm delete task Daily run' }));
+    expect(deleteTask).toHaveBeenCalledWith('t1');
+    useApp.setState({ deleteTask: originalDeleteTask });
   });
 });

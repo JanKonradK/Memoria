@@ -2,7 +2,7 @@ import { useId, useRef, type Dispatch, type SetStateAction } from 'react';
 import type { Game, Reminder } from '@memoria/shared';
 import { useApp } from '../../store';
 import { fmtDateTimeLocalInput, parseDateTimeLocalInput } from '../../util';
-import { Btn, Field, SectionTitle, TextInput } from '../ui';
+import { Btn, COMPACT_INPUT, ConfirmDelete, Field, TextInput } from '../ui';
 
 export type ReminderDraft = {
   editing: string | null;
@@ -72,7 +72,6 @@ export function GameReminders({
 
   return (
     <section>
-      <SectionTitle>Reminders</SectionTitle>
       <p className="mb-4 text-meta text-muted">
         Reminders for {game.name} appear in Tonight. Times use {zone}.
       </p>
@@ -93,34 +92,32 @@ export function GameReminders({
             <Btn aria-label={`Edit reminder ${reminder.message}`} onClick={() => edit(reminder)}>
               Edit
             </Btn>
-            <Btn
-              kind="danger"
-              aria-label={`Delete reminder ${reminder.message}`}
-              onClick={() => {
+            <ConfirmDelete
+              what={`reminder ${reminder.message}`}
+              onConfirm={() => {
                 deleteReminder(reminder.id);
                 if (editing === reminder.id) clear();
                 patch({ status: 'Reminder deleted' });
               }}
-            >
-              Delete
-            </Btn>
+            />
           </div>
         ))}
       </div>
       <form
-        className="space-y-3 border-t border-line-hairline pt-4"
+        className="grid grid-cols-1 gap-3 border-t border-line-hairline pt-4 sm:grid-cols-[minmax(0,1fr)_16rem]"
         onSubmit={(event) => {
           event.preventDefault();
           save();
         }}
       >
         {unavailable && (
-          <p role="alert" className="text-meta text-warn-fg">
+          <p role="alert" className="text-meta text-warn-fg sm:col-span-2">
             This reminder is no longer available. Your draft is kept here. Add it as a new reminder to save it.
           </p>
         )}
         <Field label="Reminder message">
           <TextInput
+            className={COMPACT_INPUT}
             ref={messageRef}
             maxLength={20_000}
             value={message}
@@ -131,6 +128,7 @@ export function GameReminders({
         </Field>
         <Field label="When">
           <TextInput
+            className={COMPACT_INPUT}
             type="datetime-local"
             value={when}
             onChange={(event) => patch({ when: event.target.value, status: '' })}
@@ -140,11 +138,11 @@ export function GameReminders({
           />
         </Field>
         {at == null && (
-          <p id={dateErrorId} role="alert" className="text-caption text-danger-fg">
+          <p id={dateErrorId} role="alert" className="text-caption text-danger-fg sm:col-span-2">
             Enter a valid date and time.
           </p>
         )}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 sm:col-span-2">
           <Btn type="submit" kind="primary" disabled={!message.trim() || at == null || unavailable}>
             {editing ? 'Save reminder' : 'Add reminder'}
           </Btn>
@@ -155,10 +153,12 @@ export function GameReminders({
           )}
           {editing && <Btn onClick={() => canDiscard() && clear()}>Cancel</Btn>}
         </div>
-        <p role="status" className="min-h-5 text-label text-muted">
+        <p role="status" className="text-label text-muted empty:hidden sm:col-span-2">
           {status}
         </p>
-        <p className="text-label text-muted">These are in-app reminders. Keep Memoria open to see them.</p>
+        <p className="text-label text-muted sm:col-span-2">
+          These are in-app reminders. Keep Memoria open to see them.
+        </p>
       </form>
     </section>
   );

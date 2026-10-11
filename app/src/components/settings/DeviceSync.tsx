@@ -6,6 +6,7 @@ import {
   isNativeDevice,
   pairLanDevice,
   pairLanFromQr,
+  resolveFirstSync,
   syncLanNow,
   useLanSync,
 } from '../../lan-sync';
@@ -268,6 +269,64 @@ function DesktopConnection() {
   );
 }
 
+/**
+ * Shown instead of syncing when this device and the PC each hold games the
+ * other has never seen. Nothing has been sent or merged yet.
+ */
+function FirstSyncChoice({ deviceGames, pcGames }: { deviceGames: number; pcGames: number }) {
+  const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const answer = (choice: Parameters<typeof resolveFirstSync>[0]) => {
+    setBusy(true);
+    void resolveFirstSync(choice).finally(() => setBusy(false));
+  };
+  const games = (count: number) => `${count} ${count === 1 ? 'game' : 'games'}`;
+  return (
+    <section className="space-y-3" aria-labelledby="first-sync-heading">
+      <h3 id="first-sync-heading" className="text-heading font-semibold text-fg">
+        Both devices already have games
+      </h3>
+      <p className="text-body text-muted">
+        This device has {games(deviceGames)} and your PC has {games(pcGames)}. Nothing has been synced yet. Choose what
+        this device should do.
+      </p>
+      <div className="space-y-1">
+        <div className="flex flex-wrap gap-2">
+          <Btn
+            kind={confirming ? 'danger' : 'primary'}
+            className={TOUCH_BUTTON}
+            disabled={busy}
+            onClick={() => (confirming ? answer('pc') : setConfirming(true))}
+          >
+            {confirming ? `Confirm: remove this device's ${games(deviceGames)}` : 'Use my PC’s data'}
+          </Btn>
+          {confirming && (
+            <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => setConfirming(false)}>
+              Go back
+            </Btn>
+          )}
+        </div>
+        <p className="text-meta text-muted">
+          For a new phone or tablet. This device shows what your PC has; the games set up here are removed from this
+          device.
+        </p>
+      </div>
+      <div className="space-y-1">
+        <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => answer('combine')}>
+          Combine both
+        </Btn>
+        <p className="text-meta text-muted">Keeps every game from both devices. A game set up on both appears twice.</p>
+      </div>
+      <div className="space-y-1">
+        <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => answer('cancel')}>
+          Cancel and disconnect
+        </Btn>
+        <p className="text-meta text-muted">Nothing changes on either device.</p>
+      </div>
+    </section>
+  );
+}
+
 function PhoneConnection() {
   const connection = useLanSync();
   const [host, setHost] = useState('');
@@ -295,7 +354,8 @@ function PhoneConnection() {
             {busy ? 'Connecting…' : 'Scan PC code'}
           </Btn>
           <p className="text-meta text-muted">
-            Point your camera at the code on your PC. Your existing progress will be kept.
+            Point your camera at the code on your PC. If this device already has games, Memoria asks before combining
+            them with your PC’s.
           </p>
           <details className={DETAILS}>
             <summary>Enter a code instead</summary>
@@ -342,6 +402,8 @@ function PhoneConnection() {
             </form>
           </details>
         </>
+      ) : connection.choice ? (
+        <FirstSyncChoice {...connection.choice} />
       ) : (
         <>
           <div role="status" className="space-y-1">
@@ -396,7 +458,7 @@ function PhoneConnection() {
           </details>
         </>
       )}
-      {(error || connection.error) && (
+      {(error || (!connection.choice && connection.error)) && (
         <p role="alert" className="text-body text-danger-fg">
           {error || connection.error}
         </p>

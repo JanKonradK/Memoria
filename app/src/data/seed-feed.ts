@@ -179,9 +179,10 @@ import type { PublicFeedEvent } from '@memoria/shared';
  */
 
 /** Last bundle refresh, not a claim that every publisher supplied new dates.
- * The per-game evidence and remaining gaps are in docs/game-news-review-2026-10-03.md.
+ * The per-game evidence and remaining gaps are in docs/game-news-review-2026-10-03.md
+ * and, for the October 11 additions, docs/game-news-review-2026-10-11.md.
  */
-export const SEED_UPDATED = '2026-10-03';
+export const SEED_UPDATED = '2026-10-11';
 /** Invalid source windows withdrawn even from an earlier build on the same day. */
 export const SEED_WITHDRAWN_KEYS = ['seed:endfield:1.5-deep-cold-issue'];
 
@@ -210,45 +211,7 @@ export const SEED_EVENTS: SeedEvent[] = [
      Theater from the fandom wiki. Both run permanently and reset ONCE a month — Abyss on
      the 16th, Theater on the 1st. The twice-monthly Abyss ended in June 2024. */
   // --- events
-  {
-    game: 'genshin',
-    name: 'Sunny Summer Fontinalia — free Charlotte + outfit',
-    type: 'event',
-    start: '2026-07-01 04:00',
-    end: '2026-08-11 03:59',
-    notes: 'Flagship: aquarium on the Wingalet. Claim Charlotte before it ends.',
-    sourceKey: 'genshin:21749',
-  },
-  {
-    game: 'genshin',
-    name: 'Sunny Summer login rewards',
-    type: 'event',
-    dailyTouch: true,
-    start: '2026-07-01 04:00',
-    end: '2026-08-10 03:59',
-    sourceKey: 'genshin:21755',
-  },
-  {
-    game: 'genshin',
-    name: 'To Temper Thyself and Journey Far',
-    type: 'event',
-    notify: false,
-    start: '2026-05-18 04:00',
-    end: '2026-08-10 03:59',
-    notes: 'Long-running quest campaign — no rush yet.',
-    sourceKey: 'seed:genshin:temper-journey',
-  },
 
-  {
-    game: 'genshin',
-    name: 'Ley Line Overflow — double Mora/EXP',
-    type: 'event',
-    dailyTouch: true,
-    start: '2026-08-03 04:00',
-    end: '2026-08-10 03:59',
-    notes: 'Three double Ley Line claims a day — plan resin.',
-    sourceKey: 'seed:genshin:6.7-leyline',
-  },
   {
     game: 'genshin',
     name: 'When We Look Up at the Moon',
@@ -270,15 +233,6 @@ export const SEED_EVENTS: SeedEvent[] = [
     sourceKey: 'genshin:21761',
   },
   // --- cycles
-  {
-    game: 'genshin',
-    name: 'Stygian Onslaught',
-    type: 'cycle',
-    start: '2026-07-06 12:00',
-    end: '2026-08-11 03:59',
-    notes: 'v6.7 rotation. Condensed Resin counts 60 Dire Prestige each.',
-    sourceKey: 'genshin:21168',
-  },
   {
     game: 'genshin',
     name: 'Stygian Onslaught',
@@ -323,33 +277,6 @@ export const SEED_EVENTS: SeedEvent[] = [
   // --- banners
   // Wishes close at 14:59, hours before the servers go down — an end set to the
   // maintenance hour would quietly promise pulls that are no longer buyable.
-  {
-    game: 'genshin',
-    name: 'Columbina — Somnias a Luna (phase 2)',
-    type: 'banner',
-    bannerKind: 'character',
-    start: '2026-07-21 18:00',
-    end: '2026-08-11 14:59',
-    sourceKey: 'seed:genshin:6.7-columbina',
-  },
-  {
-    game: 'genshin',
-    name: 'Raiden Shogun — Reign of Serenity (phase 2)',
-    type: 'banner',
-    bannerKind: 'character',
-    start: '2026-07-21 18:00',
-    end: '2026-08-11 14:59',
-    sourceKey: 'seed:genshin:6.7-raiden',
-  },
-  {
-    game: 'genshin',
-    name: "Epitome Invocation — Nocturne's Curtain Call / Engulfing Lightning (phase 2)",
-    type: 'banner',
-    bannerKind: 'weapon',
-    start: '2026-07-21 18:00',
-    end: '2026-08-11 14:59',
-    sourceKey: 'seed:genshin:6.7-epitome-p2',
-  },
   // --- maintenance
   // The key still says 6.8 on purpose: anyone who imported this seed already has
   // an event under that key, and keeping it lets the refresh rename that event
@@ -643,13 +570,11 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'genshin',
     name: 'Predictive Victory Dynamics',
     type: 'event',
-    start: '2026-10-12 00:00',
-    end: '2026-10-20 23:59',
+    start: '2026-10-12 10:00',
+    end: '2026-10-20 09:59',
     timezone: 'UTC+8',
-    notify: false,
-    dateOnly: true,
     notes:
-      'Official calendar: October 12–20 (UTC+8). Result announcement continues through October 23. Source: https://www.hoyolab.com/article/46673425',
+      'Official announcement 21887. Both times use t_gl (UTC+8). Result announcement runs October 20 at 10:00 through October 23 at 09:59 UTC+8. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
     sourceKey: 'seed:genshin:7.1-predictive-victory',
   },
   {
@@ -3046,13 +2971,13 @@ export const SEED_EVENTS: SeedEvent[] = [
      more and it earns a predicted row like the rest. */
   {
     game: 'zzz',
-    name: 'ZZZ 3.3 Special Program — predicted window',
+    name: 'ZZZ 3.3 Special Program',
     type: 'livestream',
-    start: '2026-10-07 12:30',
-    end: '2026-10-11 14:30',
+    start: '2026-10-09 12:30',
+    end: '2026-10-09 13:30',
     timezone: 'UTC+1',
     notes:
-      'Not announced. This remains only a forecast window, not a confirmed broadcast. The official 3.2 broadcast was August 28 at 19:30 UTC+8 and offered one exclusive code; neither the next date nor code details are confirmed. Source: https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=4162040&count=30&maxlength=0',
+      'Official premiere of "Journey to the Sky": October 9 at 19:30 UTC+8 (12:30 UTC+1). The one-hour display window is an estimate; the end time was not announced. Version 3.2 ends October 21 at 06:00 UTC+8. Source: https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=4162040&count=30&maxlength=0',
     sourceKey: 'seed:zzz:3.3-livestream',
   },
   {
@@ -4485,11 +4410,11 @@ export const SEED_EVENTS: SeedEvent[] = [
   {
     game: 'uma',
     sourceKey: 'seed:uma:scout-2026-10-07',
-    name: 'Spotlight Scout — October 7',
+    name: 'Spotlight Scout — [Heroic Author] Zenno Rob Roy',
     type: 'banner',
     start: '2026-10-07 22:00',
     end: '2026-10-15 21:59',
-    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/umamusume_eng/status/2105477975110258964',
+    notes: 'Official notice 1089: debut 3★ [Heroic Author] Zenno Rob Roy. Source: https://umamusume.com/news/',
     timezone: 'UTC',
     bannerKind: 'character',
     dailyTouch: false,
@@ -4497,11 +4422,12 @@ export const SEED_EVENTS: SeedEvent[] = [
   {
     game: 'uma',
     sourceKey: 'seed:uma:scout-2026-10-07:supports',
-    name: 'Spotlight Support Card Scout — October 7',
+    name: 'Spotlight Support Card Scout — Light Hello / Mayano Top Gun',
     type: 'banner',
     start: '2026-10-07 22:00',
     end: '2026-10-15 21:59',
-    notes: 'Publisher schedule verified on 2026-10-03. Source: https://x.com/umamusume_eng/status/2105477975110258964',
+    notes:
+      'Official notice 1089: SSR [From the Ground Up] Light Hello and SSR [Party Formation] Mayano Top Gun. Source: https://umamusume.com/news/',
     timezone: 'UTC',
     bannerKind: 'support',
     dailyTouch: false,
@@ -4645,5 +4571,81 @@ export const SEED_EVENTS: SeedEvent[] = [
       'Capricorn Cup. Chukyo Turf 1200m (Sprint), Left, Winter, Sunny, Firm. Full season window from the publisher roadmap. Source: https://x.com/umamusume_eng/status/2105477975110258964',
     timezone: 'UTC',
     dailyTouch: true,
+  },
+  // October 11 review. Evidence and remaining gaps: docs/game-news-review-2026-10-11.md.
+  {
+    game: 'genshin',
+    name: 'Void Star’s Advent — Skirk',
+    type: 'banner',
+    bannerKind: 'character',
+    start: '2026-10-13 18:00',
+    end: '2026-11-03 14:59',
+    notes:
+      'Official announcement 21888. Both times use t_lc (server time). Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'genshin:21888',
+  },
+  {
+    game: 'genshin',
+    name: 'La Chanson Cerise — Escoffier',
+    type: 'banner',
+    bannerKind: 'character',
+    start: '2026-10-13 18:00',
+    end: '2026-11-03 14:59',
+    notes:
+      'Official announcement 21889. Both times use t_lc (server time). Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'genshin:21889',
+  },
+  {
+    game: 'genshin',
+    name: 'Epitome Invocation — Azurelight / Symphonist of Scents',
+    type: 'banner',
+    bannerKind: 'weapon',
+    start: '2026-10-13 18:00',
+    end: '2026-11-03 14:59',
+    notes:
+      'Official announcement 21890. Both times use t_lc (server time). Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'genshin:21890',
+  },
+  {
+    game: 'genshin',
+    name: 'Genius Invokation TCG: Automatic Artistry',
+    type: 'event',
+    start: '2026-10-10 10:00',
+    end: '2026-10-26 03:59',
+    notes:
+      'Heated Battle Mode. Official announcement 21368. Both times use t_lc (server time). Requires Adventure Rank 32. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'genshin:21368',
+  },
+  {
+    game: 'genshin',
+    name: 'Anniversary Memories Album — web event',
+    type: 'event',
+    start: '2026-09-28 11:00',
+    end: '2026-10-18 23:59',
+    timezone: 'UTC+8',
+    notes:
+      'Web event with Primogem rewards. Official announcement 21874. Both times use t_gl (UTC+8). Requires Adventure Rank 10. Source: https://sg-hk4e-api.hoyoverse.com/common/hk4e_global/announcement/api/getAnnContent?game=hk4e&game_biz=hk4e_global&lang=en&bundle_id=hk4e_global&platform=pc&region=os_euro&level=60&uid=700000000',
+    sourceKey: 'genshin:21874',
+  },
+  {
+    game: 'hsr',
+    name: 'Planar Fissure',
+    type: 'event',
+    start: '2026-10-12 04:00',
+    end: '2026-10-25 03:59',
+    notes:
+      'Official announcement 1423. Both times use t_lc (server time). Double Planar Ornament drops. Source: https://sg-hkrpg-api.hoyoverse.com/common/hkrpg_global/announcement/api/getAnnContent?game=hkrpg&game_biz=hkrpg_global&lang=en&bundle_id=hkrpg_global&platform=pc&region=prod_official_eur&level=70',
+    sourceKey: 'hsr:1423',
+  },
+  {
+    game: 'nte',
+    name: 'Blackbird’s Invitation — web event',
+    type: 'event',
+    start: '2026-09-30 11:00',
+    end: '2026-11-11 05:59',
+    timezone: 'UTC+8',
+    notes:
+      'Invite-link web event. Official global window. Source: https://nte.perfectworld.com/en/article/news/gamenews/20260929/264409.html',
+    sourceKey: 'seed:nte:1.4-blackbird-invitation',
   },
 ];

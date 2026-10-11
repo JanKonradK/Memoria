@@ -78,7 +78,6 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
     banners.getByRole('button', { name: /Open Genshin Impact event: Wonderland Treasures/ }).first(),
   ).toHaveCount(1);
   for (const [key, label] of [
-    ['predictive-victory', '12–20 Oct'],
     ['snowball', '21 Oct–2 Nov'],
     ['overflowing-favor', '26 Oct–2 Nov'],
   ]) {
@@ -116,10 +115,12 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
     await page.screenshot({ path: info.outputPath(`genshin-timeline-banners-${theme}.png`) });
   }
   await view.getByRole('radio', { name: 'List', exact: true }).click();
-  const predictive = state.events.find((event) => event.sourceKey === 'seed:genshin:7.1-predictive-victory')!;
-  const listRow = page.locator(`[data-list-event="${predictive.id}"]`);
-  await expect(listRow).toContainText('12–20 Oct');
+  const snowball = state.events.find((event) => event.sourceKey === 'seed:genshin:7.1-snowball')!;
+  const listRow = page.locator(`[data-list-event="${snowball.id}"]`);
+  await expect(listRow).toContainText('21 Oct–2 Nov');
   await expect(listRow).toContainText('UTC+8');
   await listRow.getByRole('button', { name: /^Edit / }).click();
-  await expect(page.getByRole('dialog', { name: 'Edit event' })).toContainText('Official calendar: 12–20 Oct (UTC+8).');
+  await expect(page.getByRole('dialog', { name: 'Edit event' })).toContainText(
+    'Official calendar: 21 Oct–2 Nov (UTC+8).',
+  );
 });

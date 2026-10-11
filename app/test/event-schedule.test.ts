@@ -9,7 +9,6 @@ describe('confirmed calendar dates', () => {
     const game = makeGame({ presetKey: 'genshin', tz });
     const plans = planSeedImport({ ...emptyState(), games: [game] }, Date.parse('2026-10-03T12:00:00Z'));
     for (const [key, label] of [
-      ['predictive-victory', '12–20 Oct'],
       ['snowball', '21 Oct–2 Nov'],
       ['overflowing-favor', '26 Oct–2 Nov'],
     ]) {
