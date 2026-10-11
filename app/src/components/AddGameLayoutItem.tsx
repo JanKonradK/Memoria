@@ -54,7 +54,7 @@ export function AddGameLayoutItem({
   // The game can be deleted from another view while this form sits open.
   if (!gameExists) {
     return (
-      <div className="rounded-ui-lg bg-fill-1 p-3 ring-1 ring-line-hairline">
+      <div>
         <p className="text-meta text-muted">This game is no longer tracked.</p>
         <Btn className={`mt-2 ${TOUCH_BUTTON}`} onClick={onClose}>
           Close
@@ -115,10 +115,7 @@ export function AddGameLayoutItem({
   };
 
   return (
-    <form
-      onSubmit={submit}
-      className="grid grid-cols-1 items-end gap-2 rounded-ui-lg bg-fill-1 p-3 ring-1 ring-line-hairline sm:grid-cols-2"
-    >
+    <form onSubmit={submit} className="grid grid-cols-1 items-end gap-2 sm:grid-cols-2">
       <Field label="Type">
         <Select
           className={COMPACT_INPUT}

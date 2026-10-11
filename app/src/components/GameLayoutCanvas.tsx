@@ -1,3 +1,4 @@
+import '../panels.css';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { m } from 'motion/react';
@@ -313,7 +314,7 @@ export function GameLayoutCanvas({
       </p>
       <div
         ref={root}
-        className="game-widget-grid grid grid-cols-1 items-start gap-3"
+        className={`game-widget-grid grid grid-cols-1 items-start ${editing ? 'gap-0.5' : 'gap-3'}`}
         onContextMenu={(event) => {
           if (editing) event.preventDefault();
         }}
@@ -363,7 +364,7 @@ export function GameLayoutCanvas({
               initial={false}
               transition={{ layout: { duration: duration.base, ease: easing.out } }}
               data-layout-item={item.id}
-              className={`game-widget min-w-0 rounded-ui-lg ${editing ? 'border border-line-edge bg-fill-1 p-3' : 'py-1'}`}
+              className={`game-widget min-w-0 rounded-ui-lg ${editing ? `game-layout-row${expanded ? ' game-layout-row-open' : ''}` : 'py-1'}`}
               style={{ opacity: drag?.id === item.id ? 0.35 : 1 }}
             >
               {editing ? (
@@ -415,7 +416,7 @@ export function GameLayoutCanvas({
                   </button>
                   <div className="min-w-0 flex-1">
                     <p className="break-words text-body font-semibold text-fg-soft">{widget.name}</p>
-                    {widget.summary && <p className="mt-1 text-caption text-muted">{widget.summary}</p>}
+                    {widget.summary && <p className="mt-1 aside text-caption text-muted">{widget.summary}</p>}
                   </div>
                   <Btn
                     ref={(node) => {
@@ -518,7 +519,7 @@ export function GameLayoutCanvas({
           <div
             aria-hidden
             inert
-            className="game-widget pointer-events-none fixed z-[90] rounded-ui-lg bg-panel p-3 shadow-float"
+            className="game-widget pointer-events-none fixed z-[90] rounded-ui-lg bg-panel px-2 py-2 shadow-float"
             style={{
               left: drag.left + drag.x - drag.startX,
               top: drag.top + drag.y - drag.startY,

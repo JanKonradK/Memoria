@@ -1,3 +1,4 @@
+import '../../today.css';
 import '../../tonight.css';
 import { EventTags } from '../EventTags';
 import { eventCategory } from '../../event-category';
@@ -147,13 +148,25 @@ function Band({
 }) {
   return (
     <section className="flex shrink-0 flex-col gap-1.5" aria-label={title}>
-      <div className="flex items-center gap-2">
-        <span aria-hidden className="h-px w-2.5 shrink-0" style={{ background: tone }} />
-        <span className="text-caption uppercase tracking-[0.09em]" style={{ color: tone }}>
+      <div className="today-group-rule">
+        <span className="text-meta font-semibold text-fg-soft">
+          <span
+            aria-hidden
+            className="mr-2 inline-block h-1.5 w-1.5 rounded-ui-full align-middle"
+            style={{ background: tone }}
+          />
           {title}
         </span>
-        <span className="numeral text-caption text-muted">{tickets.length}</span>
-        {subtitle && <span className="ml-auto text-caption text-muted">{subtitle}</span>}
+        <span aria-hidden />
+        <span className="numeral aside text-caption text-muted">
+          {tickets.length}
+          {subtitle && (
+            <>
+              {' · '}
+              <span>{subtitle}</span>
+            </>
+          )}
+        </span>
       </div>
 
       {tickets.length === 0 ? (

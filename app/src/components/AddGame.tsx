@@ -4,9 +4,11 @@ import { PRESETS, presetForGame, SERVER_TZ_OPTIONS } from '@memoria/shared';
 import { resolveGameIdentityColors } from '../game-color';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
-import { intOr, tint } from '../util';
+import '../surfaces.css';
+import { intOr } from '../util';
+import { GameLogo } from './GameLogo';
 import { Sheet } from './Sheet';
-import { Btn, Field, GameBadge, NumInput, SectionTitle, Select, TextInput } from './ui';
+import { Btn, Field, NumInput, SectionTitle, Select, TextInput } from './ui';
 
 export function AddGameSheet({ open }: { open: boolean }) {
   const games = useApp((s) => s.state.games);
@@ -87,7 +89,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
           {trackedPresetGames.length > 0 && (
             <>
               <SectionTitle>Add another account</SectionTitle>
-              <div className="space-y-2">
+              <div className="surface-list">
                 {trackedPresetGames.map(({ game, preset }) => {
                   const colors = identityColors[game.id] ?? game;
                   return (
@@ -100,13 +102,13 @@ export function AddGameSheet({ open }: { open: boolean }) {
                         setTz(game.tz);
                         setShort(game.short);
                       }}
-                      className="flex min-h-11 w-full items-center gap-3 rounded-ui-lg bg-fill-1 px-3 py-2 text-left ring-1 ring-line-hairline transition hover:bg-fill-3 active:scale-95 sm:min-h-9"
+                      className="surface-row flex min-h-11 w-full items-center gap-3 text-left"
                     >
-                      <GameBadge short={game.short} {...colors} />
-                      <span className="min-w-0">
+                      <GameLogo game={{ ...game, ...colors }} size={48} label="short" className="shrink-0" />
+                      <span className="min-w-0 flex-1">
                         <span className="block truncate text-body font-bold text-fg-soft">{game.name}</span>
                         {game.accountLabel && (
-                          <span className="block truncate text-meta text-muted">{game.accountLabel}</span>
+                          <span className="aside block truncate text-meta text-muted">{game.accountLabel}</span>
                         )}
                       </span>
                     </button>
@@ -116,7 +118,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
               <SectionTitle>Add a new game</SectionTitle>
             </>
           )}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div className="surface-list sm:grid-cols-2 lg:grid-cols-3">
             {PRESETS.map((p) => (
               <button
                 key={p.key}
@@ -125,13 +127,14 @@ export function AddGameSheet({ open }: { open: boolean }) {
                   setPicked(p);
                   setTz(p.tz);
                 }}
-                className="flex items-center gap-3 rounded-ui-xl p-3 text-left ring-1 transition hover:brightness-125 active:scale-95"
-                style={{ background: tint(p.color, 0.08), boxShadow: `inset 0 0 0 1px ${tint(p.color, 0.25)}` }}
+                className="surface-row flex min-h-11 w-full items-center gap-3 text-left"
               >
-                <GameBadge short={p.short} color={p.color} color2={p.color2} color3={p.color3} size="lg" />
-                <span>
+                <GameLogo game={{ ...p, presetKey: p.key }} size={48} label="short" className="shrink-0" />
+                <span className="min-w-0 flex-1">
                   <span className="block text-body font-bold text-fg-soft">{p.name}</span>
-                  <span className="block text-label text-muted">{p.resources.map((r) => r.name).join(' + ')}</span>
+                  <span className="aside block text-label text-muted">
+                    {p.resources.map((r) => r.name).join(' + ')}
+                  </span>
                 </span>
               </button>
             ))}
@@ -205,9 +208,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
       ) : picked ? (
         <>
           {picked.notes && (
-            <p className="mb-4 rounded-ui-lg bg-warn/10 px-3 py-2 text-meta text-warn-fg ring-1 ring-warn/20">
-              {picked.notes}
-            </p>
+            <p className="surface-notice surface-notice-warn mb-4 text-meta text-warn-fg">{picked.notes}</p>
           )}
           <div className="space-y-3">
             <Field label="Server timezone">

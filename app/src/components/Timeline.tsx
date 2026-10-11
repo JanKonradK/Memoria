@@ -11,14 +11,15 @@ import { endTone, fmtDur } from '../util';
 import { Disclosure } from './Disclosure';
 import { Pill, ProgressBar } from './primitives';
 import { rosterGames, useIdentityColors } from './roster';
-import { Btn, GameBadge, Page, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
+import { Btn, Page, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
+import { GameLogo } from './GameLogo';
 import { TimelineTools } from './TimelineTools';
 import { CalendarToolbar } from './CalendarToolbar';
 import { CalendarFeedStatus } from './CalendarFeedStatus';
 import { TimelineList } from './TimelineList';
 import { serverRegionLabel } from '../server-region';
 import { titleStyle } from '../fonts';
-import { assignGameInks, gameRim, gameTitleInk, mix, onColor } from '../game-color';
+import { assignGameInks, gameTitleInk, mix, onColor } from '../game-color';
 import { THEME_PANEL, useGround, useInset, useTheme } from '../theme';
 import { EventTags } from './EventTags';
 import { groupGameEvents } from '../event-category';
@@ -50,6 +51,7 @@ function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; 
       aria-label={`${game.name}${account ? `, ${account}` : ''}, ${server}: tracking paused`}
       className="relative z-20 flex min-h-11 items-center gap-3 py-2"
     >
+      <GameLogo game={game} size={36} label="short" />
       <div className="min-w-0 flex-1">
         <h2
           className="truncate text-body"
@@ -59,7 +61,7 @@ function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; 
         </h2>
         <div className="mt-1 flex min-w-0 items-center gap-2 text-caption text-muted">
           <ServerChip label={server} />
-          {account && <span className="min-w-0 truncate">{account}</span>}
+          {account && <span className="aside min-w-0 truncate">{account}</span>}
           <Pill variant="paused">Paused</Pill>
         </div>
       </div>
@@ -1091,7 +1093,6 @@ export function TimelinePage({ now }: { now: number }) {
                   // the game's own primary as the fallback. Bars, connectors and
                   // the heading rule all take it from here so they cannot drift.
                   const ink = laneInk[game.id] ?? colors.color;
-                  const rim = gameRim(colors, ground);
                   return (
                     <Disclosure
                       key={game.id}
@@ -1101,7 +1102,7 @@ export function TimelinePage({ now }: { now: number }) {
                       onOpenChange={(nextOpen) => setLaneOpen((current) => ({ ...current, [game.id]: nextOpen }))}
                       title={
                         <span className="flex min-w-0 items-center gap-2">
-                          <GameBadge short={game.short} {...colors} />
+                          <GameLogo game={{ ...game, ...colors }} size={36} label="short" />
                           <span
                             className="min-w-0 truncate text-body"
                             style={{ ...titleStyle(game.titleFont), color: gameTitleInk(colors, titleGround, 4.5) }}
@@ -1110,16 +1111,11 @@ export function TimelinePage({ now }: { now: number }) {
                           </span>
                           <ServerChip label={serverLabel} />
                           {accountLabel && (
-                            <span className="min-w-0 max-w-[35%] shrink-0 truncate text-body font-semibold text-fg-soft">
+                            <span className="aside min-w-0 max-w-[35%] shrink-0 truncate text-meta text-muted">
                               {accountLabel}
                             </span>
                           )}
-                          <span
-                            className="h-px flex-1"
-                            style={{
-                              background: `linear-gradient(90deg, ${mix(rim, ground, 0.3)}, ${mix(rim, ground, 0.08)})`,
-                            }}
-                          />
+                          <span className="h-px min-w-4 flex-1 bg-line" />
                         </span>
                       }
                       summary={
@@ -1142,7 +1138,7 @@ export function TimelinePage({ now }: { now: number }) {
                       }
                       triggerLabel={`${open ? 'Collapse' : 'Expand'} ${game.name}, ${serverLabel}${accountLabel ? `, ${accountLabel}` : ''} lane`}
                       className="timeline-game-lane relative"
-                      triggerClassName="timeline-game-heading relative z-20 rounded-ui-md px-1 transition hover:bg-fill-1"
+                      triggerClassName="timeline-game-heading relative z-20 rounded-ui-md transition hover:bg-fill-1"
                       contentClassName="timeline-lane-content -ml-7 pl-7"
                     >
                       {evs.length === 0 ? (
@@ -1177,9 +1173,9 @@ export function TimelinePage({ now }: { now: number }) {
                               aria-label={`${group.label} timeline for ${game.name}`}
                             >
                               {group.key !== 'events' && (
-                                <h3 className="mb-2 flex items-center gap-2 text-meta font-semibold text-muted">
+                                <h3 className="mb-2 flex items-center gap-2.5 text-meta font-semibold text-fg-soft">
                                   {group.label}
-                                  <span aria-hidden className="h-px flex-1 bg-line-hairline" />
+                                  <span aria-hidden className="h-px min-w-4 flex-1 bg-line" />
                                 </h3>
                               )}
                               <ReorderableEventRows

@@ -1,0 +1,33 @@
+/* Flat rows for the game layout editor. Rows take no fill at rest and are
+   separated by a hairline, because the row body is not one click target. */
+.game-layout-row {
+  position: relative;
+  padding: 0.5rem;
+  border-radius: var(--radius-ui-lg);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+/* A pseudo-element, not a border: a border would curve at the rounded corners. */
+.game-layout-row + .game-layout-row::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: var(--color-line);
+}
+/* The card sets a smaller radius on every widget. Edit rows keep the list's. */
+.game-card-surface .game-widget.game-layout-row {
+  border-radius: var(--radius-ui-lg);
+}
+/* The open item is the selected state: a fill and an inset edge, no box. */
+.game-layout-row-open {
+  background: var(--color-fill-2);
+  box-shadow: inset 0 0 0 1px var(--color-line-edge);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-layout-row {
+    transition: none;
+  }
+}

@@ -17,8 +17,10 @@ import {
   undoReading,
   useReadings,
 } from '../readings';
+import '../surfaces.css';
+import { GameLogo } from './GameLogo';
 import { useIdentityColors } from './roster';
-import { Btn, GameBadge } from './ui';
+import { Btn } from './ui';
 
 /** Long enough to read and reach Undo; short enough not to sit over the next action. */
 const NOTICE_MS = 10_000;
@@ -184,7 +186,7 @@ export function ReadingIntake() {
               animate="visible"
               exit="exit"
               role="status"
-              className="reading-notice pointer-events-auto"
+              className="reading-notice surface-toast pointer-events-auto"
             >
               Reading…
             </m.p>
@@ -200,7 +202,7 @@ export function ReadingIntake() {
               exit="exit"
               role={notice.tone === 'error' ? 'alert' : 'status'}
               data-tone={notice.tone}
-              className="reading-notice pointer-events-auto"
+              className="reading-notice surface-toast pointer-events-auto"
             >
               <span className="min-w-0 flex-1">{notice.text}</span>
               {notice.batchId && (
@@ -230,14 +232,23 @@ export function ReadingIntake() {
             <Dialog.Description className="sr-only">
               More than one tracked game could own this screenshot. Choose where its readings belong.
             </Dialog.Description>
-            <ul className="mt-4 space-y-1">
+            <ul className="surface-list mt-4">
               {candidates.map((game) => (
                 <li key={game.id}>
-                  <button type="button" className="reading-choice" onClick={() => assignScreenshot(game.id)}>
-                    <GameBadge short={game.short} {...(colors[game.id] ?? game)} />
+                  <button
+                    type="button"
+                    className="surface-row flex min-h-11 w-full items-center gap-3 text-left"
+                    onClick={() => assignScreenshot(game.id)}
+                  >
+                    <GameLogo
+                      game={{ ...game, ...(colors[game.id] ?? game) }}
+                      size={36}
+                      label="short"
+                      className="shrink-0"
+                    />
                     <span className="min-w-0 flex-1 truncate text-body font-medium text-fg">{game.name}</span>
                     {game.accountLabel && (
-                      <span className="max-w-[40%] truncate text-meta text-muted">{game.accountLabel}</span>
+                      <span className="aside max-w-[40%] truncate text-meta text-muted">{game.accountLabel}</span>
                     )}
                   </button>
                 </li>
