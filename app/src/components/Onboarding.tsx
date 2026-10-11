@@ -1,5 +1,6 @@
 import { detectLocalTz, PRESETS } from '@memoria/shared';
 import { useState } from 'react';
+import { isNativeApp } from '../native';
 import { useApp } from '../store';
 import '../surfaces.css';
 import { gameShellVars } from '../theme';
@@ -48,6 +49,27 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
         Choose the games you actively play and enter the current value of their main energy. Server clocks and default
         resets are filled from the presets and can be changed later.
       </p>
+      {isNativeApp && (
+        // Setting up games here first would make a second copy of each one the PC already tracks.
+        <section className="mt-7" aria-labelledby="onboarding-pc-heading">
+          <h2 id="onboarding-pc-heading" className="text-heading font-semibold text-fg-soft">
+            Already use Memoria on your PC?
+          </h2>
+          <p className="aside mt-1 max-w-2xl text-meta text-muted">
+            Connect this device instead. It gets your games and progress from the PC, with nothing to set up twice.
+          </p>
+          <Btn
+            className="mt-3"
+            onClick={() => {
+              updateSettings({ localTz: resolveHomeTimeZone(homeTzChoice) });
+              onComplete();
+              useUI.getState().setTab('settings');
+            }}
+          >
+            Connect to my PC
+          </Btn>
+        </section>
+      )}
       <section className="mt-7" aria-labelledby="onboarding-timezone-heading">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="max-w-2xl">

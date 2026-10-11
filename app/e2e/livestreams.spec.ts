@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-test('upcoming broadcasts show estimates and keep expired codes collapsed', async ({ page }, info) => {
+test('upcoming broadcasts show announced dates and keep expired codes collapsed', async ({ page }, info) => {
   await page.clock.setFixedTime(new Date('2026-10-03T12:00:00Z'));
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
@@ -9,8 +9,9 @@ test('upcoming broadcasts show estimates and keep expired codes collapsed', asyn
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page.getByRole('button', { name: 'Livestreams', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Upcoming broadcasts', exact: true })).toBeVisible();
-  await expect(page.getByText('The publisher has not confirmed the date. This range is an estimate.')).toBeVisible();
-  await expect(page.getByText('Date unconfirmed', { exact: true })).toBeVisible();
+  // The bundle holds one broadcast ahead of this date, and its publisher has announced it.
+  await expect(page.getByText('ZZZ 3.3 Special Program')).toBeVisible();
+  await expect(page.getByText('Date unconfirmed', { exact: true })).toHaveCount(0);
   const genshin = page.getByRole('article', { name: 'A Rekviem for the Underworld' });
   await expect(genshin.getByRole('button', { name: 'Copy Rekviem', exact: true })).toBeHidden();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

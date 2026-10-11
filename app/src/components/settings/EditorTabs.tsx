@@ -70,7 +70,7 @@ export function EditorTabs<T extends string>({
     <div
       role="tablist"
       aria-label={ariaLabel}
-      className={`grid grid-cols-3 gap-1 rounded-ui-lg bg-panel sm:flex sm:flex-wrap p-1 ring-1 ring-line-hairline ${className}`}
+      className={`-mx-1 flex gap-0.5 overflow-x-auto border-b border-line-hairline bg-panel px-1 pb-2 sm:gap-1 ${className}`}
     >
       {tabs.map((tab) => {
         const selected = tab.id === value;
@@ -89,7 +89,7 @@ export function EditorTabs<T extends string>({
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(tab.id)}
             onKeyDown={onKeyDown}
-            className="relative flex min-h-11 min-w-0 items-center justify-center rounded-ui-md px-2 sm:justify-start sm:px-3 text-meta font-semibold text-muted transition-colors duration-(--dur-fast) hover:text-fg-soft aria-selected:text-fg sm:min-h-8"
+            className="relative flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-ui-md px-1.5 text-meta font-semibold text-muted transition-colors duration-(--dur-fast) hover:text-fg-soft aria-selected:text-fg sm:min-h-8 sm:flex-none sm:px-3"
           >
             {selected && (
               <m.span

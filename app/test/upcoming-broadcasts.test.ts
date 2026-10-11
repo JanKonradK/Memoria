@@ -20,10 +20,11 @@ const event: GameEvent = {
 };
 
 describe('upcoming broadcasts', () => {
-  it('shows bundled forecasts for games not tracked, with one global clock', () => {
+  it('shows bundled broadcasts for games not tracked, with one global clock', () => {
     const row = upcomingBroadcasts(emptyState(), now).find((item) => item.game === 'zzz')!;
-    expect(row.predicted).toBe(true);
-    expect(row.start).toBe(Date.parse('2026-10-07T11:30:00Z'));
+    // The publisher announced this one, so it is no longer a forecast window.
+    expect(row.predicted).toBe(false);
+    expect(row.start).toBe(Date.parse('2026-10-09T11:30:00Z'));
     expect(row.eventId).toBeUndefined();
   });
   it('uses owner edits for tracked games and keeps accounts separate', () => {

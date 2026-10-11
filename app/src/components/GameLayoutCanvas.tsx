@@ -5,7 +5,7 @@ import { m } from 'motion/react';
 import { moveLayoutItem, type GameLayoutItem } from '@memoria/shared';
 import { useReducedMotion } from '../hooks';
 import { duration, easing } from '../motion';
-import { Btn, Field, TextInput, TOUCH_BUTTON } from './ui';
+import { Btn, ConfirmDelete, Field, TextInput, TOUCH_BUTTON } from './ui';
 import { AddGameLayoutItem } from './AddGameLayoutItem';
 
 export type GameWidget = {
@@ -485,19 +485,15 @@ export function GameLayoutCanvas({
                         Hide from card
                       </Btn>
                       {widget.remove && (
-                        <Btn
-                          kind="danger"
-                          className={TOUCH_BUTTON}
-                          aria-label={`Delete ${widget.name}`}
-                          onClick={() => {
+                        <ConfirmDelete
+                          what={widget.name}
+                          onConfirm={() => {
                             const undo = widget.remove!();
                             setDeleted({ name: widget.name, undo });
                             setSelected('');
                             requestAnimationFrame(() => addButton.current?.focus({ preventScroll: true }));
                           }}
-                        >
-                          Delete
-                        </Btn>
+                        />
                       )}
                       <Btn className={TOUCH_BUTTON} onClick={closeItem}>
                         Close item

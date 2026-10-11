@@ -4,7 +4,7 @@ import { effectiveReserveRegenMinutes } from '@memoria/shared';
 import { useApp } from '../../store';
 import { intOr } from '../../util';
 import { TrackingItem } from '../settings/TrackingItem';
-import { Btn, COMPACT_INPUT, Field, NumInput, Select, TextInput, TOUCH_BUTTON } from '../ui';
+import { Btn, COMPACT_INPUT, ConfirmDelete, Field, NumInput, Select, TextInput, TOUCH_BUTTON } from '../ui';
 
 const RESOURCE_KINDS: Array<{ value: ResourceKind; label: string }> = [
   { value: 'regen', label: 'Regenerates over time' },
@@ -42,6 +42,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
               >
                 ↓ Move down
               </Btn>
+              <ConfirmDelete className="ml-auto" what={r.name} onConfirm={() => deleteResource(r.id)} />
             </div>
             <div className="flex flex-wrap items-end gap-2">
               <Field label="Name" className="min-w-32 flex-[2_1_10rem]">
@@ -92,17 +93,9 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                   className={`shrink-0 ${TOUCH_BUTTON}`}
                   onClick={() => setReserveOpen((cur) => ({ ...cur, [r.id]: true }))}
                 >
-                  + Add reserve
+                  Add reserve
                 </Btn>
               )}
-              <button
-                type="button"
-                onClick={() => deleteResource(r.id)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-lg text-title text-dim transition hover:bg-danger/10 hover:text-danger sm:h-8 sm:w-8"
-                aria-label={`Delete ${r.name}`}
-              >
-                ✕
-              </button>
             </div>
 
             {showReserveFields && (
@@ -151,15 +144,11 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
         );
       })}
       <Btn className={TOUCH_BUTTON} onClick={() => upsertResource({ gameId: game.id, name: 'Energy' })}>
-        + Resource
+        Add resource
       </Btn>
       <p className="text-label text-muted">
-        Order sets the card order. Quick spend buttons use the first regenerating resource.
-      </p>
-      <p className="text-label text-muted">
-        Minutes per point sets the regeneration rate. Use 0 for a resource that does not regenerate. Reserve minutes per
-        point applies after the main resource reaches its cap. If left blank, it uses twice the main rate, so the
-        reserve fills at half speed.
+        Minutes per point is the refill rate. A reserve fills after the main resource is full, at half that rate unless
+        you set its own.
       </p>
     </div>
   );

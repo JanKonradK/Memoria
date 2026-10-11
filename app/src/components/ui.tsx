@@ -1,4 +1,4 @@
-import { Children, isValidElement, useId, type ReactElement, type ReactNode } from 'react';
+import { Children, isValidElement, useId, useState, type ReactElement, type ReactNode } from 'react';
 import * as SelectPrimitive from '@radix-ui/react-select';
 import * as SwitchPrimitive from '@radix-ui/react-switch';
 import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group';
@@ -380,6 +380,49 @@ export function Btn({
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * A delete that asks first. The button itself becomes the question and the way
+ * back appears beside it, so nothing is removed by one stray press.
+ */
+export function ConfirmDelete({
+  label = 'Delete',
+  what,
+  onConfirm,
+  className = '',
+  disabled,
+}: {
+  label?: string;
+  /** Names the thing for assistive tech, e.g. "task Daily Commissions". */
+  what: string;
+  onConfirm: () => void;
+  className?: string;
+  disabled?: boolean;
+}) {
+  const [asking, setAsking] = useState(false);
+  return (
+    <span className={`inline-flex flex-wrap items-center gap-2 ${className}`}>
+      <Btn
+        kind="danger"
+        className={TOUCH_BUTTON}
+        disabled={disabled}
+        aria-label={asking ? `Confirm delete ${what}` : `Delete ${what}`}
+        onClick={() => {
+          if (!asking) return setAsking(true);
+          setAsking(false);
+          onConfirm();
+        }}
+      >
+        {asking ? 'Confirm delete' : label}
+      </Btn>
+      {asking && (
+        <Btn className={TOUCH_BUTTON} aria-label={`Keep ${what}`} onClick={() => setAsking(false)}>
+          Keep
+        </Btn>
+      )}
+    </span>
   );
 }
 

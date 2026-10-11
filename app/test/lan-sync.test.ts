@@ -5,6 +5,7 @@ vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => true },
 vi.mock('idb-keyval', () => ({ get: vi.fn(), set: vi.fn(), del: vi.fn(), keys: vi.fn(async () => []) }));
 import {
   disconnectLanSync,
+  resolveFirstSync,
   normalizeLanHost,
   pairLanDevice,
   pairLanFromQr,
@@ -184,5 +185,74 @@ describe('native LAN sync', () => {
     await syncLanNow();
     expect(useLanSync.getState().status).toBe('ok');
     expect(useApp.getState().state.games).toHaveLength(1);
+  });
+
+  describe('first sync with games on both sides', () => {
+    const local = { ...emptyState(), games: [game('tablet-genshin')] };
+    const pc = { ...emptyState(), games: [game('pc-genshin'), game('pc-hsr')] };
+    const sent = () =>
+      native.post.mock.calls
+        .map(([options]: [{ url: string; data: { state?: { games: Game[] } } }]) => options)
+        .filter((options) => options.url.endsWith('/sync'))
+        .map((options) => options.data.state!.games.map((entry) => entry.id));
+    async function pairWithGames() {
+      useApp.setState({ state: local });
+      native.post
+        .mockResolvedValueOnce(reply({ token, deviceId: 'tablet' }))
+        .mockResolvedValueOnce(reply({ state: pc }));
+      await pairLanDevice('192.168.1.20:17820', '12345678');
+    }
+
+    it('asks before combining and sends nothing of this device while the question is open', async () => {
+      await pairWithGames();
+      expect(useLanSync.getState().choice).toEqual({ deviceGames: 1, pcGames: 2 });
+      expect(useLanSync.getState().status).toBe('choosing');
+      // The only sync request so far carried an empty state.
+      expect(sent()).toEqual([[]]);
+      expect(useApp.getState().state.games.map((entry) => entry.id)).toEqual(['tablet-genshin']);
+      await syncLanNow();
+      expect(sent()).toEqual([[]]);
+    });
+
+    it("replaces this device's games with the PC's when asked to", async () => {
+      await pairWithGames();
+      native.post.mockResolvedValueOnce(reply({ state: pc }));
+      await resolveFirstSync('pc');
+      expect(useLanSync.getState().choice).toBeNull();
+      expect(
+        useApp
+          .getState()
+          .state.games.map((entry) => entry.id)
+          .sort(),
+      ).toEqual(['pc-genshin', 'pc-hsr']);
+      expect(sent().at(-1)!.sort()).toEqual(['pc-genshin', 'pc-hsr']);
+    });
+
+    it('keeps every game from both when asked to combine', async () => {
+      await pairWithGames();
+      native.post.mockResolvedValueOnce(reply({ state: { ...pc, games: [...pc.games, ...local.games] } }));
+      await resolveFirstSync('combine');
+      expect(sent().at(-1)).toEqual(['tablet-genshin']);
+      expect(useApp.getState().state.games).toHaveLength(3);
+    });
+
+    it('disconnects without changing this device when cancelled', async () => {
+      await pairWithGames();
+      native.post.mockResolvedValue(reply({ ok: true }));
+      await resolveFirstSync('cancel');
+      expect(useLanSync.getState()).toMatchObject({ choice: null, host: '', status: 'off' });
+      expect(useApp.getState().state.games.map((entry) => entry.id)).toEqual(['tablet-genshin']);
+    });
+
+    it('does not ask when the PC already knows every game on this device', async () => {
+      useApp.setState({ state: { ...emptyState(), games: [game('pc-genshin')] } });
+      native.post
+        .mockResolvedValueOnce(reply({ token, deviceId: 'tablet' }))
+        .mockResolvedValueOnce(reply({ state: pc }))
+        .mockResolvedValueOnce(reply({ state: pc }));
+      await pairLanDevice('192.168.1.20:17820', '12345678');
+      expect(useLanSync.getState().choice).toBeNull();
+      expect(useLanSync.getState().status).toBe('ok');
+    });
   });
 });

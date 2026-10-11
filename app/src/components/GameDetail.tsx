@@ -6,7 +6,7 @@ import { serverRegionLabel } from '../server-region';
 import { useGameDraft } from './game-detail/useGameDraft';
 import { GameEditor } from './settings/GameEditor';
 import { Sheet } from './Sheet';
-import { Btn, Field, SectionTitle, Segmented, Select, TextInput } from './ui';
+import { Btn, COMPACT_INPUT, Field, Segmented, Select, TextInput } from './ui';
 
 const ACCOUNT_DRAFT_FIELDS = ['accountLabel'] as const;
 
@@ -111,18 +111,19 @@ export function GameDetailSheet({
           <div>
             <Field label="Nickname">
               <TextInput
+                className={COMPACT_INPUT}
                 value={draft.accountLabel}
                 placeholder="e.g. Main EU"
                 onChange={(event) => changeDraft('accountLabel', event.target.value)}
                 onBlur={commitDraft}
               />
             </Field>
-            <p className="mt-1 text-label text-muted">Only needed if you track more than one account of this game.</p>
+            <p className="mt-1 text-label text-muted">Tells two accounts of the same game apart.</p>
           </div>
         }
         serverControl={
           <div className="space-y-3">
-            <span className="mb-1 block text-label font-semibold uppercase tracking-wider text-muted">Server</span>
+            <span className="mb-1 block text-meta font-medium text-muted">Server</span>
             <Segmented
               options={serverOptions}
               value={game.tz}
@@ -130,7 +131,11 @@ export function GameDetailSheet({
               ariaLabel="Server"
             />
             <Field label="Server timezone">
-              <Select value={game.tz} onChange={(event) => updateGame(game.id, { tz: event.target.value })}>
+              <Select
+                className={COMPACT_INPUT}
+                value={game.tz}
+                onChange={(event) => updateGame(game.id, { tz: event.target.value })}
+              >
                 {SERVER_TZ_OPTIONS.map((option) => (
                   <option key={option.tz} value={option.tz}>
                     {option.label}
@@ -147,8 +152,7 @@ export function GameDetailSheet({
           </div>
         }
         dangerControls={
-          <div className="mt-6 border-t border-line-hairline pt-5">
-            <SectionTitle>Delete game</SectionTitle>
+          <div>
             {!confirmDelete ? (
               <Btn kind="danger" onClick={() => setConfirmDelete(true)}>
                 Delete game…

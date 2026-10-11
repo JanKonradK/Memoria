@@ -71,6 +71,9 @@ Optional Wi-Fi sync uses a separate listener on TCP port 17820.
 The user enables it in the Windows app and pairs the Android app with a temporary code.
 The launcher keeps its existing loopback access checks.
 Both listeners use the same merge rules and a serialized state writer.
+Sync merges rows by identifier. A game added separately on two devices is two games.
+Before its first sync, the Android app reads the PC's data with an empty request.
+If each side has games the other has not seen, the app asks the user before it sends or merges data.
 The Android app uses native HTTP requests. Browser pages cannot use the Wi-Fi listener.
 
 The PC displays a QR code with a temporary pairing code and private addresses.

@@ -32,7 +32,7 @@ test('game tracking controls keep energy, task, reset and reminder edits', async
   await page.getByRole('option', { name: 'Counter', exact: true }).click();
   await dialog.getByLabel('Count target for Daily Commissions ×4').fill('4');
   await page.screenshot({ path: info.outputPath('task-editor.png') });
-  await dialog.getByRole('tab', { name: 'Resets', exact: true }).click();
+  await dialog.getByRole('tab', { name: 'Game', exact: true }).click();
   await dialog.getByRole('combobox', { name: 'Server timezone' }).click();
   await page.getByRole('option', { name: 'NIKKE, all regions (UTC+9)', exact: true }).click();
   await dialog.getByLabel('Daily reset hour', { exact: true }).fill('5');
@@ -62,7 +62,7 @@ test('game tracking controls keep energy, task, reset and reminder edits', async
   await dialog.getByRole('tab', { name: 'Tasks', exact: true }).click();
   await dialog.getByRole('button', { name: /^Daily Commissions/ }).click();
   await expect(dialog.getByLabel('Count target for Daily Commissions ×4')).toHaveValue('4');
-  await dialog.getByRole('tab', { name: 'Resets', exact: true }).click();
+  await dialog.getByRole('tab', { name: 'Game', exact: true }).click();
   await expect(dialog.getByLabel('Daily reset hour', { exact: true })).toHaveValue('5');
   await expect(dialog.getByRole('combobox', { name: 'Server timezone' })).toContainText('NIKKE');
   await dialog.getByRole('tab', { name: 'Reminders', exact: true }).click();

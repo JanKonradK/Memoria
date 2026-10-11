@@ -99,7 +99,7 @@ test('game settings protect unfinished tasks and reminders through dismissal and
   await editor.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(taskName).toHaveValue('Keep this routine');
   expect(prompts).toBe(1);
-  await editor.getByRole('button', { name: '+ Task', exact: true }).click();
+  await editor.getByRole('button', { name: 'Add task', exact: true }).click();
 
   await editor.getByRole('tab', { name: 'Reminders', exact: true }).click();
   await editor.getByLabel('Reminder message').fill('Keep this reminder');

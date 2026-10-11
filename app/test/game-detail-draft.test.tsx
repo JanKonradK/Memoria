@@ -69,7 +69,8 @@ describe('GameDetail drafts and server', () => {
   ])('keeps an unsaved %s draft when Done is rejected', (tab, label) => {
     renderDetail();
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    fireEvent.click(screen.getByRole('tab', { name: tab }));
+    // Quick spends are a section of the Energy tab.
+    fireEvent.click(screen.getByRole('tab', { name: tab === 'Quick spend' ? 'Energy' : tab }));
     const input = tab === 'Quick spend' ? screen.getByPlaceholderText(label) : screen.getByLabelText(label);
     fireEvent.change(input, { target: { value: 'Keep this draft' } });
 
@@ -157,7 +158,7 @@ describe('GameDetail drafts and server', () => {
 
   it('writes the preset timezone for each server', () => {
     const updateGame = renderDetail();
-    fireEvent.click(screen.getByRole('tab', { name: 'Resets' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Game', exact: true }));
 
     fireEvent.click(screen.getByRole('radio', { name: 'EU' }));
     expect(updateGame).toHaveBeenLastCalledWith(game.id, { tz: serverTz(1) });
@@ -171,7 +172,7 @@ describe('GameDetail drafts and server', () => {
 
   it('shows an uncommon timezone as a disabled selected option', () => {
     const updateGame = renderDetail({ ...game, tz: 'Pacific/Auckland' });
-    fireEvent.click(screen.getByRole('tab', { name: 'Resets' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Game', exact: true }));
     const uncommonServer = screen.getByRole('radio', { name: /UTC/ });
 
     expect(uncommonServer).toBeChecked();

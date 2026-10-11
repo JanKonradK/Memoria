@@ -135,19 +135,17 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   await page.getByRole('button', { name: 'Game settings for Genshin Impact' }).click();
   const dialog = page.getByRole('dialog', { name: 'Genshin Impact' });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('heading', { name: 'Energy resources' })).toBeVisible();
-  await dialog.getByRole('tab', { name: 'Resets' }).click();
-  await expect(dialog.getByRole('radiogroup', { name: 'Server' })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Resources' })).toBeVisible();
   await dialog.getByRole('tab', { name: 'Game', exact: true }).click();
+  await expect(dialog.getByRole('radiogroup', { name: 'Server' })).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Delete game…' })).toBeVisible();
   await expectNoSeriousAccessibilityViolations(page);
-  // The editor's sections are tab panels now, so only the selected one is
-  // mounted — reach Quick spend through its tab rather than by scrolling to it.
-  await dialog.getByRole('tab', { name: 'Quick spend' }).click();
-  // By role: the section heading and the "+ Quick spend" button share text.
+  // Only the selected tab's panel is mounted, and quick spends sit under Energy.
+  await dialog.getByRole('tab', { name: 'Energy', exact: true }).click();
+  // By role: the section heading and the "Add quick spend" button share text.
   await dialog.getByRole('heading', { name: 'Quick spend' }).scrollIntoViewIfNeeded();
   await dialog.getByPlaceholder('Label, e.g. Domain').fill('Domain');
-  await dialog.getByRole('button', { name: '+ Quick spend' }).click();
+  await dialog.getByRole('button', { name: 'Add quick spend' }).click();
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
 

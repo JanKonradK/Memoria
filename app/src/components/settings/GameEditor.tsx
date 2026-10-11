@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useState, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { GameEditorSection } from '../../ui-store';
 import type { Cadence, Game } from '@memoria/shared';
 import { missingPresetTasks, presetForGame } from '@memoria/shared';
@@ -9,6 +9,7 @@ import { useGround } from '../../theme';
 import { fileToImageDataUrl, intOr, localResetLabel } from '../../util';
 import { ResourceEditor } from '../game-detail/ResourceEditor';
 import { GameEvents } from '../GameEvents';
+import { GameLogo } from '../GameLogo';
 import { useGameDraft } from '../game-detail/useGameDraft';
 import { serverRegionLabel } from '../../server-region';
 import { TrackingItem } from './TrackingItem';
@@ -18,8 +19,8 @@ import { EditorTabPanel, EditorTabs, type EditorTab } from './EditorTabs';
 import {
   Btn,
   COMPACT_INPUT,
+  ConfirmDelete,
   Field,
-  GameBadge,
   NumInput,
   SectionTitle,
   Select,
@@ -33,16 +34,25 @@ import {
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const SETTINGS_DRAFT_FIELDS = ['name', 'short', 'notes'] as const;
 
-type EditorTabId = GameEditorSection;
+type EditorTabId = 'resources' | 'tasks' | 'events' | 'reminders' | 'game';
 const EDITOR_TABS: readonly EditorTab<EditorTabId>[] = [
   { id: 'resources', label: 'Energy' },
   { id: 'tasks', label: 'Tasks' },
   { id: 'events', label: 'Events' },
-  { id: 'resets', label: 'Resets' },
   { id: 'reminders', label: 'Reminders' },
-  { id: 'spend', label: 'Quick spend' },
   { id: 'game', label: 'Game' },
 ];
+/** Quick spends adjust energy and resets belong to the game, so each lives in that tab. */
+const TAB_OF: Record<GameEditorSection, EditorTabId> = {
+  resources: 'resources',
+  spend: 'resources',
+  tasks: 'tasks',
+  events: 'events',
+  reminders: 'reminders',
+  resets: 'game',
+  game: 'game',
+};
+const FIELD_LABEL = 'mb-1 block text-meta font-medium text-muted';
 
 /**
  * The trio, in the three jobs DESIGN.md gives it. `color3` had no control at
@@ -51,24 +61,10 @@ const EDITOR_TABS: readonly EditorTab<EditorTabId>[] = [
  * could change.
  */
 const TRIO_SLOTS = [
-  { slot: 'primary', field: 'color', label: 'Primary', hint: 'Card wash and timeline bar' },
-  { slot: 'secondary', field: 'color2', label: 'Secondary', hint: 'Title ink and the lead tube' },
-  { slot: 'accent', field: 'color3', label: 'Accent', hint: 'Badge rim and small highlights' },
+  { slot: 'primary', field: 'color', label: 'Primary', hint: 'Logo ring and timeline bar' },
+  { slot: 'secondary', field: 'color2', label: 'Secondary', hint: 'Logo ring and the game name' },
+  { slot: 'accent', field: 'color3', label: 'Accent', hint: 'Small highlights' },
 ] as const;
-
-/** The ✕ at the end of an editable row — same control for a quick spend and a task. */
-function RemoveRowButton({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="btn-compact flex h-11 w-11 items-center justify-center rounded-ui-md text-caption text-dim transition hover:bg-danger/10 hover:text-danger sm:h-8 sm:w-8"
-      aria-label={label}
-    >
-      ✕
-    </button>
-  );
-}
 
 /**
  * What the game will look like, while it is still being typed.
@@ -89,8 +85,8 @@ function GamePreview({ game, name, short }: { game: Game; name: string; short: s
   const displayShort = short.trim() || game.short.trim() || '?';
 
   return (
-    <div className="flex items-center gap-3 rounded-ui-lg bg-fill-1 px-3 py-2 ring-1 ring-line-hairline">
-      <GameBadge short={displayShort} color={game.color} color2={game.color2} color3={game.color3} size="lg" />
+    <div className="flex items-center gap-3 border-b border-line-hairline pb-4">
+      <GameLogo game={{ ...game, name: displayName, short: displayShort }} size={48} className="shrink-0" />
       <div className="min-w-0 flex-1">
         <p
           className="truncate text-title"
@@ -103,7 +99,6 @@ function GamePreview({ game, name, short }: { game: Game; name: string; short: s
           <span className="numeral">{localResetLabel(game, localTz, now)}</span> local
         </p>
       </div>
-      <span className="shrink-0 text-label font-semibold uppercase tracking-wider text-muted">Preview</span>
     </div>
   );
 }
@@ -133,7 +128,7 @@ function ColorSlot({
 
   return (
     <div className="min-w-0">
-      <span id={labelId} className="mb-1 block text-label font-semibold uppercase tracking-wider text-muted">
+      <span id={labelId} className={FIELD_LABEL}>
         {label}
       </span>
       <div className="focus-ring-group flex items-center gap-2 rounded-ui-lg bg-fill-2 p-1 ring-1 ring-line-hairline transition duration-(--dur-fast) focus-within:ring-line-strong">
@@ -207,7 +202,14 @@ export function GameEditor({
   // and coming back to a game you were half way through editing on Tasks should
   // not start again at Game.
   const [tabByGame, setTabByGame] = useState<Partial<Record<string, EditorTabId>>>({});
-  const tab = tabByGame[game.id] ?? initialSection ?? 'resources';
+  const tab = tabByGame[game.id] ?? (initialSection ? TAB_OF[initialSection] : 'resources');
+  // A link to a section inside a tab opens the tab with that section in view.
+  const spendRef = useRef<HTMLElement>(null);
+  const resetsRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const target = initialSection === 'spend' ? spendRef : initialSection === 'resets' ? resetsRef : null;
+    target?.current?.scrollIntoView?.({ block: 'start' });
+  }, [initialSection]);
   const resources = state.resources.filter((r) => r.gameId === game.id && !r.deleted).sort((a, b) => a.sort - b.sort);
   const chips = state.chips.filter((c) => c.gameId === game.id && !c.deleted).sort((a, b) => a.sort - b.sort);
   const tasks = state.tasks.filter((t) => t.gameId === game.id && !t.deleted).sort((a, b) => a.sort - b.sort);
@@ -227,14 +229,15 @@ export function GameEditor({
     );
 
   return (
-    <div className="space-y-4">
+    // A floor on the height, so the sheet does not change size with every tab.
+    <div className="space-y-4 sm:min-h-[38rem]">
       <EditorTabs
         idBase={tabsId}
         tabs={EDITOR_TABS}
         value={tab}
         onChange={(next) => setTabByGame((current) => ({ ...current, [game.id]: next }))}
         ariaLabel="Game settings sections"
-        className="sticky top-0 z-10"
+        className="sticky top-0 z-20"
       />
 
       <EditorTabPanel idBase={tabsId} tab={tab}>
@@ -246,298 +249,303 @@ export function GameEditor({
             onBeforeOpen={() => !dirty || window.confirm('Discard your unsaved changes?')}
           />
         )}
+
         {tab === 'game' && (
-          <section>
+          <div className="space-y-6">
             <GamePreview game={game} name={draft.name} short={draft.short} />
-            <SectionTitle>Game identity</SectionTitle>
-            <div className="mb-5">{accountControls}</div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Field label="Name" className="sm:col-span-2">
-                <TextInput
-                  className={COMPACT_INPUT}
-                  value={draft.name}
-                  onChange={(event) => changeDraft('name', event.target.value)}
-                  onBlur={commitDraft}
-                />
-              </Field>
-              <div className="sm:col-span-2">
-                <Field label="Short label (shown as the game's badge)">
+            <section>
+              <SectionTitle>Identity</SectionTitle>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Field label="Name">
                   <TextInput
                     className={COMPACT_INPUT}
-                    value={draft.short}
-                    onChange={(event) => changeDraft('short', event.target.value)}
+                    value={draft.name}
+                    onChange={(event) => changeDraft('name', event.target.value)}
                     onBlur={commitDraft}
                   />
                 </Field>
-                <p className="mt-1 text-label text-muted">
-                  Two to four characters. Give each account its own badge so you can tell them apart at a glance.
-                </p>
-              </div>
-
-              <div className="sm:col-span-2">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  {TRIO_SLOTS.map((entry) => (
-                    <ColorSlot
-                      key={entry.field}
-                      label={entry.label}
-                      hint={entry.hint}
-                      value={trio[entry.slot]}
-                      onChange={(hex) => updateGame(game.id, { [entry.field]: hex })}
+                <div>
+                  <Field label="Short name">
+                    <TextInput
+                      className={COMPACT_INPUT}
+                      value={draft.short}
+                      onChange={(event) => changeDraft('short', event.target.value)}
+                      onBlur={commitDraft}
                     />
-                  ))}
+                  </Field>
+                  <p className="mt-1 text-label text-muted">Shown where space is tight, such as Tonight.</p>
                 </div>
-                {preset && presetTrio && (
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <Btn
-                      className={TOUCH_BUTTON}
-                      disabled={onPresetTrio}
-                      onClick={() =>
-                        updateGame(game.id, {
-                          color: presetTrio.primary,
-                          color2: presetTrio.secondary,
-                          color3: presetTrio.accent,
-                        })
-                      }
-                    >
-                      Restore {preset.name} colours
-                    </Btn>
-                    <p className="min-w-0 flex-1 text-label text-muted">
-                      {onPresetTrio
-                        ? `All three slots are ${preset.name}'s own colours.`
-                        : `Puts all three slots back to ${preset.name}'s own colours.`}
-                    </p>
-                  </div>
-                )}
+                {accountControls && <div className="sm:col-span-2">{accountControls}</div>}
               </div>
+            </section>
 
-              <Field label="Title font">
-                <Select
-                  className={COMPACT_INPUT}
-                  value={game.titleFont ?? ''}
-                  onChange={(event) => updateGame(game.id, { titleFont: event.target.value || undefined })}
+            <section ref={resetsRef}>
+              <SectionTitle>Server and resets</SectionTitle>
+              <p className="mb-3 text-meta text-muted">
+                Reset times use the game server's clock. Your next daily reset is at{' '}
+                <span className="numeral text-fg">{localResetLabel(game, state.settings.localTz, Date.now())}</span> in{' '}
+                {state.settings.localTz}.
+              </p>
+              {serverControl && <div className="mb-3">{serverControl}</div>}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <Field label="Daily reset hour">
+                  <NumInput
+                    className={COMPACT_INPUT}
+                    value={String(game.dailyResetHour)}
+                    min={0}
+                    max={23}
+                    onChange={(event) =>
+                      updateGame(game.id, {
+                        dailyResetHour: Math.min(23, Math.max(0, intOr(event.target.value, 4))),
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Weekly reset day">
+                  <Select
+                    className={COMPACT_INPUT}
+                    value={String(game.weeklyResetDay)}
+                    onChange={(event) => updateGame(game.id, { weeklyResetDay: intOr(event.target.value, 1) })}
+                  >
+                    {WEEKDAYS.map((day, index) => (
+                      <option key={day} value={String(index + 1)}>
+                        {day}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="Monthly reset day">
+                  <NumInput
+                    className={COMPACT_INPUT}
+                    value={String(game.monthlyResetDay)}
+                    min={1}
+                    max={28}
+                    onChange={(event) =>
+                      updateGame(game.id, {
+                        monthlyResetDay: Math.min(28, Math.max(1, intOr(event.target.value, 1))),
+                      })
+                    }
+                  />
+                </Field>
+              </div>
+            </section>
+
+            <section>
+              <SectionTitle>Appearance</SectionTitle>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {TRIO_SLOTS.map((entry) => (
+                  <ColorSlot
+                    key={entry.field}
+                    label={entry.label}
+                    hint={entry.hint}
+                    value={trio[entry.slot]}
+                    onChange={(hex) => updateGame(game.id, { [entry.field]: hex })}
+                  />
+                ))}
+              </div>
+              {preset && presetTrio && !onPresetTrio && (
+                <Btn
+                  className={`mt-2 ${TOUCH_BUTTON}`}
+                  onClick={() =>
+                    updateGame(game.id, {
+                      color: presetTrio.primary,
+                      color2: presetTrio.secondary,
+                      color3: presetTrio.accent,
+                    })
+                  }
                 >
-                  <option value="">Default</option>
-                  {FONT_OPTIONS.map((font) => (
-                    <option key={font.css} value={font.css}>
-                      {font.label}
-                    </option>
-                  ))}
-                  {game.titleFont && !FONT_OPTIONS.some((font) => font.css === game.titleFont) && (
-                    <option value={game.titleFont}>{game.titleFont}</option>
-                  )}
-                </Select>
-              </Field>
-              <div className="sm:col-span-2">
-                <span className="mb-1 block text-label font-semibold uppercase tracking-wider text-muted">
-                  Card artwork
-                </span>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <label className="btn-compact inline-flex min-h-11 w-fit cursor-pointer items-center justify-center self-start rounded-ui-md bg-fill-2 px-3 py-1 text-caption font-semibold text-fg-soft ring-1 ring-line-hairline sm:min-h-8">
-                    {game.image ? 'Replace image' : 'Choose image'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="sr-only"
-                      onChange={(event) => {
-                        setImageError('');
-                        const file = event.target.files?.[0];
-                        if (file) {
-                          void fileToImageDataUrl(file)
-                            .then((image) => {
-                              setImageError('');
-                              updateGame(game.id, { image });
-                            })
-                            .catch((error: unknown) => {
-                              setImageError(
-                                error instanceof Error ? error.message : 'The selected image could not be decoded.',
-                              );
-                            });
-                        }
-                      }}
-                    />
-                  </label>
-                  {game.image && (
-                    <Btn
-                      className={TOUCH_BUTTON}
-                      onClick={() => {
-                        setImageError('');
-                        updateGame(game.id, { image: undefined });
-                      }}
-                    >
-                      Remove image
-                    </Btn>
+                  Restore {preset.name} colours
+                </Btn>
+              )}
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Field label="Title font">
+                  <Select
+                    className={COMPACT_INPUT}
+                    value={game.titleFont ?? ''}
+                    onChange={(event) => updateGame(game.id, { titleFont: event.target.value || undefined })}
+                  >
+                    <option value="">Default</option>
+                    {FONT_OPTIONS.map((font) => (
+                      <option key={font.css} value={font.css}>
+                        {font.label}
+                      </option>
+                    ))}
+                    {game.titleFont && !FONT_OPTIONS.some((font) => font.css === game.titleFont) && (
+                      <option value={game.titleFont}>{game.titleFont}</option>
+                    )}
+                  </Select>
+                </Field>
+                <div>
+                  <span className={FIELD_LABEL}>Card artwork</span>
+                  <div className="flex flex-wrap gap-2">
+                    <label className="btn-compact inline-flex min-h-11 w-fit cursor-pointer items-center justify-center rounded-ui-md bg-fill-2 px-3 py-1 text-caption font-semibold text-fg-soft ring-1 ring-line-hairline sm:min-h-8">
+                      {game.image ? 'Replace image' : 'Choose image'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={(event) => {
+                          setImageError('');
+                          const file = event.target.files?.[0];
+                          if (file) {
+                            void fileToImageDataUrl(file)
+                              .then((image) => {
+                                setImageError('');
+                                updateGame(game.id, { image });
+                              })
+                              .catch((error: unknown) => {
+                                setImageError(
+                                  error instanceof Error ? error.message : 'The selected image could not be decoded.',
+                                );
+                              });
+                          }
+                        }}
+                      />
+                    </label>
+                    {game.image && (
+                      <Btn
+                        className={TOUCH_BUTTON}
+                        onClick={() => {
+                          setImageError('');
+                          updateGame(game.id, { image: undefined });
+                        }}
+                      >
+                        Remove image
+                      </Btn>
+                    )}
+                  </div>
+                  {imageError && (
+                    <p className="mt-1 text-label text-danger-fg" role="alert">
+                      {imageError}
+                    </p>
                   )}
                 </div>
-                {imageError && (
-                  <p className="mt-1 text-label text-danger-fg" role="alert">
-                    {imageError}
-                  </p>
-                )}
               </div>
-            </div>
-          </section>
-        )}
+            </section>
 
-        {tab === 'game' && dangerControls}
+            <section>
+              <SectionTitle>Notes</SectionTitle>
+              <TextArea
+                aria-label="Notes"
+                value={draft.notes}
+                onChange={(event) => changeDraft('notes', event.target.value)}
+                onBlur={commitDraft}
+              />
+            </section>
+
+            <section>
+              <SectionTitle>Pause or delete</SectionTitle>
+              <Toggle
+                checked={game.paused}
+                onChange={(value) => updateGame(game.id, { paused: value })}
+                label="Pause tracking"
+                className="sm:!min-h-8"
+              />
+              <p className="mb-3 text-label text-muted">
+                A paused game keeps its settings and leaves Today and Calendar until you resume it.
+              </p>
+              {dangerControls}
+            </section>
+          </div>
+        )}
 
         {tab === 'reminders' && <GameReminders game={game} draft={reminderDraft} setDraft={setReminderDraft} />}
 
-        {tab === 'resets' && (
-          <section>
-            <SectionTitle>Resets and status</SectionTitle>
-            <p className="mb-4 text-meta text-muted">
-              Reset times use the game server's clock. Your next daily reset is at{' '}
-              <span className="numeral text-fg">{localResetLabel(game, state.settings.localTz, Date.now())}</span> in{' '}
-              {state.settings.localTz}.
-            </p>
-            <div className="mb-4">{serverControl}</div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <Field label="Daily reset hour">
-                <NumInput
-                  className={COMPACT_INPUT}
-                  value={String(game.dailyResetHour)}
-                  min={0}
-                  max={23}
-                  onChange={(event) =>
-                    updateGame(game.id, {
-                      dailyResetHour: Math.min(23, Math.max(0, intOr(event.target.value, 4))),
-                    })
-                  }
-                />
-              </Field>
-              <Field label="Weekly reset day">
-                <Select
-                  className={COMPACT_INPUT}
-                  value={String(game.weeklyResetDay)}
-                  onChange={(event) => updateGame(game.id, { weeklyResetDay: intOr(event.target.value, 1) })}
-                >
-                  {WEEKDAYS.map((day, index) => (
-                    <option key={day} value={String(index + 1)}>
-                      {day}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label="Monthly reset day">
-                <NumInput
-                  className={COMPACT_INPUT}
-                  value={String(game.monthlyResetDay)}
-                  min={1}
-                  max={28}
-                  onChange={(event) =>
-                    updateGame(game.id, {
-                      monthlyResetDay: Math.min(28, Math.max(1, intOr(event.target.value, 1))),
-                    })
-                  }
-                />
-              </Field>
-              <div className="flex items-end pb-1 sm:col-span-3">
-                <Toggle
-                  checked={game.paused}
-                  onChange={(value) => updateGame(game.id, { paused: value })}
-                  label="Pause tracking"
-                  className="sm:!min-h-8"
-                />
-              </div>
-              <Field label="Notes" className="sm:col-span-3">
-                <TextArea
-                  value={draft.notes}
-                  onChange={(event) => changeDraft('notes', event.target.value)}
-                  onBlur={commitDraft}
-                />
-              </Field>
-            </div>
-          </section>
-        )}
-
         {tab === 'resources' && (
-          <section>
-            <SectionTitle>Energy resources</SectionTitle>
-            <p className="mb-3 text-meta text-muted">
-              Set the capacity and refill rules for each resource. Open a row to edit it.
-            </p>
-            <ResourceEditor game={game} resources={resources} />
-          </section>
-        )}
+          <div className="space-y-6">
+            <section>
+              <SectionTitle>Resources</SectionTitle>
+              <p className="mb-3 text-meta text-muted">
+                Set the capacity and refill rule of each resource. Their order here is their order on the card.
+              </p>
+              <ResourceEditor game={game} resources={resources} />
+            </section>
 
-        {tab === 'spend' && (
-          <section>
-            <SectionTitle>Quick spend</SectionTitle>
-            <div className="space-y-2">
-              {chips.map((chip) => (
-                <div key={chip.id} className="grid grid-cols-[minmax(0,1fr)_88px_auto] items-center gap-2">
+            <section ref={spendRef}>
+              <SectionTitle>Quick spend</SectionTitle>
+              <p className="mb-3 text-meta text-muted">
+                One-tap changes to the first regenerating resource. Use a negative number to spend.
+              </p>
+              <div className="space-y-2">
+                {chips.map((chip) => (
+                  <div key={chip.id} className="flex flex-wrap items-center gap-2">
+                    <TextInput
+                      className={COMPACT_INPUT}
+                      value={chip.label}
+                      aria-label="Quick spend label"
+                      onChange={(event) => upsertChip({ id: chip.id, gameId: game.id, label: event.target.value })}
+                    />
+                    <NumInput
+                      className={COMPACT_INPUT}
+                      value={String(chip.delta)}
+                      aria-label={`${chip.label} energy change`}
+                      onChange={(event) =>
+                        upsertChip({ id: chip.id, gameId: game.id, delta: intOr(event.target.value, chip.delta) })
+                      }
+                    />
+                    <ConfirmDelete what={`quick spend ${chip.label}`} onConfirm={() => deleteChip(chip.id)} />
+                  </div>
+                ))}
+                <div className="grid grid-cols-[minmax(0,1fr)_88px] gap-2 sm:grid-cols-[minmax(0,1fr)_88px_auto]">
                   <TextInput
                     className={COMPACT_INPUT}
-                    value={chip.label}
-                    aria-label="Quick spend label"
-                    onChange={(event) => upsertChip({ id: chip.id, gameId: game.id, label: event.target.value })}
+                    placeholder="Label, e.g. Domain"
+                    aria-label="New quick spend label"
+                    value={newChipLabel}
+                    onChange={(event) => setNewChipLabel(event.target.value)}
                   />
                   <NumInput
                     className={COMPACT_INPUT}
-                    value={String(chip.delta)}
-                    aria-label={`${chip.label} energy change`}
-                    onChange={(event) =>
-                      upsertChip({ id: chip.id, gameId: game.id, delta: intOr(event.target.value, chip.delta) })
-                    }
+                    value={newChipDelta}
+                    aria-label="Energy change"
+                    onChange={(event) => setNewChipDelta(event.target.value)}
                   />
-                  <RemoveRowButton label={`Delete quick spend ${chip.label}`} onClick={() => deleteChip(chip.id)} />
+                  <Btn
+                    className={`col-span-2 w-fit sm:col-span-1 ${TOUCH_BUTTON}`}
+                    onClick={() => {
+                      if (!newChipLabel.trim()) return;
+                      upsertChip({
+                        gameId: game.id,
+                        label: newChipLabel.trim(),
+                        delta: intOr(newChipDelta, -20),
+                      });
+                      setNewChipLabel('');
+                    }}
+                  >
+                    Add quick spend
+                  </Btn>
                 </div>
-              ))}
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_88px_auto]">
-                <TextInput
-                  className={COMPACT_INPUT}
-                  placeholder="Label, e.g. Domain"
-                  value={newChipLabel}
-                  onChange={(event) => setNewChipLabel(event.target.value)}
-                />
-                <NumInput
-                  className={COMPACT_INPUT}
-                  value={newChipDelta}
-                  aria-label="Energy change"
-                  onChange={(event) => setNewChipDelta(event.target.value)}
-                />
-                <Btn
-                  className={TOUCH_BUTTON}
-                  onClick={() => {
-                    if (!newChipLabel.trim()) return;
-                    upsertChip({
-                      gameId: game.id,
-                      label: newChipLabel.trim(),
-                      delta: intOr(newChipDelta, -20),
-                    });
-                    setNewChipLabel('');
-                  }}
-                >
-                  + Quick spend
-                </Btn>
               </div>
-              <p className="text-label text-muted">
-                One-tap adjustments for the first energy resource. Use negative values for spending.
-              </p>
-            </div>
-          </section>
+            </section>
+          </div>
         )}
 
         {tab === 'tasks' && (
           <section>
-            <SectionTitle>Tasks</SectionTitle>
             <p className="mb-3 text-meta text-muted">
-              Build your routine with checkboxes, counters, or timers. Open a task to change its schedule.
+              Your routine for this game: checkboxes, counters and timers. Open a task to change its schedule.
             </p>
             <div className="space-y-3">
               {tasks.map((task) => (
                 <TrackingItem key={task.id} name={task.name || 'Untitled task'} summary={taskSettingsSummary(task)}>
                   <TaskFields
                     task={task}
-                    actions={<RemoveRowButton label={`Delete task ${task.name}`} onClick={() => deleteTask(task.id)} />}
+                    showSaveHint={false}
+                    actions={
+                      <ConfirmDelete
+                        label="Delete task"
+                        what={`task ${task.name}`}
+                        onConfirm={() => deleteTask(task.id)}
+                      />
+                    }
                   />
                 </TrackingItem>
               ))}
-              <div className="grid grid-cols-1 items-end gap-2 border-t border-line-hairline pt-4 sm:grid-cols-[minmax(0,1fr)_112px_auto]">
+              <div className="grid grid-cols-1 items-end gap-2 pt-1 sm:grid-cols-[minmax(0,1fr)_112px_auto]">
                 <Field label="New task">
                   <TextInput
                     className={COMPACT_INPUT}
-                    placeholder="New task…"
+                    placeholder="e.g. Daily commissions"
                     aria-label="New task name"
                     value={newTask}
                     onChange={(event) => setNewTask(event.target.value)}
@@ -558,27 +566,26 @@ export function GameEditor({
                   </Select>
                 </Field>
                 <Btn
-                  className={`shrink-0 ${TOUCH_BUTTON}`}
+                  className={`w-fit shrink-0 ${TOUCH_BUTTON}`}
                   onClick={() => {
                     if (!newTask.trim()) return;
                     addTask(game.id, newTask.trim(), newTaskCadence);
                     setNewTask('');
                   }}
                 >
-                  + Task
+                  Add task
                 </Btn>
               </div>
               {presetGap > 0 && (
-                <div className="flex flex-wrap items-center gap-2 rounded-ui-lg bg-fill-1 px-3 py-2 ring-1 ring-line-hairline">
+                <div className="flex flex-wrap items-center gap-2 border-t border-line-hairline pt-3">
                   <p className="min-w-0 flex-1 text-label text-muted">
                     This game's preset has {presetGap} {presetGap === 1 ? 'routine' : 'routines'} you are not tracking.
                   </p>
                   <Btn className={TOUCH_BUTTON} onClick={() => addMissingPresetTasks(game.id)}>
-                    + Add {presetGap}
+                    Add {presetGap}
                   </Btn>
                 </div>
               )}
-              <p className="text-label text-muted">Manage dates, banners, and event check-in rules on Events.</p>
             </div>
           </section>
         )}
