@@ -118,9 +118,11 @@ async function launch() {
   page.setDefaultTimeout(15_000);
   page.on('pageerror', (error) => errors.push(error.message));
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await expect(page.getByRole('button', { name: 'Games', exact: true })).toBeVisible({ timeout: 30_000 });
-  await page.getByRole('button', { name: 'Games', exact: true }).click();
-  await page.getByRole('button', { name: 'Open Native archive controls', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Today', exact: true })).toBeVisible({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Review Native archive', exact: true }).click();
+  // The card beside Today's list gives way to the list on a narrow window; the
+  // game's own page keeps its values in reach at every size the test resizes to.
+  await page.getByRole('button', { name: 'Open full page', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Native archive', exact: true })).toBeVisible();
   return page.getByLabel('Archive energy current value', { exact: true });
 }
@@ -344,8 +346,10 @@ try {
   await expect.poll(() => readState().tasks.some((task) => task.name === 'Keep my unsaved task')).toBe(true);
 
   await page.getByRole('button', { name: 'Connect my phone or tablet', exact: true }).click();
-  await expect(page.getByRole('img', { name: 'Scan this code with Memoria on your phone to connect' })).toBeVisible();
-  await page.getByRole('button', { name: 'Games', exact: true }).click();
+  await expect(
+    page.getByRole('img', { name: 'Scan this code with Memoria on your phone or tablet to connect' }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Today', exact: true }).click();
   // External changes take the same path used by an already paired phone.
   const synced = readState();
   synced.games[0].name = 'Synced archive';

@@ -73,8 +73,7 @@ try {
     .toBe(1);
   expect(await page.evaluate(() => window.auditCsp)).toEqual([]);
   await page.reload();
-  await page.getByRole('button', { name: 'Games', exact: true }).click();
-  await page.getByRole('button', { name: 'Open Genshin Impact controls', exact: true }).click();
+  await page.getByRole('button', { name: 'Review Genshin Impact', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Genshin Impact', exact: true })).toBeVisible();
   expect(await page.evaluate(() => window.auditCsp)).toEqual([]);
   const secondLaunch = await promisify(execFile)(exe, args, options);
@@ -83,8 +82,7 @@ try {
   const second = await context.newPage();
   second.on('pageerror', (error) => errors.push(error.message));
   await second.goto(secondUrl);
-  await second.getByRole('button', { name: 'Games', exact: true }).click();
-  await second.getByRole('button', { name: 'Open Genshin Impact controls', exact: true }).click();
+  await second.getByRole('button', { name: 'Review Genshin Impact', exact: true }).click();
   await expect(second.getByRole('heading', { name: 'Genshin Impact', exact: true })).toBeVisible();
   const state = JSON.parse(readFileSync(stateFile));
   state.games[0].name = 'Audit sync check';
@@ -96,12 +94,14 @@ try {
   await page.screenshot({ path: join(root, 'dist/security-desktop.png') });
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByRole('button', { name: 'Connect my phone or tablet', exact: true }).click();
-  await expect(page.getByRole('img', { name: 'Scan this code with Memoria on your phone to connect' })).toBeVisible();
-  await expect(page.getByText('Waiting for your phone…', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('img', { name: 'Scan this code with Memoria on your phone or tablet to connect' }),
+  ).toBeVisible();
+  await expect(page.getByText('Waiting for your device…', { exact: true })).toBeVisible();
   await expect(page.getByText('PC address', { exact: true })).not.toBeVisible();
   await page.screenshot({ path: join(root, 'dist/wifi-desktop.png') });
   await page
-    .getByRole('img', { name: 'Scan this code with Memoria on your phone to connect' })
+    .getByRole('img', { name: 'Scan this code with Memoria on your phone or tablet to connect' })
     .screenshot({ path: join(root, 'dist/wifi-code.png') });
   const wifi = await page.evaluate(async () =>
     (
@@ -117,13 +117,17 @@ try {
   });
   expect(paired.status).toBe(200);
   await expect(page.getByText('Your device is connected', { exact: true })).toBeVisible();
-  await expect(page.getByRole('img', { name: 'Scan this code with Memoria on your phone to connect' })).toHaveCount(0);
+  await expect(
+    page.getByRole('img', { name: 'Scan this code with Memoria on your phone or tablet to connect' }),
+  ).toHaveCount(0);
   await page.getByText('Manage connection', { exact: true }).click();
   await page.getByRole('button', { name: 'Pause sync', exact: true }).click();
   await expect(page.getByText('Sync is paused', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Resume sync', exact: true }).click();
   await expect(page.getByText('Your device is connected', { exact: true })).toBeVisible();
-  await expect(page.getByRole('img', { name: 'Scan this code with Memoria on your phone to connect' })).toHaveCount(0);
+  await expect(
+    page.getByRole('img', { name: 'Scan this code with Memoria on your phone or tablet to connect' }),
+  ).toHaveCount(0);
   await page.getByText('Manage connection', { exact: true }).click();
   await page.getByRole('button', { name: 'Pause sync', exact: true }).click();
   // Exercise a real waiting service worker in the isolated package copy.
@@ -134,8 +138,7 @@ try {
   });
   await page.reload();
   await expect(page.getByRole('button', { name: 'Today', exact: true })).toHaveAttribute('aria-current', 'page');
-  await page.getByRole('button', { name: 'Games', exact: true }).click();
-  const openGame = page.getByRole('button', { name: 'Open Audit sync check controls', exact: true });
+  const openGame = page.getByRole('button', { name: 'Review Audit sync check', exact: true });
   const energy = page.getByLabel('Original Resin current value');
   await expect.poll(async () => (await openGame.isVisible()) || (await energy.isVisible())).toBe(true);
   if (!(await energy.isVisible())) await openGame.click();
@@ -151,8 +154,7 @@ try {
   await expect(energy).toHaveValue('42');
   await energy.press('Enter');
   await Promise.all([page.waitForEvent('load'), page.getByRole('button', { name: 'Update now', exact: true }).click()]);
-  await page.getByRole('button', { name: 'Games', exact: true }).click();
-  await page.getByRole('button', { name: 'Open Audit sync check controls', exact: true }).click();
+  await page.getByRole('button', { name: 'Review Audit sync check', exact: true }).click();
   await expect(energy).toHaveValue('42');
   await context.close();
   const standaloneContext = await browser.newContext({
@@ -167,17 +169,15 @@ try {
     if (/^https?:/.test(request.url())) requests.push(request.url());
   });
   await standalone.goto(pathToFileURL(join(root, 'app/dist-single/Memoria.html')).href);
-  await standalone.getByRole('button', { name: 'Games', exact: true }).click();
   await standalone.getByRole('button', { name: 'Add your first game' }).click();
   await standalone.getByRole('button', { name: /Genshin Impact/ }).click();
   await standalone.getByRole('button', { name: 'Add Genshin', exact: true }).click();
-  await standalone.getByRole('button', { name: 'Open Genshin Impact controls', exact: true }).click();
+  await standalone.getByRole('button', { name: 'Review Genshin Impact', exact: true }).click();
   await expect(standalone.getByRole('heading', { name: 'Genshin Impact', exact: true })).toBeVisible();
   // Wait for the debounced local write before reload.
   await standalone.waitForTimeout(300);
   await standalone.reload();
-  await standalone.getByRole('button', { name: 'Games', exact: true }).click();
-  await standalone.getByRole('button', { name: 'Open Genshin Impact controls', exact: true }).click();
+  await standalone.getByRole('button', { name: 'Review Genshin Impact', exact: true }).click();
   await expect(standalone.getByRole('heading', { name: 'Genshin Impact', exact: true })).toBeVisible();
   expect(requests).toEqual([]);
   expect(errors).toEqual([]);
