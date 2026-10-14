@@ -10,6 +10,7 @@ const RELEASES_API = 'https://api.github.com/repos/JanKonradK/Memoria/releases/l
 const RELEASES_PAGE = 'https://github.com/JanKonradK/Memoria/releases/latest';
 const APK_ASSET = 'Memoria-android.apk';
 const CHECKSUM_ASSET = 'SHA256SUMS.txt';
+const RATE_LIMITED = 'GitHub is limiting update checks from this network. Try again in an hour.';
 const AUTO_KEY = 'memoria-update-auto';
 const CHECKED_KEY = 'memoria-update-checked-at';
 /** A window left open checks again this often. */
@@ -88,8 +89,11 @@ export function releaseNotes(release: ReleaseInfo): string {
   return release.notes.split(/^##\s+Downloads?\b/im)[0]?.trim() ?? '';
 }
 
+/** Electron prefixes errors from the main process with the IPC channel; people need only the reason. */
 function message(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message ? error.message : fallback;
+  const text =
+    error instanceof Error ? error.message.replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '') : '';
+  return text || fallback;
 }
 
 async function fetchRelease(): Promise<{ release: ReleaseInfo | null; staged: string | null }> {
@@ -99,6 +103,7 @@ async function fetchRelease(): Promise<{ release: ReleaseInfo | null; staged: st
     return { release: result.release, staged: result.staged };
   }
   const response = await fetch(RELEASES_API, { headers: { accept: 'application/vnd.github+json' } });
+  if (response.status === 403 || response.status === 429) throw new Error(RATE_LIMITED);
   if (!response.ok) throw new Error(`GitHub responded ${response.status}. Try again later.`);
   const raw = (await response.json()) as Record<string, unknown>;
   if (raw['draft'] || raw['prerelease']) return { release: null, staged: null };
@@ -229,8 +234,11 @@ export function initAppUpdates(onShowRequested: () => void): () => void {
     const listener = AppUpdater.addListener('progress', trackProgress);
     cleanups.push(() => void listener.then((handle) => handle.remove()));
   }
-  // The downloadable standalone file makes no network requests on its own.
-  if (window.location.protocol === 'file:') return () => cleanups.forEach((cleanup) => cleanup());
+  // The downloadable standalone file makes no network requests on its own, and
+  // development servers (and the browser tests run against them) leave
+  // GitHub's shared hourly limit to installed copies.
+  if (window.location.protocol === 'file:' || import.meta.env.DEV)
+    return () => cleanups.forEach((cleanup) => cleanup());
   const automaticCheck = () => {
     if (useAppUpdate.getState().auto) void checkForUpdates({ quiet: true });
   };
