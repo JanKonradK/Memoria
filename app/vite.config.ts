@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -16,7 +17,11 @@ export default defineConfig(({ mode }) => {
     alias['virtual:pwa-register'] = fileURLToPath(new URL('./src/pwa-register-stub.ts', import.meta.url));
   }
 
+  const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string };
+
   return {
+    // The updater compares this to the latest GitHub release.
+    define: { __APP_VERSION__: JSON.stringify(pkg.version) },
     // A file:// page has no site root, so nothing may be referenced from '/'.
     base: single ? './' : '/',
     // Generated single-file exports contain bundled imports, not app entrypoints.

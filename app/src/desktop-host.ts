@@ -17,8 +17,26 @@ export interface DesktopHost {
     clear(gameId: string): Promise<LaunchTargets>;
     start(gameId: string): Promise<{ started: string }>;
   };
+  update?: {
+    check(): Promise<{ installed: string | null; release: ReleaseInfo | null; staged: string | null }>;
+    download(): Promise<{ version: string }>;
+    install(): Promise<boolean>;
+    onProgress(listener: (progress: { received: number; total: number }) => void): () => void;
+    onShowRequested(listener: () => void): () => void;
+  };
   onCloseRequested(listener: (requestId: string) => void): () => void;
   completeClose(requestId: string, result: DesktopCloseResult): void;
+}
+
+/** A published GitHub release, as both the desktop host and the app read it. */
+export interface ReleaseInfo {
+  version: string;
+  tag: string;
+  name: string;
+  notes: string;
+  url: string;
+  publishedAt: string | null;
+  assets: { name: string; url: string; size: number }[];
 }
 
 /** Game id to the file name of what starts it. */

@@ -220,7 +220,7 @@ try {
   ).toEqual({
     node: 'undefined',
     process: 'undefined',
-    bridge: ['completeClose', 'launch', 'onCloseRequested', 'version'],
+    bridge: ['completeClose', 'launch', 'onCloseRequested', 'update', 'version'],
   });
   expect(await page.evaluate(async () => (await window.navigator.serviceWorker.getRegistrations()).length)).toBe(0);
   // Resize the actual native frame, including the narrowest supported PC width.

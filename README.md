@@ -43,9 +43,7 @@ Your saved progress and phone connection stay in `%APPDATA%\memoria`.
 
 ### Android app
 
-The Android build creates **Memoria-android-debug.apk** for Android 7 or later.
-This test package is available from a local build. It is not part of the published GitHub download yet.
-See [Build the Android APK](docs/development.md#build-the-android-apk) for the build command.
+Download **Memoria-android.apk** from the [latest release](https://github.com/JanKonradK/Memoria/releases/latest). It runs on Android 7 or later.
 
 1. Copy the APK to your phone.
 2. Open the APK on your phone.
@@ -54,7 +52,7 @@ See [Build the Android APK](docs/development.md#build-the-android-apk) for the b
 5. Open Memoria.
 
 The app works offline and stores your data on the phone. Use **Settings → Data → Export backup** to save a separate copy.
-Install future updates over the existing app. Uninstalling the app removes its local data.
+Memoria updates itself from **Settings → Updates**. Uninstalling the app removes its local data.
 
 ### Try it as one file
 
@@ -181,12 +179,16 @@ If you do not want to use a synced folder, transfer a backup instead.
 
 ## Get updates
 
-- **Windows app:** Select **Help → Download updates**. Download and extract the new Windows ZIP. Close Memoria, then run **Add Memoria to Start Menu.cmd** from the new folder.
-- **One-file version:** Export a backup first. Download the new **Memoria.html**, then open it with the same browser.
+Memoria checks GitHub for a new release when it opens, and twice a day while it stays open.
+When one is available, a notice appears. Select **View update** to read what changed.
+You can also open **Settings → Updates** and select **Check for updates**, or turn automatic checks off there.
+
+- **Windows app:** Select **Download update**, then **Restart and update**. Memoria saves, closes, installs the new version and opens again. **Help → Check for updates** opens the same section.
+- **Android app:** Select **Download and install**, then confirm in Android's installer. The first time, Android asks you to allow Memoria to install apps.
+- **One-file version:** Select **Open download page**. Export a backup first, then open the new **Memoria.html** with the same browser.
   If your progress is missing, import your backup.
 
-The Windows app keeps your saved data separate from its program files.
-This desktop version uses manual updates. It does not replace program files while the app is open.
+Every download is checked against the release's checksums before it is installed. Your saved data is never touched by an update.
 For the first update from an older launcher, restart Windows if Memoria cannot reconnect to local sync.
 
 ## Need help?

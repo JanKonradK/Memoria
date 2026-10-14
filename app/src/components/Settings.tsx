@@ -6,6 +6,7 @@ import { servedByLauncher } from '../launcher';
 import { syncNow } from '../sync';
 import { DeviceSync } from './settings/DeviceSync';
 import { DeviceNotifications } from './settings/DeviceNotifications';
+import { AppUpdates } from './settings/AppUpdates';
 import { GameLogo } from './GameLogo';
 import { disconnectLanSync } from '../lan-sync';
 import { exportNativeBackup, isNativeApp } from '../native';
@@ -128,6 +129,7 @@ export function SettingsPage() {
         </div>
         <DeviceSync />
         <DeviceNotifications />
+        <AppUpdates />
 
         <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <section className="settings-section min-w-0" aria-labelledby="settings-games-heading">

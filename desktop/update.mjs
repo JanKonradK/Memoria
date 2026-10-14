@@ -49,7 +49,7 @@ const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 /** A download that has not finished by now is not worth blocking a release on. */
 const NETWORK_TIMEOUT_MS = 60_000;
 /** Nothing here is worth a crash; the app runs fine on the version already on disk. */
-const MAX_DOWNLOAD_BYTES = 200 * 1024 * 1024;
+const MAX_DOWNLOAD_BYTES = 400 * 1024 * 1024;
 
 const APP_DATA_ROOT = process.env['APPDATA'] ?? join(os.homedir(), '.config');
 const DATA_DIR = join(APP_DATA_ROOT, 'memoria');
@@ -257,7 +257,7 @@ async function fetchWithTimeout(url, headers = {}) {
   });
 }
 
-export async function downloadTo(url, destination, maxBytes = MAX_DOWNLOAD_BYTES) {
+export async function downloadTo(url, destination, maxBytes = MAX_DOWNLOAD_BYTES, onProgress) {
   const response = await fetchWithTimeout(url);
   if (!response.ok) throw new Error(`${url} responded ${response.status}`);
   const length = Number(response.headers.get('content-length') ?? 0);
@@ -270,6 +270,7 @@ export async function downloadTo(url, destination, maxBytes = MAX_DOWNLOAD_BYTES
   const limit = new Transform({
     transform(chunk, _encoding, callback) {
       received += chunk.length;
+      onProgress?.(received, length);
       callback(received > maxBytes ? new Error('download exceeded the size ceiling') : null, chunk);
     },
   });
@@ -329,6 +330,90 @@ function parseChecksums(text) {
 }
 
 /**
+ * The latest final release on GitHub, or null when the latest one is a draft
+ * or prerelease. Throws on network and API failures so a caller asked to
+ * check by the user can say why.
+ *
+ * @returns {Promise<{version: string, tag: string, name: string, notes: string, url: string, publishedAt: string | null, assets: {name: string, url: string, size: number}[]} | null>}
+ */
+export async function fetchLatestRelease() {
+  const response = await fetchWithTimeout(RELEASES_API, { accept: 'application/vnd.github+json' });
+  if (!response.ok) throw new Error(`GitHub responded ${response.status}`);
+  const release = await response.json();
+  if (release.draft || release.prerelease) return null;
+  const version = String(release.tag_name ?? '').replace(/^v/, '');
+  if (!version) throw new Error('The latest release carries no tag.');
+  return {
+    version,
+    tag: String(release.tag_name),
+    name: String(release.name ?? release.tag_name),
+    notes: String(release.body ?? ''),
+    url: String(release.html_url ?? RELEASE_PAGE),
+    publishedAt: release.published_at ?? null,
+    assets: (Array.isArray(release.assets) ? release.assets : []).map((asset) => ({
+      name: String(asset.name),
+      url: String(asset.browser_download_url),
+      size: Number(asset.size) || 0,
+    })),
+  };
+}
+
+/** The staged build, if one newer than the install is waiting to be installed. */
+export function stagedVersion(installRoot) {
+  const record = readReleaseRecord(installRoot);
+  const staged = readJson(PENDING_MANIFEST);
+  if (!record || !staged || !existsSync(PENDING_DIR)) return null;
+  return compareVersions(staged.version, record.version) > 0 ? staged.version : null;
+}
+
+/**
+ * Downloads a release's Windows zip, checks it against the release's
+ * SHA256SUMS.txt and unpacks it into the pending folder. Throws with a reason
+ * a person can read; nothing in the install is touched.
+ */
+export async function stageRelease(installRoot, release, onProgress) {
+  const record = readReleaseRecord(installRoot);
+  if (!record) throw new Error('This copy of Memoria runs from source. Pull the new version instead.');
+  if (compareVersions(release.version, record.version) <= 0) throw new Error('This version is already installed.');
+  if (stagedVersion(installRoot) === release.version) return { version: release.version };
+
+  const zipAsset = release.assets.find((asset) => asset.name === ASSET_NAME);
+  const sumsAsset = release.assets.find((asset) => asset.name === CHECKSUM_ASSET);
+  if (!zipAsset || !sumsAsset) throw new Error(`Release ${release.version} has no Windows download.`);
+
+  const workDir = join(UPDATE_DIR, 'download');
+  rmSync(workDir, { recursive: true, force: true });
+  mkdirSync(workDir, { recursive: true });
+  try {
+    const zipFile = join(workDir, ASSET_NAME);
+    await downloadTo(zipAsset.url, zipFile, MAX_DOWNLOAD_BYTES, onProgress);
+    const sumsFile = await downloadTo(sumsAsset.url, join(workDir, CHECKSUM_ASSET), 64_000);
+
+    // An unsigned zip off the internet gets checked against the digest the
+    // release publishes before a single byte of it is unpacked.
+    const expected = parseChecksums(readFileSync(sumsFile, 'utf8')).get(ASSET_NAME);
+    if (!expected) throw new Error(`${CHECKSUM_ASSET} does not list ${ASSET_NAME}.`);
+    if (sha256(zipFile) !== expected) throw new Error('The download is damaged. Try again.');
+
+    const unpacked = join(workDir, 'unpacked');
+    extractZip(zipFile, unpacked);
+    const tree = unwrapSingleRoot(unpacked);
+    if (!existsSync(join(tree, 'release.json'))) throw new Error('The downloaded build has no release.json.');
+
+    // Clear the manifest along with the tree it describes. If the rename below
+    // fails, the next launch finds nothing staged rather than a manifest
+    // advertising a version whose files are no longer there.
+    clearPending();
+    mkdirSync(dirname(PENDING_DIR), { recursive: true });
+    renameSync(tree, PENDING_DIR);
+    writeJson(PENDING_MANIFEST, { version: release.version, tag: release.tag, stagedAt: new Date().toISOString() });
+    return { version: release.version };
+  } finally {
+    rmSync(workDir, { recursive: true, force: true });
+  }
+}
+
+/**
  * Asks GitHub for the latest release and, if it is newer than the running
  * build, downloads and stages it for the next launch.
  *
@@ -342,71 +427,22 @@ export async function checkForUpdate(installRoot, { force = false } = {}) {
   const record = readReleaseRecord(installRoot);
   if (!record) return { status: 'skipped', reason: 'not a packaged install' };
   if (record.runtime === 'electron' || record.updateMode === 'manual') {
-    return { status: 'manual', reason: `Download updates from ${RELEASE_PAGE}` };
+    return { status: 'manual', reason: 'Memoria for Windows checks for updates from its window' };
   }
   if (process.env['MEMORIA_NO_UPDATE']) return { status: 'skipped', reason: 'MEMORIA_NO_UPDATE is set' };
   if (!dueForCheck(force)) return { status: 'skipped', reason: 'checked recently' };
 
-  const staged = readJson(PENDING_MANIFEST);
-  if (staged && compareVersions(staged.version, record.version) > 0) {
-    return { status: 'staged', version: staged.version, reason: 'already waiting for a restart' };
-  }
+  const staged = stagedVersion(installRoot);
+  if (staged) return { status: 'staged', version: staged, reason: 'already waiting for a restart' };
 
   try {
-    const response = await fetchWithTimeout(RELEASES_API, { accept: 'application/vnd.github+json' });
     // Record the attempt even when it fails, so a broken network or a rate
     // limit cannot turn every launch into another request.
     writeJson(LAST_CHECK_FILE, { checkedAt: new Date().toISOString() });
-    if (!response.ok) return { status: 'error', reason: `GitHub responded ${response.status}` };
-
-    const release = await response.json();
-    if (release.draft || release.prerelease) return { status: 'current', reason: 'latest is not a final release' };
-
-    const version = String(release.tag_name ?? '').replace(/^v/, '');
-    if (!version) return { status: 'error', reason: 'release carries no tag' };
-    if (compareVersions(version, record.version) <= 0) return { status: 'current', version: record.version };
-
-    const assets = Array.isArray(release.assets) ? release.assets : [];
-    const zipAsset = assets.find((asset) => asset.name === ASSET_NAME);
-    const sumsAsset = assets.find((asset) => asset.name === CHECKSUM_ASSET);
-    if (!zipAsset) return { status: 'error', reason: `release ${version} has no ${ASSET_NAME}` };
-    if (!sumsAsset) return { status: 'error', reason: `release ${version} has no ${CHECKSUM_ASSET}` };
-
-    const workDir = join(UPDATE_DIR, 'download');
-    rmSync(workDir, { recursive: true, force: true });
-    mkdirSync(workDir, { recursive: true });
-
-    const zipFile = join(workDir, ASSET_NAME);
-    await downloadTo(zipAsset.browser_download_url, zipFile);
-    const sumsFile = await downloadTo(sumsAsset.browser_download_url, join(workDir, CHECKSUM_ASSET), 64_000);
-
-    // An unsigned zip off the internet gets checked against the digest the
-    // release publishes before a single byte of it is unpacked.
-    const expected = parseChecksums(readFileSync(sumsFile, 'utf8')).get(ASSET_NAME);
-    if (!expected) return { status: 'error', reason: `${CHECKSUM_ASSET} does not list ${ASSET_NAME}` };
-    const actual = sha256(zipFile);
-    if (actual !== expected) {
-      rmSync(workDir, { recursive: true, force: true });
-      return { status: 'error', reason: `checksum mismatch (expected ${expected}, got ${actual})` };
-    }
-
-    const unpacked = join(workDir, 'unpacked');
-    extractZip(zipFile, unpacked);
-    const tree = unwrapSingleRoot(unpacked);
-    if (!existsSync(join(tree, 'release.json'))) {
-      return { status: 'error', reason: 'downloaded build has no release.json' };
-    }
-
-    // Clear the manifest along with the tree it describes. If the rename below
-    // fails, the next launch finds nothing staged rather than a manifest
-    // advertising a version whose files are no longer there.
-    clearPending();
-    mkdirSync(dirname(PENDING_DIR), { recursive: true });
-    renameSync(tree, PENDING_DIR);
-    writeJson(PENDING_MANIFEST, { version, tag: release.tag_name, stagedAt: new Date().toISOString() });
-    rmSync(workDir, { recursive: true, force: true });
-
-    return { status: 'staged', version };
+    const release = await fetchLatestRelease();
+    if (!release) return { status: 'current', reason: 'latest is not a final release' };
+    if (compareVersions(release.version, record.version) <= 0) return { status: 'current', version: record.version };
+    return { status: 'staged', ...(await stageRelease(installRoot, release)) };
   } catch (error) {
     return { status: 'error', reason: String(error?.message ?? error) };
   }

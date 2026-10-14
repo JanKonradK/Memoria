@@ -41,16 +41,17 @@ for (const [density, size] of Object.entries({ mdpi: 48, hdpi: 72, xhdpi: 96, xx
 if (windows)
   run(
     'powershell',
-    ['-NoProfile', '-NonInteractive', '-Command', '& ./gradlew.bat assembleDebug --no-daemon'],
+    ['-NoProfile', '-NonInteractive', '-Command', '& ./gradlew.bat assembleRelease --no-daemon'],
     androidDir,
   );
-else run('sh', ['./gradlew', 'assembleDebug', '--no-daemon'], androidDir);
+else run('sh', ['./gradlew', 'assembleRelease', '--no-daemon'], androidDir);
 
+// The in-app updater looks for exactly this asset name on each release.
 const releaseDir = join(root, 'dist', 'release');
-const name = 'Memoria-android-debug.apk';
+const name = 'Memoria-android.apk';
 mkdirSync(releaseDir, { recursive: true });
 const artifact = join(releaseDir, name);
-copyFileSync(join(androidDir, 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk'), artifact);
+copyFileSync(join(androidDir, 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk'), artifact);
 const digest = createHash('sha256').update(readFileSync(artifact)).digest('hex');
 const sums = join(releaseDir, 'SHA256SUMS.txt');
 const other = existsSync(sums)
@@ -59,4 +60,4 @@ const other = existsSync(sums)
       .filter((line) => line && !line.endsWith(`  ${name}`))
   : [];
 writeFileSync(sums, [...other, `${digest}  ${name}`, ''].join('\n'));
-console.log(`\nAndroid debug APK: ${artifact}\nsha256 ${digest}`);
+console.log(`\nAndroid APK: ${artifact}\nsha256 ${digest}`);

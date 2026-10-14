@@ -54,6 +54,28 @@ jobs:
       - run: npm run check:release
       - run: npm run check:native
 
+      # The Android app only accepts an update signed with the key it was
+      # installed with, so a release without that key must not ship an APK.
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Restore the Android signing key
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "The ANDROID_KEYSTORE_BASE64 secret is missing."
+            exit 1
+          fi
+          mkdir -p "$HOME/.android"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$HOME/.android/debug.keystore"
+
+      # Appends Memoria-android.apk to SHA256SUMS.txt, which the app checks.
+      - run: npm run build:android
+
       - name: Add the single-file build to the checksums
         shell: bash
         run: |
@@ -61,6 +83,33 @@ jobs:
           cd dist/release
           sha256sum Memoria.html >> SHA256SUMS.txt
           cat SHA256SUMS.txt
+
+      # The app shows everything above "## Download" as the release notes.
+      # Write them in docs/releases/<tag>.md before tagging.
+      - name: Write the release notes
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          tag="$RELEASE_TAG"
+          notes="docs/releases/$tag.md"
+          download="https://github.com/JanKonradK/Memoria/releases/download/$tag"
+          {
+            if [ -f "$notes" ]; then cat "$notes"; echo; fi
+            echo "## Download"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| **[Memoria-win-x64.zip]($download/Memoria-win-x64.zip)** | Standalone Windows app. Extract the ZIP and run \`Add Memoria to Start Menu.cmd\`. Includes its own runtime. |"
+            echo "| **[Memoria-android.apk]($download/Memoria-android.apk)** | Android app. Open the APK on your phone or tablet and install it over the existing app. |"
+            echo "| [Memoria.html]($download/Memoria.html) | The whole app in one file. Double-click to open in any browser. |"
+            echo
+            echo "Installed apps update themselves: open **Settings → Updates**, or follow the notice when Memoria finds a new version."
+            echo "Your data stays on each device and is never touched by an update."
+            echo
+            echo "Verify a download against \`SHA256SUMS.txt\` if you like: \`Get-FileHash .\Memoria-win-x64.zip -Algorithm SHA256\`"
+          } > dist/release-notes.md
+          cat dist/release-notes.md
 
       - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
@@ -71,18 +120,7 @@ jobs:
           prerelease: false
           files: |
             dist/release/Memoria-win-x64.zip
+            dist/release/Memoria-android.apk
             dist/release/Memoria.html
             dist/release/SHA256SUMS.txt
-          body: |
-            ## Download
-
-            | | |
-            |---|---|
-            | **[Memoria-win-x64.zip](https://github.com/JanKonradK/Memoria/releases/download/${{ github.event.inputs.tag || github.ref_name }}/Memoria-win-x64.zip)** | Standalone Windows app. Extract the ZIP and open `Memoria.exe`. Includes its own runtime. No browser required. Run `Add Memoria to Start Menu.cmd` to install. |
-            | [Memoria.html](https://github.com/JanKonradK/Memoria/releases/download/${{ github.event.inputs.tag || github.ref_name }}/Memoria.html) | The whole app in one file. Double-click to open in any browser. Does **not** update itself — download a newer one when you want it. |
-
-            Your data stays in `%APPDATA%\memoria` and is never touched by an update.
-            To update, close Memoria and run the installer from the new download.
-
-            Verify a download against `SHA256SUMS.txt` if you like:
-            `Get-FileHash .\Memoria-win-x64.zip -Algorithm SHA256`
+          body_path: dist/release-notes.md

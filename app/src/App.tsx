@@ -9,6 +9,7 @@ import { disconnectLanSync, initLanSync } from './lan-sync';
 import { useUI, type Tab } from './ui-store';
 import { useNow, useOnline } from './hooks';
 import { applyPwaUpdate } from './pwa';
+import { dismissUpdateNotice, initAppUpdates, useAppUpdate } from './app-update';
 import { servedByLauncher } from './launcher';
 import { isNativeApp } from './native';
 import { closeWorkspace, initWorkspaceHistory } from './workspace-navigation';
@@ -180,6 +181,11 @@ export default function App() {
   }, [loaded, tab, hasFocusedGame, setTab]);
   const online = useOnline();
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const releaseNotice = useAppUpdate((s) =>
+    (s.status === 'available' || s.status === 'ready') && s.release && s.dismissed !== s.release.version
+      ? s.release.version
+      : null,
+  );
   const launchNotice = useGameLaunch((s) => s.notice);
   useEffect(() => {
     if (!launchNotice || launchNotice.tone === 'error') return;
@@ -216,6 +222,11 @@ export default function App() {
     initCloudSync();
     initLanSync();
   }, [loaded]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    return initAppUpdates(() => setTab('settings'));
+  }, [loaded, setTab]);
 
   useEffect(() => {
     const showUpdate = () => setUpdateAvailable(true);
@@ -385,6 +396,30 @@ export default function App() {
               <span className="min-w-0 flex-1">{launchNotice.text}</span>
               <button type="button" onClick={dismissLaunchNotice} className="min-h-9 px-2">
                 Dismiss
+              </button>
+            </m.div>
+          )}
+          {releaseNotice && tab !== 'settings' && (
+            <m.div
+              key="release"
+              variants={toastMotion}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="pointer-events-auto flex w-full flex-wrap items-center justify-center gap-2 rounded-ui-xl bg-popover/95 px-4 py-2 text-meta font-semibold text-accent-fg shadow-float ring-1 ring-accent/25 backdrop-blur-md"
+              role="status"
+              aria-live="polite"
+            >
+              <span className="min-w-0 flex-1">Memoria {releaseNotice} is available.</span>
+              <button
+                type="button"
+                onClick={() => setTab('settings')}
+                className="min-h-9 rounded-ui-md bg-accent/15 px-3 py-1 text-accent-fg ring-1 ring-accent/25"
+              >
+                View update
+              </button>
+              <button type="button" onClick={dismissUpdateNotice} className="min-h-9 px-2 text-accent-fg">
+                Later
               </button>
             </m.div>
           )}
