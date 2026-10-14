@@ -166,26 +166,30 @@ describe('game page controls', () => {
     expect(screen.getByRole('checkbox', { name: 'Open window: done' })).toHaveAttribute('aria-checked', 'false');
   });
 
-  it('puts the action bar after the grid, with the page actions and the extra control last', () => {
+  it('keeps the game actions in the heading, above the grid, with the extra control last', () => {
     useApp.setState({ state: roster([event('Open window')]) });
     const { container } = show(
       <GamePageControls layout="focus" actionsEnd={<button type="button">Open full page</button>} />,
     );
     const bar = screen.getByLabelText('Testland tracking controls');
     const grid = container.querySelector('.focus-bay-grid');
-    expect(bar).toHaveClass('game-actions-bar');
-    expect(bar.compareDocumentPosition(grid!) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
-    for (const name of ['Manage events', 'Add event', 'Pause tracking']) {
+    expect(bar.closest('.game-card-heading')).not.toBeNull();
+    expect(bar.compareDocumentPosition(grid!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    for (const name of ['Manage events', 'Edit Testland']) {
       expect(within(bar).getByRole('button', { name, exact: true })).toBeInTheDocument();
+    }
+    // One way to add an event (the Add menu), and pausing lives under Edit.
+    for (const name of ['Add event', 'Pause tracking', 'Readings', 'Set up launch']) {
+      expect(screen.queryByRole('button', { name, exact: true })).toBeNull();
     }
     expect(within(bar).getAllByRole('button').at(-1)).toHaveTextContent('Open full page');
   });
 
-  it('keeps the action bar above the content in the card layout, without the bar class', () => {
+  it('uses the same heading actions in the card layout', () => {
     useApp.setState({ state: roster([event('Open window')]) });
     const { container } = show(<GamePageControls />);
     const bar = screen.getByLabelText('Testland tracking controls');
-    expect(bar).not.toHaveClass('game-actions-bar');
+    expect(bar.closest('.game-card-heading')).not.toBeNull();
     expect(container.querySelector('.focus-bay-grid')).toBeNull();
     const resources = container.querySelector('[data-tour="resources"]');
     expect(resources).not.toBeNull();
@@ -194,12 +198,12 @@ describe('game page controls', () => {
 });
 
 describe("Today's selected game", () => {
-  it('gives the selected game an Open full page button inside its own tracking controls', () => {
+  it('gives the selected game an Open full page button in its heading', () => {
     useApp.setState({ state: roster(), loaded: true });
     show(<TodayPage now={NOW} />);
     fireEvent.click(screen.getByRole('button', { name: 'Review Testland', exact: true }));
     const bar = screen.getByLabelText('Testland tracking controls');
-    expect(bar).toHaveClass('game-actions-bar');
+    expect(bar.closest('.game-card-heading')).not.toBeNull();
     expect(within(bar).getByRole('button', { name: 'Open full page', exact: true })).toBeInTheDocument();
     expect(within(bar).getAllByRole('button').at(-1)).toHaveTextContent('Open full page');
   });

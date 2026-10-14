@@ -843,10 +843,20 @@ input[type='number'] {
 .focus-workspace .workspace-back {
   margin-left: -6px;
 }
+/* The game's actions share the heading with its name. Where the two cannot sit
+   side by side they take the row beneath, so the name is never squeezed. */
+.game-card-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 @media (max-width: 767px) {
   .focus-workspace .game-card-heading {
     flex-wrap: wrap;
     gap: 8px;
+  }
+  .focus-workspace .game-card-actions {
+    flex-basis: 100%;
+    justify-content: flex-start;
   }
 }
 
@@ -1124,41 +1134,6 @@ input[type='number'] {
   animation: loaderSpin 1.6s linear infinite;
 }
 
-/* A game's actions sit at the foot of its page or pane, within reach, and stay
-   there while the controls scroll above them. */
-.game-actions-bar {
-  position: sticky;
-  bottom: 0;
-  z-index: 20;
-  margin-top: 1.5rem;
-  padding: 0.75rem 0;
-  flex-wrap: wrap;
-  background: var(--color-surface-0);
-  border-top: 1px solid var(--color-line);
-}
-/* The bar's rule is the boundary, so its actions need no capsule each: flat, like
-   the app bar's, with a fill under the pointer or while the panel they open is
-   open. Play keeps its accent, the one filled button in the row. */
-.game-actions-bar .btn-compact:not(.bg-accent) {
-  border-radius: var(--radius-ui-full);
-  background: none;
-  box-shadow: none;
-  font-size: var(--text-meta);
-  transition:
-    background-color var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out),
-    scale var(--dur-fast) var(--ease-out);
-}
-@media (hover: hover) {
-  .game-actions-bar .btn-compact:not(.bg-accent):hover {
-    background: var(--color-fill-1);
-  }
-}
-.game-actions-bar .btn-compact:not(.bg-accent):is([aria-expanded='true'], [data-state='open']) {
-  background: var(--color-fill-2);
-  box-shadow: inset 0 0 0 1px var(--color-line-edge);
-  color: var(--color-fg);
-}
 /* One segment per part of an event, ticked off in order. The bar is thin; the
    button around it is tall enough to hit. */
 .event-parts {
@@ -1197,23 +1172,6 @@ input[type='number'] {
   }
   .event-part {
     height: 2rem;
-  }
-}
-/* Opened from the foot, shown at the top: clear the sticky app bar on arrival. */
-.game-panel {
-  scroll-margin-top: calc(var(--app-bar-h) + 1rem);
-}
-@media (max-width: 767px) {
-  /* One row above the dock that scrolls sideways, rather than three rows of buttons. */
-  /* Its ground runs on behind the floating dock, so no row shows through the gap. */
-  .game-actions-bar {
-    padding-bottom: calc(var(--mobile-nav-h, 0px) + 0.25rem);
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .game-actions-bar > * {
-    flex-shrink: 0;
   }
 }
 .focus-bay-grid {
@@ -1376,82 +1334,5 @@ input[type='number'] {
 @media (pointer: coarse), (max-width: 767px) {
   .ui-segmented button {
     min-height: 44px;
-  }
-}
-
-/* Readings arriving from outside a card: a drop target for the whole window,
-   one line saying what happened, and a short list when two accounts could own
-   the same screenshot. */
-.reading-drop {
-  position: fixed;
-  inset: 0;
-  z-index: 65;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  pointer-events: none;
-  background: color-mix(in srgb, var(--color-surface-0) 72%, transparent);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-}
-.reading-drop p {
-  padding: 20px 28px;
-  border: 1px dashed var(--color-line-strong);
-  border-radius: var(--radius-ui-card);
-  background: var(--color-surface-1);
-  color: var(--color-fg);
-  font-size: var(--text-lead);
-  font-weight: 600;
-  box-shadow: var(--shadow-float);
-}
-.reading-notice {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 8px 8px 16px;
-  border: 1px solid var(--color-line-strong);
-  border-radius: var(--radius-ui-xl);
-  background: var(--color-popover);
-  color: var(--color-fg-soft);
-  font-size: var(--text-meta);
-  font-weight: 500;
-  box-shadow: var(--shadow-float);
-}
-p.reading-notice {
-  min-height: 52px;
-}
-.reading-notice[data-tone='error'] {
-  border-color: color-mix(in srgb, var(--color-danger) 35%, var(--color-line-strong));
-  color: var(--color-danger-fg);
-}
-.reading-notice-action {
-  display: inline-flex;
-  min-width: 44px;
-  min-height: 44px;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  padding-inline: 12px;
-  border-radius: var(--radius-ui-full);
-  color: var(--color-fg);
-  font-weight: 600;
-  transition: background-color var(--dur-fast) var(--ease-out);
-}
-@media (hover: hover) {
-  .reading-notice-action:hover {
-    background: var(--color-fill-2);
-  }
-}
-@media (min-width: 640px) {
-  .reading-notice-action {
-    min-width: 36px;
-    min-height: 36px;
-  }
-}
-@media (prefers-reduced-transparency: reduce) {
-  .reading-drop {
-    background: var(--color-surface-0);
-    backdrop-filter: none;
   }
 }

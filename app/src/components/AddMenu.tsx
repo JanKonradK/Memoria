@@ -28,6 +28,12 @@ const ITEMS = {
 
 const LABELS = { addGame: 'Add game', event: 'Event', reminder: 'Reminder' } as const;
 
+/** The game a new event most likely belongs to: the page that is open, or the card beside Today's list. */
+function gameInView(): string | undefined {
+  const ui = useUI.getState();
+  return (ui.tab === 'today' ? ui.todayGameId : ui.focusedGameId) ?? undefined;
+}
+
 export function AddMenu() {
   const tab = useUI((store) => store.tab);
   const openSheet = useUI((store) => store.openSheet);
@@ -59,9 +65,7 @@ export function AddMenu() {
             // Radix calls this after the exit animation and focus-scope teardown.
             // Wait one frame for its pointer lock to release before opening a sheet.
             if (kind)
-              requestAnimationFrame(() =>
-                openSheet(kind === 'event' ? { kind, gameId: useUI.getState().focusedGameId ?? undefined } : { kind }),
-              );
+              requestAnimationFrame(() => openSheet(kind === 'event' ? { kind, gameId: gameInView() } : { kind }));
           }}
           className="popover-motion z-50 min-w-40 rounded-ui-lg bg-popover p-1 shadow-float ring-1 ring-line-strong"
         >

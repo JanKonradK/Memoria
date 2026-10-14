@@ -34,7 +34,7 @@ import { useIdentityColors } from './roster';
 import { serverRegionLabel } from '../server-region';
 import { groupGameEvents } from '../event-category';
 import { calendarSchedule } from '../event-schedule';
-import { ReadingStatus, ReadingsMenu, ReadingsPanel } from './GameReadings';
+import { readingSource } from '../reading-source';
 import { LaunchButton, LaunchSettings } from './GameLaunch';
 
 const TITLE_FIELDS = ['name'] as const;
@@ -789,6 +789,9 @@ function GameControlsHeader({
   editRef,
   urgent,
   layout = 'card',
+  reading,
+  actions,
+  actionsEnd,
 }: {
   game: Game;
   dailies: ChecklistItem[];
@@ -799,6 +802,12 @@ function GameControlsHeader({
   editRef?: Ref<HTMLButtonElement>;
   urgent: boolean;
   layout?: 'card' | 'focus';
+  /** When the main energy value was last entered. */
+  reading?: string;
+  /** The game's own actions, before Edit. */
+  actions?: ReactNode;
+  /** Joins the end of the actions, after the game's own. */
+  actionsEnd?: ReactNode;
 }) {
   const TitleContainer = layout === 'focus' ? 'div' : 'button';
   const ground = useGround();
@@ -858,34 +867,39 @@ function GameControlsHeader({
           <ServerChip label={regionLabel} className="max-w-20 truncate" />
           {layout === 'focus' && accountLabel && <span className="[overflow-wrap:anywhere]">{accountLabel}</span>}
           <span>reset {resetLabel}</span>
-          {!game.paused && <ReadingStatus game={game} now={now} />}
+          {!game.paused && reading && <span data-reading-status>{reading}</span>}
           {urgent && <AttentionIndicator />}
         </div>
       </TitleContainer>
-      {/* The page has one edit control. Compact cards retain their title shortcut. */}
-      <Tooltip content={`Edit ${game.name} title, items, and layout`}>
-        <Btn
-          ref={editRef}
-          type="button"
-          onClick={onEdit}
-          className={`inline-flex shrink-0 items-center gap-2 ${TOUCH_BUTTON}`}
-          aria-label={`Edit ${game.name}`}
-        >
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" className="icon h-4 w-4" aria-hidden>
-            <path
-              d="M13.3 3.7a1.7 1.7 0 0 1 2.4 2.4L7.4 14.4 4 15l.6-3.4z"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span>Edit</span>
-        </Btn>
-      </Tooltip>
-      {!game.paused && dailies.length > 0 && (
-        <ProgressBar variant="ring" value={completed / dailies.length} color={gameInk(game, ground)}>
-          {completed}/{dailies.length}
-        </ProgressBar>
-      )}
+      {/* Everything the game can do sits in its heading, beside its name. */}
+      <div className="game-card-actions flex shrink-0 items-center gap-2" aria-label={`${game.name} tracking controls`}>
+        {actions}
+        {/* The page has one edit control. Compact cards retain their title shortcut. */}
+        <Tooltip content={`Edit ${game.name} title, items, and layout`}>
+          <Btn
+            ref={editRef}
+            type="button"
+            onClick={onEdit}
+            className={`inline-flex shrink-0 items-center gap-2 ${TOUCH_BUTTON}`}
+            aria-label={`Edit ${game.name}`}
+          >
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" className="icon h-4 w-4" aria-hidden>
+              <path
+                d="M13.3 3.7a1.7 1.7 0 0 1 2.4 2.4L7.4 14.4 4 15l.6-3.4z"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span>Edit</span>
+          </Btn>
+        </Tooltip>
+        {actionsEnd}
+        {!game.paused && dailies.length > 0 && (
+          <ProgressBar variant="ring" value={completed / dailies.length} color={gameInk(game, ground)}>
+            {completed}/{dailies.length}
+          </ProgressBar>
+        )}
+      </div>
     </div>
   );
 }
@@ -910,7 +924,7 @@ export function GameControlsView({
   columns?: 1 | 2;
   onOpenEvent: (eventId: string, gameId: string) => void;
   onBack?: () => void;
-  /** Joins the end of the action bar, after the game's own actions. */
+  /** Joins the end of the heading's actions, after the game's own. */
   actionsEnd?: ReactNode;
 }) {
   const { game } = entry;
@@ -985,13 +999,6 @@ export function GameControlsView({
       emptyLabel={focus ? 'No events running or coming up.' : undefined}
     />
   );
-  // On a game's page the panels open at the top while the bar that opens them
-  // sits at the foot, so an opened panel is brought into view.
-  useEffect(() => {
-    if (focus && managingEvents)
-      document.getElementById(eventsPanelId)?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
-  }, [eventsPanelId, focus, managingEvents]);
-
   const custom = editing || game.cardLayout !== undefined;
   const widgets = new Map<string, GameWidget>();
   if (custom) {
@@ -1098,33 +1105,15 @@ export function GameControlsView({
     });
   }
 
-  const actionBar = (
-    <div
-      className={`relative z-10 flex items-center gap-2 ${focus ? 'game-actions-bar' : 'mt-3 flex-wrap'}`}
-      aria-label={`${game.name} tracking controls`}
-    >
-      <LaunchButton game={game} />
-
-      {!game.paused && <ReadingsMenu game={game} />}
-      <Btn
-        className={TOUCH_BUTTON}
-        aria-expanded={managingEvents}
-        aria-controls={eventsPanelId}
-        onClick={() => setManagingEvents((value) => !value)}
-      >
-        {managingEvents ? 'Close events' : 'Manage events'}
-      </Btn>
-      {!managingEvents && (
-        <Btn className={TOUCH_BUTTON} onClick={() => openSheet({ kind: 'event', gameId: game.id })}>
-          Add event
-        </Btn>
-      )}
-      <Btn className={`${TOUCH_BUTTON} ml-auto`} onClick={() => updateGame(game.id, { paused: !game.paused })}>
-        {game.paused ? 'Resume tracking' : 'Pause tracking'}
-      </Btn>
-      {actionsEnd}
-    </div>
-  );
+  const { resource: mainResource } = derived.primaryEnergy(game.id);
+  const source = mainResource ? readingSource(derived.snaps.get(mainResource.id), now) : null;
+  const reading = !mainResource
+    ? undefined
+    : !source
+      ? 'No reading yet'
+      : source.kind === 'estimate'
+        ? source.label
+        : `Updated ${source.age}`;
 
   return (
     <>
@@ -1138,17 +1127,33 @@ export function GameControlsView({
         editRef={editRef}
         urgent={!game.paused && entry.next != null && entry.next.at - now < 2 * 60 * 60_000}
         layout={layout}
+        reading={reading}
+        actions={
+          <>
+            <LaunchButton game={game} />
+            <Btn
+              className={TOUCH_BUTTON}
+              aria-expanded={managingEvents}
+              aria-controls={eventsPanelId}
+              onClick={() => setManagingEvents((value) => !value)}
+            >
+              {managingEvents ? 'Close events' : 'Manage events'}
+            </Btn>
+          </>
+        }
+        actionsEnd={actionsEnd}
       />
-      {!focus && actionBar}
       {game.paused && (
-        <p className="relative z-10 mt-2 text-meta text-muted">
-          Tracking paused. Your saved progress and events stay here.
-        </p>
+        <div className="relative z-10 mt-2 flex flex-wrap items-center gap-2">
+          <p className="mr-auto text-meta text-muted">Tracking paused. Your saved progress and events stay here.</p>
+          <Btn className={TOUCH_BUTTON} onClick={() => updateGame(game.id, { paused: false })}>
+            Resume tracking
+          </Btn>
+        </div>
       )}
-      <div id={eventsPanelId} className="game-panel" hidden={!managingEvents}>
+      <div id={eventsPanelId} hidden={!managingEvents}>
         {managingEvents && <GameEvents key={game.id} game={game} now={now} />}
       </div>
-      <ReadingsPanel game={game} />
       {editing && (
         <section className="relative z-20 border-b border-line py-3" aria-label={`Layout editor for ${game.name}`}>
           <div className="flex flex-wrap items-center gap-2">
@@ -1157,6 +1162,7 @@ export function GameControlsView({
               Done
             </Btn>
             <Btn onClick={() => openSheet({ kind: 'game', gameId: game.id })}>Game settings</Btn>
+            {!game.paused && <Btn onClick={() => updateGame(game.id, { paused: true })}>Pause tracking</Btn>}
             <Btn aria-label="Reset layout" onClick={() => saveLayout(undefined)}>
               Reset layout
             </Btn>
@@ -1227,7 +1233,6 @@ export function GameControlsView({
           </>
         )}
       </div>
-      {focus && actionBar}
     </>
   );
 }

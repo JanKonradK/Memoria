@@ -41,12 +41,6 @@ button.surface-row:active {
   border-left-color: var(--color-warn);
 }
 
-/* Toasts float over the page, so they keep their solid ground and shadow. The
-   outline is decoration, and it goes. */
-.reading-notice.surface-toast {
-  border: 0;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .surface-row {
     transition: none;

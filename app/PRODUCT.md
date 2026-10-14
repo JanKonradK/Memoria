@@ -67,17 +67,10 @@ Today is the default page. It groups approaching caps and unfinished routines wi
 Games contains the complete controls and the Tonight summary. Calendar contains events and livestreams.
 Settings remains available from the header.
 
-Manual entry works for every game. Screenshot import accepts recognized resource names and values for the selected account.
-Windows and Android perform local image recognition. The browser version accepts screenshot text.
-Windows and Android support optional HoYoLAB connections for Genshin Impact, Honkai: Star Rail, and Zenless Zone Zero.
-Android has an official sign-in page. Windows requires a session cookie and protects it with the current user's Windows credentials.
-Android supports one HoYoLAB sign-in identity with multiple game UID and server links.
-Automatic account checks require explicit opt-in. They run while the app is open, visible, and online.
+Manual entry is the only input, for every game. Memoria does not read accounts, screenshots or game windows.
 
-Readings identify their source and observation time. Current energy remains an estimate.
+Each energy value shows when it was entered. Current energy remains an estimate.
 Device sync status and game data freshness are separate facts.
-Imports preserve newer manual edits and deleted items. Recent import history supports undo without removing later edits.
-Windows protects account credentials separately from progress data. Credentials never enter backups or device sync.
 
 The public calendar can update separately from app releases. Feed validation protects local changes and deleted events.
 The one-file version keeps the bundled calendar and does not request network access.

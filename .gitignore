@@ -30,6 +30,3 @@ artifacts/
 desktop/verify-launch*.out
 desktop/verify-launch*.err
 desktop/.verify-appdata/
-
-# Written by Chrome or Edge when the connector is loaded unpacked.
-browser-extension/_metadata/

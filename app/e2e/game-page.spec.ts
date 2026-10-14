@@ -11,16 +11,20 @@ test.beforeEach(async ({ page }, info) => {
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
-test("a game's page keeps its actions in a bar at the foot", async ({ page }) => {
+test("a game's page keeps its actions in its heading", async ({ page }) => {
   await openGame(page, 'Genshin Impact');
-  // The bar is a plain labelled div rather than a landmark, so it is found by its label.
+  // The actions are a plain labelled div rather than a landmark, so they are found by their label.
   const bar = page.getByLabel('Genshin Impact tracking controls', { exact: true });
   await expect(bar).toBeVisible();
   await expect(bar).toBeInViewport();
+  await expect(bar.getByRole('button', { name: 'Manage events', exact: true })).toBeVisible();
+  for (const name of ['Add event', 'Readings', 'Pause tracking', 'Set up launch']) {
+    await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0);
+  }
   const resources = page.locator('[data-tour="resources"]').first();
   const barBox = await bar.boundingBox();
   const resourcesBox = await resources.boundingBox();
-  expect(barBox!.y).toBeGreaterThan(resourcesBox!.y);
+  expect(barBox!.y + barBox!.height).toBeLessThanOrEqual(resourcesBox!.y);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
   const desktop = (page.viewportSize()?.width ?? 0) >= 900;
@@ -34,7 +38,8 @@ test("a game's page keeps its actions in a bar at the foot", async ({ page }) =>
 
 test('an event can be ticked off and taken back on its page', async ({ page }) => {
   await openGame(page, 'Genshin Impact');
-  await page.getByRole('button', { name: 'Add event', exact: true }).click();
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Event', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'New event' });
   await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('Tick me');
   // The sheet opens a window at the moment it opens, but the page clock only ticks every 30 seconds.

@@ -6,52 +6,17 @@ ipcRenderer.on('memoria:launcher-session', (_event, session) => {
   globalThis.dispatchEvent(new Event('memoria-launcher-restored'));
 });
 
-ipcRenderer.on('memoria:browser-readings', () => {
-  globalThis.document.dispatchEvent(new Event('memoria:refresh-accounts'));
-});
-
 // Keep the renderer sandboxed. No filesystem, credentials, shell or generic IPC.
 contextBridge.exposeInMainWorld(
   'memoriaDesktop',
   Object.freeze({
     version: 1,
-    browser: Object.freeze({
-      setup: () => ipcRenderer.invoke('memoria:browser-setup'),
-      status: () => ipcRenderer.invoke('memoria:browser-status'),
-      listAccounts: (options) => ipcRenderer.invoke('memoria:browser-accounts', options),
-      request: (body) => ipcRenderer.invoke('memoria:browser-request', body),
-    }),
-    play: Object.freeze({
-      status: () => ipcRenderer.invoke('memoria:play-status'),
-      sources: () => ipcRenderer.invoke('memoria:play-sources'),
-      configure: (config) => ipcRenderer.invoke('memoria:play-configure', config),
-      capture: () => ipcRenderer.invoke('memoria:play-capture'),
-      remove: (id) => ipcRenderer.invoke('memoria:play-remove', id),
-      onChanged(listener) {
-        if (typeof listener !== 'function') throw new TypeError('A listener is required.');
-        const handler = () => listener();
-        ipcRenderer.on('memoria:play-changed', handler);
-        return () => ipcRenderer.removeListener('memoria:play-changed', handler);
-      },
-      onOpen(listener) {
-        if (typeof listener !== 'function') throw new TypeError('A listener is required.');
-        const handler = () => listener();
-        ipcRenderer.on('memoria:play-open', handler);
-        return () => ipcRenderer.removeListener('memoria:play-open', handler);
-      },
-    }),
     // A game is named by id only. Paths are chosen in a native dialog and stay in the main process.
     launch: Object.freeze({
       list: () => ipcRenderer.invoke('memoria:launch-list'),
       choose: (gameId) => ipcRenderer.invoke('memoria:launch-choose', gameId),
       clear: (gameId) => ipcRenderer.invoke('memoria:launch-clear', gameId),
       start: (gameId) => ipcRenderer.invoke('memoria:launch-start', gameId),
-    }),
-    hoyo: Object.freeze({
-      connect: () => ipcRenderer.invoke('memoria:hoyo-connect'),
-      disconnect: () => ipcRenderer.invoke('memoria:hoyo-disconnect'),
-      listAccounts: (options) => ipcRenderer.invoke('memoria:hoyo-accounts', options),
-      connectAccount: (options) => ipcRenderer.invoke('memoria:hoyo-link', options),
     }),
     onCloseRequested(listener) {
       if (typeof listener !== 'function') throw new TypeError('A close listener is required.');

@@ -65,7 +65,8 @@ test('Alt+Left from a move handle returns without changing the item order', asyn
 
 test('returning dismisses an event first and preserves a rejected dirty draft', async ({ page }) => {
   const gameId = await page.evaluate(() => history.state.memoriaWorkspace as string);
-  await page.getByRole('button', { name: 'Add event', exact: true }).click();
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Event', exact: true }).click();
   const editor = page.getByRole('dialog', { name: 'New event', exact: true });
   await editor.getByLabel('Name', { exact: true }).fill('Keep my event draft');
   let discard = false;

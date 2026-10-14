@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, type CSSProperties, type ReactNode } from 'react';
 import { DateTime } from 'luxon';
 import type { GameEvent, GameUrgency } from '@memoria/shared';
 import { useDerived, type Derived } from '../selectors';
@@ -10,13 +10,11 @@ import { gameInk } from '../game-color';
 import { gameShellVars, useGround, useTheme } from '../theme';
 import { navigateWorkspace } from '../workspace-navigation';
 import { readingSource } from '../reading-source';
-import { useReadings } from '../readings';
 import { useIdentityColors } from './roster';
 import { GameControls } from './GameCard';
 import { GameLogo } from './GameLogo';
 import { TickNumber } from './TickNumber';
 import { GamePage } from './GamePage';
-import { SourceIcon } from './GameReadings';
 import { NexusHub } from './nexus/NexusHub';
 import { TodayNotices } from './TodayNotices';
 import { ProgressBar } from './primitives';
@@ -63,7 +61,7 @@ function PriorityRow({
     next ? `${next.label}${left! > 0 ? ` in ${fmtDur(left!)}` : ' now'}` : 'No upcoming deadlines',
     resource &&
       (known && source
-        ? `Estimated ${projection!.value} of ${resource.cap} ${resource.name} from ${source.label.toLowerCase()} reading ${source.age}`
+        ? `Estimated ${projection!.value} of ${resource.cap} ${resource.name}, ${source.kind === 'estimate' ? 'from a starting estimate' : `entered ${source.age}`}`
         : `No ${resource.name} reading yet`),
     dailies.length > 0 && `${done} of ${dailies.length} dailies done`,
   ]
@@ -114,11 +112,14 @@ function PriorityRow({
                 <span className="text-muted">/{resource.cap}</span>
               </span>
               {known && source && (
-                <Tooltip content={`Estimated from your ${source.label.toLowerCase()} reading, ${source.age}`}>
-                  <span className="today-row-source numeral text-caption">
-                    <SourceIcon kind={source.kind} />
-                    {source.shortAge}
-                  </span>
+                <Tooltip
+                  content={
+                    source.kind === 'estimate'
+                      ? 'Estimated from a starting guess. Enter the real value on the card.'
+                      : `Estimated from the value you entered ${source.age}`
+                  }
+                >
+                  <span className="today-row-source numeral text-caption">{source.shortAge}</span>
                 </Tooltip>
               )}
             </>
@@ -174,14 +175,6 @@ export function TodayPage({ now }: { now: number }) {
   const desktop = useMediaQuery('(min-width: 900px)');
   const selectedId = useUI((ui) => ui.todayGameId);
   const setSelectedId = useUI((ui) => ui.setTodayGameId);
-  // A window snapped narrower loses the pane. Anything open in that card follows
-  // the player to the game's own page instead of disappearing with it.
-  const wasDesktop = useRef(desktop);
-  useEffect(() => {
-    const open = useReadings.getState().panel?.gameId;
-    if (wasDesktop.current && !desktop && open) openGame(open);
-    wasDesktop.current = desktop;
-  }, [desktop]);
   const openSheet = useUI((ui) => ui.openSheet);
   const setTab = useUI((ui) => ui.setTab);
   const openEvent = useCallback((event: GameEvent) => openSheet({ kind: 'eventPeek', eventId: event.id }), [openSheet]);

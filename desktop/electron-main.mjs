@@ -1,25 +1,9 @@
-import {
-  app,
-  BrowserWindow,
-  desktopCapturer,
-  dialog,
-  globalShortcut,
-  ipcMain,
-  Menu,
-  screen,
-  session,
-  shell,
-  Tray,
-  utilityProcess,
-} from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, screen, shell, utilityProcess } from 'electron';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { mkdirSync, readFileSync, watch, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { externalUrl, isAppUrl, launchOrigin, windowBounds } from './native-policy.mjs';
-import { createPlayMode } from './play-mode.mjs';
-import { createHoyoLogin } from './hoyo-login.mjs';
-import { createBrowserConnections } from './browser-bridge.mjs';
 import { createGameLaunch, LAUNCH_EXTENSIONS } from './game-launch.mjs';
 
 const here = import.meta.dirname;
@@ -40,13 +24,7 @@ let healthTimer;
 let recovering = false;
 let recoveryErrorShown = false;
 let ready = false;
-let play;
-let hoyo;
 let launch;
-let tray;
-let browserConnections;
-let browserWatch;
-let browserUpdateTimer;
 let requestedVisibility;
 let visibilityTimer;
 let visibilityRevision = 0;
@@ -113,157 +91,14 @@ function trustedSender(event) {
   );
 }
 
-/** The session token stays in this app; account cookies never enter its renderer. */
-async function nativeApi(path, body) {
-  if (!window || window.isDestroyed() || !isAppUrl(window.webContents.getURL(), origin))
-    throw new Error('Wait for Memoria to open.');
-  const token = await window.webContents.executeJavaScript("sessionStorage.getItem('memoria-launcher-token')");
-  if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(token))
-    throw new Error('The local data service is reconnecting. Try again.');
-  const response = await fetch(`${origin}${path}`, {
-    method: body ? 'POST' : 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Origin: origin,
-      'sec-fetch-site': 'same-origin',
-      'content-type': 'application/json',
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-    redirect: 'error',
-    signal: AbortSignal.timeout(30000),
-  });
-  const result = await response.json();
-  if (!response.ok)
-    throw new Error(
-      typeof result?.error === 'string' ? result.error : 'The local data service could not complete this action.',
-    );
-  return result;
-}
-
-function openPlay() {
-  focusWindow();
-  if (ready) window.webContents.send('memoria:play-open');
-}
-
-async function setupBrowserConnector() {
-  await new Promise((resolveSetup, reject) => {
-    const installer = spawn(
-      'powershell.exe',
-      [
-        '-NoProfile',
-        '-NonInteractive',
-        '-ExecutionPolicy',
-        'Bypass',
-        '-File',
-        join(here, 'Register-Browser-Connector.ps1'),
-      ],
-      { windowsHide: true, stdio: 'ignore' },
-    );
-    installer.once('error', () =>
-      reject(
-        new Error(
-          'Windows could not set up the browser connector. Install the latest Memoria Windows package and try again.',
-        ),
-      ),
-    );
-    installer.once('exit', (code) =>
-      code === 0
-        ? resolveSetup()
-        : reject(
-            new Error(
-              'The browser connector could not be registered. Install the latest Memoria Windows package and try again.',
-            ),
-          ),
-    );
-  });
-  const folder = join(root, 'browser-extension');
-  const error = await shell.openPath(folder);
-  if (error)
-    throw new Error(
-      'The connector is registered, but Windows could not open its folder. Open the browser-extension folder inside your Memoria installation.',
-    );
-  return { folder };
-}
-
-function watchBrowserReadings() {
-  try {
-    browserWatch = watch(data, { persistent: false }, (_event, filename) => {
-      if (String(filename) !== 'browser-readings.json' || quitting) return;
-      clearTimeout(browserUpdateTimer);
-      browserUpdateTimer = setTimeout(() => {
-        if (window && !window.isDestroyed() && isAppUrl(window.webContents.getURL(), origin)) {
-          window.webContents.send('memoria:browser-readings');
-        }
-      }, 100);
-    });
-    // Five-minute polling remains available if the OS stops file notifications.
-    browserWatch.on('error', () => browserWatch?.close());
-  } catch {
-    /* The next scheduled account check reads the same saved snapshot. */
-  }
-}
-
-function updatePlay() {
-  if (!play || quitting) return;
-  const status = play.status();
-  if (window && !window.isDestroyed()) {
-    window.webContents.setBackgroundThrottling(false);
-    if (isAppUrl(window.webContents.getURL(), origin)) window.webContents.send('memoria:play-changed');
-  }
-  if (!tray) return;
-  tray.setToolTip(
-    status.error
-      ? `Memoria — ${status.error}`.slice(0, 127)
-      : `Memoria — ${status.count} captures to review${status.busy ? ' · Reading…' : ''}`,
-  );
-  tray.setContextMenu(
-    Menu.buildFromTemplate([
-      { label: 'Open Memoria', click: focusWindow },
-      { label: status.count ? `Review ${status.count} captures` : 'Play mode', click: openPlay },
-      {
-        label: 'Capture selected game window',
-        enabled: status.enabled && !status.busy && Boolean(status.sourceId),
-        click: () => void play.capture().catch(updatePlay),
-      },
-      { type: 'separator' },
-      { label: 'Quit Memoria', click: requestClose },
-    ]),
-  );
-}
-
 for (const [channel, action] of Object.entries({
-  'memoria:play-status': () => play.status(),
-  'memoria:play-sources': () => play.sources(),
-  'memoria:play-configure': async (config) => {
-    const result = await play.configure(config);
-    if (!result.background) focusWindow();
-    updatePlay();
-    return result;
-  },
-  'memoria:play-capture': async () => {
-    await play.capture();
-    return play.status();
-  },
-  'memoria:play-remove': async (id) => {
-    await play.remove(id);
-    return play.status();
-  },
-  'memoria:hoyo-connect': () => hoyo.connect(),
-  'memoria:hoyo-disconnect': () => hoyo.disconnect(),
-  'memoria:hoyo-accounts': (options) => hoyo.listAccounts(options),
-  'memoria:hoyo-link': (options) => hoyo.connectAccount(options),
-  'memoria:browser-setup': () => setupBrowserConnector(),
-  'memoria:browser-status': () => browserConnections.status(),
-  'memoria:browser-accounts': (options) => browserConnections.listAccounts(options),
-  'memoria:browser-request': (body) => browserConnections.request(body),
   'memoria:launch-list': () => launch.list(),
   'memoria:launch-choose': (gameId) => launch.choose(gameId),
   'memoria:launch-clear': (gameId) => launch.clear(gameId),
   'memoria:launch-start': (gameId) => launch.start(gameId),
 })) {
   ipcMain.handle(channel, (event, argument) => {
-    if (!trustedSender(event) || !play || !hoyo || !browserConnections || !launch || quitting)
-      throw new Error('This action is only available in Memoria.');
+    if (!trustedSender(event) || !launch || quitting) throw new Error('This action is only available in Memoria.');
     return action(argument);
   });
 }
@@ -363,10 +198,8 @@ ipcMain.on('memoria:close-result', (event, requestId, result) => {
     saveBounds();
     quitting = true;
     // The renderer has checked drafts and awaited both storage layers.
-    void Promise.resolve(play?.stop()).finally(() => {
-      window?.destroy();
-      app.quit();
-    });
+    window?.destroy();
+    app.quit();
   } else if (typeof result.error === 'string' && result.error) {
     void dialog.showMessageBox(window, {
       type: 'warning',
@@ -607,11 +440,6 @@ async function createWindow() {
   window.on('close', (event) => {
     if (quitting) return;
     event.preventDefault();
-    if (ready && tray && play?.status().background && !pendingClose) {
-      saveBounds();
-      setWindowVisible(false);
-      return;
-    }
     requestClose();
   });
   window.on('closed', () => {
@@ -623,7 +451,6 @@ async function createWindow() {
       {
         label: 'File',
         submenu: [
-          { label: 'Play mode', click: openPlay },
           { label: 'Close window', accelerator: 'Alt+F4', click: () => window.close() },
           { label: 'Quit Memoria', accelerator: 'CommandOrControl+Q', click: requestClose },
         ],
@@ -671,27 +498,6 @@ async function createWindow() {
     ]),
   );
   await window.loadURL(url);
-  play = createPlayMode({
-    dataDir: data,
-    desktopCapturer,
-    globalShortcut,
-    getWindow: () => window,
-    getGames: async () => (await nativeApi('/api/state')).state.games.filter((game) => !game.deleted),
-    onChange: updatePlay,
-  });
-  hoyo = createHoyoLogin({
-    BrowserWindow,
-    session,
-    Menu,
-    dialog,
-    screen,
-    getParent: () => window,
-    connectAccount: (body) => nativeApi('/api/connections', body),
-  });
-  browserConnections = createBrowserConnections({
-    directory: data,
-    getGames: async () => (await nativeApi('/api/state')).state.games.filter((game) => !game.deleted),
-  });
   launch = createGameLaunch({
     dataDir: data,
     // The only source of a launch path: a file the player picks in a native dialog.
@@ -706,11 +512,6 @@ async function createWindow() {
     },
     open: (path) => shell.openPath(path),
   });
-  watchBrowserReadings();
-  await play.start();
-  tray = new Tray(join(here, 'memoria.ico'));
-  tray.on('double-click', focusWindow);
-  updatePlay();
   const fitDisplay = () => {
     if (!window || window.isDestroyed() || window.isMaximized() || window.isFullScreen()) return;
     const display = screen.getDisplayMatching(window.getBounds());
@@ -740,11 +541,6 @@ if (!app.requestSingleInstanceLock()) {
     cancelWindowVisibility();
     clearTimeout(closeTimer);
     clearInterval(healthTimer);
-    clearTimeout(browserUpdateTimer);
-    browserWatch?.close();
-    globalShortcut.unregisterAll();
-    hoyo?.dispose();
-    tray?.destroy();
     backend?.kill();
   });
   app.on('window-all-closed', () => app.quit());

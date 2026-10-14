@@ -5,26 +5,19 @@
 Memoria helps you see what needs attention before you play. It shows when your energy will fill,
 when tasks reset, and when events end.
 
-Enter progress manually, import a screenshot, or connect a supported HoYoLAB account in the Windows or Android app.
+You enter your progress yourself, in a tap or two per game.
 Memoria does not play games or collect rewards for you.
 You do not need a Memoria account or any coding knowledge.
 
 ## Version 3.0
 
 - **Flexible layouts** adapt to phone screens, small PC windows, and large displays.
-- **Play mode** uses a PC shortcut to capture game readings for later review.
-- **Background checks** continue for connected PC accounts while Memoria is minimized or in the system tray.
-- **HoYoLAB sign-in** in the Windows app reads supported accounts without a browser. A Chrome/Edge connector covers Google and other third-party sign-ins.
-
 - **Today** shows approaching energy caps and unfinished routines within your sleep window, then the Tonight summary across every game. Select a game for its complete controls.
 - **Calendar** shows events, banners, resets, and livestreams. Select **Livestreams** for broadcast details.
-- **Readings** on each game's card accepts screenshots and supported account data.
-  In the Windows app, drop or paste a PNG or JPEG screenshot anywhere. Memoria saves what it is sure about and asks about the rest.
-- **Launch** starts a game from its card in the Windows app.
+- **Launch** starts a game from its card in the Windows app. Select the pencil button on the card to choose what it starts.
 
-Each energy estimate shows the source and age of its last reading.
-The header status refers to device sync. It does not mean that Memoria just checked your game account.
-See [Import game progress](docs/game-imports.md) for supported methods, setup steps, and limits.
+Each energy estimate shows how long ago you entered its value.
+The header status refers to device sync. Memoria never reads your game account.
 
 ## Download and open Memoria
 
@@ -42,8 +35,7 @@ See [Import game progress](docs/game-imports.md) for supported methods, setup st
 Memoria opens in its own desktop window. The download includes its own runtime.
 You do not need a browser or developer tools.
 Press **Alt** to show the desktop menu.
-To keep account checks and phone sync active after closing the window, enable **Keep Memoria in the system tray** in **Play mode**.
-Select **Quit Memoria** in the tray menu to stop the app.
+Phone sync is available while the window is open. Closing the window quits Memoria.
 
 To install Memoria, close the app and double-click **Add Memoria to Start Menu.cmd**.
 The installer copies the app to `%LOCALAPPDATA%\Programs\Memoria` and creates Desktop and Start Menu shortcuts.
@@ -104,7 +96,7 @@ Check the starting values against your game. Server regions and game updates can
 - **Add an event or reminder.** Select **+**, then **Event** or **Reminder**.
 - **Change events for one game.** Open its card, then select **Manage events**. Select an event to change its name, type, dates, or check-in rules. You can also add or delete events here.
 - **Read Genshin events.** The card, Timeline lanes, and Manage events show Teyvat events first, Miliastra Wonderland events next, and banners last. Reorder events within each timeline section. Official calendar entries show confirmed date ranges. Events with exact times keep their countdowns.
-- **Take a break from a game.** Open its card and select **Pause tracking**. Select **Resume tracking** when you return. Your saved progress and events stay in Memoria.
+- **Take a break from a game.** Open its card, select the pencil button, then **Pause tracking**. Select **Resume tracking** on the card when you return. Your saved progress and events stay in Memoria.
 - **Change game settings.** Select the pencil button, then **Game settings**. You can also change the card layout here.
 - **Change the appearance.** Select the sun or moon button for the light or dark theme.
 
