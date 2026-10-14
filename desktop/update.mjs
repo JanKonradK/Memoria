@@ -338,6 +338,10 @@ function parseChecksums(text) {
  */
 export async function fetchLatestRelease() {
   const response = await fetchWithTimeout(RELEASES_API, { accept: 'application/vnd.github+json' });
+  // Unauthenticated requests share 60 an hour per network address.
+  if (response.status === 403 || response.status === 429) {
+    throw new Error('GitHub is limiting update checks from this network. Try again in an hour.');
+  }
   if (!response.ok) throw new Error(`GitHub responded ${response.status}`);
   const release = await response.json();
   if (release.draft || release.prerelease) return null;
