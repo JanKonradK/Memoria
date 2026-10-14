@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { emptyState, type AppState, type Game } from '@memoria/shared';
 import { beforeEach, expect, it } from 'vitest';
@@ -85,9 +85,9 @@ it('says the attention window once and carries no explainer copy', () => {
   expect(screen.queryByText('Your games')).not.toBeInTheDocument();
 });
 
-it('uses the observation time and labels current projections as estimates', () => {
+it('says when the value was entered and labels current projections as estimates', () => {
   show(<TodayPage now={NOW} />);
-  expect(row('Near cap')).toHaveAccessibleDescription(/Estimated 195 of 200 Energy from account reading 2m ago/);
+  expect(row('Near cap')).toHaveAccessibleDescription(/Estimated 195 of 200 Energy, entered 2m ago/);
   expect(within(row('Near cap')).getByText('195')).toBeInTheDocument();
   expect(screen.queryByText(/live/i)).not.toBeInTheDocument();
 });
@@ -101,9 +101,10 @@ it('distinguishes starting estimates and clamps age when the device clock moves 
   };
   useApp.setState({ state });
   show(<TodayPage now={NOW} />);
-  expect(row('Near cap')).toHaveAccessibleDescription(
-    /Estimated 195 of 200 Energy from starting estimate reading just now/,
-  );
+  expect(row('Near cap')).toHaveAccessibleDescription(/Estimated 195 of 200 Energy, from a starting estimate/);
+  state.snapshots[0]!.provenance = { kind: 'manual', observedAt: NOW + 60_000, importedAt: NOW };
+  act(() => useApp.setState({ state: { ...state, snapshots: [...state.snapshots] } }));
+  expect(row('Near cap')).toHaveAccessibleDescription(/Estimated 195 of 200 Energy, entered just now/);
 });
 
 it('puts the real, editable card beside the list instead of a link to it', () => {
@@ -115,7 +116,7 @@ it('puts the real, editable card beside the list instead of a link to it', () =>
   expect(within(card).getByLabelText('Energy current value')).toHaveValue('10');
   expect(within(card).getByRole('button', { name: 'Edit Can rest' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Open game' })).not.toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: 'Import readings' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Readings' })).not.toBeInTheDocument();
   // Selecting stays on Today; the card is already here.
   expect(useUI.getState().tab).toBe('today');
 });

@@ -65,7 +65,7 @@ export function UserGuide({ open }: { open: boolean }) {
         : []),
       {
         title: 'See what is coming',
-        body: 'Use Manage events on a game card to add events or change their names, types, dates, and check-in rules. You can also delete events there. Use Pause tracking when you take a break from a game.',
+        body: 'Use Manage events on a game card to add events or change their names, types, dates, and check-in rules. You can also delete events there. To take a break from a game, select Edit on its card, then Pause tracking.',
         target: '[data-tour="timeline"]',
         tab: 'timeline',
       },

@@ -36,8 +36,6 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
-    // Bundled on-device model: screenshot pixels do not leave the phone.
-    implementation 'com.google.mlkit:text-recognition:16.0.1'
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"

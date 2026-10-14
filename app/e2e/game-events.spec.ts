@@ -42,7 +42,8 @@ test.beforeEach(async ({ page }, info) => {
 });
 
 test('cards add, rename, change behavior, and delete finished events from Edit layout', async ({ page }, info) => {
-  await page.getByRole('button', { name: 'Add event', exact: true }).click();
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Event', exact: true }).click();
   let dialog = page.getByRole('dialog', { name: 'New event' });
   await expect(dialog.getByRole('combobox', { name: 'Game', exact: true })).toContainText('Genshin Impact');
   await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('My personal window');
@@ -106,7 +107,10 @@ test('pause survives reload and resumes saved daily progress from the game page'
   await page.getByRole('button', { name: /Daily Commissions/ }).click();
   await expect.poll(async () => (await stored(page)).completions.length).toBeGreaterThan(0);
   const before = await stored(page);
+  // Pausing sits with the card's other settings, under Edit.
+  await page.getByRole('button', { name: 'Edit Genshin Impact', exact: true }).last().click();
   await page.getByRole('button', { name: 'Pause tracking', exact: true }).click();
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Resume tracking', exact: true })).toBeVisible();
   await expect.poll(async () => (await stored(page)).games[0]?.paused).toBe(true);
   await page.getByRole('button', { name: 'Manage events', exact: true }).click();
@@ -126,7 +130,7 @@ test('pause survives reload and resumes saved daily progress from the game page'
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await openWorkspace(page);
   await page.getByRole('button', { name: 'Resume tracking', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Pause tracking', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Resume tracking', exact: true })).toHaveCount(0);
   await expect(value).toHaveValue('99');
   await expect(page.getByRole('button', { name: /Daily Commissions/ })).toHaveAttribute('aria-pressed', 'true');
   await expect.poll(async () => (await stored(page)).games[0]?.paused).toBe(false);

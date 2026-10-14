@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { showNotice } from './readings';
 
 /**
  * Starting a game from its card, in the Windows app.
@@ -14,7 +13,17 @@ export const useGameLaunch = create<{
   targets: Record<string, string>;
   /** The game whose target is being picked or started. */
   busy: string | null;
-}>(() => ({ available: false, targets: {}, busy: null }));
+  /** What the last start did, shown once as a toast. */
+  notice: { tone: 'ok' | 'error'; text: string } | null;
+}>(() => ({ available: false, targets: {}, busy: null, notice: null }));
+
+function showNotice(tone: 'ok' | 'error', text: string) {
+  useGameLaunch.setState({ notice: { tone, text } });
+}
+
+export function dismissLaunchNotice() {
+  useGameLaunch.setState({ notice: null });
+}
 
 /** Electron prefixes a rejected invoke with its channel; the player needs only the reason. */
 const reason = (error: unknown) =>

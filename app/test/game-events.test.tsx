@@ -117,12 +117,11 @@ describe('game event management', () => {
     expect(useUI.getState().sheet).toEqual({ kind: 'event', gameId: game.id, eventId: 'Done' });
   });
 
-  it('opens the full editor and scopes new events from normal controls and Edit layout', () => {
+  it('opens the full editor and scopes new events from the events panel, with no second Add event', () => {
     load([event('Personal window')]);
     render(<Controls />);
     const controls = screen.getByLabelText('My game tracking controls');
-    fireEvent.click(within(controls).getByRole('button', { name: 'Add event' }));
-    expect(useUI.getState().sheet).toEqual({ kind: 'event', gameId: game.id });
+    expect(within(controls).queryByRole('button', { name: 'Add event' })).toBeNull();
     fireEvent.click(screen.getAllByRole('button', { name: 'Edit My game', exact: true }).at(-1)!);
     fireEvent.click(screen.getByRole('button', { name: 'Manage events' }));
     const panel = screen.getByRole('region', { name: 'Events for My game' });
@@ -214,6 +213,9 @@ describe('taking a break', () => {
     const events = [event('Personal window')];
     load(events);
     render(<Controls />);
+    // Pausing is rare, so it sits with the card's other settings under Edit.
+    expect(screen.queryByRole('button', { name: 'Pause tracking', exact: true })).toBeNull();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit My game', exact: true }).at(-1)!);
     fireEvent.click(screen.getByRole('button', { name: 'Pause tracking', exact: true }));
     expect(useApp.getState().state.games[0]?.paused).toBe(true);
     expect(useApp.getState().state.games[0]?.deleted).toBeFalsy();

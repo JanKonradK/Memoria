@@ -3,20 +3,16 @@ import { chooseLaunchTarget, clearLaunchTarget, launchGame, useGameLaunch } from
 import { Btn, TOUCH_BUTTON, Tooltip } from './ui';
 
 /**
- * Starts the game itself. Only the Windows app can, so nothing renders anywhere
- * else: a button that opens a card must never be labelled as if it opened a game.
+ * Starts the game itself. Only the Windows app can, and only once a target is
+ * chosen, so nothing renders otherwise: a button that opens a card must never be
+ * labelled as if it opened a game.
  */
 export function LaunchButton({ game }: { game: Game }) {
   const available = useGameLaunch((store) => store.available);
   const target = useGameLaunch((store) => store.targets[game.id]);
   const busy = useGameLaunch((store) => store.busy === game.id);
-  if (!available) return null;
-  if (!target)
-    return (
-      <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => void chooseLaunchTarget(game.id)}>
-        Set up launch
-      </Btn>
-    );
+  // Choosing what to start belongs to the card's settings, under Edit.
+  if (!available || !target) return null;
   return (
     <Tooltip content={`Starts ${target}`}>
       <Btn

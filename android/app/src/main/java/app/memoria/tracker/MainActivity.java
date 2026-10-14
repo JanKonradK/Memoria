@@ -9,8 +9,6 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(NativeBackupPlugin.class);
         registerPlugin(PairingScannerPlugin.class);
-        registerPlugin(ScreenshotImportPlugin.class);
-        registerPlugin(HoyoConnectionPlugin.class);
         super.onCreate(savedInstanceState);
     }
 

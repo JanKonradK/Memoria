@@ -99,7 +99,8 @@ test('daily task rules can change on the card, including Tacet counts and new ta
   await expect(
     page.getByRole('button', { name: 'My Tacet fields: 1 of 6 done, click to mark one more', exact: true }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Add event', exact: true }).click();
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Event', exact: true }).click();
   const event = page.getByRole('dialog', { name: 'New event', exact: true });
   await expect(event).toBeVisible();
   await expect

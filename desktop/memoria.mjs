@@ -30,8 +30,6 @@ import { pathToFileURL } from 'node:url';
 import { applyPendingUpdate, checkForUpdate, isPackagedInstall, paths, updateStatus } from './update.mjs';
 import { createLanSync, createStateAccess, readJson } from './lan-sync.mjs';
 import { rejectRequestBody } from './http-response.mjs';
-import { createGameConnections } from './game-connections.mjs';
-import { recognizeScreenshot } from './screenshot-ocr.mjs';
 
 const here = import.meta.dirname;
 const repo = join(here, '..');
@@ -383,27 +381,6 @@ function respondTooLarge(req, res) {
 }
 
 const stateAccess = createStateAccess({ loadCore: loadSharedCore, read: readStateRaw, write: writeState });
-const gameConnections = createGameConnections({ directory: DATA_DIR });
-async function handleGameConnections(req, res) {
-  try {
-    const result =
-      req.method === 'GET' ? gameConnections.status() : await gameConnections.control(await readJson(req, 20000));
-    respondJson(res, 200, result);
-  } catch (error) {
-    if (error.status === 413 && !req.readableEnded)
-      rejectRequestBody(req, res, error.message, { headers: MARKER_HEADERS });
-    else respondJson(res, error.status ?? 500, { error: error.message });
-  }
-}
-async function handleOcr(req, res) {
-  try {
-    respondJson(res, 200, await recognizeScreenshot(await readJson(req, 12 * 1024 * 1024)));
-  } catch (error) {
-    if (error.status === 413 && !req.readableEnded)
-      rejectRequestBody(req, res, error.message, { headers: MARKER_HEADERS });
-    else respondJson(res, error.status ?? 500, { error: error.message });
-  }
-}
 let calendarCache;
 async function handleCalendar(res) {
   try {
@@ -774,9 +751,6 @@ function tryListen(port, secret) {
       if (req.method === 'GET' && urlPath === '/api/state') return void handleGetState(res);
       if (req.method === 'POST' && urlPath === '/api/sync') return handleSync(req, res);
       if (['GET', 'POST'].includes(req.method) && urlPath === '/api/devices') return void handleDevices(req, res);
-      if (['GET', 'POST'].includes(req.method) && urlPath === '/api/connections')
-        return void handleGameConnections(req, res);
-      if (req.method === 'POST' && urlPath === '/api/ocr') return void handleOcr(req, res);
       if (req.method === 'GET' && urlPath === '/api/calendar') return void handleCalendar(res);
       // Lets an app window tell the user a newer build is already downloaded and
       // will be in place the next time they open Memoria.

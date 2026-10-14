@@ -123,7 +123,6 @@ export function SettingsPage() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-heading font-semibold tracking-tight text-fg">Settings</h1>
           <div className="flex flex-wrap gap-2">
-            <Btn onClick={() => document.dispatchEvent(new CustomEvent('memoria:open-accounts'))}>Game accounts</Btn>
             <Btn onClick={() => openSheet({ kind: 'guide' })}>User guide</Btn>
           </div>
         </div>
@@ -137,9 +136,6 @@ export function SettingsPage() {
                 Games
               </h2>
               <span aria-hidden />
-              <Btn className={TOUCH_BUTTON} onClick={() => openSheet({ kind: 'addGame' })}>
-                Add game
-              </Btn>
             </div>
 
             <div className="mx-2 flex flex-wrap items-center justify-between gap-3 border-b border-line py-3">

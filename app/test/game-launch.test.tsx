@@ -4,7 +4,6 @@ import { makeGame } from '../../shared/test/helpers';
 import { LaunchButton, LaunchSettings } from '../src/components/GameLaunch';
 import { TooltipProvider } from '../src/components/ui';
 import { initGameLaunch, useGameLaunch } from '../src/game-launch';
-import { useReadings } from '../src/readings';
 
 const game = makeGame({ id: 'hsr', name: 'Honkai: Star Rail' });
 const host = {
@@ -23,8 +22,7 @@ const show = () =>
 
 beforeEach(() => {
   vi.clearAllMocks();
-  useGameLaunch.setState({ available: false, targets: {}, busy: null });
-  useReadings.setState({ notice: null });
+  useGameLaunch.setState({ available: false, targets: {}, busy: null, notice: null });
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -34,19 +32,19 @@ it('renders nothing where the game cannot be started', () => {
   expect(screen.queryByRole('button')).not.toBeInTheDocument();
 });
 
-it('asks once what starts the game, then launches it by id', async () => {
+it('shows Launch only once its target is chosen in the card settings, then launches by id', async () => {
   vi.stubGlobal('memoriaDesktop', { version: 1, launch: host });
   initGameLaunch();
   show();
   expect(screen.queryByRole('button', { name: 'Launch Honkai: Star Rail' })).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Set up launch' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Choose' }));
   const launch = await screen.findByRole('button', { name: 'Launch Honkai: Star Rail' });
   expect(host.choose).toHaveBeenCalledExactlyOnceWith('hsr');
   expect(screen.getByRole('group', { name: 'Launch settings for Honkai: Star Rail' })).toHaveTextContent(
     'Launch starts launcher.exe',
   );
   fireEvent.click(launch);
-  await waitFor(() => expect(useReadings.getState().notice?.text).toBe('Starting launcher.exe.'));
+  await waitFor(() => expect(useGameLaunch.getState().notice?.text).toBe('Starting launcher.exe.'));
   // Only the id crosses to the desktop shell. The path never comes from the page.
   expect(host.start).toHaveBeenCalledExactlyOnceWith('hsr');
 });
@@ -62,7 +60,7 @@ it('reports why Windows refused, without the bridge prefix', async () => {
   show();
   fireEvent.click(screen.getByRole('button', { name: 'Launch Honkai: Star Rail' }));
   await waitFor(() =>
-    expect(useReadings.getState().notice).toMatchObject({
+    expect(useGameLaunch.getState().notice).toMatchObject({
       tone: 'error',
       text: 'launcher.exe is no longer there. Choose it again.',
     }),
@@ -75,6 +73,7 @@ it('removes the target from the card settings', async () => {
   useGameLaunch.setState({ available: true, targets: { hsr: 'launcher.exe' } });
   show();
   fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
-  await screen.findByRole('button', { name: 'Set up launch' });
+  await screen.findByRole('button', { name: 'Choose' });
+  expect(screen.queryByRole('button', { name: 'Launch Honkai: Star Rail' })).not.toBeInTheDocument();
   expect(host.clear).toHaveBeenCalledExactlyOnceWith('hsr');
 });

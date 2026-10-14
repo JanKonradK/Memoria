@@ -265,10 +265,6 @@ describe('depth is tonal, not cast', () => {
       'components/ui.tsx',
       // The add menu: a dropdown genuinely overlays the page.
       'components/AddMenu.tsx',
-      // The card's readings menu is the same kind of dropdown.
-      'components/GameReadings.tsx',
-      // The "which game is this?" dialog for a screenshot two accounts could claim.
-      'components/ReadingIntake.tsx',
       'components/TimelineTools.tsx',
       'components/UserGuide.tsx',
       // A lifted widget overlays the grid only for the duration of its drag.

@@ -39,16 +39,7 @@ beforeAll(async () => {
     '<!doctype html><html><head></head><body>Memoria</body></html>',
   );
   writeFileSync(join(install, 'app', 'dist-private', 'private.txt'), 'outside the public app');
-  for (const file of [
-    'memoria.mjs',
-    'lan-sync.mjs',
-    'http-response.mjs',
-    'update.mjs',
-    'game-connections.mjs',
-    'screenshot-ocr.mjs',
-    'screenshot-ocr.ps1',
-    'dist/shared-core.mjs',
-  ]) {
+  for (const file of ['memoria.mjs', 'lan-sync.mjs', 'http-response.mjs', 'update.mjs', 'dist/shared-core.mjs']) {
     cpSync(join(root, 'desktop', file), join(install, 'desktop', file));
   }
   // Isolate the test server from all real Memoria ports and app data. The

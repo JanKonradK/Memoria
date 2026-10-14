@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type Reac
 import { AnimatePresence, m } from 'motion/react';
 import { flushPersist, useApp } from './store';
 import { initCloudSync } from './cloud-sync';
-import { initGameConnections } from './game-connections';
 import { initRemoteFeed } from './data/remote-feed';
 import { initNotifications } from './notifications';
 import { initSync } from './sync';
@@ -14,7 +13,7 @@ import { servedByLauncher } from './launcher';
 import { isNativeApp } from './native';
 import { closeWorkspace, initWorkspaceHistory } from './workspace-navigation';
 import { initDesktopHost } from './desktop-host';
-import { initGameLaunch } from './game-launch';
+import { dismissLaunchNotice, initGameLaunch, useGameLaunch } from './game-launch';
 import { easing, duration } from './motion';
 import { useTabSwipe } from './gestures';
 import { AppBar } from './components/AppBar';
@@ -65,10 +64,6 @@ const ReminderSheet = lazy(() =>
   import('./components/ReminderSheet').then((module) => ({ default: module.ReminderSheet })),
 );
 const UserGuide = lazy(() => import('./components/UserGuide').then((module) => ({ default: module.UserGuide })));
-const ReadingIntake = lazy(() =>
-  import('./components/ReadingIntake').then((module) => ({ default: module.ReadingIntake })),
-);
-const PlayMode = lazy(() => import('./components/PlayMode').then((module) => ({ default: module.PlayMode })));
 
 type PagePosition = { page: number; board: number };
 
@@ -185,6 +180,12 @@ export default function App() {
   }, [loaded, tab, hasFocusedGame, setTab]);
   const online = useOnline();
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const launchNotice = useGameLaunch((s) => s.notice);
+  useEffect(() => {
+    if (!launchNotice || launchNotice.tone === 'error') return;
+    const timer = window.setTimeout(dismissLaunchNotice, 6000);
+    return () => window.clearTimeout(timer);
+  }, [launchNotice]);
   const autoTourStarted = useRef(false);
   const reportLoadError = (error: unknown) => {
     useApp.setState({ loadError: error instanceof Error ? error.message : 'Local data operation failed.' });
@@ -197,10 +198,6 @@ export default function App() {
   useEffect(initWorkspaceHistory, []);
   useEffect(initDesktopHost, []);
   useEffect(initGameLaunch, []);
-
-  useEffect(() => {
-    if (loaded) return initGameConnections();
-  }, [loaded]);
 
   useEffect(() => {
     if (loaded) return initRemoteFeed();
@@ -373,6 +370,24 @@ export default function App() {
               Offline — changes are saved on this device.
             </m.div>
           )}
+          {launchNotice && (
+            <m.div
+              key="launch"
+              variants={toastMotion}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className={`pointer-events-auto flex w-full items-center gap-2 rounded-ui-xl bg-popover/95 px-4 py-2 text-meta font-semibold shadow-float ring-1 backdrop-blur-md ${
+                launchNotice.tone === 'error' ? 'text-danger-fg ring-danger/25' : 'text-fg-soft ring-line-strong'
+              }`}
+              role={launchNotice.tone === 'error' ? 'alert' : 'status'}
+            >
+              <span className="min-w-0 flex-1">{launchNotice.text}</span>
+              <button type="button" onClick={dismissLaunchNotice} className="min-h-9 px-2">
+                Dismiss
+              </button>
+            </m.div>
+          )}
           {updateAvailable && (
             <m.div
               key="update"
@@ -401,10 +416,6 @@ export default function App() {
       </div>
 
       <AppSheets />
-      <Suspense fallback={null}>
-        <ReadingIntake />
-        <PlayMode />
-      </Suspense>
     </div>
   );
 }

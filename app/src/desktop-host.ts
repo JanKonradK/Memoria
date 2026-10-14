@@ -1,9 +1,6 @@
 import { useLayoutEffect } from 'react';
 import { flushPersist, useApp } from './store';
 import { flushSync } from './sync';
-import type { DesktopPlay } from './desktop-play';
-import type { HoyoNativeAccount, HoyoNativeReading } from './hoyo-native';
-import type { ConnectionResponse } from './game-connections';
 
 export interface DesktopCloseResult {
   allow: boolean;
@@ -13,31 +10,12 @@ export interface DesktopCloseResult {
 /** Narrow native actions only, never Node, cookies or arbitrary IPC. */
 export interface DesktopHost {
   version: 1;
-  play?: DesktopPlay;
   /** Start a tracked game. Targets are picked in a native dialog and never leave this PC. */
   launch?: {
     list(): Promise<LaunchTargets>;
     choose(gameId: string): Promise<LaunchTargets>;
     clear(gameId: string): Promise<LaunchTargets>;
     start(gameId: string): Promise<{ started: string }>;
-  };
-  browser?: {
-    setup(): Promise<{ folder: string }>;
-    status(): Promise<{ receivedAt: number | null; accounts: number; error?: string }>;
-    listAccounts(options: { provider: HoyoNativeReading['provider'] }): Promise<{ accounts: HoyoNativeAccount[] }>;
-    request(body?: Record<string, unknown>): Promise<ConnectionResponse>;
-  };
-  hoyo?: {
-    connect(): Promise<{ connected: boolean }>;
-    disconnect(): Promise<{ connected: boolean }>;
-    listAccounts(options: { provider: HoyoNativeReading['provider'] }): Promise<{ accounts: HoyoNativeAccount[] }>;
-    connectAccount(options: {
-      gameId: string;
-      provider: HoyoNativeReading['provider'];
-      uid: string;
-      server: string;
-      autoRefresh: boolean;
-    }): Promise<ConnectionResponse>;
   };
   onCloseRequested(listener: (requestId: string) => void): () => void;
   completeClose(requestId: string, result: DesktopCloseResult): void;

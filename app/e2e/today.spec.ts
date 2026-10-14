@@ -51,7 +51,8 @@ test('a Today game is edited in its card on desktop and on its own page on a pho
   const desktop = page.viewportSize()!.width >= 900;
   const row = page.getByRole('button', { name: `${desktop ? 'Review' : 'Open'} Genshin Impact`, exact: true });
   await expect(page.getByRole('button', { name: 'Open game', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Import readings', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Readings', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Play mode', exact: true })).toHaveCount(0);
   if (desktop) {
     await expect(row).toHaveAttribute('aria-pressed', 'true');
     const card = page.getByRole('region', { name: 'Genshin Impact card', exact: true });

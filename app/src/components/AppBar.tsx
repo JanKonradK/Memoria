@@ -284,29 +284,6 @@ export function AppBar() {
 
       <div className="app-utilities flex items-center justify-end gap-1 sm:gap-2">
         <SyncIndicator />
-        {isDesktopApp() && (
-          <button
-            type="button"
-            className="shell-control"
-            aria-label="Play mode"
-            title="Play mode"
-            onClick={() => document.dispatchEvent(new CustomEvent('memoria:open-play'))}
-          >
-            <svg
-              viewBox="0 0 20 20"
-              aria-hidden
-              className="icon h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M6 6h8c1.1 0 1.8.8 2 2l1 6c.2 1.4-1.3 2.2-2.2 1.2L12.5 13h-5l-2.3 2.2C4.3 16.2 2.8 15.4 3 14l1-6c.2-1.2.9-2 2-2Z" />
-              <path d="M7 8v4m-2-2h4m4-1h.01M15 11h.01" />
-            </svg>
-            <span className="hidden sm:inline">Play mode</span>
-          </button>
-        )}
         <AddMenu />
         <RefreshButton />
         <button

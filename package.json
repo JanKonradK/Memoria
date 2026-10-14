@@ -33,7 +33,6 @@
     "export:events": "node scripts/export-event-feed.mjs",
     "desktop": "node scripts/start-desktop.mjs",
     "check:native": "node scripts/check-native.mjs",
-    "check:browser": "node scripts/check-browser-extension.mjs",
     "prepackage": "node node_modules/electron/install.js",
     "predesktop": "node node_modules/electron/install.js"
   },
