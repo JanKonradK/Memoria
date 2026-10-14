@@ -101,6 +101,73 @@ describe('bounded update downloads', () => {
   });
 });
 
+describe('release lookup and staging', () => {
+  const release = {
+    version: '9.0.0',
+    tag: 'v9.0.0',
+    name: 'Memoria v9.0.0',
+    notes: '',
+    url: 'https://github.com/JanKonradK/Memoria/releases/tag/v9.0.0',
+    publishedAt: null,
+    assets: [
+      { name: 'Memoria-win-x64.zip', url: 'https://example.invalid/zip', size: 5 },
+      { name: 'SHA256SUMS.txt', url: 'https://example.invalid/sums', size: 90 },
+    ],
+  };
+
+  it('reads the latest final release and skips a prerelease', async () => {
+    const { fetchLatestRelease } = await loadUpdater();
+    const body = {
+      tag_name: 'v9.0.0',
+      name: 'Memoria v9.0.0',
+      body: 'Notes',
+      html_url: release.url,
+      assets: [{ name: 'Memoria-win-x64.zip', browser_download_url: 'https://example.invalid/zip', size: 5 }],
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json(body)),
+    );
+    expect(await fetchLatestRelease()).toMatchObject({
+      version: '9.0.0',
+      notes: 'Notes',
+      assets: [{ name: 'Memoria-win-x64.zip', url: 'https://example.invalid/zip', size: 5 }],
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ ...body, prerelease: true })),
+    );
+    expect(await fetchLatestRelease()).toBeNull();
+  });
+
+  it('refuses a download that does not match the published checksum and stages nothing', async () => {
+    writeRelease(installRoot, '3.0.0');
+    const { stageRelease, stagedVersion } = await loadUpdater();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url) =>
+        url.endsWith('/sums')
+          ? new Response(`${'0'.repeat(64)}  Memoria-win-x64.zip
+`)
+          : new Response('bytes'),
+      ),
+    );
+    await expect(stageRelease(installRoot, release)).rejects.toThrow(/damaged/);
+    expect(stagedVersion(installRoot)).toBeNull();
+    expect(existsSync(join(scratch, 'memoria', 'updates', 'download'))).toBe(false);
+  });
+
+  it('never stages over a source checkout or an equal version', async () => {
+    const { stageRelease } = await loadUpdater();
+    const fetch = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+    await expect(stageRelease(installRoot, release)).rejects.toThrow(/source/);
+    writeRelease(installRoot, '9.0.0');
+    await expect(stageRelease(installRoot, release)).rejects.toThrow(/already installed/);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
 describe('compareVersions', () => {
   it('orders release versions numerically, not as strings', async () => {
     const { compareVersions } = await loadUpdater();

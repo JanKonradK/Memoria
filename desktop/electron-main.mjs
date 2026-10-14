@@ -5,6 +5,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { externalUrl, isAppUrl, launchOrigin, windowBounds } from './native-policy.mjs';
 import { createGameLaunch, LAUNCH_EXTENSIONS } from './game-launch.mjs';
+import { fetchLatestRelease, paths, readReleaseRecord, stagedVersion, stageRelease } from './update.mjs';
 
 const here = import.meta.dirname;
 const root = resolve(here, '..');
@@ -29,6 +30,9 @@ let requestedVisibility;
 let visibilityTimer;
 let visibilityRevision = 0;
 let focusPending = false;
+let latestRelease;
+let downloading;
+let installOnQuit = false;
 const boundsFile = join(data, 'desktop-window.json');
 // A restarted utility process retains this window's API session. It never goes to disk.
 const backendSession = randomBytes(32).toString('base64url');
@@ -103,6 +107,85 @@ for (const [channel, action] of Object.entries({
   });
 }
 
+// Updates: the renderer asks, the main process talks to GitHub (the window's
+// content policy only allows its own origin) and installs after the window has
+// saved and closed, by running the new build's own installer.
+const updateActions = {
+  'memoria:update-check': async () => {
+    const record = readReleaseRecord(root);
+    latestRelease = await fetchLatestRelease();
+    return {
+      installed: record?.version ?? null,
+      release: latestRelease,
+      staged: stagedVersion(root),
+    };
+  },
+  'memoria:update-download': () => {
+    if (!latestRelease) throw new Error('Check for updates first.');
+    const release = latestRelease;
+    let lastSent = 0;
+    downloading ??= stageRelease(root, release, (received, total) => {
+      const now = Date.now();
+      if (now - lastSent < 200 || !window || window.isDestroyed()) return;
+      lastSent = now;
+      window.webContents.send('memoria:update-progress', { received, total });
+    }).finally(() => {
+      downloading = undefined;
+    });
+    return downloading;
+  },
+  'memoria:update-install': () => {
+    if (!stagedVersion(root)) throw new Error('Download the update first.');
+    installOnQuit = true;
+    requestClose();
+    return true;
+  },
+};
+for (const [channel, action] of Object.entries(updateActions)) {
+  ipcMain.handle(channel, (event) => {
+    if (!trustedSender(event) || quitting) throw new Error('This action is only available in Memoria.');
+    return action();
+  });
+}
+
+/**
+ * Waits for this process tree to exit, installs the staged build over this
+ * install with its own installer, then reopens Memoria — the new build, or the
+ * old one if the install failed and rolled back.
+ */
+function runStagedInstaller() {
+  const installer = join(paths.PENDING_DIR, 'desktop', 'Install-Shortcut.ps1');
+  const quote = (value) => `'${String(value).replaceAll("'", "''")}'`;
+  const script = [
+    "$ErrorActionPreference = 'Continue'",
+    `$log = ${quote(join(paths.UPDATE_DIR, 'install.log'))}`,
+    `Wait-Process -Id ${process.pid} -Timeout 60 -ErrorAction SilentlyContinue`,
+    '$installed = $false',
+    'foreach ($attempt in 1..20) {',
+    `  & ${quote(installer)} -InstallRoot ${quote(root)} -NoShortcuts *> $log`,
+    '  if ($?) { $installed = $true; break }',
+    '  Start-Sleep -Milliseconds 500',
+    '}',
+    `if ($installed) { Remove-Item -LiteralPath ${quote(paths.PENDING_DIR)} -Recurse -Force -ErrorAction SilentlyContinue; Remove-Item -LiteralPath ${quote(paths.PENDING_MANIFEST)} -Force -ErrorAction SilentlyContinue }`,
+    'Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue',
+    `Start-Process -FilePath ${quote(join(root, 'Memoria.exe'))} -WorkingDirectory ${quote(root)}`,
+  ].join('\n');
+  const env = { ...process.env };
+  delete env.ELECTRON_RUN_AS_NODE;
+  spawn(
+    'powershell.exe',
+    [
+      '-NoProfile',
+      '-NonInteractive',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-EncodedCommand',
+      Buffer.from(script, 'utf16le').toString('base64'),
+    ],
+    { detached: true, stdio: 'ignore', windowsHide: true, env },
+  ).unref();
+}
+
 function saveBounds() {
   if (!window || window.isDestroyed()) return;
   try {
@@ -159,6 +242,7 @@ function requestClose() {
   window.webContents.send('memoria:close-request', pendingClose);
   closeTimer = setTimeout(() => {
     pendingClose = undefined;
+    installOnQuit = false;
     if (window && !window.isDestroyed()) {
       void dialog.showMessageBox(window, {
         type: 'warning',
@@ -200,7 +284,11 @@ ipcMain.on('memoria:close-result', (event, requestId, result) => {
     // The renderer has checked drafts and awaited both storage layers.
     window?.destroy();
     app.quit();
-  } else if (typeof result.error === 'string' && result.error) {
+    return;
+  }
+  // A refused close also cancels the install it was asked for.
+  installOnQuit = false;
+  if (typeof result.error === 'string' && result.error) {
     void dialog.showMessageBox(window, {
       type: 'warning',
       title: 'Keep Memoria open',
@@ -476,9 +564,10 @@ async function createWindow() {
         submenu: [
           { label: 'Allow phone sync through Windows', click: allowPhoneSync },
           {
-            label: 'Download updates',
+            label: 'Check for updates',
             click: () => {
-              void openExternal('https://github.com/JanKonradK/Memoria/releases/latest');
+              focusWindow();
+              window?.webContents.send('memoria:show-updates');
             },
           },
           {
@@ -537,6 +626,10 @@ if (!app.requestSingleInstanceLock()) {
     }
   });
   app.on('will-quit', () => {
+    if (installOnQuit) {
+      installOnQuit = false;
+      runStagedInstaller();
+    }
     quitting = true;
     cancelWindowVisibility();
     clearTimeout(closeTimer);

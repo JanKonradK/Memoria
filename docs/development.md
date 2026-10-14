@@ -96,10 +96,11 @@ npm ci
 npm run build:android
 ```
 
-The output is `dist/release/Memoria-android-debug.apk`.
+The output is `dist/release/Memoria-android.apk`, a release build. Its version comes from `package.json`.
 The APK contains the app assets and supports offline startup. The minimum version is Android 7 (API 24).
-The build uses a local debug key. Keep that key to install later test builds as updates.
-A public release needs a separate release key and a signing process.
+It is signed with `~/.android/debug.keystore`, the key already on installed devices. Set `MEMORIA_KEYSTORE` and its password variables to use another.
+Android refuses an update signed with a different key, so every published APK must use this one.
+The release workflow restores it from the `ANDROID_KEYSTORE_BASE64` repository secret.
 
 Native Back closes the active editor through its normal cancel control.
 The Android backup command opens the system file picker.
@@ -179,7 +180,7 @@ The native release record uses `runtime: "electron"` and `updateMode: "manual"`.
 This prevents the backend from changing program files that the desktop runtime uses.
 
 The standalone HTML includes its scripts, styles, fonts, and icon.
-It has no service worker, launcher sync, or automatic updater.
+It has no service worker or launcher sync. It checks for new releases and links to the download page, but cannot replace itself.
 Use a backup to transfer data between browsers or file locations.
 
 ## Publish a release
@@ -193,15 +194,19 @@ git push --follow-tags
 ```
 
 Use `minor` or `major` instead of `patch` when appropriate.
+Write the release notes in `docs/releases/v<version>.md` before tagging. The app shows them in **Settings → Updates**.
 A `v*` tag starts [the release workflow](../.github/workflows/release.yml).
 The tag must match the version in `package.json`.
-The workflow builds and publishes both downloads, checksums, and release notes.
+The workflow builds and publishes the Windows, Android and one-file downloads, checksums, and release notes.
 CI also assembles the Windows package on each push to `main` and each pull request.
 
-## Desktop updates
+## Updates
 
-The standalone desktop app uses manual updates. Select **Help → Download updates** to open the release page.
-Close Memoria before you install a newer download. The installer retains the current program folder until the new copy is complete.
+Every build checks the latest GitHub release from **Settings → Updates** (`app/src/app-update.ts`).
+The Windows app downloads `Memoria-win-x64.zip` in the main process, verifies it against `SHA256SUMS.txt` and stages it in `%APPDATA%\memoria\updates\pending`.
+**Restart and update** closes through the normal save path. A detached PowerShell process then runs the staged `Install-Shortcut.ps1` over the install and reopens Memoria. Its log is `updates\install.log`.
+Android downloads `Memoria-android.apk`, verifies it the same way and opens the system installer (`AppUpdaterPlugin.java`).
+The installer retains the current program folder until the new copy is complete.
 If the final folder change fails, the installer restores the previous program folder.
 User data stays separate from the program files.
 

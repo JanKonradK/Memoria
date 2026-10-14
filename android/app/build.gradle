@@ -1,5 +1,10 @@
 apply plugin: 'com.android.application'
 
+// The version comes from the root package.json, like every other build. The
+// code orders releases for Android: 3.1.0 becomes 30100.
+def memoriaVersion = new groovy.json.JsonSlurper().parse(rootProject.file('../package.json')).version
+def memoriaVersionCode = memoriaVersion.tokenize('.-').take(3).collect { it.toInteger() }.inject(0) { code, part -> code * 100 + part }
+
 android {
     namespace = "app.memoria.tracker"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +12,8 @@ android {
         applicationId "app.memoria.tracker"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 4
-        versionName "3.0.1"
+        versionCode memoriaVersionCode
+        versionName memoriaVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +21,20 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        // Every published APK must carry the key already on people's devices,
+        // or Android refuses to update the app. CI restores that key into the
+        // default debug keystore location, so local and CI builds match.
+        memoria {
+            storeFile file(System.getenv('MEMORIA_KEYSTORE') ?: "${System.getProperty('user.home')}/.android/debug.keystore")
+            storePassword System.getenv('MEMORIA_KEYSTORE_PASSWORD') ?: 'android'
+            keyAlias System.getenv('MEMORIA_KEY_ALIAS') ?: 'androiddebugkey'
+            keyPassword System.getenv('MEMORIA_KEY_PASSWORD') ?: 'android'
+        }
+    }
     buildTypes {
         release {
+            signingConfig signingConfigs.memoria
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

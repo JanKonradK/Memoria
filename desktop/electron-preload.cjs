@@ -18,6 +18,28 @@ contextBridge.exposeInMainWorld(
       clear: (gameId) => ipcRenderer.invoke('memoria:launch-clear', gameId),
       start: (gameId) => ipcRenderer.invoke('memoria:launch-start', gameId),
     }),
+    // Release data comes from GitHub through the main process. Installing closes
+    // Memoria through the normal save-and-close path first.
+    update: Object.freeze({
+      check: () => ipcRenderer.invoke('memoria:update-check'),
+      download: () => ipcRenderer.invoke('memoria:update-download'),
+      install: () => ipcRenderer.invoke('memoria:update-install'),
+      onProgress(listener) {
+        if (typeof listener !== 'function') throw new TypeError('A progress listener is required.');
+        const handler = (_event, progress) => {
+          if (Number.isFinite(progress?.received) && Number.isFinite(progress?.total))
+            listener({ received: progress.received, total: progress.total });
+        };
+        ipcRenderer.on('memoria:update-progress', handler);
+        return () => ipcRenderer.removeListener('memoria:update-progress', handler);
+      },
+      onShowRequested(listener) {
+        if (typeof listener !== 'function') throw new TypeError('A listener is required.');
+        const handler = () => listener();
+        ipcRenderer.on('memoria:show-updates', handler);
+        return () => ipcRenderer.removeListener('memoria:show-updates', handler);
+      },
+    }),
     onCloseRequested(listener) {
       if (typeof listener !== 'function') throw new TypeError('A close listener is required.');
       const handler = (_event, requestId) => {
