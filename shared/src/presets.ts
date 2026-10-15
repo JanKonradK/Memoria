@@ -200,7 +200,7 @@ export const PRESETS: GamePreset[] = [
     color2: '#d8c9b4',
     color3: '#2f4078',
     // Fantasy serif — Genshin's storybook look.
-    titleFont: "'Cinzel', serif",
+    titleFont: "'Cinzel Decorative', serif",
     icon: '',
     platform: 'both',
     tz: 'Etc/GMT-1',
@@ -291,7 +291,7 @@ export const PRESETS: GamePreset[] = [
     color2: '#5aa9ff',
     color3: '#ff8fc0',
     // Condensed sci-fi — the Astral Express dashboard vibe.
-    titleFont: "'Orbitron', sans-serif",
+    titleFont: "'Zen Dots', sans-serif",
     icon: '',
     platform: 'both',
     tz: 'Etc/GMT-1',
@@ -340,7 +340,7 @@ export const PRESETS: GamePreset[] = [
     color2: '#f2f4f6',
     color3: '#f07e0f',
     // Heavy urban display — New Eridu street style.
-    titleFont: "'Rajdhani', sans-serif",
+    titleFont: "'Bungee', sans-serif",
     icon: '',
     platform: 'both',
     tz: 'Etc/GMT-1',
@@ -445,7 +445,7 @@ export const PRESETS: GamePreset[] = [
     color2: '#ffde40',
     color3: '#3b7cff',
     // Playful rounded pop — Mint's polka-dot energy.
-    titleFont: "'Space Grotesk', sans-serif",
+    titleFont: "'Righteous', sans-serif",
     icon: '',
     platform: 'both',
     tz: 'Etc/GMT-1',
@@ -520,7 +520,7 @@ export const PRESETS: GamePreset[] = [
     color2: '#101d3a',
     color3: '#f4f7fb',
     // Elegant geometric — the wordmark's thin, wide-set capitals.
-    titleFont: "'Jost', sans-serif",
+    titleFont: "'Italiana', serif",
     icon: '',
     // No native desktop client. Infold's own FAQ points PC players at an
     // Android emulator, so there is no executable worth watching for.
@@ -585,7 +585,7 @@ export const PRESETS: GamePreset[] = [
     color2: '#f05a8a',
     color3: '#f5c542',
     // Soft heavy display — the logo's thick, friendly letterforms.
-    titleFont: "'Fredoka', sans-serif",
+    titleFont: "'Mochiy Pop One', sans-serif",
     icon: '',
     platform: 'both',
     // One Global service on UTC+0 — there is no region to pick.
@@ -639,7 +639,7 @@ export const PRESETS: GamePreset[] = [
     color2: '#f2f2f4',
     color3: '#111318',
     // Techno stencil — the wordmark's cut, condensed capitals.
-    titleFont: "'Chakra Petch', sans-serif",
+    titleFont: "'Black Ops One', sans-serif",
     icon: '',
     platform: 'both',
     // Every region — Korea, Japan, NA, SEA and Global — publishes on one UTC+9
@@ -688,7 +688,7 @@ export const PRESETS: GamePreset[] = [
     color2: '#f2f2f0',
     color3: '#101114',
     // Wide industrial — the wordmark's cut-corner geometric capitals.
-    titleFont: "'Saira', sans-serif",
+    titleFont: "'Share Tech Mono', monospace",
     icon: '',
     platform: 'both',
     // GRYPHLINE runs ONE combined Americas/Europe server on UTC-5. A European

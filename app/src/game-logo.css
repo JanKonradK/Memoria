@@ -28,7 +28,8 @@
 }
 
 /* The coin: the disc inside the ring. Its two faces sit back to back, and its
-   resting turn says which is up. */
+   resting turn says which is up. A flip's toss is added on top of this turn
+   from GameLogo.tsx, and ends where it rests. */
 .game-logo-coin {
   position: absolute;
   inset: 11.33%;
@@ -66,51 +67,8 @@
   flex-shrink: 0;
 }
 
-/* A flip is a toss: the coin leaps toward you, turns two and a half times and
-   settles on its other side. Both ends match the resting turns above, so the
-   coin is simply in place when the animation is over, or if it never runs. */
-.game-logo-coin[data-spin='back'] {
-  animation: coinToBack 1100ms cubic-bezier(0.22, 0.8, 0.26, 1);
-}
-.game-logo-coin[data-spin='front'] {
-  animation: coinToFront 1100ms cubic-bezier(0.22, 0.8, 0.26, 1);
-}
-@keyframes coinToBack {
-  0% {
-    transform: rotateY(0deg) scale(1);
-  }
-  40% {
-    transform: rotateY(500deg) scale(1.28);
-  }
-  78% {
-    transform: rotateY(880deg) scale(0.97);
-  }
-  100% {
-    transform: rotateY(900deg) scale(1);
-  }
-}
-@keyframes coinToFront {
-  0% {
-    transform: rotateY(180deg) scale(1);
-  }
-  40% {
-    transform: rotateY(680deg) scale(1.28);
-  }
-  78% {
-    transform: rotateY(1060deg) scale(0.97);
-  }
-  100% {
-    transform: rotateY(1080deg) scale(1);
-  }
-}
-/* While it is in the air the ring hurries round with it. */
-.game-logo:has(.game-logo-coin[data-spin]) .game-logo-ring {
-  animation-duration: 1.6s;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .game-logo-ring,
-  .game-logo-coin[data-spin] {
+  .game-logo-ring {
     animation: none;
   }
 }

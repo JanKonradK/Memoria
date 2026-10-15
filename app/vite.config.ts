@@ -84,7 +84,7 @@ export default defineConfig(({ mode }) => {
                 // vietnamese ships in dist/ but unicode-range keeps it from ever being
                 // requested, so precaching it would cost weight for nothing.
                 globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,webmanifest,woff2}'],
-                // hebrew and thai arrive with Fredoka and Chakra Petch; same reasoning.
+                // cyrillic-ext arrives with Black Ops One; same reasoning.
                 globIgnores: ['**/*-{devanagari,vietnamese,cyrillic,cyrillic-ext,hebrew,thai,greek,greek-ext}-*'],
                 navigateFallback: '/index.html',
                 navigateFallbackDenylist: [/^\/api\//],

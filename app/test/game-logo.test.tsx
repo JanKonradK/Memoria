@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeGame } from '../../shared/test/helpers';
 import { GameLogo, logoKey, logoLines, logoRing } from '../src/components/GameLogo';
 import { LOGO_ART } from '../src/game-logo-art';
@@ -10,7 +10,27 @@ const custom = makeGame({ id: 'mine', name: 'My Custom Game', short: 'MCG', colo
 
 const coins = (container: HTMLElement) => [...container.querySelectorAll('.game-logo-coin')];
 
-beforeEach(() => useUI.setState({ logoFlipped: {} }));
+type Move = { node: Element; frames: Keyframe[]; options: KeyframeAnimationOptions };
+let moves: Move[] = [];
+const movesOf = (node: Element) => moves.filter((move) => move.node === node);
+
+beforeEach(() => {
+  useUI.setState({ logoFlipped: {} });
+  moves = [];
+  Object.defineProperty(Element.prototype, 'animate', {
+    configurable: true,
+    value: vi.fn(function (this: Element, frames: Keyframe[], options: KeyframeAnimationOptions) {
+      moves.push({ node: this, frames, options });
+    }),
+  });
+  // The shared setup reports reduced motion for any unrecognised query; these tests want motion allowed.
+  vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: false }) as MediaQueryList);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  Reflect.deleteProperty(Element.prototype, 'animate');
+});
 
 describe('logoLines', () => {
   it('breaks after a colon, else after the first word', () => {
@@ -91,8 +111,8 @@ describe('GameLogo', () => {
     expect(flip).toHaveAttribute('aria-pressed', 'false');
     fireEvent.click(flip);
     expect(coins(container).map((coin) => coin.hasAttribute('data-flipped'))).toEqual([true, true, true, false]);
-    // Each one spins to its back; a logo that was already showing that side would not.
-    expect(coins(container).map((coin) => coin.getAttribute('data-spin'))).toEqual(['back', 'back', 'back', null]);
+    // Each one is tossed to its back; a logo that was already showing that side would not be.
+    expect(coins(container).map((coin) => movesOf(coin).length > 0)).toEqual([true, true, true, false]);
     expect(useUI.getState().logoFlipped).toEqual({ genshin: true });
     expect(screen.getByRole('button', { name: 'Flip the Genshin Impact logo to its full name' })).toHaveAttribute(
       'aria-pressed',
@@ -100,11 +120,11 @@ describe('GameLogo', () => {
     );
   });
 
-  it('comes up already flipped, without spinning, when the flip was made earlier', () => {
+  it('comes up already flipped, without a toss, when the flip was made earlier', () => {
     useUI.setState({ logoFlipped: { genshin: true } });
     const { container } = render(<GameLogo game={genshin} />);
     expect(coins(container)[0]).toHaveAttribute('data-flipped');
-    expect(coins(container)[0]).not.toHaveAttribute('data-spin');
+    expect(moves).toEqual([]);
   });
 
   it('flips back to the full name', () => {
@@ -112,7 +132,43 @@ describe('GameLogo', () => {
     const { container } = render(<GameLogo game={genshin} flippable />);
     fireEvent.click(screen.getByRole('button'));
     expect(coins(container)[0]).not.toHaveAttribute('data-flipped');
-    expect(coins(container)[0]).toHaveAttribute('data-spin', 'front');
+    expect(movesOf(coins(container)[0]!)).not.toEqual([]);
     expect(useUI.getState().logoFlipped).toEqual({});
+  });
+
+  // A toss is added to the coin's resting turn: 0deg in front, 180deg behind.
+  it.each([
+    ['front', 'back', 0, 180],
+    ['back', 'front', 180, 0],
+  ])('tosses from the %s, two and a half turns, onto the %s', (_from, _to, wasResting, nowResting) => {
+    useUI.setState({ logoFlipped: wasResting === 180 ? { genshin: true } : {} });
+    const { container } = render(<GameLogo game={genshin} flippable />);
+    fireEvent.click(screen.getByRole('button'));
+    const [turn, leap] = movesOf(coins(container)[0]!);
+    const degrees = (frame: Keyframe) => Number(/rotateY\((-?\d+)deg\)/.exec(String(frame.transform))![1]);
+    const start = degrees(turn!.frames[0]!);
+    const end = degrees(turn!.frames.at(-1)!);
+    const side = (turned: number) => (((nowResting + turned) % 360) + 360) % 360;
+    expect(side(start)).toBe(wasResting);
+    expect(side(end)).toBe(nowResting);
+    expect(end - start).toBe(900);
+    expect(turn!.options.composite).toBe('add');
+    expect([leap!.frames[0]!.transform, leap!.frames.at(-1)!.transform]).toEqual(['scale(1)', 'scale(1)']);
+  });
+
+  it('hurries the ring round by whole turns, so it carries on from where it would have been', () => {
+    const { container } = render(<GameLogo game={genshin} flippable />);
+    fireEvent.click(screen.getByRole('button'));
+    const [hurry] = movesOf(container.querySelector('.game-logo-ring')!);
+    expect(hurry!.frames).toEqual([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }]);
+    expect(hurry!.options.composite).toBe('add');
+  });
+
+  it('just changes side when the reader prefers reduced motion', () => {
+    vi.mocked(window.matchMedia).mockImplementation(() => ({ matches: true }) as MediaQueryList);
+    const { container } = render(<GameLogo game={genshin} flippable />);
+    fireEvent.click(screen.getByRole('button'));
+    expect(coins(container)[0]).toHaveAttribute('data-flipped');
+    expect(moves).toEqual([]);
   });
 });

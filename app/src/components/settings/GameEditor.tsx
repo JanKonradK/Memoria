@@ -2,7 +2,7 @@ import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { GameEditorSection } from '../../ui-store';
 import type { Cadence, Game } from '@memoria/shared';
 import { missingPresetTasks, presetForGame } from '@memoria/shared';
-import { FONT_OPTIONS, titleStyle } from '../../fonts';
+import { FONT_OPTIONS, titleFontOption, titleStyle } from '../../fonts';
 import { gameTitleInk, trioOf, type GameColors } from '../../game-color';
 import { useApp } from '../../store';
 import { useGround } from '../../theme';
@@ -363,7 +363,7 @@ export function GameEditor({
                 <Field label="Title font">
                   <Select
                     className={COMPACT_INPUT}
-                    value={game.titleFont ?? ''}
+                    value={titleFontOption(game.titleFont)}
                     onChange={(event) => updateGame(game.id, { titleFont: event.target.value || undefined })}
                   >
                     <option value="">Default</option>
@@ -372,7 +372,7 @@ export function GameEditor({
                         {font.label}
                       </option>
                     ))}
-                    {game.titleFont && !FONT_OPTIONS.some((font) => font.css === game.titleFont) && (
+                    {game.titleFont && !FONT_OPTIONS.some((font) => font.css === titleFontOption(game.titleFont)) && (
                       <option value={game.titleFont}>{game.titleFont}</option>
                     )}
                   </Select>
