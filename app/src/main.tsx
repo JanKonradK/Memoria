@@ -23,15 +23,17 @@ import '@fontsource/dm-sans/500.css';
 import '@fontsource/dm-sans/600.css';
 // Per-game title faces (see fonts.ts), one weight each: the weight that game's
 // logo sets its name in.
-import '@fontsource/cinzel/600.css';
-import '@fontsource/orbitron/600.css';
-import '@fontsource/rajdhani/700.css';
+import '@fontsource/cinzel-decorative/700.css';
+import '@fontsource/zen-dots/400.css';
+import '@fontsource/bungee/400.css';
 import '@fontsource/vujahday-script/400.css';
-import '@fontsource/space-grotesk/700.css';
-import '@fontsource/jost/300.css';
-import '@fontsource/fredoka/600.css';
-import '@fontsource/chakra-petch/500.css';
-import '@fontsource/saira/700.css';
+import '@fontsource/righteous/400.css';
+import '@fontsource/italiana/400.css';
+// Latin only: the aggregate file brings 119 Japanese slices, which the service
+// worker would precache (3.7 MB) for a face that only ever sets game names.
+import '@fontsource/mochiy-pop-one/latin-400.css';
+import '@fontsource/black-ops-one/400.css';
+import '@fontsource/share-tech-mono/400.css';
 
 /** Loaded after first paint — see motion-features.ts. */
 const loadMotionFeatures = () => import('./motion-features').then((module) => module.default);

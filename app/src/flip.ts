@@ -14,7 +14,7 @@ function place(node: HTMLElement): Point {
   return { x: rect.left + window.scrollX, y: rect.top + window.scrollY };
 }
 
-function prefersReducedMotion(): boolean {
+export function prefersReducedMotion(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
