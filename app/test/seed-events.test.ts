@@ -10,7 +10,7 @@ import {
 } from '../src/data/seed-events';
 
 const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
-const maintenance = SEED_EVENTS.find((seed) => seed.sourceKey === 'seed:genshin:6.8-maint')!;
+const maintenance = SEED_EVENTS.find((seed) => seed.sourceKey === 'genshin:21901')!;
 const beforeMaintenance = Date.parse('2026-08-07T00:00:00Z');
 
 it.each(['UTC+1', 'UTC+8', 'UTC-5'])('keeps permanent Genshin cycles continuous in %s', (tz) => {
@@ -55,8 +55,8 @@ function importedMaintenance(): GameEvent {
     gameId: 'eu',
     name: maintenance.name,
     type: maintenance.type,
-    start: Date.parse('2026-08-11T22:00:00Z'),
-    end: Date.parse('2026-08-12T03:00:00Z'),
+    start: Date.parse('2026-10-19T09:00:00Z'),
+    end: Date.parse('2026-11-02T02:59:00Z'),
     dailyTouch: false,
     notify: true,
     notes: maintenance.notes ?? '',
@@ -285,7 +285,7 @@ describe('planSeedImport', () => {
     const added = planned.filter((item) => item.kind === 'add');
     expect(added).toHaveLength(1);
     expect(added[0]).toMatchObject({ kind: 'add', gameId: 'us' });
-    expect(added[0]!.seed!.sourceKey).toBe('seed:genshin:6.8-maint');
+    expect(added[0]!.seed!.sourceKey).toBe('genshin:21901');
   });
 
   it('keeps the name-collision guard inside one account', () => {
