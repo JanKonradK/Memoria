@@ -13,7 +13,7 @@ test('failed local saves keep edits available for retry and backup', async ({ pa
   });
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  await page.getByRole('button', { name: 'Add your first game' }).click();
+  await page.getByRole('button', { name: 'Add a game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -28,7 +28,7 @@ test('failed local saves keep edits available for retry and backup', async ({ pa
   await page.evaluate(() => sessionStorage.setItem('test-fail-save', '1'));
   await energy.fill('37');
   await energy.press('Enter');
-  await expect(page.getByRole('alert')).toContainText('Your latest changes could not be saved');
+  await expect(page.getByRole('alert')).toContainText('Your latest changes were not saved');
   await page.getByRole('button', { name: 'Refresh data' }).click();
   await expect(energy).toHaveValue('37');
   await page.getByRole('button', { name: 'Open backup settings' }).click();

@@ -976,14 +976,13 @@ export const useApp = create<AppStore>((set, get) => ({
       /* Invalid input is rejected below. */
     }
     const parsed = bytes <= MAX_EVENT_FEED_BYTES ? RemoteEventFeedSchema.safeParse(payload) : null;
-    if (!parsed?.success)
-      return { applied: 0, skipped: true, error: 'The public calendar is invalid. Existing events were kept.' };
+    if (!parsed?.success) return { applied: 0, skipped: true, error: 'Event update was invalid. Kept saved events.' };
     const feed = parsed.data;
     const at = now();
     const generatedAt = Date.parse(feed.generatedAt);
     const current = get().state.settings.remoteFeedVersion;
     if (generatedAt > at + 300_000 || feed.seedUpdated > new Date(at).toISOString().slice(0, 10))
-      return { applied: 0, skipped: true, error: 'The public calendar has a future publication date.' };
+      return { applied: 0, skipped: true, error: 'Event update has a future date.' };
     if (
       feed.seedUpdated < SEED_UPDATED ||
       (current && (generatedAt < Date.parse(current.generatedAt) || feed.seedUpdated < current.seedUpdated))

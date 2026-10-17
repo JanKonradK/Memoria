@@ -11,9 +11,9 @@ export function LivestreamCodes({ redemption, gameName }: { redemption: CodeSet;
   const copy = async (code: string) => {
     try {
       await navigator.clipboard.writeText(code);
-      setMessage(`${code} copied. Paste it to redeem.`);
+      setMessage(`Copied ${code}`);
     } catch {
-      setMessage(`Could not copy ${code}. Select the code and copy it manually.`);
+      setMessage(`Could not copy ${code}`);
     }
   };
   return (
@@ -22,11 +22,7 @@ export function LivestreamCodes({ redemption, gameName }: { redemption: CodeSet;
         <h4 className="text-meta font-semibold text-fg-soft">Reward codes</h4>
         <span aria-hidden />
         <span className="numeral aside text-caption text-muted">
-          {status === 'expired'
-            ? 'Expired'
-            : status === 'available'
-              ? 'Redemption window open'
-              : 'Expiry not confirmed'}
+          {status === 'expired' ? 'Expired' : status === 'available' ? 'Active' : ''}
         </span>
       </div>
       {redemption.expiryLabel && (
@@ -38,7 +34,7 @@ export function LivestreamCodes({ redemption, gameName }: { redemption: CodeSet;
         <summary
           className={`${status === 'expired' ? '' : 'hidden'} min-h-11 cursor-pointer content-center rounded-ui-sm px-2 py-2 text-meta text-accent-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
         >
-          Show expired codes ({redemption.codes.length})
+          Expired codes ({redemption.codes.length})
         </summary>
         <ul className="mt-2 grid gap-0.5">
           {redemption.codes.map(({ code, rewards, redeemUrl }) => (
@@ -72,14 +68,6 @@ export function LivestreamCodes({ redemption, gameName }: { redemption: CodeSet;
           ))}
         </ul>
         <p className="mt-3 px-2 text-meta leading-relaxed text-muted">{redemption.instructions}</p>
-        <a
-          href={redemption.source.url}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-1 inline-flex min-h-11 items-center px-2 text-caption text-muted underline underline-offset-4 hover:text-fg"
-        >
-          {redemption.source.label} ↗
-        </a>
       </details>
       <p role="status" className="mt-1 px-2 text-meta text-fg-soft">
         {message}

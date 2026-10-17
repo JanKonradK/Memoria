@@ -122,9 +122,7 @@ test('agenda keeps full titles, actions and route-return choices usable at every
     'No matching event',
   );
   await viewControls.getByRole('radio', { name: 'List', exact: true }).click();
-  await expect(
-    page.getByText('No events match “No matching event”. Clear the search to see all events.'),
-  ).toBeVisible();
+  await expect(page.getByText('No events match “No matching event”.')).toBeVisible();
   await page.getByRole('button', { name: 'Clear event search', exact: true }).click();
   await expect(page.locator('[data-list-event]')).toHaveCount(12);
 });

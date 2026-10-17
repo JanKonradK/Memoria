@@ -34,7 +34,7 @@ test.beforeEach(async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  await page.getByRole('button', { name: 'Add your first game' }).click();
+  await page.getByRole('button', { name: 'Add a game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -51,8 +51,8 @@ test('cards add, rename, change behavior, and delete finished events from Edit l
   await page.getByRole('option', { name: 'banner', exact: true }).click();
   await dialog.getByRole('combobox', { name: 'Banner tag', exact: true }).click();
   await page.getByRole('option', { name: 'Character banner', exact: true }).click();
-  await dialog.getByRole('switch', { name: 'Needs a daily check-in' }).click();
-  await dialog.getByRole('switch', { name: 'Include in next actions' }).click();
+  await dialog.getByRole('switch', { name: 'Daily check-in' }).click();
+  await dialog.getByRole('switch', { name: 'Count toward next action' }).click();
   await dialog.getByRole('button', { name: 'Add event', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await page.getByRole('button', { name: 'Edit Genshin Impact', exact: true }).last().click();
@@ -69,7 +69,7 @@ test('cards add, rename, change behavior, and delete finished events from Edit l
   await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('My renamed cycle');
   await dialog.getByRole('combobox', { name: 'Type', exact: true }).click();
   await page.getByRole('option', { name: 'cycle', exact: true }).click();
-  await dialog.getByRole('switch', { name: 'Mark done', exact: true }).click();
+  await dialog.getByRole('switch', { name: 'Done', exact: true }).click();
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await panel.getByRole('searchbox', { name: 'Find event' }).fill('My renamed cycle');

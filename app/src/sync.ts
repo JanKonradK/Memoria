@@ -44,7 +44,7 @@ export async function syncNow(): Promise<void> {
   if (stateBytes > SYNC_WARNING_BYTES) {
     store.setSyncStatus(
       'error',
-      `Local data is ${stateBytes.toLocaleString()} bytes and is nearing the 1 MB launcher limit. Export a backup and reduce large images or old data.`,
+      `Data is ${stateBytes.toLocaleString()} bytes, close to the 1 MB limit. Remove large images or old data.`,
     );
     return;
   }

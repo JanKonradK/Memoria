@@ -41,9 +41,6 @@ export function GameEvents({ game, now, onBeforeOpen }: { game: Game; now: numbe
           Add event
         </Btn>
       </div>
-      <p className="mb-3 mt-1 text-meta text-muted">
-        Open an event to change its name, type, dates, or check-in rules, or delete it.
-      </p>
       <Segmented
         ariaLabel="Game event status"
         value={filter}
@@ -64,11 +61,7 @@ export function GameEvents({ game, now, onBeforeOpen }: { game: Game; now: numbe
       <div className="mt-3 max-h-96 overflow-y-auto overscroll-contain">
         {shown.length === 0 ? (
           <p className="py-2 text-meta text-muted">
-            {match
-              ? 'No events match this name.'
-              : filter === 'finished'
-                ? 'No finished events.'
-                : 'No events in this view.'}
+            {match ? 'No matches.' : filter === 'finished' ? 'No finished events.' : 'No events.'}
           </p>
         ) : (
           groupGameEvents(game, shown).map((group) => (

@@ -78,7 +78,7 @@ it('hands over to the editor from Edit', () => {
 it('says so when the event has gone', () => {
   seed([]);
   show(<EventPeek open eventId="Missing" />);
-  expect(screen.getByText('This event is no longer available.')).toBeInTheDocument();
+  expect(screen.getByText('This event was deleted.')).toBeInTheDocument();
 });
 
 it('lists a pinned event first on a game page, ahead of ones that end sooner', () => {

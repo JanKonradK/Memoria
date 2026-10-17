@@ -35,7 +35,7 @@ test('livestream recaps have readable artwork, working navigation and accessible
     await expect(artwork).toBeVisible();
     await expect.poll(() => artwork.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
   }
-  await expect(page.getByRole('link', { name: 'Watch official replay ↗', exact: true })).toHaveCount(4);
+  await expect(page.getByRole('link', { name: 'Watch replay ↗', exact: true })).toHaveCount(4);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole('button', { name: 'Switch to light theme' }).click();
@@ -56,9 +56,9 @@ test('codes copy, show official destinations and expire while the page stays ope
   const nte = page.getByRole('article', { name: 'For Whom the Verses Mourn' });
   const genshin = page.getByRole('article', { name: 'A Rekviem for the Underworld' });
   await nte.getByRole('button', { name: 'Copy WITCHHOUSE', exact: true }).click();
-  await expect(nte.getByRole('status')).toHaveText('WITCHHOUSE copied. Paste it to redeem.');
+  await expect(nte.getByRole('status')).toHaveText('Copied WITCHHOUSE');
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('WITCHHOUSE');
-  await genshin.getByText('Show expired codes (3)', { exact: true }).click();
+  await genshin.getByText('Expired codes (3)', { exact: true }).click();
   await expect(genshin.getByRole('button', { name: 'Copy Rekviem', exact: true })).toBeDisabled();
   await expect(genshin.getByRole('link', { name: 'Redemption page for Rekviem' })).toHaveAttribute(
     'href',
@@ -71,9 +71,9 @@ test('codes copy, show official destinations and expire while the page stays ope
     }),
   );
   await nte.getByRole('button', { name: 'Copy THEWHOOTS', exact: true }).click();
-  await expect(nte.getByRole('status')).toContainText('Select the code and copy it manually.');
+  await expect(nte.getByRole('status')).toContainText('Could not copy THEWHOOTS');
   await page.clock.fastForward(90_000);
-  await nte.getByText('Show expired codes (3)', { exact: true }).click();
+  await nte.getByText('Expired codes (3)', { exact: true }).click();
   await expect(nte.getByRole('button', { name: 'Copy WITCHHOUSE', exact: true })).toBeDisabled();
   await expect(nte.getByText('Expired', { exact: true })).toBeVisible();
 });

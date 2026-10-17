@@ -18,7 +18,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       ['Umamusume', 'Uma'],
       ['Goddess of Victory', 'NIKKE'],
     ]) {
-      if (name === 'Genshin Impact') await page.getByRole('button', { name: 'Add your first game' }).click();
+      if (name === 'Genshin Impact') await page.getByRole('button', { name: 'Add a game' }).click();
       else {
         await page.getByRole('button', { name: 'Add', exact: true }).click();
         await page.getByRole('menuitem', { name: 'Add game', exact: true }).click();

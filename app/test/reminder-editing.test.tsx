@@ -27,7 +27,7 @@ it('keeps an edited reminder if it is deleted elsewhere and can save a new copy'
 
   expect(screen.getByLabelText('Reminder message')).toHaveValue('Claim all rewards');
   expect(screen.getByRole('button', { name: 'Save reminder', exact: true })).toBeDisabled();
-  expect(screen.getByRole('alert')).toHaveTextContent('This reminder is no longer available');
+  expect(screen.getByRole('alert')).toHaveTextContent('This reminder was deleted');
   fireEvent.click(screen.getByRole('button', { name: 'Add as new reminder', exact: true }));
   expect(useApp.getState().state.reminders).toEqual([
     expect.objectContaining({ id, deleted: true }),
@@ -93,13 +93,13 @@ it('keeps a new reminder time fixed when home timezone changes and uses the new 
   fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'Fixed reminder time' } });
   fireEvent.change(screen.getByLabelText('When'), { target: { value: '2026-10-07T10:00' } });
   act(() => useApp.getState().updateSettings({ localTz: 'Asia/Tokyo' }));
-  expect(screen.getByText('Times use Etc/UTC.')).toBeInTheDocument();
+  expect(screen.getByText('Times in Etc/UTC')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Add reminder', exact: true }));
   expect(useApp.getState().state.reminders[0]?.at).toBe(Date.UTC(2026, 9, 7, 10));
 
   rerender(<ReminderSheet open={false} />);
   rerender(<ReminderSheet open />);
-  expect(screen.getByText('Times use Asia/Tokyo.')).toBeInTheDocument();
+  expect(screen.getByText('Times in Asia/Tokyo')).toBeInTheDocument();
 });
 
 it('does not move an existing reminder when a timezone sync arrives during editing', () => {

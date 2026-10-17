@@ -56,7 +56,7 @@ test('a desktop row opens an integrated page and returns to the same Today geome
     [1, 'Honkai: Star Rail', 'HSR'],
     [2, 'Zenless Zone Zero', 'ZZZ'],
   ] as const) {
-    if (index === 0) await page.getByRole('button', { name: 'Add your first game' }).click();
+    if (index === 0) await page.getByRole('button', { name: 'Add a game' }).click();
     else {
       await page.getByRole('button', { name: 'Add', exact: true }).click();
       await page.getByRole('menuitem', { name: 'Add game', exact: true }).click();

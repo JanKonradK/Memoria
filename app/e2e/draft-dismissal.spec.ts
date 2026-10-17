@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  await page.getByRole('button', { name: 'Add your first game' }).click();
+  await page.getByRole('button', { name: 'Add a game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -128,7 +128,7 @@ test('event and reminder forms save from Enter and explain invalid dates', async
   const startValue = await starts.inputValue();
   await starts.fill('');
   await expect(starts).toHaveAttribute('aria-invalid', 'true');
-  await expect(event.getByRole('alert')).toContainText('Enter valid dates');
+  await expect(event.getByRole('alert')).toContainText('The end must be after the start');
   await expect(event.getByRole('button', { name: 'Add event', exact: true })).toBeDisabled();
   await starts.fill(startValue);
   await event.getByRole('textbox', { name: 'Notes', exact: true }).fill('Keep a second line');

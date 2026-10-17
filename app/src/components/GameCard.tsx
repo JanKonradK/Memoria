@@ -147,9 +147,7 @@ function ChecklistGroupRule({
         {done}/{total}
       </span>
       {left != null && (
-        <Tooltip
-          content={`Everything ${CADENCE_LABEL[cadence].toLowerCase()} resets then · d = days, h = hours, m = minutes`}
-        >
+        <Tooltip content={`${CADENCE_LABEL[cadence]} reset`}>
           <span className={`shrink-0 text-caption tabular-nums ${tone}`}>{fmtDur(left)}</span>
         </Tooltip>
       )}
@@ -292,7 +290,7 @@ function TimerTaskRow({
           {item.cadence === 'custom' ? 'Ready' : 'Collect'}
         </span>
       ) : running ? (
-        <Tooltip content="When this dispatch comes back. Nothing to do until then.">
+        <Tooltip content="When this dispatch returns">
           <span className="shrink-0 text-meta tabular-nums text-dim">back {fmtDur(left)}</span>
         </Tooltip>
       ) : null}
@@ -483,7 +481,7 @@ export function EventStrip({
                       {ev.name}
                     </span>
                   </span>
-                  <Tooltip content={calendar?.description ?? 'd = days · h = hours · m = minutes'}>
+                  <Tooltip content={calendar?.description ?? 'Time left'}>
                     {calendar ? (
                       <span className="ml-auto shrink-0 font-bold tabular-nums text-muted">{calendar.label}</span>
                     ) : ev.start > now ? (
@@ -996,7 +994,7 @@ export function GameControlsView({
       onOpenEvent={onOpenEvent}
       onToggleDone={focus ? (event, done) => setParts(event, done ? eventParts(event) : 0) : undefined}
       onSetParts={focus ? setParts : undefined}
-      emptyLabel={focus ? 'No events running or coming up.' : undefined}
+      emptyLabel={focus ? 'No events.' : undefined}
     />
   );
   const custom = editing || game.cardLayout !== undefined;
@@ -1057,7 +1055,7 @@ export function GameControlsView({
             {item ? (
               <TaskControl item={item} now={now} actions={actions} color={gameInk(visualGame, ground)} />
             ) : (
-              <p className="text-meta text-muted">{task.name} · not active right now</p>
+              <p className="text-meta text-muted">{task.name} · inactive</p>
             )}
           </>
         ),
@@ -1145,7 +1143,7 @@ export function GameControlsView({
       />
       {game.paused && (
         <div className="relative z-10 mt-2 flex flex-wrap items-center gap-2">
-          <p className="mr-auto text-meta text-muted">Tracking paused. Your saved progress and events stay here.</p>
+          <p className="mr-auto text-meta text-muted">Paused</p>
           <Btn className={TOUCH_BUTTON} onClick={() => updateGame(game.id, { paused: false })}>
             Resume tracking
           </Btn>
@@ -1176,9 +1174,6 @@ export function GameControlsView({
               Undo layout
             </Btn>
           </div>
-          <p className="mt-2 text-caption text-muted">
-            Title and item settings save automatically. Undo layout restores only item order and visibility.
-          </p>
           <LaunchSettings game={game} />
           <div className="mt-3">
             <Field label="Game title">

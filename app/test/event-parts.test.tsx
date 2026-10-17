@@ -132,7 +132,7 @@ it('returns an event to the inferred count when the field is cleared', () => {
   });
   show(<EventSheet open gameId={game.id} eventId="Anniversary login rewards" />);
   const field = screen.getByRole('spinbutton', { name: 'Parts' });
-  expect(field).toHaveAttribute('placeholder', 'Automatic (7)');
+  expect(field).toHaveAttribute('placeholder', 'Auto (7)');
   fireEvent.change(field, { target: { value: '' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save', exact: true }));
   expect(stored('Anniversary login rewards').parts).toBeUndefined();

@@ -43,21 +43,14 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-5xl px-4 py-10 sm:px-5">
-      <p className="text-label font-black uppercase tracking-[0.25em] text-accent-fg">Welcome to Memoria</p>
-      <h1 className="mt-3 text-display font-black tracking-tight text-fg">Set up your first dashboard</h1>
-      <p className="mt-2 max-w-2xl text-body leading-6 text-muted">
-        Choose the games you actively play and enter the current value of their main energy. Server clocks and default
-        resets are filled from the presets and can be changed later.
-      </p>
+      <h1 className="text-display font-black tracking-tight text-fg">Add your games</h1>
+      <p className="mt-2 max-w-2xl text-body leading-6 text-muted">Pick what you play and enter your current energy.</p>
       {isNativeApp && (
         // Setting up games here first would make a second copy of each one the PC already tracks.
         <section className="mt-7" aria-labelledby="onboarding-pc-heading">
           <h2 id="onboarding-pc-heading" className="text-heading font-semibold text-fg-soft">
-            Already use Memoria on your PC?
+            Already using Memoria on your PC?
           </h2>
-          <p className="aside mt-1 max-w-2xl text-meta text-muted">
-            Connect this device instead. It gets your games and progress from the PC, with nothing to set up twice.
-          </p>
           <Btn
             className="mt-3"
             onClick={() => {
@@ -66,7 +59,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
               useUI.getState().setTab('settings');
             }}
           >
-            Connect to my PC
+            Connect to PC
           </Btn>
         </section>
       )}
@@ -76,9 +69,6 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
             <h2 id="onboarding-timezone-heading" className="text-heading font-semibold text-fg-soft">
               Home timezone
             </h2>
-            <p className="aside mt-1 text-meta text-muted">
-              Memoria uses it to convert each game’s server reset into your own clock.
-            </p>
           </div>
           <HomeTimeZoneField
             value={homeTzChoice}
@@ -149,9 +139,6 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
           Skip for now
         </Btn>
       </div>
-      <p className="mt-3 text-meta text-dim">
-        Display preferences, backups and every game detail stay editable in Settings after setup.
-      </p>
     </main>
   );
 }

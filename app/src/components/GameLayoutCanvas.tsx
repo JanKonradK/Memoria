@@ -250,7 +250,7 @@ export function GameLayoutCanvas({
         <div className="mb-3 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <p id={help} className="text-meta text-muted">
-              Select Edit to change an item. Hold its handle to move it, or use the move buttons.
+              Drag a handle to move an item.
               <span className="sr-only"> You can also focus a handle and press Arrow Up or Arrow Down.</span>
             </p>
             <Btn
@@ -506,9 +506,7 @@ export function GameLayoutCanvas({
           );
         })}
       </div>
-      {!editing && displayed.length === 0 && (
-        <p className="py-4 text-meta text-muted">No visible items. Use Edit to add them.</p>
-      )}
+      {!editing && displayed.length === 0 && <p className="py-4 text-meta text-muted">No items shown.</p>}
       {editing &&
         drag &&
         createPortal(

@@ -24,7 +24,7 @@ export function rescheduleNotifications(): Promise<void> {
     if (!isNativeApp) return;
     const enabled = useNotifications.getState().enabled;
     if (enabled && (await LocalNotifications.checkPermissions()).display !== 'granted')
-      throw new Error('Notifications are blocked in Android settings. Enable them there or turn reminders off.');
+      throw new Error('Notifications are blocked in Android settings.');
     const pending = await LocalNotifications.getPending();
     const owned = pending.notifications.filter((item) => item.extra?.memoria === true);
     const plan = useNotifications.getState().enabled ? buildNotificationPlan(useApp.getState().state, Date.now()) : [];
@@ -59,7 +59,7 @@ export function rescheduleNotifications(): Promise<void> {
 export async function setNotificationsEnabled(enabled: boolean): Promise<void> {
   if (!isNativeApp) throw new Error('Device reminders are available in the Android app.');
   if (enabled && (await LocalNotifications.requestPermissions()).display !== 'granted')
-    throw new Error('Android did not allow notifications. You can change this in system settings.');
+    throw new Error('Notifications are off for Memoria in Android settings.');
   const previous = useNotifications.getState().enabled;
   if (enabled) localStorage.setItem(KEY, 'enabled');
   useNotifications.setState({ enabled });

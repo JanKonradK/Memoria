@@ -89,7 +89,7 @@ describe('native notification lifecycle', () => {
 
   it('keeps reminders disabled when opt-in permission is denied', async () => {
     mocks.requestPermissions.mockResolvedValueOnce({ display: 'denied' });
-    await expect(setNotificationsEnabled(true)).rejects.toThrow('Android did not allow');
+    await expect(setNotificationsEnabled(true)).rejects.toThrow('Notifications are off');
     expect(useNotifications.getState().enabled).toBe(false);
     expect(localStorage.getItem('memoria-device-notifications')).not.toBe('enabled');
     expect(mocks.schedule).not.toHaveBeenCalled();

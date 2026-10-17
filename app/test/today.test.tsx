@@ -132,9 +132,9 @@ it('selects a paused game so tracking can be resumed from its card', () => {
 it('offers a first game and PC connection for an empty roster', () => {
   useApp.setState({ state: emptyState() });
   show(<TodayPage now={NOW} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Add your first game' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Add a game' }));
   expect(useUI.getState().sheet).toEqual({ kind: 'addGame' });
-  fireEvent.click(screen.getByRole('button', { name: 'Connect my PC' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Connect to PC' }));
   expect(useUI.getState().tab).toBe('settings');
 });
 

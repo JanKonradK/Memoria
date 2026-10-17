@@ -65,7 +65,7 @@ try {
   const page = await context.newPage();
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(url);
-  await page.getByRole('button', { name: 'Add your first game' }).click();
+  await page.getByRole('button', { name: 'Add a game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect
@@ -116,15 +116,15 @@ try {
     body: JSON.stringify({ code: wifi.code, name: 'Test phone' }),
   });
   expect(paired.status).toBe(200);
-  await expect(page.getByText('Your device is connected', { exact: true })).toBeVisible();
+  await expect(page.getByText('Device connected', { exact: true })).toBeVisible();
   await expect(
     page.getByRole('img', { name: 'Scan this code with Memoria on your phone or tablet to connect' }),
   ).toHaveCount(0);
   await page.getByText('Manage connection', { exact: true }).click();
   await page.getByRole('button', { name: 'Pause sync', exact: true }).click();
-  await expect(page.getByText('Sync is paused', { exact: true })).toBeVisible();
+  await expect(page.getByText('Sync paused', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Resume sync', exact: true }).click();
-  await expect(page.getByText('Your device is connected', { exact: true })).toBeVisible();
+  await expect(page.getByText('Device connected', { exact: true })).toBeVisible();
   await expect(
     page.getByRole('img', { name: 'Scan this code with Memoria on your phone or tablet to connect' }),
   ).toHaveCount(0);
@@ -169,7 +169,7 @@ try {
     if (/^https?:/.test(request.url())) requests.push(request.url());
   });
   await standalone.goto(pathToFileURL(join(root, 'app/dist-single/Memoria.html')).href);
-  await standalone.getByRole('button', { name: 'Add your first game' }).click();
+  await standalone.getByRole('button', { name: 'Add a game' }).click();
   await standalone.getByRole('button', { name: /Genshin Impact/ }).click();
   await standalone.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await standalone.getByRole('button', { name: 'Review Genshin Impact', exact: true }).click();

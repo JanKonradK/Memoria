@@ -38,7 +38,7 @@ function PairingQr({ addresses, code }: { addresses: string[]; code: string }) {
         if (current) setImage({ payload, src });
       })
       .catch(() => {
-        if (current) setError('The QR code could not load. Use the manual code below.');
+        if (current) setError('QR code failed to load. Use the code below.');
       });
     return () => {
       current = false;
@@ -82,8 +82,7 @@ function DesktopConnection() {
       setLoadError('');
       setNow(Date.now());
     } catch {
-      if (id === requestId.current.id)
-        setLoadError('Restart the PC app, then try again. If this keeps happening, restart Windows.');
+      if (id === requestId.current.id) setLoadError('Restart Memoria on the PC and try again.');
     }
   };
   useEffect(() => {
@@ -143,10 +142,7 @@ function DesktopConnection() {
           <p role="alert" className="text-danger-fg">
             {devices.error}
           </p>
-          <p className="text-muted">
-            Reset the connection, then scan a new code on your phone or tablet. Your games and progress stay saved. A
-            copy of the old connection file is kept.
-          </p>
+          <p className="text-muted">Reset, then scan a new code on your phone or tablet. Your data stays.</p>
           <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => void control('reset')}>
             Reset device connection
           </Btn>
@@ -156,12 +152,7 @@ function DesktopConnection() {
           {paired && !pairingVisible && (
             <div role="status" className="space-y-1">
               <p className="text-body font-semibold text-ok-fg">
-                {devices.enabled ? 'Your device is connected' : 'Sync is paused'}
-              </p>
-              <p className="text-body text-muted">
-                {devices.enabled
-                  ? 'You’re all set. Your progress syncs automatically when both apps are open.'
-                  : 'Your progress is safe on both devices. Resume when you are ready.'}
+                {devices.enabled ? 'Device connected' : 'Sync paused'}
               </p>
             </div>
           )}
@@ -185,9 +176,7 @@ function DesktopConnection() {
             <div className="grid items-start gap-5 sm:grid-cols-[auto_minmax(0,1fr)]">
               <div>
                 {devices.addresses.length === 0 ? (
-                  <p className="max-w-xs text-body text-muted">
-                    Connect this PC to your home Wi-Fi. Your code will appear here.
-                  </p>
+                  <p className="max-w-xs text-body text-muted">Connect this PC to Wi-Fi to show a code.</p>
                 ) : pairingCode ? (
                   <PairingQr addresses={devices.addresses} code={pairingCode} />
                 ) : (
@@ -200,24 +189,20 @@ function DesktopConnection() {
                 )}
               </div>
               <div className="space-y-3">
-                <p className="text-lead font-semibold text-fg">Now pick up your phone or tablet</p>
+                <p className="text-lead font-semibold text-fg">On your phone or tablet</p>
                 <ol className="list-decimal space-y-2 pl-5 text-body text-muted">
-                  <li>Open Memoria on it.</li>
+                  <li>Open Memoria.</li>
                   <li>
-                    Open Settings and tap <strong className="font-medium text-fg">Scan PC code</strong>.
+                    Settings → <strong className="font-medium text-fg">Scan PC code</strong>.
                   </li>
-                  <li>Point your camera at this code.</li>
+                  <li>Scan this code. Both devices need the same Wi-Fi.</li>
                 </ol>
-                <p className="text-body text-muted">
-                  Use the same Wi-Fi on both devices. Your existing progress will be kept.
-                </p>
                 <p role="status" className="text-meta text-muted">
                   Waiting for your device…
                 </p>
                 <details className={DETAILS}>
                   <summary>Enter a code instead</summary>
                   <div className="space-y-2 pb-3">
-                    <p>On your phone or tablet, tap Enter a code instead.</p>
                     <p className="font-medium text-fg">PC address</p>
                     {devices.addresses.map((address) => (
                       <p key={address} className="select-all break-all">
@@ -237,7 +222,6 @@ function DesktopConnection() {
             <details className={DETAILS}>
               <summary>Manage connection</summary>
               <div className="space-y-3 pb-3">
-                <p>Sync works while Memoria is open on both devices. You can keep using either app offline.</p>
                 {devices.devices.map((device) => (
                   <div key={device.id} className="flex flex-wrap items-center justify-between gap-2">
                     <span className="min-w-0 [overflow-wrap:anywhere]">{device.name}</span>
@@ -254,7 +238,6 @@ function DesktopConnection() {
                 <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => void control('stop')}>
                   Pause sync
                 </Btn>
-                <p className="text-meta">This keeps your saved progress and remembers your device.</p>
               </div>
             </details>
           )}
@@ -287,8 +270,7 @@ function FirstSyncChoice({ deviceGames, pcGames }: { deviceGames: number; pcGame
         Both devices already have games
       </h3>
       <p className="text-body text-muted">
-        This device has {games(deviceGames)} and your PC has {games(pcGames)}. Nothing has been synced yet. Choose what
-        this device should do.
+        This device has {games(deviceGames)}, your PC has {games(pcGames)}. Nothing synced yet.
       </p>
       <div className="space-y-1">
         <div className="flex flex-wrap gap-2">
@@ -306,22 +288,18 @@ function FirstSyncChoice({ deviceGames, pcGames }: { deviceGames: number; pcGame
             </Btn>
           )}
         </div>
-        <p className="text-meta text-muted">
-          For a new phone or tablet. This device shows what your PC has; the games set up here are removed from this
-          device.
-        </p>
+        <p className="text-meta text-muted">Replaces this device's games with your PC's.</p>
       </div>
       <div className="space-y-1">
         <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => answer('combine')}>
           Combine both
         </Btn>
-        <p className="text-meta text-muted">Keeps every game from both devices. A game set up on both appears twice.</p>
+        <p className="text-meta text-muted">Keeps both. A game on both appears twice.</p>
       </div>
       <div className="space-y-1">
         <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => answer('cancel')}>
           Cancel and disconnect
         </Btn>
-        <p className="text-meta text-muted">Nothing changes on either device.</p>
       </div>
     </section>
   );
@@ -349,14 +327,10 @@ function PhoneConnection() {
     <>
       {!connection.host ? (
         <>
-          <p className="text-body text-muted">On your PC, open Memoria → Settings → Connect my phone or tablet.</p>
+          <p className="text-body text-muted">On your PC: Settings → Connect my phone or tablet.</p>
           <Btn kind="primary" className={TOUCH_BUTTON} disabled={busy} onClick={() => void scan()}>
             {busy ? 'Connecting…' : 'Scan PC code'}
           </Btn>
-          <p className="text-meta text-muted">
-            Point your camera at the code on your PC. If this device already has games, Memoria asks before combining
-            them with your PC’s.
-          </p>
           <details className={DETAILS}>
             <summary>Enter a code instead</summary>
             <form
@@ -371,12 +345,11 @@ function PhoneConnection() {
                   .finally(() => setBusy(false));
               }}
             >
-              <p>On your PC, select Enter a code instead. Type both the PC address and pairing code shown there.</p>
               <Field label="PC address">
                 <TextInput
                   value={host}
                   onChange={(event) => setHost(event.target.value)}
-                  placeholder="Type the address shown on your PC"
+                  placeholder="Shown on your PC"
                   autoCapitalize="none"
                   autoCorrect="off"
                   inputMode="url"
@@ -411,15 +384,10 @@ function PhoneConnection() {
               {connection.status === 'ok'
                 ? 'Connected to your PC'
                 : connection.status === 'syncing' || connection.status === 'pairing'
-                  ? 'Updating your progress…'
+                  ? 'Syncing…'
                   : connection.status === 'offline'
                     ? 'Waiting for your PC'
-                    : 'Your progress is saved on this device'}
-            </p>
-            <p className="text-body text-muted">
-              {connection.status === 'offline'
-                ? 'You can keep using Memoria. Sync will resume when your PC is available.'
-                : 'Your progress syncs automatically when both apps are open.'}
+                    : 'Not connected'}
             </p>
             {connection.lastSyncAt && (
               <p className="text-meta text-muted">
@@ -438,7 +406,7 @@ function PhoneConnection() {
               >
                 Check connection
               </Btn>
-              <p>If your PC has moved to another network, show a new code on the PC and scan it again.</p>
+              <p>PC on a new network? Scan a new code.</p>
               <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => void scan()}>
                 {busy ? 'Connecting…' : 'Scan a new PC code'}
               </Btn>
@@ -453,7 +421,6 @@ function PhoneConnection() {
               >
                 Disconnect
               </Btn>
-              <p className="text-meta">Disconnecting keeps your saved progress on both devices.</p>
             </div>
           </details>
         </>
@@ -481,19 +448,16 @@ export function DeviceSync() {
       </div>
       {/* Inset to the heading's text, so the body and its hairlines line up with the rule. */}
       <div className="mx-2 space-y-3">
-        <p className="text-body text-muted">Keep the same progress on both devices.</p>
         {desktop ? <DesktopConnection /> : <PhoneConnection />}
         <details className={DETAILS}>
           <summary>Need help connecting?</summary>
           <ul className="list-disc space-y-2 pb-3 pl-5">
             <li>Connect both devices to the same Wi-Fi.</li>
             <li>Keep Memoria open on your PC.</li>
-            <li>If Windows asks to allow Memoria through its firewall, allow it on your private network.</li>
-            <li>If a code has expired, show a new code on your PC and scan it again.</li>
+            <li>Allow Memoria through the Windows firewall on private networks.</li>
+            <li>Code expired? Show a new one on the PC.</li>
           </ul>
-          <p className="pb-3 text-meta text-muted">
-            Use your own trusted Wi-Fi. This local connection is not encrypted.
-          </p>
+          <p className="pb-3 text-meta text-muted">Use only trusted Wi-Fi. This connection is not encrypted.</p>
         </details>
       </div>
     </section>

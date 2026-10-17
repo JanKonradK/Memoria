@@ -71,7 +71,7 @@ async function openAddMenu(page: Page, item: 'Add game' | 'Event' | 'Reminder') 
 async function addPreset(page: Page, name: string, short: string, first = false) {
   const allGames = page.getByRole('button', { name: 'Back to Today', exact: true });
   if (await allGames.isVisible()) await allGames.click();
-  if (first) await page.getByRole('button', { name: 'Add your first game' }).click();
+  if (first) await page.getByRole('button', { name: 'Add a game' }).click();
   else await openAddMenu(page, 'Add game');
   await expect(page.getByRole('dialog', { name: 'Add a game' })).toBeVisible();
   await page.getByRole('button', { name: new RegExp(name) }).click();
@@ -92,13 +92,13 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Add your first game' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Add a game' })).toBeVisible();
 });
 
 test('first run opens the spotlight tour and fits the viewport', async ({ page }) => {
   await page.addInitScript(() => localStorage.removeItem('memoria-onboarding'));
   await page.goto('/');
-  await expect(page.getByRole('dialog', { name: 'Your daily run starts here' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Pages' })).toBeVisible();
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
 });

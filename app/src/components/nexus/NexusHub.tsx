@@ -354,9 +354,7 @@ export function NexusHub({
 
       <div className="flex flex-col gap-5">
         {closing.length + arrived.length + arriving.length === 0 ? (
-          <p className="px-2 pt-6 text-body text-muted">
-            Nothing closes in the next 10 days or arrives in the next two weeks.
-          </p>
+          <p className="px-2 pt-6 text-body text-muted">Nothing ending or starting soon.</p>
         ) : (
           <>
             <Band

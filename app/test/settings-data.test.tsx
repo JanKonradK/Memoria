@@ -28,7 +28,7 @@ it('rejects malformed backup data before offering a merge', async () => {
   useApp.setState({ state: emptyState() });
   render(<SettingsPage />);
   selectBackup(async () => JSON.stringify({ ...emptyState(), games: [makeGame({ dailyResetHour: 99 })] }));
-  await screen.findByText('Import failed — not a valid Memoria backup file.');
+  await screen.findByText('Import failed: not a Memoria backup.');
   expect(screen.queryByRole('button', { name: 'Merge backup', exact: true })).not.toBeInTheDocument();
   expect(useApp.getState().state.games).toHaveLength(0);
 });

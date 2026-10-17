@@ -521,7 +521,7 @@ describe('cloudSyncNow', () => {
     await connectNewCloudFile();
     vi.mocked(idbDel).mockRejectedValueOnce(new Error('Connection storage unavailable'));
 
-    await expect(disconnectCloudFile()).rejects.toThrow(/Stop syncing again/);
+    await expect(disconnectCloudFile()).rejects.toThrow(/Could not stop syncing/);
     expect(useApp.getState().cloudStatus).toBe('error');
     expect(useApp.getState().cloudFileName).toBe(handle.name);
     expect(idb.has('memoria-cloud-file')).toBe(true);

@@ -1,7 +1,6 @@
 import { presetForGame } from '@memoria/shared';
 import { DateTime } from 'luxon';
-import { LIVESTREAMS, LIVESTREAMS_CHECKED, type LivestreamRecap } from '../data/livestreams';
-import { SEED_UPDATED } from '../data/seed-feed';
+import { LIVESTREAMS, type LivestreamRecap } from '../data/livestreams';
 import { upcomingBroadcasts } from '../data/upcoming-broadcasts';
 import { useNow } from '../hooks';
 import { useApp } from '../store';
@@ -26,7 +25,7 @@ function Recap({ recap }: { recap: LivestreamRecap }) {
           href={recap.replay}
           target="_blank"
           rel="noreferrer"
-          aria-label={`Watch ${recap.gameName} ${recap.version} official ${recap.preview ? 'broadcast' : 'replay'}`}
+          aria-label={`Watch ${recap.gameName} ${recap.version} ${recap.preview ? 'broadcast' : 'replay'}`}
           className="block rounded-ui-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
         >
           <img
@@ -38,9 +37,6 @@ function Recap({ recap }: { recap: LivestreamRecap }) {
             className="aspect-video w-full rounded-ui-md object-contain bg-inset"
           />
         </a>
-        <figcaption className="aside mt-2 text-caption text-muted">
-          Official broadcast artwork · {recap.publisher}
-        </figcaption>
       </figure>
       <div className="min-w-0">
         <p className="text-meta text-muted">
@@ -69,19 +65,8 @@ function Recap({ recap }: { recap: LivestreamRecap }) {
             rel="noreferrer"
             className="inline-flex min-h-11 items-center font-medium text-accent-fg underline underline-offset-4"
           >
-            {recap.preview ? 'Open official broadcast ↗' : 'Watch official replay ↗'}
+            {recap.preview ? 'Watch ↗' : 'Watch replay ↗'}
           </a>
-          {recap.sources.map((source) => (
-            <a
-              key={source.url}
-              href={source.url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex min-h-11 items-center text-muted underline underline-offset-4 hover:text-fg"
-            >
-              {source.label} ↗
-            </a>
-          ))}
         </div>
       </div>
     </article>
@@ -106,9 +91,6 @@ export function LivestreamsPage() {
           <h1 id="livestream-heading" className="text-heading font-semibold text-fg">
             Livestreams
           </h1>
-          <p className="mt-1 text-caption text-muted">
-            Calendar {DateTime.fromISO(SEED_UPDATED).toFormat('d LLL yyyy')} · Recaps {LIVESTREAMS_CHECKED}
-          </p>
         </div>
         <CalendarToolbar view="livestreams" />
       </div>
@@ -118,7 +100,6 @@ export function LivestreamsPage() {
             Upcoming broadcasts
           </h2>
           <span aria-hidden />
-          <span className="aside text-caption text-muted">Times use {state.settings.localTz}</span>
         </div>
         {broadcasts.length > 0 ? (
           <ul className="mt-2 grid gap-0.5">
@@ -139,15 +120,10 @@ export function LivestreamsPage() {
                       </>
                     )}
                   </p>
-                  {broadcast.predicted && (
-                    <p className="aside mt-1 text-caption text-muted">
-                      The publisher has not confirmed the date. This range is an estimate.
-                    </p>
-                  )}
                 </div>
                 <div className="flex items-center gap-3">
                   <Pill variant={broadcast.predicted ? 'warn' : 'neutral'}>
-                    {broadcast.predicted ? 'Date unconfirmed' : broadcast.start <= now ? 'Now' : 'Scheduled'}
+                    {broadcast.predicted ? 'Estimated' : broadcast.start <= now ? 'Live' : 'Scheduled'}
                   </Pill>
                   <Btn
                     onClick={() =>
@@ -163,9 +139,7 @@ export function LivestreamsPage() {
             ))}
           </ul>
         ) : (
-          <p className="mt-3 px-2 text-body text-muted">
-            No upcoming broadcasts in this view{focused ? ` for ${focused.name}` : ''}.
-          </p>
+          <p className="mt-3 px-2 text-body text-muted">No upcoming broadcasts.</p>
         )}
       </section>
       <div className="today-group-rule mt-8">
@@ -178,9 +152,9 @@ export function LivestreamsPage() {
         ))}
         {recaps.length === 0 && (
           <div className="px-2">
-            <p className="text-body text-muted">No livestream recap for {focused?.name} yet.</p>
+            <p className="text-body text-muted">No recaps for {focused?.name}.</p>
             <Btn onClick={() => useUI.getState().setFocusedGameId(null)} className="mt-4 !min-h-11 text-meta">
-              Show all livestreams
+              Show all games
             </Btn>
           </div>
         )}

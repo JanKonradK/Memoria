@@ -21,6 +21,6 @@ export function calendarSchedule(event: GameEvent) {
     end: last,
     zone: seed.timezone,
     label: `${first.toFormat(firstFormat)}–${last.toFormat(lastFormat)}`,
-    description: `Calendar dates: ${first.toFormat('d LLL yyyy')} through ${last.toFormat('d LLL yyyy')} (${seed.timezone}).`,
+    description: `${first.toFormat('d LLL yyyy')} – ${last.toFormat('d LLL yyyy')}`,
   };
 }

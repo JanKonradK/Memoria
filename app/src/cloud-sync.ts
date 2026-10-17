@@ -184,9 +184,7 @@ async function write(target: CloudFileHandle, version: number, text: string): Pr
   // A valid local document can still grow beyond the file transport's limit.
   // Keep the existing remote copy readable by every device.
   if (new TextEncoder().encode(text).byteLength > MAX_CLOUD_FILE_BYTES)
-    throw new Error(
-      'The merged data exceeds the 10 MB sync file limit. Export a backup and reduce large images or old data. Nothing was written to the sync file.',
-    );
+    throw new Error('Data is over the 10 MB sync limit. Nothing was written.');
   // createWritable() stages into a swap file and commits on close(), so a crash
   // or a pulled USB stick leaves the previous document rather than half of one.
   const writable = await target.createWritable();
@@ -269,7 +267,7 @@ export async function cloudSyncNow(): Promise<void> {
     if (error instanceof DOMException && (error.name === 'NotAllowedError' || error.name === 'SecurityError')) {
       setStatus('needs-permission', 'Memoria needs permission to read the sync file again.');
     } else if (error instanceof DOMException && error.name === 'NotFoundError') {
-      setStatus('error', 'The sync file is gone — reconnect to pick it again.');
+      setStatus('error', 'Sync file not found. Pick it again.');
     } else {
       setStatus('error', message(error));
     }
@@ -435,9 +433,7 @@ export async function disconnectCloudFile(): Promise<void> {
   try {
     await idbDel(HANDLE_KEY);
   } catch {
-    const error = new Error(
-      'The saved sync connection could not be removed. Sync is paused for this session. Try Stop syncing again before closing Memoria.',
-    );
+    const error = new Error('Could not stop syncing. Try again before closing Memoria.');
     if (connectionVersion === version) setStatus('error', error.message);
     throw error;
   }

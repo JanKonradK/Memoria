@@ -109,7 +109,7 @@ describe('finished events leave the lane', () => {
     show([event({ id: 'over', name: 'Yesterdays banner', start: NOW - 9 * DAY, end: NOW - DAY })]);
 
     expect(screen.getByText(/Nothing running/)).toBeInTheDocument();
-    expect(screen.getByText(/1 finished event/)).toBeInTheDocument();
+    expect(screen.getByText(/1 finished hidden/)).toBeInTheDocument();
   });
 
   it('counts only visible events in the current game scope and view', () => {

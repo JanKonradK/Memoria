@@ -115,5 +115,5 @@ it('the list excludes paused accounts even when a caller supplies their events',
     />,
   );
   expect(container.querySelectorAll('[data-list-event]')).toHaveLength(0);
-  expect(screen.getByText('Events are hidden while tracking is paused.')).toBeInTheDocument();
+  expect(screen.getByText('All games are paused.')).toBeInTheDocument();
 });

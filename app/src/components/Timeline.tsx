@@ -690,7 +690,7 @@ const EventRow = memo(function EventRow({
           style={clusterBefore ? { right: `calc(${100 - displayLeft}% + 8px)` } : undefined}
         >
           {!tickFloats && tick}
-          <Tooltip content={calendar?.description ?? 'd = days · h = hours · m = minutes'}>
+          <Tooltip content={calendar?.description ?? 'Time left'}>
             <span
               ref={countdownRef}
               className="whitespace-nowrap rounded-ui-sm bg-scrim-veil px-1.5 py-px text-caption font-bold tabular-nums"
@@ -793,7 +793,7 @@ export function ReorderableEventRows({
               type="button"
               aria-label={`Reorder ${event.name}`}
               aria-describedby="event-reorder-help"
-              title="Hold and drag to reorder. Use Arrow Up or Arrow Down with the keyboard."
+              title="Drag to reorder"
               disabled={events.length < 2}
               className="absolute -left-7 top-0 z-30 flex h-[var(--lane-row-h)] w-7 touch-none select-none items-center justify-center rounded-ui-sm text-muted hover:bg-fill-2 hover:text-fg disabled:opacity-30"
               style={{ cursor: preview ? 'grabbing' : 'grab' }}
@@ -991,7 +991,7 @@ export function TimelinePage({ now }: { now: number }) {
         </CalendarToolbar>
       </div>
       <p id="event-reorder-help" className="sr-only">
-        Hold and drag the handle to reorder events within a section. Or focus a handle and press Arrow Up or Arrow Down.
+        Drag the handle to reorder, or focus it and press Arrow Up or Arrow Down.
       </p>
       <div className="timeline-caption flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted">
         <span className="timeline-range-label">
@@ -1000,8 +1000,7 @@ export function TimelinePage({ now }: { now: number }) {
         <span>
           {visibleCount} {visibleCount === 1 ? 'event' : 'events'}
         </span>
-        <span>Dates in {state.settings.localTz}</span>
-        <CalendarFeedStatus now={now} />
+        <CalendarFeedStatus />
         {search.trim() && (
           <button
             type="button"
@@ -1014,7 +1013,7 @@ export function TimelinePage({ now }: { now: number }) {
           </button>
         )}
         {showFinished && <span>Including finished</span>}
-        {pausedGames.length > 0 && <span>Resume a paused game to show its events.</span>}
+        {pausedGames.length > 0 && <span>{pausedGames.length} paused</span>}
       </div>
 
       <PinnedEvents events={events} games={games} now={now} onOpen={peekEvent} />
@@ -1070,11 +1069,7 @@ export function TimelinePage({ now }: { now: number }) {
               ))}
               <div data-timeline-now aria-hidden className="timeline-today-line" style={{ left: todayLeft }} />
 
-              {games.length === 0 && (
-                <p className="py-8 text-center text-body text-dim">
-                  No events yet — add banners and events so nothing ends without you noticing.
-                </p>
-              )}
+              {games.length === 0 && <p className="py-8 text-center text-body text-dim">No events.</p>}
 
               {games
                 .filter((game) => !game.paused)
@@ -1153,15 +1148,10 @@ export function TimelinePage({ now }: { now: number }) {
                     >
                       {evs.length === 0 ? (
                         <p className="py-1 text-label text-muted">
-                          {search.trim()
-                            ? 'No matching events in this window. Clear the search to see all events.'
-                            : 'Nothing in this window — import or add events.'}
+                          {search.trim() ? 'No matching events.' : 'No events in this window.'}
                         </p>
                       ) : shown.length === 0 ? (
-                        <p className="py-1 text-label text-muted">
-                          Nothing running — {finishedCount} finished {finishedCount === 1 ? 'event' : 'events'}. Use the
-                          Show finished events control to show them.
-                        </p>
+                        <p className="py-1 text-label text-muted">Nothing running. {finishedCount} finished hidden.</p>
                       ) : (
                         <>
                           {state.events.some(
