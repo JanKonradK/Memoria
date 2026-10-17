@@ -180,12 +180,12 @@ If you do not want to use a synced folder, transfer a backup instead.
 ## Get updates
 
 Memoria checks GitHub for a new release when it opens, and twice a day while it stays open.
-When one is available, a notice appears. Select **View update** to read what changed.
-You can also open **Settings → Updates** and select **Check for updates**, or turn automatic checks off there.
+When one is available, a full-screen page lists every change since your version. Select **Update** or **Later**.
+**Settings → Updates** has **Check for updates** and the automatic-check switch.
 
-- **Windows app:** Select **Download update**, then **Restart and update**. Memoria saves, closes, installs the new version and opens again. **Help → Check for updates** opens the same section.
-- **Android app:** Select **Download and install**, then confirm in Android's installer. The first time, Android asks you to allow Memoria to install apps.
-- **One-file version:** Select **Open download page**. Export a backup first, then open the new **Memoria.html** with the same browser.
+- **Windows app:** **Update** downloads the new version, then **Restart and update** installs it and reopens Memoria. **Help → Check for updates** checks now.
+- **Android app:** **Update** downloads the APK and opens Android's installer. The first time, Android asks you to allow Memoria to install apps.
+- **One-file version:** **Download** opens the release page. Export a backup first, then open the new **Memoria.html** in the same browser.
   If your progress is missing, import your backup.
 
 Every download is checked against the release's checksums before it is installed. Your saved data is never touched by an update.

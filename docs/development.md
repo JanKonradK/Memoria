@@ -202,9 +202,9 @@ CI also assembles the Windows package on each push to `main` and each pull reque
 
 ## Updates
 
-Every build checks the latest GitHub release from **Settings → Updates** (`app/src/app-update.ts`).
+Every build reads the GitHub release list (`app/src/app-update.ts`) and shows the notes of every release newer than itself in `UpdateScreen.tsx`.
 The Windows app downloads `Memoria-win-x64.zip` in the main process, verifies it against `SHA256SUMS.txt` and stages it in `%APPDATA%\memoria\updates\pending`.
-**Restart and update** closes through the normal save path. A detached PowerShell process then runs the staged `Install-Shortcut.ps1` over the install and reopens Memoria. Its log is `updates\install.log`.
+**Restart and update** closes through the normal save path. `updates\install-update.ps1`, started through `cmd start` (PowerShell launched directly as a detached child exits without running), then runs the staged `Install-Shortcut.ps1` over the install and reopens Memoria. Its log is `updates\install.log`.
 Android downloads `Memoria-android.apk`, verifies it the same way and opens the system installer (`AppUpdaterPlugin.java`).
 The installer retains the current program folder until the new copy is complete.
 If the final folder change fails, the installer restores the previous program folder.

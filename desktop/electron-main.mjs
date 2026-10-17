@@ -113,7 +113,7 @@ for (const [channel, action] of Object.entries({
 const updateActions = {
   'memoria:update-check': async () => {
     const record = readReleaseRecord(root);
-    latestRelease = await fetchLatestRelease();
+    latestRelease = await fetchLatestRelease(record?.version ?? null);
     return {
       installed: record?.version ?? null,
       release: latestRelease,
@@ -170,19 +170,22 @@ function runStagedInstaller() {
     'Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue',
     `Start-Process -FilePath ${quote(join(root, 'Memoria.exe'))} -WorkingDirectory ${quote(root)}`,
   ].join('\n');
+  const scriptFile = join(paths.UPDATE_DIR, 'install-update.ps1');
+  // A byte-order mark keeps Windows PowerShell from misreading non-ASCII paths.
+  writeFileSync(scriptFile, `\uFEFF${script}\n`, 'utf8');
   const env = { ...process.env };
   delete env.ELECTRON_RUN_AS_NODE;
+  // PowerShell started straight from a detached child of this window exits
+  // without running anything, so `start` launches it on its own instead.
   spawn(
-    'powershell.exe',
+    process.env.ComSpec || 'cmd.exe',
     [
-      '-NoProfile',
-      '-NonInteractive',
-      '-ExecutionPolicy',
-      'Bypass',
-      '-EncodedCommand',
-      Buffer.from(script, 'utf16le').toString('base64'),
+      '/d',
+      '/s',
+      '/c',
+      `"start "" /b powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "${scriptFile}""`,
     ],
-    { detached: true, stdio: 'ignore', windowsHide: true, env },
+    { detached: true, stdio: 'ignore', windowsHide: true, windowsVerbatimArguments: true, env },
   ).unref();
 }
 

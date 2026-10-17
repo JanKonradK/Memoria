@@ -37,7 +37,7 @@ import { pipeline } from 'node:stream/promises';
  * moves for real.
  */
 export const REPO = 'JanKonradK/Memoria';
-const RELEASES_API = `https://api.github.com/repos/${REPO}/releases/latest`;
+const RELEASES_API = `https://api.github.com/repos/${REPO}/releases?per_page=30`;
 const RELEASE_PAGE = `https://github.com/${REPO}/releases/latest`;
 
 /** The zip built by scripts/package-release.mjs and attached to every release. */
@@ -329,26 +329,9 @@ function parseChecksums(text) {
   return table;
 }
 
-/**
- * The latest final release on GitHub, or null when the latest one is a draft
- * or prerelease. Throws on network and API failures so a caller asked to
- * check by the user can say why.
- *
- * @returns {Promise<{version: string, tag: string, name: string, notes: string, url: string, publishedAt: string | null, assets: {name: string, url: string, size: number}[]} | null>}
- */
-export async function fetchLatestRelease() {
-  const response = await fetchWithTimeout(RELEASES_API, { accept: 'application/vnd.github+json' });
-  // Unauthenticated requests share 60 an hour per network address.
-  if (response.status === 403 || response.status === 429) {
-    throw new Error('GitHub is limiting update checks from this network. Try again in an hour.');
-  }
-  if (!response.ok) throw new Error(`GitHub responded ${response.status}`);
-  const release = await response.json();
-  if (release.draft || release.prerelease) return null;
-  const version = String(release.tag_name ?? '').replace(/^v/, '');
-  if (!version) throw new Error('The latest release carries no tag.');
+function readRelease(release) {
   return {
-    version,
+    version: String(release.tag_name ?? '').replace(/^v/, ''),
     tag: String(release.tag_name),
     name: String(release.name ?? release.tag_name),
     notes: String(release.body ?? ''),
@@ -358,6 +341,41 @@ export async function fetchLatestRelease() {
       name: String(asset.name),
       url: String(asset.browser_download_url),
       size: Number(asset.size) || 0,
+    })),
+  };
+}
+
+/**
+ * The newest final release on GitHub, or null when there is none. `changes`
+ * holds the notes of every final release newer than `since`, newest first, so
+ * someone several versions behind sees everything they are about to get.
+ * Throws on network and API failures so a caller asked to check by the user
+ * can say why.
+ *
+ * @param {string | null} [since]
+ * @returns {Promise<{version: string, tag: string, name: string, notes: string, url: string, publishedAt: string | null, assets: {name: string, url: string, size: number}[], changes: {version: string, notes: string, publishedAt: string | null}[]} | null>}
+ */
+export async function fetchLatestRelease(since = null) {
+  const response = await fetchWithTimeout(RELEASES_API, { accept: 'application/vnd.github+json' });
+  // Unauthenticated requests share 60 an hour per network address.
+  if (response.status === 403 || response.status === 429) {
+    throw new Error('GitHub limits update checks. Try again in an hour.');
+  }
+  if (!response.ok) throw new Error(`GitHub responded ${response.status}`);
+  const body = await response.json();
+  const releases = (Array.isArray(body) ? body : [body])
+    .filter((release) => !release.draft && !release.prerelease && String(release.tag_name ?? '').replace(/^v/, ''))
+    .map(readRelease)
+    .sort((a, b) => compareVersions(b.version, a.version));
+  const latest = releases[0];
+  if (!latest) return null;
+  const newer = releases.filter((release) => !since || compareVersions(release.version, since) > 0);
+  return {
+    ...latest,
+    changes: (newer.length ? newer : [latest]).map(({ version, notes, publishedAt }) => ({
+      version,
+      notes,
+      publishedAt,
     })),
   };
 }
@@ -443,7 +461,7 @@ export async function checkForUpdate(installRoot, { force = false } = {}) {
     // Record the attempt even when it fails, so a broken network or a rate
     // limit cannot turn every launch into another request.
     writeJson(LAST_CHECK_FILE, { checkedAt: new Date().toISOString() });
-    const release = await fetchLatestRelease();
+    const release = await fetchLatestRelease(record.version);
     if (!release) return { status: 'current', reason: 'latest is not a final release' };
     if (compareVersions(release.version, record.version) <= 0) return { status: 'current', version: record.version };
     return { status: 'staged', ...(await stageRelease(installRoot, release)) };

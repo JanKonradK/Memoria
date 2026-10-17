@@ -37,6 +37,8 @@ export interface ReleaseInfo {
   url: string;
   publishedAt: string | null;
   assets: { name: string; url: string; size: number }[];
+  /** Notes of every release newer than this copy, newest first. */
+  changes?: { version: string; notes: string; publishedAt: string | null }[];
 }
 
 /** Game id to the file name of what starts it. */

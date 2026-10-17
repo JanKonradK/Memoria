@@ -9,7 +9,8 @@ import { disconnectLanSync, initLanSync } from './lan-sync';
 import { useUI, type Tab } from './ui-store';
 import { useNow, useOnline } from './hooks';
 import { applyPwaUpdate } from './pwa';
-import { dismissUpdateNotice, initAppUpdates, useAppUpdate } from './app-update';
+import { initAppUpdates } from './app-update';
+import { UpdateScreen } from './components/UpdateScreen';
 import { servedByLauncher } from './launcher';
 import { isNativeApp } from './native';
 import { closeWorkspace, initWorkspaceHistory } from './workspace-navigation';
@@ -181,11 +182,6 @@ export default function App() {
   }, [loaded, tab, hasFocusedGame, setTab]);
   const online = useOnline();
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const releaseNotice = useAppUpdate((s) =>
-    (s.status === 'available' || s.status === 'ready') && s.release && s.dismissed !== s.release.version
-      ? s.release.version
-      : null,
-  );
   const launchNotice = useGameLaunch((s) => s.notice);
   useEffect(() => {
     if (!launchNotice || launchNotice.tone === 'error') return;
@@ -254,10 +250,9 @@ export default function App() {
       <main className="flex min-h-dvh items-center justify-center px-5 py-12">
         <section className="glass gold-hairline w-full max-w-lg rounded-ui-card p-6" role="alert">
           <p className="text-meta font-bold uppercase tracking-widest text-danger-fg">Local data unavailable</p>
-          <h1 className="mt-2 text-heading font-black text-fg-soft">Memoria could not open this device's data.</h1>
+          <h1 className="mt-2 text-heading font-black text-fg-soft">Could not open your data</h1>
           <p className="mt-2 text-body text-muted">
-            Retry first. Starting fresh permanently clears this browser's local Memoria database; synced or exported
-            copies are not affected.
+            Retry first. Starting fresh deletes the data on this device; synced and exported copies are kept.
           </p>
           <p className="mt-3 rounded-ui-lg bg-scrim-well p-3 text-meta text-dim">{loadError}</p>
           <div className="mt-5 flex flex-wrap gap-2">
@@ -267,7 +262,7 @@ export default function App() {
             <Btn
               kind="danger"
               onClick={() => {
-                if (window.confirm('Permanently clear Memoria data stored in this browser and start fresh?')) {
+                if (window.confirm('Delete all Memoria data on this device and start fresh?')) {
                   void disconnectLanSync()
                     .then(clearLocalData)
                     .then(() => {
@@ -318,8 +313,8 @@ export default function App() {
       >
         {saveError && (
           <section className="mx-4 my-3 space-y-2 rounded-ui-lg bg-danger/10 p-4 text-body" role="alert">
-            <p className="font-semibold text-danger-fg">Your latest changes could not be saved.</p>
-            <p className="text-muted">Keep Memoria open. Try saving again, or export a backup from Settings.</p>
+            <p className="font-semibold text-danger-fg">Your latest changes were not saved.</p>
+            <p className="text-muted">Keep Memoria open and try again.</p>
             <div className="flex flex-wrap gap-2">
               <Btn
                 disabled={retryingSave}
@@ -378,7 +373,7 @@ export default function App() {
               role="status"
               aria-live="polite"
             >
-              Offline — changes are saved on this device.
+              Offline. Changes are saved on this device.
             </m.div>
           )}
           {launchNotice && (
@@ -399,30 +394,6 @@ export default function App() {
               </button>
             </m.div>
           )}
-          {releaseNotice && tab !== 'settings' && (
-            <m.div
-              key="release"
-              variants={toastMotion}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="pointer-events-auto flex w-full flex-wrap items-center justify-center gap-2 rounded-ui-xl bg-popover/95 px-4 py-2 text-meta font-semibold text-accent-fg shadow-float ring-1 ring-accent/25 backdrop-blur-md"
-              role="status"
-              aria-live="polite"
-            >
-              <span className="min-w-0 flex-1">Memoria {releaseNotice} is available.</span>
-              <button
-                type="button"
-                onClick={() => setTab('settings')}
-                className="min-h-9 rounded-ui-md bg-accent/15 px-3 py-1 text-accent-fg ring-1 ring-accent/25"
-              >
-                View update
-              </button>
-              <button type="button" onClick={dismissUpdateNotice} className="min-h-9 px-2 text-accent-fg">
-                Later
-              </button>
-            </m.div>
-          )}
           {updateAvailable && (
             <m.div
               key="update"
@@ -434,7 +405,7 @@ export default function App() {
               role="status"
               aria-live="polite"
             >
-              <span className="min-w-0 flex-1">A new Memoria version is ready.</span>
+              <span className="min-w-0 flex-1">New version ready.</span>
               <button
                 type="button"
                 onClick={applyPwaUpdate}
@@ -451,6 +422,7 @@ export default function App() {
       </div>
 
       <AppSheets />
+      <UpdateScreen />
     </div>
   );
 }
