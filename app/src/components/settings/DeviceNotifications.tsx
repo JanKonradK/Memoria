@@ -16,13 +16,7 @@ export function DeviceNotifications() {
       </div>
       {/* Inset to the heading's text, so the body lines up with the rule. */}
       <div className="mx-2 space-y-3">
-        <p className="text-body text-muted">
-          Get your custom reminders and one upcoming deadline per game. Quiet hours apply. Reminders cover the next 24
-          hours and update when you open Memoria. Android can delay delivery.
-        </p>
-        <p className="text-meta text-muted">
-          Energy alerts use recent readings. Refresh after playing to keep them accurate.
-        </p>
+        <p className="text-body text-muted">Your reminders and one deadline per game, for the next 24 hours.</p>
         <Btn
           disabled={busy}
           onClick={() => {
@@ -30,14 +24,14 @@ export function DeviceNotifications() {
             setMessage('');
             void setNotificationsEnabled(!enabled)
               .catch((cause: unknown) =>
-                setMessage(cause instanceof Error ? cause.message : 'Reminders could not be changed.'),
+                setMessage(cause instanceof Error ? cause.message : 'Could not change reminders.'),
               )
               .finally(() => setBusy(false));
           }}
         >
           {busy ? 'Updating…' : enabled ? 'Turn reminders off' : 'Enable reminders'}
         </Btn>
-        {enabled && <p className="text-meta text-muted">{scheduled} reminders scheduled on this device.</p>}
+        {enabled && <p className="text-meta text-muted">{scheduled} scheduled</p>}
         {(message || error) && (
           <p role="alert" className="text-body text-danger-fg">
             {message || error}

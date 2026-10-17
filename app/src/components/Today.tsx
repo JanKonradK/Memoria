@@ -115,8 +115,8 @@ function PriorityRow({
                 <Tooltip
                   content={
                     source.kind === 'estimate'
-                      ? 'Estimated from a starting guess. Enter the real value on the card.'
-                      : `Estimated from the value you entered ${source.age}`
+                      ? 'Starting guess. Enter the real value on the card.'
+                      : `Entered ${source.age}`
                   }
                 >
                   <span className="today-row-source numeral text-caption">{source.shortAge}</span>
@@ -212,13 +212,12 @@ export function TodayPage({ now }: { now: number }) {
       <TodayNotices now={now} />
       {order.length === 0 ? (
         <section className="today-empty">
-          <h2 className="text-heading font-semibold text-fg">Nothing tracked yet</h2>
-          <p className="mt-2 text-body text-muted">Add a game to see what caps or resets next.</p>
+          <h2 className="text-heading font-semibold text-fg">No games yet</h2>
           <div className="mt-5 flex flex-wrap gap-2">
             <Btn kind="primary" onClick={() => openSheet({ kind: 'addGame' })}>
-              Add your first game
+              Add a game
             </Btn>
-            <Btn onClick={() => setTab('settings')}>Connect my PC</Btn>
+            <Btn onClick={() => setTab('settings')}>Connect to PC</Btn>
           </div>
         </section>
       ) : (

@@ -103,11 +103,10 @@ export function ReminderSheet({ open }: { open: boolean }) {
         </div>
         {unavailableGame && (
           <p role="alert" className="text-meta text-warn-fg">
-            This game is no longer available. Choose another game or select No game to keep this reminder.
+            This game was removed. Pick another game or No game.
           </p>
         )}
-        <p className="text-label text-muted">Times use {draftZone}.</p>
-        <p className="text-label text-dim">Shown in the in-app reminder lists until you delete it.</p>
+        <p className="text-label text-muted">Times in {draftZone}</p>
       </form>
     </Sheet>
   );

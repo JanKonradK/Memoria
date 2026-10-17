@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }, info) => {
   test.skip(!['desktop', 'android-s23'].includes(info.project.name), 'Game page on desktop and phone');
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await page.getByRole('button', { name: 'Add your first game', exact: true }).click();
+  await page.getByRole('button', { name: 'Add a game', exact: true }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);

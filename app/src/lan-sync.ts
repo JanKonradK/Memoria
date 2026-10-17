@@ -74,10 +74,7 @@ async function request(host: string, path: string, data: unknown, token?: string
       disableRedirects: true,
     });
   } catch {
-    throw new LanError(
-      'Cannot reach your PC. Open Memoria on the PC and connect both devices to the same Wi-Fi. Your progress is saved.',
-      0,
-    );
+    throw new LanError('Cannot reach your PC. Open Memoria there and use the same Wi-Fi.', 0);
   }
   const body = response.data;
   if (response.status !== 200)
@@ -119,7 +116,7 @@ export async function pairLanFromQr(text: string): Promise<void> {
 }
 
 async function connectToPc(hosts: string[], code: string): Promise<void> {
-  if (pairingInProgress) throw new Error('A connection is already in progress. Please wait.');
+  if (pairingInProgress) throw new Error('Already connecting.');
   if (!/^\d{8}$/.test(code.replace(/\s/g, ''))) throw new Error('Enter the eight-digit code from PC Settings.');
   pairingInProgress = true;
   const previous = pair;
@@ -270,7 +267,7 @@ export async function syncLanNow(): Promise<void> {
   const current = generation;
   const sent = useApp.getState().state;
   if (new TextEncoder().encode(JSON.stringify({ state: sent })).byteLength > 1_000_000) {
-    setStatus('error', 'Local data exceeds the 1 MB sync limit. Export a backup and reduce old data.');
+    setStatus('error', 'Data is over the 1 MB sync limit.');
     return;
   }
   let complete!: () => void;

@@ -118,7 +118,6 @@ export function GameDetailSheet({
                 onBlur={commitDraft}
               />
             </Field>
-            <p className="mt-1 text-label text-muted">Tells two accounts of the same game apart.</p>
           </div>
         }
         serverControl={
@@ -146,9 +145,6 @@ export function GameDetailSheet({
                 )}
               </Select>
             </Field>
-            <p className="text-label text-muted">
-              EU, NA, and Asia are HoYo/Kuro shortcuts. Choose the timezone above for other servers.
-            </p>
           </div>
         }
         dangerControls={
@@ -160,7 +156,7 @@ export function GameDetailSheet({
             ) : (
               <>
                 <p className="mb-2 text-label text-danger-fg">
-                  This also deletes this game's resources, tasks, quick spends, events, and reminders.
+                  Also deletes its resources, tasks, events and reminders.
                 </p>
                 <div className="flex gap-2">
                   <Btn

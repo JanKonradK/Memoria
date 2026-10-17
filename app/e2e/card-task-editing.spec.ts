@@ -23,7 +23,7 @@ test('daily task rules can change on the card, including Tacet counts and new ta
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  await page.getByRole('button', { name: 'Add your first game' }).click();
+  await page.getByRole('button', { name: 'Add a game' }).click();
   await page.getByRole('button', { name: /Wuthering Waves/ }).click();
   await page.getByRole('button', { name: 'Add WuWa', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);

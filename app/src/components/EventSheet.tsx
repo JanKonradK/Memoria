@@ -8,7 +8,6 @@ import {
   type BannerKind,
 } from '@memoria/shared';
 import { eventCategory, eventBannerKind } from '../event-category';
-import { calendarSchedule } from '../event-schedule';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fmtDateTimeLocalInput, fmtDur, parseDateTimeLocalInput } from '../util';
@@ -26,14 +25,12 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
   const deleteEvent = useApp((s) => s.deleteEvent);
   const closeSheet = useUI((s) => s.closeSheet);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const trackingHelp = useId();
   const formId = useId();
   const dateErrorId = useId();
 
   const games = rosterGames(state.games);
   const existing = eventId ? state.events.find((e) => e.id === eventId && !e.deleted) : undefined;
   const unavailable = Boolean(eventId && !existing);
-  const calendar = existing ? calendarSchedule(existing) : undefined;
   const [draftZone, setDraftZone] = useState(state.settings.localTz);
 
   const [draft, setDraft] = useState({
@@ -205,12 +202,12 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
       >
         {unavailable && (
           <p role="alert" className="text-meta text-warn-fg">
-            This event is no longer available. Your draft is kept here. Add it as a new event to save it.
+            This event was deleted. Add it again to keep your draft.
           </p>
         )}
         {!selectedGame && (
           <p role="alert" className="text-meta text-warn-fg">
-            {games.length ? 'Choose an available game to save this event.' : 'Add a game before creating an event.'}
+            {games.length ? 'Pick a game to save this event.' : 'Add a game first.'}
           </p>
         )}
         <fieldset className="min-w-0 space-y-3">
@@ -276,12 +273,7 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
         </fieldset>
         <fieldset className="min-w-0 space-y-3 border-t border-line-edge pt-4">
           <legend className="pr-2 text-body font-semibold">Schedule</legend>
-          <p className="text-caption text-muted">Dates and times use {draftZone}.</p>
-          {calendar && (
-            <p className="text-caption text-muted">
-              Official calendar: {calendar.label} ({calendar.zone}). The fields below let you set personal times.
-            </p>
-          )}
+          <p className="text-caption text-muted">Times in {draftZone}</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Starts">
               <TextInput
@@ -304,7 +296,7 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
           </div>
           {badWindow ? (
             <p id={dateErrorId} role="alert" className="text-caption text-danger-fg">
-              Enter valid dates. The end must be after the start.
+              The end must be after the start.
             </p>
           ) : (
             <p className="text-caption text-dim">Duration: {fmtDur(draft.end - draft.start)}</p>
@@ -334,64 +326,34 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
             maxLength={20_000}
             value={draft.notes}
             onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
-            placeholder="Rewards, links, or anything to remember…"
+            placeholder="Rewards, links, notes…"
           />
         </Field>
         <fieldset className="min-w-0 space-y-4 border-t border-line-edge pt-4">
           <legend className="pr-2 text-body font-semibold">Tracking</legend>
           {games.find((game) => game.id === draft.gameId)?.paused && (
-            <p className="text-caption text-muted">
-              This game is paused. Saved events stay hidden from Timeline until you resume tracking.
-            </p>
+            <p className="text-caption text-muted">Game paused. Its events are hidden.</p>
           )}
-          <div>
-            <Toggle
-              checked={draft.dailyTouch}
-              onChange={(v) => setDraft({ ...draft, dailyTouch: v })}
-              label="Needs a daily check-in"
-              ariaDescribedBy={`${trackingHelp}-daily`}
+          <Toggle
+            checked={draft.dailyTouch}
+            onChange={(v) => setDraft({ ...draft, dailyTouch: v })}
+            label="Daily check-in"
+          />
+          <Toggle
+            checked={draft.notify}
+            onChange={(v) => setDraft({ ...draft, notify: v })}
+            label="Count toward next action"
+          />
+          <Field label="Parts">
+            <NumInput
+              min={1}
+              max={MAX_EVENT_PARTS}
+              value={draft.parts}
+              onChange={(e) => setDraft({ ...draft, parts: e.target.value })}
+              placeholder={`Auto (${inferredParts})`}
             />
-            <p id={`${trackingHelp}-daily`} className="mt-1 text-caption text-muted">
-              Keep this event near the top of the card while it is active.
-            </p>
-          </div>
-          <div>
-            <Toggle
-              checked={draft.notify}
-              onChange={(v) => setDraft({ ...draft, notify: v })}
-              label="Include in next actions"
-              ariaDescribedBy={`${trackingHelp}-next`}
-            />
-            <p id={`${trackingHelp}-next`} className="mt-1 text-caption text-muted">
-              Use its end time when choosing the game’s next action.
-            </p>
-          </div>
-          <div>
-            <Field label="Parts">
-              <NumInput
-                min={1}
-                max={MAX_EVENT_PARTS}
-                value={draft.parts}
-                onChange={(e) => setDraft({ ...draft, parts: e.target.value })}
-                placeholder={`Automatic (${inferredParts})`}
-                aria-describedby={`${trackingHelp}-parts`}
-              />
-            </Field>
-            <p id={`${trackingHelp}-parts`} className="mt-1 text-caption text-muted">
-              How many steps you tick this event off in. Leave empty to use a guess from its name and notes.
-            </p>
-          </div>
-          <div>
-            <Toggle
-              checked={draft.done}
-              onChange={(v) => setDraft({ ...draft, done: v })}
-              label="Mark done"
-              ariaDescribedBy={`${trackingHelp}-done`}
-            />
-            <p id={`${trackingHelp}-done`} className="mt-1 text-caption text-muted">
-              Move this event to Finished. Its details stay saved.
-            </p>
-          </div>
+          </Field>
+          <Toggle checked={draft.done} onChange={(v) => setDraft({ ...draft, done: v })} label="Done" />
         </fieldset>
       </form>
     </Sheet>

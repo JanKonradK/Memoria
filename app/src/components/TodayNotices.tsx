@@ -107,8 +107,8 @@ export function TodayNotices({ now }: { now: number }) {
           title="Check your home timezone"
           detail={
             <>
-              Memoria is set to Europe/Warsaw ({utcOffsetLabel('Europe/Warsaw', now)}). This system reports {detectedTz}{' '}
-              ({utcOffsetLabel(detectedTz, now)}).
+              Set to Europe/Warsaw ({utcOffsetLabel('Europe/Warsaw', now)}). This device uses {detectedTz} (
+              {utcOffsetLabel(detectedTz, now)}).
             </>
           }
           action={`Switch to ${detectedTz}`}
@@ -127,7 +127,7 @@ export function TodayNotices({ now }: { now: number }) {
           title={`${presetGap} new ${presetGap === 1 ? 'routine' : 'routines'} for ${presetGamesBehind} ${
             presetGamesBehind === 1 ? 'game' : 'games'
           }`}
-          detail="Presets gained dailies and weeklies since these games were added. Nothing you deleted comes back."
+          detail="Deleted routines stay deleted."
           action="Add them"
           onAction={() => addMissingPresetTasksEverywhere()}
           dismissLabel="Dismiss new routines"

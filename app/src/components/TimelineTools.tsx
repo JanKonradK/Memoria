@@ -54,9 +54,7 @@ export function TimelineTools({
           <Dialog.Overlay className="timeline-search-overlay fixed inset-0 z-50 bg-scrim/30" />
           <Dialog.Content className="timeline-search-panel popover-motion fixed right-3 top-[calc(var(--app-bar-h)+8px)] z-50 w-[min(24rem,calc(100vw-24px))]">
             <Dialog.Title className="mb-3 text-lead font-semibold tracking-tight">Find events</Dialog.Title>
-            <Dialog.Description className="sr-only">
-              Filter the timeline by event name. The filter stays active when you close this panel.
-            </Dialog.Description>
+            <Dialog.Description className="sr-only">Filter events by name.</Dialog.Description>
             <label htmlFor="timeline-search" className="mb-2 block text-meta text-muted">
               Search events
             </label>

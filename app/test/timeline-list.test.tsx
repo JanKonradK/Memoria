@@ -145,7 +145,7 @@ describe('timeline agenda controls', () => {
 
   it('explains hidden history instead of presenting an empty list as missing data', () => {
     render(<TimelineList {...props([event('Completed', { done: true })])} />);
-    expect(screen.getByText(/1 finished event is hidden.*Show finished events/)).toBeInTheDocument();
+    expect(screen.getByText(/1 finished hidden/)).toBeInTheDocument();
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 });

@@ -80,7 +80,7 @@ for (const method of ['scan', 'manual']) {
         .getByRole('button', { name: 'Today', exact: true })
         .click();
       await expect(page.getByRole('dialog')).toHaveCount(0);
-      await page.getByRole('button', { name: 'Connect my PC', exact: true }).click();
+      await page.getByRole('button', { name: 'Connect to PC', exact: true }).click();
       await expect(page.getByRole('heading', { name: 'Device sync', exact: true })).toBeVisible();
       await expect(page.getByLabel('PC address', { exact: true })).not.toBeVisible();
       if (method === 'manual') {
@@ -111,7 +111,7 @@ for (const method of ['scan', 'manual']) {
         ),
       ).toEqual([]);
       await page.getByRole('button', { name: 'Today', exact: true }).click();
-      await page.getByRole('button', { name: 'Add your first game' }).click();
+      await page.getByRole('button', { name: 'Add a game' }).click();
       await page.getByRole('button', { name: /Genshin Impact/ }).click();
       await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
       await expect(page.getByRole('dialog')).toHaveCount(0);

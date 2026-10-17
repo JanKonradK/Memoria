@@ -28,9 +28,9 @@ it('a new event starts with fresh rules after editing a finished banner', () => 
   expect(screen.getByLabelText('Name')).toHaveValue('');
   expect(screen.getByLabelText('Notes')).toHaveValue('');
   expect(screen.getByRole('combobox', { name: 'Type' })).toHaveTextContent('event');
-  expect(screen.getByRole('switch', { name: 'Needs a daily check-in' })).toHaveAttribute('aria-checked', 'false');
-  expect(screen.getByRole('switch', { name: 'Include in next actions' })).toHaveAttribute('aria-checked', 'true');
-  expect(screen.getByRole('switch', { name: 'Mark done' })).toHaveAttribute('aria-checked', 'false');
+  expect(screen.getByRole('switch', { name: 'Daily check-in' })).toHaveAttribute('aria-checked', 'false');
+  expect(screen.getByRole('switch', { name: 'Count toward next action' })).toHaveAttribute('aria-checked', 'true');
+  expect(screen.getByRole('switch', { name: 'Done' })).toHaveAttribute('aria-checked', 'false');
   expect(screen.queryByRole('button', { name: 'Confirm delete' })).not.toBeInTheDocument();
   expect(useApp.getState().state.events).toEqual([event]);
 });
@@ -51,7 +51,7 @@ it('keeps a draft when its event is deleted and requires an explicit new copy', 
 
   expect(screen.getByLabelText('Name')).toHaveValue('My pending change');
   expect(screen.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
-  expect(screen.getByRole('alert')).toHaveTextContent('This event is no longer available');
+  expect(screen.getByRole('alert')).toHaveTextContent('This event was deleted');
   expect(useApp.getState().state.events).toHaveLength(1);
   fireEvent.click(screen.getByRole('button', { name: 'Add as new event', exact: true }));
   expect(useApp.getState().state.events).toEqual([
@@ -72,7 +72,7 @@ it('keeps the event draft timezone when home timezone changes during editing', (
   act(() => useApp.getState().updateSettings({ localTz: 'Asia/Tokyo' }));
   fireEvent.change(screen.getByLabelText('Ends'), { target: { value: '2026-10-07T13:00' } });
 
-  expect(screen.getByText('Dates and times use Etc/UTC.')).toBeInTheDocument();
+  expect(screen.getByText('Times in Etc/UTC')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Add event', exact: true }));
   expect(useApp.getState().state.events[0]).toEqual(
     expect.objectContaining({ start: Date.UTC(2026, 9, 7, 10), end: Date.UTC(2026, 9, 7, 13) }),

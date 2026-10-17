@@ -54,7 +54,7 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
   if (!event || !game) {
     return (
       <Sheet open={open} onClose={closeSheet} title="Event">
-        <p className="text-body text-muted">This event is no longer available.</p>
+        <p className="text-body text-muted">This event was deleted.</p>
       </Sheet>
     );
   }

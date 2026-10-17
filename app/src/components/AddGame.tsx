@@ -159,15 +159,9 @@ export function AddGameSheet({ open }: { open: boolean }) {
                 value={accountLabel}
                 onChange={(event) => setAccountLabel(event.target.value)}
               />
-              <span className="mt-1 block text-meta text-dim">
-                Shown next to the game name so you can tell your accounts apart.
-              </span>
             </Field>
             <Field label="Short name">
               <TextInput maxLength={4} value={short} onChange={(event) => setShort(event.target.value)} />
-              <span className="mt-1 block text-meta text-dim">
-                Shown where space is tight. Give each account its own.
-              </span>
             </Field>
             <Field label="Server timezone">
               <Select value={tz} onChange={(event) => setTz(event.target.value)}>
@@ -230,8 +224,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
               </Field>
             ))}
             <p className="text-label text-dim">
-              Reset: {String(picked.dailyResetHour).padStart(2, '0')}:00 server · everything is editable later in the
-              game editor.
+              Daily reset {String(picked.dailyResetHour).padStart(2, '0')}:00 server time
             </p>
           </div>
           <div className="mt-5 flex gap-2">

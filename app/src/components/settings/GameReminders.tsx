@@ -72,14 +72,8 @@ export function GameReminders({
 
   return (
     <section>
-      <p className="mb-4 text-meta text-muted">
-        Reminders for {game.name} appear in Tonight. Times use {zone}.
-      </p>
-      {reminders.length === 0 && (
-        <p className="mb-5 text-body text-muted">
-          No reminders yet. Add a check-in or something you want to do before reset.
-        </p>
-      )}
+      <p className="mb-4 text-meta text-muted">Shown in Tonight. Times in {zone}.</p>
+      {reminders.length === 0 && <p className="mb-5 text-body text-muted">No reminders.</p>}
       <div className="mb-5 divide-y divide-line-hairline">
         {reminders.map((reminder) => (
           <div key={reminder.id} className="flex flex-wrap items-center gap-2 py-3">
@@ -112,7 +106,7 @@ export function GameReminders({
       >
         {unavailable && (
           <p role="alert" className="text-meta text-warn-fg sm:col-span-2">
-            This reminder is no longer available. Your draft is kept here. Add it as a new reminder to save it.
+            This reminder was deleted. Add it again to keep your draft.
           </p>
         )}
         <Field label="Reminder message">
@@ -155,9 +149,6 @@ export function GameReminders({
         </div>
         <p role="status" className="text-label text-muted empty:hidden sm:col-span-2">
           {status}
-        </p>
-        <p className="text-label text-muted sm:col-span-2">
-          These are in-app reminders. Keep Memoria open to see them.
         </p>
       </form>
     </section>

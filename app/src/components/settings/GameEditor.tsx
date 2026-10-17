@@ -274,7 +274,6 @@ export function GameEditor({
                       onBlur={commitDraft}
                     />
                   </Field>
-                  <p className="mt-1 text-label text-muted">Shown where space is tight, such as Tonight.</p>
                 </div>
                 {accountControls && <div className="sm:col-span-2">{accountControls}</div>}
               </div>
@@ -283,9 +282,8 @@ export function GameEditor({
             <section ref={resetsRef}>
               <SectionTitle>Server and resets</SectionTitle>
               <p className="mb-3 text-meta text-muted">
-                Reset times use the game server's clock. Your next daily reset is at{' '}
-                <span className="numeral text-fg">{localResetLabel(game, state.settings.localTz, Date.now())}</span> in{' '}
-                {state.settings.localTz}.
+                Next daily reset{' '}
+                <span className="numeral text-fg">{localResetLabel(game, state.settings.localTz, Date.now())}</span>
               </p>
               {serverControl && <div className="mb-3">{serverControl}</div>}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -396,9 +394,7 @@ export function GameEditor({
                                 updateGame(game.id, { image });
                               })
                               .catch((error: unknown) => {
-                                setImageError(
-                                  error instanceof Error ? error.message : 'The selected image could not be decoded.',
-                                );
+                                setImageError(error instanceof Error ? error.message : 'Could not read that image.');
                               });
                           }
                         }}
@@ -443,9 +439,6 @@ export function GameEditor({
                 label="Pause tracking"
                 className="sm:!min-h-8"
               />
-              <p className="mb-3 text-label text-muted">
-                A paused game keeps its settings and leaves Today and Calendar until you resume it.
-              </p>
               {dangerControls}
             </section>
           </div>
@@ -457,17 +450,12 @@ export function GameEditor({
           <div className="space-y-6">
             <section>
               <SectionTitle>Resources</SectionTitle>
-              <p className="mb-3 text-meta text-muted">
-                Set the capacity and refill rule of each resource. Their order here is their order on the card.
-              </p>
               <ResourceEditor game={game} resources={resources} />
             </section>
 
             <section ref={spendRef}>
               <SectionTitle>Quick spend</SectionTitle>
-              <p className="mb-3 text-meta text-muted">
-                One-tap changes to the first regenerating resource. Use a negative number to spend.
-              </p>
+              <p className="mb-3 text-meta text-muted">Negative numbers spend.</p>
               <div className="space-y-2">
                 {chips.map((chip) => (
                   <div key={chip.id} className="flex flex-wrap items-center gap-2">
@@ -524,9 +512,6 @@ export function GameEditor({
 
         {tab === 'tasks' && (
           <section>
-            <p className="mb-3 text-meta text-muted">
-              Your routine for this game: checkboxes, counters and timers. Open a task to change its schedule.
-            </p>
             <div className="space-y-3">
               {tasks.map((task) => (
                 <TrackingItem key={task.id} name={task.name || 'Untitled task'} summary={taskSettingsSummary(task)}>
@@ -581,7 +566,7 @@ export function GameEditor({
               {presetGap > 0 && (
                 <div className="flex flex-wrap items-center gap-2 border-t border-line-hairline pt-3">
                   <p className="min-w-0 flex-1 text-label text-muted">
-                    This game's preset has {presetGap} {presetGap === 1 ? 'routine' : 'routines'} you are not tracking.
+                    {presetGap} preset {presetGap === 1 ? 'routine' : 'routines'} not tracked
                   </p>
                   <Btn className={TOUCH_BUTTON} onClick={() => addMissingPresetTasks(game.id)}>
                     Add {presetGap}

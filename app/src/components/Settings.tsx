@@ -87,7 +87,7 @@ export function SettingsPage() {
     setImportDraft(null);
     setStatusMessage('');
     if (file.size > 1_000_000) {
-      setStatusMessage('Import failed — backup exceeds the 1 MB limit.');
+      setStatusMessage('Import failed: backup is over 1 MB.');
       return;
     }
     void file
@@ -110,7 +110,7 @@ export function SettingsPage() {
           setStatusMessage('');
         } catch {
           setImportDraft(null);
-          setStatusMessage('Import failed — not a valid Memoria backup file.');
+          setStatusMessage('Import failed: not a Memoria backup.');
         }
       })
       .catch((error: unknown) => {
@@ -143,7 +143,6 @@ export function SettingsPage() {
             <div className="mx-2 flex flex-wrap items-center justify-between gap-3 border-b border-line py-3">
               <div>
                 <p className="text-meta font-semibold text-fg-soft">Sleep window</p>
-                <p className="aside text-label text-muted">Used by the hub's overnight check.</p>
               </div>
               <div className="flex items-center gap-2">
                 <NumInput
@@ -165,7 +164,6 @@ export function SettingsPage() {
             <div className="mx-2 flex flex-wrap items-center justify-between gap-3 border-b border-line py-3">
               <div>
                 <p className="text-meta font-semibold text-fg-soft">Home timezone</p>
-                <p className="aside text-label text-muted">Used for every local clock and date.</p>
               </div>
               <HomeTimeZoneField
                 value={settings.localTz === detectedTz ? SYSTEM_TIMEZONE_VALUE : settings.localTz}
@@ -232,9 +230,7 @@ export function SettingsPage() {
                 })}
               </div>
             ) : (
-              <p className="mx-2 mt-4 text-body text-dim">
-                No games yet. Add one to start tracking resources and tasks.
-              </p>
+              <p className="mx-2 mt-4 text-body text-dim">No games yet.</p>
             )}
           </section>
 
@@ -251,9 +247,6 @@ export function SettingsPage() {
 
             {launcher && (
               <div className="mx-2 space-y-3 border-b border-line py-4">
-                <p className="text-meta text-muted">
-                  Your changes save automatically on this PC. Every open Memoria window uses the same progress.
-                </p>
                 <div className="flex flex-wrap items-center gap-3">
                   <Btn kind="primary" className={TOUCH_BUTTON} onClick={() => void syncNow().catch(reportError)}>
                     Save now
@@ -279,23 +272,13 @@ export function SettingsPage() {
               <div className="mx-2 space-y-3 border-b border-line py-4">
                 <div>
                   <p className="text-meta font-semibold text-fg-soft">Shared-folder sync</p>
-                  <details className="mt-1 text-meta text-muted">
-                    <summary className="min-h-11 cursor-pointer rounded-ui-sm py-3 font-medium text-fg-soft">
-                      How shared-folder sync works
-                    </summary>
-                    <p className="pb-2 leading-relaxed">
-                      Keep one file in a folder your computer already syncs — Google Drive, OneDrive, Proton Drive,
-                      Dropbox, iCloud Drive. Point every device at that same file and they stay in agreement. Memoria
-                      never contacts the provider; it only reads and writes the file, and their app moves it.
-                    </p>
-                  </details>
+                  <p className="aside text-label text-muted">
+                    One file in a synced folder, such as Google Drive or OneDrive, shared by every device.
+                  </p>
                 </div>
 
                 {!cloudSupported && (
-                  <p className="text-meta text-muted">
-                    This browser cannot open a file for writing. Chrome and Edge can, including from a downloaded{' '}
-                    <code className="text-fg-soft">Memoria.html</code>. Elsewhere, use Export and Import below.
-                  </p>
+                  <p className="text-meta text-muted">Needs Chrome or Edge. Use Export and Import instead.</p>
                 )}
 
                 {cloudSupported && !cloudConnected && (
@@ -307,7 +290,7 @@ export function SettingsPage() {
                         onClick={() => {
                           setStatusMessage('');
                           void connectNewCloudFile()
-                            .then((ok) => ok && setStatusMessage('Syncing to the file you chose.'))
+                            .then((ok) => ok && setStatusMessage('Syncing.'))
                             .catch(reportError);
                         }}
                       >
@@ -318,7 +301,7 @@ export function SettingsPage() {
                         onClick={() => {
                           setStatusMessage('');
                           void connectExistingCloudFile()
-                            .then((ok) => ok && setStatusMessage('Joined the existing sync file.'))
+                            .then((ok) => ok && setStatusMessage('Syncing.'))
                             .catch(reportError);
                         }}
                       >
@@ -326,8 +309,8 @@ export function SettingsPage() {
                       </Btn>
                     </div>
                     <p className="aside text-label text-muted">
-                      First device: create <code className="text-fg-soft">{CLOUD_FILE_SUGGESTED_NAME}</code> inside the
-                      synced folder. Every device after that: pick the file the first one made.
+                      Create <code className="text-fg-soft">{CLOUD_FILE_SUGGESTED_NAME}</code> on the first device. Pick
+                      it on the others.
                     </p>
                   </>
                 )}
@@ -356,7 +339,7 @@ export function SettingsPage() {
                         className={TOUCH_BUTTON}
                         onClick={() => {
                           void disconnectCloudFile()
-                            .then(() => setStatusMessage('Stopped syncing on this device. The file was left alone.'))
+                            .then(() => setStatusMessage('Stopped syncing.'))
                             .catch(reportError);
                         }}
                       >
@@ -417,16 +400,14 @@ export function SettingsPage() {
                     {importDraft.events} event
                     {importDraft.events === 1 ? '' : 's'}?
                   </p>
-                  <p className="mt-1 text-meta text-muted">
-                    Your current progress is kept. If both copies changed the same item, the latest edit is used.
-                  </p>
+                  <p className="mt-1 text-meta text-muted">Where both changed an item, the newer edit wins.</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Btn
                       kind="primary"
                       className={TOUCH_BUTTON}
                       onClick={() => {
                         const ok = importStateJson(importDraft.text);
-                        setStatusMessage(ok ? 'Backup imported and merged.' : 'Import failed.');
+                        setStatusMessage(ok ? 'Backup merged.' : 'Import failed.');
                         setImportDraft(null);
                       }}
                     >
@@ -439,16 +420,14 @@ export function SettingsPage() {
                 </div>
               )}
               <div className="mt-5 border-t border-line pt-4">
-                <p className="text-meta text-muted">
-                  Clearing wipes this browser's Memoria database.{' '}
-                  {launcher ? 'The desktop state file is left untouched. ' : ''}
-                  Export first if you need a copy.
-                </p>
                 <Btn
                   kind="danger"
-                  className={`mt-3 ${TOUCH_BUTTON}`}
+                  className={TOUCH_BUTTON}
                   onClick={() => {
-                    if (!window.confirm('Permanently clear Memoria data stored in this browser?')) return;
+                    if (
+                      !window.confirm('Delete all Memoria data in this browser? Export a backup first if you need one.')
+                    )
+                      return;
                     void disconnectLanSync()
                       .then(clearLocalData)
                       .then(() => {

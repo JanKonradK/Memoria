@@ -119,8 +119,4 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
   const listRow = page.locator(`[data-list-event="${snowball.id}"]`);
   await expect(listRow).toContainText('21 Oct–2 Nov');
   await expect(listRow).toContainText('UTC+8');
-  await listRow.getByRole('button', { name: /^Edit / }).click();
-  await expect(page.getByRole('dialog', { name: 'Edit event' })).toContainText(
-    'Official calendar: 21 Oct–2 Nov (UTC+8).',
-  );
 });

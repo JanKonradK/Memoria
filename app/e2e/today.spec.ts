@@ -13,7 +13,7 @@ test('Today starts a new roster and keeps all navigation reachable', async ({ pa
   const primary = page.getByRole('navigation', { name: 'Primary', exact: true });
   await expect(primary.getByRole('button')).toHaveText(['Today', 'Calendar']);
   await expect(primary.getByRole('button', { name: 'Today' })).toHaveAttribute('aria-current', 'page');
-  await page.getByRole('button', { name: 'Add your first game', exact: true }).click();
+  await page.getByRole('button', { name: 'Add a game', exact: true }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -44,7 +44,7 @@ test('Today starts a new roster and keeps all navigation reachable', async ({ pa
 });
 
 test('a Today game is edited in its card on desktop and on its own page on a phone', async ({ page }) => {
-  await page.getByRole('button', { name: 'Add your first game', exact: true }).click();
+  await page.getByRole('button', { name: 'Add a game', exact: true }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);

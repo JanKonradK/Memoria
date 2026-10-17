@@ -173,14 +173,12 @@ export function TimelineList({
       {sections.length === 0 ? (
         <p className="timeline-empty text-center text-body text-muted">
           {games.length > 0 && games.every((game) => game.paused)
-            ? 'Events are hidden while tracking is paused.'
+            ? 'All games are paused.'
             : hiddenFinished > 0
-              ? `Nothing running or arriving. ${hiddenFinished} finished ${
-                  hiddenFinished === 1 ? 'event is' : 'events are'
-                } hidden — use Show finished events to see them.`
+              ? `Nothing running. ${hiddenFinished} finished hidden.`
               : search
-                ? `No events match “${search}”. Clear the search to see all events.`
-                : 'No events here yet. Use Add → Event to add one.'}
+                ? `No events match “${search}”.`
+                : 'No events.'}
         </p>
       ) : (
         sections.map((section) => (

@@ -28,35 +28,35 @@ export function UserGuide({ open }: { open: boolean }) {
   const steps = useMemo<Step[]>(
     () => [
       {
-        title: 'Your daily run starts here',
-        body: 'I’m Memoria. I keep your games, energy and deadlines in one place. Let’s take a quick look around.',
+        title: 'Pages',
+        body: 'Today, Timeline, Livestreams and Settings.',
         target: '[data-tour="pages"]',
         tab: 'today',
       },
       {
-        title: 'Build your roster',
-        body: 'Use Add to choose a game from its preset. This is also where you add events and reminders. Each account can have its own server and nickname.',
+        title: 'Add menu',
+        body: 'Add games, events and reminders.',
         target: '[data-tour="add"]',
         tab: 'today',
       },
       {
-        title: 'Find events for one game',
-        body: 'Choose a game to filter this page. Your choice follows you to Settings and Livestreams. Choose All games to see the full list again.',
+        title: 'Filter by game',
+        body: 'Show one game across pages. All games clears it.',
         target: '[data-tour="focus"]',
         tab: 'timeline',
       },
       ...(firstGameId
         ? [
             {
-              title: 'Keep an eye on your energy',
-              body: 'Enter the value shown in your game. Use the minus buttons or quick spends after a run. Weekly stock, such as City Stamina, starts full and refills at its weekly reset.',
+              title: 'Energy',
+              body: 'Enter the value from your game. Use minus or quick spends after a run.',
               target: '[data-tour="resources"]',
               tab: 'home' as const,
               focus: true,
             },
             {
-              title: 'Check it off',
-              body: 'Click a task when it is done. Counters track each run. Start a timer after using or collecting an item; its red, unchecked ring means it is ready again.',
+              title: 'Tasks',
+              body: 'Click a task when done. A red timer ring means it is ready again.',
               target: '[data-tour="tasks"]',
               tab: 'home' as const,
               focus: true,
@@ -64,20 +64,20 @@ export function UserGuide({ open }: { open: boolean }) {
           ]
         : []),
       {
-        title: 'See what is coming',
-        body: 'Use Manage events on a game card to add events or change their names, types, dates, and check-in rules. You can also delete events there. To take a break from a game, select Edit on its card, then Pause tracking.',
+        title: 'Timeline',
+        body: 'Every event by game. Open one to pin it, mark it done or edit it.',
         target: '[data-tour="timeline"]',
         tab: 'timeline',
       },
       {
-        title: 'Find the window you need',
-        body: 'Switch between Timeline and List here. Use Find to search for an event by name. Use Finished to include finished events.',
+        title: 'Views',
+        body: 'Switch between Timeline and List, search, or show finished events.',
         target: '[data-tour="timeline-tools"]',
         tab: 'timeline',
       },
       {
-        title: 'Make yourself at home',
-        body: 'Edit your games, connect your phone or tablet to your PC, or export a backup here. You can open User guide to see this tour again.',
+        title: 'Settings',
+        body: 'Games, device sync, backups and updates. Replay this guide from here.',
         target: '[data-tour="settings"]',
         tab: 'settings',
       },

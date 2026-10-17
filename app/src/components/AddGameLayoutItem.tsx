@@ -55,7 +55,7 @@ export function AddGameLayoutItem({
   if (!gameExists) {
     return (
       <div>
-        <p className="text-meta text-muted">This game is no longer tracked.</p>
+        <p className="text-meta text-muted">This game was removed.</p>
         <Btn className={`mt-2 ${TOUCH_BUTTON}`} onClick={onClose}>
           Close
         </Btn>
@@ -78,7 +78,7 @@ export function AddGameLayoutItem({
     // Re-read the store rather than trust the render this handler closed over.
     const state = useApp.getState().state;
     if (!state.games.some((game) => game.id === gameId && !game.deleted)) {
-      return setError('This game is no longer tracked.');
+      return setError('This game was removed.');
     }
 
     if (kind === 'task') {
@@ -204,13 +204,6 @@ export function AddGameLayoutItem({
           {error}
         </p>
       )}
-      <p className="text-label text-muted sm:col-span-2">
-        {kind === 'task'
-          ? 'Tasks reset on their cadence. After adding one, edit its timer or counter rules here.'
-          : kind === 'counter'
-            ? 'A counter holds a manual count. Set its starting value on the card.'
-            : 'Energy refills at the rate you set, up to its cap.'}
-      </p>
     </form>
   );
 }

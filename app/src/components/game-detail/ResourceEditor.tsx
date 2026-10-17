@@ -146,10 +146,6 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
       <Btn className={TOUCH_BUTTON} onClick={() => upsertResource({ gameId: game.id, name: 'Energy' })}>
         Add resource
       </Btn>
-      <p className="text-label text-muted">
-        Minutes per point is the refill rate. A reserve fills after the main resource is full, at half that rate unless
-        you set its own.
-      </p>
     </div>
   );
 }

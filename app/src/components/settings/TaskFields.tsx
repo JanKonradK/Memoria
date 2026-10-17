@@ -168,11 +168,10 @@ export function TaskFields({
             onChange={(core) => updateTask(task.id, { core })}
             label="Priority task"
           />
-          <p className="text-label text-muted">Priority tasks appear first in their group.</p>
         </div>
         {actions}
       </div>
-      {showSaveHint && <p className="text-label text-muted">Task settings save automatically.</p>}
+      {showSaveHint && <p className="text-label text-muted">Saves automatically.</p>}
     </div>
   );
 }
