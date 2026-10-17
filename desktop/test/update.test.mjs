@@ -115,27 +115,39 @@ describe('release lookup and staging', () => {
     ],
   };
 
-  it('reads the latest final release and skips a prerelease', async () => {
+  it('reads the newest final release with the notes of every newer version, skipping prereleases', async () => {
     const { fetchLatestRelease } = await loadUpdater();
-    const body = {
-      tag_name: 'v9.0.0',
-      name: 'Memoria v9.0.0',
-      body: 'Notes',
+    const entry = (tag, body, extra = {}) => ({
+      tag_name: tag,
+      name: `Memoria ${tag}`,
+      body,
       html_url: release.url,
       assets: [{ name: 'Memoria-win-x64.zip', browser_download_url: 'https://example.invalid/zip', size: 5 }],
-    };
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => Response.json(body)),
-    );
-    expect(await fetchLatestRelease()).toMatchObject({
-      version: '9.0.0',
-      notes: 'Notes',
-      assets: [{ name: 'Memoria-win-x64.zip', url: 'https://example.invalid/zip', size: 5 }],
+      ...extra,
     });
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => Response.json({ ...body, prerelease: true })),
+      vi.fn(async () =>
+        Response.json([
+          entry('v9.1.0-beta.1', 'Beta', { prerelease: true }),
+          entry('v8.0.0', 'Old'),
+          entry('v9.0.0', 'Nine'),
+          entry('v8.5.0', 'Eight five'),
+        ]),
+      ),
+    );
+    expect(await fetchLatestRelease('8.0.0')).toMatchObject({
+      version: '9.0.0',
+      notes: 'Nine',
+      assets: [{ name: 'Memoria-win-x64.zip', url: 'https://example.invalid/zip', size: 5 }],
+      changes: [
+        { version: '9.0.0', notes: 'Nine' },
+        { version: '8.5.0', notes: 'Eight five' },
+      ],
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json([entry('v9.0.0', 'Nine', { prerelease: true })])),
     );
     expect(await fetchLatestRelease()).toBeNull();
   });

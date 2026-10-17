@@ -6,11 +6,11 @@ import { isNativeApp } from './native';
 import { flushPersist } from './store';
 
 export const APP_VERSION = __APP_VERSION__;
-const RELEASES_API = 'https://api.github.com/repos/JanKonradK/Memoria/releases/latest';
+const RELEASES_API = 'https://api.github.com/repos/JanKonradK/Memoria/releases?per_page=30';
 const RELEASES_PAGE = 'https://github.com/JanKonradK/Memoria/releases/latest';
 const APK_ASSET = 'Memoria-android.apk';
 const CHECKSUM_ASSET = 'SHA256SUMS.txt';
-const RATE_LIMITED = 'GitHub is limiting update checks from this network. Try again in an hour.';
+const RATE_LIMITED = 'GitHub limits update checks. Try again in an hour.';
 const AUTO_KEY = 'memoria-update-auto';
 const CHECKED_KEY = 'memoria-update-checked-at';
 /** A window left open checks again this often. */
@@ -47,8 +47,10 @@ interface UpdateState {
   error: string;
   checkedAt: number | null;
   auto: boolean;
-  /** A notice closed with Later stays closed for that version until the next launch. */
+  /** A version closed with Later stays closed until the next launch. */
   dismissed: string | null;
+  /** The full-screen update view is showing. */
+  open: boolean;
 }
 
 function readCheckedAt(): number | null {
@@ -64,6 +66,7 @@ export const useAppUpdate = create<UpdateState>(() => ({
   checkedAt: readCheckedAt(),
   auto: localStorage.getItem(AUTO_KEY) !== 'off',
   dismissed: null,
+  open: false,
 }));
 
 /** Numeric `1.2.3` ordering. A prerelease sorts below the same finished version. */
@@ -85,7 +88,7 @@ export function compareVersions(left: string, right: string): number {
 }
 
 /** The release notes above the download table the release workflow appends. */
-export function releaseNotes(release: ReleaseInfo): string {
+export function releaseNotes(release: Pick<ReleaseInfo, 'notes'>): string {
   return release.notes.split(/^##\s+Downloads?\b/im)[0]?.trim() ?? '';
 }
 
@@ -105,26 +108,43 @@ async function fetchRelease(): Promise<{ release: ReleaseInfo | null; staged: st
   const response = await fetch(RELEASES_API, { headers: { accept: 'application/vnd.github+json' } });
   if (response.status === 403 || response.status === 429) throw new Error(RATE_LIMITED);
   if (!response.ok) throw new Error(`GitHub responded ${response.status}. Try again later.`);
-  const raw = (await response.json()) as Record<string, unknown>;
-  if (raw['draft'] || raw['prerelease']) return { release: null, staged: null };
-  const tag = String(raw['tag_name'] ?? '');
-  const assets = Array.isArray(raw['assets']) ? (raw['assets'] as Record<string, unknown>[]) : [];
+  const body = (await response.json()) as unknown;
+  const releases = (Array.isArray(body) ? (body as Record<string, unknown>[]) : [])
+    .filter((raw) => !raw['draft'] && !raw['prerelease'] && String(raw['tag_name'] ?? '').replace(/^v/, ''))
+    .map((raw): ReleaseInfo => {
+      const tag = String(raw['tag_name']);
+      const assets = Array.isArray(raw['assets']) ? (raw['assets'] as Record<string, unknown>[]) : [];
+      return {
+        version: tag.replace(/^v/, ''),
+        tag,
+        name: String(raw['name'] ?? tag),
+        notes: String(raw['body'] ?? ''),
+        url: String(raw['html_url'] ?? RELEASES_PAGE),
+        publishedAt: typeof raw['published_at'] === 'string' ? raw['published_at'] : null,
+        assets: assets.map((asset) => ({
+          name: String(asset['name']),
+          url: String(asset['browser_download_url']),
+          size: Number(asset['size']) || 0,
+        })),
+      };
+    })
+    .sort((a, b) => compareVersions(b.version, a.version));
+  const latest = releases[0];
+  if (!latest) return { release: null, staged: null };
+  const newer = releases.filter((release) => compareVersions(release.version, APP_VERSION) > 0);
   return {
     release: {
-      version: tag.replace(/^v/, ''),
-      tag,
-      name: String(raw['name'] ?? tag),
-      notes: String(raw['body'] ?? ''),
-      url: String(raw['html_url'] ?? RELEASES_PAGE),
-      publishedAt: typeof raw['published_at'] === 'string' ? raw['published_at'] : null,
-      assets: assets.map((asset) => ({
-        name: String(asset['name']),
-        url: String(asset['browser_download_url']),
-        size: Number(asset['size']) || 0,
-      })),
+      ...latest,
+      changes: newer.map(({ version, notes, publishedAt }) => ({ version, notes, publishedAt })),
     },
     staged: null,
   };
+}
+
+/** What changed in every version newer than this copy, newest first. */
+export function releaseChanges(release: ReleaseInfo): { version: string; notes: string; publishedAt: string | null }[] {
+  const changes = release.changes?.length ? release.changes : [release];
+  return changes.map((change) => ({ ...change, notes: releaseNotes(change) }));
 }
 
 let checking: Promise<void> | undefined;
@@ -140,17 +160,19 @@ export function checkForUpdates({ quiet = false } = {}): Promise<void> {
       const checkedAt = Date.now();
       localStorage.setItem(CHECKED_KEY, String(checkedAt));
       const newer = release && release.version && compareVersions(release.version, APP_VERSION) > 0;
-      useAppUpdate.setState({
+      useAppUpdate.setState((state) => ({
         status: !newer ? 'current' : staged === release.version ? 'ready' : 'available',
         release: newer ? release : null,
         checkedAt,
         progress: null,
-      });
+        // An automatic check opens the update screen once per launch; Later keeps it closed.
+        open: Boolean(newer) && (!quiet || state.open || state.dismissed !== release?.version),
+      }));
     } catch (error) {
       useAppUpdate.setState(
         quiet
           ? { status: 'idle' }
-          : { status: 'error', error: message(error, 'Memoria could not reach GitHub. Try again later.') },
+          : { status: 'error', error: message(error, 'Could not reach GitHub. Try again later.') },
       );
     } finally {
       checking = undefined;
@@ -180,7 +202,7 @@ export async function downloadUpdate(): Promise<void> {
     }
     const apk = release.assets.find((asset) => asset.name === APK_ASSET);
     const sums = release.assets.find((asset) => asset.name === CHECKSUM_ASSET);
-    if (!apk || !sums) throw new Error(`Memoria ${release.version} has no Android download.`);
+    if (!apk || !sums) throw new Error(`Version ${release.version} has no Android download.`);
     // Android stops this app while it installs. Save the last edit first.
     await flushPersist();
     await AppUpdater.install({ apkUrl: apk.url, checksumUrl: sums.url, version: release.version });
@@ -189,7 +211,7 @@ export async function downloadUpdate(): Promise<void> {
     useAppUpdate.setState({
       status: 'available',
       progress: null,
-      error: message(error, 'The update could not be downloaded. Try again.'),
+      error: message(error, 'Download failed. Try again.'),
     });
   }
 }
@@ -199,7 +221,7 @@ export async function installUpdate(): Promise<void> {
   try {
     await window.memoriaDesktop?.update?.install();
   } catch (error) {
-    useAppUpdate.setState({ error: message(error, 'The update could not start. Try again.') });
+    useAppUpdate.setState({ error: message(error, 'Update failed to start. Try again.') });
   }
 }
 
@@ -208,8 +230,13 @@ export function setAutoUpdateCheck(auto: boolean): void {
   useAppUpdate.setState({ auto });
 }
 
+/** Close the update screen until the next launch. */
 export function dismissUpdateNotice(): void {
-  useAppUpdate.setState((state) => ({ dismissed: state.release?.version ?? null }));
+  useAppUpdate.setState((state) => ({ dismissed: state.release?.version ?? null, open: false }));
+}
+
+export function showUpdate(): void {
+  if (useAppUpdate.getState().release) useAppUpdate.setState({ open: true });
 }
 
 function trackProgress({ received, total }: { received: number; total: number }) {
