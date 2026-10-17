@@ -253,7 +253,7 @@ describe('planSeedImport', () => {
     for (const broadcast of broadcasts) {
       expect(broadcast.start).toBe(Date.parse('2026-09-12T12:00:00Z'));
       expect(broadcast.seed.name).toBe('Genshin 7.1 Special Program');
-      expect(broadcast.seed.notes).toContain('estimate');
+      expect(broadcast.seed.notes).toBe('Estimated window.');
     }
   });
   it('plans one timezone-adjusted seed for every account of a preset', () => {

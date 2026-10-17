@@ -18,9 +18,9 @@ let inFlight: Promise<void> | null = null;
 let cached: RemoteEventFeed | null = null;
 
 async function readResponse(response: Response): Promise<unknown> {
-  if (!response.ok) throw new Error('The public calendar could not be reached. Saved events are still available.');
+  if (!response.ok) throw new Error('Could not update events.');
   if (Number(response.headers.get('content-length') ?? 0) > MAX_EVENT_FEED_BYTES)
-    throw new Error('The public calendar is too large.');
+    throw new Error('Event update is too large.');
   const reader = response.body?.getReader();
   if (!reader) return JSON.parse(await response.text());
   const chunks: Uint8Array[] = [];
@@ -32,7 +32,7 @@ async function readResponse(response: Response): Promise<unknown> {
       length += chunk.value.byteLength;
       if (length > MAX_EVENT_FEED_BYTES) {
         await reader.cancel();
-        throw new Error('The public calendar is too large.');
+        throw new Error('Event update is too large.');
       }
       chunks.push(chunk.value);
     }
@@ -57,8 +57,7 @@ async function requestFeed(): Promise<unknown> {
       readTimeout: 12_000,
       disableRedirects: true,
     });
-    if (response.status !== 200)
-      throw new Error('The public calendar could not be reached. Saved events are still available.');
+    if (response.status !== 200) throw new Error('Could not update events.');
     return typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
   }
   const options: RequestInit = {
@@ -81,9 +80,9 @@ export function refreshRemoteFeed(): Promise<void> {
     try {
       const payload = await requestFeed();
       if (new TextEncoder().encode(JSON.stringify(payload)).byteLength > MAX_EVENT_FEED_BYTES)
-        throw new Error('The public calendar is too large.');
+        throw new Error('Event update is too large.');
       const parsed = RemoteEventFeedSchema.safeParse(payload);
-      if (!parsed.success) throw new Error('The public calendar has invalid data. Saved events were kept.');
+      if (!parsed.success) throw new Error('Event update was invalid. Kept saved events.');
       const result = useApp.getState().importRemoteEvents(parsed.data);
       if (result.error) throw new Error(result.error);
       // Do not replace the offline cache with an older feed rejected by the store.
@@ -103,8 +102,7 @@ export function refreshRemoteFeed(): Promise<void> {
     } catch (error) {
       useRemoteFeed.setState({
         status: 'error',
-        error:
-          error instanceof Error ? error.message : 'The public calendar could not be checked. Saved events were kept.',
+        error: error instanceof Error ? error.message : 'Could not update events.',
       });
     } finally {
       inFlight = null;
