@@ -1,0 +1,35 @@
+[package]
+name = "memoria-desktop"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = "0.8.9"
+base64 = "0.23.1"
+bytes = "1.12.1"
+futures-util = "0.3.34"
+hmac = "0.13.0"
+iana-time-zone = "0.1.65"
+notify = "8.2.1"
+rand = "0.10.3"
+reqwest = { version = "0.13.5", default-features = false, features = ["native-tls", "stream", "json"] }
+rquickjs = "0.14.0"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+sha2 = "0.11.1"
+tauri = "2.12.5"
+tauri-plugin-dialog = "2.8.3"
+tauri-plugin-opener = "2.7.2"
+tauri-plugin-single-instance = "2.5.4"
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "sync", "time", "net", "fs"] }
+tokio-stream = { version = "0.1.19", features = ["sync"] }
+url = "2.5.8"
+uuid = { version = "1.29.0", features = ["v4"] }
+
+[build-dependencies]
+tauri-build = "2.7.4"
+
+[dev-dependencies]
+http-body-util = "0.1.5"
+tempfile = "3.27.0"
+tower = "0.5.3"

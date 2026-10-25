@@ -34,6 +34,10 @@ jobs:
       # lint, format:check, typecheck, tests, build, PWA budget.
       - run: npm run check
 
+      # The Rust desktop host: unit and parity tests, then the launcher
+      # contract suite against the built binary. Rust and MSVC ship on this image.
+      - run: npm run test:native
+
       # Proves the download can actually be assembled from this commit, so a
       # packaging break is caught on the PR that causes it rather than at tag
       # time. The zip is not published from here.

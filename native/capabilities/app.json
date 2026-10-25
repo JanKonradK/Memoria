@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "app",
+  "description": "The Memoria window, served by the loopback launcher. No plugin access from the page.",
+  "windows": ["main"],
+  "remote": {
+    "urls": ["http://127.0.0.1:17817/*", "http://127.0.0.1:17818/*", "http://127.0.0.1:17819/*"]
+  },
+  "permissions": ["allow-renderer-ready", "allow-close-result", "allow-request-quit", "allow-toggle-menu"]
+}

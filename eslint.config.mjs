@@ -18,6 +18,9 @@ export default [
       '**/test-results/**',
       '**/test-results-*/**',
       'android/**',
+      // Rust build output and Tauri-generated schemas.
+      'native/target/**',
+      'native/gen/**',
       // Vendored AI-harness tooling (impeccable, agent configs). Third-party
       // source we do not own and must not gate our own lint run on.
       '.claude/**',
@@ -31,6 +34,13 @@ export default [
     files: ['**/*.{js,mjs,cjs}'],
     languageOptions: {
       globals: { ...globals.node },
+    },
+  },
+  {
+    // Injected into the app page by the Rust desktop host.
+    files: ['native/src/bridge.js'],
+    languageOptions: {
+      globals: { ...globals.browser },
     },
   },
   ...tsRecommended,

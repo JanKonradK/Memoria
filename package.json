@@ -33,6 +33,8 @@
     "export:events": "node scripts/export-event-feed.mjs",
     "desktop": "node scripts/start-desktop.mjs",
     "check:native": "node scripts/check-native.mjs",
+    "native": "cargo run --manifest-path native/Cargo.toml",
+    "test:native": "node scripts/test-native.mjs",
     "prepackage": "node node_modules/electron/install.js",
     "predesktop": "node node_modules/electron/install.js"
   },

@@ -134,6 +134,23 @@ The installer copies `dist/release/Memoria` to `%LOCALAPPDATA%\Programs\Memoria`
 Close an installed copy before installation. The installer refuses to replace an active runtime.
 User data stays in `%APPDATA%\memoria`.
 
+### Rust desktop host
+
+The app is moving from Electron to a Rust host in `native/` (Tauri 2 on WebView2).
+See [rust-migration.md](rust-migration.md) for the design and phases.
+It needs the Rust toolchain and the Visual Studio C++ Build Tools.
+
+```sh
+npm run build
+npm run native
+npm run test:native
+```
+
+`npm run native` opens the window on the same data folder as the Electron app. Close the Electron app first.
+`npm run test:native` runs the Rust tests, the parity test against the Node state rules,
+and `desktop/test/launcher.test.mjs` against the built host.
+The WebView2 profile stays in `%APPDATA%\memoria\webview-profile`.
+
 ### Legacy browser launcher
 
 The browser launcher remains available for diagnostics and browser checks:

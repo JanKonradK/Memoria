@@ -1,15 +1,18 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { emptyState } from '@memoria/shared';
 import { spawn } from 'node:child_process';
-import { request } from 'node:http';
+import { createServer, request } from 'node:http';
 import { createHmac, randomBytes } from 'node:crypto';
 import { once } from 'node:events';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import os from 'node:os';
-import { isolateLauncherPort } from '../../scripts/launcher-test-support.mjs';
+import { freePort, isolateLauncherPort } from '../../scripts/launcher-test-support.mjs';
 
 const root = resolve(import.meta.dirname, '../..');
+/** Set to native/target/<profile>/memoria-desktop.exe to run this contract against the Rust host. */
+const NATIVE_BIN = process.env.MEMORIA_NATIVE_BIN;
+let calendar;
 const scratch = mkdtempSync(join(os.tmpdir(), 'memoria-launcher-test-'));
 const install = join(scratch, 'install');
 const appdata = join(scratch, 'data');
@@ -39,17 +42,49 @@ beforeAll(async () => {
     '<!doctype html><html><head></head><body>Memoria</body></html>',
   );
   writeFileSync(join(install, 'app', 'dist-private', 'private.txt'), 'outside the public app');
-  for (const file of ['memoria.mjs', 'lan-sync.mjs', 'http-response.mjs', 'update.mjs', 'dist/shared-core.mjs']) {
-    cpSync(join(root, 'desktop', file), join(install, 'desktop', file));
-  }
-  // Isolate the test server from all real Memoria ports and app data. The
-  // production launcher remains fixed to its existing browser storage origins.
-  const launcher = join(install, 'desktop', 'memoria.mjs');
-  await isolateLauncherPort(launcher);
-  // Split every UTF-8 sequence at transport boundaries in the isolated process.
-  writeFileSync(
-    launcher,
-    `${readFileSync(launcher, 'utf8')}\nconst realTestFetch = globalThis.fetch;
+  // Damaged optional phone metadata must not prevent the desktop from opening.
+  mkdirSync(join(appdata, 'memoria'), { recursive: true });
+  writeFileSync(join(appdata, 'memoria', 'devices.json'), '{ unreadable connections');
+  const env = { ...process.env, APPDATA: appdata, MEMORIA_NO_BROWSER: '1', MEMORIA_NO_UPDATE: '1' };
+  if (NATIVE_BIN) {
+    // The Rust host speaks the same contract. Serve the feed from loopback and
+    // split every UTF-8 sequence across writes.
+    calendar = createServer((_req, res) => {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      const bytes = Buffer.from(JSON.stringify({ name: '原神 — étoile 🌟' }));
+      (async () => {
+        for (const byte of bytes) {
+          res.write(Uint8Array.of(byte));
+          await new Promise((resolve) => setImmediate(resolve));
+        }
+        res.end();
+      })();
+    });
+    calendar.listen(0, '127.0.0.1');
+    await once(calendar, 'listening');
+    child = spawn(NATIVE_BIN, ['--headless'], {
+      cwd: install,
+      windowsHide: true,
+      env: {
+        ...env,
+        MEMORIA_ROOT: install,
+        MEMORIA_TEST_PORT: String(await freePort()),
+        MEMORIA_CALENDAR_URL: `http://127.0.0.1:${calendar.address().port}/events.json`,
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } else {
+    for (const file of ['memoria.mjs', 'lan-sync.mjs', 'http-response.mjs', 'update.mjs', 'dist/shared-core.mjs']) {
+      cpSync(join(root, 'desktop', file), join(install, 'desktop', file));
+    }
+    // Isolate the test server from all real Memoria ports and app data. The
+    // production launcher remains fixed to its existing browser storage origins.
+    const launcher = join(install, 'desktop', 'memoria.mjs');
+    await isolateLauncherPort(launcher);
+    // Split every UTF-8 sequence at transport boundaries in the isolated process.
+    writeFileSync(
+      launcher,
+      `${readFileSync(launcher, 'utf8')}\nconst realTestFetch = globalThis.fetch;
 globalThis.fetch = (url, options) => {
   if (url !== 'https://raw.githubusercontent.com/JanKonradK/Memoria/main/app/public/events.json')
     return realTestFetch(url, options);
@@ -58,16 +93,14 @@ globalThis.fetch = (url, options) => {
     for (const byte of bytes) yield Uint8Array.of(byte);
   })() });
 };\n`,
-  );
-  // Damaged optional phone metadata must not prevent the desktop from opening.
-  mkdirSync(join(appdata, 'memoria'), { recursive: true });
-  writeFileSync(join(appdata, 'memoria', 'devices.json'), '{ unreadable connections');
-  child = spawn(process.execPath, [launcher], {
-    cwd: install,
-    windowsHide: true,
-    env: { ...process.env, APPDATA: appdata, MEMORIA_NO_BROWSER: '1', MEMORIA_NO_UPDATE: '1' },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+    );
+    child = spawn(process.execPath, [launcher], {
+      cwd: install,
+      windowsHide: true,
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  }
   const launchUrl = await new Promise((resolve, reject) => {
     let output = '';
     let errors = '';
@@ -99,6 +132,7 @@ afterAll(async () => {
     child.kill();
     await exited;
   }
+  calendar?.close();
   const target = resolve(scratch);
   if (!target.startsWith(`${resolve(os.tmpdir())}${sep}memoria-launcher-test-`))
     throw new Error('Unsafe test cleanup path');
@@ -112,7 +146,8 @@ describe('launcher security boundary', () => {
     expect(await response.json()).toEqual({ name: '原神 — étoile 🌟' });
   });
 
-  it('opens with unreadable phone metadata and backs it up only on explicit recovery', async () => {
+  // The Rust host gains phone sync in phase 2 of docs/rust-migration.md.
+  it.skipIf(NATIVE_BIN)('opens with unreadable phone metadata and backs it up only on explicit recovery', async () => {
     const file = join(appdata, 'memoria', 'devices.json');
     expect((await fetch(`${origin}/api/state`, { headers: auth() })).status).toBe(200);
     const status = await (await fetch(`${origin}/api/devices`, { headers: auth() })).json();
@@ -226,19 +261,23 @@ describe('launcher security boundary', () => {
     expect((await post(emptyState(), { 'sec-fetch-site': 'cross-site' })).status).toBe(403);
   });
 
-  it('keeps Wi-Fi controls behind the existing launcher authorization and origin checks', async () => {
-    expect((await fetch(`${origin}/api/devices`)).status).toBe(401);
-    const response = await fetch(`${origin}/api/devices`, { headers: auth() });
-    expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ enabled: false, devices: [], code: null });
-    const blocked = await fetch(`${origin}/api/devices`, {
-      method: 'POST',
-      headers: { ...auth(), origin: 'https://attacker.invalid', 'content-type': 'application/json' },
-      body: JSON.stringify({ action: 'start' }),
-    });
-    expect(blocked.status).toBe(403);
-    expect((await (await fetch(`${origin}/api/devices`, { headers: auth() })).json()).enabled).toBe(false);
-  });
+  // The Rust host gains phone sync in phase 2 of docs/rust-migration.md.
+  it.skipIf(NATIVE_BIN)(
+    'keeps Wi-Fi controls behind the existing launcher authorization and origin checks',
+    async () => {
+      expect((await fetch(`${origin}/api/devices`)).status).toBe(401);
+      const response = await fetch(`${origin}/api/devices`, { headers: auth() });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({ enabled: false, devices: [], code: null });
+      const blocked = await fetch(`${origin}/api/devices`, {
+        method: 'POST',
+        headers: { ...auth(), origin: 'https://attacker.invalid', 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'start' }),
+      });
+      expect(blocked.status).toBe(403);
+      expect((await (await fetch(`${origin}/api/devices`, { headers: auth() })).json()).enabled).toBe(false);
+    },
+  );
 
   it('blocks encoded traversal into sibling dist directories and malformed paths', async () => {
     for (const path of [
