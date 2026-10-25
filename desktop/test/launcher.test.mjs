@@ -146,8 +146,7 @@ describe('launcher security boundary', () => {
     expect(await response.json()).toEqual({ name: '原神 — étoile 🌟' });
   });
 
-  // The Rust host gains phone sync in phase 2 of docs/rust-migration.md.
-  it.skipIf(NATIVE_BIN)('opens with unreadable phone metadata and backs it up only on explicit recovery', async () => {
+  it('opens with unreadable phone metadata and backs it up only on explicit recovery', async () => {
     const file = join(appdata, 'memoria', 'devices.json');
     expect((await fetch(`${origin}/api/state`, { headers: auth() })).status).toBe(200);
     const status = await (await fetch(`${origin}/api/devices`, { headers: auth() })).json();
@@ -261,23 +260,19 @@ describe('launcher security boundary', () => {
     expect((await post(emptyState(), { 'sec-fetch-site': 'cross-site' })).status).toBe(403);
   });
 
-  // The Rust host gains phone sync in phase 2 of docs/rust-migration.md.
-  it.skipIf(NATIVE_BIN)(
-    'keeps Wi-Fi controls behind the existing launcher authorization and origin checks',
-    async () => {
-      expect((await fetch(`${origin}/api/devices`)).status).toBe(401);
-      const response = await fetch(`${origin}/api/devices`, { headers: auth() });
-      expect(response.status).toBe(200);
-      expect(await response.json()).toMatchObject({ enabled: false, devices: [], code: null });
-      const blocked = await fetch(`${origin}/api/devices`, {
-        method: 'POST',
-        headers: { ...auth(), origin: 'https://attacker.invalid', 'content-type': 'application/json' },
-        body: JSON.stringify({ action: 'start' }),
-      });
-      expect(blocked.status).toBe(403);
-      expect((await (await fetch(`${origin}/api/devices`, { headers: auth() })).json()).enabled).toBe(false);
-    },
-  );
+  it('keeps Wi-Fi controls behind the existing launcher authorization and origin checks', async () => {
+    expect((await fetch(`${origin}/api/devices`)).status).toBe(401);
+    const response = await fetch(`${origin}/api/devices`, { headers: auth() });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ enabled: false, devices: [], code: null });
+    const blocked = await fetch(`${origin}/api/devices`, {
+      method: 'POST',
+      headers: { ...auth(), origin: 'https://attacker.invalid', 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'start' }),
+    });
+    expect(blocked.status).toBe(403);
+    expect((await (await fetch(`${origin}/api/devices`, { headers: auth() })).json()).enabled).toBe(false);
+  });
 
   it('blocks encoded traversal into sibling dist directories and malformed paths', async () => {
     for (const path of [

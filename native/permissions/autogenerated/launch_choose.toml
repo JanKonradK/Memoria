@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-launch-choose"
+description = "Enables the launch_choose command without any pre-configured scope."
+commands.allow = ["launch_choose"]
+
+[[permission]]
+identifier = "deny-launch-choose"
+description = "Denies the launch_choose command without any pre-configured scope."
+commands.deny = ["launch_choose"]

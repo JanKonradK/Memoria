@@ -3,9 +3,12 @@
 
 mod core;
 mod desktop;
+mod lan;
+mod launch;
 mod paths;
 mod policy;
 mod server;
+mod update;
 
 use std::sync::Arc;
 
@@ -55,7 +58,14 @@ fn main() {
             desktop::renderer_ready,
             desktop::close_result,
             desktop::request_quit,
-            desktop::toggle_menu
+            desktop::toggle_menu,
+            desktop::launch_list,
+            desktop::launch_choose,
+            desktop::launch_clear,
+            desktop::launch_start,
+            desktop::update_check,
+            desktop::update_download,
+            desktop::update_install
         ])
         .on_menu_event(desktop::menu_handler)
         .setup(|app| {
@@ -69,7 +79,7 @@ fn main() {
                     Started::Owned { url } | Started::Reused { url } => url,
                 };
                 let origin = policy::launch_origin(&url).ok_or("The local data service gave an unexpected address.")?;
-                app.manage(desktop::Host::new(paths, origin));
+                app.manage(desktop::Host::new(paths, origin)?);
                 let url = url.parse().map_err(|e: url::ParseError| e.to_string())?;
                 desktop::create_window(&handle, url).map_err(|e| e.to_string())
             });

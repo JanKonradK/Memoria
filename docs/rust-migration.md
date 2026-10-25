@@ -28,10 +28,10 @@ accepts an existing `runtime: "electron"` install as the destination it replaces
 
 ## Phases
 
-1. **Shell and local server.** Window, bounds, menu, zoom, navigation guard, external links,
+1. **Shell and local server.** Done. Window, bounds, menu, zoom, navigation guard, external links,
    close-and-save handshake, single instance. Loopback server with launch tickets, CSP,
    `/api/state`, `/api/sync`, `/api/events`, `/api/calendar`, `/api/update`, `/.memoria/hello`.
 2. **Parity.** Phone (LAN) sync on port 17820, game launch, and the updater (check, download,
-   verify, stage, install on close).
+   verify, stage, install on close). Done.
 3. **Remove Electron.** Package the Rust build, update the installer, scripts, tests, README
    and `docs/development.md`, then drop `electron`, `desktop/*.mjs` and the browser launcher.

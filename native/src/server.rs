@@ -31,6 +31,7 @@ use tokio::{net::TcpListener, sync::broadcast};
 
 use crate::{
     core::{CoreError, MAX_SYNC_BYTES, StateCore},
+    lan::{self, FileStore, LanSync},
     paths::Paths,
     policy::{PORTS, is_token},
 };
@@ -109,6 +110,7 @@ pub struct Launcher {
     /// Binds the window's bearer token to this process. Never written to disk.
     session: String,
     core: StateCore,
+    lan: Arc<LanSync>,
     tickets: Mutex<HashMap<String, Instant>>,
     used_nonces: Mutex<HashMap<String, Instant>>,
     changes: broadcast::Sender<()>,
@@ -140,9 +142,17 @@ pub async fn start(paths: Paths, core: StateCore) -> Result<Started, String> {
     for port in ports {
         match TcpListener::bind(SocketAddr::from((Ipv4Addr::LOCALHOST, port))).await {
             Ok(listener) => {
-                let launcher = Arc::new(Launcher::new(paths, secret, core, http, port)?);
+                let store = Box::new(FileStore { file: paths.data.join("devices.json") });
+                let lan = LanSync::new(core.clone(), store, Box::new(lan::wall_clock), lan_port());
+                let launcher = Arc::new(Launcher::new(paths, secret, core, lan.clone(), http, port)?);
                 let url = format!("http://127.0.0.1:{port}/api/launch/{}", launcher.issue_ticket());
                 launcher.watch_state();
+                // The user's opt-in survives restarts. A bind failure does not block local work.
+                tokio::spawn(async move {
+                    if let Err(error) = lan.restore().await {
+                        eprintln!("Wi-Fi sync unavailable: {}", error.message);
+                    }
+                });
                 let router = Router::new().fallback(handle).with_state(launcher.clone());
                 tokio::spawn(async move {
                     let _ = axum::serve(listener, router).await;
@@ -165,6 +175,11 @@ pub async fn start(paths: Paths, core: StateCore) -> Result<Started, String> {
         }
     }
     Err(format!("ports {} are all in use by other programs.", conflicts.join(", ")))
+}
+
+/// MEMORIA_TEST_LAN_PORT keeps a test copy off the phone sync port of a running Memoria.
+fn lan_port() -> u16 {
+    std::env::var("MEMORIA_TEST_LAN_PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(lan::LAN_PORT)
 }
 
 /// MEMORIA_TEST_PORT keeps contract tests off the real storage origins.
@@ -249,7 +264,14 @@ fn inline_script_hashes(html: &str) -> Vec<String> {
 }
 
 impl Launcher {
-    fn new(paths: Paths, secret: String, core: StateCore, http: reqwest::Client, port: u16) -> Result<Self, String> {
+    fn new(
+        paths: Paths,
+        secret: String,
+        core: StateCore,
+        lan: Arc<LanSync>,
+        http: reqwest::Client,
+        port: u16,
+    ) -> Result<Self, String> {
         let index = fs::read_to_string(paths.dist.join("index.html")).map_err(|_| {
             "this install is missing app/dist. Re-download Memoria from \
              https://github.com/JanKonradK/Memoria/releases/latest and unpack it again."
@@ -262,6 +284,7 @@ impl Launcher {
             secret,
             session: new_token(),
             core,
+            lan,
             tickets: Mutex::default(),
             used_nonces: Mutex::default(),
             changes: broadcast::channel(16).0,
@@ -470,6 +493,8 @@ async fn route(launcher: &Arc<Launcher>, request: Request) -> Response {
                 Err(e) => error(500, &e.message),
             },
             ("POST", "/api/sync") => sync(launcher, &headers, request.into_body()).await,
+            ("GET", "/api/devices") => json_response(StatusCode::OK, &launcher.lan.status()),
+            ("POST", "/api/devices") => devices(launcher, &headers, request.into_body()).await,
             ("GET", "/api/calendar") => calendar(launcher).await,
             ("GET", "/api/update") => json_response(StatusCode::OK, &update_status(&launcher.paths)),
             _ => error(404, "API route not found."),
@@ -637,6 +662,18 @@ async fn sync(launcher: &Launcher, headers: &HeaderMap, body: Body) -> Response 
     match launcher.core.merge(text, Box::new(|| true)).await {
         Ok(json) => json_text(StatusCode::OK, format!("{{\"state\":{json}}}")),
         Err(e) => core_error(e),
+    }
+}
+
+async fn devices(launcher: &Launcher, headers: &HeaderMap, body: Body) -> Response {
+    let result = match lan::read_json(headers, body, 1024).await {
+        Ok(body) => launcher.lan.control(&body).await,
+        Err(error) => Err(error),
+    };
+    match result {
+        Ok(status) => json_response(StatusCode::OK, &status),
+        Err(error) if error.status == 413 => too_large(&error.message),
+        Err(error) => core_error(error),
     }
 }
 
