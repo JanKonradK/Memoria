@@ -93,11 +93,11 @@ describe('shipping a new bundle to an existing install', () => {
 
   it('corrects a same-day broadcast forecast but preserves edits and deletions', () => {
     const base = seedBundledEvents({ ...emptyState(), games: [gameFor('nte', 'nte-1')] }, AT);
-    const broadcast = base.events.find((event) => event.sourceKey === 'seed:nte:1.4-livestream')!;
+    const broadcast = base.events.find((event) => event.sourceKey === 'seed:nte:1.5-livestream')!;
     const stale = {
       ...broadcast,
-      name: 'NTE 1.4 Preview Special Program — predicted window',
-      end: Date.parse('2026-09-22T14:30:00Z'),
+      name: 'NTE 1.5 Preview Special Program — predicted window',
+      end: Date.parse('2026-11-03T14:30:00Z'),
     };
     stale.seedHash = eventFingerprint(stale);
     for (const kind of ['pristine', 'edited', 'deleted'] as const) {
@@ -107,12 +107,12 @@ describe('shipping a new bundle to an existing install', () => {
         ...(kind === 'deleted' ? { deleted: true } : {}),
       };
       const before = { ...base, events: base.events.map((event) => (event.id === row.id ? row : event)) };
-      const after = seedBundledEvents(before, Date.parse('2026-09-17T12:00:00Z'));
+      const after = seedBundledEvents(before, Date.parse('2026-10-26T12:00:00Z'));
       const actual = after.events.find((event) => event.id === row.id)!;
       if (kind === 'pristine') {
-        expect(actual.name).toBe('NTE 1.4 Preview Special Program');
-        expect(actual.start).toBe(Date.parse('2026-09-16T11:30:00Z'));
-        expect(actual.end).toBe(Date.parse('2026-09-16T12:30:00Z'));
+        expect(actual.name).toBe('NTE 1.5 Preview Special Program');
+        expect(actual.start).toBe(Date.parse('2026-10-28T11:30:00Z'));
+        expect(actual.end).toBe(Date.parse('2026-10-28T12:30:00Z'));
       } else expect(actual).toEqual(row);
     }
   });

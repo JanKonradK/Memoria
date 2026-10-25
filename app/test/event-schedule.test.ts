@@ -1,8 +1,34 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { emptyState } from '@memoria/shared';
 import { makeGame, makeEvent } from '../../shared/test/helpers';
 import { planSeedImport } from '../src/data/seed-events';
 import { calendarSchedule } from '../src/event-schedule';
+
+// The bundle has no date-only rows once every notice prints an hour, so these
+// fixtures keep the calendar-date path covered.
+vi.mock('../src/data/seed-feed', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/data/seed-feed')>();
+  const fixture = (key: string, name: string, start: string, end: string) => ({
+    game: 'genshin',
+    name,
+    type: 'event' as const,
+    start: `${start} 00:00`,
+    end: `${end} 23:59`,
+    timezone: 'UTC+8',
+    notify: false,
+    dateOnly: true,
+    notes: 'Estimated dates.',
+    sourceKey: `seed:genshin:test-${key}`,
+  });
+  return {
+    ...actual,
+    SEED_EVENTS: [
+      ...actual.SEED_EVENTS,
+      fixture('snowball', 'Calendar fixture A', '2026-10-21', '2026-11-02'),
+      fixture('overflowing-favor', 'Calendar fixture B', '2026-10-26', '2026-11-02'),
+    ],
+  };
+});
 
 describe('confirmed calendar dates', () => {
   it.each(['UTC+1', 'UTC+8', 'UTC-5'])('keeps UTC+8 calendar dates on the %s server', (tz) => {
@@ -12,7 +38,7 @@ describe('confirmed calendar dates', () => {
       ['snowball', '21 Oct–2 Nov'],
       ['overflowing-favor', '26 Oct–2 Nov'],
     ]) {
-      const plan = plans.find((row) => row.seed?.sourceKey === `seed:genshin:7.1-${key}`)!;
+      const plan = plans.find((row) => row.seed?.sourceKey === `seed:genshin:test-${key}`)!;
       const event = makeEvent({
         sourceKey: plan.seed!.sourceKey,
         name: plan.seed!.name,
