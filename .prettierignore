@@ -16,3 +16,6 @@ android
 .github/hooks
 .github/agents
 **/.impeccable/hook.cache.json
+# Rust build output and Tauri-generated schemas.
+native/target
+native/gen
