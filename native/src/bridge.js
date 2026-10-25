@@ -4,7 +4,16 @@
 (() => {
   if (!/^http:\/\/127\.0\.0\.1:1781[789]$/.test(location.origin) || 'memoriaDesktop' in window) return;
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
-  const listeners = { 'close-request': new Set() };
+  // Rust rejects with a plain reason. The app reads error.message, as it did from Electron.
+  const call = (command, args) =>
+    invoke(command, args).catch((reason) => {
+      throw new Error(typeof reason === 'string' ? reason : 'Memoria could not finish this action.');
+    });
+  const listeners = {
+    'close-request': new Set(),
+    'update-progress': new Set(),
+    'show-updates': new Set(),
+  };
   // Rust delivers host events through this one receiver.
   Object.defineProperty(window, '__memoriaReceive', {
     value: Object.freeze((name, payload) => {
@@ -26,6 +35,31 @@
     enumerable: true,
     value: Object.freeze({
       version: 1,
+      // A game is named by id only. Paths are chosen in a native dialog and stay in Rust.
+      launch: Object.freeze({
+        list: () => call('launch_list'),
+        choose: (gameId) => call('launch_choose', { gameId }),
+        clear: (gameId) => call('launch_clear', { gameId }),
+        start: (gameId) => call('launch_start', { gameId }),
+      }),
+      // Release data comes from GitHub through Rust. Installing closes Memoria
+      // through the normal save-and-close path first.
+      update: Object.freeze({
+        check: () => call('update_check'),
+        download: () => call('update_download'),
+        install: () => call('update_install'),
+        onProgress(listener) {
+          if (typeof listener !== 'function') throw new TypeError('A progress listener is required.');
+          return subscribe('update-progress', (progress) => {
+            if (Number.isFinite(progress?.received) && Number.isFinite(progress?.total))
+              listener({ received: progress.received, total: progress.total });
+          });
+        },
+        onShowRequested(listener) {
+          if (typeof listener !== 'function') throw new TypeError('A listener is required.');
+          return subscribe('show-updates', () => listener());
+        },
+      }),
       onCloseRequested(listener) {
         if (typeof listener !== 'function') throw new TypeError('A close listener is required.');
         const stop = subscribe('close-request', (requestId) => {

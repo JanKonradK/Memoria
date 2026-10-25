@@ -11,6 +11,7 @@ use std::{
     time::Duration,
 };
 
+use serde_json::{Value, json};
 use tauri::{
     AppHandle, Manager, Url, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent,
     menu::{Menu, MenuBuilder, MenuEvent, MenuItemBuilder, SubmenuBuilder},
@@ -20,8 +21,10 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use tauri_plugin_opener::OpenerExt;
 
 use crate::{
+    launch::{self, GameLaunch, LAUNCH_EXTENSIONS},
     paths::Paths,
     policy::{Rect, external_url, is_app_url, window_bounds},
+    update::{self, Release},
 };
 
 const BRIDGE: &str = include_str!("bridge.js");
@@ -46,11 +49,22 @@ pub struct Host {
     /// The last size and place of the window while it was neither maximized nor minimized.
     normal: Mutex<Option<Rect>>,
     zoom: Mutex<f64>,
+    launch: Mutex<GameLaunch>,
+    latest_release: Mutex<Option<Release>>,
+    /// One download at a time. A second request waits, then finds it staged.
+    downloading: tokio::sync::Mutex<()>,
+    install_on_quit: AtomicBool,
+    http: reqwest::Client,
 }
 
 impl Host {
-    pub fn new(paths: Paths, origin: String) -> Arc<Self> {
-        Arc::new(Self {
+    pub fn new(paths: Paths, origin: String) -> Result<Arc<Self>, String> {
+        Ok(Arc::new(Self {
+            launch: Mutex::new(GameLaunch::new(&paths.data)),
+            latest_release: Mutex::new(None),
+            downloading: tokio::sync::Mutex::new(()),
+            install_on_quit: AtomicBool::new(false),
+            http: update::client()?,
             paths,
             origin,
             ready: AtomicBool::new(false),
@@ -58,7 +72,7 @@ impl Host {
             pending_close: Mutex::new(None),
             normal: Mutex::new(None),
             zoom: Mutex::new(1.0),
-        })
+        }))
     }
 }
 
@@ -122,6 +136,7 @@ pub fn request_close(app: &AppHandle) {
             let same = pending.as_deref() == Some(id.as_str());
             if same {
                 *pending = None;
+                host.install_on_quit.store(false, Ordering::SeqCst);
             }
             same
         };
@@ -142,6 +157,14 @@ fn quit(app: &AppHandle, save: bool) {
         save_bounds(app, &host);
     }
     host.quitting.store(true, Ordering::SeqCst);
+    if host.install_on_quit.swap(false, Ordering::SeqCst) && update::run_staged_installer(&host.paths).is_err() {
+        message(
+            app,
+            MessageDialogKind::Error,
+            "Memoria",
+            "Windows could not start the update. Memoria stays on this version.",
+        );
+    }
     app.exit(0);
 }
 
@@ -175,6 +198,8 @@ pub fn close_result(
         quit(&app, true);
         return;
     }
+    // A refused close also cancels the install it was asked for.
+    host.install_on_quit.store(false, Ordering::SeqCst);
     if let Some(error) = error.filter(|e| !e.is_empty()) {
         let text: String = error.chars().take(500).collect();
         message(&app, MessageDialogKind::Warning, "Keep Memoria open", &text);
@@ -260,6 +285,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         .build()?;
     let help = SubmenuBuilder::new(app, "Help")
         .item(&item("phone-sync", "Allow phone sync through Windows", None)?)
+        .item(&item("updates", "Check for updates", None)?)
         .item(&item("about", "About Memoria", None)?)
         .build()?;
     MenuBuilder::new(app).items(&[&file, &edit, &view, &help]).build()
@@ -284,6 +310,10 @@ fn on_menu(app: &AppHandle, event: MenuEvent) {
             let _ = window.set_fullscreen(!window.is_fullscreen().unwrap_or(false));
         }
         "phone-sync" => allow_phone_sync(app),
+        "updates" => {
+            focus(app);
+            let _ = window.eval("window.__memoriaReceive?.('show-updates')");
+        }
         "about" => message(
             app,
             MessageDialogKind::Info,
@@ -409,4 +439,118 @@ pub fn second_instance(app: &AppHandle) {
 
 pub fn is_quitting(app: &AppHandle) -> bool {
     app.try_state::<Arc<Host>>().is_none_or(|host| host.quitting.load(Ordering::SeqCst))
+}
+
+fn allowed(app: &AppHandle, webview: &tauri::Webview, host: &Host) -> Result<(), String> {
+    if from_app(app, webview, host) && !host.quitting.load(Ordering::SeqCst) {
+        Ok(())
+    } else {
+        Err("This action is only available in Memoria.".into())
+    }
+}
+
+#[tauri::command]
+pub fn launch_list(app: AppHandle, webview: tauri::Webview, host: tauri::State<Arc<Host>>) -> Result<Value, String> {
+    allowed(&app, &webview, &host)?;
+    Ok(host.launch.lock().unwrap().list())
+}
+
+/// The only way a launch path enters Memoria: a file the player picks here.
+#[tauri::command]
+pub async fn launch_choose(
+    app: AppHandle,
+    webview: tauri::Webview,
+    host: tauri::State<'_, Arc<Host>>,
+    game_id: String,
+) -> Result<Value, String> {
+    allowed(&app, &webview, &host)?;
+    host.launch.lock().unwrap().check_choice(&game_id)?;
+    let (picked, chosen) = tokio::sync::oneshot::channel();
+    let mut dialog = app
+        .dialog()
+        .file()
+        .set_title("Choose the game or its launcher")
+        .add_filter("Programs and shortcuts", &LAUNCH_EXTENSIONS);
+    if let Some(window) = window(&app) {
+        dialog = dialog.set_parent(&window);
+    }
+    dialog.pick_file(move |path| {
+        let _ = picked.send(path.and_then(|p| p.into_path().ok()));
+    });
+    let path = chosen.await.unwrap_or(None);
+    host.launch.lock().unwrap().choose(&game_id, path)
+}
+
+#[tauri::command]
+pub fn launch_clear(
+    app: AppHandle,
+    webview: tauri::Webview,
+    host: tauri::State<Arc<Host>>,
+    game_id: String,
+) -> Result<Value, String> {
+    allowed(&app, &webview, &host)?;
+    host.launch.lock().unwrap().clear(&game_id)
+}
+
+/// Started the way a double-click would, so a launcher that needs elevation can ask for it.
+#[tauri::command]
+pub fn launch_start(
+    app: AppHandle,
+    webview: tauri::Webview,
+    host: tauri::State<Arc<Host>>,
+    game_id: String,
+) -> Result<Value, String> {
+    allowed(&app, &webview, &host)?;
+    let path = host.launch.lock().unwrap().target(&game_id)?;
+    app.opener().open_path(&path, None::<&str>).map_err(|_| launch::start_failed(&path))?;
+    Ok(launch::started(&path))
+}
+
+#[tauri::command]
+pub async fn update_check(
+    app: AppHandle,
+    webview: tauri::Webview,
+    host: tauri::State<'_, Arc<Host>>,
+) -> Result<Value, String> {
+    allowed(&app, &webview, &host)?;
+    let installed = update::installed_version(&host.paths);
+    let release = update::fetch_latest_release(&host.http, installed.as_deref()).await?;
+    *host.latest_release.lock().unwrap() = release.clone();
+    Ok(json!({ "installed": installed, "release": release, "staged": update::staged_version(&host.paths) }))
+}
+
+#[tauri::command]
+pub async fn update_download(
+    app: AppHandle,
+    webview: tauri::Webview,
+    host: tauri::State<'_, Arc<Host>>,
+) -> Result<Value, String> {
+    allowed(&app, &webview, &host)?;
+    let release = host.latest_release.lock().unwrap().clone().ok_or("Check for updates first.")?;
+    let _one_at_a_time = host.downloading.lock().await;
+    let last_sent = Mutex::new(None::<std::time::Instant>);
+    let progress = |received: u64, total: u64| {
+        let mut last = last_sent.lock().unwrap();
+        if last.is_some_and(|at| at.elapsed() < Duration::from_millis(200)) {
+            return;
+        }
+        *last = Some(std::time::Instant::now());
+        if let Some(window) = window(&app) {
+            let payload = json!({ "received": received, "total": total });
+            let _ = window.eval(format!("window.__memoriaReceive?.('update-progress', {payload})"));
+        }
+    };
+    update::stage_release(&host.http, &host.paths, &release, &progress).await
+}
+
+/// Installs after the window has saved and closed, through the normal close path.
+#[tauri::command]
+pub fn update_install(app: AppHandle, webview: tauri::Webview, host: tauri::State<Arc<Host>>) -> Result<bool, String> {
+    allowed(&app, &webview, &host)?;
+    if update::staged_version(&host.paths).is_none() {
+        return Err("Download the update first.".into());
+    }
+    host.install_on_quit.store(true, Ordering::SeqCst);
+    request_close(&app);
+    Ok(true)
 }

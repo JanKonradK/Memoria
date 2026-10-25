@@ -2,7 +2,19 @@ use std::{path::PathBuf, process::Command};
 
 /// Commands the app window may invoke. Each becomes an `allow-*` permission
 /// that native/capabilities/ grants to the loopback app origin only.
-const COMMANDS: &[&str] = &["renderer_ready", "close_result", "request_quit", "toggle_menu"];
+const COMMANDS: &[&str] = &[
+    "renderer_ready",
+    "close_result",
+    "request_quit",
+    "toggle_menu",
+    "launch_list",
+    "launch_choose",
+    "launch_clear",
+    "launch_start",
+    "update_check",
+    "update_download",
+    "update_install",
+];
 
 fn main() {
     bundle_shared_core();

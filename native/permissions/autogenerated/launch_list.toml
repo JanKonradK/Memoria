@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-launch-list"
+description = "Enables the launch_list command without any pre-configured scope."
+commands.allow = ["launch_list"]
+
+[[permission]]
+identifier = "deny-launch-list"
+description = "Denies the launch_list command without any pre-configured scope."
+commands.deny = ["launch_list"]
