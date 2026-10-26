@@ -11,13 +11,13 @@ use std::{
     time::Duration,
 };
 
+use rfd::MessageLevel;
 use serde_json::{Value, json};
 use tauri::{
     AppHandle, Manager, Url, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent,
     menu::{Menu, MenuBuilder, MenuEvent, MenuItemBuilder, SubmenuBuilder},
     webview::{NewWindowResponse, PageLoadEvent},
 };
-use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use tauri_plugin_opener::OpenerExt;
 
 use crate::{
@@ -86,12 +86,17 @@ fn from_app(app: &AppHandle, webview: &tauri::Webview, host: &Host) -> bool {
         && window(app).is_some()
 }
 
-fn message(app: &AppHandle, kind: MessageDialogKind, title: &str, text: &str) {
-    let mut dialog = app.dialog().message(text).title(title).kind(kind).buttons(MessageDialogButtons::Ok);
+/// A message over the window. It does not block the caller.
+fn message(app: &AppHandle, kind: MessageLevel, title: &str, text: &str) {
+    let mut dialog = rfd::AsyncMessageDialog::new()
+        .set_title(title)
+        .set_description(text)
+        .set_level(kind)
+        .set_buttons(rfd::MessageButtons::Ok);
     if let Some(window) = window(app) {
-        dialog = dialog.parent(&window);
+        dialog = dialog.set_parent(&window);
     }
-    dialog.show(|_| {});
+    tauri::async_runtime::spawn(dialog.show());
 }
 
 fn focus(app: &AppHandle) {
@@ -143,7 +148,7 @@ pub fn request_close(app: &AppHandle) {
         if timed_out && !host.quitting.load(Ordering::SeqCst) {
             message(
                 &app,
-                MessageDialogKind::Warning,
+                MessageLevel::Warning,
                 "Memoria is still saving",
                 "Memoria could not confirm that your changes were saved.\n\nKeep the app open. Check the connection, then try closing it again.",
             );
@@ -160,7 +165,7 @@ fn quit(app: &AppHandle, save: bool) {
     if host.install_on_quit.swap(false, Ordering::SeqCst) && update::run_staged_installer(&host.paths).is_err() {
         message(
             app,
-            MessageDialogKind::Error,
+            MessageLevel::Error,
             "Memoria",
             "Windows could not start the update. Memoria stays on this version.",
         );
@@ -202,7 +207,7 @@ pub fn close_result(
     host.install_on_quit.store(false, Ordering::SeqCst);
     if let Some(error) = error.filter(|e| !e.is_empty()) {
         let text: String = error.chars().take(500).collect();
-        message(&app, MessageDialogKind::Warning, "Keep Memoria open", &text);
+        message(&app, MessageLevel::Warning, "Keep Memoria open", &text);
     }
 }
 
@@ -316,7 +321,7 @@ fn on_menu(app: &AppHandle, event: MenuEvent) {
         }
         "about" => message(
             app,
-            MessageDialogKind::Info,
+            MessageLevel::Info,
             "Memoria",
             "Memoria for Windows\n\nYour games, saved on this PC.\nPhone sync is available while Memoria is open.",
         ),
@@ -337,13 +342,13 @@ fn allow_phone_sync(app: &AppHandle) {
             .status();
         let (kind, text) = match status {
             Ok(status) if status.success() => {
-                (MessageDialogKind::Info, "Windows now allows your phone to connect to Memoria on this local network.")
+                (MessageLevel::Info, "Windows now allows your phone to connect to Memoria on this local network.")
             }
             Ok(_) => (
-                MessageDialogKind::Warning,
+                MessageLevel::Warning,
                 "Windows did not allow the network change. Approve the administrator prompt to enable phone sync.",
             ),
-            Err(_) => (MessageDialogKind::Error, "Windows could not open the network setup."),
+            Err(_) => (MessageLevel::Error, "Windows could not open the network setup."),
         };
         message(&app, kind, "Memoria phone sync", text);
     });
@@ -352,7 +357,7 @@ fn allow_phone_sync(app: &AppHandle) {
 fn open_external(app: &AppHandle, value: &str) {
     let Some(url) = external_url(value) else { return };
     if app.opener().open_url(url, None::<&str>).is_err() {
-        message(app, MessageDialogKind::Error, "Memoria", "Windows could not open this link.");
+        message(app, MessageLevel::Error, "Memoria", "Windows could not open this link.");
     }
 }
 
@@ -465,19 +470,13 @@ pub async fn launch_choose(
 ) -> Result<Value, String> {
     allowed(&app, &webview, &host)?;
     host.launch.lock().unwrap().check_choice(&game_id)?;
-    let (picked, chosen) = tokio::sync::oneshot::channel();
-    let mut dialog = app
-        .dialog()
-        .file()
+    let mut dialog = rfd::AsyncFileDialog::new()
         .set_title("Choose the game or its launcher")
         .add_filter("Programs and shortcuts", &LAUNCH_EXTENSIONS);
     if let Some(window) = window(&app) {
         dialog = dialog.set_parent(&window);
     }
-    dialog.pick_file(move |path| {
-        let _ = picked.send(path.and_then(|p| p.into_path().ok()));
-    });
-    let path = chosen.await.unwrap_or(None);
+    let path = dialog.pick_file().await.map(|file| file.path().to_path_buf());
     host.launch.lock().unwrap().choose(&game_id, path)
 }
 

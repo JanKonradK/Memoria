@@ -21,7 +21,7 @@ if (-not (Test-Path -LiteralPath $program) -or -not (Test-Path -LiteralPath $rel
   throw 'Install Memoria before you enable phone sync.'
 }
 $record = Get-Content -LiteralPath $release -Raw | ConvertFrom-Json
-if ($record.name -ne 'Memoria' -or $record.runtime -ne 'electron') {
+if ($record.name -ne 'Memoria' -or $record.runtime -ne 'tauri') {
   throw 'The selected folder is not a standalone Memoria install.'
 }
 $ruleName = 'Memoria-Native-Phone-Sync-17820'

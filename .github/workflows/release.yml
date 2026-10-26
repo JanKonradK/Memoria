@@ -31,6 +31,7 @@ jobs:
 
       # A tag never ships without passing everything main has to pass.
       - run: npm run check
+      - run: npm run test:native
 
       - name: Refuse a tag that disagrees with package.json
         shell: bash
@@ -100,7 +101,7 @@ jobs:
             echo
             echo "| | |"
             echo "|---|---|"
-            echo "| **[Memoria-win-x64.zip]($download/Memoria-win-x64.zip)** | Standalone Windows app. Extract the ZIP and run \`Add Memoria to Start Menu.cmd\`. Includes its own runtime. |"
+            echo "| **[Memoria-win-x64.zip]($download/Memoria-win-x64.zip)** | Standalone Windows app. Extract the ZIP and run \`Add Memoria to Start Menu.cmd\`. Runs on Windows 10 and 11. |"
             echo "| **[Memoria-android.apk]($download/Memoria-android.apk)** | Android app. Open the APK on your phone or tablet and install it over the existing app. |"
             echo "| [Memoria.html]($download/Memoria.html) | The whole app in one file. Double-click to open in any browser. |"
             echo

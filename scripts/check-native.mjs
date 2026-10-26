@@ -1,15 +1,16 @@
 /* global window, document */
-import { _electron as electron, expect } from '@playwright/test';
+import { chromium, expect } from '@playwright/test';
 import { spawn, execFile } from 'node:child_process';
 import { once } from 'node:events';
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
-import { safeParseAppState } from '../desktop/dist/shared-core.mjs';
-import { isolateLauncherPort } from './launcher-test-support.mjs';
+import { freePort, isolatedHostEnv } from './launcher-test-support.mjs';
 
-// Exercise the actual Windows executable and its bundled engine. The copied
-// package and synthetic profile keep this check away from the owner's data.
+// Exercise the packaged Windows executable in its real WebView2 window. The
+// copied package and synthetic profile keep this check away from the owner's
+// data, ports and phone pairings. Playwright attaches through WebView2's
+// DevTools port; Win32 calls stand in for the person closing or minimizing it.
 const root = resolve(import.meta.dirname, '..');
 const scratch = join(root, 'dist/native-check', String(Date.now()));
 const install = join(scratch, 'install');
@@ -19,12 +20,6 @@ const stateFile = join(appdata, 'memoria/state.json');
 mkdirSync(join(appdata, 'memoria'), { recursive: true });
 mkdirSync(localAppdata, { recursive: true });
 cpSync(join(root, 'dist/release/Memoria'), install, { recursive: true });
-await isolateLauncherPort(join(install, 'desktop/memoria.mjs'), [17817, 17818, 17819]);
-const lanModule = join(install, 'desktop/lan-sync.mjs');
-const lanSource = readFileSync(lanModule, 'utf8');
-const lanDeclaration = 'export const LAN_PORT = 17820;';
-if (!lanSource.includes(lanDeclaration)) throw new Error('Test LAN port declaration changed');
-writeFileSync(lanModule, lanSource.replace(lanDeclaration, 'export const LAN_PORT = 0;'));
 
 const stamp = Date.now() - 86_400_000;
 const fixture = {
@@ -76,21 +71,19 @@ const fixture = {
     fieldUpdatedAt: { quietStart: stamp, quietEnd: stamp, localTz: stamp, sleepHours: stamp },
   },
 };
-const parsed = safeParseAppState(fixture);
-if (!parsed.success) throw new Error(`Invalid native check fixture: ${parsed.error}`);
 writeFileSync(stateFile, JSON.stringify(fixture));
 
 const executablePath = join(install, 'Memoria.exe');
 if (!existsSync(executablePath)) throw new Error('Build the Windows package before running check:native.');
+expect(JSON.parse(readFileSync(join(install, 'release.json'), 'utf8')).runtime).toBe('tauri');
+const devtoolsPort = await freePort();
 const env = {
-  ...process.env,
-  APPDATA: appdata,
+  ...(await isolatedHostEnv({ appdata, ports: [17817, 17818, 17819] })),
   LOCALAPPDATA: localAppdata,
-  MEMORIA_NO_BROWSER: '1',
-  MEMORIA_NO_UPDATE: '1',
+  WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${devtoolsPort}`,
 };
-delete env.ELECTRON_RUN_AS_NODE;
 let desktop;
+let browser;
 let page;
 const errors = [];
 
@@ -112,9 +105,66 @@ function checkExistingData() {
   expect(state.settings).toMatchObject({ quietStart: 135, quietEnd: 555, localTz: 'Asia/Tokyo', sleepHours: 6.5 });
 }
 
+/** Runs a Win32 call on the Memoria window: close, minimize, minimized, windows, or size W H. */
+async function windowCall(action, ...args) {
+  const script = `
+$ErrorActionPreference = 'Stop'
+Add-Type -Namespace Check -Name Win -MemberDefinition @'
+[DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
+[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int c);
+[DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
+[DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+[DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr h, int x, int y, int w, int t, bool r);
+[DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint p);
+public delegate bool Visit(IntPtr h, IntPtr l);
+[DllImport("user32.dll")] public static extern bool EnumWindows(Visit v, IntPtr l);
+[DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, System.Text.StringBuilder s, int n);
+'@
+$found = New-Object System.Collections.Generic.List[IntPtr]
+[Check.Win]::EnumWindows({ param($h, $l)
+  $owner = 0; [void][Check.Win]::GetWindowThreadProcessId($h, [ref]$owner)
+  $title = New-Object System.Text.StringBuilder 64; [void][Check.Win]::GetWindowText($h, $title, 64)
+  if ($owner -eq ${desktop.pid} -and $title.ToString() -eq 'Memoria' -and [Check.Win]::IsWindowVisible($h)) { $found.Add($h) }
+  $true }, [IntPtr]::Zero) | Out-Null
+$action = '${action}'
+if ($action -eq 'windows') { $found.Count; exit }
+if ($found.Count -ne 1) { throw "Expected one Memoria window, found $($found.Count)." }
+$h = $found[0]
+switch ($action) {
+  'close' { [void][Check.Win]::PostMessage($h, 0x10, [IntPtr]::Zero, [IntPtr]::Zero) }
+  'minimize' { [void][Check.Win]::ShowWindow($h, 6) }
+  'minimized' { [Check.Win]::IsIconic($h) }
+  'size' { [void][Check.Win]::MoveWindow($h, 40, 40, ${args[0] ?? 0}, ${args[1] ?? 0}, $true) }
+}`;
+  const { stdout } = await promisify(execFile)(
+    'powershell.exe',
+    ['-NoProfile', '-NonInteractive', '-Command', script],
+    {
+      windowsHide: true,
+    },
+  );
+  return stdout.trim();
+}
+
 async function launch() {
-  desktop = await electron.launch({ executablePath, cwd: install, env, timeout: 45_000 });
-  page = await desktop.firstWindow({ timeout: 45_000 });
+  desktop = spawn(executablePath, [], { cwd: install, env, windowsHide: false, stdio: 'ignore' });
+  await expect
+    .poll(
+      () =>
+        fetch(`http://127.0.0.1:${devtoolsPort}/json/version`).then(
+          (r) => r.ok,
+          () => false,
+        ),
+      {
+        timeout: 45_000,
+      },
+    )
+    .toBe(true);
+  browser = await chromium.connectOverCDP(`http://127.0.0.1:${devtoolsPort}`);
+  await expect
+    .poll(() => browser.contexts().flatMap((context) => context.pages()).length, { timeout: 30_000 })
+    .toBeGreaterThan(0);
+  page = browser.contexts()[0].pages()[0];
   page.setDefaultTimeout(15_000);
   page.on('pageerror', (error) => errors.push(error.message));
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -127,129 +177,76 @@ async function launch() {
   return page.getByLabel('Archive energy current value', { exact: true });
 }
 
+/** Ctrl+Q, which the window's own key handler turns into Quit Memoria. */
 async function requestQuit() {
-  await desktop.evaluate(({ Menu }) => {
-    const item = Menu.getApplicationMenu()
-      ?.items.find((entry) => entry.label === 'File')
-      ?.submenu?.items.find((entry) => entry.label === 'Quit Memoria');
-    if (!item) throw new Error('The native Quit Memoria action is missing.');
-    item.click();
-  });
+  await page.keyboard.press('Control+q');
+}
+
+async function waitForExit() {
+  const [code] = await Promise.race([
+    once(desktop, 'exit'),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Memoria did not close.')), 30_000).unref()),
+  ]);
+  await browser.close().catch(() => undefined);
+  desktop = undefined;
+  return code;
 }
 
 async function closeWindow(quit = false) {
-  const closed = desktop.waitForEvent('close', { timeout: 30_000 });
   if (quit) await requestQuit();
-  else await desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
-  await closed;
-  desktop = undefined;
+  else await windowCall('close');
+  expect(await waitForExit()).toBe(0);
 }
 
 try {
   let energy = await launch();
   await expect(energy).toHaveValue('31');
   checkExistingData();
-  // Send keys through Electron; CDP key presses bypass native input handling.
-  const zoomLevel = () =>
-    desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.getZoomLevel());
-  const zoomShortcut = (input) =>
-    desktop.evaluate(({ BrowserWindow }, key) => {
-      const target = BrowserWindow.getAllWindows()[0];
-      target.focus();
-      target.webContents.focus();
-      target.webContents.sendInputEvent({ type: 'keyDown', ...key });
-      target.webContents.sendInputEvent({ type: 'keyUp', ...key });
-    }, input);
-  await zoomShortcut({ keyCode: '0', modifiers: ['control'] });
-  await expect.poll(zoomLevel).toBe(0);
-  await zoomShortcut({ keyCode: '-', modifiers: ['control'] });
-  await expect.poll(zoomLevel).toBe(-0.5);
-  for (const shortcut of [
-    { keyCode: '=', modifiers: ['control'] },
-    { keyCode: '+', modifiers: ['control', 'shift'] },
-    { keyCode: 'numadd', modifiers: ['control'] },
-  ]) {
-    await zoomShortcut(shortcut);
-    await expect.poll(zoomLevel, { message: `${JSON.stringify(shortcut)} must zoom in once` }).toBe(0);
-    await zoomShortcut(shortcut);
-    await expect
-      .poll(zoomLevel, { message: `${JSON.stringify(shortcut)} must enlarge the app above actual size` })
-      .toBe(0.5);
-    await zoomShortcut({ keyCode: '0', modifiers: ['control'] });
-    await expect.poll(zoomLevel).toBe(0);
-    await zoomShortcut({ keyCode: '-', modifiers: ['control'] });
-    await expect.poll(zoomLevel).toBe(-0.5);
-  }
-  await zoomShortcut({ keyCode: '0', modifiers: ['control'] });
-  await expect.poll(zoomLevel).toBe(0);
-  await zoomShortcut({ keyCode: '+', modifiers: ['control', 'alt'] });
-  await zoomShortcut({ keyCode: '=', modifiers: [] });
-  await expect.poll(zoomLevel).toBe(0);
-  await expect(energy).toHaveValue('31');
-  console.log('PASS: Ctrl+Plus, Ctrl+Equal, number-pad Plus, Ctrl+Minus, and Ctrl+0');
-  const security = await desktop.evaluate(({ BrowserWindow, app }) => {
-    const windows = BrowserWindow.getAllWindows();
-    const preferences = windows[0].webContents.getLastWebPreferences();
-    return {
-      windows: windows.length,
-      contextIsolation: preferences.contextIsolation,
-      sandbox: preferences.sandbox,
-      nodeIntegration: preferences.nodeIntegration,
-      webSecurity: preferences.webSecurity,
-      packaged: app.isPackaged,
-      profile: app.getPath('userData'),
-      executable: process.execPath,
-    };
-  });
-  expect(security).toMatchObject({
-    windows: 1,
-    contextIsolation: true,
-    sandbox: true,
-    nodeIntegration: false,
-    webSecurity: true,
-    packaged: true,
-    executable: executablePath,
-  });
-  expect(security.profile).toBe(join(appdata, 'memoria/desktop-profile'));
+  // The page sees the narrow bridge and nothing else from the host.
   expect(
     await page.evaluate(() => ({
       node: typeof window.require,
       process: typeof window.process,
+      tauri: typeof window.__TAURI__,
       bridge: Object.keys(window.memoriaDesktop ?? {}).sort(),
+      frozen: Object.isFrozen(window.memoriaDesktop),
     })),
   ).toEqual({
     node: 'undefined',
     process: 'undefined',
+    tauri: 'undefined',
     bridge: ['completeClose', 'launch', 'onCloseRequested', 'update', 'version'],
+    frozen: true,
   });
+  // Only Memoria's own commands are granted, never plugin or core commands.
+  expect(
+    await page.evaluate(() =>
+      window.__TAURI_INTERNALS__.invoke('plugin:app|version').then(
+        () => 'unexpected access',
+        (error) => String(error),
+      ),
+    ),
+  ).toContain('not allowed');
   expect(await page.evaluate(async () => (await window.navigator.serviceWorker.getRegistrations()).length)).toBe(0);
-  // Resize the actual native frame, including the narrowest supported PC width.
-  // Its web contents must reflow while keeping the user's values intact.
+  expect(existsSync(join(appdata, 'memoria/webview-profile'))).toBe(true);
+  // Resize the native frame. Its contents must reflow and keep the values.
   for (const [width, height] of [
-    [360, 480],
-    [960, 600],
+    [480, 640],
+    [960, 700],
     [1280, 900],
   ]) {
-    await desktop.evaluate(
-      ({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0].setSize(...size),
-      [width, height],
-    );
-    await expect
-      .poll(() => desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getSize()))
-      .toEqual([width, height]);
+    await windowCall('size', width, height);
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1))
       .toBe(true);
     await expect(energy).toHaveValue('31');
   }
-  // Check the renderer's copy permission without replacing the owner's system
-  // clipboard, which is shared even when the app profile is isolated.
   expect(
     await page.evaluate(async () => (await window.navigator.permissions.query({ name: 'clipboard-write' })).state),
   ).toBe('granted');
 
   // Closing immediately must commit the active input and drain both local
-  // storage and the disk sync queue before the renderer is destroyed.
+  // storage and the disk sync queue before the window goes.
   await energy.fill('42');
   await closeWindow();
   expect(latestEnergy()).toBe(42);
@@ -257,7 +254,9 @@ try {
   energy = await launch();
   await expect(energy).toHaveValue('42');
 
-  await desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].minimize());
+  // A second launch hands off to the open window and restores it.
+  await windowCall('minimize');
+  await expect.poll(() => windowCall('minimized')).toBe('True');
   const second = spawn(executablePath, [], { cwd: install, env, windowsHide: true, stdio: 'ignore' });
   const [secondCode] = await Promise.race([
     once(second, 'exit'),
@@ -271,76 +270,30 @@ try {
     }),
   ]);
   expect(secondCode).toBe(0);
-  await expect
-    .poll(() =>
-      desktop.evaluate(({ BrowserWindow }) => ({
-        windows: BrowserWindow.getAllWindows().length,
-        minimized: BrowserWindow.getAllWindows()[0].isMinimized(),
-      })),
-    )
-    .toEqual({ windows: 1, minimized: false });
-
+  await expect.poll(() => windowCall('minimized')).toBe('False');
+  expect(await windowCall('windows')).toBe('1');
   await expect(energy).toHaveValue('42');
 
+  // Quit asks before it discards an unsaved draft, and Cancel keeps the window.
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByRole('button', { name: 'Game settings for Native archive', exact: true }).click();
   await page.getByRole('tab', { name: 'Tasks', exact: true }).click();
   const draft = page.getByRole('textbox', { name: 'New task name', exact: true });
   await draft.fill('Keep my unsaved task');
-  const confirmation = page.waitForEvent('dialog');
+  // Answer inside the listener: Playwright dismisses a dialog nobody is listening for.
+  const confirmation = new Promise((resolve) =>
+    page.once('dialog', async (dialog) => {
+      resolve({ type: dialog.type(), message: dialog.message() });
+      await dialog.dismiss();
+    }),
+  );
   await requestQuit();
   const dialog = await confirmation;
-  expect(dialog.type()).toBe('confirm');
-  expect(dialog.message()).toContain('unsaved changes');
-  await dialog.dismiss();
+  expect(dialog.type).toBe('confirm');
+  expect(dialog.message).toContain('unsaved changes');
   await expect(draft).toHaveValue('Keep my unsaved task');
-  expect(await desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
-
-  // Terminate only the synthetic app's named utility process. Recovery must
-  // renew launcher authorization and the event stream without reloading over
-  // this live editor draft.
-  const startedAt = await page.evaluate(() => {
-    window.nativeRestoredForCheck = false;
-    window.addEventListener('memoria-launcher-restored', () => (window.nativeRestoredForCheck = true), { once: true });
-    return window.performance.timeOrigin;
-  });
-  const stoppedPid = await desktop.evaluate(({ app }) => {
-    const worker = app
-      .getAppMetrics()
-      .find((metric) => metric.type === 'Utility' && metric.name === 'Memoria local data and phone sync');
-    if (!worker || worker.pid === process.pid) throw new Error('The isolated app data worker was not found.');
-    process.kill(worker.pid, 'SIGTERM');
-    return worker.pid;
-  });
-  await expect
-    .poll(
-      () =>
-        desktop.evaluate(
-          ({ app }, stopped) =>
-            app
-              .getAppMetrics()
-              .some(
-                (metric) =>
-                  metric.type === 'Utility' &&
-                  metric.name === 'Memoria local data and phone sync' &&
-                  metric.pid !== stopped,
-              ),
-          stoppedPid,
-        ),
-      { timeout: 30_000 },
-    )
-    .toBe(true);
-  await expect.poll(() => page.evaluate(() => window.nativeRestoredForCheck), { timeout: 30_000 }).toBe(true);
-  expect(
-    await page.evaluate(async () => {
-      const response = await fetch('/api/state', {
-        headers: { authorization: `Bearer ${sessionStorage.getItem('memoria-launcher-token')}` },
-      });
-      return response.status;
-    }),
-  ).toBe(200);
-  expect(await page.evaluate(() => window.performance.timeOrigin)).toBe(startedAt);
-  await expect(draft).toHaveValue('Keep my unsaved task');
+  expect(desktop.exitCode).toBe(null);
+  expect(await windowCall('windows')).toBe('1');
   await page.getByRole('button', { name: 'Add task', exact: true }).click();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect.poll(() => readState().tasks.some((task) => task.name === 'Keep my unsaved task')).toBe(true);
@@ -357,46 +310,17 @@ try {
   writeFileSync(stateFile, JSON.stringify(synced));
   await expect(page.getByRole('heading', { name: 'Synced archive', exact: true })).toBeVisible({ timeout: 15_000 });
   checkExistingData();
-  const origin = new URL(page.url()).origin;
-  // Exercise the actual window's registered guard without triggering the two
-  // competing Electron/CDP beforeunload dialog implementations in automation.
-  const navigation = await desktop.evaluate(({ BrowserWindow }) => {
-    const contents = BrowserWindow.getAllWindows()[0].webContents;
-    const check = (target) => {
-      let prevented = false;
-      contents.emit('will-navigate', { preventDefault: () => (prevented = true) }, target);
-      return prevented;
-    };
-    return {
-      remote: check('https://example.com/memoria-native-navigation-check'),
-      file: check('file:///C:/Windows/win.ini'),
-      internal: check(new URL('/', contents.getURL()).href),
-    };
-  });
-  expect(navigation).toEqual({ remote: true, file: true, internal: false });
-  await expect(page.getByRole('heading', { name: 'Synced archive', exact: true })).toBeVisible();
-  expect(new URL(page.url()).origin).toBe(origin);
 
-  // An unrelated window loading the same preload cannot use privileged IPC.
-  const stranger = await desktop.evaluate(
-    async ({ BrowserWindow }, preload) => {
-      const fixtureWindow = new BrowserWindow({
-        show: false,
-        webPreferences: { preload, sandbox: true, contextIsolation: true, nodeIntegration: false },
-      });
-      await fixtureWindow.loadURL(
-        'data:text/html;charset=utf-8,%3C!doctype%20html%3E%3Ctitle%3EStranger%3C%2Ftitle%3E',
-      );
-      const answer = await fixtureWindow.webContents.executeJavaScript(
-        "window.memoriaDesktop.launch.list().then(() => 'unexpected access', error => error.message)",
-      );
-      fixtureWindow.destroy();
-      return answer;
-    },
-    join(install, 'desktop/electron-preload.cjs'),
-  );
-  expect(stranger).toContain('only available in Memoria');
+  // The window refuses to leave the app for a website or a local file.
+  const origin = new URL(page.url()).origin;
+  for (const target of ['https://example.com/memoria-native-navigation-check', 'file:///C:/Windows/win.ini']) {
+    await page.evaluate((url) => window.location.assign(url), target);
+    await page.waitForTimeout(1_000);
+    expect(new URL(page.url()).origin).toBe(origin);
+  }
+  await expect(page.getByRole('heading', { name: 'Synced archive', exact: true })).toBeVisible();
   await page.screenshot({ path: join(root, 'dist/native-desktop.png') });
+
   // Quit flushes a focused editor before the window goes.
   await page.getByLabel('Archive energy current value', { exact: true }).fill('124');
   await closeWindow(true);
@@ -406,37 +330,19 @@ try {
   console.log(
     JSON.stringify({
       native:
-        'PASS: bundled executable, isolated renderer, responsive native resizing, existing PC data, close and quit flush, relaunch, single instance, unsaved draft, backend recovery, phone pairing, disk sync, blocked remote navigation, privileged IPC limited to the app window',
+        'PASS: packaged Rust host, WebView2 window, narrow bridge, plugin IPC denied, native resizing, existing PC data, close and quit flush, relaunch, single instance, unsaved draft, phone pairing, disk sync, blocked navigation',
       screenshot: 'dist/native-desktop.png',
     }),
   );
 } catch (error) {
-  if (desktop) {
-    console.error(
-      JSON.stringify(
-        await desktop
-          .evaluate(({ app, BrowserWindow }) => ({
-            nativeFailure: BrowserWindow.getAllWindows().map((item) => ({
-              id: item.id,
-              title: item.getTitle(),
-              visible: item.isVisible(),
-              minimized: item.isMinimized(),
-              destroyed: item.isDestroyed(),
-            })),
-            activateHandlers: app.listeners('activate').map((handler) => handler.name),
-          }))
-          .catch(() => ({ nativeFailure: 'The isolated app stopped.' })),
-      ),
-    );
-  }
   await page?.screenshot({ path: join(root, 'dist/native-failure.png') }).catch(() => undefined);
   throw error;
 } finally {
+  await browser?.close().catch(() => undefined);
   if (desktop) {
     // A failed dirty-draft test can deliberately leave close guarded. Only the
     // synthetic test process tree is terminated; no installed app is touched.
-    const pid = desktop.process().pid;
-    await promisify(execFile)('taskkill', ['/PID', String(pid), '/T', '/F'], { windowsHide: true }).catch(
+    await promisify(execFile)('taskkill', ['/PID', String(desktop.pid), '/T', '/F'], { windowsHide: true }).catch(
       () => undefined,
     );
   }

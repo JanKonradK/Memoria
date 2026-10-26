@@ -25,12 +25,8 @@ export function dismissLaunchNotice() {
   useGameLaunch.setState({ notice: null });
 }
 
-/** Electron prefixes a rejected invoke with its channel; the player needs only the reason. */
-const reason = (error: unknown) =>
-  (error instanceof Error ? error.message : 'Windows could not start the game.').replace(
-    /^Error invoking remote method '[^']+': (?:Error: )?/,
-    '',
-  );
+/** The desktop host rejects with the plain reason. */
+const reason = (error: unknown) => (error instanceof Error && error.message) || 'Windows could not start the game.';
 
 export function initGameLaunch(): void {
   const host = window.memoriaDesktop?.launch;

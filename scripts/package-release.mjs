@@ -1,8 +1,8 @@
 // Builds the downloadable Memoria release: a zip a person unpacks anywhere and
 // double-clicks, with no Node install, no npm and no build step of their own.
 //
-//   npm run build            # must run first — this script only assembles
-//   npm run package
+//   npm run build            # must run first: the zip serves app/dist
+//   npm run package          # builds the Rust host in native/, then assembles
 //
 // Output lands in dist/release/:
 //   Memoria-win-x64.zip   the download
@@ -13,22 +13,13 @@
 // Downloads produces a folder rather than a mess.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const releaseDir = join(root, 'dist', 'release');
 const stageDir = join(releaseDir, 'Memoria');
-const nodeCacheDir = join(root, 'dist', '.node-cache');
-
-/**
- * The Node runtime shipped inside the zip. Pinned rather than tracking latest:
- * the release is tested against one runtime, and a user's install should not
- * change underneath them because nodejs.org moved a tag.
- */
-const NODE_VERSION = process.env['MEMORIA_NODE_VERSION'] ?? 'v24.21.0';
-if (!/^v\d+\.\d+\.\d+$/.test(NODE_VERSION)) throw new Error('MEMORIA_NODE_VERSION must be a version such as v24.14.0.');
-const NODE_DIST = `https://nodejs.org/dist/${NODE_VERSION}`;
+const manifest = join(root, 'native', 'Cargo.toml');
 
 const ZIP_NAME = 'Memoria-win-x64.zip';
 const SUMS_NAME = 'SHA256SUMS.txt';
@@ -58,21 +49,11 @@ const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const version = pkg.version;
 if (!/^\d+\.\d+\.\d+/.test(version)) fail(`package.json version "${version}" is not a release version`);
 
-// Everything the launcher needs at runtime, and nothing else. Listed explicitly
+// Everything the app needs at runtime, and nothing else. Listed explicitly
 // rather than copied wholesale so a stray local file cannot end up in a public
 // download.
 const required = [
   ['app/dist', 'app/dist'],
-  ['desktop/memoria.mjs', 'desktop/memoria.mjs'],
-  ['desktop/electron-main.mjs', 'desktop/electron-main.mjs'],
-  ['desktop/electron-preload.cjs', 'desktop/electron-preload.cjs'],
-  ['desktop/native-policy.mjs', 'desktop/native-policy.mjs'],
-  ['desktop/game-launch.mjs', 'desktop/game-launch.mjs'],
-  ['desktop/lan-sync.mjs', 'desktop/lan-sync.mjs'],
-  ['desktop/http-response.mjs', 'desktop/http-response.mjs'],
-  ['desktop/update.mjs', 'desktop/update.mjs'],
-  ['desktop/shared-core.mjs', 'desktop/shared-core.mjs'],
-  ['desktop/dist/shared-core.mjs', 'desktop/dist/shared-core.mjs'],
   ['desktop/Memoria.vbs', 'desktop/Memoria.vbs'],
   ['desktop/memoria.ico', 'desktop/memoria.ico'],
   ['desktop/Install-Shortcut.ps1', 'desktop/Install-Shortcut.ps1'],
@@ -86,59 +67,22 @@ for (const [source] of required) {
   }
 }
 
-// The release includes its own window engine. Never package a host runtime for
-// a different platform under the Windows download name.
-const electronRoot = join(root, 'node_modules', 'electron');
-const electronDist = join(electronRoot, 'dist');
-const electronExe = join(electronDist, 'electron.exe');
-if (process.platform !== 'win32' || process.arch !== 'x64' || !existsSync(electronExe)) {
-  fail('the Windows x64 Electron runtime is missing — install dependencies on Windows x64 before packaging');
-}
-const electronVersion = JSON.parse(readFileSync(join(electronRoot, 'package.json'), 'utf8')).version;
-if (readFileSync(join(electronDist, 'version'), 'utf8').trim() !== electronVersion) {
-  fail('the Electron runtime version does not match the installed package');
-}
-
-// --- bundled Node -----------------------------------------------------------
-
-/**
- * Fetches the official node.exe and checks it against the SHASUMS256.txt that
- * nodejs.org publishes beside it. A runtime pulled over the network and handed
- * to users unverified would be the single worst link in this chain.
- */
-async function fetchNodeExe() {
-  const cached = join(nodeCacheDir, NODE_VERSION, 'node.exe');
-
-  const sumsResponse = await fetch(`${NODE_DIST}/SHASUMS256.txt`);
-  if (!sumsResponse.ok) fail(`nodejs.org returned ${sumsResponse.status} for SHASUMS256.txt`);
-  const sums = await sumsResponse.text();
-  const line = sums.split(/\r?\n/).find((entry) => entry.trim().endsWith('win-x64/node.exe'));
-  if (!line) fail(`SHASUMS256.txt for ${NODE_VERSION} does not list win-x64/node.exe`);
-  const expected = line.trim().split(/\s+/)[0].toLowerCase();
-  if (!/^[0-9a-f]{64}$/.test(expected)) fail('nodejs.org returned an invalid node.exe checksum');
-  if (existsSync(cached)) {
-    if (sha256(cached) === expected) return cached;
-    rmSync(cached, { force: true });
-  }
-
-  console.log(`Downloading Node ${NODE_VERSION} (win-x64)...`);
-  const exeResponse = await fetch(`${NODE_DIST}/win-x64/node.exe`);
-  if (!exeResponse.ok) fail(`nodejs.org returned ${exeResponse.status} for node.exe`);
-  const bytes = Buffer.from(await exeResponse.arrayBuffer());
-
-  mkdirSync(join(nodeCacheDir, NODE_VERSION), { recursive: true });
-  writeFileSync(cached, bytes);
-  const actual = sha256(cached);
-  if (actual !== expected) {
-    rmSync(cached, { force: true });
-    fail(`node.exe checksum mismatch (expected ${expected}, got ${actual})`);
-  }
-  return cached;
-}
+// The Rust host is a Windows x64 program. Never package a binary for another
+// platform under the Windows download name.
+if (process.platform !== 'win32' || process.arch !== 'x64') fail('build the Windows download on Windows x64');
+console.log('Building the Rust desktop host...');
+const cargo = spawnSync(
+  'cargo',
+  ['build', '--release', '--locked', '--features', 'custom-protocol', '--manifest-path', manifest],
+  { cwd: root, stdio: 'inherit' },
+);
+if (cargo.status !== 0) fail('cargo could not build native/. Install Rust from https://rustup.rs');
+const hostExe = join(root, 'native', 'target', 'release', 'memoria-desktop.exe');
+if (!existsSync(hostExe)) fail(`cargo did not produce ${hostExe}`);
 
 // --- assemble ---------------------------------------------------------------
 
-if (process.platform === 'win32' && existsSync(stageDir)) {
+if (existsSync(stageDir)) {
   const idle = spawnSync(
     'powershell',
     [
@@ -151,34 +95,16 @@ if (process.platform === 'win32' && existsSync(stageDir)) {
   );
   if (idle.status !== 0) fail(`close Memoria from ${stageDir} before replacing the staged release`);
 }
-
-// Keep independently built Android artifacts in the shared release directory.
-if (process.platform !== 'win32') rmSync(stageDir, { recursive: true, force: true });
 mkdirSync(stageDir, { recursive: true });
 
-// Include Electron's license files, locale files, resources, and native DLLs.
-// Only its default example app is replaced with our small bootstrap module.
-cpSync(electronDist, stageDir, { recursive: true });
-renameSync(join(stageDir, 'electron.exe'), join(stageDir, 'Memoria.exe'));
-rmSync(join(stageDir, 'resources', 'default_app.asar'), { force: true });
-const electronApp = join(stageDir, 'resources', 'app');
-mkdirSync(electronApp, { recursive: true });
-writeFileSync(
-  join(electronApp, 'package.json'),
-  `${JSON.stringify({ name: 'memoria', productName: 'Memoria', version, type: 'module', main: 'main.mjs' }, null, 2)}\n`,
-);
-writeFileSync(join(electronApp, 'main.mjs'), "import '../../desktop/electron-main.mjs';\n");
-
+// One program. Its window engine is the WebView2 runtime that Windows provides.
+cpSync(hostExe, join(stageDir, 'Memoria.exe'));
 for (const [source, destination] of required) {
   cpSync(join(root, source), join(stageDir, destination), { recursive: true });
 }
 
-const nodeExe = await fetchNodeExe();
-mkdirSync(join(stageDir, 'node'), { recursive: true });
-cpSync(nodeExe, join(stageDir, 'node', 'node.exe'));
-
-// The marker that tells the launcher it is packaged: no source tree to rebuild
-// from, and a version the updater can compare against GitHub.
+// The marker that tells Memoria it is packaged, with a version the updater
+// compares against GitHub. Installed 3.2.0 builds refuse an update without it.
 writeFileSync(
   join(stageDir, 'release.json'),
   `${JSON.stringify(
@@ -187,9 +113,7 @@ writeFileSync(
       version,
       tag: `v${version}`,
       channel: 'stable',
-      node: NODE_VERSION,
-      electron: electronVersion,
-      runtime: 'electron',
+      runtime: 'tauri',
       updateMode: 'manual',
       builtAt: new Date().toISOString(),
       platform: 'win-x64',
@@ -202,7 +126,7 @@ writeFileSync(
 
 writeStagedText('Start Memoria.cmd', [
   '@echo off',
-  'rem Open the standalone app with its bundled runtime.',
+  'rem Open the standalone app.',
   'cd /d "%~dp0"',
   'start "" "%~dp0Memoria.exe" %*',
 ]);
@@ -220,7 +144,7 @@ writeStagedText('README.txt', [
   '',
   'A gacha daily / energy / event tracker that runs entirely on this machine.',
   'No cloud account. Optional Wi-Fi sync connects your Android phone to this PC.',
-  'Includes its own window and runtime. No browser or developer tools required.',
+  'Uses the Microsoft Edge WebView2 runtime that comes with Windows 10 and 11.',
   '',
   'START IT',
   '  Double-click Memoria.exe.',
@@ -246,26 +170,18 @@ writeStagedText('README.txt', [
 
 const zipPath = join(releaseDir, ZIP_NAME);
 // Compress-Archive is on every supported Windows and, unlike bsdtar's zip
-// writer, needs no feature probing. Non-Windows hosts get bsdtar, which is
-// enough for a maintainer inspecting the layout locally.
-if (process.platform === 'win32') {
-  const zipped = spawnSync(
-    'powershell',
-    [
-      '-NoProfile',
-      '-NonInteractive',
-      '-Command',
-      `Compress-Archive -LiteralPath ${powershellLiteral(stageDir)} -DestinationPath ${powershellLiteral(zipPath)} -CompressionLevel Optimal -Force`,
-    ],
-    { stdio: 'inherit' },
-  );
-  if (zipped.status !== 0) fail('Compress-Archive failed');
-} else {
-  const zipped = spawnSync('tar', ['-c', '-f', zipPath, '--format', 'zip', '-C', releaseDir, 'Memoria'], {
-    stdio: 'inherit',
-  });
-  if (zipped.status !== 0) fail('tar could not write the zip');
-}
+// writer, needs no feature probing.
+const zipped = spawnSync(
+  'powershell',
+  [
+    '-NoProfile',
+    '-NonInteractive',
+    '-Command',
+    `Compress-Archive -LiteralPath ${powershellLiteral(stageDir)} -DestinationPath ${powershellLiteral(zipPath)} -CompressionLevel Optimal -Force`,
+  ],
+  { stdio: 'inherit' },
+);
+if (zipped.status !== 0) fail('Compress-Archive failed');
 
 const digest = sha256(zipPath);
 const sumsPath = join(releaseDir, SUMS_NAME);

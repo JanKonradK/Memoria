@@ -17,15 +17,32 @@ $source = [IO.Path]::GetFullPath($source).TrimEnd('\')
 $destination = [IO.Path]::GetFullPath($InstallRoot).TrimEnd('\')
 $dataDirectory = Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'memoria'
 
+function Read-Release([string]$directory) {
+  $file = Join-Path $directory 'release.json'
+  if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { return $null }
+  try { return Get-Content -LiteralPath $file -Raw | ConvertFrom-Json } catch { return $null }
+}
+
+# The release this script installs: the Rust host and the app it serves.
 function Assert-NativeBundle([string]$directory) {
-  foreach ($relativePath in @('Memoria.exe', 'release.json', 'resources\app\package.json', 'desktop\electron-main.mjs', 'app\dist\index.html')) {
+  foreach ($relativePath in @('Memoria.exe', 'release.json', 'app\dist\index.html', 'desktop\Install-Shortcut.ps1')) {
     if (-not (Test-Path -LiteralPath (Join-Path $directory $relativePath) -PathType Leaf)) {
       throw "The Windows app is incomplete: $relativePath is missing. Run npm run build and npm run package, or extract a new Windows download."
     }
   }
-  $record = Get-Content -LiteralPath (Join-Path $directory 'release.json') -Raw | ConvertFrom-Json
-  if ($record.name -ne 'Memoria' -or $record.runtime -ne 'electron') {
+  $record = Read-Release $directory
+  if (-not $record -or $record.name -ne 'Memoria' -or $record.runtime -ne 'tauri') {
     throw 'This folder does not contain a standalone Memoria release.'
+  }
+}
+
+# A folder this script may replace: an earlier install, including the
+# Electron builds up to 3.2.0, which install updates with this script.
+function Assert-ReplaceableInstall([string]$directory) {
+  $record = Read-Release $directory
+  if (-not (Test-Path -LiteralPath (Join-Path $directory 'Memoria.exe') -PathType Leaf) -or
+      -not $record -or $record.name -ne 'Memoria' -or $record.runtime -notin @('electron', 'tauri')) {
+    throw 'The install folder already holds something that is not Memoria. Nothing was changed.'
   }
 }
 
@@ -42,7 +59,7 @@ if (-not $source.Equals($destination, [StringComparison]::OrdinalIgnoreCase)) {
     throw 'The source and install folders must not contain each other.'
   }
   if (Test-Path -LiteralPath $destination) {
-    Assert-NativeBundle $destination
+    Assert-ReplaceableInstall $destination
     if ((Get-Item -LiteralPath $destination).Attributes -band [IO.FileAttributes]::ReparsePoint) {
       throw 'The install folder must not be a symbolic link or junction.'
     }

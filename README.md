@@ -32,7 +32,7 @@ The header status refers to device sync. Memoria never reads your game account.
 5. Open the extracted **Memoria** folder.
 6. Double-click **Memoria.exe**.
 
-Memoria opens in its own desktop window. The download includes its own runtime.
+Memoria opens in its own desktop window. It uses the Microsoft Edge WebView2 runtime that comes with Windows 10 and 11.
 You do not need a browser or developer tools.
 Press **Alt** to show the desktop menu.
 Phone sync is available while the window is open. Closing the window quits Memoria.
@@ -203,6 +203,7 @@ GitHub requires an account to post an issue.
 
 Use Node.js 24.15 or later in version 24, or Node.js 26 or later.
 CI uses Node.js 24.21.0.
+The Windows app is written in Rust and needs the [Rust toolchain](https://rustup.rs) to build.
 The app and shared packages use the TypeScript 7.0.2 compiler.
 ESLint uses TypeScript 6.0.3 because its current TypeScript parser does not support version 7.
 The `xcode` dependency uses `uuid` 11.1.1 to remove a known security defect.

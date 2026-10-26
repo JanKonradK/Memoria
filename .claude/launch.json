@@ -9,10 +9,9 @@
     },
     {
       "name": "memoria-launcher",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["desktop/memoria.mjs"],
-      "port": 17817,
-      "env": { "MEMORIA_NO_BROWSER": "1" }
+      "runtimeExecutable": "cargo",
+      "runtimeArgs": ["run", "--manifest-path", "native/Cargo.toml", "--", "--headless"],
+      "port": 17817
     }
   ]
 }

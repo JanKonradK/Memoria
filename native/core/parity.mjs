@@ -1,18 +1,16 @@
-// Prints state cases with the Node launcher's answers, for the Rust parity test
-// (native/src/core.rs). The reference is createStateAccess from
-// desktop/lan-sync.mjs, run against an in-memory state file.
+// Prints state cases with Node's answers, for the Rust parity test
+// (native/src/core.rs). Node runs the same rules (entry.mjs) on V8 with full
+// Intl, so any difference comes from QuickJS or the Rust side around it.
 import { build } from 'esbuild';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { createStateAccess } from '../../desktop/lan-sync.mjs';
 
-const repo = join(import.meta.dirname, '..', '..');
 const scratch = mkdtempSync(join(tmpdir(), 'memoria-parity-'));
-const bundle = join(scratch, 'shared-core.mjs');
+const bundle = join(scratch, 'entry.mjs');
 await build({
-  entryPoints: [join(repo, 'desktop', 'shared-core.mjs')],
+  entryPoints: [join(import.meta.dirname, 'entry.mjs')],
   bundle: true,
   platform: 'node',
   format: 'esm',
@@ -64,12 +62,14 @@ const task = (id, gameId, over = {}) => ({
   ...over,
 });
 
-const base = core.normalizeState({
-  games: [game('g1'), game('g2', { name: 'Zweite Welt — 日本', sort: 1 })],
-  resources: [resource('r1', 'g1'), resource('r2', 'g2', { cap: 180 })],
-  snapshots: [snapshot('s1', 'r1', 120, now - 3_600_000)],
-  tasks: [task('t1', 'g1'), task('t2', 'g2', { cadence: 'weekly', intervalDays: 7 })],
-});
+const base = core.read(
+  JSON.stringify({
+    games: [game('g1'), game('g2', { name: 'Zweite Welt — 日本', sort: 1 })],
+    resources: [resource('r1', 'g1'), resource('r2', 'g2', { cap: 180 })],
+    snapshots: [snapshot('s1', 'r1', 120, now - 3_600_000)],
+    tasks: [task('t1', 'g1'), task('t2', 'g2', { cadence: 'weekly', intervalDays: 7 })],
+  }),
+).state;
 const edited = structuredClone(base);
 edited.games[0] = { ...edited.games[0], name: 'Renamed', updatedAt: now - 1000 };
 edited.snapshots.push(snapshot('s2', 'r2', 50, now - 60_000));
@@ -99,28 +99,18 @@ const cases = [
 
 const results = [];
 for (const item of cases) {
-  let file = item.raw === null ? null : structuredClone(item.raw);
-  let wrote = false;
-  const access = createStateAccess({
-    loadCore: async () => core,
-    read: () => structuredClone(file),
-    write: (state) => {
-      wrote = true;
-      file = state;
-    },
-  });
-  const body = item.body ?? JSON.stringify({ state: item.incoming });
   const raw = item.raw === null ? null : JSON.stringify(item.raw);
+  const body = item.body ?? JSON.stringify({ state: item.incoming });
   let expected;
   try {
-    expected = { ok: await access.merge(JSON.parse(body)?.state), wrote };
+    const result = core.merge(raw, body);
+    expected =
+      'status' in result
+        ? { status: result.status, error: result.error }
+        : { ok: JSON.parse(result.json), wrote: result.changed };
   } catch (error) {
-    expected = { status: error.status ?? 500, error: String(error.message) };
+    expected = { status: 500, error: String(error.message) };
   }
-  const read = await createStateAccess({
-    loadCore: async () => core,
-    read: () => (raw === null ? null : JSON.parse(raw)),
-  }).read();
-  results.push({ name: item.name, raw, body, expected, read });
+  results.push({ name: item.name, raw, body, expected, read: core.read(raw).state });
 }
 process.stdout.write(JSON.stringify(results));

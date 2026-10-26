@@ -113,15 +113,32 @@ describes the optional card transition. Older browsers use immediate navigation.
 
 ## Standalone Windows app
 
+The Windows app is a Rust program in `native/` (Tauri 2 on the WebView2 runtime that Windows provides).
+It needs the [Rust toolchain](https://rustup.rs) and the Visual Studio C++ Build Tools.
+Node is only a build tool. The shipped app contains no Node or Electron.
+
 ```sh
 npm run build
 npm run desktop
 ```
 
-Electron opens the interface in its own window with its bundled runtime.
-The renderer has no Node access. The preload exposes only the close-and-save handshake.
-The local backend keeps the existing data file and Wi-Fi connections.
-The desktop profile stays in `%APPDATA%\memoria\desktop-profile`.
+`npm run desktop` builds the host and opens the window on your real data folder. Close an installed Memoria first.
+The host serves `app/dist` on a loopback port (17817, 17818 or 17819) and backs `/api/state`, `/api/sync`
+and `/api/events` with `%APPDATA%\memoria\state.json`. It runs the merge and validation rules from `shared/`
+in embedded QuickJS, so they have one implementation ([rust-migration.md](rust-migration.md)).
+The page has no Node or Tauri access. `native/src/bridge.js` exposes only `window.memoriaDesktop`:
+the close-and-save handshake, game launch and updates. IPC is granted only to the loopback origins.
+The WebView2 profile stays in `%APPDATA%\memoria\webview-profile`.
+
+```sh
+npm run test:native
+```
+
+This runs the Rust tests, the parity test that runs the state rules in Node and in QuickJS,
+and `native/test/launcher.test.mjs` against the built host.
+`Memoria.exe --headless` serves the app without a window and prints a launch URL, for these tests.
+`MEMORIA_TEST_PORT`, `MEMORIA_TEST_LAN_PORT` and `MEMORIA_ROOT` keep a test copy off the ports
+and folders of a running Memoria.
 
 To install a copy with Desktop and Start Menu shortcuts:
 
@@ -133,42 +150,6 @@ npm run install:desktop
 The installer copies `dist/release/Memoria` to `%LOCALAPPDATA%\Programs\Memoria`.
 Close an installed copy before installation. The installer refuses to replace an active runtime.
 User data stays in `%APPDATA%\memoria`.
-
-### Rust desktop host
-
-The app is moving from Electron to a Rust host in `native/` (Tauri 2 on WebView2).
-See [rust-migration.md](rust-migration.md) for the design and phases.
-It needs the Rust toolchain and the Visual Studio C++ Build Tools.
-
-```sh
-npm run build
-npm run native
-npm run test:native
-```
-
-`npm run native` opens the window on the same data folder as the Electron app. Close the Electron app first.
-`npm run test:native` runs the Rust tests, the parity test against the Node state rules,
-and `desktop/test/launcher.test.mjs` against the built host.
-The WebView2 profile stays in `%APPDATA%\memoria\webview-profile`.
-
-### Legacy browser launcher
-
-The browser launcher remains available for diagnostics and browser checks:
-
-```sh
-node desktop/memoria.mjs --list-browsers
-node desktop/memoria.mjs --browser zen
-```
-
-For a persistent choice, set `browser` in `desktop/config.json`:
-
-```json
-{ "browser": "helium" }
-```
-
-Supported names include `helium`, `chrome`, `edge`, `brave`, `vivaldi`, `opera`, `firefox`, `zen`, and `librewolf`.
-A full executable path is also valid. Use `system` for the system browser.
-Priority is `--browser`, then `MEMORIA_BROWSER`, then `config.json`, then automatic selection.
 
 ## Build the downloads
 
@@ -187,14 +168,17 @@ Outputs:
 - `app/dist-single/Memoria.html`
 
 Release checks use a copied install, isolated app data, and an available launcher port.
-They cover startup, disk sync, a second launch, live changes, and offline HTML use.
+`check:release` serves the packaged app headless to Chromium. It covers startup, disk sync, a second launch,
+live changes, Wi-Fi controls, a safe service worker update, the CSP, and offline HTML use.
+`check:native` opens the packaged window and drives it through WebView2's DevTools port.
+It covers existing PC data, resizing, close and quit saving, a second launch, an unsaved draft,
+phone pairing, and blocked navigation.
 
-The ZIP includes `Memoria.exe`, Electron, the built app, backend, icon, and a pinned Node runtime.
-Electron's license files stay in the download. The package uses the Electron version from `package-lock.json`.
-Packaging verifies the Node download against the official checksum.
+`npm run package` builds the Rust host in release mode. The ZIP holds `Memoria.exe`, the built app,
+the icon and the install scripts.
 `release.json` identifies a packaged install. The updater does not replace a source checkout.
-The native release record uses `runtime: "electron"` and `updateMode: "manual"`.
-This prevents the backend from changing program files that the desktop runtime uses.
+The release record uses `runtime: "tauri"`. Installed Electron builds (up to 3.2.0) update into it:
+they run the new build's `Install-Shortcut.ps1`, which accepts an Electron install as the folder it replaces.
 
 The standalone HTML includes its scripts, styles, fonts, and icon.
 It has no service worker or launcher sync. It checks for new releases and links to the download page, but cannot replace itself.
@@ -220,20 +204,9 @@ CI also assembles the Windows package on each push to `main` and each pull reque
 ## Updates
 
 Every build reads the GitHub release list (`app/src/app-update.ts`) and shows the notes of every release newer than itself in `UpdateScreen.tsx`.
-The Windows app downloads `Memoria-win-x64.zip` in the main process, verifies it against `SHA256SUMS.txt` and stages it in `%APPDATA%\memoria\updates\pending`.
+The Windows app downloads `Memoria-win-x64.zip` in the Rust host (`native/src/update.rs`), verifies it against `SHA256SUMS.txt` and stages it in `%APPDATA%\memoria\updates\pending`.
 **Restart and update** closes through the normal save path. `updates\install-update.ps1`, started through `cmd start` (PowerShell launched directly as a detached child exits without running), then runs the staged `Install-Shortcut.ps1` over the install and reopens Memoria. Its log is `updates\install.log`.
 Android downloads `Memoria-android.apk`, verifies it the same way and opens the system installer (`AppUpdaterPlugin.java`).
 The installer retains the current program folder until the new copy is complete.
 If the final folder change fails, the installer restores the previous program folder.
 User data stays separate from the program files.
-
-Older browser packages keep the previous background updater.
-The updater checks GitHub at most once every six hours and verifies the download checksum.
-It stages updates for the next launcher start.
-For an older browser package, this command starts a manual check:
-
-```bat
-node\node.exe desktop\memoria.mjs --check-update
-```
-
-Set `MEMORIA_NO_UPDATE=1` before launch to disable automatic update checks.

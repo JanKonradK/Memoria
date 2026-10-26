@@ -1,5 +1,5 @@
-// The state rules the Rust desktop host runs in QuickJS. Same steps as
-// createStateAccess in desktop/lan-sync.mjs; the parity test keeps them equal.
+// The state rules the Rust desktop host runs in QuickJS. The parity test
+// (native/core/parity.mjs) checks QuickJS gives the same answers as Node.
 // Rust owns disk, size limits and locking. This file only decides content.
 import { mergeState, normalizeState, safeParseAppState } from '@memoria/shared';
 

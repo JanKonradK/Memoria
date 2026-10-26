@@ -13,24 +13,37 @@ beforeEach(() => {
   scratch = mkdtempSync(join(tmpdir(), 'memoria-install-test-'));
   source = join(scratch, 'download');
   destination = join(scratch, 'programs', 'Memoria');
-  for (const directory of ['desktop', 'resources/app', 'app/dist']) {
+  for (const directory of ['desktop', 'app/dist']) {
     mkdirSync(join(source, directory), { recursive: true });
   }
   copyFileSync(resolve('desktop/Install-Shortcut.ps1'), join(source, 'desktop/Install-Shortcut.ps1'));
   copyFileSync(resolve('desktop/Install-Lock.ps1'), join(source, 'desktop/Install-Lock.ps1'));
-  for (const name of [
-    'Memoria.exe',
-    'resources/app/package.json',
-    'desktop/electron-main.mjs',
-    'app/dist/index.html',
-  ]) {
+  for (const name of ['Memoria.exe', 'app/dist/index.html']) {
     writeFileSync(join(source, name), 'test bundle');
   }
-  writeFileSync(
-    join(source, 'release.json'),
-    JSON.stringify({ name: 'Memoria', version: '2.0.0', runtime: 'electron' }),
-  );
+  writeFileSync(join(source, 'release.json'), JSON.stringify({ name: 'Memoria', version: '3.3.0', runtime: 'tauri' }));
 });
+
+/** The layout of the Electron builds up to 3.2.0, which install their update with the new script. */
+function electronInstall(directory) {
+  for (const folder of ['resources/app', 'desktop', 'node', 'app/dist']) {
+    mkdirSync(join(directory, folder), { recursive: true });
+  }
+  for (const name of [
+    'Memoria.exe',
+    'ffmpeg.dll',
+    'resources/app/package.json',
+    'desktop/electron-main.mjs',
+    'node/node.exe',
+    'app/dist/index.html',
+  ]) {
+    writeFileSync(join(directory, name), 'electron build');
+  }
+  writeFileSync(
+    join(directory, 'release.json'),
+    JSON.stringify({ name: 'Memoria', version: '3.2.0', runtime: 'electron' }),
+  );
+}
 
 afterEach(() => {
   rmSync(scratch, { recursive: true, force: true });
@@ -74,6 +87,30 @@ describe.skipIf(process.platform !== 'win32')('standalone Windows install', () =
     expect(readFileSync(join(data, 'state.json'), 'utf8')).toBe('saved progress');
   }, 30_000);
 
+  it('replaces an Electron install from 3.2.0 and leaves none of its files behind', () => {
+    electronInstall(destination);
+    const result = install();
+    expect(result.status, result.stderr).toBe(0);
+    expect(readFileSync(join(destination, 'Memoria.exe'), 'utf8')).toBe('test bundle');
+    expect(JSON.parse(readFileSync(join(destination, 'release.json'), 'utf8')).runtime).toBe('tauri');
+    for (const name of ['ffmpeg.dll', 'resources', 'node', 'desktop/electron-main.mjs']) {
+      expect(existsSync(join(destination, name)), name).toBe(false);
+    }
+  }, 30_000);
+
+  it('refuses an Electron build as the download', () => {
+    const electron = join(scratch, 'electron-download');
+    electronInstall(electron);
+    mkdirSync(join(electron, 'desktop'), { recursive: true });
+    copyFileSync(resolve('desktop/Install-Shortcut.ps1'), join(electron, 'desktop/Install-Shortcut.ps1'));
+    copyFileSync(resolve('desktop/Install-Lock.ps1'), join(electron, 'desktop/Install-Lock.ps1'));
+    source = electron;
+    const result = install();
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('does not contain a standalone Memoria release');
+    expect(existsSync(destination)).toBe(false);
+  }, 15_000);
+
   it('refuses to replace an unrelated destination folder', () => {
     mkdirSync(destination, { recursive: true });
     writeFileSync(join(destination, 'personal.txt'), 'keep this file');
@@ -86,7 +123,7 @@ describe.skipIf(process.platform !== 'win32')('standalone Windows install', () =
   it('refuses an incomplete download before changing an installed app', () => {
     const first = install();
     expect(first.status, first.stderr).toBe(0);
-    rmSync(join(source, 'desktop/electron-main.mjs'));
+    rmSync(join(source, 'app/dist/index.html'));
     writeFileSync(join(source, 'Memoria.exe'), 'incomplete replacement');
     const result = install();
     expect(result.status).not.toBe(0);

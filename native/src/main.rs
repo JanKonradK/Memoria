@@ -13,7 +13,6 @@ mod update;
 use std::sync::Arc;
 
 use tauri::{Manager, RunEvent};
-use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
 use crate::{core::StateCore, paths::Paths, server::Started};
 
@@ -52,7 +51,6 @@ fn main() {
 
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| desktop::second_instance(app)))
-        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             desktop::renderer_ready,
@@ -84,13 +82,12 @@ fn main() {
                 desktop::create_window(&handle, url).map_err(|e| e.to_string())
             });
             if let Err(error) = result {
-                handle
-                    .dialog()
-                    .message(error)
-                    .title("Memoria could not start")
-                    .kind(MessageDialogKind::Error)
-                    .buttons(MessageDialogButtons::Ok)
-                    .blocking_show();
+                rfd::MessageDialog::new()
+                    .set_title("Memoria could not start")
+                    .set_description(error)
+                    .set_level(rfd::MessageLevel::Error)
+                    .set_buttons(rfd::MessageButtons::Ok)
+                    .show();
                 handle.exit(1);
             }
             Ok(())
