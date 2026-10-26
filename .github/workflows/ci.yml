@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   check:
-    # The launcher, the packaging script and the shortcut installer are all
+    # The Rust desktop host, the packaging script and the shortcut installer are all
     # Windows-specific, so the checks that matter run where users run them.
     runs-on: windows-latest
     steps:

@@ -1,53 +1,32 @@
 /* global window, document */
 import { chromium, expect } from '@playwright/test';
-import { spawn, execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { cpSync, mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { isolateLauncherPort } from './launcher-test-support.mjs';
+import { isolatedHostEnv, launchUrlFrom } from './launcher-test-support.mjs';
 const root = resolve(import.meta.dirname, '..');
 const scratch = join(root, 'dist/security-browser', String(Date.now()));
 const install = join(scratch, 'install');
 const appdata = join(scratch, 'data');
 mkdirSync(scratch, { recursive: true });
 cpSync(join(root, 'dist/release/Memoria'), install, { recursive: true });
-// The built app accepts only these launcher origins. Skip any occupied port in
-// the test copy, while the shipped launcher retains its identity checks.
-await isolateLauncherPort(join(install, 'desktop/memoria.mjs'), [17817, 17818, 17819]);
-// Let the OS choose a test LAN port while the user's paired PC keeps its own.
-const lanModule = join(install, 'desktop/lan-sync.mjs');
-const lanSource = readFileSync(lanModule, 'utf8');
-const lanPortDeclaration = 'export const LAN_PORT = 17820;';
-if (!lanSource.includes(lanPortDeclaration)) throw new Error('Test LAN port declaration changed');
-writeFileSync(lanModule, lanSource.replace(lanPortDeclaration, 'export const LAN_PORT = 0;'));
 const stateFile = join(appdata, 'memoria/state.json');
-const exe = join(install, 'node/node.exe');
-const args = [join(install, 'desktop/memoria.mjs')];
+// The packaged Memoria.exe serves the app without a window. The built app
+// accepts only its own launcher origins, so take a free one of those ports.
+const exe = join(install, 'Memoria.exe');
+const args = ['--headless'];
 const options = {
   cwd: install,
   windowsHide: true,
-  env: { ...process.env, APPDATA: appdata, MEMORIA_NO_BROWSER: '1', MEMORIA_NO_UPDATE: '1' },
+  env: await isolatedHostEnv({ appdata, ports: [17817, 17818, 17819] }),
 };
 const child = spawn(exe, args, options);
 let browser;
 const errors = [];
-const matchUrl = (text) => text.match(/http:\/\/127\.0\.0\.1:\d+\/api\/launch\/[A-Za-z0-9_-]{43}/)?.[0];
 try {
-  const url = await new Promise((resolve, reject) => {
-    let text = '';
-    child.once('error', reject);
-    child.once('exit', () => reject(new Error(`Test launcher exited early: ${errors.join('')}`)));
-    child.stdout.on('data', (chunk) => {
-      text += chunk;
-      const url = matchUrl(text);
-      if (url) resolve(url);
-    });
-    child.stderr.on('data', (chunk) => {
-      errors.push(String(chunk));
-    });
-  });
+  const url = await launchUrlFrom(child);
   browser = await chromium.launch();
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' });
   await context.addInitScript(() => {
@@ -76,8 +55,10 @@ try {
   await page.getByRole('button', { name: 'Review Genshin Impact', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Genshin Impact', exact: true })).toBeVisible();
   expect(await page.evaluate(() => window.auditCsp)).toEqual([]);
-  const secondLaunch = await promisify(execFile)(exe, args, options);
-  const secondUrl = matchUrl(secondLaunch.stdout);
+  // A second launch finds the running host and hands over a fresh ticket.
+  const secondChild = spawn(exe, args, options);
+  const secondUrl = await launchUrlFrom(secondChild);
+  secondChild.kill();
   expect(new URL(secondUrl).origin).toBe(new URL(url).origin);
   const second = await context.newPage();
   second.on('pageerror', (error) => errors.push(error.message));
@@ -186,7 +167,7 @@ try {
       desktop:
         'PASS: launch, add game, disk sync, reload, second launch, live events, Wi-Fi controls, safe PWA update, CSP',
       singleFile: 'PASS: add game, reload, no HTTP requests',
-      runtime: (await promisify(execFile)(exe, ['--version'])).stdout.trim(),
+      release: JSON.parse(readFileSync(join(install, 'release.json'), 'utf8')).version,
     }),
   );
 } finally {

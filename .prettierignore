@@ -6,7 +6,6 @@ test-results
 test-results-*
 package-lock.json
 app/public
-desktop/dist
 android
 # Vendored AI-harness tooling (impeccable, agent configs) — third-party source
 # we do not own, plus the design hook's generated cache.

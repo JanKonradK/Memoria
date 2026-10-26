@@ -260,10 +260,10 @@ mod tests {
     use super::*;
     use std::process::Command;
 
-    /// Replays native/core/parity.mjs cases, answered by the Node launcher's
-    /// createStateAccess, through the Rust core.
+    /// Replays native/core/parity.mjs cases, answered by the same rules in
+    /// Node, through the Rust core.
     #[tokio::test]
-    async fn matches_the_node_launcher() {
+    async fn matches_node() {
         let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
         let output = Command::new("node").arg("native/core/parity.mjs").current_dir(&repo).output().unwrap();
         assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));

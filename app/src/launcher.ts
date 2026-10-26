@@ -1,5 +1,5 @@
 /**
- * The Windows desktop launcher (desktop/memoria.mjs) serves the built app from a
+ * The Windows desktop host (native/src/server.rs) serves the built app from a
  * fixed loopback port and backs /api/state, /api/sync and /api/events with
  * %APPDATA%\memoria\state.json. Opened any other way — `npm run dev`, a plain
  * static server — the app is IndexedDB-only and sync stays off.

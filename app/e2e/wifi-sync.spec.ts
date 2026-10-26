@@ -1,22 +1,32 @@
 import { expect, test } from '@playwright/test';
-import { createLanSync, createStateAccess } from '../../desktop/lan-sync.mjs';
-import * as core from '../../desktop/dist/shared-core.mjs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import type { AppState } from '@memoria/shared';
 import AxeBuilder from '@axe-core/playwright';
+import { buildNativeHost, isolatedHostEnv, startHeadlessHost } from '../../scripts/launcher-test-support.mjs';
 import { gameRow, openGame } from './support';
+
+// Built on first use, so the projects that skip this test never run cargo.
+let binary: string | undefined;
 
 for (const method of ['scan', 'manual']) {
   test(`Android ${method} pairing merges PC and phone edits and recovers after an outage`, async ({ page }, info) => {
     test.skip(info.project.name !== 'android-s23', 'Native bridge integration at phone size');
-    let document = core.normalizeState(undefined);
-    const access = createStateAccess({
-      loadCore: async () => core,
-      read: () => document,
-      write: (next: typeof document) => {
-        document = next;
-      },
-    });
-    const server = createLanSync({ state: access, port: 0 });
-    const status = await server.control({ action: 'start' });
+    test.setTimeout(90_000);
+    // The PC side is the Rust desktop host, in its own folders and on free ports.
+    const scratch = mkdtempSync(join(tmpdir(), 'memoria-wifi-e2e-'));
+    const install = join(scratch, 'install');
+    mkdirSync(join(install, 'app', 'dist'), { recursive: true });
+    writeFileSync(
+      join(install, 'app', 'dist', 'index.html'),
+      '<!doctype html><html><head></head><body>Memoria</body></html>',
+    );
+    const env = await isolatedHostEnv({ appdata: join(scratch, 'data'), install });
+    binary ??= buildNativeHost();
+    const host = await startHeadlessHost({ binary, env, cwd: install });
+    const pcState = async (): Promise<AppState> => (await host.api('/api/state')).state;
+    const status = await host.api('/api/devices', { action: 'start' });
     const address = `http://192.168.1.2:${status.port}`;
     let offline = false;
     let scanMode = 'cancel';
@@ -115,11 +125,11 @@ for (const method of ['scan', 'manual']) {
       await page.getByRole('button', { name: /Genshin Impact/ }).click();
       await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
       await expect(page.getByRole('dialog')).toHaveCount(0);
-      await expect.poll(() => document.games.length).toBe(1);
-      // A PC edit arrives through the same server state access as the launcher.
-      const remote = structuredClone(document);
+      await expect.poll(async () => (await pcState()).games.length).toBe(1);
+      // A PC edit arrives the way the desktop window saves one.
+      const remote = await pcState();
       remote.games[0] = { ...remote.games[0], name: 'PC edited game', updatedAt: Date.now() + 10 };
-      await access.merge(remote);
+      await host.api('/api/sync', { state: remote });
       await page.evaluate(() => window.dispatchEvent(new Event('online')));
       await expect(gameRow(page, 'PC edited game')).toBeVisible();
       offline = true;
@@ -133,9 +143,7 @@ for (const method of ['scan', 'manual']) {
       await expect(page.getByText(/Cannot reach your PC/).first()).toBeVisible();
       offline = false;
       await page.evaluate(() => window.dispatchEvent(new Event('online')));
-      await expect
-        .poll(() => document.snapshots.some((snapshot: { value: number }) => snapshot.value === 77))
-        .toBe(true);
+      await expect.poll(async () => (await pcState()).snapshots.some((snapshot) => snapshot.value === 77)).toBe(true);
       await page.getByText('Connection options', { exact: true }).click();
       await page.screenshot({ path: info.outputPath('wifi-connected.png') });
       await page.getByText('Connection options', { exact: true }).click();
@@ -145,7 +153,8 @@ for (const method of ['scan', 'manual']) {
       await openGame(page, 'PC edited game');
       await expect(energy).toHaveValue('77');
     } finally {
-      await server.control({ action: 'stop' });
+      await host.stop();
+      rmSync(scratch, { recursive: true, force: true });
     }
   });
 }

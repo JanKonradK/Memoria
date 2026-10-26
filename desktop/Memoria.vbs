@@ -1,10 +1,9 @@
 ' Memoria launcher: open the standalone app without a console window.
+' Kept for shortcuts made by older builds, which pointed here.
 Set fso = CreateObject("Scripting.FileSystemObject")
 scriptDir = fso.GetParentFolderName(WScript.ScriptFullName)
 repo = fso.GetParentFolderName(scriptDir)
 Set sh = CreateObject("WScript.Shell")
-Set launchEnvironment = sh.Environment("Process")
-launchEnvironment.Remove "ELECTRON_RUN_AS_NODE"
 sh.CurrentDirectory = repo
 
 extra = ""
@@ -13,14 +12,9 @@ For Each arg In WScript.Arguments
 Next
 
 packagedExe = repo & "\Memoria.exe"
-sourceExe = repo & "\node_modules\electron\dist\electron.exe"
-If fso.FileExists(packagedExe) Then
-  command = """" & packagedExe & """" & extra
-ElseIf fso.FileExists(sourceExe) Then
-  command = """" & sourceExe & """ """ & scriptDir & "\electron-main.mjs""" & extra
-Else
-  MsgBox "The Memoria runtime is missing. Install the Windows download or run npm install in the source folder.", 16, "Memoria"
+If Not fso.FileExists(packagedExe) Then
+  MsgBox "Memoria.exe is missing. Install the Windows download again.", 16, "Memoria"
   WScript.Quit 1
 End If
 
-sh.Run command, 0, False
+sh.Run """" & packagedExe & """" & extra, 0, False

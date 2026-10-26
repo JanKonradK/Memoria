@@ -1,5 +1,5 @@
 // Tests the Rust desktop host: its unit and parity tests, then the launcher
-// contract suite (desktop/test/launcher.test.mjs) against the built binary.
+// contract suite (native/test/launcher.test.mjs) against the built binary.
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 
@@ -13,7 +13,7 @@ const run = (command, args, env = process.env) => {
 run('cargo', ['test', '--manifest-path', manifest]);
 run('cargo', ['build', '--manifest-path', manifest]);
 const binary = join(root, 'native', 'target', 'debug', `memoria-desktop${process.platform === 'win32' ? '.exe' : ''}`);
-run('npx', ['vitest', 'run', '--config', 'vitest.desktop.config.mjs', 'desktop/test/launcher.test.mjs'], {
+run('npx', ['vitest', 'run', '--config', 'vitest.desktop.config.mjs', 'native/test'], {
   ...process.env,
   MEMORIA_NATIVE_BIN: binary,
 });

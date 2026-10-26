@@ -49,12 +49,8 @@ it('shows Launch only once its target is chosen in the card settings, then launc
   expect(host.start).toHaveBeenCalledExactlyOnceWith('hsr');
 });
 
-it('reports why Windows refused, without the bridge prefix', async () => {
-  host.start.mockRejectedValueOnce(
-    new Error(
-      "Error invoking remote method 'memoria:launch-start': Error: launcher.exe is no longer there. Choose it again.",
-    ),
-  );
+it('reports why Windows refused', async () => {
+  host.start.mockRejectedValueOnce(new Error('launcher.exe is no longer there. Choose it again.'));
   vi.stubGlobal('memoriaDesktop', { version: 1, launch: host });
   useGameLaunch.setState({ available: true, targets: { hsr: 'launcher.exe' } });
   show();

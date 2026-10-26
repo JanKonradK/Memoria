@@ -4,14 +4,15 @@ import { spawn } from 'node:child_process';
 import { createServer, request } from 'node:http';
 import { createHmac, randomBytes } from 'node:crypto';
 import { once } from 'node:events';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import os from 'node:os';
-import { freePort, isolateLauncherPort } from '../../scripts/launcher-test-support.mjs';
+import { freePort } from '../../scripts/launcher-test-support.mjs';
 
-const root = resolve(import.meta.dirname, '../..');
-/** Set to native/target/<profile>/memoria-desktop.exe to run this contract against the Rust host. */
+// The loopback contract the React app relies on, run against the built Rust
+// host. scripts/test-native.mjs builds it and sets MEMORIA_NATIVE_BIN.
 const NATIVE_BIN = process.env.MEMORIA_NATIVE_BIN;
+if (!NATIVE_BIN) throw new Error('Run this suite with npm run test:native.');
 let calendar;
 const scratch = mkdtempSync(join(os.tmpdir(), 'memoria-launcher-test-'));
 const install = join(scratch, 'install');
@@ -33,7 +34,6 @@ function post(state = emptyState(), extra = {}) {
 }
 
 beforeAll(async () => {
-  mkdirSync(join(install, 'desktop', 'dist'), { recursive: true });
   mkdirSync(join(install, 'app', 'dist'), { recursive: true });
   mkdirSync(join(install, 'app', 'dist-private'), { recursive: true });
   writeFileSync(join(install, 'release.json'), JSON.stringify({ name: 'Memoria', version: '0.1.0' }));
@@ -45,62 +45,34 @@ beforeAll(async () => {
   // Damaged optional phone metadata must not prevent the desktop from opening.
   mkdirSync(join(appdata, 'memoria'), { recursive: true });
   writeFileSync(join(appdata, 'memoria', 'devices.json'), '{ unreadable connections');
-  const env = { ...process.env, APPDATA: appdata, MEMORIA_NO_BROWSER: '1', MEMORIA_NO_UPDATE: '1' };
-  if (NATIVE_BIN) {
-    // The Rust host speaks the same contract. Serve the feed from loopback and
-    // split every UTF-8 sequence across writes.
-    calendar = createServer((_req, res) => {
-      res.writeHead(200, { 'content-type': 'application/json' });
-      const bytes = Buffer.from(JSON.stringify({ name: '原神 — étoile 🌟' }));
-      (async () => {
-        for (const byte of bytes) {
-          res.write(Uint8Array.of(byte));
-          await new Promise((resolve) => setImmediate(resolve));
-        }
-        res.end();
-      })();
-    });
-    calendar.listen(0, '127.0.0.1');
-    await once(calendar, 'listening');
-    child = spawn(NATIVE_BIN, ['--headless'], {
-      cwd: install,
-      windowsHide: true,
-      env: {
-        ...env,
-        MEMORIA_ROOT: install,
-        MEMORIA_TEST_PORT: String(await freePort()),
-        MEMORIA_CALENDAR_URL: `http://127.0.0.1:${calendar.address().port}/events.json`,
-      },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-  } else {
-    for (const file of ['memoria.mjs', 'lan-sync.mjs', 'http-response.mjs', 'update.mjs', 'dist/shared-core.mjs']) {
-      cpSync(join(root, 'desktop', file), join(install, 'desktop', file));
-    }
-    // Isolate the test server from all real Memoria ports and app data. The
-    // production launcher remains fixed to its existing browser storage origins.
-    const launcher = join(install, 'desktop', 'memoria.mjs');
-    await isolateLauncherPort(launcher);
-    // Split every UTF-8 sequence at transport boundaries in the isolated process.
-    writeFileSync(
-      launcher,
-      `${readFileSync(launcher, 'utf8')}\nconst realTestFetch = globalThis.fetch;
-globalThis.fetch = (url, options) => {
-  if (url !== 'https://raw.githubusercontent.com/JanKonradK/Memoria/main/app/public/events.json')
-    return realTestFetch(url, options);
-  const bytes = Buffer.from(JSON.stringify({ name: '原神 — étoile 🌟' }));
-  return Promise.resolve({ ok: true, body: (async function* () {
-    for (const byte of bytes) yield Uint8Array.of(byte);
-  })() });
-};\n`,
-    );
-    child = spawn(process.execPath, [launcher], {
-      cwd: install,
-      windowsHide: true,
-      env,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-  }
+  // Serve the event feed from loopback and split every UTF-8 sequence across writes.
+  calendar = createServer((_req, res) => {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    const bytes = Buffer.from(JSON.stringify({ name: '原神 — étoile 🌟' }));
+    (async () => {
+      for (const byte of bytes) {
+        res.write(Uint8Array.of(byte));
+        await new Promise((resolve) => setImmediate(resolve));
+      }
+      res.end();
+    })();
+  });
+  calendar.listen(0, '127.0.0.1');
+  await once(calendar, 'listening');
+  child = spawn(NATIVE_BIN, ['--headless'], {
+    cwd: install,
+    windowsHide: true,
+    // Isolate the test host from the real ports and app data of a running Memoria.
+    env: {
+      ...process.env,
+      APPDATA: appdata,
+      MEMORIA_ROOT: install,
+      MEMORIA_TEST_PORT: String(await freePort()),
+      MEMORIA_TEST_LAN_PORT: String(await freePort()),
+      MEMORIA_CALENDAR_URL: `http://127.0.0.1:${calendar.address().port}/events.json`,
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
   const launchUrl = await new Promise((resolve, reject) => {
     let output = '';
     let errors = '';

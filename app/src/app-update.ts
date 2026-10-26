@@ -92,11 +92,9 @@ export function releaseNotes(release: Pick<ReleaseInfo, 'notes'>): string {
   return release.notes.split(/^##\s+Downloads?\b/im)[0]?.trim() ?? '';
 }
 
-/** Electron prefixes errors from the main process with the IPC channel; people need only the reason. */
+/** The desktop host rejects with the plain reason. */
 function message(error: unknown, fallback: string): string {
-  const text =
-    error instanceof Error ? error.message.replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '') : '';
-  return text || fallback;
+  return (error instanceof Error && error.message) || fallback;
 }
 
 async function fetchRelease(): Promise<{ release: ReleaseInfo | null; staged: string | null }> {
