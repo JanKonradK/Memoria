@@ -141,7 +141,7 @@ If you cannot use the camera, select **Enter a code instead** on both devices.
 Then copy the PC address and pairing code into the phone app.
 If the code expires, select **Show a new code** on the PC.
 If Windows Firewall requests access, allow Memoria on your private network.
-If Windows blocks the connection, press **Alt** and select **Help → Allow phone sync through Windows**.
+If Windows blocks the connection, right-click the Memoria icon in the tray and select **Allow phone sync through Windows**.
 Approve the Windows permission request to allow phone connections from your local network.
 
 Keep Memoria open on the PC. The phone syncs while its app is open.
@@ -158,6 +158,13 @@ If an older PC launcher remains active after an update, restart Windows and open
 This starts the new Wi-Fi listener without a change to your saved data.
 
 Wi-Fi sync uses HTTP without encryption. Use a trusted private network.
+
+#### Sync away from home
+
+Install [Tailscale](https://tailscale.com) on the PC and the phone or tablet, and sign in to the same account on both.
+After the next sync at home, the phone also knows the PC's Tailscale address and syncs from any network.
+You do not need to scan a new code. Tailscale encrypts the connection.
+If you allowed phone sync through Windows before this update, select **Allow phone sync through Windows** again.
 
 ### Sync computers through a shared folder
 
@@ -183,7 +190,7 @@ Memoria checks GitHub for a new release when it opens, and twice a day while it 
 When one is available, a full-screen page lists every change since your version. Select **Update** or **Later**.
 **Settings → Updates** has **Check for updates** and the automatic-check switch.
 
-- **Windows app:** **Update** downloads the new version, then **Restart and update** installs it and reopens Memoria. **Help → Check for updates** checks now.
+- **Windows app:** **Update** downloads the new version, then **Restart and update** installs it and reopens Memoria. **Check for updates** in the tray icon's menu checks now.
 - **Android app:** **Update** downloads the APK and opens Android's installer. The first time, Android asks you to allow Memoria to install apps.
 - **One-file version:** **Download** opens the release page. Export a backup first, then open the new **Memoria.html** in the same browser.
   If your progress is missing, import your backup.

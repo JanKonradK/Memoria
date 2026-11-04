@@ -4,24 +4,12 @@ import { prefersReducedMotion } from '../flip';
 import { titleStyle } from '../fonts';
 import { LOGO_ART } from '../game-logo-art';
 import { RING_A, RING_B } from '../game-logo-ring';
+import { logoRing } from '../game-logo-colors';
 import { useUI } from '../ui-store';
 import '../game-logo.css';
 
 type LogoGame = Pick<Game, 'name' | 'short' | 'color' | 'color2' | 'color3' | 'titleFont'> &
   Partial<Pick<Game, 'id' | 'presetKey'>>;
-
-/** Ring colours per preset, as [colour of RING_A, colour of RING_B] in docs/logos. */
-const PRESET_RINGS = new Map<string, [string, string]>([
-  ['genshin', ['#e8c77a', '#2f4078']],
-  ['hsr', ['#5aa9ff', '#ff8fc0']],
-  ['zzz', ['#f07e0f', '#f2f4f6']],
-  ['wuwa', ['#d3dae0', '#27396f']],
-  ['nte', ['#3b7cff', '#ffde40']],
-  ['lads', ['#78b9dd', '#f4f7fb']],
-  ['uma', ['#f05a8a', '#23b6a7']],
-  ['nikke', ['#e31b2d', '#f2f2f4']],
-  ['endfield', ['#f0b900', '#f2f2f0']],
-]);
 
 /** The coin sits inside the ring: its disc in the artwork's 1024 box, and that disc as a share of the logo. */
 const COIN_BOX = '116 116 792 792';
@@ -36,9 +24,9 @@ const leaps = new WeakMap<Element, Animation>();
  * and a half times and lands, while the ring hurries one extra turn round.
  *
  * Every move is added on top of what is already there (the coin's resting turn,
- * the ring's slow turn, a toss still in the air) and ends a whole number of
+ * a toss still in the air) and ends a whole number of
  * turns from where it began. So nothing jumps when a toss starts or lands, the
- * ring rejoins its slow turn exactly where it would have been, and a coin flipped
+ * ring settles back exactly where it was, and a coin flipped
  * again in the air turns on from where it is.
  */
 function toss(coin: HTMLElement | null, ring: SVGSVGElement | null, toBack: boolean) {
@@ -67,18 +55,12 @@ function toss(coin: HTMLElement | null, ring: SVGSVGElement | null, toBack: bool
       ),
     );
   if (typeof ring?.animate !== 'function') return;
-  // Eased at both ends, so the ring gathers speed and settles back into its slow turn.
+  // Eased at both ends, so the ring gathers speed and settles back where it rests.
   ring.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], {
     duration: TOSS_MS,
     easing: 'cubic-bezier(0.45, 0, 0.25, 1)',
     composite: 'add',
   });
-}
-
-/** The two ring colours for a game: its preset's pair, else its own accents. */
-export function logoRing(game: Pick<LogoGame, 'presetKey' | 'color' | 'color2' | 'color3'>): [string, string] {
-  const preset = game.presetKey ? PRESET_RINGS.get(game.presetKey) : undefined;
-  return preset ?? [game.color, game.color2 ?? game.color3 ?? '#f2f4f6'];
 }
 
 /**
@@ -161,7 +143,7 @@ function FaceText({
 }
 
 /**
- * The round game logo: a two-colour ring that turns slowly around a coin. The
+ * The round game logo: a two-colour ring around a coin. The
  * coin's front carries the game's full name and its back the short one; a flip
  * is remembered and shown everywhere that game's logo appears.
  *

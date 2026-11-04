@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { gameRow } from './support';
+import { gameRow, openSettings } from './support';
 
 test('backup export and merge preview stay within the viewport', async ({ page }) => {
   // Start past first-run onboarding: this flow is about the dashboard and Settings.
@@ -14,7 +14,7 @@ test('backup export and merge preview stay within the viewport', async ({ page }
   if (await phoneOpen.isVisible()) await phoneOpen.click();
   await expect(page.getByRole('heading', { name: 'Genshin Impact', exact: true })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await openSettings(page, 'Data');
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export backup' }).click();
   const download = await downloadPromise;

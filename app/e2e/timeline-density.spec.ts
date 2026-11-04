@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openSettings } from './support';
 import { emptyState } from '@memoria/shared';
 import { makeGame } from '../../shared/test/helpers';
 
@@ -56,11 +57,12 @@ test('24 events remain reachable in the rounded timeline board with controls in 
     start: now + 15 * day,
     end: now + 15 * day + 6 * 3_600_000,
   });
+  await openSettings(page, 'Data');
   await page
     .locator('input[type="file"]')
     .setInputFiles({ name: 'density.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await expect(page.locator('.calendar-toolbar').getByRole('combobox', { name: 'Focus game' })).toBeVisible();
   await expect(page.getByRole('button', { name: '+ Event', exact: true })).toHaveCount(0);
   await expect(page.locator('[data-timeline-event-row]')).toHaveCount(24);

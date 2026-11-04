@@ -18,6 +18,8 @@ export default [
       '**/test-results/**',
       '**/test-results-*/**',
       'android/**',
+      'desktop/tauri/target/**',
+      'desktop/tauri/gen/**',
       // Vendored AI-harness tooling (impeccable, agent configs). Third-party
       // source we do not own and must not gate our own lint run on.
       '.claude/**',

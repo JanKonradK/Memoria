@@ -56,7 +56,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
             onClick={() => {
               updateSettings({ localTz: resolveHomeTimeZone(homeTzChoice) });
               onComplete();
-              useUI.getState().setTab('settings');
+              useUI.getState().openSettings('sync');
             }}
           >
             Connect to PC

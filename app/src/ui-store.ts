@@ -59,6 +59,8 @@ export function applyTheme(theme: Theme): void {
 
 export type GameEditorSection = 'game' | 'resets' | 'resources' | 'spend' | 'tasks' | 'reminders' | 'events';
 
+export type SettingsSection = 'games' | 'sync' | 'device' | 'updates' | 'data';
+
 export type SheetRoute =
   | { kind: 'game'; gameId: string; section?: GameEditorSection }
   | { kind: 'addGame' }
@@ -92,6 +94,9 @@ interface UIStore {
   finishTour(): void;
   setFocusedGameId(gameId: string | null): void;
   setTab(tab: Tab): void;
+  /** The Settings pane shown beside its menu on wide windows. Session only. */
+  settingsSection: SettingsSection;
+  openSettings(section: SettingsSection): void;
   openSheet(sheet: NonNullable<SheetRoute>): void;
   closeSheet(): void;
   setReserveOpen(id: string, open: boolean | undefined): void;
@@ -127,6 +132,8 @@ export const useUI = create<UIStore>()(
       todayGameId: null,
       setTodayGameId: (todayGameId) => set({ todayGameId }),
       setTab: (tab) => set({ tab }),
+      settingsSection: 'games',
+      openSettings: (settingsSection) => set({ tab: 'settings', settingsSection }),
       openSheet: (sheet) => set({ sheet }),
       closeSheet: () => set({ sheet: null }),
       setReserveOpen: (id, open) =>

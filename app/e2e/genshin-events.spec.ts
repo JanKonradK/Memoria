@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { emptyState } from '@memoria/shared';
 import { makeGame, makeEvent } from '../../shared/test/helpers';
-import { editFromQuickView, openGame } from './support';
+import { editFromQuickView, openGame, openSettings } from './support';
 
 test('Genshin keeps complete Teyvat, Wonderland and banner groups through editing', async ({ page }, info) => {
   const now = Date.now();
@@ -45,6 +45,7 @@ test('Genshin keeps complete Teyvat, Wonderland and banner groups through editin
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openSettings(page, 'Data');
   await page.locator('input[type="file"]').setInputFiles({
     name: 'genshin-groups.json',
     mimeType: 'application/json',

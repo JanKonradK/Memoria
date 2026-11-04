@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { emptyState } from '@memoria/shared';
 import { makeGame, makeEvent } from '../../shared/test/helpers';
-import { editFromQuickView } from './support';
+import { editFromQuickView, openSettings } from './support';
 
 test('banner tags distinguish rewards across games and can be edited', async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
@@ -24,13 +24,14 @@ test('banner tags distinguish rewards across games and can be edited', async ({ 
       }),
     ),
   );
+  await openSettings(page, 'Data');
   await page.locator('input[type="file"]').setInputFiles({
     name: 'tags.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify({ ...emptyState(), games, events })),
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })

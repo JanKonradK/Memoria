@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeGame } from '../../shared/test/helpers';
-import { GameLogo, logoKey, logoLines, logoRing } from '../src/components/GameLogo';
+import { GameLogo, logoKey, logoLines } from '../src/components/GameLogo';
+import { logoRing } from '../src/game-logo-colors';
 import { LOGO_ART } from '../src/game-logo-art';
 import { useUI } from '../src/ui-store';
 

@@ -16,15 +16,17 @@ import { isNativeApp } from './native';
 import { closeWorkspace, initWorkspaceHistory } from './workspace-navigation';
 import { initDesktopHost } from './desktop-host';
 import { dismissLaunchNotice, initGameLaunch, useGameLaunch } from './game-launch';
+import { initPresence } from './presence';
+import { initHomeWidget } from './home-widget';
 import { easing, duration } from './motion';
 import { useTabSwipe } from './gestures';
 import { AppBar } from './components/AppBar';
 import { Btn } from './components/ui';
 
 /** Primary pages lead their secondary and utility views in transition order. */
-const TAB_ORDER = ['today', 'timeline', 'livestreams', 'settings'] as const;
+const TAB_ORDER = ['livestreams', 'timeline', 'today', 'settings'] as const;
 /** A game's page sits just past Today: forward from it, and before Calendar. */
-const tabRank = (tab: Tab) => (tab === 'home' ? 0.5 : TAB_ORDER.indexOf(tab));
+const tabRank = (tab: Tab) => (tab === 'home' ? 2.5 : TAB_ORDER.indexOf(tab));
 
 const ONBOARDING_KEY = 'memoria-onboarding';
 /** The key this flag shipped under before the rename; still honoured on read. */
@@ -165,7 +167,7 @@ export default function App() {
 
   const swipe = useTabSwipe((towards) => {
     if (tab === 'home') {
-      if (towards === 1) setTab('timeline');
+      if (towards === 1) setTab('settings');
       else closeWorkspace();
       return;
     }
@@ -202,6 +204,14 @@ export default function App() {
   useEffect(initGameLaunch, []);
 
   useEffect(() => {
+    if (loaded) return initPresence();
+  }, [loaded]);
+
+  useEffect(() => {
+    if (loaded) return initHomeWidget();
+  }, [loaded]);
+
+  useEffect(() => {
     if (loaded) return initRemoteFeed();
   }, [loaded]);
 
@@ -221,8 +231,8 @@ export default function App() {
 
   useEffect(() => {
     if (!loaded) return;
-    return initAppUpdates(() => setTab('settings'));
-  }, [loaded, setTab]);
+    return initAppUpdates(() => useUI.getState().openSettings('updates'));
+  }, [loaded]);
 
   useEffect(() => {
     const showUpdate = () => setUpdateAvailable(true);
@@ -327,7 +337,7 @@ export default function App() {
               >
                 {retryingSave ? 'Saving…' : 'Try saving again'}
               </Btn>
-              <Btn onClick={() => setTab('settings')}>Open backup settings</Btn>
+              <Btn onClick={() => useUI.getState().openSettings('data')}>Open backup settings</Btn>
             </div>
             <details className="text-meta text-muted">
               <summary className="cursor-pointer py-2">Save error details</summary>

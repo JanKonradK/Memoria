@@ -9,7 +9,8 @@ describe('game presets', () => {
       expect(preset.name.length).toBeGreaterThan(0);
       expect(preset.short.length).toBeGreaterThan(0);
       expect(preset.resources.length).toBeGreaterThan(0);
-      expect(preset.tz).toMatch(/^Etc\/GMT/);
+      // Fixed offsets, except a server that follows summer time (NTE Europe).
+      expect(preset.tz).toMatch(preset.key === 'nte' ? /^Europe\// : /^Etc\/GMT/);
       for (const resource of preset.resources) {
         expect(resource.cap).toBeGreaterThan(0);
         expect(resource.regenMinutes).toBeGreaterThanOrEqual(0);

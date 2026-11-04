@@ -98,9 +98,48 @@ describe('native LAN sync', () => {
     await syncLanNow();
     expect(useLanSync.getState().status).toBe('ok');
   });
+  it('learns the PC addresses from a sync and switches to one that works, such as Tailscale', async () => {
+    native.post
+      .mockResolvedValueOnce(reply({ token, deviceId: 'phone' }))
+      .mockResolvedValueOnce(
+        reply({ state: emptyState(), addresses: ['http://192.168.1.20:17820', 'http://100.101.2.3:17820', 'x'] }),
+      );
+    await pairLanDevice('192.168.1.20:17820', '12345678');
+    expect(JSON.parse(localStorage.getItem('memoria-wifi-device')!).hosts).toEqual([
+      'http://192.168.1.20:17820',
+      'http://100.101.2.3:17820',
+    ]);
+    native.post.mockClear();
+    native.post
+      .mockRejectedValueOnce(new Error('away from home'))
+      .mockResolvedValueOnce(reply({ state: emptyState() }));
+    await syncLanNow();
+    expect(native.post.mock.calls.map(([options]) => options.url)).toEqual([
+      'http://192.168.1.20:17820/sync',
+      'http://100.101.2.3:17820/sync',
+    ]);
+    expect(useLanSync.getState().status).toBe('ok');
+    expect(useLanSync.getState().host).toBe('http://100.101.2.3:17820');
+    expect(JSON.parse(localStorage.getItem('memoria-wifi-device')!).host).toBe('http://100.101.2.3:17820');
+  });
+  it('reports the PC as offline once every known address fails', async () => {
+    native.post
+      .mockResolvedValueOnce(reply({ token, deviceId: 'phone' }))
+      .mockResolvedValueOnce(reply({ state: emptyState(), addresses: ['http://100.101.2.3:17820'] }));
+    await pairLanDevice('192.168.1.20:17820', '12345678');
+    native.post.mockClear();
+    native.post.mockRejectedValue(new Error('offline'));
+    await syncLanNow();
+    expect(native.post).toHaveBeenCalledTimes(2);
+    expect(useLanSync.getState().status).toBe('offline');
+    expect(useLanSync.getState().host).toBe('http://192.168.1.20:17820');
+  });
   it('accepts only private literal addresses without credentials, query strings or paths', () => {
     expect(normalizeLanHost('192.168.1.20')).toBe('http://192.168.1.20:17820');
+    expect(normalizeLanHost('100.101.2.3')).toBe('http://100.101.2.3:17820');
     for (const value of [
+      'http://100.63.0.1',
+      'http://100.128.0.1',
       'https://example.com',
       'http://127.0.0.1',
       'http://10.0.0.1/sync',

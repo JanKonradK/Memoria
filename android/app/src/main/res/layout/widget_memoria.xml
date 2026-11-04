@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Up to eight games in rows of two. MemoriaWidgetProvider fills the cells and shows the rows that fit. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:paddingStart="10dp"
+    android:paddingTop="6dp"
+    android:paddingEnd="10dp"
+    android:paddingBottom="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="6dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/app_name"
+            android:textColor="#F4F4F6"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/widget_refresh"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/widget_row"
+            android:contentDescription="@string/widget_refresh"
+            android:padding="8dp"
+            android:src="@drawable/widget_refresh" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:paddingStart="6dp"
+        android:text="@string/widget_empty"
+        android:textColor="#9A9AA4"
+        android:textSize="13sp" />
+
+    <LinearLayout
+        android:id="@+id/line0"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/cell0"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_row"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:visibility="invisible">
+
+            <ImageView
+                android:id="@+id/cell0_logo"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                android:importantForAccessibility="no" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/cell0_label"
+                    style="@style/WidgetLabel" />
+
+                <TextView
+                    android:id="@+id/cell0_energy"
+                    style="@style/WidgetEnergy" />
+
+                <TextView
+                    android:id="@+id/cell0_full"
+                    style="@style/WidgetFull" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/cell1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_row"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:visibility="invisible">
+
+            <ImageView
+                android:id="@+id/cell1_logo"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                android:importantForAccessibility="no" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/cell1_label"
+                    style="@style/WidgetLabel" />
+
+                <TextView
+                    android:id="@+id/cell1_energy"
+                    style="@style/WidgetEnergy" />
+
+                <TextView
+                    android:id="@+id/cell1_full"
+                    style="@style/WidgetFull" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/line1"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/cell2"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_row"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:visibility="invisible">
+
+            <ImageView
+                android:id="@+id/cell2_logo"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                android:importantForAccessibility="no" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/cell2_label"
+                    style="@style/WidgetLabel" />
+
+                <TextView
+                    android:id="@+id/cell2_energy"
+                    style="@style/WidgetEnergy" />
+
+                <TextView
+                    android:id="@+id/cell2_full"
+                    style="@style/WidgetFull" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/cell3"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_row"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:visibility="invisible">
+
+            <ImageView
+                android:id="@+id/cell3_logo"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                android:importantForAccessibility="no" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/cell3_label"
+                    style="@style/WidgetLabel" />
+
+                <TextView
+                    android:id="@+id/cell3_energy"
+                    style="@style/WidgetEnergy" />
+
+                <TextView
+                    android:id="@+id/cell3_full"
+                    style="@style/WidgetFull" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/line2"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/cell4"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_row"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:visibility="invisible">
+
+            <ImageView
+                android:id="@+id/cell4_logo"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                android:importantForAccessibility="no" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/cell4_label"
+                    style="@style/WidgetLabel" />
+
+                <TextView
+                    android:id="@+id/cell4_energy"
+                    style="@style/WidgetEnergy" />
+
+                <TextView
+                    android:id="@+id/cell4_full"
+                    style="@style/WidgetFull" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/cell5"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_row"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:visibility="invisible">
+
+            <ImageView
+                android:id="@+id/cell5_logo"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                android:importantForAccessibility="no" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/cell5_label"
+                    style="@style/WidgetLabel" />
+
+                <TextView
+                    android:id="@+id/cell5_energy"
+                    style="@style/WidgetEnergy" />
+
+                <TextView
+                    android:id="@+id/cell5_full"
+                    style="@style/WidgetFull" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/line3"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/cell6"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_row"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:visibility="invisible">
+
+            <ImageView
+                android:id="@+id/cell6_logo"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                android:importantForAccessibility="no" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/cell6_label"
+                    style="@style/WidgetLabel" />
+
+                <TextView
+                    android:id="@+id/cell6_energy"
+                    style="@style/WidgetEnergy" />
+
+                <TextView
+                    android:id="@+id/cell6_full"
+                    style="@style/WidgetFull" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/cell7"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_row"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:visibility="invisible">
+
+            <ImageView
+                android:id="@+id/cell7_logo"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                android:importantForAccessibility="no" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/cell7_label"
+                    style="@style/WidgetLabel" />
+
+                <TextView
+                    android:id="@+id/cell7_energy"
+                    style="@style/WidgetEnergy" />
+
+                <TextView
+                    android:id="@+id/cell7_full"
+                    style="@style/WidgetFull" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

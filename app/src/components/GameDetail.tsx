@@ -1,4 +1,4 @@
-import { SERVER_TZ_OPTIONS } from '@memoria/shared';
+import { presetForGame, SERVER_TZ_OPTIONS } from '@memoria/shared';
 import { useState } from 'react';
 import { useApp } from '../store';
 import { useUI, type GameEditorSection } from '../ui-store';
@@ -67,11 +67,19 @@ export function GameDetailSheet({
     commitDraft();
     closeSheet();
   };
-  const knownServer = SERVER_OPTIONS.some((option) => option.value === game.tz);
+  // A game whose own Europe server follows summer time (NTE) keeps that clock
+  // behind its EU choice, so picking EU never moves its reset by an hour.
+  const presetTz = presetForGame(game)?.tz;
+  const ownEurope =
+    presetTz && !presetTz.startsWith('Etc/') && serverRegionLabel(presetTz, Date.now()) === 'EU' ? presetTz : null;
+  const regions = ownEurope
+    ? SERVER_OPTIONS.map((option) => (option.label === 'EU' ? { ...option, value: ownEurope } : option))
+    : SERVER_OPTIONS;
+  const knownServer = regions.some((option) => option.value === game.tz);
   const serverOptions = knownServer
-    ? SERVER_OPTIONS
+    ? regions
     : [
-        ...SERVER_OPTIONS,
+        ...regions,
         {
           value: game.tz,
           label: serverRegionLabel(game.tz, Date.now()),

@@ -4,4 +4,7 @@
     <string name="title_activity_main">Memoria</string>
     <string name="package_name">app.memoria.tracker</string>
     <string name="custom_url_scheme">app.memoria.tracker</string>
+    <string name="widget_description">Eight games with energy, time to full and dailies</string>
+    <string name="widget_refresh">Refresh</string>
+    <string name="widget_empty">Open Memoria to show your games here.</string>
 </resources>

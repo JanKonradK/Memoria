@@ -26,6 +26,9 @@ jobs:
           node-version: 24.21.0
           cache: npm
 
+      # The Windows program is Rust (desktop/tauri). The runner image ships rustup.
+      - run: rustup toolchain install stable --profile minimal --no-self-update && rustup default stable
+
       - run: npm ci
       - run: npm run audit
 
@@ -100,7 +103,7 @@ jobs:
             echo
             echo "| | |"
             echo "|---|---|"
-            echo "| **[Memoria-win-x64.zip]($download/Memoria-win-x64.zip)** | Standalone Windows app. Extract the ZIP and run \`Add Memoria to Start Menu.cmd\`. Includes its own runtime. |"
+            echo "| **[Memoria-win-x64.zip]($download/Memoria-win-x64.zip)** | Standalone Windows app. Extract the ZIP and run \`Add Memoria to Start Menu.cmd\`. Uses the WebView2 runtime built into Windows. |"
             echo "| **[Memoria-android.apk]($download/Memoria-android.apk)** | Android app. Open the APK on your phone or tablet and install it over the existing app. |"
             echo "| [Memoria.html]($download/Memoria.html) | The whole app in one file. Double-click to open in any browser. |"
             echo

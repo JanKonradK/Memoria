@@ -33,7 +33,7 @@ The browser tests cover responsive layouts, keyboard controls, and accessibility
 | `app/src/data/seed-feed.ts`   | Event facts and source notes                                               |
 | `app/src/data/seed-events.ts` | Event import rules                                                         |
 | `shared/src/`                 | Types, validation, migrations, merge rules, energy, and reset calculations |
-| `desktop/`                    | Windows launcher and updates                                               |
+| `desktop/`                    | Windows app (`desktop/tauri`), installer and updates                       |
 | `scripts/` and `app/scripts/` | Builds, packaging, and release checks                                      |
 
 Read [AGENTS.md](../AGENTS.md) before code changes. Reuse existing code and preserve saved data.
@@ -50,17 +50,15 @@ Keep preset task keys stable so renamed tasks do not create duplicates.
 ## Storage and sync
 
 The browser uses IndexedDB. Backup export and import use JSON files.
-The Windows launcher also stores `%APPDATA%\memoria\state.json` outside the install folder.
+The Windows app also stores `%APPDATA%\memoria\state.json` outside the install folder.
 
 Local sync uses `/api/state`, `/api/sync`, and `/api/events`.
-The launcher listens on loopback only. It normally uses port 17817, with 17818 and 17819 as alternatives.
-A browser's storage belongs to its origin, so keep these ports stable.
-An authenticated second launch reuses the existing instance.
+The Windows app listens on loopback only. It normally uses port 17817, with 17818 and 17819 as alternatives.
+The window's storage belongs to its origin, so keep these ports stable.
+A second start shows the open window and exits.
 
-The shortcut gives each browser session an authorization token for its exact origin.
-Session storage holds the token. Requests send it in a header, not a cookie.
-The token expires when the launcher stops. Reopen the shortcut if local sync requests a new session.
-For the first upgrade from the cookie-based launcher, stop the old launcher before you start the new version.
+Each run mints a new authorization token and gives it to the window before the app's scripts run.
+Session storage holds the token. Requests send it in a header, not a cookie. It never reaches disk.
 
 Optional cloud sync uses a user-selected file in an existing synced folder.
 The provider's client transfers the file. Memoria reads it before each write and merges the data.
@@ -69,7 +67,7 @@ If a provider creates a conflict copy, import that copy through Settings to merg
 
 Optional Wi-Fi sync uses a separate listener on TCP port 17820.
 The user enables it in the Windows app and pairs the Android app with a temporary code.
-The launcher keeps its existing loopback access checks.
+The loopback server keeps its own access checks.
 Both listeners use the same merge rules and a serialized state writer.
 Sync merges rows by identifier. A game added separately on two devices is two games.
 Before its first sync, the Android app reads the PC's data with an empty request.
@@ -83,6 +81,8 @@ Manual entry remains available. A failed replacement scan keeps the previous con
 The camera permission request occurs only after the user selects Scan PC code. The scanner does not save images.
 
 Wi-Fi sync uses HTTP on a trusted private network. It does not encrypt network traffic.
+Both sides also accept 100.64.0.0/10, the range Tailscale uses, so sync works away from home over an encrypted tailnet.
+Every `/sync` reply lists the PC's current addresses. The phone keeps up to eight and tries the others when the last working one cannot be reached.
 Keep the PC on and Memoria open. The phone syncs while its app is open and after it returns to the foreground.
 Offline edits stay on the phone until the PC becomes available.
 
@@ -113,15 +113,29 @@ describes the optional card transition. Older browsers use immediate navigation.
 
 ## Standalone Windows app
 
+The Windows app is a small Rust program in `desktop/tauri` built with [Tauri](https://tauri.app).
+It shows the built app in WebView2, the browser engine that ships with Windows, so the download carries no browser or Node runtime.
+Building it needs the Rust toolchain (`rustup`, MSVC target).
+
 ```sh
-npm run build
 npm run desktop
 ```
 
-Electron opens the interface in its own window with its bundled runtime.
-The renderer has no Node access. The preload exposes only the close-and-save handshake.
-The local backend keeps the existing data file and Wi-Fi connections.
-The desktop profile stays in `%APPDATA%\memoria\desktop-profile`.
+This builds the app, then compiles and starts the program against this checkout.
+
+What the program does, by file:
+
+- `server.rs`: serves `app/dist` on a fixed loopback port (17817, then 17818, 17819) and backs `/api/state`, `/api/sync`, `/api/events`, `/api/devices`, `/api/calendar` and `/api/update` with `%APPDATA%\memoria\state.json`. The API answers only a token minted each run and handed to the window by `bridge.js`.
+- `core.rs`: merges and validates the data file with the app's own TypeScript code (`desktop/tauri/core-entry.mjs`, bundled to `desktop/dist/core.js` by `npm run build:desktop`) running in QuickJS. There is no second copy of the merge rules.
+- `lan.rs`: Wi-Fi sync with the Android app on port 17820.
+- `update.rs`: checks GitHub, downloads and verifies the release zip, and installs it after the window closes.
+- `launch.rs` and `presence.rs`: starting games, start-with-Windows, the tray, and game start notices.
+- `bridge.js`: gives the page the same narrow `window.memoriaDesktop` API it always had. The page has no other access to the program.
+
+The window's browser profile is `%APPDATA%\memoria\webview`. A new profile reads the PC's data file before its first write, so nothing is lost when it is reset.
+Hidden in the tray, the window stops painting and WebView2 lowers its memory use.
+
+Rust tests run with `npm run test:rust`, which is part of `npm run check`.
 
 To install a copy with Desktop and Start Menu shortcuts:
 
@@ -131,27 +145,8 @@ npm run install:desktop
 ```
 
 The installer copies `dist/release/Memoria` to `%LOCALAPPDATA%\Programs\Memoria`.
-Close an installed copy before installation. The installer refuses to replace an active runtime.
-User data stays in `%APPDATA%\memoria`.
-
-### Legacy browser launcher
-
-The browser launcher remains available for diagnostics and browser checks:
-
-```sh
-node desktop/memoria.mjs --list-browsers
-node desktop/memoria.mjs --browser zen
-```
-
-For a persistent choice, set `browser` in `desktop/config.json`:
-
-```json
-{ "browser": "helium" }
-```
-
-Supported names include `helium`, `chrome`, `edge`, `brave`, `vivaldi`, `opera`, `firefox`, `zen`, and `librewolf`.
-A full executable path is also valid. Use `system` for the system browser.
-Priority is `--browser`, then `MEMORIA_BROWSER`, then `config.json`, then automatic selection.
+Close an installed copy before installation. The installer refuses to replace a running program.
+It also replaces an earlier Electron install in place. User data stays in `%APPDATA%\memoria`.
 
 ## Build the downloads
 
@@ -169,15 +164,13 @@ Outputs:
 - `dist/release/SHA256SUMS.txt`
 - `app/dist-single/Memoria.html`
 
-Release checks use a copied install, isolated app data, and an available launcher port.
-They cover startup, disk sync, a second launch, live changes, and offline HTML use.
+`check:native` drives the packaged `Memoria.exe` through WebView2's debugging port, using a copied install, a scratch data folder and a separate instance name.
+It covers existing data, close-and-save, relaunch, a second start, the unsaved-draft guard, phone pairing and sync, disk sync, the tray and the content policy, and deletes its scratch folder afterwards.
+`check:release` checks the zip's contents and the one-file HTML offline.
 
-The ZIP includes `Memoria.exe`, Electron, the built app, backend, icon, and a pinned Node runtime.
-Electron's license files stay in the download. The package uses the Electron version from `package-lock.json`.
-Packaging verifies the Node download against the official checksum.
-`release.json` identifies a packaged install. The updater does not replace a source checkout.
-The native release record uses `runtime: "electron"` and `updateMode: "manual"`.
-This prevents the backend from changing program files that the desktop runtime uses.
+The ZIP contains `Memoria.exe` (about 7 MB), the built app, the install scripts and the icon.
+Packaging sets the program's version from `package.json`.
+`release.json` identifies a packaged install, with `runtime: "tauri"`. The updater does not replace a source checkout.
 
 The standalone HTML includes its scripts, styles, fonts, and icon.
 It has no service worker or launcher sync. It checks for new releases and links to the download page, but cannot replace itself.
@@ -203,20 +196,9 @@ CI also assembles the Windows package on each push to `main` and each pull reque
 ## Updates
 
 Every build reads the GitHub release list (`app/src/app-update.ts`) and shows the notes of every release newer than itself in `UpdateScreen.tsx`.
-The Windows app downloads `Memoria-win-x64.zip` in the main process, verifies it against `SHA256SUMS.txt` and stages it in `%APPDATA%\memoria\updates\pending`.
+The Windows app downloads `Memoria-win-x64.zip` in the program (`update.rs`), verifies it against `SHA256SUMS.txt` and stages it in `%APPDATA%\memoria\updates\pending`.
 **Restart and update** closes through the normal save path. `updates\install-update.ps1`, started through `cmd start` (PowerShell launched directly as a detached child exits without running), then runs the staged `Install-Shortcut.ps1` over the install and reopens Memoria. Its log is `updates\install.log`.
 Android downloads `Memoria-android.apk`, verifies it the same way and opens the system installer (`AppUpdaterPlugin.java`).
 The installer retains the current program folder until the new copy is complete.
 If the final folder change fails, the installer restores the previous program folder.
 User data stays separate from the program files.
-
-Older browser packages keep the previous background updater.
-The updater checks GitHub at most once every six hours and verifies the download checksum.
-It stages updates for the next launcher start.
-For an older browser package, this command starts a manual check:
-
-```bat
-node\node.exe desktop\memoria.mjs --check-update
-```
-
-Set `MEMORIA_NO_UPDATE=1` before launch to disable automatic update checks.

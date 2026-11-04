@@ -1,4 +1,6 @@
-/* Round game logo: the ring turns slowly around a coin that can be flipped. */
+/* Round game logo: a ring around a coin that can be flipped. The ring rests
+   still: a dozen logos turning forever kept a phone redrawing at its full
+   refresh rate. It turns once when its coin is tossed. */
 .game-logo {
   position: relative;
   display: inline-flex;
@@ -18,13 +20,6 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  animation: gameLogoSpin 24s linear infinite;
-}
-
-@keyframes gameLogoSpin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* The coin: the disc inside the ring. Its two faces sit back to back, and its

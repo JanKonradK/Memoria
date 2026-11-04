@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openSettings } from './support';
 import { emptyState } from '@memoria/shared';
 import { makeGame } from '../../shared/test/helpers';
 import { planSeedImport } from '../src/data/seed-events';
@@ -26,11 +27,12 @@ test('event handles reorder with mouse, touch, and keyboard and persist across r
       updatedAt: now,
     })),
   };
+  await openSettings(page, 'Data');
   await page
     .locator('input[type="file"]')
     .setInputFiles({ name: 'order.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })
@@ -40,6 +42,10 @@ test('event handles reorder with mouse, touch, and keyboard and persist across r
       .locator('[data-timeline-event-row]')
       .evaluateAll((rows) => rows.map((row) => row.getAttribute('data-event-id')));
   await expect.poll(order).toEqual(['First', 'Second', 'Third']);
+  // Handles and ticks stay hidden until edit mode.
+  await expect(page.getByRole('button', { name: 'Reorder First', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Mark First done', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Edit events', exact: true }).click();
   const first = await page.getByRole('button', { name: 'Reorder First', exact: true }).boundingBox();
   const third = await page.getByRole('button', { name: 'Reorder Third', exact: true }).boundingBox();
   await page.mouse.move(first!.x + first!.width / 2, first!.y + first!.height / 2);
@@ -92,14 +98,27 @@ test('event handles reorder with mouse, touch, and keyboard and persist across r
     .toBe(0);
   await page.reload();
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })
     .click();
   await expect.poll(order).toEqual(['Third', 'Second', 'First']);
+  // Holding an event picks it up and turns edit mode on.
+  const edit = page.getByRole('button', { name: 'Edit events', exact: true });
+  await expect(edit).toHaveAttribute('aria-pressed', 'false');
+  const held = (await page.locator('[data-event-id="First"]').boundingBox())!;
+  const top = (await page.locator('[data-event-id="Third"]').boundingBox())!;
+  await page.mouse.move(held.x + held.width / 2, held.y + held.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(700);
+  await page.mouse.move(held.x + held.width / 2, top.y + top.height / 2, { steps: 10 });
+  await page.mouse.up();
+  await expect.poll(order).toEqual(['First', 'Third', 'Second']);
+  await expect(edit).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Mark Third done', exact: true }).click();
-  await expect.poll(order).toEqual(['Second', 'First']);
+  await expect.poll(order).toEqual(['First', 'Second']);
   await page.getByRole('button', { name: 'Open Ordering event: First', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.keyboard.press('Escape');
@@ -135,11 +154,12 @@ test('seeded Genshin events reorder within Teyvat and keep world sections after 
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openSettings(page, 'Data');
   await page
     .locator('input[type="file"]')
     .setInputFiles({ name: 'seeds.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })
@@ -149,6 +169,7 @@ test('seeded Genshin events reorder within Teyvat and keep world sections after 
   await expect.poll(async () => (await order()).length).toBeGreaterThan(10);
   await page.screenshot({ path: info.outputPath('seeded-tags.png'), fullPage: true });
   const original = await order();
+  await page.getByRole('button', { name: 'Edit events', exact: true }).click();
   const sections = page.locator('[data-timeline-event-group]');
   await expect
     .poll(() => sections.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-timeline-event-group'))))
@@ -177,7 +198,7 @@ test('seeded Genshin events reorder within Teyvat and keep world sections after 
   await expect(page.getByRole('status').filter({ hasText: /moved to position 1 of/ })).toBeVisible();
   // Switch views before reloading so this checks committed state, not the drag preview.
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })
@@ -185,7 +206,7 @@ test('seeded Genshin events reorder within Teyvat and keep world sections after 
   await expect.poll(order).toEqual(expected);
   await page.reload();
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })

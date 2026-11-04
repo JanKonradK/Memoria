@@ -65,23 +65,22 @@ beforeEach(() => {
   useUI.setState({ tab: 'today', sheet: null, focusedGameId: null, todayGameId: null });
 });
 
-it('groups real deadlines and keeps paused games out of the priority lists', () => {
+it('lists every game in one list, soonest first, with paused games last', () => {
   show(<TodayPage now={NOW} />);
-  const attention = screen.getByRole('region', { name: 'Needs attention' });
-  const rest = screen.getByRole('region', { name: 'Can wait' });
-  expect(within(attention).getByText('Near cap')).toBeInTheDocument();
-  expect(within(attention).queryByText('Paused game')).not.toBeInTheDocument();
-  expect(within(rest).getByText('Can rest')).toBeInTheDocument();
-  expect(within(rest).getByText('Unknown reading')).toBeInTheDocument();
+  const list = screen.getByRole('list', { name: 'Games' });
+  const names = within(list)
+    .getAllByRole('button')
+    .map((button) => button.getAttribute('data-roster-game'));
+  expect(names[0]).toBe('Near cap');
+  expect(names.at(-1)).toBe('Paused game');
+  expect(names).toHaveLength(4);
   expect(row('Unknown reading')).toHaveAccessibleDescription(/No Energy reading yet/);
-  expect(within(screen.getByRole('region', { name: 'Paused' })).getByText('Paused game')).toBeInTheDocument();
 });
 
-it('says the attention window once and carries no explainer copy', () => {
+it('shows only games, with no group headings or cross-game panel', () => {
   show(<TodayPage now={NOW} />);
-  expect(screen.getByRole('region', { name: 'Needs attention' })).toHaveTextContent('next 8h');
-  expect(screen.queryByText(/Caps and unfinished routines/)).not.toBeInTheDocument();
-  expect(screen.queryByText(/header status shows device sync/)).not.toBeInTheDocument();
+  expect(screen.queryByRole('region', { name: 'Needs attention' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('region', { name: 'Across every game' })).not.toBeInTheDocument();
   expect(screen.queryByText('Your games')).not.toBeInTheDocument();
 });
 
@@ -138,9 +137,8 @@ it('offers a first game and PC connection for an empty roster', () => {
   expect(useUI.getState().tab).toBe('settings');
 });
 
-it('closes the list with the Tonight summary and opens the selected game on its own page', () => {
+it('opens the selected game on its own page', () => {
   show(<TodayPage now={NOW} />);
-  expect(screen.getByRole('region', { name: 'Across every game' })).toBeInTheDocument();
   fireEvent.click(row('Can rest'));
   fireEvent.click(screen.getByRole('button', { name: 'Open full page' }));
   expect(useUI.getState().tab).toBe('home');

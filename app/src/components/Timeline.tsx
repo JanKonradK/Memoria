@@ -4,6 +4,7 @@ import { DateTime } from 'luxon';
 import type { Game, GameEvent } from '@memoria/shared';
 import { m } from 'motion/react';
 import { useApp } from '../store';
+import { useMediaQuery } from '../hooks';
 import { cycleKey, sortTimelineEvents } from '../timeline-sort';
 import { useUI } from '../ui-store';
 import { slideIn } from '../motion';
@@ -483,6 +484,9 @@ const EventRow = memo(function EventRow({
   onToggleEvent,
   laneWidth,
   localTz,
+  compact,
+  editing,
+  held = false,
   reorderHandle,
 }: {
   ev: GameEvent;
@@ -499,6 +503,12 @@ const EventRow = memo(function EventRow({
   /** Measured lane width in px, so the trailing furniture can be laid out. */
   laneWidth: number;
   localTz: string;
+  /** Phone width: the name on its own line above a thin time bar. */
+  compact: boolean;
+  /** Ticks and reorder handles only show while editing. */
+  editing: boolean;
+  /** Picked up by a hold and following the finger. */
+  held?: boolean;
   reorderHandle?: ReactNode;
 }) {
   const { displayLeft: proportionalLeft, displayWidth } = barGeometry(ev, ws, we);
@@ -588,6 +598,87 @@ const EventRow = memo(function EventRow({
     </button>
   );
 
+  if (compact) {
+    // Horizontal room is what a phone lacks, so the name gets the full width on
+    // one line and the bar keeps its true time geometry on a thin line beneath.
+    return (
+      <m.div
+        variants={slideIn}
+        initial="hidden"
+        animate="visible"
+        data-timeline-event-row
+        data-event-id={ev.id}
+        data-held={held || undefined}
+        className="timeline-event-lane timeline-event-compact relative"
+      >
+        {editing && reorderHandle}
+        <div className={`group/row relative w-full ${ev.done ? 'opacity-40' : ''}`}>
+          <button
+            type="button"
+            onClick={() => onOpenEvent(ev)}
+            className="timeline-compact-open absolute inset-0 z-10 rounded-ui-md"
+            aria-label={`Open ${game.name} event: ${ev.name}`}
+            aria-description={scheduleDescription}
+          />
+          <div className="timeline-compact-head pointer-events-none relative z-20">
+            <span
+              className={`flex min-w-0 flex-1 items-center gap-1 text-meta text-fg ${maint || banner ? 'font-normal' : 'font-medium'}`}
+            >
+              <EventTags game={game} event={ev} inherit availableWidth={laneWidth / 2} />
+              {ev.pinned && <PinMark className="h-3.5 w-3.5 shrink-0" />}
+              <span data-event-title className="min-w-0 truncate">
+                {ev.name}
+              </span>
+            </span>
+            <span
+              data-event-countdown
+              className="numeral shrink-0 text-caption font-bold"
+              style={{ color: ev.done ? 'var(--color-ok)' : tone }}
+            >
+              {countdownLabel}
+            </span>
+            {editing && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleEvent(ev);
+                }}
+                aria-label={ev.done ? `Restore ${ev.name}` : `Mark ${ev.name} done`}
+                className="timeline-compact-tick pointer-events-auto"
+              >
+                <span
+                  aria-hidden
+                  className="flex h-5 w-5 items-center justify-center rounded-ui-full border text-caption font-black"
+                  style={{
+                    backgroundColor: ev.done ? 'var(--color-ok)' : barFill,
+                    borderColor: ink,
+                    color: ev.done ? 'var(--color-fg-invert)' : barInk,
+                  }}
+                >
+                  ✓
+                </span>
+              </button>
+            )}
+          </div>
+          <div className="timeline-compact-track timeline-event-track pointer-events-none relative">
+            <span
+              data-event-bar
+              data-pinned={ev.pinned || undefined}
+              className="timeline-compact-bar absolute inset-y-0"
+              style={{
+                left: `${displayLeft}%`,
+                width: `max(${displayWidth}%, 6px)`,
+                backgroundColor: ink,
+                opacity: ended ? 0.35 : 1,
+              }}
+            />
+          </div>
+        </div>
+      </m.div>
+    );
+  }
+
   return (
     <m.div
       variants={slideIn}
@@ -595,9 +686,10 @@ const EventRow = memo(function EventRow({
       animate="visible"
       data-timeline-event-row
       data-event-id={ev.id}
+      data-held={held || undefined}
       className="timeline-event-lane relative"
     >
-      {reorderHandle}
+      {editing && reorderHandle}
       <div
         className={`group/row relative block h-[var(--lane-row-h)] w-full rounded-ui-lg text-left ${
           ev.done ? 'opacity-40' : ''
@@ -680,7 +772,7 @@ const EventRow = memo(function EventRow({
           </span>
         )}
 
-        {tickFloats && tick}
+        {editing && tickFloats && tick}
 
         {/* One right-anchored cluster keeps the mandatory tick and countdown from
             stacking. The tick only joins it when the measured lane needs the gap. */}
@@ -689,7 +781,7 @@ const EventRow = memo(function EventRow({
           className="pointer-events-none absolute right-1 top-0 z-30 flex h-[var(--lane-bar-h)] items-center gap-1.5"
           style={clusterBefore ? { right: `calc(${100 - displayLeft}% + 8px)` } : undefined}
         >
-          {!tickFloats && tick}
+          {editing && !tickFloats && tick}
           <Tooltip content={calendar?.description ?? 'Time left'}>
             <span
               ref={countdownRef}
@@ -705,10 +797,20 @@ const EventRow = memo(function EventRow({
   );
 });
 
-/** A dedicated handle leaves event actions and normal touch scrolling intact. */
+/** How long a still press on an event takes to pick it up. */
+const HOLD_MS = 450;
+/** Moving further than this before the hold completes is a scroll, not a hold. */
+const HOLD_SLOP_PX = 8;
+
+/**
+ * Handles appear only while editing. Holding any event for a moment also picks
+ * it up: editing turns on and the event follows the finger until it is let go.
+ */
 export function ReorderableEventRows({
   events,
   game,
+  editing,
+  onHold,
   ...rowProps
 }: {
   events: GameEvent[];
@@ -722,11 +824,18 @@ export function ReorderableEventRows({
   onToggleEvent: (event: GameEvent) => void;
   laneWidth: number;
   localTz: string;
+  compact: boolean;
+  editing: boolean;
+  /** A held event turns editing on. */
+  onHold: () => void;
 }) {
   const reorder = useApp((s) => s.reorderEvents);
   const container = useRef<HTMLDivElement>(null);
   const gesture = useRef<{ id: string; pointerId: number; y: number; order: string[]; moved: boolean } | null>(null);
+  const hold = useRef<{ timer: number; pointerId: number; x: number; y: number } | null>(null);
+  const swallowClick = useRef(false);
   const [preview, setPreview] = useState<string[] | null>(null);
+  const [heldId, setHeldId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
   const ids = events.map((event) => event.id);
   const visible = preview ? preview.flatMap((id) => events.filter((event) => event.id === id)) : events;
@@ -736,11 +845,79 @@ export function ReorderableEventRows({
       `${events.find((event) => event.id === id)?.name} moved to position ${order.indexOf(id) + 1} of ${order.length}.`,
     );
   };
+  const cancelHold = () => {
+    if (hold.current) window.clearTimeout(hold.current.timer);
+    hold.current = null;
+  };
+  const endDrag = () => {
+    gesture.current = null;
+    setPreview(null);
+    setHeldId(null);
+  };
+
+  // While an event is held the page must not scroll under the finger. Only a
+  // non-passive listener can stop that.
+  useEffect(() => {
+    const node = container.current;
+    if (!node) return;
+    const stopScroll = (event: TouchEvent) => {
+      if (gesture.current && event.cancelable) event.preventDefault();
+    };
+    node.addEventListener('touchmove', stopScroll, { passive: false });
+    return () => {
+      node.removeEventListener('touchmove', stopScroll);
+      if (hold.current) window.clearTimeout(hold.current.timer);
+    };
+  }, []);
+
   return (
     <div
       ref={container}
       className="timeline-rows relative flex flex-col"
+      data-holding={preview ? '' : undefined}
+      onPointerDownCapture={(e) => {
+        if ((e.pointerType === 'mouse' && e.button !== 0) || gesture.current || events.length < 2) return;
+        const target = e.target as HTMLElement;
+        if (target.closest('.timeline-reorder-handle, [aria-label^="Mark "], [aria-label^="Restore "]')) return;
+        const id = target.closest<HTMLElement>('[data-timeline-event-row]')?.dataset.eventId;
+        if (!id) return;
+        cancelHold();
+        const { pointerId, clientX, clientY } = e;
+        hold.current = {
+          pointerId,
+          x: clientX,
+          y: clientY,
+          timer: window.setTimeout(() => {
+            hold.current = null;
+            try {
+              container.current?.setPointerCapture(pointerId);
+            } catch {
+              return; // The press already ended.
+            }
+            swallowClick.current = true;
+            navigator.vibrate?.(12);
+            onHold();
+            gesture.current = { id, pointerId, y: clientY, order: ids, moved: false };
+            setHeldId(id);
+            setPreview(ids);
+          }, HOLD_MS),
+        };
+      }}
+      onClickCapture={(e) => {
+        if (!swallowClick.current) return;
+        swallowClick.current = false;
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onContextMenu={(e) => {
+        if (hold.current || gesture.current) e.preventDefault();
+      }}
       onPointerMove={(e) => {
+        const pending = hold.current;
+        if (pending?.pointerId === e.pointerId) {
+          if (Math.hypot(e.clientX - pending.x, e.clientY - pending.y) > HOLD_SLOP_PX) cancelHold();
+          return;
+        }
         const drag = gesture.current;
         if (!drag || drag.pointerId !== e.pointerId || (Math.abs(e.clientY - drag.y) < 5 && !drag.moved)) return;
         drag.moved = true;
@@ -760,22 +937,21 @@ export function ReorderableEventRows({
         setPreview(order);
       }}
       onPointerUp={(e) => {
+        if (hold.current?.pointerId === e.pointerId) cancelHold();
         const drag = gesture.current;
         if (!drag || drag.pointerId !== e.pointerId) return;
-        gesture.current = null;
         if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-        if (drag?.moved) commit(drag.order, drag.id);
-        setPreview(null);
+        if (drag.moved) commit(drag.order, drag.id);
+        endDrag();
+        // A click can still land on the row under the finger. It belongs to the drag.
+        window.setTimeout(() => (swallowClick.current = false), 0);
       }}
       onPointerCancel={(e) => {
-        if (gesture.current?.pointerId !== e.pointerId) return;
-        gesture.current = null;
-        setPreview(null);
+        if (hold.current?.pointerId === e.pointerId) cancelHold();
+        if (gesture.current?.pointerId === e.pointerId) endDrag();
       }}
       onLostPointerCapture={(e) => {
-        if (gesture.current?.pointerId !== e.pointerId) return;
-        gesture.current = null;
-        setPreview(null);
+        if (gesture.current?.pointerId === e.pointerId) endDrag();
       }}
     >
       <span className="sr-only" role="status">
@@ -787,6 +963,8 @@ export function ReorderableEventRows({
           key={event.id}
           ev={event}
           game={game}
+          editing={editing}
+          held={heldId === event.id}
           {...rowProps}
           reorderHandle={
             <button
@@ -795,7 +973,7 @@ export function ReorderableEventRows({
               aria-describedby="event-reorder-help"
               title="Drag to reorder"
               disabled={events.length < 2}
-              className="absolute -left-7 top-0 z-30 flex h-[var(--lane-row-h)] w-7 touch-none select-none items-center justify-center rounded-ui-sm text-muted hover:bg-fill-2 hover:text-fg disabled:opacity-30"
+              className="timeline-reorder-handle absolute top-0 z-30 flex touch-none select-none items-center justify-center rounded-ui-sm text-muted hover:bg-fill-2 hover:text-fg disabled:opacity-30"
               style={{ cursor: preview ? 'grabbing' : 'grab' }}
               onPointerDown={(e) => {
                 if (e.button !== 0 || gesture.current) return;
@@ -849,13 +1027,14 @@ export function TimelinePage({ now }: { now: number }) {
   const focusedGameId = useUI((s) => s.focusedGameId);
   const search = useUI((s) => s.timelineSearch);
   const setSearch = useUI((s) => s.setTimelineSearch);
-  // Pick the initial view for the device; resizing must not undo a user's choice.
-  const [initialView] = useState(() => (window.matchMedia('(max-width: 767px)').matches ? 'list' : 'lanes'));
-  const chosenView = useUI((s) => s.timelineView);
-  const view = chosenView ?? initialView;
-  const setView = useUI((s) => s.setTimelineView);
+  // Time bars on every width: a phone gives each event a name line above its bar.
+  const view = useUI((s) => s.timelineView) ?? 'lanes';
+  const compact = useMediaQuery('(max-width: 639px)');
   const showFinished = useUI((s) => s.timelineShowFinished);
   const setShowFinished = useUI((s) => s.setTimelineShowFinished);
+  // Reorder handles, ticks and order resets stay hidden until asked for.
+  const [editing, setEditing] = useState(false);
+  const startEditing = useCallback(() => setEditing(true), []);
   const openEvent = useCallback(
     (event: GameEvent) => openSheet({ kind: 'event', eventId: event.id, gameId: event.gameId }),
     [openSheet],
@@ -974,24 +1153,23 @@ export function TimelinePage({ now }: { now: number }) {
   return (
     <Page className="timeline-page">
       <div className="timeline-page-heading">
-        <h1 tabIndex={-1} className="text-heading font-semibold tracking-tight">
+        {/* The dock already names the page; the heading stays for screen readers and focus. */}
+        <h1 tabIndex={-1} className="sr-only">
           Event timeline
         </h1>
-        <CalendarToolbar view="timeline">
+        <CalendarToolbar view={view}>
           <TimelineTools
             search={search}
             onSearch={setSearch}
-            view={view}
-            onView={(next) => {
-              if (next === 'list' || next === 'lanes') setView(next);
-            }}
             showFinished={showFinished}
             onShowFinished={setShowFinished}
+            editing={view === 'lanes' ? editing : undefined}
+            onEditing={setEditing}
           />
         </CalendarToolbar>
       </div>
       <p id="event-reorder-help" className="sr-only">
-        Drag the handle to reorder, or focus it and press Arrow Up or Arrow Down.
+        Hold an event and drag it, or in edit mode focus its handle and press Arrow Up or Arrow Down.
       </p>
       <div className="timeline-caption flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted">
         <span className="timeline-range-label">
@@ -1030,8 +1208,12 @@ export function TimelinePage({ now }: { now: number }) {
           onToggleEvent={toggleEvent}
         />
       ) : (
-        <div data-tour="timeline" className="timeline-board timeline-lanes-board relative">
-          <div ref={timelineScaleRef} data-timeline-scale className="ml-7">
+        <div
+          data-tour="timeline"
+          data-editing={editing || undefined}
+          className="timeline-board timeline-lanes-board relative"
+        >
+          <div ref={timelineScaleRef} data-timeline-scale className="timeline-scale">
             <div data-timeline-ruler className="relative h-5 text-caption text-muted">
               {ticks.map((tick, index) => {
                 const first = index === 0;
@@ -1107,7 +1289,7 @@ export function TimelinePage({ now }: { now: number }) {
                       onOpenChange={(nextOpen) => setLaneOpen((current) => ({ ...current, [game.id]: nextOpen }))}
                       title={
                         <span className="flex min-w-0 items-center gap-2">
-                          <GameLogo game={{ ...game, ...colors }} size={36} />
+                          <GameLogo game={{ ...game, ...colors }} size={compact ? 30 : 36} />
                           <span
                             className="min-w-0 truncate text-body"
                             style={{ ...titleStyle(game.titleFont), color: gameTitleInk(colors, titleGround, 4.5) }}
@@ -1144,7 +1326,7 @@ export function TimelinePage({ now }: { now: number }) {
                       triggerLabel={`${open ? 'Collapse' : 'Expand'} ${game.name}, ${serverLabel}${accountLabel ? `, ${accountLabel}` : ''} lane`}
                       className="timeline-game-lane relative"
                       triggerClassName="timeline-game-heading relative z-20 rounded-ui-md transition hover:bg-fill-1"
-                      contentClassName="timeline-lane-content -ml-7 pl-7"
+                      contentClassName="timeline-lane-content"
                     >
                       {evs.length === 0 ? (
                         <p className="py-1 text-label text-muted">
@@ -1154,17 +1336,18 @@ export function TimelinePage({ now }: { now: number }) {
                         <p className="py-1 text-label text-muted">Nothing running. {finishedCount} finished hidden.</p>
                       ) : (
                         <>
-                          {state.events.some(
-                            (event) => event.gameId === game.id && !event.deleted && event.sort !== undefined,
-                          ) && (
-                            <ConfirmAction
-                              className="mb-1"
-                              label="Reset automatic order"
-                              confirmLabel="Confirm: drop my order"
-                              cancelLabel="Keep my order"
-                              onConfirm={() => resetEventOrder(game.id)}
-                            />
-                          )}
+                          {editing &&
+                            state.events.some(
+                              (event) => event.gameId === game.id && !event.deleted && event.sort !== undefined,
+                            ) && (
+                              <ConfirmAction
+                                className="mb-1"
+                                label="Reset automatic order"
+                                confirmLabel="Confirm: drop my order"
+                                cancelLabel="Keep my order"
+                                onConfirm={() => resetEventOrder(game.id)}
+                              />
+                            )}
                           {groupGameEvents(game, shown).map((group) => (
                             <section
                               key={group.key}
@@ -1190,6 +1373,9 @@ export function TimelinePage({ now }: { now: number }) {
                                 onToggleEvent={toggleEvent}
                                 laneWidth={timelineWidth}
                                 localTz={state.settings.localTz}
+                                compact={compact}
+                                editing={editing}
+                                onHold={startEditing}
                               />
                             </section>
                           ))}

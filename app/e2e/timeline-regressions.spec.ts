@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openSettings } from './support';
 import { emptyState } from '@memoria/shared';
 import { makeGame } from '../../shared/test/helpers';
 
@@ -32,11 +33,12 @@ test('separate cycles stay separate and clipped titles stay clear of countdowns'
       },
     ].map((event) => ({ ...event, gameId: game.id, dailyTouch: false, notify: true, notes: '', updatedAt: now })),
   };
+  await openSettings(page, 'Data');
   await page
     .locator('input[type="file"]')
     .setInputFiles({ name: 'timeline.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })
@@ -84,13 +86,14 @@ test('the Today capsule sits on the now line and no visible ruler tick runs unde
       { id: 'crossing-b', name: 'Second crossing', type: 'event', start: now - 1 * day, end: now + 14 * day },
     ].map((event) => ({ ...event, gameId: game.id, dailyTouch: false, notify: true, notes: '', updatedAt: now })),
   };
+  await openSettings(page, 'Data');
   await page.locator('input[type="file"]').setInputFiles({
     name: 'today-marker.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(state)),
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })

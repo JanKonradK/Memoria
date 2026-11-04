@@ -13,12 +13,13 @@ import { isDesktopApp } from '../desktop-host';
 import { closeWorkspace } from '../workspace-navigation';
 
 const ROUTES: Array<{ id: Tab; label: string; icon: string }> = [
+  { id: 'timeline', label: 'Timeline', icon: 'M3 5h14v12H3zM6 3v4M14 3v4M3 9h14M6 12h3M11 14h3' },
   {
     id: 'today',
     label: 'Today',
     icon: 'M10 2v2m0 12v2M2 10h2m12 0h2M4.3 4.3l1.4 1.4m8.6 8.6 1.4 1.4M4.3 15.7l1.4-1.4m8.6-8.6 1.4-1.4M14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
   },
-  { id: 'timeline', label: 'Calendar', icon: 'M3 5h14v12H3zM6 3v4M14 3v4M3 9h14M6 12h3M11 14h3' },
+  { id: 'settings', label: 'Settings', icon: 'M3 5h14M3 10h14M3 15h14M6 3v4M14 8v4M8 13v4' },
 ];
 
 /**
@@ -242,7 +243,7 @@ export function AppBar() {
           />
         )}
         {ROUTES.map((route) => {
-          // A game's page belongs to Today, the same way Livestreams belongs to Calendar.
+          // A game's page belongs to Today, the same way Livestreams belongs to Timeline.
           const active =
             tab === route.id ||
             (route.id === 'today' && tab === 'home') ||
@@ -286,25 +287,6 @@ export function AppBar() {
         <SyncIndicator />
         <AddMenu />
         <RefreshButton />
-        <button
-          type="button"
-          onClick={() => setTab('settings')}
-          aria-label="Settings"
-          aria-current={tab === 'settings' ? 'page' : undefined}
-          className="shell-control"
-        >
-          <svg
-            viewBox="0 0 20 20"
-            aria-hidden
-            className="icon h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-          >
-            <path d="M3 5h14M3 10h14M3 15h14M6 3v4M14 8v4M8 13v4" />
-          </svg>
-          <span className="hidden sm:inline">Settings</span>
-        </button>
         <button
           type="button"
           onClick={toggleTheme}

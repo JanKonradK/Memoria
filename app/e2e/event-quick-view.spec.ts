@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { openSettings } from './support';
 import { emptyState } from '@memoria/shared';
 import { makeEvent, makeGame } from '../../shared/test/helpers';
 
@@ -28,13 +29,14 @@ test('an event on the calendar opens a quick view where it is pinned and ticked 
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openSettings(page, 'Data');
   await page.locator('input[type="file"]').setInputFiles({
     name: 'quick-view.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(state)),
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })

@@ -7,6 +7,9 @@ test-results-*
 package-lock.json
 app/public
 desktop/dist
+# Rust build output and generated Tauri schemas.
+desktop/tauri/target
+desktop/tauri/gen
 android
 # Vendored AI-harness tooling (impeccable, agent configs) — third-party source
 # we do not own, plus the design hook's generated cache.

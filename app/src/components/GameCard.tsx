@@ -454,7 +454,7 @@ export function EventStrip({
     .filter((section) => section.events.length > 0);
   if (sections.length === 0) return emptyLabel ? <p className="aside py-2 text-meta text-muted">{emptyLabel}</p> : null;
   return (
-    <div>
+    <div className="event-strip">
       {sections.map((section) => (
         <section key={section.key} className="mt-3 first:mt-0" aria-label={`${section.label} events for ${game.name}`}>
           <BandRule label={section.label} />

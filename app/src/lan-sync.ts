@@ -16,7 +16,9 @@ const PAIR_KEY = 'memoria-wifi-device';
 /** Set from pairing until the first sync has been cleared to run. Survives a restart. */
 const FIRST_SYNC_KEY = 'memoria-wifi-first-sync';
 const CHOOSE = 'Choose in Settings how this device joins your PC.';
-type Pair = { host: string; token: string; deviceId: string };
+/** `hosts` lists every address the PC has reported, the last working one first. */
+type Pair = { host: string; hosts: string[]; token: string; deviceId: string };
+const MAX_HOSTS = 8;
 type LanStatus = 'off' | 'pairing' | 'syncing' | 'choosing' | 'ok' | 'offline' | 'error';
 /** Both sides hold games the other has never seen, so combining them is the owner's call. */
 export type FirstSyncChoice = { deviceGames: number; pcGames: number };
@@ -60,7 +62,13 @@ class LanError extends Error {
   }
 }
 
-async function request(host: string, path: string, data: unknown, token?: string): Promise<Record<string, unknown>> {
+async function request(
+  host: string,
+  path: string,
+  data: unknown,
+  token?: string,
+  quick = false,
+): Promise<Record<string, unknown>> {
   if (!isNativeDevice()) throw new Error('Wi-Fi pairing is available in the Android app.');
   let response;
   try {
@@ -69,12 +77,13 @@ async function request(host: string, path: string, data: unknown, token?: string
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       data,
       responseType: 'json',
-      connectTimeout: path === '/pair' ? 2000 : 8000,
+      // A quick try leaves time for the PC's other addresses.
+      connectTimeout: path === '/pair' ? 2000 : quick ? 4000 : 8000,
       readTimeout: path === '/pair' ? 4000 : 15_000,
       disableRedirects: true,
     });
   } catch {
-    throw new LanError('Cannot reach your PC. Open Memoria there and use the same Wi-Fi.', 0);
+    throw new LanError('Cannot reach your PC. Open Memoria there and use the same Wi-Fi or private network.', 0);
   }
   const body = response.data;
   if (response.status !== 200)
@@ -87,6 +96,53 @@ async function request(host: string, path: string, data: unknown, token?: string
   if (!body || typeof body !== 'object')
     throw new LanError('The PC returned an invalid response. Update Memoria on both devices.', 500);
   return body as Record<string, unknown>;
+}
+
+function savePair(next: Pair) {
+  pair = next;
+  localStorage.setItem(PAIR_KEY, JSON.stringify(next));
+  useLanSync.setState({ host: next.host });
+}
+
+/** Valid addresses from a PC reply, the working one first. Unknown entries are dropped. */
+function knownHosts(host: string, reported: unknown, previous: string[]): string[] {
+  const hosts = [host];
+  const add = (value: unknown) => {
+    if (typeof value !== 'string') return;
+    try {
+      hosts.push(normalizeLanHost(value));
+    } catch {
+      // Ignore an address this build cannot use.
+    }
+  };
+  if (Array.isArray(reported)) reported.forEach(add);
+  previous.forEach(add);
+  return [...new Set(hosts)].slice(0, MAX_HOSTS);
+}
+
+/**
+ * Send to the last working address, then to the PC's other addresses when it
+ * cannot be reached, so a new Wi-Fi address or a private network app such as
+ * Tailscale keeps sync going without a new code.
+ */
+async function requestPc(connection: Pair, path: string, data: unknown): Promise<Record<string, unknown>> {
+  const others = connection.hosts.filter((host) => host !== connection.host);
+  try {
+    return await request(connection.host, path, data, connection.token, others.length > 0);
+  } catch (error) {
+    if (!(error instanceof LanError) || error.status !== 0 || others.length === 0) throw error;
+    for (const [index, host] of others.entries()) {
+      try {
+        const body = await request(host, path, data, connection.token, true);
+        if (pair?.token === connection.token)
+          savePair({ ...connection, host, hosts: knownHosts(host, [], connection.hosts) });
+        return body;
+      } catch (next) {
+        if (!(next instanceof LanError) || next.status !== 0 || index === others.length - 1) throw next;
+      }
+    }
+    throw error;
+  }
 }
 
 function setStatus(status: LanStatus, error = '') {
@@ -143,13 +199,10 @@ async function connectToPc(hosts: string[], code: string): Promise<void> {
       typeof body.deviceId !== 'string'
     )
       throw new Error('The PC returned invalid pairing details. Get a new code and try again.');
-    const next = { host, token: body.token, deviceId: body.deviceId };
-    localStorage.setItem(PAIR_KEY, JSON.stringify(next));
     localStorage.setItem(FIRST_SYNC_KEY, '1');
     pcStateForChoice = null;
-    useLanSync.setState({ choice: null });
-    pair = next;
-    useLanSync.setState({ host, lastSyncAt: null });
+    useLanSync.setState({ choice: null, lastSyncAt: null });
+    savePair({ host, hosts: knownHosts(host, hosts, []), token: body.token, deviceId: body.deviceId });
     if (previous) {
       // The PC may have moved to a new Wi-Fi address. Its old credential is
       // still valid there; retire it so reconnecting does not fill device slots.
@@ -198,8 +251,8 @@ function checkFirstSync(): Promise<void> {
       const local = live(useApp.getState().state);
       if (local.length > 0) {
         // An empty state changes nothing on the PC; the reply is the PC's own data.
-        const response = await request(connection.host, '/sync', { state: emptyState() }, connection.token);
-        if (current !== generation || pair !== connection) return;
+        const response = await requestPc(connection, '/sync', { state: emptyState() });
+        if (current !== generation || pair?.token !== connection.token) return;
         if (!safeParseAppState(response.state).success)
           throw new Error('The PC returned invalid data. Update Memoria on both devices. Local edits were kept.');
         const pcState = normalizeState(response.state);
@@ -215,7 +268,7 @@ function checkFirstSync(): Promise<void> {
       }
       clearFirstSync();
     } catch (error) {
-      if (current !== generation || pair !== connection) return;
+      if (current !== generation || pair?.token !== connection.token) return;
       if (error instanceof LanError && error.status === 401) {
         localStorage.removeItem(PAIR_KEY);
         clearFirstSync();
@@ -278,8 +331,9 @@ export async function syncLanNow(): Promise<void> {
   setStatus('syncing');
   let success = false;
   try {
-    const response = await request(connection.host, '/sync', { state: sent }, connection.token);
-    if (current !== generation || pair !== connection) return;
+    const response = await requestPc(connection, '/sync', { state: sent });
+    const reached = pair;
+    if (current !== generation || !reached || reached.token !== connection.token) return;
     const parsed = safeParseAppState(response.state);
     if (!parsed.success)
       throw new Error('The PC returned invalid data. Update Memoria on both devices. Local edits were kept.');
@@ -289,10 +343,12 @@ export async function syncLanNow(): Promise<void> {
     // Normalize the original clocks: schema repair would turn an impossible
     // future energy reading into "now" and let it replace the current reading.
     useApp.getState().replaceState(mergeState(local, normalizeState(response.state)));
+    const hosts = knownHosts(reached.host, response.addresses, reached.hosts);
+    if (hosts.join() !== reached.hosts.join()) savePair({ ...reached, hosts });
     setStatus('ok');
     success = true;
   } catch (error) {
-    if (current !== generation || pair !== connection) return;
+    if (current !== generation || pair?.token !== connection.token) return;
     if (error instanceof LanError && error.status === 401) {
       localStorage.removeItem(PAIR_KEY);
       pair = null;
@@ -317,10 +373,17 @@ export function initLanSync(): void {
   if (initialized || !isNativeDevice()) return;
   initialized = true;
   try {
-    const saved = JSON.parse(localStorage.getItem(PAIR_KEY) ?? 'null') as Pair | null;
-    if (saved && /^[A-Za-z0-9_-]{43}$/.test(saved.token) && typeof saved.deviceId === 'string') {
-      pair = { ...saved, host: normalizeLanHost(saved.host) };
-      useLanSync.setState({ host: pair.host });
+    const saved = JSON.parse(localStorage.getItem(PAIR_KEY) ?? 'null') as Partial<Pair> | null;
+    if (
+      saved &&
+      typeof saved.token === 'string' &&
+      /^[A-Za-z0-9_-]{43}$/.test(saved.token) &&
+      typeof saved.deviceId === 'string'
+    ) {
+      // Connections saved before address lists existed hold one host.
+      const host = normalizeLanHost(saved.host ?? '');
+      pair = { host, hosts: knownHosts(host, saved.hosts, []), token: saved.token, deviceId: saved.deviceId };
+      useLanSync.setState({ host });
     }
   } catch {
     localStorage.removeItem(PAIR_KEY);

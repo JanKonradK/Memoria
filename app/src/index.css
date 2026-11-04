@@ -359,42 +359,49 @@ body {
   justify-content: space-between;
   gap: 12px 24px;
 }
-.calendar-toolbar,
-.timeline-tools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  min-width: 0;
-}
-/* Wide between the groups, tight within one, so the groups read without a box each. */
+/* Timeline's controls: one row at every width. The game filter takes the free
+   space and truncates; the view switch and tools are icons with labels where
+   there is room. */
 .calendar-toolbar {
   --tool-h: 36px;
-  justify-content: flex-end;
-  gap: 4px 16px;
-}
-.timeline-tools {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: 4px;
+  width: 100%;
+  min-width: 0;
 }
-.timeline-tools .ui-segmented {
-  margin-right: 12px;
+.timeline-tools,
+.calendar-views {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+}
+.calendar-views {
+  margin-left: auto;
+  padding: 2px;
+  border-radius: var(--radius-ui-full);
+  background: var(--color-fill-1);
 }
 @media (pointer: coarse), (max-width: 767px) {
   .calendar-toolbar {
     --tool-h: 44px;
   }
+  .calendar-views {
+    padding: 0;
+  }
 }
-.calendar-toolbar .ui-segmented {
-  display: inline-flex;
-  gap: 2px;
-  padding: 0;
-  border: 0;
-  background: none;
-}
-.calendar-toolbar .ui-segmented button,
+.calendar-view-button,
 .calendar-toolbar .shell-control,
 .calendar-toolbar .app-game-scope button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: var(--tool-h);
   min-height: var(--tool-h);
-  padding-inline: 12px;
+  padding-inline: 10px;
   border: 0;
   border-radius: var(--radius-ui-full);
   background: none;
@@ -405,46 +412,49 @@ body {
   white-space: nowrap;
   transition:
     background-color var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out),
     color var(--dur-fast) var(--ease-out),
     scale var(--dur-fast) var(--ease-out);
 }
 .calendar-toolbar .app-game-scope button {
+  justify-content: flex-start;
   color: var(--color-fg-soft);
 }
+/* Labels give way first; the icons and accessible names remain. */
+.calendar-tool-label {
+  display: none;
+}
+@media (min-width: 900px) {
+  .calendar-tool-label {
+    display: inline;
+  }
+}
 @media (hover: hover) {
-  .calendar-toolbar .ui-segmented button:hover,
+  .calendar-view-button:hover,
   .calendar-toolbar .shell-control:hover,
   .calendar-toolbar .app-game-scope button:hover {
-    background: var(--color-fill-1);
+    background: var(--color-fill-2);
     color: var(--color-fg-soft);
   }
 }
-.calendar-toolbar .ui-segmented button:active,
+.calendar-view-button:active,
 .calendar-toolbar .shell-control:active:not(:disabled),
 .calendar-toolbar .app-game-scope button:active {
   transform: none;
-  scale: 0.97;
+  scale: 0.96;
 }
 /* Chosen, switched on, or open: the fill and inset edge of a pressed Today row. */
-.calendar-views button[aria-current='page'],
-.calendar-toolbar .ui-segmented button > span[aria-hidden],
+.calendar-view-button[data-state='on'],
 .calendar-toolbar .shell-control[data-active],
 .calendar-toolbar .shell-control[aria-pressed='true'],
 .calendar-toolbar .shell-control[data-state='open'],
 .calendar-toolbar .app-game-scope button[data-state='open'] {
-  border-color: transparent;
-  background: var(--color-fill-2);
+  background: var(--color-surface-2);
   box-shadow: inset 0 0 0 1px var(--color-line-edge);
   color: var(--color-fg);
 }
-.calendar-toolbar .ui-segmented button[data-state='on'] {
-  background: none;
-  color: var(--color-fg);
-}
-/* The filter is as wide as the game it names, up to a limit; the name truncates past it.
-   No percentage minimum: the row would measure itself too narrow and wrap with room to spare. */
+/* The filter is as wide as the game it names, up to a limit; the name truncates past it. */
 .calendar-toolbar .app-game-scope {
+  flex: 0 1 auto;
   min-width: 0;
   max-width: 16rem;
 }
@@ -552,7 +562,8 @@ body {
     --text-meta--line-height: 1.375rem;
     --text-label: 0.875rem;
     --text-label--line-height: 1.25rem;
-    --mobile-nav-h: calc(6rem + env(safe-area-inset-bottom));
+    /* The dock floats over the page; this is only what content must clear at its end. */
+    --mobile-nav-h: calc(66px + env(safe-area-inset-bottom));
   }
   html {
     scroll-padding-top: calc(var(--app-bar-h) + 1rem);
@@ -576,12 +587,12 @@ body {
   }
   .app-nav {
     position: fixed;
-    inset: auto 12px calc(12px + env(safe-area-inset-bottom));
+    inset: auto 16px calc(8px + env(safe-area-inset-bottom));
     z-index: 40;
-    height: 72px;
-    max-width: 460px;
+    height: 54px;
+    max-width: 400px;
     margin-inline: auto;
-    padding: 6px;
+    padding: 4px;
     gap: 0;
   }
   .app-nav-button {
@@ -590,10 +601,12 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.25rem;
-    padding: 0.25rem;
+    gap: 1px;
+    min-height: 44px;
+    padding: 2px;
     border-radius: var(--radius-ui-full);
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
+    line-height: 1.1;
   }
   .app-nav .nav-slider {
     border-radius: var(--radius-ui-full);
@@ -604,14 +617,6 @@ body {
   }
   .app-game-scope {
     width: 100%;
-  }
-  .calendar-toolbar {
-    justify-content: flex-start;
-    width: 100%;
-  }
-  .calendar-toolbar .app-game-scope {
-    width: auto;
-    min-width: 0;
   }
   .shell-control,
   .btn-compact,
@@ -634,8 +639,8 @@ body {
     display: none;
   }
   .app-page {
-    padding-top: 1.25rem;
-    padding-bottom: calc(var(--mobile-nav-h) + 1.5rem);
+    padding-top: 1rem;
+    padding-bottom: calc(var(--mobile-nav-h) + 0.75rem);
   }
   .app-toasts {
     bottom: calc(var(--mobile-nav-h) + 0.75rem);
@@ -657,11 +662,11 @@ body {
    content still has room between the header and bottom navigation. */
 @media (min-width: 540px) and (max-width: 767px) and (max-height: 500px) {
   :root {
-    --mobile-nav-h: calc(4.5rem + env(safe-area-inset-bottom));
+    --mobile-nav-h: calc(60px + env(safe-area-inset-bottom));
   }
   .app-nav {
-    height: 60px;
-    bottom: calc(8px + env(safe-area-inset-bottom));
+    height: 52px;
+    bottom: calc(6px + env(safe-area-inset-bottom));
   }
   .app-nav-button {
     flex-direction: row;
@@ -1294,12 +1299,12 @@ input[type='number'] {
 }
 @media (max-width: 767px) {
   .app-nav-button {
-    font-size: var(--text-caption);
+    font-size: 0.6875rem;
     font-weight: 600;
   }
   .app-nav-button svg {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
   }
 }
 @media (prefers-reduced-transparency: reduce) {

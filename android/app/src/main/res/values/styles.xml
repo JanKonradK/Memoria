@@ -21,4 +21,33 @@
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
         <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
+
+    <!-- Home screen widget. Colours follow the app's dark tokens. -->
+    <style name="WidgetLabel">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textColor">#F4F4F6</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="WidgetEnergy">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFeatureSettings">tnum</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textColor">#DCDCE2</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="WidgetFull">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFeatureSettings">tnum</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
 </resources>

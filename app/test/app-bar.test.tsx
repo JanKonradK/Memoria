@@ -35,12 +35,12 @@ beforeEach(() => {
 
 afterEach(() => useApp.setState({ load: originalLoad }));
 
-it('keeps two primary routes and makes calendar livestreams and settings reachable', () => {
+it('keeps three primary routes and makes timeline livestreams and settings reachable', () => {
   useUI.setState({ tab: 'today' });
   render(
     <>
       <AppBar />
-      <CalendarToolbar view="timeline" />
+      <CalendarToolbar view="lanes" />
     </>,
   );
   const nav = screen.getByRole('navigation', { name: 'Primary' });
@@ -48,14 +48,14 @@ it('keeps two primary routes and makes calendar livestreams and settings reachab
     within(nav)
       .getAllByRole('button')
       .map((button) => button.textContent),
-  ).toEqual(['Today', 'Calendar']);
-  fireEvent.click(within(nav).getByRole('button', { name: 'Calendar' }));
-  // Calendar's own views sit on the page, outside the app bar.
-  expect(within(screen.getByRole('banner')).queryByRole('button', { name: 'Livestreams' })).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: 'Livestreams' }));
+  ).toEqual(['Timeline', 'Today', 'Settings']);
+  fireEvent.click(within(nav).getByRole('button', { name: 'Timeline' }));
+  // Timeline's own views sit on the page, outside the app bar.
+  expect(within(screen.getByRole('banner')).queryByRole('radio', { name: 'Livestreams' })).toBeNull();
+  fireEvent.click(screen.getByRole('radio', { name: 'Livestreams' }));
   expect(useUI.getState().tab).toBe('livestreams');
-  expect(within(nav).getByRole('button', { name: 'Calendar' })).toHaveAttribute('aria-current', 'page');
-  fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+  expect(within(nav).getByRole('button', { name: 'Timeline' })).toHaveAttribute('aria-current', 'page');
+  fireEvent.click(within(nav).getByRole('button', { name: 'Settings' }));
   expect(useUI.getState().tab).toBe('settings');
 });
 

@@ -47,20 +47,16 @@ test('phone roster opens full controls and keeps edits across navigation', async
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Back to Today', exact: true }).click();
-  await expect(page.getByRole('region', { name: 'Across every game' })).toBeVisible();
-  await expect(page.getByText(/Sleep safe|caps overnight/)).toBeVisible();
+  await expect(page.getByRole('list', { name: 'Games', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Reminder', exact: true }).click();
   const message = 'Remember to collect every expedition reward before the next server reset tonight.';
   await page.getByRole('textbox', { name: 'Message' }).fill(message);
   await page.getByRole('button', { name: 'Add reminder', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  const reminder = page.getByText(message, { exact: true });
-  await expect(reminder).toBeVisible();
-  expect(await reminder.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
   await page.getByRole('button', { name: 'Switch to light theme' }).click();
   // Scan the settled theme rather than an intermediate color transition.
-  await expect(page.getByRole('button', { name: 'Calendar', exact: true })).toHaveCSS('color', 'rgb(53, 55, 64)');
+  await expect(page.getByRole('button', { name: 'Timeline', exact: true })).toHaveCSS('color', 'rgb(53, 55, 64)');
   expect(
     (await new AxeBuilder({ page }).analyze()).violations.filter((v) =>
       ['serious', 'critical'].includes(v.impact ?? ''),
@@ -88,8 +84,10 @@ test('touch scroll on an energy button does not change the value', async ({ page
 test('event actions stay visible while the form scrolls and both event views remain available', async ({
   page,
 }, info) => {
-  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
-  await expect(page.getByRole('radio', { name: 'List', exact: true })).toHaveAttribute('data-state', 'on');
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  // Time bars open first on a phone too, each event a name line above a thin bar.
+  await expect(page.getByRole('radio', { name: 'Timeline', exact: true })).toHaveAttribute('data-state', 'on');
+  await page.getByRole('radio', { name: 'List', exact: true }).click();
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Event', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'New event' });

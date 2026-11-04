@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { isNativeApp } from '../../native';
 import { setNotificationsEnabled, useNotifications } from '../../notifications';
 import { Btn } from '../ui';
+import { SettingRow } from './SettingRow';
 
 export function DeviceNotifications() {
   const { enabled, scheduled, error } = useNotifications();
@@ -9,14 +10,15 @@ export function DeviceNotifications() {
   const [message, setMessage] = useState('');
   if (!isNativeApp) return null;
   return (
-    <section className="mb-5 min-w-0" aria-label="Reminders on this device">
-      <div className="today-group-rule">
-        <h2 className="text-meta font-semibold text-fg-soft">Reminders on this device</h2>
-        <span aria-hidden />
-      </div>
-      {/* Inset to the heading's text, so the body lines up with the rule. */}
-      <div className="mx-2 space-y-3">
-        <p className="text-body text-muted">Your reminders and one deadline per game, for the next 24 hours.</p>
+    <div className="min-w-0">
+      <SettingRow
+        label="Reminders on this device"
+        hint={
+          enabled
+            ? `${scheduled} scheduled. Your reminders and one deadline per game, for the next 24 hours.`
+            : 'Your reminders and one deadline per game, for the next 24 hours.'
+        }
+      >
         <Btn
           disabled={busy}
           onClick={() => {
@@ -31,13 +33,12 @@ export function DeviceNotifications() {
         >
           {busy ? 'Updating…' : enabled ? 'Turn reminders off' : 'Enable reminders'}
         </Btn>
-        {enabled && <p className="text-meta text-muted">{scheduled} scheduled</p>}
-        {(message || error) && (
-          <p role="alert" className="text-body text-danger-fg">
-            {message || error}
-          </p>
-        )}
-      </div>
-    </section>
+      </SettingRow>
+      {(message || error) && (
+        <p role="alert" className="settings-note text-body text-danger-fg">
+          {message || error}
+        </p>
+      )}
+    </div>
   );
 }

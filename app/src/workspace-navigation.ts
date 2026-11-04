@@ -63,6 +63,15 @@ export function closeWorkspace(): void {
   });
 }
 
+/** Open one game's full page from anywhere in the app. */
+export function openGame(gameId: string): void {
+  const ui = useUI.getState();
+  navigateWorkspace(gameId, null, () => {
+    ui.setFocusedGameId(gameId);
+    ui.setTab('home');
+  });
+}
+
 /** Open a workspace without capturing and resizing the whole page. */
 export function navigateWorkspace(
   gameId: string | null,

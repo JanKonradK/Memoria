@@ -1,0 +1,57 @@
+[package]
+name = "memoria"
+version = "3.2.0"
+description = "Memoria for Windows"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "Memoria"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-ico"] }
+tauri-plugin-single-instance = "2"
+# Native dialogs. Not tauri-plugin-dialog: it replaces the page's window.confirm
+# with an async version, which would let a close skip the unsaved-changes check.
+rfd = { version = "0.17", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "time", "fs", "io-util"] }
+axum = { version = "0.8", default-features = false, features = ["http1", "tokio", "json", "query"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+reqwest = { version = "0.13", default-features = false, features = ["native-tls", "json"] }
+rquickjs = "0.9"
+sha2 = "0.10"
+hex = "0.4"
+base64 = "0.22"
+rand = "0.8"
+if-addrs = "0.13"
+iana-time-zone = "0.1"
+notify = { version = "8", default-features = false }
+
+[target.'cfg(windows)'.dependencies]
+# The same WebView2 bindings Tauri uses, for trimming memory while hidden.
+webview2-com = "0.39"
+windows-core = "0.62"
+winreg = "0.52"
+tauri-winrt-notification = "0.7"
+windows-sys = { version = "0.59", features = [
+  "Win32_Foundation",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_Threading",
+  "Win32_Security",
+  "Win32_UI_Shell",
+  "Win32_UI_WindowsAndMessaging",
+] }
+
+[profile.release]
+# Small and fast to load: the point of moving off Electron.
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
