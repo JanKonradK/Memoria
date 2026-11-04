@@ -185,10 +185,10 @@ import type { PublicFeedEvent } from '@memoria/shared';
 
 /** Last bundle refresh, not a claim that every publisher supplied new dates.
  * The per-game evidence and remaining gaps are in docs/game-news-review-2026-10-03.md,
- * docs/game-news-review-2026-10-11.md, docs/game-news-review-2026-10-17.md, and
- * docs/game-news-review-2026-10-25.md.
+ * docs/game-news-review-2026-10-11.md, docs/game-news-review-2026-10-17.md,
+ * docs/game-news-review-2026-10-25.md, and docs/game-news-review-2026-11-03.md.
  */
-export const SEED_UPDATED = '2026-10-25';
+export const SEED_UPDATED = '2026-11-04';
 /** Invalid source windows withdrawn even from an earlier build on the same day. */
 export const SEED_WITHDRAWN_KEYS = ['seed:endfield:1.5-deep-cold-issue'];
 
@@ -260,16 +260,6 @@ export const SEED_EVENTS: SeedEvent[] = [
     sourceKey: 'seed:genshin:abyss-2026-08',
   },
 
-  {
-    game: 'genshin',
-    name: 'Imaginarium Theater',
-    type: 'cycle',
-    notify: false,
-    start: '2026-08-01 04:00',
-    end: '2026-09-01 04:00',
-    notes: 'Resets on the 1st each month. Estimated dates.',
-    sourceKey: 'seed:genshin:theater-2026-08',
-  },
   // --- banners
   // Wishes close at 14:59, hours before the servers go down — an end set to the
   // maintenance hour would quietly promise pulls that are no longer buyable.
@@ -277,33 +267,6 @@ export const SEED_EVENTS: SeedEvent[] = [
      real ann_ids and real times instead of the reset-aligned guesses they had
      on 08-09. Everything below opens "After the Version 7.0 update", i.e. when
      the t_gl maintenance above finishes: 08-12 04:00 on the Europe clock. */
-  {
-    game: 'genshin',
-    name: "Odette — Swan's Shadow in Silken Ice (phase 1)",
-    type: 'banner',
-    bannerKind: 'character',
-    start: '2026-08-12 04:00',
-    end: '2026-09-01 17:59',
-    sourceKey: 'seed:genshin:7.0-p1',
-  },
-  {
-    game: 'genshin',
-    name: "Arlecchino — The Hearth's Ashen Shadow (phase 1)",
-    type: 'banner',
-    bannerKind: 'character',
-    start: '2026-08-12 04:00',
-    end: '2026-09-01 17:59',
-    sourceKey: 'genshin:21804',
-  },
-  {
-    game: 'genshin',
-    name: 'Epitome Invocation — Whitelake Frostfeather / Crimson Moon’s Semblance (phase 1)',
-    type: 'banner',
-    bannerKind: 'weapon',
-    start: '2026-08-12 04:00',
-    end: '2026-09-01 17:59',
-    sourceKey: 'genshin:21807',
-  },
   /* Phase 2 published on 08-27 and the estimate this file carried was right to
      the minute: 09-01 18:00 - 09-22 14:59, both t_lc. The single combined guess
      is retired in favour of the three rows the feed actually ships. */
@@ -492,16 +455,6 @@ export const SEED_EVENTS: SeedEvent[] = [
   },
   {
     game: 'genshin',
-    name: 'Spooky Summer Adventures — Spooky Boo Hat',
-    type: 'event',
-    start: '2026-08-17 12:00',
-    end: '2026-09-04 03:59',
-    notes: 'Spooky Boo Hat cosmetic; quests close August 31 at 03:59, reward claims September 4.',
-    category: 'miliastra',
-    sourceKey: 'genshin:21829',
-  },
-  {
-    game: 'genshin',
     name: 'Archon Quest "Everwinter Without Mercy" — timed reward',
     type: 'event',
     start: '2026-08-12 04:00',
@@ -616,15 +569,6 @@ export const SEED_EVENTS: SeedEvent[] = [
   // --- cycles (staggered 6-week endgame windows)
   {
     game: 'hsr',
-    name: 'Apocalyptic Shadow',
-    type: 'cycle',
-    start: '2026-07-20 04:00',
-    end: '2026-08-31 03:59',
-    notes: 'Vanguard Knight.',
-    sourceKey: 'seed:hsr:as-4.4',
-  },
-  {
-    game: 'hsr',
     name: 'Pure Fiction',
     type: 'cycle',
     start: '2026-08-03 04:00',
@@ -644,15 +588,6 @@ export const SEED_EVENTS: SeedEvent[] = [
   // --- banners
   // Warps close at 15:00, eight hours before the 4.5 maintenance.
   // --- maintenance
-  {
-    game: 'hsr',
-    name: 'v4.5 update maintenance',
-    type: 'maintenance',
-    start: '2026-08-25 23:00',
-    end: '2026-08-26 04:00',
-    notes: 'Estimated dates.',
-    sourceKey: 'seed:hsr:4.5-maint',
-  },
   {
     game: 'hsr',
     name: 'v4.6 update maintenance',
@@ -796,26 +731,6 @@ export const SEED_EVENTS: SeedEvent[] = [
   // stretch season — so the two now alternate WEEKLY (Shiyu Aug 7/21, DA Aug 14/28)
   // rather than colliding. No official notice publishes either window: ann 1234 gives the
   // rotations and buff sets but no schedule, which is why every cycle row stays silent.
-  {
-    game: 'zzz',
-    name: 'Deadly Assault',
-    type: 'cycle',
-    notify: false,
-    start: '2026-08-14 04:00',
-    end: '2026-08-28 03:59',
-    notes: '3.1 Phase II: Girtablullu, Ye Shiyuan the Thrall and Miasma Priest. Estimated dates.',
-    sourceKey: 'seed:zzz:da-2026-08-14',
-  },
-  {
-    game: 'zzz',
-    name: 'Shiyu Defense: Critical',
-    type: 'cycle',
-    notify: false,
-    start: '2026-08-21 04:00',
-    end: '2026-09-04 03:59',
-    notes: '3.1 Phase II buffs. Estimated dates.',
-    sourceKey: 'seed:zzz:shiyu-2026-08-21',
-  },
   {
     game: 'zzz',
     name: 'Deadly Assault',
@@ -1308,15 +1223,6 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'nte',
     name: 'Beyond the Rails',
     type: 'cycle',
-    start: '2026-08-13 05:00',
-    end: '2026-08-27 04:59',
-    notes: 'Waxing Circle.',
-    sourceKey: 'seed:nte:1.2-rails-3',
-  },
-  {
-    game: 'nte',
-    name: 'Beyond the Rails',
-    type: 'cycle',
     start: '2026-08-26 22:00',
     end: '2026-09-09 21:59',
     notes: '',
@@ -1463,16 +1369,6 @@ export const SEED_EVENTS: SeedEvent[] = [
   },
   {
     game: 'nte',
-    name: 'Stamina Recharge ×2',
-    type: 'event',
-    dailyTouch: true,
-    start: '2026-08-24 05:00',
-    end: '2026-08-31 04:59',
-    notes: '',
-    sourceKey: 'seed:nte:1.3-stamina',
-  },
-  {
-    game: 'nte',
     name: 'Gold Clash — 2× Fons in Pink Paws Heist',
     type: 'event',
     dailyTouch: true,
@@ -1533,69 +1429,6 @@ export const SEED_EVENTS: SeedEvent[] = [
      so explicitly, switching notation mid-sentence ("from 05:00 on Jul. 2 (server time) to
      04:59 on Jul. 9 (UTC+8)"). Converting a "(Server Time)" value would shift this whole
      game by 6 hours. */
-  {
-    game: 'lads',
-    name: 'Po Zhen Zi',
-    type: 'event',
-    start: '2026-08-17 05:00',
-    end: '2026-08-31 04:59',
-    notes: 'Free track: a 4★ Memory pair, a 3★ Memory, 10 Deepspace Wishes and 500 Diamonds.',
-    sourceKey: 'seed:lads:po-zhen-zi',
-  },
-  {
-    game: 'lads',
-    name: 'Rafayel: Masked Radiance / Masked Dissolution',
-    type: 'banner',
-    bannerKind: 'memory',
-    start: '2026-08-17 05:00',
-    end: '2026-08-31 04:59',
-    notes: 'Limited 5★ Solar-Slot Memory Pair; 150 pulls guarantee both and unlock the Companion.',
-    sourceKey: 'seed:lads:rafayel-masked-radiance',
-  },
-  {
-    game: 'lads',
-    name: 'Skyvault Afar',
-    type: 'event',
-    notify: false,
-    start: '2026-08-17 05:00',
-    end: '2026-08-31 04:59',
-    notes: 'Free reward track in Po Zhen Zi. Estimated dates.',
-    sourceKey: 'seed:lads:skyvault-afar',
-  },
-  {
-    game: 'lads',
-    name: 'Roaming Trails',
-    type: 'event',
-    start: '2026-08-17 05:00',
-    end: '2026-08-31 04:59',
-    sourceKey: 'seed:lads:roaming-trails',
-  },
-  {
-    game: 'lads',
-    name: 'Companion Rehearsal',
-    type: 'event',
-    start: '2026-08-17 05:00',
-    end: '2026-08-31 04:59',
-    sourceKey: 'seed:lads:companion-rehearsal',
-  },
-  {
-    game: 'lads',
-    name: 'Yanzhou Market',
-    type: 'event',
-    start: '2026-08-17 05:00',
-    end: '2026-09-01 04:59',
-    notes: 'Spend event currency before this closes; the market stays open a day after Po Zhen Zi ends.',
-    sourceKey: 'seed:lads:yanzhou-market',
-  },
-  {
-    game: 'lads',
-    name: 'Sylus — No Defense Zone rerun',
-    type: 'banner',
-    bannerKind: 'memory',
-    start: '2026-08-24 05:00',
-    end: '2026-08-31 04:59',
-    sourceKey: 'seed:lads:sylus-no-defense-zone',
-  },
   // Seasons run 14 days. The old row claimed a 45-day Season 14 ending Aug 27 — that season
   // actually ended Jul 27, so the stored end looks like a Jul→Aug typo. Name is the bare
   // recurring string now; the season number lives in notes so instances group.
@@ -1641,76 +1474,8 @@ export const SEED_EVENTS: SeedEvent[] = [
      both known boundaries: 06:00 SGT - 8h = 22:00 UTC (content opens) and 22:59 SGT - 8h =
      14:59 UTC (the 15:00 daily-mission roll). Watch which boundary a window closes on —
      assuming the 22:00 one is what put the anniversary end 7 hours late. */
-  {
-    game: 'uma',
-    name: '1.5-Year Anniversary campaign',
-    type: 'event',
-    dailyTouch: true,
-    start: '2026-07-22 22:00',
-    // Closes on the 15:00 daily-mission boundary, not the 22:00 content one.
-    end: '2026-08-28 14:59',
-    notes:
-      'Login rewards, free daily 10-pulls, Carats and Grand Concert; Training the Trainer closes August 24 at 14:59.',
-    sourceKey: 'seed:uma:anniversary-1.5',
-  },
-  {
-    game: 'uma',
-    name: 'Days Flying By (story event)',
-    type: 'event',
-    start: '2026-08-18 22:00',
-    end: '2026-08-30 21:59',
-    notes: 'Free Shinko Windy Guts SSR from the story event.',
-    sourceKey: 'seed:uma:story-event-18',
-  },
-  {
-    game: 'uma',
-    name: 'Spotlight Scout — Halloween Agnes Digital / Meisho Doto',
-    type: 'banner',
-    bannerKind: 'character',
-    start: '2026-08-18 22:00',
-    end: '2026-08-30 21:59',
-    notes: 'Runs with Days Flying By.',
-    sourceKey: 'seed:uma:scout-2026-08-18',
-  },
-  {
-    game: 'uma',
-    name: 'Spotlight Support Card Scout — Shinko Windy, Daitaku Helios, Mejiro Palmer',
-    type: 'banner',
-    bannerKind: 'support',
-    start: '2026-08-18 22:00',
-    end: '2026-08-30 21:59',
-    notes: 'Runs with Days Flying By.',
-    sourceKey: 'seed:uma:scout-2026-08-18:supports',
-  },
-  {
-    game: 'uma',
-    name: 'Spotlight Scout — Aston Machan',
-    type: 'banner',
-    bannerKind: 'character',
-    start: '2026-08-25 22:00',
-    end: '2026-09-01 21:59',
-    sourceKey: 'seed:uma:scout-2026-08-25',
-  },
-  {
-    game: 'uma',
-    name: 'Spotlight Support Card Scout — Fine Motion, Maruzensky',
-    type: 'banner',
-    bannerKind: 'support',
-    start: '2026-08-25 22:00',
-    end: '2026-09-01 21:59',
-    sourceKey: 'seed:uma:scout-2026-08-25:supports',
-  },
   // Champions Meeting is monthly and recurring, so instances share the bare name and carry
   // the cup in notes — otherwise every cup groups alone and no connector is ever drawn.
-  {
-    game: 'uma',
-    name: 'Champions Meeting',
-    type: 'cycle',
-    start: '2026-08-24 22:00',
-    end: '2026-09-02 21:59',
-    notes: 'Libra Cup; Hanshin Racecourse, 1600m (Mile).',
-    sourceKey: 'seed:uma:cm-libra-2026-08',
-  },
   /* --- September. Uma publishes DATES and not times, so every row below uses the
      block's established 22:00 open / 21:59 close (and 14:59 for Legend Races), the
      same convention the August rows were verified against. The dates are the
@@ -1893,15 +1658,6 @@ export const SEED_EVENTS: SeedEvent[] = [
      but the 07:00 it establishes is the start every collab row below inherits. */
   {
     game: 'nikke',
-    name: 'August Mission Pass',
-    type: 'event',
-    start: '2026-08-01 00:00',
-    end: '2026-08-31 23:59',
-    notes: 'Resets on the 1st each month.',
-    sourceKey: 'seed:nikke:mission-pass-aug',
-  },
-  {
-    game: 'nikke',
     name: 'September Mission Pass',
     type: 'event',
     start: '2026-09-01 00:00',
@@ -1990,33 +1746,6 @@ export const SEED_EVENTS: SeedEvent[] = [
     end: '2026-10-08 04:59',
     notes: 'Clear Main Scenarios for rewards; Story Difficulty gives a bonus.',
     sourceKey: 'seed:nikke:trail-marker-2026-08',
-  },
-  {
-    game: 'nikke',
-    name: 'Solo Raid Season 40',
-    type: 'event',
-    start: '2026-08-20 12:00',
-    end: '2026-08-27 04:59',
-    sourceKey: 'seed:nikke:solo-raid-40',
-  },
-  {
-    game: 'nikke',
-    name: 'FULL BURST DAY',
-    type: 'event',
-    dailyTouch: true,
-    start: '2026-08-29 05:00',
-    end: '2026-08-31 04:59',
-    notes: 'One extra Interception and one extra Simulation Room reward set.',
-    sourceKey: 'seed:nikke:full-burst-2026-08-29',
-  },
-  {
-    game: 'nikke',
-    name: 'Coordinated Operation: Gatekeeper',
-    type: 'cycle',
-    start: '2026-08-28 12:00',
-    end: '2026-08-30 23:59',
-    notes: 'Third weekend.',
-    sourceKey: 'seed:nikke:coop-gatekeeper-3',
   },
   // Season 9 runs 2026-06-30 05:00 to 2026-09-22 04:59 and the reward record resets every
   // 14 days at the Tuesday 05:00 reset. Chaining from the published start lands exactly on
@@ -2122,88 +1851,9 @@ export const SEED_EVENTS: SeedEvent[] = [
      date. On this block's UTC-5 clock that is the evening of Sept 1, immediately after the
      1.4 boundary, so the maintenance row below reads 09-01 17:00 → 23:00. The hour is the
      1.4 window's shape, not a published one, so the row stays silent. */
-  {
-    game: 'endfield',
-    name: 'Like a Star Streaking Through the Boundaries',
-    type: 'event',
-    start: '2026-08-09 12:00',
-    end: '2026-09-01 17:00',
-    notes: 'Phase 2 story event.',
-    sourceKey: 'seed:endfield:1.4-like-a-star',
-  },
-  {
-    game: 'endfield',
-    name: 'Good Morning from Your Dawnstar — Liino',
-    type: 'banner',
-    bannerKind: 'character',
-    start: '2026-08-09 12:00',
-    end: '2026-09-01 17:00',
-    notes: '',
-    sourceKey: 'seed:endfield:1.4-liino',
-  },
-  {
-    game: 'endfield',
-    name: 'Combat Drills: Liino',
-    type: 'event',
-    start: '2026-08-09 12:00',
-    end: '2026-09-01 17:00',
-    notes: 'Trial runs throughout the Chartered Headhunting banner.',
-    sourceKey: 'seed:endfield:1.4-drills-liino',
-  },
-  {
-    game: 'endfield',
-    name: 'Bedazzling Dawnstar — 7-day sign-in',
-    type: 'event',
-    dailyTouch: true,
-    start: '2026-08-09 12:00',
-    end: '2026-09-01 17:00',
-    notes: 'Five event Headhunting Permits over seven sign-ins.',
-    sourceKey: 'seed:endfield:1.4-bedazzling-signin',
-  },
-  {
-    game: 'endfield',
-    name: 'The Rooted Realm',
-    type: 'event',
-    start: '2026-08-09 12:00',
-    end: '2026-09-01 17:00',
-    notes: '1,600 Oroberyl.',
-    sourceKey: 'seed:endfield:1.4-rooted-realm',
-  },
-  {
-    game: 'endfield',
-    name: 'Sanity Supply (second window)',
-    type: 'event',
-    dailyTouch: true,
-    start: '2026-08-26 04:00',
-    end: '2026-09-01 17:00',
-    notes: 'Daily missions reward Sanity Usage Permits and Emergency Sanity Boosters.',
-    sourceKey: 'seed:endfield:1.4-sanity-2',
-  },
-  {
-    game: 'endfield',
-    name: 'v1.5 "Dreamscape of Wind and Snow" update maintenance',
-    type: 'maintenance',
-    // Announced for "September 2" — the Asia column. This block runs on the ONE
-    // combined AmEu server at UTC-5, where that is the evening of Sept 1, landing
-    // exactly on the 1.4 boundary. Confirmed after the fact on 09-02: the wiki
-    // records the AmEu version opening at 2026/09/01 23:00, which is the end below.
-    start: '2026-09-01 17:00',
-    end: '2026-09-01 23:00',
-    notes: '',
-    sourceKey: 'seed:endfield:1.5-maint',
-  },
   // Echoes of War is now fully sourced, not community-derived: Recalling I/II/III ran
   // 7/7/10 days and Delirating I/II/III run 7/7/10, the third of each season stretching to
   // the version boundary. Instances share the bare name so the connectors group.
-  {
-    game: 'endfield',
-    name: 'Echoes of War',
-    type: 'cycle',
-    start: '2026-08-23 04:00',
-    end: '2026-09-01 17:00',
-    notes: 'Season of Delirating, Cycle III; ten-day cycle.',
-    sourceKey: 'seed:endfield:eow-delirating-3',
-  },
   /* v1.5 update notice 5208: event dates below use server time unless a
      timezone override is set. The next maintenance has no confirmed date.
      Rows with an estimated end remain silent. See the September 17 audit. */
@@ -4226,58 +3876,212 @@ export const SEED_EVENTS: SeedEvent[] = [
   },
   {
     game: 'genshin',
-    name: 'Genshin 7.2 Special Program',
-    type: 'livestream',
-    start: '2026-10-23 12:00',
-    end: '2026-10-23 13:00',
-    timezone: 'UTC',
-    notes: 'Estimated window. Recap and codes are in Livestreams.',
-    sourceKey: 'seed:genshin:7.2-livestream',
-  },
-  {
-    game: 'genshin',
     name: 'v7.2 update maintenance',
     type: 'maintenance',
-    notify: false,
     start: '2026-11-04 06:00',
     end: '2026-11-04 11:00',
     timezone: 'UTC+8',
-    notes: 'Estimated dates.',
+    notes: '300 Primogems maintenance compensation by mail.',
     sourceKey: 'seed:genshin:7.2-maint',
   },
   {
     game: 'genshin',
-    name: 'Mitya (phase 1)',
+    name: 'Myriad Patterns Unfold — Mitya',
     type: 'banner',
     bannerKind: 'character',
-    notify: false,
     start: '2026-11-04 11:00',
     end: '2026-11-24 17:59',
     startTimezone: 'UTC+8',
-    notes: 'New 5★. Estimated dates.',
+    notes: 'New 5★ Electro. 4★: Valeriy (new), Charlotte, Rosaria.',
     sourceKey: 'seed:genshin:7.2-mitya',
   },
   {
     game: 'genshin',
-    name: 'Furina rerun (phase 1)',
+    name: 'Chanson of Many Waters — Furina rerun',
     type: 'banner',
     bannerKind: 'character',
-    notify: false,
     start: '2026-11-04 11:00',
     end: '2026-11-24 17:59',
     startTimezone: 'UTC+8',
-    notes: 'Estimated dates.',
+    notes: '4★: Valeriy (new), Charlotte, Rosaria.',
     sourceKey: 'seed:genshin:7.2-furina',
   },
   {
     game: 'genshin',
     name: 'Spiral Abyss',
     type: 'cycle',
-    notify: false,
     start: '2026-11-16 04:00',
     end: '2026-12-16 04:00',
-    notes: 'Resets on the 16th each month. Estimated dates.',
+    notes: 'Floor 11: Electro and Geo bonus. Resets on the 16th each month.',
     sourceKey: 'seed:genshin:abyss-2026-11',
+  },
+  // November 3 review. Version 7.2 notices: docs/game-news-review-2026-11-03.md.
+  {
+    game: 'genshin',
+    name: 'Epitome Invocation — Starsealed Edict / Splendor of Tranquil Waters',
+    type: 'banner',
+    bannerKind: 'weapon',
+    start: '2026-11-04 11:00',
+    end: '2026-11-24 17:59',
+    startTimezone: 'UTC+8',
+    notes: '',
+    sourceKey: 'genshin:21977',
+  },
+  {
+    game: 'genshin',
+    name: 'Archon Quest "Hour of Ruin" — timed reward',
+    type: 'event',
+    start: '2026-11-04 11:00',
+    end: '2026-12-15 14:59',
+    startTimezone: 'UTC+8',
+    notes: 'Complete Chapter VII Acts V and VI for extra Primogems. Requires Adventure Rank 18.',
+    sourceKey: 'genshin:21970',
+  },
+  {
+    game: 'genshin',
+    name: 'The Grand Defense: Defy the Unjust Judgment',
+    type: 'event',
+    notify: false,
+    start: '2026-11-04 11:00',
+    end: '2026-12-15 14:59',
+    startTimezone: 'UTC+8',
+    notes: 'Invite a 4★ character of your choice. Requires Adventure Rank 20. Runs all of version 7.2; estimated end.',
+    sourceKey: 'genshin:21969',
+  },
+  {
+    game: 'genshin',
+    name: 'Where Kristall Roots Run Deep — exploration reward',
+    type: 'event',
+    category: 'teyvat',
+    start: '2026-11-04 11:00',
+    end: '2027-01-26 14:59',
+    startTimezone: 'UTC+8',
+    notes: 'Finish the Novokitezhgrad and Wingspan Peak exploration missions for 400 Primogems.',
+    sourceKey: 'genshin:21971',
+  },
+  {
+    game: 'genshin',
+    name: 'Repertoire of Myriad Melodies: Interlude of the Long Journey',
+    type: 'event',
+    start: '2026-11-04 11:00',
+    end: '2026-12-15 14:59',
+    startTimezone: 'UTC+8',
+    notes: 'Complete the new album’s performance missions for 60 Primogems.',
+    sourceKey: 'genshin:21972',
+  },
+  {
+    game: 'genshin',
+    name: 'Sacred Spirit Chronicle — Battle Pass',
+    type: 'event',
+    start: '2026-11-04 11:00',
+    end: '2026-12-14 03:59',
+    startTimezone: 'UTC+8',
+    notes: 'Requires Adventure Rank 20.',
+    sourceKey: 'genshin:21974',
+  },
+  {
+    game: 'genshin',
+    name: "The Forge Realm's Temper: Endless Swarm",
+    type: 'event',
+    notify: false,
+    start: '2026-11-04 11:00',
+    end: '2026-12-15 14:59',
+    startTimezone: 'UTC+8',
+    notes:
+      'TCG challenge stages at The Cat’s Tail. Requires Adventure Rank 32. Runs all of version 7.2; estimated end.',
+    sourceKey: 'genshin:20834',
+  },
+  {
+    game: 'genshin',
+    name: 'To Temper Thyself and Journey Far',
+    type: 'cycle',
+    start: '2026-11-02 04:00',
+    end: '2027-01-25 03:59',
+    notes: 'Daily and weekly training goals; 8 weekly goals earn a Stella Fortuna.',
+    sourceKey: 'genshin:21892',
+  },
+  {
+    game: 'genshin',
+    name: 'Raiment Collection: Radiance Ablaze',
+    type: 'event',
+    start: '2026-11-04 11:00',
+    end: '2026-12-16 05:59',
+    startTimezone: 'UTC+8',
+    category: 'miliastra',
+    notes: 'Earn the Tinker’s Treasures cosmetic set. Rewards have a weekly limit.',
+    sourceKey: 'genshin:21991',
+  },
+  {
+    game: 'genshin',
+    name: 'Wonderland Treasures: Frosty Court',
+    type: 'banner',
+    bannerKind: 'other',
+    start: '2026-11-04 11:00',
+    end: '2026-12-14 03:59',
+    startTimezone: 'UTC+8',
+    category: 'miliastra',
+    notes: 'Cosmetic draw with Frosty Plume.',
+    sourceKey: 'genshin:21990',
+  },
+  {
+    game: 'genshin',
+    name: 'Wonderland Treasures: Polyphonic Harmony',
+    type: 'banner',
+    bannerKind: 'other',
+    start: '2026-11-04 11:00',
+    end: '2026-12-14 03:59',
+    startTimezone: 'UTC+8',
+    category: 'miliastra',
+    notes: 'Cosmetic draw with Polyphonic Variations.',
+    sourceKey: 'genshin:21989',
+  },
+  {
+    game: 'genshin',
+    name: 'Miliastra Wonderland: Polyphonic Season — Play Phase',
+    type: 'event',
+    start: '2026-11-05 10:00',
+    end: '2026-12-15 03:59',
+    category: 'miliastra',
+    notes: 'The showcase phase follows the play phase.',
+    sourceKey: 'genshin:21993',
+  },
+  {
+    game: 'genshin',
+    name: 'Imaginarium Theater',
+    type: 'cycle',
+    start: '2026-12-01 04:00',
+    end: '2027-01-01 04:00',
+    notes: 'Pyro, Hydro and Geo. Resets on the 1st each month.',
+    sourceKey: 'seed:genshin:theater-2026-12',
+  },
+  {
+    game: 'genshin',
+    name: 'Spiral Abyss',
+    type: 'cycle',
+    start: '2026-12-16 04:00',
+    end: '2027-01-16 04:00',
+    notes: 'Floor 11: Cryo and Anemo bonus. Resets on the 16th each month.',
+    sourceKey: 'seed:genshin:abyss-2026-12',
+  },
+  {
+    game: 'genshin',
+    name: 'Log in for 7.2 fix compensation',
+    type: 'event',
+    start: '2026-11-04 11:00',
+    end: '2026-11-07 06:00',
+    timezone: 'UTC+8',
+    notes: '300 Primogems by mail for Adventure Rank 5 and above. Claim mail within 30 days.',
+    sourceKey: 'genshin:21988',
+  },
+  {
+    game: 'genshin',
+    name: 'Genshin 7.3 Special Program — predicted window',
+    type: 'livestream',
+    start: '2026-12-04 12:00',
+    end: '2026-12-05 13:00',
+    timezone: 'UTC',
+    notes: 'Not announced yet.',
+    sourceKey: 'seed:genshin:7.3-livestream',
   },
   // --- Honkai: Star Rail
   {
@@ -4302,13 +4106,13 @@ export const SEED_EVENTS: SeedEvent[] = [
   },
   {
     game: 'hsr',
-    name: 'HSR 4.7 Special Program — predicted window',
+    name: 'HSR 4.8 Special Program — predicted window',
     type: 'livestream',
-    start: '2026-10-30 11:30',
-    end: '2026-11-03 12:30',
+    start: '2026-12-11 11:30',
+    end: '2026-12-15 12:30',
     timezone: 'UTC',
     notes: 'Not announced yet.',
-    sourceKey: 'seed:hsr:4.7-livestream',
+    sourceKey: 'seed:hsr:4.8-livestream',
   },
   {
     game: 'hsr',
@@ -4512,12 +4316,12 @@ export const SEED_EVENTS: SeedEvent[] = [
   },
   {
     game: 'wuwa',
-    name: 'WuWa 3.8 Special Broadcast — predicted window',
+    name: 'WuWa 3.8 Special Broadcast',
     type: 'livestream',
-    start: '2026-10-30 11:00',
-    end: '2026-11-01 12:00',
+    start: '2026-11-06 11:00',
+    end: '2026-11-06 12:00',
     timezone: 'UTC',
-    notes: 'Not announced yet.',
+    notes: 'Announced for 19:00 UTC+8.',
     sourceKey: 'seed:wuwa:3.8-livestream',
   },
   // --- Neverness to Everness v1.4 second half
@@ -4584,13 +4388,13 @@ export const SEED_EVENTS: SeedEvent[] = [
   },
   {
     game: 'nte',
-    name: 'NTE 1.5 Preview Special Program',
+    name: 'NTE 1.6 Preview Special Program — predicted window',
     type: 'livestream',
-    start: '2026-10-28 11:30',
-    end: '2026-10-28 12:30',
+    start: '2026-12-08 11:30',
+    end: '2026-12-10 12:30',
     timezone: 'UTC',
-    notes: 'Estimated window. Recap and codes are in Livestreams.',
-    sourceKey: 'seed:nte:1.5-livestream',
+    notes: 'Not announced yet.',
+    sourceKey: 'seed:nte:1.6-livestream',
   },
   {
     game: 'nte',

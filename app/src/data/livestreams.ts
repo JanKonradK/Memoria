@@ -1,7 +1,7 @@
-import genshinArtwork from '../assets/livestreams/genshin-7.1.jpg';
-import nteArtwork from '../assets/livestreams/nte-1.4.jpg';
+import genshinArtwork from '../assets/livestreams/genshin-7.2.jpg';
+import nteArtwork from '../assets/livestreams/nte-1.5.jpg';
 import wuwaArtwork from '../assets/livestreams/wuwa-3.7.jpg';
-import hsrArtwork from '../assets/livestreams/hsr-4.6.jpg';
+import hsrArtwork from '../assets/livestreams/hsr-4.7.jpg';
 
 export interface LivestreamCodes {
   expiresAt?: number;
@@ -28,38 +28,75 @@ export interface LivestreamRecap {
   note?: string;
 }
 
-/** Newest broadcasts first. See docs/game-news-review-2026-10-03.md.
+/** Newest broadcasts first. See docs/game-news-review-2026-11-03.md.
  * This editorial feed does not modify the player's events or create alerts.
  */
 export const LIVESTREAMS: LivestreamRecap[] = [
   {
-    id: 'hsr-4.6',
+    id: 'hsr-4.7',
     game: 'hsr',
     gameName: 'Honkai: Star Rail',
-    version: '4.6',
-    title: 'Dance With the Beast Before Moonrise',
-    broadcast: '2026-09-20T11:30:00Z',
-    broadcastLabel: '20 September 2026 · 11:30 UTC / 12:30 UK',
-    releaseLabel: '28 September 2026',
-    replay: 'https://www.youtube.com/watch?v=drFgtruoPe8',
+    version: '4.7',
+    title: 'Now, Lay Laughter to All Stars',
+    broadcast: '2026-10-30T11:30:00Z',
+    broadcastLabel: '30 October 2026 · 11:30 UTC / 11:30 UK',
+    releaseLabel: '11 November 2026',
+    replay: 'https://www.youtube.com/watch?v=psifFhA2QAA',
     image: hsrArtwork,
-    imageAlt: 'Honkai: Star Rail Version 4.6 artwork',
+    imageAlt: 'Honkai: Star Rail Version 4.7 Special Program artwork, Aha’s Night',
     highlights: [
-      'Pearl joins as a five-star Ice character on the Path of Elation. Her character and Light Cone banners run throughout Version 4.6.',
-      'Evanescia returns in the first half; Mortenax Blade returns in the second half.',
-      'New workshop and combat events, Astral Imagea companions, and outfits for Hyacine and Evanescia are coming.',
+      'Aha joins as a five-star Quantum character on the Path of Elation, the first playable Aeon.',
+      'Version 4.7 also brings a new Currency Wars season, new events and a free character selection.',
     ],
-    note: 'Pearl and her Light Cone close November 10 at 15:00; Evanescia closes October 21 at 11:59.',
+    note: 'The stream codes expired on 31 October at 23:59 (UTC+8).',
+  },
+  {
+    id: 'nte-1.5',
+    game: 'nte',
+    gameName: 'Neverness to Everness',
+    version: '1.5',
+    title: 'Once Upon a Glitched Call',
+    broadcast: '2026-10-28T11:30:00Z',
+    broadcastLabel: '28 October 2026 · 11:30 UTC / 11:30 UK',
+    releaseLabel: '11 November 2026',
+    replay: 'https://www.youtube.com/watch?v=UxT6b7h5Mcc',
+    image: nteArtwork,
+    imageAlt: 'NTE Version 1.5 preview artwork, Once Upon a Glitched Call',
+    highlights: [
+      'New limited S-Class Espers: Elyms and Exe of ETD Team 6.',
+      'New activities: City Logistics deliveries and Full Tank Ahead tank battles.',
+    ],
+    note: 'The stream codes expired on 1 November.',
+  },
+  {
+    id: 'genshin-7.2',
+    game: 'genshin',
+    gameName: 'Genshin Impact',
+    version: '7.2',
+    title: 'Hour of Ruin',
+    broadcast: '2026-10-23T12:00:00Z',
+    broadcastLabel: '23 October 2026 · 12:00 UTC / 13:00 UK',
+    releaseLabel: '4 November 2026',
+    replay: 'https://www.youtube.com/watch?v=8XhQlIxJzUk',
+    image: genshinArtwork,
+    imageAlt: 'Genshin Impact Version 7.2 Special Program artwork, Hour of Ruin',
     redemption: {
-      expiresAt: Date.parse('2026-09-21T23:59:00+08:00'),
-      expiryLabel: '21 September 2026, 23:59 (UTC+8)',
-      instructions: 'Redeem each code, pick your server, then claim the reward from in-game mail.',
-      codes: ['KA5SV3FJM7WX', '7S4AD2X35NE3', 'MALSV2F247FP'].map((code) => ({
-        code,
-        rewards: 'Special Program gift',
-        redeemUrl: `https://hsr.hoyoverse.com/gift?code=${code}`,
-      })),
+      expiresAt: Date.parse('2026-10-26T00:00:00-04:00'),
+      expiryLabel: '26 October 2026, 00:00 (UTC-4)',
+      instructions:
+        'Redeem on the web or in game: Paimon Menu → Settings → Account → Redeem Code. Needs AR 10. Rewards arrive in in-game mail.',
+      codes: [
+        { code: 'HourofRuin', rewards: '100 Primogems + 10 Mystic Enhancement Ore' },
+        { code: 'ExpertMitya', rewards: '100 Primogems + 5 Hero’s Wit' },
+        { code: 'PhotoTime', rewards: '100 Primogems + 50,000 Mora' },
+      ].map((entry) => ({ ...entry, redeemUrl: `https://genshin.hoyoverse.com/en/gift?code=${entry.code}` })),
     },
+    highlights: [
+      'Mitya debuts as a five-star Electro character, with Furina’s rerun alongside. Valeriy is the new four-star.',
+      'Archon Quest Chapter VII Acts V and VI continue the story. Novokitezhgrad and Wingspan Peak open in Snezhnaya.',
+      'The Grand Defense lets you invite a four-star character of your choice.',
+    ],
+    note: 'Phase-one banners close on 24 November at 17:59 server time.',
   },
   {
     id: 'wuwa-3.7',
@@ -80,74 +117,5 @@ export const LIVESTREAMS: LivestreamRecap[] = [
       'Main quest replay, Echo stacking, camera tools and twenty team slots are coming. Download quality options start as a limited test.',
     ],
     note: 'Chisa and Iuno reruns close October 22 at 09:59.',
-  },
-  {
-    id: 'nte-1.4',
-    game: 'nte',
-    gameName: 'Neverness to Everness',
-    version: '1.4',
-    title: 'For Whom the Verses Mourn',
-    broadcast: '2026-09-16',
-    broadcastLabel: '16 September 2026',
-    releaseLabel: '30 September 2026',
-    replay: 'https://www.youtube.com/watch?v=zrDTlGF6Pg8',
-    image: nteArtwork,
-    imageAlt: 'NTE 1.4 preview artwork with Blackbird and Akane Rin',
-    redemption: {
-      expiresAt: Date.parse('2026-09-20T23:59:00+08:00'),
-      expiryLabel: '20 September 2026, 23:59 (UTC+8)',
-      instructions: 'In game: Menu → ⋯ → Redeem Code. Rewards arrive in in-game mail.',
-      codes: [
-        { code: 'WITCHHOUSE', rewards: '100 Annulith + Hunter Guides, dye and Beetle Coins' },
-        { code: 'THEWHOOTS', rewards: '100 Annulith + Hunter Guides, dye and Beetle Coins' },
-        { code: 'PUKALANDGOGO', rewards: '100 Annulith + Hunter Guides, dye and Beetle Coins' },
-      ],
-    },
-    highlights: [
-      'New Espers: Blackbird and Akane Rin.',
-      'Explore Pukaland and St. Arbor, with the new main episode The Witch and spinoff To Us, Back Then.',
-      'Pukaland Travelogue starts on 30 September. Multiplayer Volley Star and one-tap Bond gifting are also coming.',
-    ],
-  },
-  {
-    id: 'genshin-7.1',
-    game: 'genshin',
-    gameName: 'Genshin Impact',
-    version: '7.1',
-    title: 'A Rekviem for the Underworld',
-    broadcast: '2026-09-12',
-    broadcastLabel: '12 September 2026',
-    releaseLabel: '23 September 2026',
-    replay: 'https://www.youtube.com/watch?v=fSwBYIeAieo',
-    image: genshinArtwork,
-    imageAlt: 'Genshin Impact Version 7.1 artwork',
-    redemption: {
-      expiresAt: Date.parse('2026-09-15T12:00:00+08:00'),
-      expiryLabel: '15 September 2026, 12:00 (UTC+8)',
-      instructions:
-        'Redeem on the web or in game: Paimon Menu → Settings → Account → Redeem Code. Needs AR 10. Rewards arrive in in-game mail.',
-      codes: [
-        {
-          code: 'Rekviem',
-          rewards: '100 Primogems + 10 Mystic Enhancement Ore',
-          redeemUrl: 'https://genshin.hoyoverse.com/en/gift?code=Rekviem',
-        },
-        {
-          code: 'Vesna0923',
-          rewards: '100 Primogems + 5 Hero’s Wit',
-          redeemUrl: 'https://genshin.hoyoverse.com/en/gift?code=Vesna0923',
-        },
-        {
-          code: 'PrimaDonna',
-          rewards: '100 Primogems + 50,000 Mora',
-          redeemUrl: 'https://genshin.hoyoverse.com/en/gift?code=PrimaDonna',
-        },
-      ],
-    },
-    highlights: [
-      'Vesna and Vodyanitsa debut. Skirk and Escoffier return in the second phase.',
-      'A new Snezhnaya Archon Quest and weekly boss continue the story.',
-      'Moonchase Festival returns, alongside sixth-anniversary character selections and login rewards.',
-    ],
   },
 ];
