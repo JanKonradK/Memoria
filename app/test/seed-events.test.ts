@@ -241,19 +241,18 @@ describe('planSeedImport', () => {
     const maintenance = imported.filter((row) => row.seed.sourceKey === 'seed:zzz:3.2-maint');
     expect(maintenance.map((row) => row.start)).toEqual(Array(3).fill(Date.parse('2026-09-08T22:00:00Z')));
   });
-  it('uses the official Genshin 7.2 broadcast instant for every server', () => {
+  it('uses one global instant for the next Genshin broadcast on every server', () => {
     const state = {
       ...emptyState(),
       games: [account('eu', 'Etc/GMT-1'), account('us', 'Etc/GMT+5'), account('asia', 'Etc/GMT-8')],
     };
-    const broadcasts = planSeedImport(state, Date.parse('2026-10-20T00:00:00Z')).filter(
-      (item) => item.seed.sourceKey === 'seed:genshin:7.2-livestream',
+    const broadcasts = planSeedImport(state, Date.parse('2026-11-03T00:00:00Z')).filter(
+      (item) => item.seed.sourceKey === 'seed:genshin:7.3-livestream',
     );
     expect(broadcasts).toHaveLength(3);
     for (const broadcast of broadcasts) {
-      expect(broadcast.start).toBe(Date.parse('2026-10-23T12:00:00Z'));
-      expect(broadcast.seed.name).toBe('Genshin 7.2 Special Program');
-      expect(broadcast.seed.notes).toBe('Estimated window. Recap and codes are in Livestreams.');
+      expect(broadcast.start).toBe(Date.parse('2026-12-04T12:00:00Z'));
+      expect(broadcast.seed.name).toBe('Genshin 7.3 Special Program — predicted window');
     }
   });
   it('plans one timezone-adjusted seed for every account of a preset', () => {
