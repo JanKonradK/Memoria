@@ -72,7 +72,7 @@ export function GameReminders({
 
   return (
     <section>
-      <p className="mb-4 text-meta text-muted">Shown in Tonight. Times in {zone}.</p>
+      <p className="mb-4 text-meta text-muted">Sent as a notification. Times in {zone}.</p>
       {reminders.length === 0 && <p className="mb-5 text-body text-muted">No reminders.</p>}
       <div className="mb-5 divide-y divide-line-hairline">
         {reminders.map((reminder) => (

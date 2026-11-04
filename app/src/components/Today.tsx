@@ -1,33 +1,26 @@
-import { useCallback, type CSSProperties, type ReactNode } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { DateTime } from 'luxon';
-import type { GameEvent, GameUrgency } from '@memoria/shared';
+import type { GameUrgency } from '@memoria/shared';
 import { useDerived, type Derived } from '../selectors';
 import { useUI } from '../ui-store';
 import { useMediaQuery } from '../hooks';
 import { useFlip } from '../flip';
-import { fmtDur } from '../util';
+import { fmtClock, fmtDur } from '../util';
+import { calendarSchedule } from '../event-schedule';
+import { selectTodayAgenda, TODAY_AGENDA_HOURS, type TodayAgendaItem } from '../today-agenda';
 import { gameInk } from '../game-color';
 import { gameShellVars, useGround, useTheme } from '../theme';
-import { navigateWorkspace } from '../workspace-navigation';
+import { openGame } from '../workspace-navigation';
 import { readingSource } from '../reading-source';
 import { useIdentityColors } from './roster';
 import { GameControls } from './GameCard';
 import { GameLogo } from './GameLogo';
 import { TickNumber } from './TickNumber';
 import { GamePage } from './GamePage';
-import { NexusHub } from './nexus/NexusHub';
 import { TodayNotices } from './TodayNotices';
 import { ProgressBar } from './primitives';
-import { Btn, GameBadge, Page, Tooltip } from './ui';
+import { Btn, Page, Tooltip } from './ui';
 import '../today.css';
-
-function openGame(gameId: string) {
-  const ui = useUI.getState();
-  navigateWorkspace(gameId, null, () => {
-    ui.setFocusedGameId(gameId);
-    ui.setTab('home');
-  });
-}
 
 const URGENT_MS = 2 * 60 * 60_000;
 
@@ -56,6 +49,8 @@ function PriorityRow({
   const left = next ? next.at - now : null;
   const tone = left == null ? 'idle' : left <= 0 ? 'danger' : left < URGENT_MS ? 'warn' : 'calm';
   const compact = useMediaQuery('(max-width: 479px)');
+  // The dailies ring matches the logo, so both ends of the row carry the same weight.
+  const badge = compact ? 48 : 60;
   const descriptionId = `today-priority-${encodeURIComponent(game.id)}`;
   const summary = [
     next ? `${next.label}${left! > 0 ? ` in ${fmtDur(left!)}` : ' now'}` : 'No upcoming deadlines',
@@ -74,7 +69,8 @@ function PriorityRow({
         type="button"
         className="today-priority-row"
         data-roster-game={game.id}
-        aria-label={`${desktop ? 'Review' : 'Open'} ${game.name}${game.accountLabel ? ` ${game.accountLabel}` : ''}`}
+        data-paused={game.paused || undefined}
+        aria-label={`${desktop ? 'Review' : 'Open'} ${game.name}${game.accountLabel ? ` ${game.accountLabel}` : ''}${game.paused ? ', paused' : ''}`}
         aria-describedby={descriptionId}
         aria-pressed={desktop ? selected : undefined}
         onClick={onSelect}
@@ -83,7 +79,7 @@ function PriorityRow({
           {summary}
         </span>
         <span className="today-row-badge">
-          <GameLogo game={game} size={compact ? 56 : 64} />
+          <GameLogo game={game} size={badge} />
         </span>
         <span className="today-row-name">
           <span className="today-row-title text-body font-semibold text-fg">{game.name}</span>
@@ -130,13 +126,13 @@ function PriorityRow({
           {dailies.length > 0 && (
             <ProgressBar
               variant="ring"
-              size={34}
-              stroke={3.5}
+              size={badge}
+              stroke={compact ? 4 : 4.5}
               value={done / dailies.length}
               color={gameInk(colors, ground)}
             >
               {done === dailies.length ? (
-                <svg viewBox="0 0 20 20" aria-hidden className="icon h-3.5 w-3.5" fill="none" stroke="currentColor">
+                <svg viewBox="0 0 20 20" aria-hidden className="icon h-5 w-5" fill="none" stroke="currentColor">
                   <path d="m5 10.5 3.5 3.5L15 7" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               ) : (
@@ -152,17 +148,114 @@ function PriorityRow({
   );
 }
 
-function Group({ id, label, note, children }: { id: string; label: string; note?: string; children: ReactNode }) {
+const CADENCE_NOUN: Record<string, [string, string]> = {
+  daily: ['daily', 'dailies'],
+  weekly: ['weekly', 'weeklies'],
+  monthly: ['monthly', 'monthlies'],
+  custom: ['routine', 'routines'],
+};
+const AGENDA_PREVIEW = 10;
+
+function agendaText(item: TodayAgendaItem, gameName: (id: string) => string) {
+  const games = item.gameIds.map(gameName).join(', ');
+  if (item.kind === 'energy') return { title: item.label, detail: games };
+  if (item.kind === 'reset') {
+    const [one, many] = CADENCE_NOUN[item.cadence] ?? CADENCE_NOUN.custom!;
+    return { title: `${item.left} ${item.left === 1 ? one : many} reset`, detail: games };
+  }
+  return { title: item.event.name, detail: `${item.edge === 'ends' ? 'Ends' : 'Starts'} · ${games}` };
+}
+
+/** Everything due across every game in the next day, under the list. */
+function TodayAgenda({ derived, onSelectGame }: { derived: Derived; onSelectGame: (gameId: string) => void }) {
+  const { state, now, order } = derived;
+  const openSheet = useUI((ui) => ui.openSheet);
+  const colors = useIdentityColors(state.games);
+  const [expanded, setExpanded] = useState(false);
+  const items = selectTodayAgenda(order, state.events, now);
+  const byId = new Map(state.games.map((game) => [game.id, game]));
+  const gameName = (id: string) => {
+    const game = byId.get(id);
+    return game ? (game.accountLabel ? `${game.name} (${game.accountLabel})` : game.name) : '';
+  };
+  const shown = expanded ? items : items.slice(0, AGENDA_PREVIEW);
+
   return (
-    <section className="today-group" aria-labelledby={id}>
+    <section className="today-agenda" aria-labelledby="today-agenda-heading">
       <div className="today-group-rule">
-        <h2 id={id} className="text-meta font-semibold text-fg-soft">
-          {label}
+        <h2 id="today-agenda-heading" className="text-meta font-semibold text-fg-soft">
+          Next {TODAY_AGENDA_HOURS}h
         </h2>
         <span aria-hidden />
-        {note && <span className="numeral aside text-caption text-muted">{note}</span>}
+        <span className="numeral text-caption text-muted">{items.length}</span>
       </div>
-      {children}
+      {items.length === 0 ? (
+        <p className="aside today-clear text-meta text-muted">Nothing ends, caps or resets.</p>
+      ) : (
+        <ul className="today-agenda-list">
+          {shown.map((item) => {
+            const { title, detail } = agendaText(item, gameName);
+            const left = item.at - now;
+            const calendar = item.kind === 'event' ? calendarSchedule(item.event) : undefined;
+            // Something starting soon is news, not a deadline.
+            const deadline = item.kind !== 'event' || item.edge === 'ends';
+            const tone =
+              item.kind === 'energy' && item.full ? 'danger' : deadline && left < URGENT_MS ? 'warn' : 'calm';
+            return (
+              <li key={item.key}>
+                <button
+                  type="button"
+                  className="today-agenda-row"
+                  data-kind={item.kind}
+                  onClick={() =>
+                    item.kind === 'event'
+                      ? openSheet({ kind: 'eventPeek', eventId: item.event.id })
+                      : onSelectGame(item.gameIds[0]!)
+                  }
+                >
+                  <span className="today-agenda-logos" data-count={Math.min(item.gameIds.length, 3)}>
+                    {item.gameIds.slice(0, 3).map((id) => {
+                      const game = byId.get(id);
+                      return game ? <GameLogo key={id} game={{ ...game, ...colors[id] }} size={30} /> : null;
+                    })}
+                  </span>
+                  <span className="today-agenda-text">
+                    <span
+                      className={`truncate text-meta font-semibold ${item.kind === 'event' && item.edge === 'starts' ? 'text-fg-soft' : 'text-fg'}`}
+                    >
+                      {title}
+                    </span>
+                    <span className="aside truncate text-caption text-muted">{detail}</span>
+                  </span>
+                  <span className="today-agenda-when numeral" data-tone={tone}>
+                    {calendar ? (
+                      <span className="text-caption text-muted">{calendar.label}</span>
+                    ) : (
+                      <>
+                        <span className="text-meta font-semibold">{left <= 0 ? 'Now' : fmtDur(left)}</span>
+                        {left > 0 && (
+                          <span className="aside text-caption text-muted">
+                            {fmtClock(item.at, state.settings.localTz)}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {items.length > AGENDA_PREVIEW && (
+        <button
+          type="button"
+          className="today-agenda-more text-meta font-semibold"
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? 'Show fewer' : `Show ${items.length - AGENDA_PREVIEW} more`}
+        </button>
+      )}
     </section>
   );
 }
@@ -176,32 +269,11 @@ export function TodayPage({ now }: { now: number }) {
   const selectedId = useUI((ui) => ui.todayGameId);
   const setSelectedId = useUI((ui) => ui.setTodayGameId);
   const openSheet = useUI((ui) => ui.openSheet);
-  const setTab = useUI((ui) => ui.setTab);
-  const openEvent = useCallback((event: GameEvent) => openSheet({ kind: 'eventPeek', eventId: event.id }), [openSheet]);
-  const openTimeline = useCallback(() => setTab('timeline'), [setTab]);
-  const active = order.filter((entry) => !entry.game.paused);
-  const paused = order.filter((entry) => entry.game.paused);
-  const attentionUntil = now + state.settings.sleepHours * 3_600_000;
-  const attention = active.filter((entry) => entry.next && entry.next.at <= attentionUntil);
-  const canWait = active.filter((entry) => !entry.next || entry.next.at > attentionUntil);
-  const selected = order.find((entry) => entry.game.id === selectedId) ?? attention[0] ?? active[0] ?? order[0];
+  // One list, soonest first. Paused games follow, dimmed.
+  const games = [...order.filter((entry) => !entry.game.paused), ...order.filter((entry) => entry.game.paused)];
+  const selected = order.find((entry) => entry.game.id === selectedId) ?? games[0];
   const date = DateTime.fromMillis(now, { zone: state.settings.localTz }).toFormat('cccc, d LLLL');
   const listRef = useFlip<HTMLDivElement>('[data-roster-game]', (node) => node.dataset.rosterGame ?? null);
-
-  const rows = (entries: GameUrgency[]) => (
-    <ul className="today-priority-list">
-      {entries.map((entry) => (
-        <PriorityRow
-          key={entry.game.id}
-          entry={entry}
-          derived={derived}
-          desktop={desktop}
-          selected={selected?.game.id === entry.game.id}
-          onSelect={() => (desktop ? setSelectedId(entry.game.id) : openGame(entry.game.id))}
-        />
-      ))}
-    </ul>
-  );
 
   return (
     <Page className="today-page">
@@ -217,42 +289,28 @@ export function TodayPage({ now }: { now: number }) {
             <Btn kind="primary" onClick={() => openSheet({ kind: 'addGame' })}>
               Add a game
             </Btn>
-            <Btn onClick={() => setTab('settings')}>Connect to PC</Btn>
+            <Btn onClick={() => useUI.getState().openSettings('sync')}>Connect to PC</Btn>
           </div>
         </section>
       ) : (
         <div className="today-layout">
           <div className="today-list" ref={listRef}>
-            <Group id="today-attention" label="Needs attention" note={`next ${state.settings.sleepHours}h`}>
-              {attention.length ? rows(attention) : <p className="today-clear text-meta text-muted">Nothing due.</p>}
-            </Group>
-            {canWait.length > 0 && (
-              <Group id="today-can-wait" label="Can wait">
-                {rows(canWait)}
-              </Group>
-            )}
-            {paused.length > 0 && (
-              <Group id="today-paused" label="Paused">
-                <ul className="today-paused">
-                  {paused.map(({ game }) => (
-                    <li key={game.id}>
-                      <button
-                        type="button"
-                        className="today-paused-game"
-                        aria-label={`${desktop ? 'Review' : 'Open'} ${game.name}, paused`}
-                        aria-pressed={desktop ? selected?.game.id === game.id : undefined}
-                        onClick={() => (desktop ? setSelectedId(game.id) : openGame(game.id))}
-                      >
-                        <GameBadge short={game.short} {...(colors[game.id] ?? game)} size="sm" />
-                        <span className="truncate text-meta">{game.name}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </Group>
-            )}
-            {/* What closes and arrives across every game, after what each game needs. */}
-            <NexusHub state={state} entries={order} now={now} onOpenEvent={openEvent} onOpenTimeline={openTimeline} />
+            <ul className="today-priority-list" aria-label="Games">
+              {games.map((entry) => (
+                <PriorityRow
+                  key={entry.game.id}
+                  entry={entry}
+                  derived={derived}
+                  desktop={desktop}
+                  selected={selected?.game.id === entry.game.id}
+                  onSelect={() => (desktop ? setSelectedId(entry.game.id) : openGame(entry.game.id))}
+                />
+              ))}
+            </ul>
+            <TodayAgenda
+              derived={derived}
+              onSelectGame={(gameId) => (desktop ? setSelectedId(gameId) : openGame(gameId))}
+            />
           </div>
           {desktop && selected && (
             <div className="today-detail">

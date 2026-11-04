@@ -1,15 +1,196 @@
-/* Settings sits on the page ground like Today. The game list is a list of rows
-   with no fill at rest; the fill appears on hover. Scoped under the list so these
-   win over the phone padding for .settings-game-row in index.css. */
-.settings-game-list {
+/* Settings sits on the page ground like Today: no cards, a hairline between
+   rows, a quiet fill under the pointer. A wide window puts a section menu on
+   the left and the chosen section beside it; a narrow one is one page. */
+.settings-shell {
+  max-width: 200rem;
+  margin-inline: auto;
+}
+.settings-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.5rem 1.25rem;
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.settings-panes {
+  display: grid;
+  gap: 2rem;
+  min-width: 0;
+}
+
+/* The menu: the same rows and pressed state as Today's list. */
+.settings-nav ul {
+  display: grid;
   gap: 2px;
 }
-.settings-game-list .settings-game-row {
+.settings-nav-item {
+  display: flex;
+  width: 100%;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--radius-ui-lg);
+  color: var(--color-fg-soft);
+  text-align: left;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    scale var(--dur-fast) var(--ease-out);
+}
+.settings-nav-item:active {
+  scale: 0.985;
+}
+@media (hover: hover) {
+  .settings-nav-item:hover {
+    background: var(--color-fill-1);
+    color: var(--color-fg);
+  }
+}
+.settings-nav-item[aria-current='page'] {
+  background: var(--color-fill-2);
+  box-shadow: inset 0 0 0 1px var(--color-line-edge);
+  color: var(--color-fg);
+}
+.settings-nav-badge {
+  min-width: 0;
+  max-width: 50%;
+  color: var(--color-muted);
+}
+.settings-nav-new {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--color-ok-fg);
+}
+
+/* A section heading: a small label over a hairline on a phone, a page title beside the menu. */
+.settings-pane-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0 0.5rem 0.25rem;
+}
+.settings-pane-heading h2 {
+  font-size: var(--text-meta);
+}
+.settings-pane-heading > span[aria-hidden] {
+  height: 1px;
+  min-width: 1rem;
+  flex: 1;
+  background: var(--color-line);
+}
+
+.settings-group {
+  margin-top: 1.75rem;
+}
+.settings-group-heading {
+  display: flex;
+  min-height: 2.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  padding: 0 0.5rem 0.5rem;
+}
+.settings-note,
+.settings-status {
+  margin-inline: 0.5rem;
+}
+.settings-status {
+  padding-top: 0.5rem;
+}
+
+/* One setting per row: name and note on the left, control on the right. A
+   form reads down one line of labels, so rows stop at a readable measure. */
+.settings-rows {
+  max-width: 56rem;
+}
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem 2rem;
+  padding: 0.875rem 0.5rem;
+  border-bottom: 1px solid var(--color-line);
+}
+.settings-row-text {
+  min-width: min(100%, 16rem);
+  flex: 1 1 18rem;
+}
+.settings-row-text > p + p {
+  margin-top: 0.125rem;
+}
+.settings-row-control {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+}
+.settings-row[data-control='below'] .settings-row-control {
+  flex-basis: 100%;
+}
+
+/* The game list fills the pane: as many columns as fit a full row each. */
+.settings-game-list {
+  display: grid;
+  /* Cells stop at a width where Edit still sits near the name it edits. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 30rem));
+  gap: 2px 1rem;
+}
+.settings-game-list .settings-game-row {
+  gap: 0.875rem;
+  padding: 0.625rem 0.5rem;
+}
+
+/* Wi-Fi and shared-folder sync sit side by side once both have room. */
+.settings-sync-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+  gap: 0 3rem;
+  align-items: start;
+}
+.settings-sync-grid > .settings-group {
+  max-width: 44rem;
+}
+
+@media (min-width: 900px) {
+  .settings-layout {
+    grid-template-columns: 14.5rem minmax(0, 1fr);
+    gap: clamp(1.5rem, 3vw, 3.5rem);
+  }
+  .settings-nav {
+    position: sticky;
+    top: calc(var(--app-bar-h) + 1rem);
+  }
+  /* Beside the menu the pane heading is the page's own title, level with the menu's first row. */
+  .settings-pane-heading {
+    min-height: 2.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--color-line);
+  }
+  .settings-pane-heading h2 {
+    font-size: var(--text-title);
+    letter-spacing: -0.01em;
+    color: var(--color-fg);
+  }
+  .settings-pane-heading > span[aria-hidden] {
+    display: none;
+  }
+  .settings-pane > .settings-rows:first-of-type > .settings-row:first-child {
+    padding-top: 1rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .settings-nav-item,
   .settings-game-row {
     transition: none;
   }

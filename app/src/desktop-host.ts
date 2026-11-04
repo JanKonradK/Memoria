@@ -24,8 +24,31 @@ export interface DesktopHost {
     onProgress(listener: (progress: { received: number; total: number }) => void): () => void;
     onShowRequested(listener: () => void): () => void;
   };
+  /** Start with Windows, the tray, and notices when a tracked game starts. */
+  presence?: {
+    get(): Promise<DesktopPresence>;
+    set(changes: Partial<DesktopPreferences>): Promise<DesktopPresence>;
+    /** Program names per game id, e.g. `{ genshin: ['GenshinImpact'] }`. */
+    watch(games: Record<string, string[]>): Promise<boolean>;
+    notify(notice: { gameId: string; title: string; body: string }): Promise<boolean>;
+    onChanged(listener: (presence: DesktopPresence) => void): () => void;
+    onGameStarted(listener: (gameId: string) => void): () => void;
+    onOpenGame(listener: (gameId: string) => void): () => void;
+  };
   onCloseRequested(listener: (requestId: string) => void): () => void;
   completeClose(requestId: string, result: DesktopCloseResult): void;
+}
+
+export interface DesktopPreferences {
+  openAtLogin: boolean;
+  closeToTray: boolean;
+  gameStartNotices: boolean;
+}
+
+export interface DesktopPresence extends DesktopPreferences {
+  /** False in a development checkout, which never registers itself with Windows. */
+  canStartWithWindows: boolean;
+  gameWatch: boolean;
 }
 
 /** A published GitHub release, as both the desktop host and the app read it. */

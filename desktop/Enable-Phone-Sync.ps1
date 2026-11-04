@@ -1,4 +1,5 @@
-# Allow the paired phone to reach this app on the local network only.
+# Allow the paired phone to reach this app on the local network, or through a
+# private network app such as Tailscale (100.64.0.0/10), only.
 $ErrorActionPreference = 'Stop'
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principal = New-Object Security.Principal.WindowsPrincipal($identity)
@@ -21,7 +22,7 @@ if (-not (Test-Path -LiteralPath $program) -or -not (Test-Path -LiteralPath $rel
   throw 'Install Memoria before you enable phone sync.'
 }
 $record = Get-Content -LiteralPath $release -Raw | ConvertFrom-Json
-if ($record.name -ne 'Memoria' -or $record.runtime -ne 'electron') {
+if ($record.name -ne 'Memoria' -or @('tauri', 'electron') -notcontains $record.runtime) {
   throw 'The selected folder is not a standalone Memoria install.'
 }
 $ruleName = 'Memoria-Native-Phone-Sync-17820'
@@ -33,7 +34,7 @@ $options = @{
   Program = $program
   Protocol = 'TCP'
   LocalPort = 17820
-  RemoteAddress = 'LocalSubnet'
+  RemoteAddress = @('LocalSubnet', '100.64.0.0/10')
   EdgeTraversalPolicy = 'Block'
 }
 if (Get-NetFirewallRule -Name $ruleName -ErrorAction SilentlyContinue) {

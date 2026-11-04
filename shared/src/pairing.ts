@@ -6,6 +6,19 @@ export interface PairingCode {
   code: string;
 }
 
+/**
+ * Home-network ranges, plus 100.64.0.0/10 so a private network app such as
+ * Tailscale can carry sync when the phone is away from home Wi-Fi.
+ */
+function syncableAddress(first: number, second: number): boolean {
+  return (
+    first === 10 ||
+    (first === 192 && second === 168) ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 100 && second >= 64 && second <= 127)
+  );
+}
+
 export function normalizeLanHost(value: string): string {
   const match = /^(?:http:\/\/)?(\d{1,3}(?:\.\d{1,3}){3})(?::(\d{1,5}))?\/?$/.exec(value.trim());
   const address = match?.[1];
@@ -16,10 +29,7 @@ export function normalizeLanHost(value: string): string {
   const octets = parts.map(Number);
   const [first = -1, second = -1] = octets;
   const port = Number(match?.[2] ?? 17820);
-  const privateIp =
-    parts.length === 4 &&
-    octets.every((octet) => octet <= 255) &&
-    (first === 10 || (first === 192 && second === 168) || (first === 172 && second >= 16 && second <= 31));
+  const privateIp = parts.length === 4 && octets.every((octet) => octet <= 255) && syncableAddress(first, second);
   if (!privateIp || port < 1 || port > 65535 || parts.some((part) => part.length > 1 && part.startsWith('0'))) {
     throw new Error('Use the PC address shown in Memoria on your computer.');
   }

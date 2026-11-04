@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { openSettings } from './support';
 import { emptyState } from '@memoria/shared';
 import { makeEvent, makeGame } from '../../shared/test/helpers';
 import { eventFingerprint, planSeedImport } from '../src/data/seed-events';
@@ -49,6 +50,7 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openSettings(page, 'Data');
   await page.locator('input[type="file"]').setInputFiles({
     name: 'genshin-legacy.json',
     mimeType: 'application/json',
@@ -57,7 +59,7 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   // Loading the stored document is when the app safely refreshes bundled facts.
   await page.getByRole('button', { name: 'Refresh data', exact: true }).click();
-  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   const view = page.getByRole('radiogroup', { name: 'Event view' });
   await view.getByRole('radio', { name: 'Timeline', exact: true }).click();
   const groups = page.locator('[data-timeline-event-group]');
@@ -77,14 +79,10 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
   await expect(
     banners.getByRole('button', { name: /Open Genshin Impact event: Wonderland Treasures/ }).first(),
   ).toHaveCount(1);
-  for (const [key, label] of [
-    ['snowball', '21 Oct–2 Nov'],
-    ['overflowing-favor', '26 Oct–2 Nov'],
-  ]) {
+  // These notices now print exact times, so the rows count down instead of showing calendar dates.
+  for (const key of ['snowball', 'overflowing-favor']) {
     const event = state.events.find((event) => event.sourceKey === `seed:genshin:7.1-${key}`)!;
-    await expect(
-      page.locator(`[data-event-id="${event.id}"] [data-event-countdown]`).getByText(label, { exact: true }),
-    ).toHaveCount(1);
+    await expect(page.locator(`[data-event-id="${event.id}"] [data-event-countdown]`)).toHaveText(/arrives \d+d/);
   }
   const selectors = state.events.filter((event) => event.sourceKey?.endsWith('-selector'));
   for (const event of selectors) {
@@ -117,6 +115,7 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
   await view.getByRole('radio', { name: 'List', exact: true }).click();
   const snowball = state.events.find((event) => event.sourceKey === 'seed:genshin:7.1-snowball')!;
   const listRow = page.locator(`[data-list-event="${snowball.id}"]`);
-  await expect(listRow).toContainText('21 Oct–2 Nov');
-  await expect(listRow).toContainText('UTC+8');
+  // A timed row lists its start and end clocks rather than a calendar range.
+  await expect(listRow).toContainText(/Starts\s*21 Oct \d\d:\d\d/);
+  await expect(listRow).toContainText(/Ends\s*2 Nov \d\d:\d\d/);
 });

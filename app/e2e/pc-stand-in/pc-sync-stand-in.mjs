@@ -1,3 +1,6 @@
+// A stand-in for the PC's Wi-Fi sync listener, so the phone's pairing and
+// sync flow can be tested in a browser. The shipped listener is Rust
+// (desktop/tauri/src/lan.rs) and speaks the same protocol.
 import { createServer } from 'node:http';
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { networkInterfaces } from 'node:os';
@@ -11,7 +14,9 @@ const fail = (status, message) => Object.assign(new Error(message), { status });
 
 export function privateAddress(value) {
   const address = value?.replace(/^::ffff:/, '');
-  return /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|127\.)/.test(address ?? '');
+  return /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|127\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.)/.test(
+    address ?? '',
+  );
 }
 
 /** Both loopback and LAN writes enter this queue before reading disk. */

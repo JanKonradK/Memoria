@@ -1,0 +1,27 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "The Memoria window, served by the app's own loopback server.",
+  "windows": ["main"],
+  "remote": {
+    "urls": ["http://127.0.0.1:*/*"]
+  },
+  "permissions": [
+    "core:default",
+    "allow-launch-list",
+    "allow-launch-choose",
+    "allow-launch-clear",
+    "allow-launch-start",
+    "allow-update-check",
+    "allow-update-download",
+    "allow-update-install",
+    "allow-presence-get",
+    "allow-presence-set",
+    "allow-games-watch",
+    "allow-game-notify",
+    "allow-renderer-ready",
+    "allow-close-result",
+    "allow-open-external",
+    "allow-set-zoom"
+  ]
+}

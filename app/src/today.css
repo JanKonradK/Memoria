@@ -1,21 +1,21 @@
 .today-heading {
   display: flex;
-  max-width: 108rem;
+  max-width: 200rem;
   align-items: baseline;
   gap: 0.75rem;
   margin-inline: auto;
   padding: 0.5rem 0.5rem 1.25rem;
 }
 
-/* One ranked list beside the real card for the selected game. The pair is
-   capped and centred so a very wide window does not stretch either past a
-   width that can be scanned. */
+/* One ranked list beside the real card for the selected game. The list keeps
+   a scannable width; the game pane takes the rest of the window, and lays its
+   own columns out from the width it gets (see .today-card). */
 .today-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: clamp(1rem, 2vw, 2rem);
-  max-width: 108rem;
+  max-width: 200rem;
   margin-inline: auto;
 }
 
@@ -48,24 +48,28 @@
   gap: 2px;
 }
 
-/* Two lines: who and when on the first, how full and what on the second. The
-   logo column is a fixed width so every name starts on the same edge. */
+/* Two lines between a logo and a dailies ring of the same size: name and
+   countdown on the first, the energy bar and its value on the second. The
+   middle takes every pixel the ends leave. */
 .today-priority-row {
-  --meter-w: 9rem;
+  --badge: 3.75rem;
   display: grid;
   width: 100%;
-  grid-template-columns: 4.25rem minmax(0, 1fr) auto 2.125rem;
+  grid-template-columns: var(--badge) minmax(0, 1fr) auto var(--badge);
   grid-template-areas:
     'badge name time ring'
     'badge reading reading ring';
   align-items: center;
-  gap: 0.375rem 0.75rem;
-  padding: 0.75rem 0.5rem;
+  gap: 0.25rem 0.75rem;
+  padding: 0.625rem 0.5rem;
   border-radius: var(--radius-ui-lg);
   text-align: left;
   transition:
     background var(--dur-fast) var(--ease-out),
     scale var(--dur-fast) var(--ease-out);
+}
+.today-priority-row[data-paused] {
+  opacity: 0.55;
 }
 /* A press is felt before anything else happens. `scale`, so it never fights a
    row that is gliding to a new place on `transform`. */
@@ -95,13 +99,18 @@
 }
 .today-row-title {
   min-width: 0;
+  flex-shrink: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* The game's name is kept whole first; the account nick takes what is left. */
+.today-row-name:has(.today-row-account) .today-row-title {
+  max-width: calc(100% - 2.5rem);
+}
 .today-row-account {
-  min-width: 2rem;
-  flex-shrink: 2;
+  min-width: 0;
   color: var(--color-muted);
 }
 .today-row-time {
@@ -121,19 +130,20 @@
 .today-row-time[data-tone='danger'] {
   color: var(--color-danger-fg);
 }
-/* Fixed tracks, so every bar is the same length and fill levels compare down
-   the list. The deadline label takes what is left; on a phone it has its own
-   line and the bar takes what is left instead. */
+/* The bar stretches across the row. Value and age keep fixed tracks, so every
+   bar is the same length and fill levels compare down the list. */
 .today-row-reading {
   grid-area: reading;
   display: grid;
-  grid-template-columns: var(--meter-w) 3.875rem auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 4.5rem 2.75rem minmax(0, 11rem);
   align-items: center;
   gap: 0.625rem;
   min-width: 0;
 }
+.today-row-value {
+  font-size: var(--text-meta);
+}
 .today-row-what {
-  grid-column: -2;
   justify-self: end;
   max-width: 100%;
   color: var(--color-muted);
@@ -144,7 +154,8 @@
   justify-content: flex-end;
 }
 .today-row-ring .numeral {
-  font-size: 0.6875rem;
+  font-size: 0.875rem;
+  font-weight: 600;
   letter-spacing: -0.03em;
 }
 .today-row-source {
@@ -178,38 +189,8 @@
   box-shadow: none;
 }
 
-.today-paused {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-  padding-inline: 0.5rem;
-}
-.today-paused-game {
-  display: inline-flex;
-  min-height: 44px;
-  max-width: 100%;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0.75rem 0.25rem 0.5rem;
-  border-radius: var(--radius-ui-full);
-  color: var(--color-muted);
-  transition:
-    background var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out);
-}
-.today-paused-game[aria-pressed='true'] {
-  background: var(--color-fill-2);
-  color: var(--color-fg-soft);
-}
-@media (hover: hover) {
-  .today-paused-game:hover {
-    background: var(--color-fill-2);
-    color: var(--color-fg-soft);
-  }
-}
-
 .today-notices {
-  max-width: 108rem;
+  max-width: 200rem;
   margin-inline: auto;
 }
 
@@ -223,6 +204,33 @@
   display: flex;
   flex-direction: column;
   padding: 0.25rem 0 0;
+  container: today-card / inline-size;
+}
+/* The pane splits into tracking and events once each half has room for a
+   row's name and its countdown, and a very wide pane lets the event sections
+   run side by side rather than in one long column. */
+.today-card .focus-bay-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+@container today-card (min-width: 46rem) {
+  .today-card .focus-bay-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+@container today-card (min-width: 92rem) {
+  .today-card .focus-bay-grid {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  }
+  /* Columns, not a grid: a long section and two short ones balance out. */
+  .today-card .event-strip {
+    columns: 2;
+    column-gap: 2rem;
+  }
+  .today-card .event-strip > section {
+    break-inside: avoid;
+    margin-top: 0;
+    padding-bottom: 0.75rem;
+  }
 }
 .today-card > .game-card-heading {
   align-items: center;
@@ -234,55 +242,108 @@
   overflow-wrap: anywhere;
 }
 
+/* The next day across every game, flat like the list above it. */
+.today-agenda {
+  min-width: 0;
+}
+.today-agenda .today-group-rule {
+  padding-bottom: 0.25rem;
+}
+.today-agenda-list {
+  display: grid;
+  gap: 1px;
+}
+.today-agenda-row {
+  display: grid;
+  width: 100%;
+  min-height: 2.75rem;
+  grid-template-columns: 3.75rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.3125rem 0.5rem;
+  border-radius: var(--radius-ui-md);
+  text-align: left;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .today-agenda-row:hover {
+    background: var(--color-fill-1);
+  }
+}
+/* Games sharing a line overlap like a hand of coins, centred under the row logos above. */
+.today-agenda-logos {
+  display: flex;
+  justify-content: center;
+}
+.today-agenda-logos > * + * {
+  margin-left: -0.75rem;
+}
+.today-agenda-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.today-agenda-text > * {
+  min-width: 0;
+}
+.today-agenda-when {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.25;
+  color: var(--color-fg-soft);
+}
+.today-agenda-when[data-tone='warn'] > :first-child {
+  color: var(--color-warn-fg);
+}
+.today-agenda-when[data-tone='danger'] > :first-child {
+  color: var(--color-danger-fg);
+}
+.today-agenda-more {
+  margin: 0.25rem 0.5rem 0;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-ui-md);
+  color: var(--color-muted);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+.today-agenda-more:hover {
+  background: var(--color-fill-1);
+  color: var(--color-fg-soft);
+}
+
 .today-empty {
   max-width: 32rem;
   padding: 1rem 0.5rem;
 }
 
-/* Narrow lists give up the reading's age first, then the account name. The bar
-   and gaps tighten so the deadline keeps room beside the bar, and it is the
-   last thing cut. */
-@container (max-width: 37rem) {
+/* A phone keeps the logo and ring at 48px and gives the rest to the middle. */
+@media (max-width: 479px) {
   .today-priority-row {
-    --meter-w: 3.5rem;
-    gap: 0.375rem 0.5rem;
+    --badge: 3rem;
+    gap: 0.25rem 0.625rem;
+    padding: 0.5rem 0.25rem;
   }
-  .today-row-source {
-    display: none;
-  }
-  .today-row-reading {
-    grid-template-columns: var(--meter-w) 3.875rem minmax(0, 1fr);
-    gap: 0.5rem;
+  .today-row-time {
+    font-size: var(--text-body);
   }
 }
-@container (max-width: 25rem) {
-  .today-row-account {
+
+/* Narrow lists drop the deadline label and the reading's age; the countdown
+   and the screen reader summary still say what is next. */
+@container (max-width: 34rem) {
+  .today-row-reading {
+    grid-template-columns: minmax(0, 1fr) 4.5rem;
+  }
+  .today-row-source,
+  .today-row-what {
     display: none;
   }
-  /* A phone shows the whole name on two lines rather than half of it on one. */
-  .today-row-title {
-    display: -webkit-box;
-    white-space: normal;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    line-height: 1.25;
-  }
-  /* Too narrow for the label beside the bar, so it gets a full-width line of
-     its own (up to two) and the bar and value take the row's width. */
-  .today-row-reading {
-    grid-template-columns: minmax(0, 1fr) 3.875rem;
-    row-gap: 0.25rem;
-  }
-  .today-row-what {
-    grid-column: 1 / -1;
-    justify-self: start;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    white-space: normal;
-    line-height: 1.25;
+}
+@container (max-width: 20rem) {
+  .today-row-account {
+    display: none;
   }
 }
 
@@ -312,9 +373,6 @@
     padding-left: clamp(1rem, 2vw, 2rem);
     border-left: 1px solid var(--color-line);
   }
-  .today-paused-game {
-    min-height: 36px;
-  }
 }
 
 /* A short window keeps one document scroll. A taller one keeps the card beside
@@ -331,8 +389,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .today-agenda-row,
   .today-priority-row,
-  .today-paused-game,
   .today-meter > span {
     transition: none;
   }

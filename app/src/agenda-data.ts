@@ -12,7 +12,7 @@ import {
  *
  * This lived in TimelineAgenda.tsx alongside the components that rendered it.
  * Those components are gone — the timeline is lanes only now — but the selector
- * is still the source for the dashboard's Tonight panel, so it moves here as a
+ * is still the source for the agenda views, so it moves here as a
  * pure module rather than dying with its former UI.
  */
 

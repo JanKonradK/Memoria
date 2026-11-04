@@ -17,15 +17,25 @@ $source = [IO.Path]::GetFullPath($source).TrimEnd('\')
 $destination = [IO.Path]::GetFullPath($InstallRoot).TrimEnd('\')
 $dataDirectory = Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'memoria'
 
-function Assert-NativeBundle([string]$directory) {
-  foreach ($relativePath in @('Memoria.exe', 'release.json', 'resources\app\package.json', 'desktop\electron-main.mjs', 'app\dist\index.html')) {
+# The download being installed is the Rust build. The folder it replaces may
+# still hold the earlier Electron build, which is how existing installs upgrade.
+function Assert-NativeBundle([string]$directory, [switch]$AllowPrevious) {
+  $record = $null
+  $releaseFile = Join-Path $directory 'release.json'
+  if (Test-Path -LiteralPath $releaseFile -PathType Leaf) {
+    $record = Get-Content -LiteralPath $releaseFile -Raw | ConvertFrom-Json
+  }
+  $runtimes = @('tauri')
+  if ($AllowPrevious) { $runtimes += 'electron' }
+  if (-not $record -or $record.name -ne 'Memoria' -or $runtimes -notcontains $record.runtime) {
+    throw 'This folder does not contain a standalone Memoria release.'
+  }
+  $required = @('Memoria.exe', 'release.json', 'app\dist\index.html')
+  if ($record.runtime -eq 'electron') { $required += @('resources\app\package.json', 'desktop\electron-main.mjs') }
+  foreach ($relativePath in $required) {
     if (-not (Test-Path -LiteralPath (Join-Path $directory $relativePath) -PathType Leaf)) {
       throw "The Windows app is incomplete: $relativePath is missing. Run npm run build and npm run package, or extract a new Windows download."
     }
-  }
-  $record = Get-Content -LiteralPath (Join-Path $directory 'release.json') -Raw | ConvertFrom-Json
-  if ($record.name -ne 'Memoria' -or $record.runtime -ne 'electron') {
-    throw 'This folder does not contain a standalone Memoria release.'
   }
 }
 
@@ -42,7 +52,7 @@ if (-not $source.Equals($destination, [StringComparison]::OrdinalIgnoreCase)) {
     throw 'The source and install folders must not contain each other.'
   }
   if (Test-Path -LiteralPath $destination) {
-    Assert-NativeBundle $destination
+    Assert-NativeBundle $destination -AllowPrevious
     if ((Get-Item -LiteralPath $destination).Attributes -band [IO.FileAttributes]::ReparsePoint) {
       throw 'The install folder must not be a symbolic link or junction.'
     }

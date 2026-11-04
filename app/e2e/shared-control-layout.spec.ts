@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { emptyState } from '@memoria/shared';
+import { openSettings } from './support';
 import { makeGame } from '../../shared/test/helpers';
 
 test('long game choices fit the viewport and backup import has visible keyboard focus', async ({ page }) => {
@@ -9,7 +10,7 @@ test('long game choices fit the viewport and backup import has visible keyboard 
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openSettings(page, 'Data');
   await page.locator('input[type="file"]').setInputFiles({
     name: 'long-game.json',
     mimeType: 'application/json',
@@ -50,6 +51,7 @@ test('long game choices fit the viewport and backup import has visible keyboard 
   }));
   expect(overflow.scrollWidth, JSON.stringify(overflow, null, 2)).toBeLessThanOrEqual(overflow.width);
 
+  await openSettings(page, 'Data');
   await page.getByRole('button', { name: 'Export backup', exact: true }).focus();
   await page.keyboard.press('Tab');
   await expect(page.locator('input[type="file"]')).toBeFocused();

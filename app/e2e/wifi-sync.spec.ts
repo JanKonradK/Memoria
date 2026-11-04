@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createLanSync, createStateAccess } from '../../desktop/lan-sync.mjs';
+import { createLanSync, createStateAccess } from './pc-stand-in/pc-sync-stand-in.mjs';
 import * as core from '../../desktop/dist/shared-core.mjs';
 import AxeBuilder from '@axe-core/playwright';
 import { gameRow, openGame } from './support';

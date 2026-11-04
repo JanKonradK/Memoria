@@ -140,7 +140,7 @@ export const SERVER_TZ_OPTIONS: Array<{ label: string; tz: string }> = [
   { label: 'US Pacific (DST)', tz: 'America/Los_Angeles' },
   { label: 'US Eastern (DST)', tz: 'America/New_York' },
   { label: 'Japan (UTC+9)', tz: 'Asia/Tokyo' },
-  { label: 'Central Europe (DST)', tz: 'Europe/Warsaw' },
+  { label: 'Central Europe, NTE Europe (DST)', tz: 'Europe/Warsaw' },
 ];
 
 // Short labels are stored on games. Removing an old alias when a badge changes
@@ -448,7 +448,10 @@ export const PRESETS: GamePreset[] = [
     titleFont: "'Righteous', sans-serif",
     icon: '',
     platform: 'both',
-    tz: 'Etc/GMT-1',
+    // Unlike the HoYo and Kuro servers, NTE's Europe server follows summer
+    // time: its reset stays at 05:00 Central European time, which is 04:00 in
+    // the UK all year. A fixed UTC+1 clock would put it an hour early every winter.
+    tz: 'Europe/Warsaw',
     dailyResetHour: 5,
     weeklyResetDay: 1,
     monthlyResetDay: 1,

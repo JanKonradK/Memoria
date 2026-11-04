@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { openSettings } from './support';
 import { emptyState, PRESETS } from '@memoria/shared';
 import { makeGame, makeResource, makeSnapshot, makeTask } from '../../shared/test/helpers';
 
@@ -55,6 +56,7 @@ test('Today fits more games and keeps compact summaries readable and actionable'
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openSettings(page, 'Data');
   await page
     .locator('input[type="file"]')
     .setInputFiles({ name: 'roster.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });

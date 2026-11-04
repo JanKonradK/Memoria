@@ -39,7 +39,7 @@ test('shared game focus, event editing, and the guide work at every size', async
   ).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('game-page.png') });
-  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Focus game' })).toContainText('Genshin Impact');
   await page.getByRole('radiogroup', { name: 'Event view' }).getByRole('radio', { name: 'List', exact: true }).click();
   await page.getByRole('button', { name: 'Add', exact: true }).click();

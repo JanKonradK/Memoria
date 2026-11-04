@@ -1,5 +1,6 @@
 // Builds the downloadable Memoria release: a zip a person unpacks anywhere and
-// double-clicks, with no Node install, no npm and no build step of their own.
+// double-clicks. One small Rust program plus the built app; the window is the
+// WebView2 runtime that ships with Windows.
 //
 //   npm run build            # must run first — this script only assembles
 //   npm run package
@@ -13,22 +14,12 @@
 // Downloads produces a folder rather than a mess.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const releaseDir = join(root, 'dist', 'release');
 const stageDir = join(releaseDir, 'Memoria');
-const nodeCacheDir = join(root, 'dist', '.node-cache');
-
-/**
- * The Node runtime shipped inside the zip. Pinned rather than tracking latest:
- * the release is tested against one runtime, and a user's install should not
- * change underneath them because nodejs.org moved a tag.
- */
-const NODE_VERSION = process.env['MEMORIA_NODE_VERSION'] ?? 'v24.21.0';
-if (!/^v\d+\.\d+\.\d+$/.test(NODE_VERSION)) throw new Error('MEMORIA_NODE_VERSION must be a version such as v24.14.0.');
-const NODE_DIST = `https://nodejs.org/dist/${NODE_VERSION}`;
 
 const ZIP_NAME = 'Memoria-win-x64.zip';
 const SUMS_NAME = 'SHA256SUMS.txt';
@@ -57,88 +48,43 @@ function powershellLiteral(value) {
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const version = pkg.version;
 if (!/^\d+\.\d+\.\d+/.test(version)) fail(`package.json version "${version}" is not a release version`);
+if (process.platform !== 'win32' || process.arch !== 'x64') fail('build the Windows release on Windows x64');
 
-// Everything the launcher needs at runtime, and nothing else. Listed explicitly
+// Everything the app needs at runtime, and nothing else. Listed explicitly
 // rather than copied wholesale so a stray local file cannot end up in a public
 // download.
 const required = [
   ['app/dist', 'app/dist'],
-  ['desktop/memoria.mjs', 'desktop/memoria.mjs'],
-  ['desktop/electron-main.mjs', 'desktop/electron-main.mjs'],
-  ['desktop/electron-preload.cjs', 'desktop/electron-preload.cjs'],
-  ['desktop/native-policy.mjs', 'desktop/native-policy.mjs'],
-  ['desktop/game-launch.mjs', 'desktop/game-launch.mjs'],
-  ['desktop/lan-sync.mjs', 'desktop/lan-sync.mjs'],
-  ['desktop/http-response.mjs', 'desktop/http-response.mjs'],
-  ['desktop/update.mjs', 'desktop/update.mjs'],
-  ['desktop/shared-core.mjs', 'desktop/shared-core.mjs'],
-  ['desktop/dist/shared-core.mjs', 'desktop/dist/shared-core.mjs'],
-  ['desktop/Memoria.vbs', 'desktop/Memoria.vbs'],
   ['desktop/memoria.ico', 'desktop/memoria.ico'],
   ['desktop/Install-Shortcut.ps1', 'desktop/Install-Shortcut.ps1'],
   ['desktop/Install-Lock.ps1', 'desktop/Install-Lock.ps1'],
   ['desktop/Enable-Phone-Sync.ps1', 'desktop/Enable-Phone-Sync.ps1'],
 ];
-
-for (const [source] of required) {
-  if (!existsSync(join(root, source))) {
-    fail(`missing ${source} — run "npm run build" before packaging`);
-  }
+for (const [source] of [...required, ['desktop/dist/core.js']]) {
+  if (!existsSync(join(root, source))) fail(`missing ${source} — run "npm run build" before packaging`);
 }
 
-// The release includes its own window engine. Never package a host runtime for
-// a different platform under the Windows download name.
-const electronRoot = join(root, 'node_modules', 'electron');
-const electronDist = join(electronRoot, 'dist');
-const electronExe = join(electronDist, 'electron.exe');
-if (process.platform !== 'win32' || process.arch !== 'x64' || !existsSync(electronExe)) {
-  fail('the Windows x64 Electron runtime is missing — install dependencies on Windows x64 before packaging');
-}
-const electronVersion = JSON.parse(readFileSync(join(electronRoot, 'package.json'), 'utf8')).version;
-if (readFileSync(join(electronDist, 'version'), 'utf8').trim() !== electronVersion) {
-  fail('the Electron runtime version does not match the installed package');
-}
+// --- the Windows program ------------------------------------------------------
 
-// --- bundled Node -----------------------------------------------------------
+// The program reports the same version as the release it ships in.
+const tauriDir = join(root, 'desktop', 'tauri');
+const cargoToml = join(tauriDir, 'Cargo.toml');
+writeFileSync(cargoToml, readFileSync(cargoToml, 'utf8').replace(/^version = "[^"]+"/m, `version = "${version}"`));
+const tauriConf = join(tauriDir, 'tauri.conf.json');
+const conf = JSON.parse(readFileSync(tauriConf, 'utf8'));
+if (conf.version !== version) writeFileSync(tauriConf, `${JSON.stringify({ ...conf, version }, null, 2)}\n`);
 
-/**
- * Fetches the official node.exe and checks it against the SHASUMS256.txt that
- * nodejs.org publishes beside it. A runtime pulled over the network and handed
- * to users unverified would be the single worst link in this chain.
- */
-async function fetchNodeExe() {
-  const cached = join(nodeCacheDir, NODE_VERSION, 'node.exe');
-
-  const sumsResponse = await fetch(`${NODE_DIST}/SHASUMS256.txt`);
-  if (!sumsResponse.ok) fail(`nodejs.org returned ${sumsResponse.status} for SHASUMS256.txt`);
-  const sums = await sumsResponse.text();
-  const line = sums.split(/\r?\n/).find((entry) => entry.trim().endsWith('win-x64/node.exe'));
-  if (!line) fail(`SHASUMS256.txt for ${NODE_VERSION} does not list win-x64/node.exe`);
-  const expected = line.trim().split(/\s+/)[0].toLowerCase();
-  if (!/^[0-9a-f]{64}$/.test(expected)) fail('nodejs.org returned an invalid node.exe checksum');
-  if (existsSync(cached)) {
-    if (sha256(cached) === expected) return cached;
-    rmSync(cached, { force: true });
-  }
-
-  console.log(`Downloading Node ${NODE_VERSION} (win-x64)...`);
-  const exeResponse = await fetch(`${NODE_DIST}/win-x64/node.exe`);
-  if (!exeResponse.ok) fail(`nodejs.org returned ${exeResponse.status} for node.exe`);
-  const bytes = Buffer.from(await exeResponse.arrayBuffer());
-
-  mkdirSync(join(nodeCacheDir, NODE_VERSION), { recursive: true });
-  writeFileSync(cached, bytes);
-  const actual = sha256(cached);
-  if (actual !== expected) {
-    rmSync(cached, { force: true });
-    fail(`node.exe checksum mismatch (expected ${expected}, got ${actual})`);
-  }
-  return cached;
-}
+console.log('Building Memoria.exe...');
+const built = spawnSync('cargo', ['build', '--release', '--manifest-path', cargoToml], {
+  stdio: 'inherit',
+});
+if (built.status !== 0) fail('cargo could not build Memoria.exe');
+const program = join(tauriDir, 'target', 'release', 'Memoria.exe');
+if (!existsSync(program)) fail('cargo did not produce Memoria.exe');
 
 // --- assemble ---------------------------------------------------------------
 
-if (process.platform === 'win32' && existsSync(stageDir)) {
+if (existsSync(stageDir)) {
   const idle = spawnSync(
     'powershell',
     [
@@ -151,34 +97,15 @@ if (process.platform === 'win32' && existsSync(stageDir)) {
   );
   if (idle.status !== 0) fail(`close Memoria from ${stageDir} before replacing the staged release`);
 }
-
-// Keep independently built Android artifacts in the shared release directory.
-if (process.platform !== 'win32') rmSync(stageDir, { recursive: true, force: true });
 mkdirSync(stageDir, { recursive: true });
 
-// Include Electron's license files, locale files, resources, and native DLLs.
-// Only its default example app is replaced with our small bootstrap module.
-cpSync(electronDist, stageDir, { recursive: true });
-renameSync(join(stageDir, 'electron.exe'), join(stageDir, 'Memoria.exe'));
-rmSync(join(stageDir, 'resources', 'default_app.asar'), { force: true });
-const electronApp = join(stageDir, 'resources', 'app');
-mkdirSync(electronApp, { recursive: true });
-writeFileSync(
-  join(electronApp, 'package.json'),
-  `${JSON.stringify({ name: 'memoria', productName: 'Memoria', version, type: 'module', main: 'main.mjs' }, null, 2)}\n`,
-);
-writeFileSync(join(electronApp, 'main.mjs'), "import '../../desktop/electron-main.mjs';\n");
-
+cpSync(program, join(stageDir, 'Memoria.exe'));
 for (const [source, destination] of required) {
   cpSync(join(root, source), join(stageDir, destination), { recursive: true });
 }
 
-const nodeExe = await fetchNodeExe();
-mkdirSync(join(stageDir, 'node'), { recursive: true });
-cpSync(nodeExe, join(stageDir, 'node', 'node.exe'));
-
-// The marker that tells the launcher it is packaged: no source tree to rebuild
-// from, and a version the updater can compare against GitHub.
+// The marker that tells the program it is installed, and the version the
+// updater compares against GitHub.
 writeFileSync(
   join(stageDir, 'release.json'),
   `${JSON.stringify(
@@ -187,9 +114,7 @@ writeFileSync(
       version,
       tag: `v${version}`,
       channel: 'stable',
-      node: NODE_VERSION,
-      electron: electronVersion,
-      runtime: 'electron',
+      runtime: 'tauri',
       updateMode: 'manual',
       builtAt: new Date().toISOString(),
       platform: 'win-x64',
@@ -220,20 +145,20 @@ writeStagedText('README.txt', [
   '',
   'A gacha daily / energy / event tracker that runs entirely on this machine.',
   'No cloud account. Optional Wi-Fi sync connects your Android phone to this PC.',
-  'Includes its own window and runtime. No browser or developer tools required.',
+  'Uses the WebView2 runtime built into Windows. No browser or developer tools required.',
   '',
   'START IT',
   '  Double-click Memoria.exe.',
   '  To install it, close Memoria and run "Add Memoria to Start Menu.cmd".',
   '  The installer copies the app to %LOCALAPPDATA%\\Programs\\Memoria.',
   '  It creates Desktop and Start Menu shortcuts. No administrator rights needed.',
-  '  For phone sync, press Alt and select Help > Allow phone sync through Windows.',
+  '  For phone sync, right-click the Memoria tray icon and select Allow phone sync through Windows.',
   '  Approve the Windows permission request to allow local phone connections.',
   '',
   'UPDATES',
   '  Memoria checks GitHub for new versions and shows what changed.',
   '  Select Update, then Restart and update. Your data is kept.',
-  '  Press Alt and select Help > Check for updates to check now.',
+  '  Right-click the Memoria tray icon and select Check for updates to check now.',
   '',
   'YOUR DATA',
   '  Lives in %APPDATA%\\memoria, not in this folder. Deleting or replacing',

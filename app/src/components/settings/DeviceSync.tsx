@@ -434,32 +434,35 @@ function PhoneConnection() {
   );
 }
 
+/** Wi-Fi sync between the Windows app and a paired phone or tablet. */
 export function DeviceSync() {
   const desktop = servedByLauncher();
   const native = isNativeDevice();
   if (!desktop && !native) return null;
   return (
-    <section id="device-sync" className="settings-section mb-5 min-w-0" aria-labelledby="wifi-sync-heading">
-      <div className="today-group-rule">
-        <h2 id="wifi-sync-heading" className="text-meta font-semibold text-fg-soft">
-          Device sync
-        </h2>
-        <span aria-hidden />
-      </div>
-      {/* Inset to the heading's text, so the body and its hairlines line up with the rule. */}
-      <div className="mx-2 space-y-3">
-        {desktop ? <DesktopConnection /> : <PhoneConnection />}
-        <details className={DETAILS}>
-          <summary>Need help connecting?</summary>
-          <ul className="list-disc space-y-2 pb-3 pl-5">
-            <li>Connect both devices to the same Wi-Fi.</li>
-            <li>Keep Memoria open on your PC.</li>
-            <li>Allow Memoria through the Windows firewall on private networks.</li>
-            <li>Code expired? Show a new one on the PC.</li>
-          </ul>
-          <p className="pb-3 text-meta text-muted">Use only trusted Wi-Fi. This connection is not encrypted.</p>
-        </details>
-      </div>
-    </section>
+    <div id="device-sync" className="settings-sync min-w-0 space-y-3">
+      {desktop ? <DesktopConnection /> : <PhoneConnection />}
+      <details className={DETAILS}>
+        <summary>Need help connecting?</summary>
+        <ul className="list-disc space-y-2 pb-3 pl-5">
+          <li>Connect both devices to the same Wi-Fi.</li>
+          <li>Keep Memoria open on your PC.</li>
+          <li>Allow Memoria through the Windows firewall on private networks.</li>
+          <li>Code expired? Show a new one on the PC.</li>
+          <li>
+            Away from home? Install Tailscale on both devices and sign in to the same account. After the next sync, the
+            phone reaches the PC from any network.
+          </li>
+        </ul>
+        <p className="pb-3 text-meta text-muted">
+          Use only trusted Wi-Fi. This connection is not encrypted. Tailscale encrypts it.
+        </p>
+      </details>
+    </div>
   );
+}
+
+/** Whether this build offers Wi-Fi sync at all. */
+export function deviceSyncAvailable() {
+  return servedByLauncher() || isNativeDevice();
 }

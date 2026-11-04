@@ -1,11 +1,12 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { emptyState } from '@memoria/shared';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { makeGame } from '../../shared/test/helpers';
 import { SettingsPage } from '../src/components/Settings';
 import { useApp } from '../src/store';
+import { useUI } from '../src/ui-store';
 
-vi.mock('../src/components/settings/DeviceSync', () => ({ DeviceSync: () => null }));
+vi.mock('../src/components/settings/DeviceSync', () => ({ DeviceSync: () => null, deviceSyncAvailable: () => false }));
 vi.mock('../src/cloud-sync', () => ({
   CLOUD_FILE_SUGGESTED_NAME: 'memoria-sync.json',
   cloudSyncSupported: () => true,
@@ -15,6 +16,11 @@ vi.mock('../src/cloud-sync', () => ({
   disconnectCloudFile: vi.fn(),
   reconnectCloudFile: vi.fn(),
 }));
+
+// The test window is wide, so Settings shows one pane beside its menu.
+beforeEach(() => {
+  useUI.setState({ settingsSection: 'data' });
+});
 
 afterEach(() => {
   useApp.setState({ state: emptyState(), cloudStatus: 'off', cloudFileName: '', cloudError: '' });
@@ -70,6 +76,7 @@ it('shows an initial shared-folder connection error before a filename is availab
     cloudFileName: '',
     cloudError: 'Cannot open this file.',
   });
+  useUI.setState({ settingsSection: 'sync' });
   render(<SettingsPage />);
   expect(screen.getByText('Cannot open this file.')).toBeVisible();
   expect(screen.getByRole('button', { name: 'Use existing file…' })).toBeVisible();

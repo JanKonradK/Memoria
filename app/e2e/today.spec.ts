@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openSettings } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { emptyState } from '@memoria/shared';
 import { makeGame } from '../../shared/test/helpers';
@@ -11,14 +12,14 @@ test.beforeEach(async ({ page }, info) => {
 
 test('Today starts a new roster and keeps all navigation reachable', async ({ page }, info) => {
   const primary = page.getByRole('navigation', { name: 'Primary', exact: true });
-  await expect(primary.getByRole('button')).toHaveText(['Today', 'Calendar']);
+  await expect(primary.getByRole('button')).toHaveText(['Timeline', 'Today', 'Settings']);
   await expect(primary.getByRole('button', { name: 'Today' })).toHaveAttribute('aria-current', 'page');
   await page.getByRole('button', { name: 'Add a game', exact: true }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Needs attention', exact: true })).toBeVisible();
+  await expect(page.getByRole('list', { name: 'Games', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath('today-dark.png') });
   expect(
@@ -28,17 +29,17 @@ test('Today starts a new roster and keeps all navigation reachable', async ({ pa
   ).toEqual([]);
   await page.getByRole('button', { name: 'Switch to light theme' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-  await expect(primary.getByRole('button', { name: 'Calendar' })).toHaveCSS('color', 'rgb(53, 55, 64)');
+  await expect(primary.getByRole('button', { name: 'Timeline' })).toHaveCSS('color', 'rgb(53, 55, 64)');
   expect(
     (await new AxeBuilder({ page }).analyze()).violations.filter((issue) =>
       ['serious', 'critical'].includes(issue.impact ?? ''),
     ),
   ).toEqual([]);
   await page.screenshot({ path: info.outputPath('today-light.png') });
-  await primary.getByRole('button', { name: 'Calendar' }).click();
-  await page.getByRole('button', { name: 'Livestreams', exact: true }).click();
+  await primary.getByRole('button', { name: 'Timeline' }).click();
+  await page.getByRole('radio', { name: 'Livestreams', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Livestreams', exact: true })).toBeVisible();
-  await expect(primary.getByRole('button', { name: 'Calendar' })).toHaveAttribute('aria-current', 'page');
+  await expect(primary.getByRole('button', { name: 'Timeline' })).toHaveAttribute('aria-current', 'page');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
 });
@@ -79,6 +80,7 @@ test('browser Back restores a scrolled Today roster', async ({ page }, info) => 
   state.games = Array.from({ length: 12 }, (_, index) =>
     makeGame({ id: `today-${index}`, name: `Today game ${index}`, sort: index }),
   );
+  await openSettings(page, 'Data');
   await page.locator('input[type="file"]').setInputFiles({
     name: 'today-roster.json',
     mimeType: 'application/json',
@@ -86,12 +88,12 @@ test('browser Back restores a scrolled Today roster', async ({ page }, info) => 
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today' }).click();
-  const priority = page.getByRole('button', { name: 'Open Today game 7', exact: true });
+  const priority = page.getByRole('button', { name: 'Open Today game 11', exact: true });
   await priority.scrollIntoViewIfNeeded();
   const position = await page.evaluate(() => scrollY);
   expect(position).toBeGreaterThan(0);
   await priority.click();
-  await expect(page.getByRole('heading', { name: 'Today game 7', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Today game 11', exact: true })).toBeVisible();
   await page.goBack();
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(position, 0);

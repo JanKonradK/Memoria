@@ -157,6 +157,9 @@ describe('finished events leave the lane', () => {
       { key: 'miliastra', ids: ['mw-1', 'mw-2'] },
       { key: 'banners', ids: ['banner'] },
     ]);
+    // Handles only exist in edit mode.
+    expect(screen.queryByRole('button', { name: 'Reorder Wonderland first' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit events' }));
     fireEvent.keyDown(screen.getByRole('button', { name: 'Reorder Wonderland first' }), { key: 'ArrowUp' });
     expect(sections()[1].ids).toEqual(['mw-1', 'mw-2']);
     fireEvent.keyDown(screen.getByRole('button', { name: 'Reorder Wonderland second' }), { key: 'ArrowUp' });

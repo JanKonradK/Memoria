@@ -87,11 +87,9 @@ export function LivestreamsPage() {
   return (
     <section className="app-page mx-auto max-w-6xl px-4 py-6 sm:px-6" aria-labelledby="livestream-heading">
       <div className="calendar-heading">
-        <div className="min-w-0">
-          <h1 id="livestream-heading" className="text-heading font-semibold text-fg">
-            Livestreams
-          </h1>
-        </div>
+        <h1 id="livestream-heading" className="sr-only">
+          Livestreams
+        </h1>
         <CalendarToolbar view="livestreams" />
       </div>
       <section aria-labelledby="upcoming-broadcasts-heading" className="mt-6">

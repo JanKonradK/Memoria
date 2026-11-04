@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { emptyState, PRESETS } from '@memoria/shared';
 import { makeGame } from '../../shared/test/helpers';
-import { gameRow, openGame } from './support';
+import { gameRow, openGame, openSettings } from './support';
 
 test('saved sheets animate out and lazy editors can open after dismissal', async ({ page }, testInfo) => {
   test.skip(!['desktop', 'mobile-390'].includes(testInfo.project.name), 'Desktop dialog and mobile sheet');
@@ -124,6 +124,7 @@ test('a long desktop Today list restores its scroll and supports repeated page v
     });
   });
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openSettings(page, 'Data');
   await page.locator('input[type="file"]').setInputFiles({
     name: 'long-roster.json',
     mimeType: 'application/json',

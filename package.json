@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "npm -w app run dev",
     "build": "npm -w app run build && npm run build:desktop",
-    "build:desktop": "esbuild desktop/shared-core.mjs --bundle --platform=node --format=esm --outfile=desktop/dist/shared-core.mjs",
+    "build:desktop": "esbuild desktop/shared-core.mjs --bundle --platform=node --format=esm --outfile=desktop/dist/shared-core.mjs && esbuild desktop/tauri/core-entry.mjs --bundle --platform=neutral --main-fields=module,main --format=iife --global-name=MemoriaCore --target=es2020 --minify --outfile=desktop/dist/core.js --log-level=warning",
     "build:android": "node scripts/build-android.mjs",
     "android:open": "cd app && cap open android",
     "test": "npm -w shared run test && npm -w app run test && npm run test:desktop",
@@ -22,7 +22,7 @@
     "check:pwa": "node scripts/check-pwa.mjs",
     "check:events": "node scripts/export-event-feed.mjs --check",
     "check:release": "node scripts/check-release.mjs",
-    "check": "npm run lint && npm run format:check && npm run check:events && npm run typecheck && npm test && npm run build && npm run check:pwa",
+    "check": "npm run lint && npm run format:check && npm run check:events && npm run typecheck && npm test && npm run test:rust && npm run build && npm run check:pwa",
     "typecheck": "npm -w shared run typecheck && npm -w app run typecheck",
     "audit": "npm audit --audit-level=moderate",
     "icons": "node app/scripts/gen-mark.mjs && node app/scripts/gen-icons.mjs && node app/scripts/gen-ico.mjs",
@@ -31,17 +31,15 @@
     "build:single": "npm -w app run build:single",
     "package": "node scripts/package-release.mjs",
     "export:events": "node scripts/export-event-feed.mjs",
-    "desktop": "node scripts/start-desktop.mjs",
+    "desktop": "npm run build && cargo run --manifest-path desktop/tauri/Cargo.toml",
     "check:native": "node scripts/check-native.mjs",
-    "prepackage": "node node_modules/electron/install.js",
-    "predesktop": "node node_modules/electron/install.js"
+    "test:rust": "npm run build:desktop && cargo test --manifest-path desktop/tauri/Cargo.toml --quiet"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@capacitor/cli": "8.5.2",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.63.0",
-    "electron": "44.9.3",
     "esbuild": "^0.28.2",
     "eslint": "^10.12.0",
     "eslint-plugin-react-hooks": "^7.1.1",

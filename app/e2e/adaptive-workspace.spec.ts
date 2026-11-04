@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openSettings } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { emptyState } from '@memoria/shared';
 import { makeGame, makeResource, makeSnapshot } from '../../shared/test/helpers';
@@ -21,6 +22,7 @@ async function importRoster(page: Page) {
     makeSnapshot({ id: `snapshot-${resource.id}`, resourceId: resource.id, value: 200, takenAt: Date.now() }),
   );
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openSettings(page, 'Data');
   await page.locator('input[type="file"]').setInputFiles({
     name: 'responsive-roster.json',
     mimeType: 'application/json',
@@ -79,9 +81,8 @@ test('Today and game controls adapt while a PC window is resized', async ({ page
     await page.screenshot({ path: info.outputPath(`today-${viewport.width}.png`) });
   }
 
-  // A snapped PC window keeps Tonight under the list, and a game's page keeps a typed value while it resizes.
+  // A game's page keeps a typed value while the window resizes.
   await page.setViewportSize({ width: 960, height: 650 });
-  await expect(page.getByRole('region', { name: 'Across every game', exact: true })).toBeVisible();
   await page.locator('[data-roster-game="adaptive-0"]').click();
   await page.getByRole('button', { name: 'Open full page' }).click();
   const energy = page.getByLabel('Energy current value', { exact: true });

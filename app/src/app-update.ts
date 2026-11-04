@@ -92,7 +92,7 @@ export function releaseNotes(release: Pick<ReleaseInfo, 'notes'>): string {
   return release.notes.split(/^##\s+Downloads?\b/im)[0]?.trim() ?? '';
 }
 
-/** Electron prefixes errors from the main process with the IPC channel; people need only the reason. */
+/** The Electron build prefixed errors with the IPC channel; people need only the reason. */
 function message(error: unknown, fallback: string): string {
   const text =
     error instanceof Error ? error.message.replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '') : '';
