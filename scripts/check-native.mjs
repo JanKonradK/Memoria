@@ -150,7 +150,12 @@ async function memoryInUse(pid) {
 }
 
 async function launch() {
-  app = spawn(executablePath, [], { cwd: install, env, stdio: 'ignore' });
+  app = spawn(executablePath, [], { cwd: install, env, stdio: ['ignore', 'ignore', 'pipe'] });
+  const output = [];
+  app.stderr.on('data', (chunk) => output.push(String(chunk)));
+  const started = app;
+  let exitCode;
+  started.once('exit', (code, signal) => (exitCode = code ?? signal));
   const deadline = Date.now() + 45_000;
   while (!page && Date.now() < deadline) {
     await new Promise((done) => setTimeout(done, 300));
@@ -160,7 +165,24 @@ async function launch() {
       .flatMap((context) => context.pages())
       .find((item) => item.url().includes(`:${appPort}`));
   }
-  if (!page) throw new Error('The Memoria window did not open.');
+  if (!page) {
+    // Say why, so a failure on a build machine can be read from its log.
+    const probe = (url) =>
+      fetch(url, { signal: AbortSignal.timeout(3000) }).then(
+        (response) => `HTTP ${response.status}`,
+        (error) => String(error.cause?.code ?? error.message),
+      );
+    const pages = browser?.contexts().flatMap((context) => context.pages().map((item) => item.url()));
+    throw new Error(
+      `The Memoria window did not open. ${JSON.stringify({
+        exitCode,
+        stderr: output.join('').slice(-2000),
+        debugPort: await probe(`http://127.0.0.1:${debugPort}/json/version`),
+        appServer: await probe(`http://127.0.0.1:${appPort}/`),
+        pages,
+      })}`,
+    );
+  }
   page.setDefaultTimeout(15_000);
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => {
