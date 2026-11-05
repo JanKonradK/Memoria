@@ -1,7 +1,39 @@
+import {
+  devicePublicKey,
+  deviceFingerprint,
+  lanKeys,
+  sealLan,
+  openLan,
+  type LanPacket,
+} from '@memoria/shared/lan-crypto';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { emptyState, encodePairingCode, type Game } from '@memoria/shared';
 const native = vi.hoisted(() => ({ post: vi.fn() }));
-vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => true }, CapacitorHttp: native }));
+vi.mock('@capacitor/core', () => ({
+  Capacitor: { isNativePlatform: () => true },
+  CapacitorHttp: {
+    post: async (options: { url: string; data: LanPacket }) => {
+      const pc = devicePublicKey('11'.repeat(32));
+      if (options.url.endsWith('/hello')) return { status: 200, data: { publicKey: pc, challenge: 'ab'.repeat(32) } };
+      const path = new URL(options.url).pathname;
+      const packet = options.data;
+      const keys = lanKeys('11'.repeat(32), packet.publicKey, pc, packet.publicKey);
+      const data = openLan(keys.request, path, packet);
+      const result = await native.post({ ...options, data });
+      return {
+        status: 200,
+        data: sealLan(
+          keys.response,
+          path,
+          pc,
+          packet.challenge,
+          result.status === 200 ? result.data : { error: result.data.error, status: result.status },
+          packet.nonce,
+        ),
+      };
+    },
+  },
+}));
 vi.mock('idb-keyval', () => ({ get: vi.fn(), set: vi.fn(), del: vi.fn(), keys: vi.fn(async () => []) }));
 import {
   disconnectLanSync,
@@ -15,6 +47,7 @@ import {
 import { useApp } from '../src/store';
 
 const token = 'a'.repeat(43);
+const fingerprint = deviceFingerprint(devicePublicKey('11'.repeat(32)));
 const game = (id: string, updatedAt = 1): Game => ({
   id,
   name: id,
@@ -35,7 +68,7 @@ async function pair() {
   native.post
     .mockResolvedValueOnce(reply({ token, deviceId: 'phone' }))
     .mockResolvedValueOnce(reply({ state: emptyState() }));
-  await pairLanDevice('192.168.1.20:17820', '12345678');
+  await pairLanDevice('192.168.1.20:17820', '12345678', fingerprint);
 }
 beforeEach(async () => {
   vi.useFakeTimers();
@@ -52,6 +85,11 @@ afterEach(async () => {
 });
 
 describe('native LAN sync', () => {
+  it('rejects a substituted PC key before it sends the pairing code', async () => {
+    await expect(pairLanDevice('192.168.1.20', '12345678', '00'.repeat(32))).rejects.toThrow('PC key does not match');
+    expect(native.post).not.toHaveBeenCalled();
+    expect(localStorage.getItem('memoria-wifi-device')).toBeNull();
+  });
   it('retires the previous credential at the new address when the PC changes networks', async () => {
     await pair();
     const nextToken = 'b'.repeat(43);
@@ -61,11 +99,11 @@ describe('native LAN sync', () => {
       if (options.url === 'http://192.168.1.20:17820/disconnect') throw new Error('old network unavailable');
       return options.url.endsWith('/sync') ? reply({ state: emptyState() }) : reply({ ok: true });
     });
-    await pairLanFromQr(encodePairingCode(['192.168.2.20'], '12345678'));
+    await pairLanFromQr(encodePairingCode(['192.168.2.20'], '12345678', fingerprint));
     expect(native.post).toHaveBeenCalledWith(
       expect.objectContaining({
         url: 'http://192.168.2.20:17820/disconnect',
-        headers: expect.objectContaining({ Authorization: `Bearer ${token}` }),
+        headers: { 'Content-Type': 'application/json' },
       }),
     );
     expect(useLanSync.getState().host).toBe('http://192.168.2.20:17820');
@@ -77,7 +115,7 @@ describe('native LAN sync', () => {
       .mockRejectedValueOnce(new Error('no route'))
       .mockResolvedValueOnce(reply({ token, deviceId: 'phone' }))
       .mockResolvedValueOnce(reply({ state: emptyState() }));
-    await pairLanFromQr(encodePairingCode(['10.0.0.1', '192.168.1.20'], '12345678'));
+    await pairLanFromQr(encodePairingCode(['10.0.0.1', '192.168.1.20'], '12345678', fingerprint));
     expect(useLanSync.getState().status).toBe('ok');
     expect(useLanSync.getState().host).toBe('http://192.168.1.20:17820');
     expect(native.post.mock.calls.map(([options]) => options.url)).toEqual([
@@ -92,7 +130,9 @@ describe('native LAN sync', () => {
     await expect(pairLanFromQr('https://example.com')).rejects.toThrow('not a Memoria');
     expect(native.post).not.toHaveBeenCalled();
     native.post.mockRejectedValueOnce(new Error('offline'));
-    await expect(pairLanFromQr(encodePairingCode(['192.168.2.20'], '12345678'))).rejects.toThrow('Cannot reach');
+    await expect(pairLanFromQr(encodePairingCode(['192.168.2.20'], '12345678', fingerprint))).rejects.toThrow(
+      'Cannot reach',
+    );
     expect(useLanSync.getState().host).toBe('http://192.168.1.20:17820');
     native.post.mockResolvedValueOnce(reply({ state: emptyState() }));
     await syncLanNow();
@@ -104,7 +144,7 @@ describe('native LAN sync', () => {
       .mockResolvedValueOnce(
         reply({ state: emptyState(), addresses: ['http://192.168.1.20:17820', 'http://100.101.2.3:17820', 'x'] }),
       );
-    await pairLanDevice('192.168.1.20:17820', '12345678');
+    await pairLanDevice('192.168.1.20:17820', '12345678', fingerprint);
     expect(JSON.parse(localStorage.getItem('memoria-wifi-device')!).hosts).toEqual([
       'http://192.168.1.20:17820',
       'http://100.101.2.3:17820',
@@ -126,7 +166,7 @@ describe('native LAN sync', () => {
     native.post
       .mockResolvedValueOnce(reply({ token, deviceId: 'phone' }))
       .mockResolvedValueOnce(reply({ state: emptyState(), addresses: ['http://100.101.2.3:17820'] }));
-    await pairLanDevice('192.168.1.20:17820', '12345678');
+    await pairLanDevice('192.168.1.20:17820', '12345678', fingerprint);
     native.post.mockClear();
     native.post.mockRejectedValue(new Error('offline'));
     await syncLanNow();
@@ -163,6 +203,8 @@ describe('native LAN sync', () => {
     const concurrent = syncLanNow().then(completed);
     await Promise.resolve();
     expect(completed).not.toHaveBeenCalled();
+    await Promise.resolve();
+    await Promise.resolve();
     finish(reply({ state: { ...emptyState(), games: [game('remote', 50)] } }));
     await Promise.all([sync, concurrent]);
     expect(completed).toHaveBeenCalledOnce();
@@ -208,6 +250,8 @@ describe('native LAN sync', () => {
     );
     const sync = syncLanNow();
     await disconnectLanSync();
+    await Promise.resolve();
+    await Promise.resolve();
     finish(reply({ state: { ...emptyState(), games: [game('late')] } }));
     await sync;
     expect(useApp.getState().state.games).toHaveLength(0);
@@ -239,7 +283,7 @@ describe('native LAN sync', () => {
       native.post
         .mockResolvedValueOnce(reply({ token, deviceId: 'tablet' }))
         .mockResolvedValueOnce(reply({ state: pc }));
-      await pairLanDevice('192.168.1.20:17820', '12345678');
+      await pairLanDevice('192.168.1.20:17820', '12345678', fingerprint);
     }
 
     it('asks before combining and sends nothing of this device while the question is open', async () => {
@@ -289,7 +333,7 @@ describe('native LAN sync', () => {
         .mockResolvedValueOnce(reply({ token, deviceId: 'tablet' }))
         .mockResolvedValueOnce(reply({ state: pc }))
         .mockResolvedValueOnce(reply({ state: pc }));
-      await pairLanDevice('192.168.1.20:17820', '12345678');
+      await pairLanDevice('192.168.1.20:17820', '12345678', fingerprint);
       expect(useLanSync.getState().choice).toBeNull();
       expect(useLanSync.getState().status).toBe('ok');
     });

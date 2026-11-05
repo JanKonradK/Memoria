@@ -16,6 +16,7 @@ afterEach(() => {
 it('keeps an expired additional-phone code visible until a new phone connects', async () => {
   let status = {
     enabled: true,
+    fingerprint: 'a'.repeat(64),
     addresses: ['http://192.168.1.2:17820'],
     code: null as string | null,
     expiresAt: null as number | null,

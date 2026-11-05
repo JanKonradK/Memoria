@@ -1,3 +1,12 @@
+import {
+  newDeviceKey,
+  devicePublicKey,
+  deviceFingerprint,
+  lanKeys,
+  sealLan,
+  openLan,
+  type LanPacket,
+} from '@memoria/shared/lan-crypto';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import {
   emptyState,
@@ -17,7 +26,7 @@ const PAIR_KEY = 'memoria-wifi-device';
 const FIRST_SYNC_KEY = 'memoria-wifi-first-sync';
 const CHOOSE = 'Choose in Settings how this device joins your PC.';
 /** `hosts` lists every address the PC has reported, the last working one first. */
-type Pair = { host: string; hosts: string[]; token: string; deviceId: string };
+type Pair = { host: string; hosts: string[]; secret: string; publicKey: string; fingerprint: string; deviceId: string };
 const MAX_HOSTS = 8;
 type LanStatus = 'off' | 'pairing' | 'syncing' | 'choosing' | 'ok' | 'offline' | 'error';
 /** Both sides hold games the other has never seen, so combining them is the owner's call. */
@@ -66,36 +75,55 @@ async function request(
   host: string,
   path: string,
   data: unknown,
-  token?: string,
+  connection?: Pick<Pair, 'secret' | 'fingerprint'>,
   quick = false,
 ): Promise<Record<string, unknown>> {
   if (!isNativeDevice()) throw new Error('Wi-Fi pairing is available in the Android app.');
-  let response;
-  try {
-    response = await CapacitorHttp.post({
-      url: `${host}${path}`,
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  if (!connection) throw new Error('Pair this PC again to enable encrypted sync.');
+  const send = (url: string, data: unknown) =>
+    CapacitorHttp.post({
+      url,
       data,
+      headers: { 'Content-Type': 'application/json' },
       responseType: 'json',
-      // A quick try leaves time for the PC's other addresses.
-      connectTimeout: path === '/pair' ? 2000 : quick ? 4000 : 8000,
-      readTimeout: path === '/pair' ? 4000 : 15_000,
+      connectTimeout: quick ? 4000 : 8000,
+      readTimeout: 15000,
       disableRedirects: true,
     });
-  } catch {
+  let response;
+  let packet: LanPacket;
+  let responseKey: Uint8Array;
+  try {
+    const hello = await send(`${host}/hello`, {});
+    const pc = hello.data?.publicKey;
+    if (
+      hello.status !== 200 ||
+      typeof pc !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(pc) ||
+      deviceFingerprint(pc) !== connection.fingerprint
+    )
+      throw new LanError('The PC key does not match. Scan a new PC code in Settings.', 403);
+    const phone = devicePublicKey(connection.secret);
+    const keys = lanKeys(connection.secret, pc, pc, phone);
+    responseKey = keys.response;
+    packet = sealLan(keys.request, path, phone, hello.data.challenge, data);
+    response = await send(`${host}${path}`, packet);
+  } catch (error) {
+    if (error instanceof LanError) throw error;
     throw new LanError('Cannot reach your PC. Open Memoria there and use the same Wi-Fi or private network.', 0);
   }
-  const body = response.data;
   if (response.status !== 200)
-    throw new LanError(
-      typeof body?.error === 'string'
-        ? body.error
-        : `PC returned HTTP ${response.status}. Check PC Settings and try again.`,
-      response.status,
-    );
-  if (!body || typeof body !== 'object')
-    throw new LanError('The PC returned an invalid response. Update Memoria on both devices.', 500);
-  return body as Record<string, unknown>;
+    throw new LanError('Encrypted connection failed. Update both devices and pair again.', 403);
+  let body;
+  try {
+    const reply = response.data as LanPacket;
+    if (reply.challenge !== packet.challenge) throw new Error();
+    body = openLan(responseKey, path, reply, packet.nonce);
+  } catch {
+    throw new LanError('Sync authentication failed. Local edits were kept.', 403);
+  }
+  if (typeof body.error === 'string') throw new LanError(body.error, Number(body.status) || 500);
+  return body;
 }
 
 function savePair(next: Pair) {
@@ -128,13 +156,13 @@ function knownHosts(host: string, reported: unknown, previous: string[]): string
 async function requestPc(connection: Pair, path: string, data: unknown): Promise<Record<string, unknown>> {
   const others = connection.hosts.filter((host) => host !== connection.host);
   try {
-    return await request(connection.host, path, data, connection.token, others.length > 0);
+    return await request(connection.host, path, data, connection, others.length > 0);
   } catch (error) {
     if (!(error instanceof LanError) || error.status !== 0 || others.length === 0) throw error;
     for (const [index, host] of others.entries()) {
       try {
-        const body = await request(host, path, data, connection.token, true);
-        if (pair?.token === connection.token)
+        const body = await request(host, path, data, connection, true);
+        if (pair?.secret === connection.secret)
           savePair({ ...connection, host, hosts: knownHosts(host, [], connection.hosts) });
         return body;
       } catch (next) {
@@ -161,19 +189,22 @@ function setStatus(status: LanStatus, error = '') {
     );
 }
 
-export async function pairLanDevice(hostInput: string, code: string): Promise<void> {
+export async function pairLanDevice(hostInput: string, code: string, fingerprint: string): Promise<void> {
   if (pair) throw new Error('Disconnect this PC before pairing another.');
-  return connectToPc([normalizeLanHost(hostInput)], code);
+  return connectToPc([normalizeLanHost(hostInput)], code, fingerprint.replace(/\s/g, '').toLowerCase());
 }
 
 export async function pairLanFromQr(text: string): Promise<void> {
   const payload = parsePairingCode(text);
-  return connectToPc(payload.addresses, payload.code);
+  return connectToPc(payload.addresses, payload.code, payload.fingerprint);
 }
 
-async function connectToPc(hosts: string[], code: string): Promise<void> {
+async function connectToPc(hosts: string[], code: string, fingerprint: string): Promise<void> {
   if (pairingInProgress) throw new Error('Already connecting.');
   if (!/^\d{8}$/.test(code.replace(/\s/g, ''))) throw new Error('Enter the eight-digit code from PC Settings.');
+  if (!/^[a-f0-9]{64}$/.test(fingerprint)) throw new Error('Enter the PC key fingerprint from PC Settings.');
+  const secret = newDeviceKey();
+  const credentials = { secret, fingerprint };
   pairingInProgress = true;
   const previous = pair;
   const current = ++generation;
@@ -184,7 +215,7 @@ async function connectToPc(hosts: string[], code: string): Promise<void> {
     for (const candidate of hosts) {
       if (current !== generation) return;
       try {
-        body = await request(candidate, '/pair', { code: code.replace(/\s/g, ''), name: 'Android phone' });
+        body = await request(candidate, '/pair', { code: code.replace(/\s/g, ''), name: 'Android phone' }, credentials);
         host = candidate;
         break;
       } catch (error) {
@@ -192,23 +223,24 @@ async function connectToPc(hosts: string[], code: string): Promise<void> {
       }
     }
     if (current !== generation) return;
-    if (
-      !body ||
-      typeof body.token !== 'string' ||
-      !/^[A-Za-z0-9_-]{43}$/.test(body.token) ||
-      typeof body.deviceId !== 'string'
-    )
-      throw new Error('The PC returned invalid pairing details. Get a new code and try again.');
+    if (!body || typeof body.deviceId !== 'string') throw new Error('Invalid pairing reply.');
     localStorage.setItem(FIRST_SYNC_KEY, '1');
     pcStateForChoice = null;
     useLanSync.setState({ choice: null, lastSyncAt: null });
-    savePair({ host, hosts: knownHosts(host, hosts, []), token: body.token, deviceId: body.deviceId });
+    savePair({
+      host,
+      hosts: knownHosts(host, hosts, []),
+      secret,
+      publicKey: devicePublicKey(secret),
+      fingerprint,
+      deviceId: body.deviceId,
+    });
     if (previous) {
       // The PC may have moved to a new Wi-Fi address. Its old credential is
       // still valid there; retire it so reconnecting does not fill device slots.
       const previousHosts = [...new Set([previous.host, host])];
       for (const previousHost of previousHosts)
-        void request(previousHost, '/disconnect', {}, previous.token).catch(() => undefined);
+        void request(previousHost, '/disconnect', {}, previous).catch(() => undefined);
     }
     await syncLanNow();
   } catch (error) {
@@ -232,7 +264,7 @@ export async function disconnectLanSync(): Promise<void> {
   setStatus('off');
   // Forget locally immediately even when the PC is off. Its Settings can revoke
   // the old device if this best-effort request cannot reach it.
-  if (previous) void request(previous.host, '/disconnect', {}, previous.token).catch(() => undefined);
+  if (previous) void request(previous.host, '/disconnect', {}, previous).catch(() => undefined);
 }
 
 /**
@@ -252,7 +284,7 @@ function checkFirstSync(): Promise<void> {
       if (local.length > 0) {
         // An empty state changes nothing on the PC; the reply is the PC's own data.
         const response = await requestPc(connection, '/sync', { state: emptyState() });
-        if (current !== generation || pair?.token !== connection.token) return;
+        if (current !== generation || pair?.secret !== connection.secret) return;
         if (!safeParseAppState(response.state).success)
           throw new Error('The PC returned invalid data. Update Memoria on both devices. Local edits were kept.');
         const pcState = normalizeState(response.state);
@@ -268,7 +300,7 @@ function checkFirstSync(): Promise<void> {
       }
       clearFirstSync();
     } catch (error) {
-      if (current !== generation || pair?.token !== connection.token) return;
+      if (current !== generation || pair?.secret !== connection.secret) return;
       if (error instanceof LanError && error.status === 401) {
         localStorage.removeItem(PAIR_KEY);
         clearFirstSync();
@@ -333,7 +365,7 @@ export async function syncLanNow(): Promise<void> {
   try {
     const response = await requestPc(connection, '/sync', { state: sent });
     const reached = pair;
-    if (current !== generation || !reached || reached.token !== connection.token) return;
+    if (current !== generation || !reached || reached.secret !== connection.secret) return;
     const parsed = safeParseAppState(response.state);
     if (!parsed.success)
       throw new Error('The PC returned invalid data. Update Memoria on both devices. Local edits were kept.');
@@ -348,7 +380,7 @@ export async function syncLanNow(): Promise<void> {
     setStatus('ok');
     success = true;
   } catch (error) {
-    if (current !== generation || pair?.token !== connection.token) return;
+    if (current !== generation || pair?.secret !== connection.secret) return;
     if (error instanceof LanError && error.status === 401) {
       localStorage.removeItem(PAIR_KEY);
       pair = null;
@@ -376,14 +408,26 @@ export function initLanSync(): void {
     const saved = JSON.parse(localStorage.getItem(PAIR_KEY) ?? 'null') as Partial<Pair> | null;
     if (
       saved &&
-      typeof saved.token === 'string' &&
-      /^[A-Za-z0-9_-]{43}$/.test(saved.token) &&
+      typeof saved.secret === 'string' &&
+      /^[a-f0-9]{64}$/.test(saved.secret) &&
+      typeof saved.fingerprint === 'string' &&
+      /^[a-f0-9]{64}$/.test(saved.fingerprint) &&
       typeof saved.deviceId === 'string'
     ) {
-      // Connections saved before address lists existed hold one host.
       const host = normalizeLanHost(saved.host ?? '');
-      pair = { host, hosts: knownHosts(host, saved.hosts, []), token: saved.token, deviceId: saved.deviceId };
+      pair = {
+        host,
+        hosts: knownHosts(host, saved.hosts, []),
+        secret: saved.secret,
+        publicKey: devicePublicKey(saved.secret),
+        fingerprint: saved.fingerprint,
+        deviceId: saved.deviceId,
+      };
       useLanSync.setState({ host });
+    } else if (saved) {
+      localStorage.removeItem(PAIR_KEY);
+      clearFirstSync();
+      setStatus('error', 'Pair this PC again to enable encrypted sync.');
     }
   } catch {
     localStorage.removeItem(PAIR_KEY);

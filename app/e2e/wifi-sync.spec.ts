@@ -20,7 +20,13 @@ for (const method of ['scan', 'manual']) {
     const address = `http://192.168.1.2:${status.port}`;
     let offline = false;
     let scanMode = 'cancel';
-    const pairingText = JSON.stringify({ kind: 'memoria-pair', version: 1, addresses: [address], code: status.code });
+    const pairingText = JSON.stringify({
+      kind: 'memoria-pair',
+      version: 2,
+      addresses: [address],
+      code: status.code,
+      fingerprint: status.fingerprint,
+    });
     await page.exposeFunction('nativeScan', () =>
       scanMode === 'cancel'
         ? { error: 'CANCELLED' }
@@ -91,6 +97,7 @@ for (const method of ['scan', 'manual']) {
         await expect(page.getByLabel('PC address', { exact: true })).toBeFocused();
         await expect(page.getByRole('button', { name: 'Connect to PC', exact: true })).toBeEnabled();
         await page.getByLabel('PC address', { exact: true }).fill(address);
+        await page.getByLabel('PC key fingerprint', { exact: true }).fill(status.fingerprint);
         await page.getByRole('button', { name: 'Connect to PC', exact: true }).click();
       } else {
         await page.screenshot({ path: info.outputPath('phone-connect.png') });
