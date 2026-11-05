@@ -32,6 +32,7 @@ test('backup export and merge preview stay within the viewport', async ({ page }
         exportedAt: new Date().toISOString(),
         schemaVersion: 2,
         state: {
+          schemaVersion: 10,
           games: [],
           resources: [],
           snapshots: [],

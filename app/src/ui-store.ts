@@ -59,7 +59,7 @@ export function applyTheme(theme: Theme): void {
 
 export type GameEditorSection = 'game' | 'resets' | 'resources' | 'spend' | 'tasks' | 'reminders' | 'events';
 
-export type SettingsSection = 'games' | 'sync' | 'device' | 'updates' | 'data';
+export type SettingsSection = 'games' | 'sync' | 'device' | 'updates' | 'data' | 'activity';
 
 export type SheetRoute =
   | { kind: 'game'; gameId: string; section?: GameEditorSection }
