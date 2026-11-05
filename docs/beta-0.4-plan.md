@@ -106,6 +106,16 @@ The owner asked for real features instead of the small ones above. Two were buil
 - Pairing allows 5 attempts per address per minute and 30 overall, so one device cannot lock others out.
 - Not done: re-verifying a staged update at install time. It waits for signed updates, because without a signature it adds little.
 
+**Release gates and calendar changes (items 1, 7 and F2)**
+
+- CI runs `npm run check` on each push and pull request. The shared tests include migration and backup restore checks.
+- Four browser jobs run all Playwright viewport projects. Each job uses two workers, a browser cache and a 15-minute limit.
+- A release resolves the tag to one commit. The browser tests and release build use that commit. A failed check blocks publication.
+- The calendar shows the feed publication date separately from the download time on this device.
+- **Calendar changes** shows new, changed and withdrawn events from the bundled and remote feeds. Each change stays unread until confirmation.
+- If the user edited an event, the panel shows the feed values and the saved values. The importer keeps the user edits.
+- The unread list and feed baseline stay in local storage on each device. They do not require a shared schema change.
+
 **Events as JSON**
 
 - `app/src/data/feed/current.json` holds the current and upcoming versions. `seed-feed.ts` only loads it.
