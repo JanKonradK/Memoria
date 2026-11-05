@@ -172,7 +172,7 @@ describe('seedMissingRegenSnapshots', () => {
     const twice = seedMissingRegenSnapshots(once, seenAt + 60_000, () => `duplicate-${++idCalls}`);
 
     expect(once.snapshots).toEqual([
-      realSnapshot,
+      expect.objectContaining(realSnapshot),
       {
         id: 'seed-1',
         resourceId: 'missing-reading',

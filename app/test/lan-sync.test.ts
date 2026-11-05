@@ -193,7 +193,7 @@ describe('native LAN sync', () => {
 
     await syncLanNow();
 
-    expect(useApp.getState().state.snapshots).toEqual([reading]);
+    expect(useApp.getState().state.snapshots).toEqual([expect.objectContaining(reading)]);
     expect(useApp.getState().state.games.map((item) => item.id)).toEqual(['pc']);
     expect(useLanSync.getState().status).toBe('ok');
   });

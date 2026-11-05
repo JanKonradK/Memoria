@@ -1,3 +1,4 @@
+import { assertSyncProtocol } from '@memoria/shared';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import {
   emptyState,
@@ -253,6 +254,7 @@ function checkFirstSync(): Promise<void> {
         // An empty state changes nothing on the PC; the reply is the PC's own data.
         const response = await requestPc(connection, '/sync', { state: emptyState() });
         if (current !== generation || pair?.token !== connection.token) return;
+        assertSyncProtocol(response.state);
         if (!safeParseAppState(response.state).success)
           throw new Error('The PC returned invalid data. Update Memoria on both devices. Local edits were kept.');
         const pcState = normalizeState(response.state);
@@ -334,6 +336,7 @@ export async function syncLanNow(): Promise<void> {
     const response = await requestPc(connection, '/sync', { state: sent });
     const reached = pair;
     if (current !== generation || !reached || reached.token !== connection.token) return;
+    assertSyncProtocol(response.state);
     const parsed = safeParseAppState(response.state);
     if (!parsed.success)
       throw new Error('The PC returned invalid data. Update Memoria on both devices. Local edits were kept.');

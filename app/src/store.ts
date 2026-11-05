@@ -1,3 +1,15 @@
+import {
+  assertSyncProtocol,
+  checkpoint,
+  emptyHistory,
+  recordAction,
+  restoreCheckpoint,
+  sameValue,
+  stampChanges,
+  undoAction,
+  checklistFor,
+  type LocalHistory,
+} from '@memoria/shared';
 import { create } from 'zustand';
 import { del as idbDel, get as idbGet, keys as idbKeys, set as idbSet } from 'idb-keyval';
 import type {
@@ -163,7 +175,8 @@ function recordEnergySnapshot(state: AppState, reading: Omit<Snapshot, 'id' | 't
 }
 
 let persistTimer: ReturnType<typeof setTimeout> | undefined;
-let pendingPersist: AppState | null = null;
+type StoredDocument = AppState & { localHistory: LocalHistory };
+let pendingPersist: StoredDocument | null = null;
 let persistInFlight: Promise<void> | null = null;
 let storageEpoch = 0;
 let storedReadInFlight: { epoch: number; promise: Promise<unknown> } | null = null;
@@ -172,7 +185,7 @@ let clearInFlight: Promise<void> | null = null;
 
 function persist(state: AppState): void {
   clearTimeout(persistTimer);
-  pendingPersist = state;
+  pendingPersist = { ...state, localHistory: useApp.getState().history };
   persistTimer = setTimeout(() => {
     void flushPersist().catch(() => undefined);
   }, 120);
@@ -198,7 +211,7 @@ export async function flushPersist(): Promise<void> {
   persistInFlight = (async () => {
     try {
       assertStateCapacity(pending);
-      await idbSet(IDB_KEY, normalizeState(pending));
+      await idbSet(IDB_KEY, { ...normalizeState(pending), localHistory: pending.localHistory });
       if (useApp.getState().saveError) useApp.setState({ saveError: '' });
     } catch (error) {
       // A newer edit takes priority. Otherwise retain this exact document for retry.
@@ -219,7 +232,7 @@ export async function flushPersist(): Promise<void> {
 
 function sameJson(left: unknown, right: unknown): boolean {
   try {
-    return JSON.stringify(left) === JSON.stringify(right);
+    return sameValue(left, right);
   } catch {
     return false;
   }
@@ -481,6 +494,7 @@ async function readAndAdoptStoredState(epoch: number): Promise<unknown> {
     const response = await launcherFetch('/api/state', { signal: AbortSignal.timeout(30_000) });
     if (!response.ok) throw new Error(`The PC data could not be opened (HTTP ${response.status}).`);
     const body = (await response.json()) as { state?: unknown } | null;
+    assertSyncProtocol(body?.state);
     const parsed = safeParseAppState(body?.state);
     if (!parsed.success) throw new Error('The PC data is invalid. Update Memoria and try again.');
     if (epoch !== storageEpoch) return undefined;
@@ -542,6 +556,10 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
 }
 
 export interface AppStore {
+  history: LocalHistory;
+  undoActivity(id: string): void;
+  restoreSavedCheckpoint(id: string): void;
+  completeDailies(gameId: string): string | undefined;
   state: AppState;
   loaded: boolean;
   loadError: string;
@@ -562,7 +580,7 @@ export interface AppStore {
   setCloudStatus(status: CloudStatus, error?: string): void;
   setCloudFileName(name: string): void;
   mutate(fn: (s: AppState) => AppState): void;
-  batch(fn: (s: AppState) => AppState): void;
+  batch(fn: (s: AppState) => AppState, label?: string): void;
 
   addGameFromPreset(
     preset: GamePreset,
@@ -620,6 +638,7 @@ export interface AppStore {
 }
 
 export const useApp = create<AppStore>((set, get) => ({
+  history: emptyHistory(uid()),
   state: emptyState(),
   loaded: false,
   loadError: '',
@@ -649,16 +668,38 @@ export const useApp = create<AppStore>((set, get) => ({
     }
     if (epoch !== storageEpoch) return;
     try {
-      const stored = stateForStorage(await readStoredState(epoch));
+      const disk = await readStoredState(epoch);
+      const localHistory = (disk as StoredDocument | undefined)?.localHistory;
+      const raw =
+        disk && typeof disk === 'object'
+          ? Object.fromEntries(Object.entries(disk).filter(([key]) => key !== 'localHistory'))
+          : disk;
+      const stored = stateForStorage(raw);
       if (epoch !== storageEpoch) return;
       const editedWhileLoading = get().loaded && get().state !== before;
-      const next = editedWhileLoading
-        ? collapseSourceTwins(mergeState(stored.state, get().state), now())
-        : stored.state;
-      set({ state: next, loaded: true, loadError: '' });
-      if (stored.repaired || editedWhileLoading) persist(next);
+      let history = editedWhileLoading ? get().history : (localHistory ?? emptyHistory(uid()));
+      let next = editedWhileLoading ? collapseSourceTwins(mergeState(stored.state, get().state), now()) : stored.state;
+      if (stored.repaired && raw) {
+        // Keep the original pre-migration document for recovery, including removed fields.
+        const original = { ...(raw as StoredDocument) };
+        delete (original as Partial<StoredDocument>).localHistory;
+        history = checkpoint(history, original as AppState, 'Before migration', now(), uid());
+        const baseline = normalizeState(raw);
+        const stamped = stampChanges(baseline, next, history, now());
+        next = stamped.state;
+        history = recordAction({ ...history, clock: stamped.clock }, raw as AppState, next, 'Migration', now(), uid());
+      }
+      const day = new Date(now()).toISOString().slice(0, 10);
+      if (
+        !history.checkpoints.some(
+          (item) => item.label === 'Daily checkpoint' && new Date(item.at).toISOString().slice(0, 10) === day,
+        )
+      )
+        history = checkpoint(history, next, 'Daily checkpoint', now(), uid());
+      set({ state: next, history, loaded: true, loadError: '' });
+      if (raw !== undefined || editedWhileLoading) persist(next);
       const seedPlan = planSeedImport(get().state, now());
-      if (seedPlan.length > 0) get().batch((state) => applySeedPlan(state, seedPlan));
+      if (seedPlan.length > 0) get().batch((state) => applySeedPlan(state, seedPlan), 'Feed import');
     } catch (error) {
       if (epoch !== storageEpoch) return;
       set({
@@ -698,7 +739,7 @@ export const useApp = create<AppStore>((set, get) => ({
         } catch {
           // Restricted localStorage must not prevent clearing the main database.
         }
-        set({ state: emptyState(), loaded: true, loadError: '', saveError: '' });
+        set({ state: emptyState(), history: emptyHistory(uid()), loaded: true, loadError: '', saveError: '' });
       } catch (error) {
         set({ loadError: error instanceof Error ? error.message : 'Local data could not be cleared.' });
       }
@@ -714,9 +755,27 @@ export const useApp = create<AppStore>((set, get) => ({
   replaceState(next) {
     // A merge can bring in another device's copy of an imported event. The
     // repair tombstones it, and that change has to go back out to the peers.
-    const repaired = collapseSourceTwins(next, now());
+    const collapsed = collapseSourceTwins(next, now());
+    const repair = collapsed !== next ? stampChanges(next, collapsed, get().history, now()) : null;
+    const repaired = repair?.state ?? next;
+    const before = get().state;
+    if (sameJson(before, repaired)) return;
+    const history = recordAction(
+      checkpoint(
+        repair ? { ...get().history, clock: repair.clock } : get().history,
+        before,
+        'Before sync',
+        now(),
+        uid(),
+      ),
+      before,
+      repaired,
+      'Sync arrivals',
+      now(),
+      uid(),
+    );
+    set({ state: repaired, history });
     persist(repaired);
-    set({ state: repaired });
     if (repaired !== next) announceMutation();
   },
 
@@ -736,14 +795,72 @@ export const useApp = create<AppStore>((set, get) => ({
     get().batch(fn);
   },
 
-  batch(fn) {
+  batch(fn, label = 'Edit') {
     const state = get().state;
     const changed = fn(state);
-    const next = changed === state ? state : collapseSourceTwins(changed, now());
-    if (next === state) return;
-    persist(next);
-    set({ state: next });
+    if (changed === state) return;
+    let history = get().history;
+    const at = now();
+    if (label.includes('import') || label === 'Feed import' || label === 'Restore checkpoint')
+      history = checkpoint(history, state, `Before ${label.toLowerCase()}`, at, uid());
+    const day = new Date(at).toISOString().slice(0, 10);
+    if (
+      !history.checkpoints.some(
+        (item) => item.label === 'Daily checkpoint' && new Date(item.at).toISOString().slice(0, 10) === day,
+      )
+    )
+      history = checkpoint(history, state, 'Daily checkpoint', at, uid());
+    const stamped = stampChanges(state, collapseSourceTwins(changed, at), history, at);
+    if (sameJson(state, stamped.state)) return;
+    history = recordAction({ ...history, clock: stamped.clock }, state, stamped.state, label, at, uid());
+    set({ state: stamped.state, history });
+    persist(stamped.state);
     announceMutation();
+  },
+
+  undoActivity(id) {
+    const history = get().history;
+    const index = history.journal.findIndex((entry) => entry.id === id);
+    const entry = history.journal[index];
+    if (!entry || entry.undone) return;
+    const next = undoAction(get().state, entry, history.journal.slice(index + 1));
+    // Mark together with the inverse in the same durable document.
+    set({
+      history: {
+        ...history,
+        journal: history.journal.map((item) => (item.id === id ? { ...item, undone: true } : item)),
+      },
+    });
+    get().batch(() => next, `Undo: ${entry.label}`);
+    persist(get().state);
+  },
+
+  restoreSavedCheckpoint(id) {
+    const saved = get().history.checkpoints.find((item) => item.id === id);
+    if (saved) get().batch((state) => restoreCheckpoint(state, normalizeState(saved.state)), 'Restore checkpoint');
+  },
+
+  completeDailies(gameId) {
+    const state = get().state;
+    const game = state.games.find((item) => item.id === gameId && !item.deleted);
+    if (!game || game.paused) return;
+    const tasks = checklistFor(state, game, now()).filter(
+      (item) => item.cadence === 'daily' && item.mode === 'check' && !item.done,
+    );
+    if (!tasks.length) return;
+    get().batch((s) => {
+      let completions = s.completions;
+      for (const item of tasks)
+        completions = upsert(completions, {
+          id: completionId(item.taskId, item.periodKey),
+          taskId: item.taskId,
+          periodKey: item.periodKey,
+          done: true,
+          updatedAt: now(),
+        });
+      return { ...s, completions };
+    }, `Complete dailies: ${game.name}`);
+    return get().history.journal.at(-1)?.id;
   },
 
   addGameFromPreset(preset, over) {
@@ -870,6 +987,14 @@ export const useApp = create<AppStore>((set, get) => ({
       ...s,
       games: tombstone(s.games, (g) => g.id === id),
       resources: tombstone(s.resources, (r) => r.gameId === id),
+      snapshots: s.snapshots.map((reading) =>
+        s.resources.some((resource) => resource.id === reading.resourceId && resource.gameId === id)
+          ? { ...reading, deleted: true }
+          : reading,
+      ),
+      completions: tombstone(s.completions, (completion) =>
+        s.tasks.some((task) => task.id === completion.taskId && task.gameId === id),
+      ),
       tasks: tombstone(s.tasks, (t) => t.gameId === id),
       chips: tombstone(s.chips, (c) => c.gameId === id),
       events: tombstone(s.events, (e) => e.gameId === id),
@@ -1045,7 +1170,7 @@ export const useApp = create<AppStore>((set, get) => ({
       };
       assertStateCapacity(result);
       return result;
-    });
+    }, 'Feed import');
     return { applied: plan.length, skipped: false };
   },
 
@@ -1328,6 +1453,7 @@ export const useApp = create<AppStore>((set, get) => ({
       // launcher would later reject, leaving the device wedged. Refuse the
       // whole import instead: unlike a load, there is a real user standing here
       // who can be told the file is bad, and their existing state is intact.
+      assertSyncProtocol(raw);
       const parsed = safeParseAppState(raw);
       if (!parsed.success) return false;
       // Imports do not go through stateForStorage, so apply the shared schema
@@ -1335,7 +1461,7 @@ export const useApp = create<AppStore>((set, get) => ({
       // Keep original clocks so impossible future readings are discarded before
       // merge, as they are for sync. Schema transforms would promote them to now.
       const migrated = migrateLegacyIdentity(migrateGenshinBadge(normalizeState(raw)).state).state;
-      get().mutate((s) => mergeState(s, migrated));
+      get().batch((s) => mergeState(s, migrated), 'Backup import');
       return true;
     } catch {
       return false;

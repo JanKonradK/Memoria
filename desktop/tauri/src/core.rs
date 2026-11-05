@@ -153,7 +153,8 @@ fn run(state_file: PathBuf, inbox: mpsc::Receiver<Job>, changes: broadcast::Send
                         ));
                     }
                     let (json, changed) = call_merge(&context, raw, body)?;
-                    if json.len() > MAX_STATE_BYTES - 100 {
+                    let outgoing = call_read(&context, Some(json.clone()))?;
+                    if outgoing.len() > MAX_STATE_BYTES - 100 {
                         return Err(CoreError::new(
                             413,
                             "Combined data exceeds the 1 MB sync limit. Export a backup and reduce old data.",
@@ -164,7 +165,7 @@ fn run(state_file: PathBuf, inbox: mpsc::Receiver<Job>, changes: broadcast::Send
                             .map_err(|error| CoreError::new(500, format!("The PC could not save data: {error}")))?;
                         let _ = changes.send(());
                     }
-                    Ok(json)
+                    Ok(outgoing)
                 })();
                 let _ = reply.send(result);
             }
@@ -248,7 +249,7 @@ mod tests {
     async fn rejects_invalid_documents_and_revoked_devices() {
         let core = Core::start(scratch("invalid"), broadcast::channel(4).0);
         let error = core
-            .merge(r#"{"state":{"games":"no"}}"#.into(), || true)
+            .merge(r#"{"state":{"schemaVersion":10,"games":"no"}}"#.into(), || true)
             .await
             .unwrap_err();
         assert_eq!(error.status, 400);

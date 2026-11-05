@@ -4,7 +4,16 @@
 // the PC merges phone and window edits with exactly the code the app runs.
 // Rust does the file reads and writes; everything about the document's shape
 // stays here.
-import { buildNotificationPlan, mergeState, normalizeState, safeParseAppState } from '@memoria/shared';
+import {
+  assertSyncProtocol,
+  checkpoint,
+  emptyHistory,
+  recordAction,
+  buildNotificationPlan,
+  mergeState,
+  normalizeState,
+  safeParseAppState,
+} from '@memoria/shared';
 
 const parse = (raw) => (raw == null ? null : JSON.parse(raw));
 
@@ -30,9 +39,15 @@ export function merge(raw, incomingJson) {
     return { status: 400, error: 'Request body is not valid JSON.' };
   }
   const state = incoming?.state;
+  try {
+    assertSyncProtocol(state);
+  } catch (error) {
+    return { status: 426, error: error.message };
+  }
   const parsed = safeParseAppState(state);
   if (!parsed.success) return { status: 400, error: `Invalid app state: ${parsed.error}` };
-  const current = normalizeState(parse(raw));
+  const disk = parse(raw);
+  const current = normalizeState(disk);
   let combined;
   try {
     // Normalizing the incoming copy first drops impossible future readings
@@ -44,6 +59,41 @@ export function merge(raw, incomingJson) {
   }
   const merged = safeParseAppState(combined);
   if (!merged.success) return { status: 500, error: 'The merged state failed validation. No data was changed.' };
-  const json = JSON.stringify(merged.data);
-  return { status: 200, json, changed: json !== JSON.stringify(current) };
+  let changed = JSON.stringify(merged.data) !== JSON.stringify(current);
+  let localHistory = disk?.localHistory ?? emptyHistory('PC core');
+  if (disk && disk.schemaVersion !== current.schemaVersion) {
+    const { localHistory: ignored, ...original } = disk;
+    void ignored;
+    localHistory = checkpoint(localHistory, original, 'Before migration', Date.now(), `migration-${Date.now()}`);
+    localHistory = recordAction(localHistory, original, current, 'Migration', Date.now(), `migration-${Date.now()}`);
+    changed = true;
+  }
+  const day = new Date().toISOString().slice(0, 10);
+  if (
+    !localHistory.checkpoints.some(
+      (item) => item.label === 'Daily checkpoint' && new Date(item.at).toISOString().slice(0, 10) === day,
+    )
+  ) {
+    localHistory = checkpoint(localHistory, current, 'Daily checkpoint', Date.now(), `daily-${day}`);
+    changed = true;
+  }
+  if (changed) {
+    localHistory = checkpoint(
+      localHistory,
+      current,
+      'Before sync',
+      Date.now(),
+      `checkpoint-${Date.now()}-${localHistory.journal.length}`,
+    );
+    localHistory = recordAction(
+      localHistory,
+      current,
+      merged.data,
+      'Sync arrivals',
+      Date.now(),
+      `sync-${Date.now()}-${localHistory.journal.length}`,
+    );
+  }
+  const json = JSON.stringify({ ...merged.data, localHistory });
+  return { status: 200, json, changed };
 }
