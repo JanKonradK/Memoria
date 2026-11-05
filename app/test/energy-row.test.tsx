@@ -68,9 +68,8 @@ function renderRow({
  * The reserve is opt-in — nothing on this row opens it but a click. Most cases
  * below are about the editor inside it, so they open it first.
  */
-function openReserve() {
-  fireEvent.click(screen.getByRole('button', { name: /Reserve TB Power/ }));
-}
+/** Reserves always show now; kept so each test still says it reads the reserve. */
+function openReserve() {}
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -85,27 +84,21 @@ beforeEach(() => {
 });
 
 describe('EnergyRow reserve controls', () => {
-  it('stays collapsed even when the main resource is full and the reserve is filling', () => {
-    // Capped is the NORMAL state for a game with a reserve, so opening on it
-    // meant the second stepper, tube and subtitle were always there. The
-    // summary line carries the whole reading instead.
+  it('always shows the reserve, even when the main resource is full', () => {
+    // Backups and reserves are part of the reading, so they are never folded away.
     renderRow();
 
-    expect(screen.queryByRole('textbox', { name: 'Reserve TB Power for Trailblaze Power' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Reserve TB Power 320\/2400/ })).toHaveAttribute(
-      'aria-expanded',
-      'false',
-    );
-    expect(screen.getByLabelText('Reserve TB Power for Trailblaze Power').closest('[inert]')).not.toBeNull();
+    expect(screen.getByRole('textbox', { name: 'Reserve TB Power for Trailblaze Power' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Reserve TB Power for Trailblaze Power').closest('[inert]')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Reserve TB Power \d+\/2400/ })).not.toBeInTheDocument();
   });
 
-  it('shows the reserve projection once opened', () => {
-    const { container } = renderRow();
+  it('shows the reserve projection', () => {
+    renderRow();
     openReserve();
 
     expect(screen.getByRole('textbox', { name: 'Reserve TB Power for Trailblaze Power' })).toBeInTheDocument();
     expect(screen.getByText(/\+1 \/ 12m · full/)).toBeInTheDocument();
-    expect(container.querySelectorAll('div[aria-hidden="true"]')).toHaveLength(2);
     expect(screen.queryByText(/charging/i)).not.toBeInTheDocument();
   });
 
@@ -140,7 +133,7 @@ describe('EnergyRow reserve controls', () => {
     openReserve();
 
     const verdict = screen.getByText('FULL');
-    const summary = screen.getByRole('button', { name: 'Reserve TB Power' });
+    const summary = screen.getByText('Reserve TB Power', { selector: '[data-reserve] > div' });
     // DOCUMENT_POSITION_FOLLOWING: the summary comes after the verdict.
     expect(verdict.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -156,34 +149,6 @@ describe('EnergyRow reserve controls', () => {
     fireEvent.blur(input);
 
     expect(onCommit).toHaveBeenCalledWith(300, 400);
-  });
-
-  it('opens and closes from its summary line', () => {
-    renderRow({
-      proj: {
-        ...projection,
-        value: 200,
-        precise: 200,
-        isFull: false,
-        fullAt: now + 100 * 6 * 60_000,
-        msToFull: 100 * 6 * 60_000,
-        reserve: 0,
-      },
-      reserve: 0,
-    });
-
-    const inputName = 'Reserve TB Power for Trailblaze Power';
-    const indicator = screen.getByRole('button', { name: /Reserve TB Power 0\/2400/ });
-    expect(screen.queryByRole('textbox', { name: inputName })).not.toBeInTheDocument();
-    expect(indicator).toHaveAttribute('aria-expanded', 'false');
-
-    fireEvent.click(indicator);
-    expect(screen.getByRole('textbox', { name: inputName })).toBeInTheDocument();
-    expect(indicator).toHaveAttribute('aria-expanded', 'true');
-
-    fireEvent.click(indicator);
-    expect(screen.queryByRole('textbox', { name: inputName })).not.toBeInTheDocument();
-    expect(indicator).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('focuses the main input when its cap text is pressed', () => {

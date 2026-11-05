@@ -49,13 +49,6 @@ test('shared game focus, event editing, and the guide work at every size', async
   await page.getByRole('button', { name: 'End 3 days after start', exact: true }).click();
   await page.getByRole('button', { name: 'Add event', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Find events', exact: true }).click();
-  await page.getByRole('textbox', { name: 'Search events' }).fill('Review window');
-  await page
-    .getByRole('dialog', { name: 'Find events', exact: true })
-    .getByRole('button', { name: 'Done', exact: true })
-    .click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Edit Genshin Impact event: Review window', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue('Keep these notes.');
   const start = await page.getByLabel('Starts', { exact: true }).inputValue();

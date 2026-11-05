@@ -27,12 +27,12 @@ import { THEME_PANEL, useGround, useInset, useTheme } from '../theme';
 import { EventTags } from './EventTags';
 import { groupGameEvents } from '../event-category';
 import { calendarSchedule } from '../event-schedule';
+import { timelineDays, timelineWindow, weekResetLines } from '../timeline-window';
 import '../timeline.css';
 import '../pinned.css';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
-const MIN_TICK_GAP_PX = 64;
 const TICK_SLOT_PX = 26;
 const COUNTDOWN_PX = 96;
 const SPAN_PX = 116;
@@ -40,8 +40,11 @@ const MIN_BAR_PX = 18;
 const BAR_TEXT_INSET_PX = 8;
 /** Half the Today capsule plus a little air: ticks whose label reaches this far are hidden. */
 const TODAY_HALF_PX = 28;
-/** Widest tick label ("Oct 4" at 13px is about 35px). Tick labels are anchored, so this sets their extent. */
-const TICK_LABEL_PX = 40;
+/** Rough label widths at caption size: a bare day number, and one with its month ("Nov 9"). */
+const DAY_LABEL_PX = 18;
+const MONTH_LABEL_PX = 42;
+/** Space kept between neighbouring day labels. */
+const LABEL_GAP_PX = 8;
 export const MIN_LABEL_PX = 40;
 
 /** Pausing keeps the account visible without exposing any of its event rows. */
@@ -80,14 +83,6 @@ function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; 
   );
 }
 
-/**
- * The window the ruler shows, in days. This was a 7d/40d control in the app bar;
- * the short window only ever meant "zoom in on this week", which the ruler's own
- * Today marker and the Tonight panel both already answer. FULL_AGENDA_DAYS in
- * agenda-data.ts mirrors this value.
- */
-const RANGE_DAYS = 40;
-
 function useElementWidth() {
   const observerRef = useRef<ResizeObserver | null>(null);
   const [width, setWidth] = useState(0);
@@ -110,26 +105,6 @@ function useElementWidth() {
   useEffect(() => () => observerRef.current?.disconnect(), []);
 
   return [setElement, width] as const;
-}
-
-function buildGridTicks(rangeStart: number, rangeEnd: number, width: number, localTz: string): DateTime[] {
-  const rangeSpan = rangeEnd - rangeStart;
-  // Keep widening the interval until month labels have room. Eight-day ticks
-  // still collide in a 40-day window on narrow phones after panel padding.
-  let stepDays = 4;
-  if (width > 0 && rangeSpan > 0) {
-    while ((stepDays * DAY * width) / rangeSpan < MIN_TICK_GAP_PX) stepDays *= 2;
-  }
-  const step = { days: stepDays } as const;
-  let boundary = DateTime.fromMillis(rangeStart, { zone: localTz }).startOf('day');
-  if (boundary.toMillis() < rangeStart) boundary = boundary.plus(step);
-
-  const boundaries: DateTime[] = [];
-  while (boundary.toMillis() <= rangeEnd) {
-    boundaries.push(boundary);
-    boundary = boundary.plus(step);
-  }
-  return boundaries;
 }
 
 /**
@@ -1025,8 +1000,6 @@ export function TimelinePage({ now }: { now: number }) {
   const laneInset = useInset();
   const [timelineScaleRef, timelineWidth] = useElementWidth();
   const focusedGameId = useUI((s) => s.focusedGameId);
-  const search = useUI((s) => s.timelineSearch);
-  const setSearch = useUI((s) => s.setTimelineSearch);
   // Time bars on every width: a phone gives each event a name line above its bar.
   const view = useUI((s) => s.timelineView) ?? 'lanes';
   const compact = useMediaQuery('(max-width: 639px)');
@@ -1049,15 +1022,10 @@ export function TimelinePage({ now }: { now: number }) {
   // Lane membership and the ruler only change on the hour; the Today marker below
   // reads raw `now`. Without this the whole grid rebuilt every tick.
   const hourBucket = Math.floor(now / HOUR);
-  const { games, events, eventsByGame, ticks, ws, we, span } = useMemo(() => {
-    const rangeNow = now;
-    const rangeDays = RANGE_DAYS;
-    const rangeStart = rangeNow - (rangeDays * DAY) / 3;
-    const rangeEnd = rangeStart + rangeDays * DAY;
+  const { games, events, eventsByGame, days, weekLines, ws, we, span } = useMemo(() => {
+    const { start: rangeStart, end: rangeEnd } = timelineWindow(now, state.settings.localTz);
     const rangeSpan = rangeEnd - rangeStart;
-    const live = state.events.filter(
-      (event) => !event.deleted && event.name.toLowerCase().includes(search.trim().toLowerCase()),
-    );
+    const live = state.events.filter((event) => !event.deleted);
     const hasFocus = state.games.some((game) => !game.deleted && game.id === focusedGameId);
     const activeGames = rosterGames(state.games).filter((game) => !hasFocus || game.id === focusedGameId);
     const gameIds = new Set(activeGames.filter((game) => !game.paused).map((game) => game.id));
@@ -1071,15 +1039,16 @@ export function TimelinePage({ now }: { now: number }) {
         ),
       ]),
     );
-    const gridTicks = buildGridTicks(rangeStart, rangeEnd, timelineWidth, state.settings.localTz);
+    const shownGames = activeGames.filter((game) => !game.paused);
 
     return {
       games: activeGames,
-      // The searched, undeleted set the list view shows. Both views read the
-      // same filter so a search can never mean two different things.
+      // The undeleted set the list view shows, so both views count the same events.
       events: live.filter((event) => gameIds.has(event.gameId)),
       eventsByGame: byGame,
-      ticks: gridTicks,
+      days: timelineDays(rangeStart, rangeEnd, state.settings.localTz),
+      // Week lines sit on the weekly reset the shown games share, not on midnight.
+      weekLines: weekResetLines(shownGames, rangeStart, rangeEnd, state.settings.localTz),
       ws: rangeStart,
       we: rangeEnd,
       span: rangeSpan,
@@ -1087,7 +1056,7 @@ export function TimelinePage({ now }: { now: number }) {
     // Timeline membership and grid construction intentionally invalidate on
     // the hour bucket; the Today marker below continues to use raw `now`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hourBucket, state.events, state.games, state.settings.localTz, timelineWidth, focusedGameId, search]);
+  }, [hourBucket, state.events, state.games, state.settings.localTz, focusedGameId]);
 
   // One pass assigns every lane a colour, so the timeline and the dashboard agree
   // and no two lanes land in the same region of hue and lightness. Without it,
@@ -1098,19 +1067,41 @@ export function TimelinePage({ now }: { now: number }) {
   const todayFraction = (now - ws) / span;
   const todayLeft = `${todayFraction * 100}%`;
   const todayX = todayFraction * timelineWidth;
-  // A tick label under the Today capsule is hidden, and a month is named on the
-  // first label that shows it rather than on a hidden one.
-  const tickLabels: { hidden: boolean; showMonth: boolean }[] = [];
-  let shownMonth: number | undefined;
-  for (const [index, tick] of ticks.entries()) {
-    const tickX = ((tick.toMillis() - ws) / span) * timelineWidth;
-    const labelLeft =
-      index === 0 ? tickX : index === ticks.length - 1 ? tickX - TICK_LABEL_PX : tickX - TICK_LABEL_PX / 2;
-    const hidden =
-      timelineWidth > 0 && labelLeft < todayX + TODAY_HALF_PX && labelLeft + TICK_LABEL_PX > todayX - TODAY_HALF_PX;
-    tickLabels.push({ hidden, showMonth: !hidden && shownMonth !== tick.month });
-    if (!hidden) shownMonth = tick.month;
+  // Day labels sit in the middle of their day. Every day is named when there is
+  // room; otherwise only the days a week line falls on. A label is left out
+  // rather than drawn over its neighbour, the ruler's ends, or the Today capsule.
+  const weekDays = new Set(
+    weekLines.map((line) => DateTime.fromMillis(line, { zone: state.settings.localTz }).toISODate()),
+  );
+  const dayPx = span > 0 ? (DAY / span) * timelineWidth : 0;
+  const everyDay = dayPx >= DAY_LABEL_PX + LABEL_GAP_PX + 6;
+  // Week days are placed first so a plain day number never pushes one out. The
+  // month is named on week days and on the 1st, which is enough to read the dates.
+  type DayLabel = { day: DateTime; center: number; left: number; right: number; showMonth: boolean; week: boolean };
+  const placed: DayLabel[] = [];
+  if (timelineWidth > 0) {
+    const candidates = days.flatMap((day): DayLabel[] => {
+      const week = weekDays.has(day.toISODate());
+      if (!everyDay && !week) return [];
+      const center = ((day.toMillis() + DAY / 2 - ws) / span) * timelineWidth;
+      const showMonth = week || day.day === 1;
+      const half = (showMonth ? MONTH_LABEL_PX : DAY_LABEL_PX) / 2;
+      return [{ day, center, left: center - half, right: center + half, showMonth, week }];
+    });
+    for (const pass of [true, false]) {
+      for (const label of candidates) {
+        if (label.week !== pass) continue;
+        if (label.left < 0 || label.right > timelineWidth) continue;
+        if (label.left < todayX + TODAY_HALF_PX && label.right > todayX - TODAY_HALF_PX) continue;
+        const clash = placed.some(
+          (other) => label.left < other.right + LABEL_GAP_PX && label.right + LABEL_GAP_PX > other.left,
+        );
+        if (!clash) placed.push(label);
+      }
+    }
+    placed.sort((a, b) => a.center - b.center);
   }
+  const dayLabels = placed;
   const todayDate = DateTime.fromMillis(now, { zone: state.settings.localTz }).toFormat('cccc d LLLL');
 
   // Lanes whose finished pile has been opened. Finished means ticked off OR
@@ -1134,9 +1125,6 @@ export function TimelinePage({ now }: { now: number }) {
   const pausedGames = games.filter((game) => game.paused);
   const scopedEvents = view === 'lanes' ? [...eventsByGame.values()].flat() : events;
   const visibleCount = scopedEvents.filter((event) => showFinished || (!event.done && event.end > now)).length;
-  const rangeStart = DateTime.fromMillis(ws, { zone: state.settings.localTz });
-  const rangeEnd = DateTime.fromMillis(we, { zone: state.settings.localTz });
-  const rangeFormat = rangeStart.year === rangeEnd.year ? 'd LLL' : 'd LLL yyyy';
   const pausedRows = pausedGames.length > 0 && (
     <div data-tour="timeline" className="mt-4 divide-y divide-line-hairline border-t border-line-edge">
       {pausedGames.map((game) => (
@@ -1159,8 +1147,6 @@ export function TimelinePage({ now }: { now: number }) {
         </h1>
         <CalendarToolbar view={view}>
           <TimelineTools
-            search={search}
-            onSearch={setSearch}
             showFinished={showFinished}
             onShowFinished={setShowFinished}
             editing={view === 'lanes' ? editing : undefined}
@@ -1172,25 +1158,10 @@ export function TimelinePage({ now }: { now: number }) {
         Hold an event and drag it, or in edit mode focus its handle and press Arrow Up or Arrow Down.
       </p>
       <div className="timeline-caption flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted">
-        <span className="timeline-range-label">
-          {view === 'lanes' ? `${rangeStart.toFormat(rangeFormat)}–${rangeEnd.toFormat(rangeFormat)}` : 'Event list'}
-        </span>
         <span>
           {visibleCount} {visibleCount === 1 ? 'event' : 'events'}
         </span>
         <CalendarFeedStatus />
-        {search.trim() && (
-          <button
-            type="button"
-            className="timeline-search-chip min-w-0 text-accent-fg"
-            onClick={() => setSearch('')}
-            aria-label="Clear event search"
-          >
-            <span className="truncate">“{search.trim()}”</span>
-            <span aria-hidden>×</span>
-          </button>
-        )}
-        {showFinished && <span>Including finished</span>}
         {pausedGames.length > 0 && <span>{pausedGames.length} paused</span>}
       </div>
 
@@ -1203,7 +1174,6 @@ export function TimelinePage({ now }: { now: number }) {
           now={now}
           localTz={state.settings.localTz}
           showFinished={showFinished}
-          search={search.trim()}
           onOpenEvent={openEvent}
           onToggleEvent={toggleEvent}
         />
@@ -1215,26 +1185,19 @@ export function TimelinePage({ now }: { now: number }) {
         >
           <div ref={timelineScaleRef} data-timeline-scale className="timeline-scale">
             <div data-timeline-ruler className="relative h-5 text-caption text-muted">
-              {ticks.map((tick, index) => {
-                const first = index === 0;
-                const last = index === ticks.length - 1;
-                const { hidden, showMonth } = tickLabels[index]!;
-                return (
-                  <span
-                    key={tick.toMillis()}
-                    data-timeline-tick
-                    className={`absolute top-0 flex h-5 flex-row items-center gap-1 ${
-                      first ? 'translate-x-0' : last ? '-translate-x-full' : '-translate-x-1/2'
-                    } ${hidden ? 'invisible' : ''}`}
-                    style={{ left: `${((tick.toMillis() - ws) / span) * 100}%` }}
-                  >
-                    <span className="numeral text-caption uppercase text-dim">
-                      {showMonth ? tick.toFormat('LLL') : ''}
-                    </span>
-                    <span className="numeral text-caption text-muted">{tick.toFormat('d')}</span>
+              {dayLabels.map(({ day, center, showMonth, week }) => (
+                <span
+                  key={day.toMillis()}
+                  data-timeline-tick
+                  className="absolute top-0 flex h-5 -translate-x-1/2 flex-row items-center gap-1"
+                  style={{ left: center }}
+                >
+                  {showMonth && <span className="numeral text-caption uppercase text-dim">{day.toFormat('LLL')}</span>}
+                  <span className={`numeral text-caption ${week ? 'font-semibold text-fg-soft' : 'text-muted'}`}>
+                    {day.toFormat('d')}
                   </span>
-                );
-              })}
+                </span>
+              ))}
               <span data-timeline-today className="timeline-today-label" style={{ left: todayLeft }}>
                 Today
                 <span className="sr-only">, {todayDate}</span>
@@ -1242,11 +1205,12 @@ export function TimelinePage({ now }: { now: number }) {
             </div>
 
             <div className="relative">
-              {ticks.map((tick) => (
+              {weekLines.map((line) => (
                 <div
-                  key={tick.toMillis()}
-                  className="timeline-grid-dotted pointer-events-none absolute inset-y-0 w-px"
-                  style={{ left: `${((tick.toMillis() - ws) / span) * 100}%` }}
+                  key={line}
+                  data-timeline-week-line
+                  className="timeline-grid-dotted timeline-week-line pointer-events-none absolute inset-y-0 w-px"
+                  style={{ left: `${((line - ws) / span) * 100}%` }}
                 />
               ))}
               <div data-timeline-now aria-hidden className="timeline-today-line" style={{ left: todayLeft }} />
@@ -1329,9 +1293,7 @@ export function TimelinePage({ now }: { now: number }) {
                       contentClassName="timeline-lane-content"
                     >
                       {evs.length === 0 ? (
-                        <p className="py-1 text-label text-muted">
-                          {search.trim() ? 'No matching events.' : 'No events in this window.'}
-                        </p>
+                        <p className="py-1 text-label text-muted">No events in this window.</p>
                       ) : shown.length === 0 ? (
                         <p className="py-1 text-label text-muted">Nothing running. {finishedCount} finished hidden.</p>
                       ) : (

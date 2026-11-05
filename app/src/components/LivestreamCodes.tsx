@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { redemptionCodeStatus } from '@memoria/shared';
-import type { LivestreamCodes as CodeSet } from '../data/livestreams';
+import type { RedemptionCodes as CodeSet } from '../data/catch-up';
 import { useNow } from '../hooks';
 import { Btn } from './ui';
+import '../calendar-list.css';
+import '../today.css';
 
 export function LivestreamCodes({ redemption, gameName }: { redemption: CodeSet; gameName: string }) {
   const now = useNow(30_000);

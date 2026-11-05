@@ -1,17 +1,14 @@
-import * as Dialog from '@radix-ui/react-dialog';
-import { Btn, TextInput } from './ui';
-
-/** Find, Finished and, on the timeline view, Edit, beside the view switch. */
+/**
+ * The finished-events switch and, on the timeline view, Edit, beside the view
+ * switch. Finished works like the theme button: it names what a press does.
+ * There is no search box: the browser's own find covers that.
+ */
 export function TimelineTools({
-  search,
-  onSearch,
   showFinished,
   onShowFinished,
   editing,
   onEditing,
 }: {
-  search: string;
-  onSearch: (value: string) => void;
   showFinished: boolean;
   onShowFinished: (value: boolean) => void;
   /** Undefined hides the Edit button. */
@@ -20,73 +17,32 @@ export function TimelineTools({
 }) {
   return (
     <div data-tour="timeline-tools" className="timeline-tools">
-      <Dialog.Root>
-        <Dialog.Trigger asChild>
-          <button
-            type="button"
-            className="shell-control timeline-tool-button relative"
-            data-active={search.trim() ? '' : undefined}
-            aria-label="Find events"
-            title={search.trim() ? `Search: ${search.trim()}` : 'Find events'}
-          >
-            <svg
-              className="timeline-tool-icon icon h-4 w-4"
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              aria-hidden
-            >
-              <circle cx="8.5" cy="8.5" r="5.5" />
-              <path d="m13 13 4 4" />
-            </svg>
-            <span className="calendar-tool-label">Find</span>
-            {search.trim() && <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-ui-full bg-accent" />}
-          </button>
-        </Dialog.Trigger>
-        <Dialog.Portal>
-          <Dialog.Overlay className="timeline-search-overlay fixed inset-0 z-50 bg-scrim/30" />
-          <Dialog.Content className="timeline-search-panel popover-motion fixed right-3 top-[calc(var(--app-bar-h)+8px)] z-50 w-[min(24rem,calc(100vw-24px))]">
-            <Dialog.Title className="mb-3 text-lead font-semibold tracking-tight">Find events</Dialog.Title>
-            <Dialog.Description className="sr-only">Filter events by name.</Dialog.Description>
-            <label htmlFor="timeline-search" className="mb-2 block text-meta text-muted">
-              Search events
-            </label>
-            <TextInput
-              id="timeline-search"
-              aria-label="Search events"
-              placeholder="Event name…"
-              value={search}
-              onChange={(event) => onSearch(event.target.value)}
-            />
-            <div className="mt-4 flex justify-end gap-2">
-              <Btn disabled={!search} onClick={() => onSearch('')}>
-                Clear
-              </Btn>
-              <Dialog.Close asChild>
-                <Btn>Done</Btn>
-              </Dialog.Close>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
       <button
         type="button"
         className="shell-control timeline-tool-button"
-        aria-label="Show finished events"
-        aria-pressed={showFinished}
-        title={showFinished ? 'Hide finished events' : 'Show finished events'}
+        aria-label={showFinished ? 'Hide finished events' : 'Show finished events'}
         onClick={() => onShowFinished(!showFinished)}
       >
         <svg
+          key={String(showFinished)}
           className="timeline-tool-icon icon h-4 w-4"
           viewBox="0 0 20 20"
           fill="none"
           stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
           aria-hidden
         >
-          <path d="M3 8a7 7 0 1 1 1 7M3 3v5h5M10 6v4l3 2" />
+          {showFinished ? (
+            <path d="M3 3l14 14M8.6 5.2A8.6 8.6 0 0 1 10 5c4.5 0 7.5 5 7.5 5a14 14 0 0 1-2.1 2.7M5.4 6.6C3.5 8 2.5 10 2.5 10s3 5 7.5 5c1.3 0 2.5-.4 3.5-1M8.3 8.4a2.4 2.4 0 0 0 3.3 3.3" />
+          ) : (
+            <>
+              <path d="M2.5 10s3-5 7.5-5 7.5 5 7.5 5-3 5-7.5 5-7.5-5-7.5-5Z" />
+              <circle cx="10" cy="10" r="2.4" />
+            </>
+          )}
         </svg>
-        <span className="calendar-tool-label">Finished</span>
+        <span className="calendar-tool-label">{showFinished ? 'Hide finished' : 'Show finished'}</span>
       </button>
       {editing !== undefined && (
         <button

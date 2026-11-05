@@ -13,7 +13,8 @@ You do not need a Memoria account or any coding knowledge.
 
 - **Flexible layouts** adapt to phone screens, small PC windows, and large displays.
 - **Today** shows approaching energy caps and unfinished routines within your sleep window, then the Tonight summary across every game. Select a game for its complete controls.
-- **Calendar** shows events, banners, resets, and livestreams. Select **Livestreams** for broadcast details.
+- **Calendar** shows events, banners, resets, and livestreams.
+- **Catch up**, in each game's heading, sums up what recent versions added: characters, weapons, gear sets, outfits, events, quality-of-life changes and codes.
 - **Launch** starts a game from its card in the Windows app. Select the pencil button on the card to choose what it starts.
 
 Each energy estimate shows how long ago you entered its value.

@@ -1,7 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import type { EnergyProjection, Resource } from '@memoria/shared';
 import { effectiveReserveRegenMinutes, effectiveResourceKind } from '@memoria/shared';
-import { useUI } from '../ui-store';
 import { clamp, fmtClock, fmtDur, intOr } from '../util';
 import { ProgressBar } from './primitives';
 
@@ -239,16 +238,10 @@ export const EnergyRow = memo(function EnergyRow({
   // the stale displayed value and roll back regenerated energy.
   const mainEdit = useRef({ dirty: false, cancelled: false });
   const reserveEdit = useRef({ dirty: false, cancelled: false });
-  const pinnedReserveOpen = useUI((state) => state.reserveOpen[res.id]);
-  const setReserveOpen = useUI((state) => state.setReserveOpen);
 
   useEffect(() => {
     liveRef.current = { value: proj.value, reserve: reserve ?? 0 };
   }, [proj.value, reserve]);
-
-  useEffect(() => {
-    if (res.reserveCap <= 0 && pinnedReserveOpen !== undefined) setReserveOpen(res.id, undefined);
-  }, [pinnedReserveOpen, res.id, res.reserveCap, setReserveOpen]);
 
   const liveValue = proj.hasSnapshot ? proj.value : null;
   const shown = draft ?? (liveValue == null ? '' : String(liveValue));
@@ -290,7 +283,6 @@ export const EnergyRow = memo(function EnergyRow({
   // games that have one — so the card silently grew a second stepper, a second
   // tube and a second subtitle that nobody asked for. The summary line below
   // carries the whole reading; opening it is the user's decision and it sticks.
-  const reserveIsOpen = pinnedReserveOpen ?? false;
   // Urgency is TIME based, not %: red when capping within 2h (or already full),
   // amber within 8h, green otherwise.
   const urgency =
@@ -411,38 +403,11 @@ export const EnergyRow = memo(function EnergyRow({
 
           {res.reserveCap > 0 && (
             <>
-              <button
-                type="button"
-                aria-expanded={reserveIsOpen}
-                onClick={() => setReserveOpen(res.id, !reserveIsOpen)}
-                className="mt-1.5 flex min-h-11 w-full items-center gap-1 rounded-ui-md text-left text-caption font-semibold tabular-nums text-dim transition hover:text-fg-soft md:min-h-6"
-              >
-                <svg
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  stroke="currentColor"
-                  className={`icon h-3 w-3 shrink-0 transition-transform duration-(--dur-base) ease-(--ease-out) ${reserveIsOpen ? 'rotate-90' : ''}`}
-                  aria-hidden
-                >
-                  <path d="m7 5 5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                {/* Closed, this line IS the reserve reading — that is what earns
-                    it the right to stay closed. Open, the stepper below owns the
-                    number and repeating it here would be the third copy. */}
-                <span>
-                  {reserveLabel}
-                  {reserveIsOpen ? '' : ` ${reserveValue}/${res.reserveCap}`}
-                </span>
-              </button>
-
-              <div
-                aria-hidden={!reserveIsOpen}
-                inert={!reserveIsOpen}
-                className="grid transition-[grid-template-rows,opacity] duration-(--dur-base) ease-(--ease-out)"
-                style={{ gridTemplateRows: reserveIsOpen ? '1fr' : '0fr', opacity: reserveIsOpen ? 1 : 0 }}
-              >
-                <div className="min-h-0 overflow-hidden">
-                  <div className="mt-1 border-t border-line-hairline pt-2">
+              {/* Backups and reserves are part of the reading, so they always show. */}
+              <div className="mt-2 border-t border-line-hairline pt-2" data-reserve>
+                <div className="mb-1 text-caption font-semibold text-dim">{reserveLabel}</div>
+                <div>
+                  <div>
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
                       <ValueStepper
                         value={reserveDraft ?? String(reserveValue)}

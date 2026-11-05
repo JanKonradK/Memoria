@@ -25,7 +25,9 @@ beforeEach(() => {
     }),
   });
   // The shared setup reports reduced motion for any unrecognised query; these tests want motion allowed.
-  vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: false }) as MediaQueryList);
+  vi.spyOn(window, 'matchMedia').mockImplementation(
+    () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }) as unknown as MediaQueryList,
+  );
 });
 
 afterEach(() => {
@@ -166,10 +168,22 @@ describe('GameLogo', () => {
   });
 
   it('just changes side when the reader prefers reduced motion', () => {
-    vi.mocked(window.matchMedia).mockImplementation(() => ({ matches: true }) as MediaQueryList);
+    vi.mocked(window.matchMedia).mockImplementation(
+      () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} }) as unknown as MediaQueryList,
+    );
     const { container } = render(<GameLogo game={genshin} flippable />);
     fireEvent.click(screen.getByRole('button'));
     expect(coins(container)[0]).toHaveAttribute('data-flipped');
     expect(moves).toEqual([]);
+  });
+
+  it('turns the ring of a heading logo only when asked, and never under reduced motion', () => {
+    const { container, rerender } = render(<GameLogo game={genshin} />);
+    expect(container.querySelector('.game-logo-spin[data-spinning]')).toBeNull();
+    vi.mocked(window.matchMedia).mockImplementation(
+      () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} }) as unknown as MediaQueryList,
+    );
+    rerender(<GameLogo game={genshin} spin />);
+    expect(container.querySelector('.game-logo-spin[data-spinning]')).toBeNull();
   });
 });

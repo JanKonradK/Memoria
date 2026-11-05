@@ -328,6 +328,38 @@ export function mergeState(a: AppState, b: AppState): AppState {
   return normalizeState(merged);
 }
 
+const CATCH_UP_KEYS_PER_GAME = 200;
+
+/** Keep well-formed entries only; a malformed one is dropped rather than failing every setting. */
+function normalizeCatchUpSeen(raw: unknown): Record<string, string[]> | undefined {
+  const record = objectRecord(raw);
+  if (!record) return undefined;
+  const out: Record<string, string[]> = {};
+  for (const [game, keys] of Object.entries(record)) {
+    if (game.length < 1 || game.length > 40 || !Array.isArray(keys)) continue;
+    const valid = [
+      ...new Set(keys.filter((key): key is string => typeof key === 'string' && key.length > 0 && key.length <= 80)),
+    ]
+      .sort()
+      .slice(-CATCH_UP_KEYS_PER_GAME);
+    if (valid.length > 0) out[game] = valid;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/** Union per game: reading something on one device never unreads it on another. */
+function mergeCatchUpSeen(
+  a: Record<string, string[]> | undefined,
+  b: Record<string, string[]> | undefined,
+): Record<string, string[]> | undefined {
+  if (!a && !b) return undefined;
+  const merged: Record<string, string[]> = {};
+  for (const side of [a, b]) {
+    for (const [game, keys] of Object.entries(side ?? {})) merged[game] = [...(merged[game] ?? []), ...keys];
+  }
+  return normalizeCatchUpSeen(merged);
+}
+
 function normalizeSettings(raw: unknown): Settings {
   const base = emptyState().settings;
   const record = objectRecord(raw) ?? {};
@@ -359,6 +391,7 @@ function normalizeSettings(raw: unknown): Settings {
     remoteFeedVersion: RemoteFeedVersionSchema.safeParse(record.remoteFeedVersion).success
       ? RemoteFeedVersionSchema.parse(record.remoteFeedVersion)
       : undefined,
+    catchUpSeen: normalizeCatchUpSeen(record.catchUpSeen),
     updatedAt: updatedAt ?? base.updatedAt,
     fieldUpdatedAt: safeFieldClocks,
   };
@@ -398,6 +431,9 @@ function mergeSettings(left: Partial<Settings> | undefined, right: Partial<Setti
       right.revision.localeCompare(left.revision),
   );
   if (remoteVersions[0]) merged.remoteFeedVersion = remoteVersions[0];
+  const catchUpSeen = mergeCatchUpSeen(a.catchUpSeen, b.catchUpSeen);
+  if (catchUpSeen) merged.catchUpSeen = catchUpSeen;
+  else delete merged.catchUpSeen;
   return merged;
 }
 

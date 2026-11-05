@@ -51,9 +51,9 @@ it('keeps three primary routes and makes timeline livestreams and settings reach
   ).toEqual(['Timeline', 'Today', 'Settings']);
   fireEvent.click(within(nav).getByRole('button', { name: 'Timeline' }));
   // Timeline's own views sit on the page, outside the app bar.
-  expect(within(screen.getByRole('banner')).queryByRole('radio', { name: 'Livestreams' })).toBeNull();
-  fireEvent.click(screen.getByRole('radio', { name: 'Livestreams' }));
-  expect(useUI.getState().tab).toBe('livestreams');
+  expect(within(screen.getByRole('banner')).queryByRole('radio', { name: 'List' })).toBeNull();
+  // Livestreams moved to each game's Catch up, so the switch has two views.
+  expect(screen.queryByRole('radio', { name: 'Livestreams' })).toBeNull();
   expect(within(nav).getByRole('button', { name: 'Timeline' })).toHaveAttribute('aria-current', 'page');
   fireEvent.click(within(nav).getByRole('button', { name: 'Settings' }));
   expect(useUI.getState().tab).toBe('settings');

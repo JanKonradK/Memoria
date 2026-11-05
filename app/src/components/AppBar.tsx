@@ -244,11 +244,8 @@ export function AppBar() {
           />
         )}
         {ROUTES.map((route) => {
-          // A game's page belongs to Today, the same way Livestreams belongs to Timeline.
-          const active =
-            tab === route.id ||
-            (route.id === 'today' && tab === 'home') ||
-            (route.id === 'timeline' && tab === 'livestreams');
+          // A game's page belongs to Today.
+          const active = tab === route.id || (route.id === 'today' && tab === 'home');
           return (
             <button
               key={route.id}

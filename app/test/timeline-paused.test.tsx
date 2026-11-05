@@ -40,12 +40,11 @@ const events = [
 ];
 const fixture: AppState = { ...emptyState(), games: [active, paused, deleted], events };
 
-function show(view: 'lanes' | 'list', options: { focus?: string; search?: string; finished?: boolean } = {}) {
+function show(view: 'lanes' | 'list', options: { focus?: string; finished?: boolean } = {}) {
   useApp.setState({ state: structuredClone(fixture) });
   useUI.setState({
     focusedGameId: options.focus ?? null,
     timelineView: view,
-    timelineSearch: options.search ?? '',
     timelineShowFinished: options.finished ?? false,
   });
   return render(
@@ -57,7 +56,7 @@ function show(view: 'lanes' | 'list', options: { focus?: string; search?: string
 
 afterEach(() => {
   useApp.setState({ state: emptyState() });
-  useUI.setState({ focusedGameId: null, timelineView: null, timelineSearch: '', timelineShowFinished: false });
+  useUI.setState({ focusedGameId: null, timelineView: null, timelineShowFinished: false });
 });
 
 describe.each(['lanes', 'list'] as const)('paused games in %s', (view) => {
@@ -73,10 +72,11 @@ describe.each(['lanes', 'list'] as const)('paused games in %s', (view) => {
     expect(useApp.getState().state.events).toEqual(events);
   });
 
-  it('does not reveal paused events through search or finished-event controls', () => {
-    const { container } = show(view, { search: 'Secret', finished: true });
-    expect(container.querySelector('.timeline-caption')).toHaveTextContent('0 events');
-    expect(container.querySelectorAll('[data-event-id], [data-list-event]')).toHaveLength(0);
+  it('does not reveal paused events through the finished-event control', () => {
+    const { container } = show(view, { finished: true });
+    // Only the other account's one event shows; the paused account's rows stay hidden.
+    expect(container.querySelector('.timeline-caption')).toHaveTextContent('1 event');
+    expect(container.querySelectorAll('[data-event-id], [data-list-event]')).toHaveLength(1);
     expect(screen.getByRole('button', { name: /Resume tracking for Shared game, Alt/ })).toBeInTheDocument();
   });
 

@@ -12,7 +12,7 @@ function entry(id: string, actions: Array<Omit<NextAction, 'gameId'>>, paused = 
   return { game, next: full[0] ?? null, actions: full };
 }
 
-it('lists the next day across games, soonest first, with shared resets on one line', () => {
+it('lists the next two days across games, soonest first, with shared resets on one line', () => {
   const order = [
     entry('a', [
       { kind: 'energy_full', at: NOW, label: 'Resin is FULL' },
@@ -30,7 +30,8 @@ it('lists the next day across games, soonest first, with shared resets on one li
   const events = [
     makeEvent({ id: 'ends', gameId: 'a', name: 'Ends soon', start: NOW - HOUR, end: NOW + 5 * HOUR }),
     makeEvent({ id: 'starts', gameId: 'b', name: 'Starts soon', start: NOW + 2 * HOUR, end: NOW + 90 * HOUR }),
-    makeEvent({ id: 'later', gameId: 'a', name: 'Ends later', start: NOW - HOUR, end: NOW + 48 * HOUR }),
+    makeEvent({ id: 'later', gameId: 'a', name: 'Ends later', start: NOW - HOUR, end: NOW + 47 * HOUR }),
+    makeEvent({ id: 'beyond', gameId: 'a', name: 'Ends after the window', start: NOW - HOUR, end: NOW + 49 * HOUR }),
     makeEvent({ id: 'done', gameId: 'a', name: 'Done', start: NOW - HOUR, end: NOW + HOUR, done: true }),
     makeEvent({ id: 'muted', gameId: 'paused', name: 'Paused game', start: NOW - HOUR, end: NOW + HOUR }),
   ];
@@ -43,6 +44,8 @@ it('lists the next day across games, soonest first, with shared resets on one li
     'energy:b:Power caps',
     'end:ends',
     `reset:daily:${NOW + 15 * HOUR}`,
+    `reset:weekly:${NOW + 30 * HOUR}`,
+    'end:later',
   ]);
   expect(items[0]).toMatchObject({ label: '2 energy bars full', gameIds: ['a', 'b'], full: true });
   expect(items[4]).toMatchObject({ gameIds: ['a', 'b'], left: 3, cadence: 'daily' });

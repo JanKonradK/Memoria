@@ -49,6 +49,7 @@ import { groupGameEvents } from '../event-category';
 import { calendarSchedule } from '../event-schedule';
 import { readingSource } from '../reading-source';
 import { LaunchButton, LaunchSettings } from './GameLaunch';
+import { useCatchUpUnread } from '../catch-up-status';
 
 const TITLE_FIELDS = ['name'] as const;
 
@@ -467,7 +468,11 @@ export function EventStrip({
   return (
     <div className="event-strip">
       {sections.map((section) => (
-        <section key={section.key} className="mt-3 first:mt-0" aria-label={`${section.label} events for ${game.name}`}>
+        <section
+          key={section.key}
+          className="mt-3 first:mt-0"
+          aria-label={section.label === 'Events' ? `${game.name} events` : `${section.label} events for ${game.name}`}
+        >
           <BandRule label={section.label} />
           <div className="mt-0.5 space-y-0.5">
             {section.events.map((ev) => {
@@ -835,11 +840,11 @@ function GameControlsHeader({
           </svg>
         </button>
       )}
-      {layout === 'focus' && <GameLogo game={game} size={fullLogo ? 136 : 72} flippable />}
+      {layout === 'focus' && <GameLogo game={game} size={fullLogo ? 136 : 72} flippable spin />}
       <TitleContainer
         type={layout === 'focus' ? undefined : 'button'}
         onClick={layout === 'focus' ? undefined : onEdit}
-        className={`group/title min-w-0 flex-1 py-0.5 text-left ${layout === 'focus' ? '' : '-ml-1 cursor-pointer rounded-ui-md px-1 transition hover:bg-fill-2'}`}
+        className={`game-card-title group/title min-w-0 flex-1 py-0.5 text-left ${layout === 'focus' ? '' : '-ml-1 cursor-pointer rounded-ui-md px-1 transition hover:bg-fill-2'}`}
         aria-label={layout === 'focus' ? undefined : `Edit ${game.name}${accountLabel ? `, ${accountLabel}` : ''}`}
       >
         <div className="game-card-title-row flex min-w-0 items-center gap-2">
@@ -888,6 +893,7 @@ function GameControlsHeader({
       {/* Everything the game can do sits in its heading, beside its name. */}
       <div className="game-card-actions flex shrink-0 items-center gap-2" aria-label={`${game.name} tracking controls`}>
         {actions}
+        <CatchUpButton game={game} />
         {/* One Edit control for the layout and the events. Compact cards keep their title shortcut. */}
         <DropdownMenuPrimitive.Root>
           <Tooltip content={`Edit ${game.name} layout or events`}>
@@ -942,6 +948,31 @@ function GameControlsHeader({
   );
 }
 
+/** Opens what the game added since the player last caught up; a dot marks unread versions. */
+function CatchUpButton({ game }: { game: Game }) {
+  const { total, unread } = useCatchUpUnread(game);
+  const openSheet = useUI((s) => s.openSheet);
+  if (total === 0) return null;
+  return (
+    <Tooltip
+      content={unread > 0 ? `${unread} new ${unread === 1 ? 'version' : 'versions'} to catch up on` : 'Catch up'}
+    >
+      <Btn
+        type="button"
+        className={`relative inline-flex shrink-0 items-center gap-2 ${TOUCH_BUTTON}`}
+        aria-label={`Catch up on ${game.name}${unread > 0 ? `, ${unread} new` : ''}`}
+        onClick={() => openSheet({ kind: 'catchUp', gameId: game.id })}
+      >
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" className="icon h-4 w-4" aria-hidden>
+          <path d="M3 5.5h14v9H3zM7.5 17.5h5M8.5 7.8v4.4L12.3 10z" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <span className="hidden sm:inline">Catch up</span>
+        {unread > 0 && <span aria-hidden className="catch-up-dot" />}
+      </Btn>
+    </Tooltip>
+  );
+}
+
 /** Pure control surface shared by the regular card and the desktop focus bay. */
 export function GameControlsView({
   entry,
@@ -953,17 +984,20 @@ export function GameControlsView({
   onOpenEvent,
   onBack,
   actionsEnd,
+  aside,
 }: {
   entry: GameUrgency;
   state: AppState;
   actions: GameControlActions;
   now: number;
   layout?: 'card' | 'focus';
-  columns?: 1 | 2;
+  columns?: 1 | 2 | 3;
   onOpenEvent: (eventId: string, gameId: string) => void;
   onBack?: () => void;
   /** Joins the end of the heading's actions, after the game's own. */
   actionsEnd?: ReactNode;
+  /** The full page's context column: livestreams and notes. Outside the editable layout. */
+  aside?: ReactNode;
 }) {
   const { game } = entry;
   const [editing, setEditing] = useState(false);
@@ -1160,6 +1194,23 @@ export function GameControlsView({
     });
   }
 
+  const customCanvas = custom && (
+    <GameLayoutCanvas
+      key={`${game.id}:${editing}`}
+      gameId={game.id}
+      items={resolveGameLayout(game, state.resources, state.tasks)}
+      widgets={widgets}
+      editing={editing}
+      onChange={saveLayout}
+      onAdded={(id) => {
+        const latest = useApp.getState().state;
+        const currentGame = latest.games.find((item) => item.id === game.id && !item.deleted);
+        if (!currentGame) return;
+        const resolved = resolveGameLayout(currentGame, latest.resources, latest.tasks);
+        saveLayout([{ id, hidden: false }, ...resolved.filter((item) => item.id !== id)]);
+      }}
+    />
+  );
   return (
     <>
       <GameControlsHeader
@@ -1233,29 +1284,24 @@ export function GameControlsView({
         }}
       >
         {custom ? (
-          <GameLayoutCanvas
-            key={`${game.id}:${editing}`}
-            gameId={game.id}
-            items={resolveGameLayout(game, state.resources, state.tasks)}
-            widgets={widgets}
-            editing={editing}
-            onChange={saveLayout}
-            onAdded={(id) => {
-              const latest = useApp.getState().state;
-              const currentGame = latest.games.find((item) => item.id === game.id && !item.deleted);
-              if (!currentGame) return;
-              const resolved = resolveGameLayout(currentGame, latest.resources, latest.tasks);
-              saveLayout([{ id, hidden: false }, ...resolved.filter((item) => item.id !== id)]);
-            }}
-          />
+          aside ? (
+            // A custom layout keeps its own order; the context column stands beside it.
+            <div className="focus-bay-grid focus-bay-custom grid gap-x-8 gap-y-6" data-cols={columns}>
+              <div className="focus-track min-w-0">{customCanvas}</div>
+              <div className="focus-context min-w-0">{aside}</div>
+            </div>
+          ) : (
+            customCanvas
+          )
         ) : layout === 'focus' ? (
-          // What you track on the left, what is running on the right.
-          <div className="focus-bay-grid grid gap-x-8 gap-y-4" data-cols={columns}>
-            <div className="min-w-0">
+          // Context on the left, what you track in the middle, what is running on the right.
+          <div className="focus-bay-grid grid gap-x-8 gap-y-6" data-cols={columns} data-aside={aside ? '' : undefined}>
+            <div className="focus-track min-w-0">
               {resources}
               {tasks}
             </div>
-            <div className="min-w-0">{events}</div>
+            {aside && <div className="focus-context min-w-0">{aside}</div>}
+            <div className="focus-events min-w-0">{events}</div>
           </div>
         ) : (
           <>

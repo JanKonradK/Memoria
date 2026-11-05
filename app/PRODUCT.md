@@ -64,7 +64,7 @@ Three things a neighbouring tracker could not truthfully claim:
 ### Version 2.0 input and navigation
 
 Today is the default page. It groups approaching caps and unfinished routines within the configured sleep window.
-Games contains the complete controls and the Tonight summary. Calendar contains events and livestreams.
+Games contains the complete controls and the Tonight summary. Calendar contains events, including livestream rows. Each game's Catch up gathers what its recent versions added and its next livestream.
 Settings remains available from the header.
 
 Manual entry is the only input, for every game. Memoria does not read accounts, screenshots or game windows.

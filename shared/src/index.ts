@@ -16,3 +16,4 @@ export * from './event-feed';
 export * from './notification-plan';
 export * from './event-parts';
 export * from './glance';
+export * from './event-twins';

@@ -3,7 +3,7 @@ import { useUI } from '../ui-store';
 import { Select } from './ui';
 import { serverRegionLabel } from '../server-region';
 
-/** One selection follows the player across Calendar, Livestreams and Settings. */
+/** One selection follows the player across Calendar and Settings. */
 export function GameScope() {
   const games = useApp((s) => s.state.games);
   const focused = useUI((s) => s.focusedGameId);
