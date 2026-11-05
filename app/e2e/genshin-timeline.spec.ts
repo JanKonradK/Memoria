@@ -80,7 +80,8 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
     banners.getByRole('button', { name: /Open Genshin Impact event: Wonderland Treasures/ }).first(),
   ).toHaveCount(1);
   // These notices now print exact times, so the rows count down instead of showing calendar dates.
-  for (const key of ['snowball', 'overflowing-favor']) {
+  // Overflowing Favor starts 23 days out, past the timeline's three weeks ahead.
+  for (const key of ['snowball']) {
     const event = state.events.find((event) => event.sourceKey === `seed:genshin:7.1-${key}`)!;
     await expect(page.locator(`[data-event-id="${event.id}"] [data-event-countdown]`)).toHaveText(/arrives \d+d/);
   }

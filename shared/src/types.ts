@@ -260,6 +260,13 @@ export interface Settings extends Syncable {
   seedImportedVersion?: string;
   /** Latest reviewed public calendar; protects its corrections from older bundles. */
   remoteFeedVersion?: { generatedAt: string; seedUpdated: string; revision: string; receivedAt: number };
+  /**
+   * The catch-up digests the player has read, per game preset key, as
+   * `digestId@revision`. Keyed by preset so two accounts of one game share it.
+   * A set that only grows, so devices merge it by union with no clocks; new
+   * research on a version gets a new revision and reads as unread again.
+   */
+  catchUpSeen?: Record<string, string[]>;
   /** Per-field clocks prevent unrelated settings edits on two devices from overwriting each other. */
   fieldUpdatedAt?: Partial<Record<SettingsField, number>>;
 }

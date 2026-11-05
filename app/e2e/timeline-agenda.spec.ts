@@ -42,9 +42,10 @@ test('agenda keeps full titles, actions and route-return choices usable at every
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await page.getByRole('radiogroup', { name: 'Event view' }).getByRole('radio', { name: 'List', exact: true }).click();
   await expect(page.locator('[data-list-event]')).toHaveCount(12);
-  await expect(page.getByRole('button', { name: 'Find events', exact: true })).toHaveText('Find');
-  await expect(page.getByRole('button', { name: 'Show finished events', exact: true })).toHaveText('Finished');
-  for (const name of ['Find events', 'Show finished events']) {
+  // Finished names what a press does, as the theme button does. There is no Find: the browser has one.
+  await expect(page.getByRole('button', { name: 'Find events', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Show finished events', exact: true })).toHaveText('Show finished');
+  for (const name of ['Show finished events']) {
     const box = (await page.getByRole('button', { name, exact: true }).boundingBox())!;
     expect(box.x).toBeGreaterThanOrEqual(0);
     expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
@@ -81,26 +82,15 @@ test('agenda keeps full titles, actions and route-return choices usable at every
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
   const phone = page.viewportSize()!.width < 768;
-  const scrollPosition = await page.evaluate((onPhone) => {
-    if (onPhone) {
-      window.scrollTo({ top: 320, behavior: 'instant' });
-      return window.scrollY;
-    }
-    const board = document.querySelector<HTMLElement>('.timeline-board')!;
-    board.scrollTop = 320;
-    return board.scrollTop;
-  }, phone);
+  // The page is the only scroller at every width.
+  const scrollPosition = await page.evaluate(() => {
+    window.scrollTo({ top: 320, behavior: 'instant' });
+    return window.scrollY;
+  });
   expect(scrollPosition).toBeGreaterThan(0);
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        (onPhone) => (onPhone ? window.scrollY : document.querySelector<HTMLElement>('.timeline-board')!.scrollTop),
-        phone,
-      ),
-    )
-    .toBeCloseTo(scrollPosition, 0);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(scrollPosition, 0);
 
   // Use a non-default view so returning to the route cannot pass by resetting
   // to its device default. Filters should travel with that choice too.
@@ -108,23 +98,11 @@ test('agenda keeps full titles, actions and route-return choices usable at every
   const viewControls = page.getByRole('radiogroup', { name: 'Event view' });
   await viewControls.getByRole('radio', { name: chosenView, exact: true }).click();
   await page.getByRole('button', { name: 'Show finished events', exact: true }).click();
-  await page.getByRole('button', { name: 'Find events', exact: true }).click();
-  await expect(page.getByRole('textbox', { name: 'Search events' })).toBeFocused();
-  await page.getByRole('textbox', { name: 'Search events' }).fill('No matching event');
-  await page.getByRole('dialog', { name: 'Find events' }).getByRole('button', { name: 'Done', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Find events', exact: true })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Hide finished events', exact: true })).toHaveText('Hide finished');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   await expect(viewControls.getByRole('radio', { name: chosenView, exact: true })).toHaveAttribute('data-state', 'on');
-  await expect(page.getByRole('button', { name: 'Show finished events', exact: true })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
-  await expect(page.getByRole('button', { name: 'Clear event search', exact: true })).toContainText(
-    'No matching event',
-  );
+  await expect(page.getByRole('button', { name: 'Hide finished events', exact: true })).toBeVisible();
   await viewControls.getByRole('radio', { name: 'List', exact: true }).click();
-  await expect(page.getByText('No events match “No matching event”.')).toBeVisible();
-  await page.getByRole('button', { name: 'Clear event search', exact: true }).click();
   await expect(page.locator('[data-list-event]')).toHaveCount(12);
 });

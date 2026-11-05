@@ -121,18 +121,16 @@ export function TimelineList({
   now,
   localTz,
   showFinished,
-  search = '',
   onOpenEvent,
   onToggleEvent,
 }: {
   /** Already narrowed by the global game focus. */
   games: Game[];
-  /** Already narrowed by search, deletion and the focused game's id set. */
+  /** Already narrowed by deletion and the focused game's id set. */
   events: GameEvent[];
   now: number;
   localTz: string;
   showFinished: boolean;
-  search?: string;
   onOpenEvent: (event: GameEvent) => void;
   onToggleEvent: (event: GameEvent) => void;
 }) {
@@ -176,9 +174,7 @@ export function TimelineList({
             ? 'All games are paused.'
             : hiddenFinished > 0
               ? `Nothing running. ${hiddenFinished} finished hidden.`
-              : search
-                ? `No events match “${search}”.`
-                : 'No events.'}
+              : 'No events.'}
         </p>
       ) : (
         sections.map((section) => (

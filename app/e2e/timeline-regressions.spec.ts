@@ -15,21 +15,21 @@ test('separate cycles stay separate and clipped titles stay clear of countdowns'
     ...emptyState(),
     games: [game],
     events: [
-      { id: 'old-cycle', name: 'Stygian Onslaught', type: 'cycle', start: now - 12 * day, end: now + 2 * day },
-      { id: 'new-cycle', name: 'Stygian Onslaught', type: 'cycle', start: now + 13 * day, end: now + 25 * day },
+      { id: 'old-cycle', name: 'Stygian Onslaught', type: 'cycle', start: now - 6 * day, end: now + 2 * day },
+      { id: 'new-cycle', name: 'Stygian Onslaught', type: 'cycle', start: now + 9 * day, end: now + 17 * day },
       {
         id: 'clipped-title',
         name: 'Bonus Star Pieces — Champions Cup',
         type: 'event',
-        start: now + 26.5 * day,
-        end: now + 29 * day,
+        start: now + 19.5 * day,
+        end: now + 24 * day,
       },
       {
         id: 'long-title',
         name: 'Champions Cup — a long title in a narrow bar',
         type: 'event',
-        start: now + 18 * day,
-        end: now + 30 * day,
+        start: now + 12 * day,
+        end: now + 25 * day,
       },
     ].map((event) => ({ ...event, gameId: game.id, dailyTouch: false, notify: true, notes: '', updatedAt: now })),
   };

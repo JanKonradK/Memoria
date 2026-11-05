@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useReducedMotion } from '../hooks';
 import type { Game } from '@memoria/shared';
 import { prefersReducedMotion } from '../flip';
 import { titleStyle } from '../fonts';
@@ -154,6 +155,7 @@ export function GameLogo({
   game,
   size = 56,
   flippable = false,
+  spin = false,
   className = '',
 }: {
   game: LogoGame;
@@ -161,6 +163,12 @@ export function GameLogo({
   size?: number;
   /** Lets this logo be pressed to turn the coin. */
   flippable?: boolean;
+  /**
+   * Turns the ring slowly. Only for the one large logo heading a page: a
+   * dozen turning forever kept a phone redrawing. Pauses offscreen, in a
+   * hidden tab and under reduced motion.
+   */
+  spin?: boolean;
   className?: string;
 }) {
   const key = logoKey(game);
@@ -176,6 +184,26 @@ export function GameLogo({
     shown.current = flipped;
     toss(coinRef.current, ringRef.current, flipped);
   }, [flipped]);
+
+  const spinRef = useRef<HTMLSpanElement>(null);
+  const reduced = useReducedMotion();
+  const [spinning, setSpinning] = useState(false);
+  useEffect(() => {
+    const node = spinRef.current;
+    if (!spin || !node || reduced || typeof IntersectionObserver === 'undefined') return;
+    let visible = false;
+    const update = () => setSpinning(visible && !document.hidden);
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry?.isIntersecting ?? false;
+      update();
+    });
+    observer.observe(node);
+    document.addEventListener('visibilitychange', update);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', update);
+    };
+  }, [spin, reduced]);
 
   const [ringA, ringB] = logoRing(game);
   const art = game.presetKey ? LOGO_ART[game.presetKey] : undefined;
@@ -198,10 +226,13 @@ export function GameLogo({
   );
   const body = (
     <>
-      <svg ref={ringRef} viewBox="0 0 1024 1024" className="game-logo-ring">
-        <path d={RING_A} fill={ringA} />
-        <path d={RING_B} fill={ringB} />
-      </svg>
+      {/* The slow turn lives on its own wrapper, so a toss can still turn the ring itself. */}
+      <span ref={spinRef} className="game-logo-spin" data-spinning={spin && spinning && !reduced ? '' : undefined}>
+        <svg ref={ringRef} viewBox="0 0 1024 1024" className="game-logo-ring">
+          <path d={RING_A} fill={ringA} />
+          <path d={RING_B} fill={ringB} />
+        </svg>
+      </span>
       <span ref={coinRef} className="game-logo-coin" data-flipped={flipped || undefined}>
         {face('front')}
         {face('back')}

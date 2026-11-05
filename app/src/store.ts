@@ -16,6 +16,7 @@ import type {
   QuickChip,
   Task,
 } from '@memoria/shared';
+import { collapseSourceTwins, sourceEventId } from '@memoria/shared';
 import {
   completionId,
   assertStateCapacity,
@@ -250,12 +251,37 @@ function migrateGenshinBadge(state: AppState): { state: AppState; repaired: bool
   return repaired ? { state: { ...state, games }, repaired } : { state, repaired };
 }
 
+/**
+ * Games made before preset keys existed carry none, so their logos had no
+ * artwork and their names no title face. Stamp the key once, and fill the face
+ * in that same pass only: after that the key is there, so a face the player
+ * later clears on purpose stays cleared.
+ */
+export function migrateLegacyIdentity(state: AppState): { state: AppState; repaired: boolean } {
+  let repaired = false;
+  const updatedAt = now();
+  const games = state.games.map((game) => {
+    if (game.deleted || game.presetKey) return game;
+    const preset = presetForGame(game);
+    if (!preset) return game;
+    repaired = true;
+    return {
+      ...game,
+      presetKey: preset.key,
+      ...(!game.titleFont && preset.titleFont ? { titleFont: preset.titleFont } : {}),
+      updatedAt: Math.max(updatedAt, game.updatedAt + 1),
+    };
+  });
+  return repaired ? { state: { ...state, games }, repaired } : { state, repaired };
+}
+
 function stateForStorage(raw: unknown): { state: AppState; repaired: boolean } {
   const normalized = seedMissingRegenSnapshots(normalizeState(raw), now(), uid);
   const pruned = pruneCompletions(normalized, now() - COMPLETION_RETENTION_MS);
   const swept = pruneRetiredSeedEvents(pruned, now() - SEED_RETENTION_MS);
   const badgeMigrated = migrateGenshinBadge(swept);
-  const state = badgeMigrated.state;
+  const identity = migrateLegacyIdentity(badgeMigrated.state);
+  const state = collapseSourceTwins(identity.state, now());
   const parsed = safeParseAppState(raw);
   // Successful transforms matter too: future clocks and inferred legacy fields
   // are safe in memory only after repair, so leave no poisoned original on disk.
@@ -266,6 +292,8 @@ function stateForStorage(raw: unknown): { state: AppState; repaired: boolean } {
     repaired:
       schemaChanged ||
       badgeMigrated.repaired ||
+      identity.repaired ||
+      state !== badgeMigrated.state ||
       state.completions.length !== normalized.completions.length ||
       // A sweep that is not written back runs again on every single load.
       state.events.length !== normalized.events.length,
@@ -306,7 +334,7 @@ function applySeedPlan(state: AppState, plan: PlannedSeed[], version = SEED_UPDA
       continue;
     }
     applyEventUpsert(byId, {
-      ...(item.eventId ? { id: item.eventId } : {}),
+      id: item.eventId ?? sourceEventId(item.gameId, seed.sourceKey),
       gameId: item.gameId,
       name: seed.name,
       type: seed.type,
@@ -591,6 +619,8 @@ export interface AppStore {
   updateReminder(id: string, patch: Pick<Reminder, 'message' | 'at'>): void;
 
   updateSettings(patch: Partial<Settings>): void;
+  /** Record catch-up digests as read for a game preset, on every device. */
+  markCatchUpRead(presetKey: string, keys: string[]): void;
   importJson(text: string): boolean;
 }
 
@@ -627,7 +657,9 @@ export const useApp = create<AppStore>((set, get) => ({
       const stored = stateForStorage(await readStoredState(epoch));
       if (epoch !== storageEpoch) return;
       const editedWhileLoading = get().loaded && get().state !== before;
-      const next = editedWhileLoading ? mergeState(stored.state, get().state) : stored.state;
+      const next = editedWhileLoading
+        ? collapseSourceTwins(mergeState(stored.state, get().state), now())
+        : stored.state;
       set({ state: next, loaded: true, loadError: '' });
       if (stored.repaired || editedWhileLoading) persist(next);
       const seedPlan = planSeedImport(get().state, now());
@@ -684,8 +716,12 @@ export const useApp = create<AppStore>((set, get) => ({
   },
 
   replaceState(next) {
-    persist(next);
-    set({ state: next });
+    // A merge can bring in another device's copy of an imported event. The
+    // repair tombstones it, and that change has to go back out to the peers.
+    const repaired = collapseSourceTwins(next, now());
+    persist(repaired);
+    set({ state: repaired });
+    if (repaired !== next) announceMutation();
   },
 
   setSyncStatus(status, error = '') {
@@ -706,7 +742,8 @@ export const useApp = create<AppStore>((set, get) => ({
 
   batch(fn) {
     const state = get().state;
-    const next = fn(state);
+    const changed = fn(state);
+    const next = changed === state ? state : collapseSourceTwins(changed, now());
     if (next === state) return;
     persist(next);
     set({ state: next });
@@ -1268,6 +1305,23 @@ export const useApp = create<AppStore>((set, get) => ({
     });
   },
 
+  markCatchUpRead(presetKey, keys) {
+    get().mutate((s) => {
+      const current = s.settings.catchUpSeen?.[presetKey] ?? [];
+      const next = [...new Set([...current, ...keys])].sort();
+      if (next.length === current.length) return s;
+      return {
+        ...s,
+        settings: {
+          ...s.settings,
+          catchUpSeen: { ...s.settings.catchUpSeen, [presetKey]: next },
+          updatedAt: now(),
+          fieldUpdatedAt: settingsFieldClocks(s.settings),
+        },
+      };
+    });
+  },
+
   importJson(text) {
     try {
       const raw = JSON.parse(text) as unknown;
@@ -1284,7 +1338,7 @@ export const useApp = create<AppStore>((set, get) => ({
       // migrations and the temporary legacy badge repair at this boundary too.
       // Keep original clocks so impossible future readings are discarded before
       // merge, as they are for sync. Schema transforms would promote them to now.
-      const migrated = migrateGenshinBadge(normalizeState(raw)).state;
+      const migrated = migrateLegacyIdentity(migrateGenshinBadge(normalizeState(raw)).state).state;
       get().mutate((s) => mergeState(s, migrated));
       return true;
     } catch {

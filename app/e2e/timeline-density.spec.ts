@@ -36,14 +36,15 @@ test('24 events remain reachable in the rounded timeline board with controls in 
     name: 'Imaginarium Theater',
     type: 'cycle',
     start: now - 7 * day,
-    end: now + 23 * day,
+    end: now + 19.5 * day,
   });
   Object.assign(state.events[2]!, { name: 'Spiral Abyss', type: 'cycle', start: now + 5 * day, end: now + 35 * day });
   Object.assign(state.events[3]!, {
     name: 'Imaginarium Theater',
     type: 'cycle',
-    start: now + 23 * day,
-    end: now + 53 * day,
+    // Inside the three weeks ahead, but clipped by the window's right edge.
+    start: now + 19.5 * day,
+    end: now + 49.5 * day,
   });
   Object.assign(state.events[22]!, {
     name: 'Special Program',
@@ -75,16 +76,15 @@ test('24 events remain reachable in the rounded timeline board with controls in 
   );
   expect(bounds[0]!.top).toBeGreaterThan(50);
   expect(bounds.every((row) => row.height >= 26 && row.height <= 27)).toBe(true);
+  // The page is the only scroller: the board never grows a scrollbar of its own.
   const board = page.locator('.timeline-board');
-  const boardBox = (await board.boundingBox())!;
-  expect(boardBox.y + boardBox.height).toBeLessThanOrEqual(768);
+  expect(await board.evaluate((node) => node.scrollHeight <= node.clientHeight + 1)).toBe(true);
   for (const row of await page.locator('[data-timeline-event-row]').all()) {
     await row.scrollIntoViewIfNeeded();
     const box = (await row.boundingBox())!;
-    expect(box.y).toBeGreaterThanOrEqual(boardBox.y);
-    expect(box.y + box.height).toBeLessThanOrEqual(boardBox.y + boardBox.height);
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(768);
   }
-  expect(await board.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
   const ids = await page
     .locator('[data-timeline-event-row]')
     .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-event-id')));

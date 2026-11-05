@@ -7,6 +7,7 @@ import { GameControlsView } from './GameCard';
 import { gameShellVars, useTheme } from '../theme';
 import { useIdentityColors } from './roster';
 import { Page } from './ui';
+import { GameContext } from './GameContext';
 import { closeWorkspace, recordWorkspaceHistory } from '../workspace-navigation';
 
 /** One game's full controls. Today is the overview this page returns to. */
@@ -37,7 +38,9 @@ export function GamePage({ now }: { now: number }) {
   );
   const openSheet = useUI((s) => s.openSheet);
   const openGameEvent = useCallback((eventId: string) => openSheet({ kind: 'eventPeek', eventId }), [openSheet]);
-  const focusColumns = useMediaQuery('(min-width: 900px)');
+  // Three columns where the window has room for them: context, tracking, events.
+  const twoColumns = useMediaQuery('(min-width: 900px)');
+  const threeColumns = useMediaQuery('(min-width: 1280px)');
   const focusedGameId = useUI((s) => s.focusedGameId);
   const focusedEntry = focusedGameId ? entryById.get(focusedGameId) : undefined;
   const workspaceId = focusedEntry?.game.id;
@@ -66,8 +69,9 @@ export function GamePage({ now }: { now: number }) {
           now={now}
           onBack={closeWorkspace}
           layout="focus"
-          columns={focusColumns ? 2 : 1}
+          columns={threeColumns ? 3 : twoColumns ? 2 : 1}
           onOpenEvent={openGameEvent}
+          aside={<GameContext game={focusedEntry.game} state={state} now={now} />}
         />
       </section>
     </Page>

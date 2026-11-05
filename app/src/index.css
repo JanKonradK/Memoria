@@ -468,14 +468,18 @@ body {
 .timeline-game-heading {
   min-height: 32px !important;
 }
-.timeline-board {
-  max-height: calc(100dvh - var(--app-bar-h) - 28px);
-  overflow-y: auto;
+/* The app restores route positions itself after mounting their content, and
+   the page is the scroller at every width, so the browser must not re-anchor. */
+html {
+  overflow-anchor: none;
 }
+/* The page is the only scroller. A board with its own scrollbar sat beside the
+   page's, and the ruler stays in view by sticking under the app bar instead. */
 .timeline-board [data-timeline-ruler] {
   position: sticky;
-  top: 0;
-  z-index: 40;
+  top: var(--app-bar-h);
+  /* Above the rows' countdowns (z-30), below the app bar (z-40). */
+  z-index: 35;
   background: var(--color-surface-0);
 }
 .app-bar:not(:has(.app-game-scope)) {
@@ -568,8 +572,6 @@ body {
   html {
     scroll-padding-top: calc(var(--app-bar-h) + 1rem);
     scroll-padding-bottom: calc(var(--mobile-nav-h) + 1rem);
-    /* App restores route and workspace positions after mounting their content. */
-    overflow-anchor: none;
   }
   .app-bar,
   .app-bar:not(:has(.app-game-scope)) {
@@ -646,13 +648,6 @@ body {
   }
   .app-toasts {
     bottom: calc(var(--mobile-nav-h) + 0.75rem);
-  }
-  .timeline-board {
-    max-height: none;
-    overflow-y: visible;
-  }
-  .timeline-board [data-timeline-ruler] {
-    top: var(--app-bar-h);
   }
   input,
   textarea {
@@ -832,7 +827,8 @@ input[type='number'] {
 .focus-workspace {
   position: relative;
   min-width: 0;
-  max-width: 1440px;
+  /* Wide enough for three columns; beyond this the lines would get too long to read. */
+  max-width: 1880px;
   margin-inline: auto;
   padding: 8px 0 24px;
 }
@@ -859,6 +855,29 @@ input[type='number'] {
 }
 .focus-workspace .game-card-actions {
   align-self: flex-start;
+}
+/* The name keeps a readable width; when the actions cannot fit beside it they
+   move to their own line instead of squeezing it to a letter per line. */
+.focus-workspace .game-card-heading {
+  flex-wrap: wrap;
+}
+.focus-workspace .game-card-title {
+  min-width: min(100%, 9rem);
+}
+.focus-workspace .game-card-actions {
+  margin-left: auto;
+}
+/* Unread catch-up notes: a small dot in the game's colour, never the only cue
+   (the button's accessible name says how many). */
+.catch-up-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--game-ink, var(--color-accent));
+  box-shadow: 0 0 0 2px var(--color-surface-0);
 }
 @media (max-width: 767px) {
   .focus-workspace .game-card-heading {
@@ -1142,9 +1161,114 @@ input[type='number'] {
 
 .focus-bay-grid {
   grid-template-columns: minmax(0, 1fr);
+  align-items: start;
 }
 .focus-bay-grid[data-cols='2'] {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+/* With the context column: below 1280px tracking sits left, and the context
+   stacks above the events on the right; one column keeps tracking first. */
+.focus-bay-grid[data-aside][data-cols='2'] {
+  grid-template-areas:
+    'track context'
+    'track events';
+  grid-template-rows: auto 1fr;
+}
+.focus-bay-grid[data-aside][data-cols='3'] {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1.15fr);
+  grid-template-areas: 'context track events';
+}
+.focus-bay-grid[data-aside][data-cols='2'] > .focus-track,
+.focus-bay-grid[data-aside][data-cols='3'] > .focus-track {
+  grid-area: track;
+}
+.focus-bay-grid[data-aside][data-cols='2'] > .focus-context,
+.focus-bay-grid[data-aside][data-cols='3'] > .focus-context {
+  grid-area: context;
+}
+.focus-bay-grid[data-aside][data-cols='2'] > .focus-events,
+.focus-bay-grid[data-aside][data-cols='3'] > .focus-events {
+  grid-area: events;
+}
+/* A custom layout keeps its own canvas; the context stands to its left. */
+.focus-bay-custom[data-cols='2'],
+.focus-bay-custom[data-cols='3'] {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 0.8fr);
+}
+.focus-bay-custom[data-cols='3'] > .focus-context {
+  order: -1;
+}
+.focus-bay-custom[data-cols='3'] {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 2fr);
+}
+
+/* The context column: livestreams and notes, flat on the page ground. */
+.game-context {
+  display: grid;
+  gap: 18px;
+}
+.game-context-block {
+  display: grid;
+  gap: 8px;
+}
+.game-context-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-fg-soft);
+  font-size: var(--text-meta);
+  font-weight: 600;
+}
+.game-context-label::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--color-line);
+}
+.game-context-stream {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px;
+  margin: -6px;
+  border-radius: var(--radius-ui-md, 16px);
+}
+@media (hover: hover) {
+  .game-context-stream:hover {
+    background: var(--color-fill-1);
+  }
+}
+.game-context-stream[data-art] {
+  grid-template-columns: 96px minmax(0, 1fr);
+}
+.game-context-thumb {
+  width: 96px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--color-inset);
+}
+.game-notes {
+  width: 100%;
+  min-height: 9rem;
+  resize: vertical;
+  padding: 12px 14px;
+  border: 1px solid var(--color-line-hairline);
+  border-radius: var(--radius-ui-md, 16px);
+  background: var(--color-fill-1);
+  color: var(--color-fg);
+  font: inherit;
+  font-size: var(--text-body);
+  line-height: 1.55;
+}
+.game-notes::placeholder {
+  color: var(--color-dim);
+}
+.game-notes:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 /* Opening a game: only its logo is carried between the row and the page
    heading. The page is not cross-faded; its content has its own short arrival. */

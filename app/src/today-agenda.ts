@@ -1,7 +1,7 @@
 import type { GameEvent, GameUrgency } from '@memoria/shared';
 
 /**
- * What happens across every game in the next day, soonest first: energy that
+ * What happens across every game in the next two days, soonest first: energy that
  * is full or will cap, routines about to reset with work left, and events that
  * end or begin. Built from the urgency actions the shared layer already
  * computed, so the times always agree with the rows above it.
@@ -11,7 +11,7 @@ export type TodayAgendaItem =
   | { kind: 'reset'; key: string; at: number; gameIds: string[]; cadence: string; left: number }
   | { kind: 'event'; key: string; at: number; gameIds: string[]; event: GameEvent; edge: 'ends' | 'starts' };
 
-export const TODAY_AGENDA_HOURS = 24;
+export const TODAY_AGENDA_HOURS = 48;
 
 const CADENCE_ORDER = ['daily', 'weekly', 'monthly', 'custom'];
 

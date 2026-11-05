@@ -13,6 +13,22 @@ const seedBannerKinds = new Map(
   SEED_EVENTS.filter((event) => event.bannerKind).map((event) => [event.sourceKey, event.bannerKind]),
 );
 
+/**
+ * What each game calls the world its events happen in, for the heading of its
+ * event list. Checked against each publisher's own pages (5 November 2026).
+ * Genshin splits into Teyvat and Miliastra Wonderland below instead.
+ */
+export const WORLD_LABELS: Record<string, string> = {
+  hsr: 'The Galaxy',
+  zzz: 'New Eridu',
+  wuwa: 'Solaris-3',
+  nte: 'Hethereau',
+  endfield: 'Talos-II',
+  lads: 'Linkon City',
+  nikke: 'The Ark',
+  uma: 'Tracen Academy',
+};
+
 /** Source keys classify legacy rows without guessing from user-written names. */
 export function eventBannerKind(event: GameEvent): BannerKind | undefined {
   if (event.type !== 'banner') return undefined;
@@ -31,7 +47,8 @@ export function groupGameEvents(
   game: Game,
   events: GameEvent[],
 ): { key: string; label: string; events: GameEvent[] }[] {
-  if (presetForGame(game)?.key !== 'genshin') return [{ key: 'events', label: 'Windows', events }];
+  const preset = presetForGame(game)?.key;
+  if (preset !== 'genshin') return [{ key: 'events', label: (preset && WORLD_LABELS[preset]) || 'Events', events }];
   return [
     {
       key: 'teyvat',

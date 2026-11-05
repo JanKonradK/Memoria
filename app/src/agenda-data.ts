@@ -6,6 +6,7 @@ import {
   selectDashboardAgendaSections,
   type AgendaRow,
 } from './timeline-sort';
+import { TIMELINE_AHEAD_DAYS, TIMELINE_BACK_DAYS } from './timeline-window';
 
 /**
  * What the agenda is, independent of anything that draws it.
@@ -34,16 +35,10 @@ export interface AgendaData {
  */
 export const DASHBOARD_AGENDA_DAYS = 14;
 
-/**
- * Full mode's window. This used to read the timeline's selectable range; the
- * range control is gone and the ruler is fixed at 40 days, so the value is
- * inlined here and must stay in step with RANGE_DAYS in Timeline.tsx.
- */
-const FULL_AGENDA_DAYS = 40;
-
 export function selectAgendaData(state: AppState, now: number, mode: AgendaMode = 'full'): AgendaData {
-  const windowStart = mode === 'dashboard' ? now : now - 2 * DAY;
-  const windowEnd = mode === 'dashboard' ? now + DASHBOARD_AGENDA_DAYS * DAY : windowStart + FULL_AGENDA_DAYS * DAY;
+  // Full mode covers the timeline's window: a week back, three weeks ahead.
+  const windowStart = mode === 'dashboard' ? now : now - TIMELINE_BACK_DAYS * DAY;
+  const windowEnd = mode === 'dashboard' ? now + DASHBOARD_AGENDA_DAYS * DAY : now + TIMELINE_AHEAD_DAYS * DAY;
   const games = new Map(state.games.filter((game) => !game.deleted).map((game) => [game.id, game]));
   const availableEvents = state.events.filter((event) => !event.deleted && games.has(event.gameId));
 

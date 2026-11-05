@@ -125,14 +125,10 @@ test('paused accounts stay compact in both views and resume their saved events',
   }
   await page.getByRole('button', { name: 'Show finished events' }).click();
   await expect(altRows).toHaveCount(0);
-  await page.getByRole('button', { name: 'Find events', exact: true }).click();
-  await page.getByRole('textbox', { name: 'Search events', exact: true }).fill('Alt');
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
-  await expect(page.locator('.timeline-caption')).toContainText('0 events');
-  await expect(altRows).toHaveCount(0);
   await altPause.getByRole('button', { name: 'Resume tracking for Shared game, Alt, ASIA', exact: true }).click();
   await expect(altRows).toHaveCount(3);
-  await expect(page.locator('.timeline-caption')).toContainText('3 events');
+  // The resumed account's three events join the other account's one.
+  await expect(page.locator('.timeline-caption')).toContainText('4 events');
   await expect(
     page.getByRole('button', { name: 'Edit Shared game (Alt) event: Alt active event', exact: true }),
   ).toBeFocused();

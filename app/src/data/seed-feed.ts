@@ -4265,8 +4265,9 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'zzz',
     name: 'ZZZ 3.4 Special Program — predicted window',
     type: 'livestream',
-    start: '2026-11-18 12:30',
-    end: '2026-11-20 13:30',
+    // 3.3 aired 9 October, 12 days before its update; 3.4 lands 2 December.
+    start: '2026-11-20 11:30',
+    end: '2026-11-21 12:30',
     timezone: 'UTC',
     notes: 'Not announced yet.',
     sourceKey: 'seed:zzz:3.4-livestream',
@@ -4390,8 +4391,9 @@ export const SEED_EVENTS: SeedEvent[] = [
     game: 'nte',
     name: 'NTE 1.6 Preview Special Program — predicted window',
     type: 'livestream',
-    start: '2026-12-08 11:30',
-    end: '2026-12-10 12:30',
+    // The last two programs aired 14 days before release; 1.6 is expected 23 December.
+    start: '2026-12-09 11:30',
+    end: '2026-12-12 12:30',
     timezone: 'UTC',
     notes: 'Not announced yet.',
     sourceKey: 'seed:nte:1.6-livestream',

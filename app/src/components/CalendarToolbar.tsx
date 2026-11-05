@@ -3,17 +3,10 @@ import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group';
 import { useUI, type TimelineView } from '../ui-store';
 import { GameScope } from './GameScope';
 
-type ViewId = TimelineView | 'livestreams';
-
-/** The three ways to look at what is coming: time bars, a list, or broadcasts. */
-const VIEWS: { id: ViewId; label: string; icon: string }[] = [
+/** The two ways to look at what is coming: time bars or a list. A game's livestreams live on its Catch up. */
+const VIEWS: { id: TimelineView; label: string; icon: string }[] = [
   { id: 'lanes', label: 'Timeline', icon: 'M3 5h8M6 10h11M3 15h6' },
   { id: 'list', label: 'List', icon: 'M7 5h10M7 10h10M7 15h10M3 5h.01M3 10h.01M3 15h.01' },
-  {
-    id: 'livestreams',
-    label: 'Livestreams',
-    icon: 'M3 6h14v9H3zM7 18h6M8.5 8.5v4l3.5-2z',
-  },
 ];
 
 /**
@@ -21,7 +14,7 @@ const VIEWS: { id: ViewId; label: string; icon: string }[] = [
  * then the page's own tools. Labels show where there is room; on a phone the
  * icons carry them and the accessible names stay.
  */
-export function CalendarToolbar({ view, children }: { view: ViewId; children?: ReactNode }) {
+export function CalendarToolbar({ view, children }: { view: TimelineView; children?: ReactNode }) {
   const setTab = useUI((s) => s.setTab);
   const setView = useUI((s) => s.setTimelineView);
   return (
@@ -32,10 +25,6 @@ export function CalendarToolbar({ view, children }: { view: ViewId; children?: R
         value={view}
         onValueChange={(next) => {
           if (!next) return;
-          if (next === 'livestreams') {
-            setTab('livestreams');
-            return;
-          }
           setView(next as TimelineView);
           setTab('timeline');
         }}

@@ -100,8 +100,8 @@ describe('finished events leave the lane', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Show finished events' }));
 
     expect(screen.getByRole('button', row('Yesterdays banner'))).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Show finished events' })).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.click(screen.getByRole('button', { name: 'Show finished events' }));
+    expect(screen.getByRole('button', { name: 'Hide finished events' })).toHaveTextContent('Hide finished');
+    fireEvent.click(screen.getByRole('button', { name: 'Hide finished events' }));
     expect(screen.queryByRole('button', row('Yesterdays banner'))).not.toBeInTheDocument();
   });
 
@@ -167,8 +167,5 @@ describe('finished events leave the lane', () => {
     expect(sections()[0].ids).toEqual(['teyvat-1', 'teyvat-2']);
     fireEvent.click(screen.getByRole('button', { name: 'Show finished events' }));
     expect(sections()[0].ids).toEqual(['teyvat-1', 'teyvat-2', 'finished']);
-    fireEvent.click(screen.getByRole('button', { name: 'Find events' }));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Search events' }), { target: { value: 'Wonderland' } });
-    expect(sections()).toEqual([{ key: 'miliastra', ids: ['mw-2', 'mw-1'] }]);
   });
 });

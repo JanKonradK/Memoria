@@ -29,7 +29,7 @@ export function UserGuide({ open }: { open: boolean }) {
     () => [
       {
         title: 'Pages',
-        body: 'Today, Timeline, Livestreams and Settings.',
+        body: 'Today, Timeline and Settings.',
         target: '[data-tour="pages"]',
         tab: 'today',
       },
@@ -71,7 +71,7 @@ export function UserGuide({ open }: { open: boolean }) {
       },
       {
         title: 'Views',
-        body: 'Switch between Timeline and List, search, or show finished events.',
+        body: 'Switch between Timeline and List, or show and hide finished events.',
         target: '[data-tour="timeline-tools"]',
         tab: 'timeline',
       },

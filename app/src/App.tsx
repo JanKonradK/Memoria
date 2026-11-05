@@ -24,9 +24,9 @@ import { AppBar } from './components/AppBar';
 import { Btn } from './components/ui';
 
 /** Primary pages lead their secondary and utility views in transition order. */
-const TAB_ORDER = ['livestreams', 'timeline', 'today', 'settings'] as const;
+const TAB_ORDER = ['timeline', 'today', 'settings'] as const;
 /** A game's page sits just past Today: forward from it, and before Calendar. */
-const tabRank = (tab: Tab) => (tab === 'home' ? 2.5 : TAB_ORDER.indexOf(tab));
+const tabRank = (tab: Tab) => (tab === 'home' ? 1.5 : TAB_ORDER.indexOf(tab));
 
 const ONBOARDING_KEY = 'memoria-onboarding';
 /** The key this flag shipped under before the rename; still honoured on read. */
@@ -55,9 +55,6 @@ const toastMotion = {
 const TodayRoute = lazy(() => import('./components/Today').then((module) => ({ default: module.TodayRoute })));
 const TimelinePage = lazy(() => import('./components/Timeline').then((module) => ({ default: module.TimelinePage })));
 const SettingsPage = lazy(() => import('./components/Settings').then((module) => ({ default: module.SettingsPage })));
-const LivestreamsPage = lazy(() =>
-  import('./components/Livestreams').then((module) => ({ default: module.LivestreamsPage })),
-);
 const GameDetailSheet = lazy(() =>
   import('./components/GameDetail').then((module) => ({ default: module.GameDetailSheet })),
 );
@@ -67,6 +64,7 @@ const EventPeek = lazy(() => import('./components/EventPeek').then((module) => (
 const ReminderSheet = lazy(() =>
   import('./components/ReminderSheet').then((module) => ({ default: module.ReminderSheet })),
 );
+const CatchUpSheet = lazy(() => import('./components/CatchUp').then((module) => ({ default: module.CatchUpSheet })));
 const UserGuide = lazy(() => import('./components/UserGuide').then((module) => ({ default: module.UserGuide })));
 
 type PagePosition = { page: number; board: number };
@@ -135,6 +133,7 @@ function AppSheets() {
           {sheet.kind === 'eventPeek' && <EventPeek key={`peek-${sheet.eventId}`} open eventId={sheet.eventId} />}
           {sheet.kind === 'reminder' && <ReminderSheet key="reminder" open />}
           {sheet.kind === 'guide' && <UserGuide key="guide" open />}
+          {sheet.kind === 'catchUp' && <CatchUpSheet key={`catch-up-${sheet.gameId}`} open gameId={sheet.gameId} />}
         </Suspense>
       )}
     </AnimatePresence>
@@ -358,13 +357,7 @@ export default function App() {
             The exit slide is what this gives up; the direction still reads. */}
         <Suspense fallback={<div className="px-5 py-12 text-center text-body text-dim">Loading view…</div>}>
           <PageFrame key={tab} tab={tab} direction={direction} positions={pagePositions}>
-            {tab === 'settings' ? (
-              <SettingsPage />
-            ) : tab === 'livestreams' ? (
-              <LivestreamsPage />
-            ) : (
-              <LivePage tab={tab} />
-            )}
+            {tab === 'settings' ? <SettingsPage /> : <LivePage tab={tab} />}
           </PageFrame>
         </Suspense>
       </main>

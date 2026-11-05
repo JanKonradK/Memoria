@@ -147,11 +147,16 @@ export function planSeedImport(state: AppState, now: number, feed?: RemoteEventF
   // resurrecting everything you deleted on every launch now that it is automatic.
   // Keep sourceKey unchanged on the event: HoYoLAB dedupes against that value.
   // Only this lookup needs an account scope, or one account hides another's seed.
-  const byKey = new Map(
-    state.events
-      .filter((event) => event.sourceKey)
-      .map((event) => [sourceIdentity(event.gameId, event.sourceKey!), event]),
-  );
+  // Prefer a live row over a tombstone for the same key: synced twins of one
+  // import leave tombstones behind, and the live copy is the one to refresh.
+  // A tombstone alone still counts, so a deleted import stays deleted.
+  const byKey = new Map<string, GameEvent>();
+  for (const event of state.events) {
+    if (!event.sourceKey) continue;
+    const key = sourceIdentity(event.gameId, event.sourceKey);
+    const current = byKey.get(key);
+    if (!current || (current.deleted && !event.deleted)) byKey.set(key, event);
+  }
   const version = feed?.seedUpdated ?? SEED_UPDATED;
   const refreshSeeds = state.settings.seedImportedVersion !== version;
   // Ids the current bundle still accounts for; anything stamped and missing from

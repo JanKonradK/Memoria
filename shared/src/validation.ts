@@ -214,6 +214,8 @@ const settings = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
   remoteFeedVersion: RemoteFeedVersionSchema.optional(),
+  /** Catch-up digests read, per game preset: `digestId@revision` keys. */
+  catchUpSeen: z.record(z.string().min(1).max(40), z.array(z.string().min(1).max(80)).max(200)).optional(),
   fieldUpdatedAt: z.record(z.string(), syncClock).optional(),
 });
 

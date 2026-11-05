@@ -37,8 +37,6 @@ test('Today starts a new roster and keeps all navigation reachable', async ({ pa
   ).toEqual([]);
   await page.screenshot({ path: info.outputPath('today-light.png') });
   await primary.getByRole('button', { name: 'Timeline' }).click();
-  await page.getByRole('radio', { name: 'Livestreams', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Livestreams', exact: true })).toBeVisible();
   await expect(primary.getByRole('button', { name: 'Timeline' })).toHaveAttribute('aria-current', 'page');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();

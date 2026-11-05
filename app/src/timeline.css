@@ -21,28 +21,25 @@
 .timeline-caption {
   padding: 10px 4px 12px;
 }
-.timeline-range-label {
-  font-variant-numeric: tabular-nums;
+/* Breathing room: the board stands in from the page edges and the scrollbar,
+   so the last countdown never touches either. Ruler and bars share the inset. */
+.timeline-page .timeline-lanes-board {
+  margin-inline: 12px;
+  margin-bottom: 24px;
 }
-.timeline-search-chip {
-  display: inline-flex;
-  max-width: 100%;
-  min-height: 44px;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 12px;
-  border-radius: var(--radius-ui-full, 999px);
-  background: var(--color-fill-2);
-}
-@media (hover: hover) {
-  .timeline-search-chip:hover {
-    background: var(--color-fill-3);
+@media (min-width: 1024px) {
+  .timeline-page .timeline-lanes-board {
+    margin-inline: 28px;
   }
 }
-.timeline-page .timeline-board {
-  max-height: calc(100dvh - var(--app-bar-h) - 112px);
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
+/* A week line marks the weekly reset, so it reads a little firmer than a hairline. */
+.timeline-week-line {
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-fg) 32%, transparent) 0.85px,
+    transparent 1.1px
+  );
+  background-size: 1px 6px;
 }
 /* The lanes sit on the page ground like the Today groups: no panel, no inset. The
    ruler stays opaque so bars scrolling beneath it do not show through. */
@@ -218,19 +215,6 @@
   flex-shrink: 0;
   white-space: nowrap;
 }
-.timeline-search-overlay {
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-}
-.timeline-search-panel {
-  padding: 22px;
-  border: 1px solid var(--glass-border, var(--color-line-strong));
-  border-radius: var(--radius-ui-xl, 32px);
-  background: var(--glass-bg, var(--color-popover));
-  box-shadow: var(--glass-shadow, 0 20px 50px -24px rgba(0, 0, 0, 0.4));
-  -webkit-backdrop-filter: blur(var(--glass-blur, 24px));
-  backdrop-filter: blur(var(--glass-blur, 24px));
-}
 @media (hover: hover) {
   .timeline-event-row:hover {
     background: var(--color-fill-1);
@@ -372,15 +356,8 @@
   .timeline-page {
     padding-bottom: calc(var(--mobile-nav-h) + 0.75rem);
   }
-  .timeline-page .timeline-board {
-    max-height: none;
-    overflow: visible;
-  }
-  /* The ruler stays in view under the app bar while the page scrolls. */
-  .timeline-page .timeline-lanes-board [data-timeline-ruler] {
-    position: sticky;
-    top: var(--app-bar-h);
-    z-index: 25;
+  .timeline-page .timeline-lanes-board {
+    margin-inline: 0;
   }
   .timeline-caption {
     padding: 8px 4px 10px;

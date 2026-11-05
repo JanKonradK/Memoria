@@ -29,7 +29,7 @@ export function migrateLegacyUiStorage(): void {
 
 migrateLegacyUiStorage();
 
-export type Tab = 'today' | 'home' | 'timeline' | 'livestreams' | 'settings';
+export type Tab = 'today' | 'home' | 'timeline' | 'settings';
 export type Theme = 'dark' | 'light';
 export type TimelineView = 'list' | 'lanes';
 
@@ -69,6 +69,8 @@ export type SheetRoute =
   | { kind: 'eventPeek'; eventId: string }
   | { kind: 'reminder' }
   | { kind: 'guide' }
+  /** What a game added since the player last caught up. */
+  | { kind: 'catchUp'; gameId: string }
   | null;
 
 interface UIStore {
@@ -85,10 +87,8 @@ interface UIStore {
   setTodayGameId(gameId: string | null): void;
   /** Session-only route controls survive navigation, without entering backups. */
   timelineView: TimelineView | null;
-  timelineSearch: string;
   timelineShowFinished: boolean;
   setTimelineView(view: TimelineView): void;
-  setTimelineSearch(search: string): void;
   setTimelineShowFinished(show: boolean): void;
   tourSeenVersion: number;
   finishTour(): void;
@@ -121,10 +121,8 @@ export const useUI = create<UIStore>()(
       theme: 'dark',
       focusedGameId: null,
       timelineView: null,
-      timelineSearch: '',
       timelineShowFinished: false,
       setTimelineView: (timelineView) => set({ timelineView }),
-      setTimelineSearch: (timelineSearch) => set({ timelineSearch }),
       setTimelineShowFinished: (timelineShowFinished) => set({ timelineShowFinished }),
       tourSeenVersion: 0,
       finishTour: () => set({ tourSeenVersion: 1, sheet: null }),

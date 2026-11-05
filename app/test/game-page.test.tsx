@@ -148,7 +148,7 @@ describe('game page controls', () => {
     expect(resources).not.toBeNull();
     expect(tasks).not.toBeNull();
     expect(resources!.compareDocumentPosition(tasks!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(within(right!).getByRole('region', { name: 'Windows events for Testland' })).toBeInTheDocument();
+    expect(within(right!).getByRole('region', { name: 'Testland events' })).toBeInTheDocument();
     expect(within(left!).queryByRole('region', { name: /events for/ })).not.toBeInTheDocument();
   });
 
