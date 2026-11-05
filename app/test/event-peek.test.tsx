@@ -57,15 +57,15 @@ it('pins and unpins an event', () => {
   expect(stored('Story').pinned).toBe(false);
 });
 
-it('ticks parts in the quick view and finishes the event with the last one', () => {
+it('sets the event status in the quick view', () => {
   seed([event('Story', { parts: 3 })]);
   show(<EventPeek open eventId="Story" />);
-  const part = (index: number) =>
-    within(screen.getByRole('group', { name: /parts done$/ })).getAllByRole('button')[index]!;
-  fireEvent.click(part(1));
-  expect(stored('Story')).toMatchObject({ partsDone: 2, done: false });
-  fireEvent.click(part(2));
-  expect(stored('Story')).toMatchObject({ partsDone: 3, done: true });
+  const status = screen.getByRole('radiogroup', { name: 'Story progress' });
+  expect(within(status).getByRole('radio', { name: 'Not started' })).toBeChecked();
+  fireEvent.click(within(status).getByRole('radio', { name: 'Partly done' }));
+  expect(stored('Story')).toMatchObject({ partsDone: 1, done: false });
+  fireEvent.click(within(status).getByRole('radio', { name: 'Done' }));
+  expect(stored('Story')).toMatchObject({ partsDone: 2, done: true });
 });
 
 it('hands over to the editor from Edit', () => {
@@ -84,16 +84,7 @@ it('says so when the event has gone', () => {
 it('lists a pinned event first on a game page, ahead of ones that end sooner', () => {
   const now = Date.now();
   const events = [event('Ends first', { end: now + DAY }), event('Pinned later', { end: now + 5 * DAY, pinned: true })];
-  show(
-    <EventStrip
-      game={game}
-      events={events}
-      now={now}
-      onOpenEvent={() => {}}
-      onToggleDone={() => {}}
-      onSetParts={() => {}}
-    />,
-  );
+  show(<EventStrip game={game} events={events} now={now} onOpenEvent={() => {}} onSetProgress={() => {}} />);
   const ticks = screen.getAllByRole('checkbox').map((node) => node.getAttribute('aria-label'));
   expect(ticks).toEqual(['Pinned later: done', 'Ends first: done']);
 });

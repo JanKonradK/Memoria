@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { openGame } from './support';
+import { chooseFromEdit, openGame } from './support';
 
 async function stored(page: Page) {
   return page.evaluate(
@@ -26,7 +26,7 @@ async function stored(page: Page) {
 
 async function openWorkspace(page: Page) {
   await openGame(page, 'Genshin Impact');
-  await expect(page.getByRole('button', { name: 'Manage events', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Edit Genshin Impact', exact: true })).toBeVisible();
 }
 
 test.beforeEach(async ({ page }, info) => {
@@ -55,7 +55,7 @@ test('cards add, rename, change behavior, and delete finished events from Edit l
   await dialog.getByRole('switch', { name: 'Count toward next action' }).click();
   await dialog.getByRole('button', { name: 'Add event', exact: true }).click();
   await expect(dialog).toHaveCount(0);
-  await page.getByRole('button', { name: 'Edit Genshin Impact', exact: true }).last().click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
   await page.getByRole('button', { name: 'Edit item Events', exact: true }).click();
   await page.getByRole('button', { name: 'Edit event details', exact: true }).click();
   const panel = page.getByRole('region', { name: 'Events for Genshin Impact' });
@@ -69,7 +69,7 @@ test('cards add, rename, change behavior, and delete finished events from Edit l
   await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('My renamed cycle');
   await dialog.getByRole('combobox', { name: 'Type', exact: true }).click();
   await page.getByRole('option', { name: 'cycle', exact: true }).click();
-  await dialog.getByRole('switch', { name: 'Done', exact: true }).click();
+  await dialog.getByRole('radiogroup', { name: 'Status' }).getByRole('radio', { name: 'Done', exact: true }).click();
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await panel.getByRole('searchbox', { name: 'Find event' }).fill('My renamed cycle');
@@ -108,12 +108,12 @@ test('pause survives reload and resumes saved daily progress from the game page'
   await expect.poll(async () => (await stored(page)).completions.length).toBeGreaterThan(0);
   const before = await stored(page);
   // Pausing sits with the card's other settings, under Edit.
-  await page.getByRole('button', { name: 'Edit Genshin Impact', exact: true }).last().click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
   await page.getByRole('button', { name: 'Pause tracking', exact: true }).click();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Resume tracking', exact: true })).toBeVisible();
   await expect.poll(async () => (await stored(page)).games[0]?.paused).toBe(true);
-  await page.getByRole('button', { name: 'Manage events', exact: true }).click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Manage events');
   const events = page.getByRole('region', { name: 'Events for Genshin Impact' });
   await events.getByRole('radio', { name: /^All/ }).click();
   await events

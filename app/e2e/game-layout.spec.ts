@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { openGame } from './support';
+import { chooseFromEdit, openGame } from './support';
 
 async function openControls(page: Page) {
   await openGame(page, 'Genshin Impact');
@@ -53,7 +53,7 @@ test('each widget stays full width and can be moved, hidden, restored, and saved
   page,
 }, info) => {
   const before = await stored(page);
-  await page.getByRole('button', { name: 'Edit Genshin Impact', exact: true }).last().click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
   await expect(page.getByRole('region', { name: 'Layout editor for Genshin Impact' })).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   const resin = page.getByRole('button', { name: 'Move Original Resin', exact: true });
@@ -150,11 +150,11 @@ test('each widget stays full width and can be moved, hidden, restored, and saved
   await page.getByRole('button', { name: /Daily Commissions/ }).click();
   await expect(page.getByRole('button', { name: /Daily Commissions/ })).toHaveAttribute('aria-pressed', 'true');
   await page.screenshot({ path: info.outputPath('custom-layout.png') });
-  await page.getByRole('button', { name: 'Edit Genshin Impact', exact: true }).last().click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
   await page.getByRole('button', { name: 'Reset layout', exact: true }).click();
   await page.getByRole('button', { name: 'Undo layout changes', exact: true }).click();
   expect((await stored(page)).layout).toEqual(saved.layout);
-  await page.getByRole('button', { name: 'Edit Genshin Impact', exact: true }).last().click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
   await page.getByRole('button', { name: 'Reset layout', exact: true }).click();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   expect((await stored(page)).layout).toBeUndefined();
@@ -164,7 +164,7 @@ test('each widget stays full width and can be moved, hidden, restored, and saved
 
 test('pointer dragging reorders widgets and cancellation leaves saved order intact', async ({ page }, info) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await page.getByRole('button', { name: 'Edit Genshin Impact', exact: true }).last().click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
   const grid = page.locator('.game-widget-grid');
   const order = () =>
     grid
@@ -213,7 +213,7 @@ test('pointer dragging reorders widgets and cancellation leaves saved order inta
 });
 
 test('Edit changes the game title and creates, renames, deletes, and restores real items', async ({ page }) => {
-  await page.getByRole('button', { name: 'Edit Genshin Impact', exact: true }).last().click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
   await expect(page.getByLabel('Selected widget controls')).toHaveCount(0);
   await page.getByLabel('Game title', { exact: true }).fill('Evening check-in');
   await page.getByRole('button', { name: 'Add item', exact: true }).click();
@@ -241,7 +241,7 @@ test('Edit changes the game title and creates, renames, deletes, and restores re
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await page.getByLabel('Tickets current value').fill('7');
   await page.getByLabel('Tickets current value').press('Enter');
-  await page.getByRole('button', { name: 'Edit Evening check-in', exact: true }).last().click();
+  await chooseFromEdit(page, 'Evening check-in', 'Edit layout');
   await page.getByRole('button', { name: 'Edit item Tickets', exact: true }).click();
   await page.getByRole('button', { name: 'Delete Tickets', exact: true }).click();
   await page.getByRole('button', { name: 'Confirm delete Tickets', exact: true }).click();
@@ -273,7 +273,7 @@ test('Edit changes the game title and creates, renames, deletes, and restores re
 
 test('a quick touch swipe scrolls instead of moving an item', async ({ page }, info) => {
   test.skip(info.project.name !== 'android-s23', 'Native Android touch scroll');
-  await page.getByRole('button', { name: 'Edit Genshin Impact', exact: true }).last().click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
   const handle = page.getByRole('button', { name: 'Move Original Resin', exact: true });
   await handle.evaluate((node) => node.scrollIntoView({ block: 'center' }));
   const box = (await handle.boundingBox())!;

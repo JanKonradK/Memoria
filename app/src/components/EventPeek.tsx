@@ -1,4 +1,10 @@
-import { eventParts, eventPartsDone, setEventPartsDone, type GameEvent } from '@memoria/shared';
+import {
+  EVENT_PROGRESS_LABEL,
+  eventProgress,
+  setEventProgress,
+  type EventProgress,
+  type GameEvent,
+} from '@memoria/shared';
 import { calendarSchedule } from '../event-schedule';
 import { useNow } from '../hooks';
 import { useApp } from '../store';
@@ -11,7 +17,7 @@ import { EventTags } from './EventTags';
 import { GameLogo } from './GameLogo';
 import { useIdentityColors } from './roster';
 import { Sheet } from './Sheet';
-import { Btn, TOUCH_BUTTON } from './ui';
+import { Btn, Segmented, TOUCH_BUTTON } from './ui';
 import '../event-peek.css';
 
 /** A pin, drawn small beside a pinned event's name wherever it is listed. */
@@ -61,10 +67,9 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
 
   const visualGame = { ...game, ...(identityColors[game.id] ?? {}) };
   const ink = gameInk(visualGame, ground);
-  const total = eventParts(event);
-  const ticked = eventPartsDone(event);
-  const setParts = (count: number) =>
-    useApp.getState().upsertEvent({ id: event.id, gameId: event.gameId, ...setEventPartsDone(event, count) });
+  const progress = eventProgress(event);
+  const setProgress = (next: EventProgress) =>
+    useApp.getState().upsertEvent({ id: event.id, gameId: event.gameId, ...setEventProgress(next) });
   const calendar = calendarSchedule(event);
   const upcoming = event.start > now;
   const ended = event.end <= now;
@@ -95,7 +100,7 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
             kind="primary"
             className={TOUCH_BUTTON}
             aria-pressed={Boolean(event.done)}
-            onClick={() => setParts(event.done ? 0 : total)}
+            onClick={() => setProgress(event.done ? 'none' : 'done')}
           >
             {event.done ? 'Done — undo' : 'Mark done'}
           </Btn>
@@ -130,28 +135,15 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
           </span>
         </p>
 
-        {total > 1 && (
-          <div>
-            <div role="group" aria-label={`${event.name}: ${ticked} of ${total} parts done`} className="event-parts">
-              {Array.from({ length: total }, (_, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  aria-pressed={index < ticked}
-                  aria-label={`${event.name}: part ${index + 1} of ${total}`}
-                  onClick={() => setParts(index + 1 === ticked ? index : index + 1)}
-                  className="event-part"
-                />
-              ))}
-            </div>
-            <p className="aside text-caption text-muted">
-              <span className="numeral">
-                {ticked} of {total}
-              </span>{' '}
-              parts done
-            </p>
-          </div>
-        )}
+        <Segmented
+          ariaLabel={`${event.name} progress`}
+          value={progress}
+          onChange={setProgress}
+          options={(['none', 'partial', 'done'] as const).map((value) => ({
+            value,
+            label: EVENT_PROGRESS_LABEL[value],
+          }))}
+        />
 
         {event.notes.trim() && <p className="event-peek-notes text-meta text-fg-soft">{event.notes}</p>}
       </div>

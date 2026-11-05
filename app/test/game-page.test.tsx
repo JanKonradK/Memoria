@@ -90,7 +90,7 @@ describe('game page event list', () => {
   });
 
   it('lists finished events with a tick on the game page, struck through and checked', () => {
-    strip([event('Open window'), event('Finished window', { done: true })], { onToggleDone: vi.fn() });
+    strip([event('Open window'), event('Finished window', { done: true })], { onSetProgress: vi.fn() });
     expect(screen.getByRole('button', { name: /Finished window/ })).toBeInTheDocument();
     expect(screen.getByText('Finished window')).toHaveClass('line-through');
     expect(screen.getByRole('checkbox', { name: 'Finished window: done' })).toHaveAttribute('aria-checked', 'true');
@@ -106,7 +106,7 @@ describe('game page event list', () => {
         event('Open later', { end: NOW + 5 * DAY }),
         event('Open sooner', { end: NOW + 2 * DAY }),
       ],
-      { onToggleDone: vi.fn() },
+      { onSetProgress: vi.fn() },
     );
     expect(screen.getAllByRole('checkbox').map((box) => box.getAttribute('aria-label'))).toEqual([
       'Open sooner: done',
@@ -115,22 +115,22 @@ describe('game page event list', () => {
     ]);
   });
 
-  it('reports the event and the opposite of its current done state when its tick is pressed', () => {
-    const onToggleDone = vi.fn();
-    strip([event('Open window'), event('Finished window', { done: true })], { onToggleDone });
+  it('reports the next state when a tick is pressed: partly done, then not started after done', () => {
+    const onSetProgress = vi.fn();
+    strip([event('Open window'), event('Finished window', { done: true })], { onSetProgress });
     fireEvent.click(screen.getByRole('checkbox', { name: 'Open window: done' }));
-    expect(onToggleDone).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'Open window' }), true);
+    expect(onSetProgress).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'Open window' }), 'partial');
     fireEvent.click(screen.getByRole('checkbox', { name: 'Finished window: done' }));
-    expect(onToggleDone).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'Finished window' }), false);
+    expect(onSetProgress).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'Finished window' }), 'none');
   });
 
   it('says the empty label in place of the list when nothing is running or coming up', () => {
-    strip([], { onToggleDone: vi.fn(), emptyLabel: 'No events running or coming up.' });
+    strip([], { onSetProgress: vi.fn(), emptyLabel: 'No events running or coming up.' });
     expect(screen.getByText('No events running or coming up.')).toBeInTheDocument();
   });
 
   it('renders nothing for an empty list when no empty label is given', () => {
-    const { container } = strip([], { onToggleDone: vi.fn() });
+    const { container } = strip([], { onSetProgress: vi.fn() });
     expect(container).toBeEmptyDOMElement();
   });
 });
@@ -152,18 +152,23 @@ describe('game page controls', () => {
     expect(within(left!).queryByRole('region', { name: /events for/ })).not.toBeInTheDocument();
   });
 
-  it('ticks an event done in the store and takes it back', () => {
+  it('steps an event through partly done and done in the store, then takes it back', () => {
     useApp.setState({ state: roster([event('Open window')]) });
     show(<GamePageControls layout="focus" />);
     const eventDone = () => useApp.getState().state.events.find((item) => item.id === 'Open window')?.done;
+    const tick = () => screen.getByRole('checkbox', { name: 'Open window: done' });
 
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Open window: done' }));
-    expect(eventDone()).toBe(true);
-    expect(screen.getByRole('checkbox', { name: 'Open window: done' })).toHaveAttribute('aria-checked', 'true');
-
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Open window: done' }));
+    fireEvent.click(tick());
     expect(eventDone()).toBe(false);
-    expect(screen.getByRole('checkbox', { name: 'Open window: done' })).toHaveAttribute('aria-checked', 'false');
+    expect(tick()).toHaveAttribute('aria-checked', 'mixed');
+
+    fireEvent.click(tick());
+    expect(eventDone()).toBe(true);
+    expect(tick()).toHaveAttribute('aria-checked', 'true');
+
+    fireEvent.click(tick());
+    expect(eventDone()).toBe(false);
+    expect(tick()).toHaveAttribute('aria-checked', 'false');
   });
 
   it('keeps the game actions in the heading, above the grid, with the extra control last', () => {
@@ -175,9 +180,12 @@ describe('game page controls', () => {
     const grid = container.querySelector('.focus-bay-grid');
     expect(bar.closest('.game-card-heading')).not.toBeNull();
     expect(bar.compareDocumentPosition(grid!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    for (const name of ['Manage events', 'Edit Testland']) {
-      expect(within(bar).getByRole('button', { name, exact: true })).toBeInTheDocument();
-    }
+    // Layout and events share one Edit menu.
+    expect(within(bar).getByRole('button', { name: 'Edit Testland', exact: true })).toHaveAttribute(
+      'aria-haspopup',
+      'menu',
+    );
+    expect(within(bar).queryByRole('button', { name: 'Manage events', exact: true })).toBeNull();
     // One way to add an event (the Add menu), and pausing lives under Edit.
     for (const name of ['Add event', 'Pause tracking', 'Readings', 'Set up launch']) {
       expect(screen.queryByRole('button', { name, exact: true })).toBeNull();

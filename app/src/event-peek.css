@@ -1,4 +1,4 @@
-/* The quick view of one event: who, how long, the parts, the notes. */
+/* The quick view of one event: who, how long, its status, the notes. */
 .event-peek {
   display: grid;
   gap: 1rem;
@@ -8,10 +8,6 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.5rem;
-}
-/* In the sheet the segments run edge to edge; there is no tick beside them. */
-.event-peek .event-parts {
-  padding: 0 0 0.25rem;
 }
 .event-peek-notes {
   padding-left: 0.75rem;

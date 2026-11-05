@@ -14,6 +14,19 @@ export async function openGame(page: Page, name: string): Promise<void> {
   await expect(page.locator('.focus-workspace')).toBeVisible();
 }
 
+/** A game's one Edit menu: its layout editor and its events panel. */
+export async function chooseFromEdit(
+  page: Page,
+  game: string,
+  item: 'Edit layout' | 'Manage events' | 'Close events',
+): Promise<void> {
+  await page
+    .getByRole('button', { name: `Edit ${game}`, exact: true })
+    .last()
+    .click();
+  await page.getByRole('menuitem', { name: item, exact: true }).click();
+}
+
 /** An event opens on its quick view; the editor is behind that view's Edit button. */
 export async function editFromQuickView(page: Page): Promise<void> {
   await page.getByRole('dialog').getByRole('button', { name: 'Edit', exact: true }).click();

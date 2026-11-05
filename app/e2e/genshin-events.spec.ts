@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { emptyState } from '@memoria/shared';
 import { makeGame, makeEvent } from '../../shared/test/helpers';
-import { editFromQuickView, openGame, openSettings } from './support';
+import { chooseFromEdit, editFromQuickView, openGame, openSettings } from './support';
 
 test('Genshin keeps complete Teyvat, Wonderland and banner groups through editing', async ({ page }, info) => {
   const now = Date.now();
@@ -99,7 +99,7 @@ test('Genshin keeps complete Teyvat, Wonderland and banner groups through editin
   await expect(dialog).toHaveCount(0);
   await expect(mw.getByRole('button', { name: /Personal cosmetic draw/ })).toBeVisible();
   await expect(banners.getByRole('button', { name: /Personal cosmetic draw/ })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Manage events', exact: true }).click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Manage events');
   const manager = page.getByRole('region', { name: 'Events for Genshin Impact', exact: true });
   await manager.getByRole('searchbox', { name: 'Find event' }).fill('Personal cosmetic');
   await expect(manager.getByRole('heading', { level: 4 })).toHaveText('Miliastra Wonderland');

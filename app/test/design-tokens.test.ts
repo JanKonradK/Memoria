@@ -265,6 +265,8 @@ describe('depth is tonal, not cast', () => {
       'components/ui.tsx',
       // The add menu: a dropdown genuinely overlays the page.
       'components/AddMenu.tsx',
+      // The game page's Edit menu, the same kind of dropdown.
+      'components/GameCard.tsx',
       'components/TimelineTools.tsx',
       'components/UserGuide.tsx',
       // A lifted widget overlays the grid only for the duration of its drag.
