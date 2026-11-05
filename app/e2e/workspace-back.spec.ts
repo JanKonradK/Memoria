@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { gameRow, openGame } from './support';
+import { chooseFromEdit, gameRow, openGame } from './support';
 
 test.beforeEach(async ({ page }, info) => {
   test.skip(!['desktop', 'android-s23', 'mobile-320'].includes(info.project.name), 'Workspace return sizes');
@@ -47,7 +47,7 @@ test('browser Back and Forward use the same workspace and focus path as the arro
 });
 
 test('Alt+Left from a move handle returns without changing the item order', async ({ page }) => {
-  await page.getByRole('button', { name: 'Edit Genshin Impact', exact: true }).last().click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
   const grid = page.locator('.game-widget-grid');
   const order = () =>
     grid
@@ -59,7 +59,7 @@ test('Alt+Left from a move handle returns without changing the item order', asyn
   const card = gameRow(page, 'Genshin Impact');
   await expect(card).toBeFocused();
   await openGame(page, 'Genshin Impact');
-  await page.getByRole('button', { name: 'Edit Genshin Impact', exact: true }).last().click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
   expect(await order()).toEqual(original);
 });
 

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { gameRow, openGame } from './support';
+import { chooseFromEdit, gameRow, openGame } from './support';
 
 test.beforeEach(async ({ page }, info) => {
   test.skip(!['android-s23', 'mobile-320', 'mobile-390'].includes(info.project.name), 'Phone check-in flow');
@@ -42,7 +42,7 @@ test('phone roster opens full controls and keeps edits across navigation', async
   await openGame(page, 'Genshin Impact');
   await expect(value).toHaveValue('99');
   await expect(task).toHaveAttribute('aria-pressed', 'true');
-  await page.getByRole('button', { name: 'Edit Genshin Impact', exact: true }).last().click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
   await expect(page.getByRole('region', { name: 'Layout editor for Genshin Impact' })).toBeVisible();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);

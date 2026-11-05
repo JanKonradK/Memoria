@@ -69,6 +69,13 @@ afterEach(() => {
   useUI.setState({ sheet: null, focusedGameId: null });
 });
 
+/** The game's Edit menu holds both the layout editor and the events panel. */
+function chooseFromEdit(item: 'Edit layout' | 'Manage events' | 'Close events') {
+  const trigger = screen.getAllByRole('button', { name: 'Edit My game', exact: true }).at(-1)!;
+  fireEvent.keyDown(trigger, { key: 'Enter' });
+  fireEvent.click(screen.getByRole('menuitem', { name: item }));
+}
+
 describe('game event management', () => {
   it('keeps the same Genshin world order when searching or changing status', () => {
     const genshin = { ...game, presetKey: 'genshin' };
@@ -122,8 +129,7 @@ describe('game event management', () => {
     render(<Controls />);
     const controls = screen.getByLabelText('My game tracking controls');
     expect(within(controls).queryByRole('button', { name: 'Add event' })).toBeNull();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Edit My game', exact: true }).at(-1)!);
-    fireEvent.click(screen.getByRole('button', { name: 'Manage events' }));
+    chooseFromEdit('Manage events');
     const panel = screen.getByRole('region', { name: 'Events for My game' });
     fireEvent.click(within(panel).getByRole('button', { name: 'Edit My game event: Personal window' }));
     expect(useUI.getState().sheet).toEqual({ kind: 'event', gameId: game.id, eventId: 'Personal window' });
@@ -215,13 +221,13 @@ describe('taking a break', () => {
     render(<Controls />);
     // Pausing is rare, so it sits with the card's other settings under Edit.
     expect(screen.queryByRole('button', { name: 'Pause tracking', exact: true })).toBeNull();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Edit My game', exact: true }).at(-1)!);
+    chooseFromEdit('Edit layout');
     fireEvent.click(screen.getByRole('button', { name: 'Pause tracking', exact: true }));
     expect(useApp.getState().state.games[0]?.paused).toBe(true);
     expect(useApp.getState().state.games[0]?.deleted).toBeFalsy();
     expect(useApp.getState().state.events).toEqual(events);
     expect(screen.getByRole('button', { name: 'Resume tracking', exact: true })).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: 'Manage events' }));
+    chooseFromEdit('Manage events');
     expect(screen.getByRole('button', { name: 'Edit My game event: Personal window' })).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Resume tracking', exact: true }));
     expect(useApp.getState().state.games[0]?.paused).toBe(false);

@@ -65,9 +65,9 @@ test('an event on the calendar opens a quick view where it is pinned and ticked 
 
   await view.getByRole('button', { name: 'Pin', exact: true }).click();
   await expect(view.getByRole('button', { name: 'Pinned', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  const parts = view.getByRole('group', { name: /parts done$/ });
-  await parts.getByRole('button').nth(1).click();
-  await expect(parts).toHaveAccessibleName('Anniversary story: 2 of 3 parts done');
+  const status = view.getByRole('radiogroup', { name: 'Anniversary story progress' });
+  await status.getByRole('radio', { name: 'Partly done', exact: true }).click();
+  await expect(status.getByRole('radio', { name: 'Partly done', exact: true })).toBeChecked();
   await page.keyboard.press('Escape');
   await expect(view).toHaveCount(0);
   await expect(page.locator('[data-event-id="quick-event"] [data-event-bar]')).toHaveAttribute('data-pinned', 'true');

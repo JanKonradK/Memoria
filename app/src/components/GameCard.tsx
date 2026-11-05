@@ -1,13 +1,26 @@
+import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import { EventTags } from './EventTags';
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
-import type { AppState, ChecklistItem, Game, GameEvent, GameUrgency, GameLayoutItem, Snapshot } from '@memoria/shared';
+import type {
+  AppState,
+  ChecklistItem,
+  EventProgress,
+  Game,
+  GameEvent,
+  GameUrgency,
+  GameLayoutItem,
+  Snapshot,
+} from '@memoria/shared';
 import {
   effectiveResourceKind,
-  eventParts,
+  EVENT_PROGRESS_LABEL,
+  EVENT_STEPS,
   eventPartsDone,
+  eventProgress,
+  nextEventProgress,
   projectEnergy,
   resolveGameLayout,
-  setEventPartsDone,
+  setEventProgress,
 } from '@memoria/shared';
 import { m } from 'motion/react';
 import { useDerived } from '../selectors';
@@ -210,7 +223,8 @@ function EventTick({ ticked, total, color }: { ticked: number; total: number; co
   return (
     <Tick
       checked={done}
-      segments={total > 1 ? { current: ticked, total } : undefined}
+      // Segments only once started, so a fresh event reads as an empty ring.
+      segments={total > 1 && ticked > 0 && ticked < total ? { current: ticked, total } : undefined}
       color={color}
       sweep={sweep}
       checkEnter={checkEnter}
@@ -396,33 +410,30 @@ function TaskRow({
  * Active Genshin windows are grouped by world, then banners. Other games keep
  * their compact summary. Each section includes its next upcoming window.
  *
- * With `onToggleDone` this is the game page's event list rather than a card's
+ * With `onSetProgress` this is the game page's event list rather than a card's
  * summary: every active window is listed, each with a tick, and a finished one
- * stays in place, struck through, so the tick can be taken back. With
- * `onSetParts` as well, an event played in several parts shows one segment per
- * part under its name, ticked off in order.
+ * stays in place, struck through, so the tick can be taken back. The tick steps
+ * through not started, partly done (half a ring) and done.
  */
 export function EventStrip({
   game,
   events: allEvents,
   now,
   onOpenEvent,
-  onToggleDone,
-  onSetParts,
+  onSetProgress,
   emptyLabel,
 }: {
   game: Game;
   events: AppState['events'];
   now: number;
   onOpenEvent: (eventId: string, gameId: string) => void;
-  onToggleDone?: (event: GameEvent, done: boolean) => void;
-  /** Called with how many parts are now ticked, counted from the first. */
-  onSetParts?: (event: GameEvent, ticked: number) => void;
+  /** Called with the event's new state when its tick is tapped. */
+  onSetProgress?: (event: GameEvent, progress: EventProgress) => void;
   /** Said in place of the list when the game has nothing running or coming. */
   emptyLabel?: string;
 }) {
   const ground = useGround();
-  const mine = allEvents.filter((e) => !e.deleted && (onToggleDone || !e.done) && e.gameId === game.id);
+  const mine = allEvents.filter((e) => !e.deleted && (onSetProgress || !e.done) && e.gameId === game.id);
   // `notify` used to gate this list, which meant an event omitted from next
   // actions vanished from its own card — a ZZZ card could sit there showing
   // nothing while two of its events were live. Card visibility is independent.
@@ -431,7 +442,7 @@ export function EventStrip({
       const active = section.events
         .filter((event) => event.start <= now && event.end > now)
         .sort((a, b) => a.end - b.end);
-      const shown = onToggleDone
+      const shown = onSetProgress
         ? // Pinned first, then unfinished, so what you mean to do leads each section.
           [...active].sort(
             (a, b) =>
@@ -499,9 +510,8 @@ export function EventStrip({
                   </Tooltip>
                 </button>
               );
-              if (!onToggleDone) return open;
-              const total = onSetParts ? eventParts(ev) : 1;
-              const ticked = onSetParts ? eventPartsDone(ev) : Number(Boolean(ev.done));
+              if (!onSetProgress) return open;
+              const progress = eventProgress(ev);
               return (
                 <div key={ev.id}>
                   <div className="flex items-center gap-1">
@@ -509,33 +519,15 @@ export function EventStrip({
                     <button
                       type="button"
                       role="checkbox"
-                      aria-checked={Boolean(ev.done)}
+                      aria-checked={progress === 'done' ? true : progress === 'partial' ? 'mixed' : false}
                       aria-label={`${ev.name}: done`}
-                      onClick={() => onToggleDone(ev, !ev.done)}
+                      title={`${EVENT_PROGRESS_LABEL[progress]}. Tap for ${EVENT_PROGRESS_LABEL[nextEventProgress(ev)].toLowerCase()}.`}
+                      onClick={() => onSetProgress(ev, nextEventProgress(ev))}
                       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-md transition hover:bg-fill-2 md:h-8 md:w-8"
                     >
-                      <EventTick ticked={ticked} total={total} color={gameInk(game, ground)} />
+                      <EventTick ticked={eventPartsDone(ev)} total={EVENT_STEPS} color={gameInk(game, ground)} />
                     </button>
                   </div>
-                  {onSetParts && total > 1 && (
-                    <div
-                      role="group"
-                      aria-label={`${ev.name}: ${ticked} of ${total} parts done`}
-                      className="event-parts"
-                    >
-                      {Array.from({ length: total }, (_, index) => (
-                        <button
-                          key={index}
-                          type="button"
-                          aria-pressed={index < ticked}
-                          aria-label={`${ev.name}: part ${index + 1} of ${total}`}
-                          // Ticking a part ticks those before it; the last ticked part unticks itself.
-                          onClick={() => onSetParts(ev, index + 1 === ticked ? index : index + 1)}
-                          className="event-part"
-                        />
-                      ))}
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -564,6 +556,7 @@ function EnergyControlRow({
   now,
   localTz,
   setEnergy,
+  note,
 }: {
   game: Game;
   res: AppState['resources'][number];
@@ -571,6 +564,8 @@ function EnergyControlRow({
   now: number;
   localTz: string;
   setEnergy: GameControlActions['setEnergy'];
+  /** When the reading was entered, for the game's main energy. */
+  note?: string;
 }) {
   const ground = useGround();
   const projection = useMemo(() => projectEnergy(res, snap, now, game), [game, now, res, snap]);
@@ -588,6 +583,7 @@ function EnergyControlRow({
       now={now}
       localTz={localTz}
       onCommit={commit}
+      note={note}
     />
   );
 }
@@ -598,12 +594,14 @@ function ResourceControls({
   snaps,
   now,
   actions,
+  reading,
 }: {
   game: Game;
   state: AppState;
   snaps: Map<string, Snapshot>;
   now: number;
   actions: GameControlActions;
+  reading?: { resourceId: string; label: string };
 }) {
   const resources = state.resources.filter((r) => r.gameId === game.id && !r.deleted).sort((a, b) => a.sort - b.sort);
   const cardResources = resources.filter((res) => ['regen', 'weekly'].includes(effectiveResourceKind(res)));
@@ -621,6 +619,7 @@ function ResourceControls({
               now={now}
               localTz={state.settings.localTz}
               setEnergy={actions.setEnergy}
+              note={reading?.resourceId === res.id ? reading.label : undefined}
             />
           ))}
         </div>
@@ -787,7 +786,9 @@ function GameControlsHeader({
   editRef,
   urgent,
   layout = 'card',
-  reading,
+  managingEvents,
+  onToggleEvents,
+  eventsPanelId,
   actions,
   actionsEnd,
 }: {
@@ -800,8 +801,9 @@ function GameControlsHeader({
   editRef?: Ref<HTMLButtonElement>;
   urgent: boolean;
   layout?: 'card' | 'focus';
-  /** When the main energy value was last entered. */
-  reading?: string;
+  managingEvents: boolean;
+  onToggleEvents: () => void;
+  eventsPanelId: string;
   /** The game's own actions, before Edit. */
   actions?: ReactNode;
   /** Joins the end of the actions, after the game's own. */
@@ -840,13 +842,28 @@ function GameControlsHeader({
         className={`group/title min-w-0 flex-1 py-0.5 text-left ${layout === 'focus' ? '' : '-ml-1 cursor-pointer rounded-ui-md px-1 transition hover:bg-fill-2'}`}
         aria-label={layout === 'focus' ? undefined : `Edit ${game.name}${accountLabel ? `, ${accountLabel}` : ''}`}
       >
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="game-card-title-row flex min-w-0 items-center gap-2">
           <h2
-            className={`min-w-0 flex-1 ${layout === 'focus' ? 'text-title min-[1600px]:text-heading' : 'truncate text-heading'} text-fg transition group-hover/title:text-fg`}
+            className={`min-w-0 ${layout === 'focus' ? 'text-title min-[1600px]:text-heading' : 'truncate text-heading'} text-fg transition group-hover/title:text-fg`}
             style={{ ...titleStyle(game.titleFont), color: `var(--game-ink, ${gameTitleInk(game, ground, 4.5)})` }}
           >
             {game.name}
           </h2>
+          {/* Today's dailies sit on the title line, sized to it. */}
+          {!game.paused && dailies.length > 0 && (
+            <ProgressBar
+              variant="ring"
+              size={layout === 'focus' ? 40 : 32}
+              stroke={3}
+              value={completed / dailies.length}
+              color={gameInk(game, ground)}
+              className="game-daily-ring shrink-0"
+              aria-label={`${completed} of ${dailies.length} dailies done`}
+              role="img"
+            >
+              {completed}/{dailies.length}
+            </ProgressBar>
+          )}
           {accountLabel && layout !== 'focus' && (
             <>
               <span aria-hidden className="h-3 w-px shrink-0 bg-line-edge" />
@@ -865,38 +882,61 @@ function GameControlsHeader({
           <ServerChip label={regionLabel} className="max-w-20 truncate" />
           {layout === 'focus' && accountLabel && <span className="[overflow-wrap:anywhere]">{accountLabel}</span>}
           <span>reset {resetLabel}</span>
-          {!game.paused && reading && <span data-reading-status>{reading}</span>}
           {urgent && <AttentionIndicator />}
         </div>
       </TitleContainer>
       {/* Everything the game can do sits in its heading, beside its name. */}
       <div className="game-card-actions flex shrink-0 items-center gap-2" aria-label={`${game.name} tracking controls`}>
         {actions}
-        {/* The page has one edit control. Compact cards retain their title shortcut. */}
-        <Tooltip content={`Edit ${game.name} title, items, and layout`}>
-          <Btn
-            ref={editRef}
-            type="button"
-            onClick={onEdit}
-            className={`inline-flex shrink-0 items-center gap-2 ${TOUCH_BUTTON}`}
-            aria-label={`Edit ${game.name}`}
-          >
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" className="icon h-4 w-4" aria-hidden>
-              <path
-                d="M13.3 3.7a1.7 1.7 0 0 1 2.4 2.4L7.4 14.4 4 15l.6-3.4z"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span>Edit</span>
-          </Btn>
-        </Tooltip>
+        {/* One Edit control for the layout and the events. Compact cards keep their title shortcut. */}
+        <DropdownMenuPrimitive.Root>
+          <Tooltip content={`Edit ${game.name} layout or events`}>
+            <DropdownMenuPrimitive.Trigger asChild>
+              <Btn
+                ref={editRef}
+                type="button"
+                className={`inline-flex shrink-0 items-center gap-2 ${TOUCH_BUTTON}`}
+                aria-label={`Edit ${game.name}`}
+              >
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" className="icon h-4 w-4" aria-hidden>
+                  <path
+                    d="M13.3 3.7a1.7 1.7 0 0 1 2.4 2.4L7.4 14.4 4 15l.6-3.4z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                {/* A phone gives the game's name the room; the pencil says Edit. */}
+                <span className="hidden sm:inline">Edit</span>
+              </Btn>
+            </DropdownMenuPrimitive.Trigger>
+          </Tooltip>
+          <DropdownMenuPrimitive.Portal>
+            <DropdownMenuPrimitive.Content
+              align="end"
+              sideOffset={6}
+              className="popover-motion z-50 min-w-44 rounded-ui-lg bg-popover p-1 shadow-float ring-1 ring-line-strong"
+            >
+              {[
+                { label: 'Edit layout', onSelect: onEdit },
+                {
+                  label: managingEvents ? 'Close events' : 'Manage events',
+                  onSelect: onToggleEvents,
+                  controls: eventsPanelId,
+                },
+              ].map((item) => (
+                <DropdownMenuPrimitive.Item
+                  key={item.label}
+                  onSelect={item.onSelect}
+                  aria-controls={item.controls}
+                  className="flex min-h-11 cursor-pointer items-center rounded-ui-sm px-3 text-body text-fg-soft outline-none transition-colors data-[highlighted]:bg-fill-2 data-[highlighted]:text-fg sm:min-h-9"
+                >
+                  {item.label}
+                </DropdownMenuPrimitive.Item>
+              ))}
+            </DropdownMenuPrimitive.Content>
+          </DropdownMenuPrimitive.Portal>
+        </DropdownMenuPrimitive.Root>
         {actionsEnd}
-        {!game.paused && dailies.length > 0 && (
-          <ProgressBar variant="ring" value={completed / dailies.length} color={gameInk(game, ground)}>
-            {completed}/{dailies.length}
-          </ProgressBar>
-        )}
       </div>
     </div>
   );
@@ -979,21 +1019,37 @@ export function GameControlsView({
   // undo it, so the card ignored the rule that pull-currency tasks lead.
   const checklist = derived.checklistByGame.get(game.id) ?? [];
   const dailies = checklist.filter((item) => item.cadence === 'daily');
+  const { resource: mainResource } = derived.primaryEnergy(game.id);
+  const source = mainResource ? readingSource(derived.snaps.get(mainResource.id), now) : null;
+  const reading =
+    mainResource && !game.paused
+      ? {
+          resourceId: mainResource.id,
+          label: !source ? 'No reading yet' : source.kind === 'estimate' ? source.label : `Updated ${source.age}`,
+        }
+      : undefined;
+
   const resources = (
-    <ResourceControls game={visualGame} state={state} snaps={derived.snaps} now={now} actions={actions} />
+    <ResourceControls
+      game={visualGame}
+      state={state}
+      snaps={derived.snaps}
+      now={now}
+      actions={actions}
+      reading={reading}
+    />
   );
   const tasks = <ChecklistControls game={visualGame} checklist={checklist} now={now} actions={actions} />;
   const focus = layout === 'focus';
-  const setParts = (event: GameEvent, ticked: number) =>
-    useApp.getState().upsertEvent({ id: event.id, gameId: event.gameId, ...setEventPartsDone(event, ticked) });
+  const setProgress = (event: GameEvent, progress: EventProgress) =>
+    useApp.getState().upsertEvent({ id: event.id, gameId: event.gameId, ...setEventProgress(progress) });
   const events = !game.paused && (
     <EventStrip
       game={visualGame}
       events={state.events}
       now={now}
       onOpenEvent={onOpenEvent}
-      onToggleDone={focus ? (event, done) => setParts(event, done ? eventParts(event) : 0) : undefined}
-      onSetParts={focus ? setParts : undefined}
+      onSetProgress={focus ? setProgress : undefined}
       emptyLabel={focus ? 'No events.' : undefined}
     />
   );
@@ -1032,6 +1088,7 @@ export function GameControlsView({
             now={now}
             localTz={state.settings.localTz}
             setEnergy={actions.setEnergy}
+            note={reading?.resourceId === resource.id ? reading.label : undefined}
           />
         ),
       });
@@ -1103,16 +1160,6 @@ export function GameControlsView({
     });
   }
 
-  const { resource: mainResource } = derived.primaryEnergy(game.id);
-  const source = mainResource ? readingSource(derived.snaps.get(mainResource.id), now) : null;
-  const reading = !mainResource
-    ? undefined
-    : !source
-      ? 'No reading yet'
-      : source.kind === 'estimate'
-        ? source.label
-        : `Updated ${source.age}`;
-
   return (
     <>
       <GameControlsHeader
@@ -1125,20 +1172,10 @@ export function GameControlsView({
         editRef={editRef}
         urgent={!game.paused && entry.next != null && entry.next.at - now < 2 * 60 * 60_000}
         layout={layout}
-        reading={reading}
-        actions={
-          <>
-            <LaunchButton game={game} />
-            <Btn
-              className={TOUCH_BUTTON}
-              aria-expanded={managingEvents}
-              aria-controls={eventsPanelId}
-              onClick={() => setManagingEvents((value) => !value)}
-            >
-              {managingEvents ? 'Close events' : 'Manage events'}
-            </Btn>
-          </>
-        }
+        managingEvents={managingEvents}
+        onToggleEvents={() => setManagingEvents((value) => !value)}
+        eventsPanelId={eventsPanelId}
+        actions={<LaunchButton game={game} />}
         actionsEnd={actionsEnd}
       />
       {game.paused && (

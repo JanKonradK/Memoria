@@ -30,7 +30,7 @@ it('a new event starts with fresh rules after editing a finished banner', () => 
   expect(screen.getByRole('combobox', { name: 'Type' })).toHaveTextContent('event');
   expect(screen.getByRole('switch', { name: 'Daily check-in' })).toHaveAttribute('aria-checked', 'false');
   expect(screen.getByRole('switch', { name: 'Count toward next action' })).toHaveAttribute('aria-checked', 'true');
-  expect(screen.getByRole('switch', { name: 'Done' })).toHaveAttribute('aria-checked', 'false');
+  expect(screen.getByRole('radio', { name: 'Not started' })).toBeChecked();
   expect(screen.queryByRole('button', { name: 'Confirm delete' })).not.toBeInTheDocument();
   expect(useApp.getState().state.events).toEqual([event]);
 });

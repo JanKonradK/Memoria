@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { openGame } from './support';
+import { chooseFromEdit, openGame } from './support';
 
 async function frameTaskEditor(page: Page) {
   await page.getByLabel('Item title', { exact: true }).evaluate((node) => {
@@ -36,7 +36,7 @@ test('daily task rules can change on the card, including Tacet counts and new ta
   }
   await openGame(page, 'Wuthering Waves');
   await page.getByRole('button', { name: 'Tacet Fields ×5: 0 of 5 done, click to mark one more', exact: true }).click();
-  await page.getByRole('button', { name: 'Edit Wuthering Waves', exact: true }).last().click();
+  await chooseFromEdit(page, 'Wuthering Waves', 'Edit layout');
   await page.getByRole('button', { name: 'Edit item Tacet Fields ×5', exact: true }).click();
   await page.getByLabel('Count target for Tacet Fields ×5', { exact: true }).fill('6');
   await page.getByLabel('Item title', { exact: true }).fill('My Tacet fields');
@@ -126,7 +126,7 @@ test('daily task rules can change on the card, including Tacet counts and new ta
   await event.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Switch to light theme', exact: true }).click();
-  await page.getByRole('button', { name: 'Edit Wuthering Waves', exact: true }).last().click();
+  await chooseFromEdit(page, 'Wuthering Waves', 'Edit layout');
   await page.getByRole('button', { name: 'Edit item Tacet Discord Nests', exact: true }).click();
   await expect(page.getByLabel('Count target for Tacet Discord Nests', { exact: true })).toHaveValue('5');
   await expect(page.locator('[data-aria-hidden="true"]')).toHaveCount(0);

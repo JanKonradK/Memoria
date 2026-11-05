@@ -210,8 +210,9 @@ export function AppBar() {
     >
       {/* Tabular clock digits keep the brand width stable while time changes. */}
       <div className="app-brand flex items-center gap-2.5">
-        <Logo className="[&>svg]:h-4 [&>svg]:w-8" />
-        <span className="text-body font-semibold tracking-[-0.02em] text-fg">Memoria</span>
+        {/* Sized to the bar's 44px controls, so it grows without making the bar taller. */}
+        <Logo className="[&>svg]:h-7 [&>svg]:w-14" />
+        <span className="text-heading leading-none font-semibold tracking-[-0.02em] text-fg">Memoria</span>
         <span className="hidden sm:inline">
           <AppBarClock />
         </span>

@@ -579,8 +579,10 @@ body {
     /* A filter would make the fixed bottom nav relative to this header. */
     backdrop-filter: none;
   }
+  /* Large enough to read as the app's name, no taller than the bar's controls. */
   .app-brand > span {
-    font-size: 0.75rem;
+    font-size: 1.25rem;
+    line-height: 1;
   }
   .app-brand > span.hidden {
     display: none;
@@ -842,26 +844,25 @@ input[type='number'] {
   border-bottom: 1px solid var(--color-line);
 }
 .focus-workspace .game-card-heading h2 {
-  font-size: clamp(1.375rem, 3vw, 1.75rem);
-  overflow-wrap: anywhere;
+  font-size: clamp(1.625rem, 4vw, 2.125rem);
+  line-height: 1.15;
+  overflow-wrap: break-word;
 }
 .focus-workspace .workspace-back {
   margin-left: -6px;
 }
-/* The game's actions share the heading with its name. Where the two cannot sit
-   side by side they take the row beneath, so the name is never squeezed. */
+/* The game's actions share the heading with its name, at its top right. There
+   are few enough of them that the name wraps rather than the actions. */
 .game-card-actions {
   flex-wrap: wrap;
   justify-content: flex-end;
 }
+.focus-workspace .game-card-actions {
+  align-self: flex-start;
+}
 @media (max-width: 767px) {
   .focus-workspace .game-card-heading {
-    flex-wrap: wrap;
     gap: 8px;
-  }
-  .focus-workspace .game-card-actions {
-    flex-basis: 100%;
-    justify-content: flex-start;
   }
 }
 
@@ -1139,46 +1140,6 @@ input[type='number'] {
   animation: loaderSpin 1.6s linear infinite;
 }
 
-/* One segment per part of an event, ticked off in order. The bar is thin; the
-   button around it is tall enough to hit. */
-.event-parts {
-  display: flex;
-  gap: 3px;
-  padding: 0 2.75rem 0.25rem 0.375rem;
-}
-.event-part {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  height: 1.25rem;
-}
-.event-part::before {
-  content: '';
-  position: absolute;
-  inset: 50% 0 auto;
-  height: 5px;
-  transform: translateY(-50%);
-  border-radius: var(--radius-ui-full);
-  /* Tinted with the game's ink so an empty part still reads as a part to fill. */
-  background: color-mix(in srgb, var(--game-ink, var(--color-fg)) 20%, transparent);
-  transition: background var(--dur-fast) var(--ease-out);
-}
-@media (hover: hover) {
-  .event-part:hover::before {
-    background: color-mix(in srgb, var(--game-ink, var(--color-fg)) 45%, transparent);
-  }
-}
-.event-part[aria-pressed='true']::before {
-  background: var(--game-ink, var(--color-fg));
-}
-@media (pointer: coarse) {
-  .event-parts {
-    padding-right: 3.25rem;
-  }
-  .event-part {
-    height: 2rem;
-  }
-}
 .focus-bay-grid {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -1243,8 +1204,12 @@ input[type='number'] {
   overflow-wrap: anywhere;
 }
 @container (max-width: 240px) {
-  .game-task-row {
+  .game-task-row,
+  .energy-row-line {
     flex-wrap: wrap;
+  }
+  .energy-row-line > :first-child {
+    flex-basis: 100%;
   }
   .game-task-row [data-task-name] {
     flex-basis: 100%;

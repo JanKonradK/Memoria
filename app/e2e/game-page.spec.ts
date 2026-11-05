@@ -17,7 +17,7 @@ test("a game's page keeps its actions in its heading", async ({ page }) => {
   const bar = page.getByLabel('Genshin Impact tracking controls', { exact: true });
   await expect(bar).toBeVisible();
   await expect(bar).toBeInViewport();
-  await expect(bar.getByRole('button', { name: 'Manage events', exact: true })).toBeVisible();
+  await expect(bar.getByRole('button', { name: 'Edit Genshin Impact', exact: true })).toBeVisible();
   for (const name of ['Add event', 'Readings', 'Pause tracking', 'Set up launch']) {
     await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0);
   }
@@ -54,7 +54,10 @@ test('an event can be ticked off and taken back on its page', async ({ page }) =
   await dialog.getByRole('button', { name: 'Add event', exact: true }).click();
   await expect(dialog).toHaveCount(0);
 
+  // One tick steps through partly done and done, then back to not started.
   const tick = page.getByRole('checkbox', { name: 'Tick me: done', exact: true });
+  await tick.click();
+  await expect(tick).toHaveAttribute('aria-checked', 'mixed');
   await tick.click();
   await expect(tick).toHaveAttribute('aria-checked', 'true');
   await tick.click();

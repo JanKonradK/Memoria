@@ -94,7 +94,7 @@ function StepBtn({ delta, onStep, label }: { delta: number; onStep: (d: number) 
         if (e.detail === 0 || !press || (!press.stepped && !press.cancelled)) onStep(delta);
         gesture.current = null;
       }}
-      className="energy-step flex h-11 min-w-11 items-center justify-center rounded-ui-md bg-fill-2 px-1.5 text-meta font-bold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 active:scale-90 md:h-7 md:min-w-7"
+      className="energy-step flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-full bg-fill-2 text-meta font-bold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 active:scale-90 md:h-8 md:w-8"
       aria-label={`${delta > 0 ? 'Increase' : 'Decrease'} ${label}`}
     >
       {delta > 0 ? `+${delta}` : delta}
@@ -148,11 +148,11 @@ function ValueStepper({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   return (
-    <span className="energy-value-stepper ml-auto flex w-full items-center justify-end gap-2 md:w-auto md:gap-1">
+    <span className="energy-value-stepper ml-auto flex shrink-0 items-center justify-end gap-1">
       <StepBtn delta={-1} onStep={onStep} label={label} />
       {/* One pill: editable value + "/ cap" together inside the same box. */}
       <span
-        className="energy-value-box focus-ring-group flex h-11 cursor-text items-center rounded-ui-md bg-fill-2 px-3 ring-1 ring-line-hairline transition focus-within:bg-fill-3 md:h-7 md:px-2"
+        className="energy-value-box focus-ring-group flex h-11 cursor-text items-center rounded-ui-full bg-fill-2 px-2.5 ring-1 ring-line-hairline transition focus-within:bg-fill-3 md:h-8"
         onMouseDown={(e) => {
           if (e.target !== inputRef.current) {
             e.preventDefault();
@@ -191,11 +191,12 @@ function ValueStepper({
             }
           }}
           className={`bg-transparent text-right tabular-nums outline-none ${valueClassName}`}
-          style={{ color, width: `${Math.max(2, value.length || 1) + 0.5}ch` }}
+          // Room for four digits whatever the value, so every currency on a page lines up.
+          style={{ color, width: `${Math.max(4, value.length) + 0.5}ch` }}
           aria-label={ariaLabel}
           aria-keyshortcuts="a s d f Enter Escape"
         />
-        <span className="pl-1 text-label tabular-nums text-dim">/ {cap}</span>
+        <span className="inline-block min-w-[6ch] pl-1 text-left text-label tabular-nums text-dim">/ {cap}</span>
       </span>
       <StepBtn delta={1} onStep={onStep} label={label} />
     </span>
@@ -215,6 +216,7 @@ export const EnergyRow = memo(function EnergyRow({
   now,
   localTz,
   onCommit,
+  note,
 }: {
   res: Resource;
   color: string;
@@ -224,6 +226,8 @@ export const EnergyRow = memo(function EnergyRow({
   now: number;
   localTz: string;
   onCommit: (value: number, reserve?: number) => void;
+  /** Small text at the end of the status line: when the reading was entered. */
+  note?: string;
 }) {
   const kind = effectiveResourceKind(res);
   const compact = kind === 'counter';
@@ -323,9 +327,12 @@ export const EnergyRow = memo(function EnergyRow({
 
   return (
     <div className="group/row">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-        <span className="flex min-w-0 items-center">
-          <span className="energy-resource-name truncate text-body font-semibold text-fg-soft">{res.name}</span>
+      {/* Name and stepper share one line; a long name wraps rather than pushing the stepper down. */}
+      <div className="energy-row-line flex items-center gap-x-2 gap-y-1.5">
+        <span className="flex min-w-0 flex-1 items-center">
+          <span className="energy-resource-name line-clamp-2 text-title font-semibold leading-tight text-fg-soft [overflow-wrap:anywhere]">
+            {res.name}
+          </span>
         </span>
 
         <ValueStepper
@@ -379,20 +386,27 @@ export const EnergyRow = memo(function EnergyRow({
               be printed after the whole reserve block, so an open reserve read
               "fills while Trailblaze Power is capped / full Sat 10:10" — two
               lines about two different vessels, stacked as if they were one. */}
-          <div
-            className={`mt-1 text-meta tabular-nums ${
-              proj.isFull && urgency === 'danger'
-                ? 'font-bold text-danger-fg'
-                : urgency === 'danger'
-                  ? 'text-danger-fg'
-                  : urgency === 'warn'
-                    ? 'text-warn-fg'
-                    : urgency === 'ok'
-                      ? 'text-ok-fg'
-                      : 'text-fg-soft'
-            }`}
-          >
-            {subtitle}
+          <div className="mt-1 flex flex-wrap items-baseline gap-x-3">
+            <span
+              className={`min-w-0 text-meta tabular-nums ${
+                proj.isFull && urgency === 'danger'
+                  ? 'font-bold text-danger-fg'
+                  : urgency === 'danger'
+                    ? 'text-danger-fg'
+                    : urgency === 'warn'
+                      ? 'text-warn-fg'
+                      : urgency === 'ok'
+                        ? 'text-ok-fg'
+                        : 'text-fg-soft'
+              }`}
+            >
+              {subtitle}
+            </span>
+            {note && (
+              <span data-reading-status className="aside ml-auto text-label tabular-nums text-muted">
+                {note}
+              </span>
+            )}
           </div>
 
           {res.reserveCap > 0 && (

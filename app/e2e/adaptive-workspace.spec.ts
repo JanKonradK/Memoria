@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openSettings } from './support';
+import { chooseFromEdit, openSettings } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { emptyState } from '@memoria/shared';
 import { makeGame, makeResource, makeSnapshot } from '../../shared/test/helpers';
@@ -90,7 +90,7 @@ test('Today and game controls adapt while a PC window is resized', async ({ page
   await page.setViewportSize({ width: 360, height: 600 });
   await expect(energy).toHaveValue('83');
   await energy.press('Enter');
-  await page.getByRole('button', { name: 'Edit Genshin Impact', exact: true }).click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
   await page.getByRole('button', { name: 'Game settings', exact: true }).click();
   await page.setViewportSize({ width: 900, height: 400 });
   const dialog = page.getByRole('dialog');
