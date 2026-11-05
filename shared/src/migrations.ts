@@ -1,3 +1,4 @@
+import { RECORD_COLLECTIONS, legacyHlc } from './hlc';
 import type { AppState, Snapshot } from './types';
 import { CURRENT_SCHEMA_VERSION } from './types';
 import { objectRecord } from './internal';
@@ -99,7 +100,15 @@ function migrateCrystalflyTrapTimer(raw: unknown): unknown {
 function migrateRoutineDefaults(raw: unknown): unknown {
   const state = objectRecord(raw);
   if (!state || !Array.isArray(state.games) || !Array.isArray(state.tasks)) return raw;
-  const changedAt = Date.now();
+  // Migrations must produce the same records on devices with different clocks.
+  const changedAt = ['games', 'tasks', 'completions']
+    .flatMap((key) => (Array.isArray(state[key]) ? (state[key] as unknown[]) : []))
+    .map(objectRecord)
+    .reduce(
+      (at, row) =>
+        Math.max(at, typeof row?.updatedAt === 'number' && Number.isFinite(row.updatedAt) ? row.updatedAt + 1 : 0),
+      0,
+    );
   const games = state.games
     .map(objectRecord)
     .filter((game): game is Record<string, unknown> => Boolean(game && !game.deleted));
@@ -210,6 +219,46 @@ function migrateRoutineDefaults(raw: unknown): unknown {
   return { ...state, tasks, chips };
 }
 
+/** No local time or random device id: every copy of a v9 document upgrades identically. */
+function migrateChangeClocks(raw: unknown): unknown {
+  const state = objectRecord(raw);
+  if (!state) return raw;
+  const stamp = (rawRow: unknown): unknown => {
+    const row = objectRecord(rawRow);
+    if (!row) return rawRow;
+    const at = typeof row.updatedAt === 'number' ? row.updatedAt : typeof row.takenAt === 'number' ? row.takenAt : 0;
+    return {
+      ...row,
+      hlc: row.hlc ?? legacyHlc(Number.isFinite(at) ? at : 0),
+      deviceId: row.deviceId ?? 'Unknown device',
+    };
+  };
+  const result = { ...state };
+  for (const key of RECORD_COLLECTIONS) if (Array.isArray(state[key])) result[key] = state[key].map(stamp);
+  const settings = objectRecord(stamp(state.settings));
+  if (settings) {
+    const fields = objectRecord(settings.fieldUpdatedAt) ?? {};
+    result.settings = {
+      ...settings,
+      fieldHlc:
+        settings.fieldHlc ??
+        Object.fromEntries(
+          ['quietStart', 'quietEnd', 'localTz', 'sleepHours'].map((field) => [
+            field,
+            legacyHlc(
+              typeof fields[field] === 'number'
+                ? (fields[field] as number)
+                : typeof settings.updatedAt === 'number'
+                  ? settings.updatedAt
+                  : 0,
+            ),
+          ]),
+        ),
+    };
+  }
+  return result;
+}
+
 /** Keys are source versions; each migration advances its input by one version. */
 export const MIGRATIONS: Readonly<Record<number, StateMigration>> = {
   3: migrateGenshinPalette,
@@ -217,6 +266,7 @@ export const MIGRATIONS: Readonly<Record<number, StateMigration>> = {
   5: stripGameCardDisplayToggles,
   6: migrateCrystalflyTrapTimer,
   7: migrateRoutineDefaults,
+  9: migrateChangeClocks,
   // 8 -> 9 changes nothing: it only marks documents that may carry savings plans.
 };
 

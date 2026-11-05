@@ -113,9 +113,9 @@ describe('savings planner', () => {
 describe('savings and older apps', () => {
   it('marks documents with a newer schema so a 3.3 app refuses them instead of stripping plans', async () => {
     const { CURRENT_SCHEMA_VERSION, migrateState } = await import('../src');
-    expect(CURRENT_SCHEMA_VERSION).toBe(9);
+    expect(CURRENT_SCHEMA_VERSION).toBe(10);
     const v8 = { schemaVersion: 8, games: [makeGame({ id: 'g' })] };
-    expect((migrateState(v8) as { schemaVersion: number }).schemaVersion).toBe(9);
-    expect(() => migrateState({ schemaVersion: 10 })).toThrow(/newer version/);
+    expect((migrateState(v8) as { schemaVersion: number }).schemaVersion).toBe(10);
+    expect(() => migrateState({ schemaVersion: 11 })).toThrow(/newer version/);
   });
 });
