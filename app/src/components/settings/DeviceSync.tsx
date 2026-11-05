@@ -16,6 +16,7 @@ import { Btn, Field, TextInput, TOUCH_BUTTON } from '../ui';
 type Devices = {
   error?: string;
   enabled: boolean;
+  fingerprint: string;
   addresses: string[];
   code: string | null;
   expiresAt: number | null;
@@ -25,8 +26,8 @@ const DETAILS =
   'border-t border-line text-body text-muted [&>summary]:min-h-11 [&>summary]:cursor-pointer [&>summary]:rounded-ui-sm [&>summary]:py-3 [&>summary]:font-medium [&>summary]:text-fg-soft';
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-function PairingQr({ addresses, code }: { addresses: string[]; code: string }) {
-  const payload = encodePairingCode(addresses, code);
+function PairingQr({ addresses, code, fingerprint }: { addresses: string[]; code: string; fingerprint: string }) {
+  const payload = encodePairingCode(addresses, code, fingerprint);
   const [image, setImage] = useState<{ payload: string; src: string }>();
   const [error, setError] = useState('');
   useEffect(() => {
@@ -178,7 +179,7 @@ function DesktopConnection() {
                 {devices.addresses.length === 0 ? (
                   <p className="max-w-xs text-body text-muted">Connect this PC to Wi-Fi to show a code.</p>
                 ) : pairingCode ? (
-                  <PairingQr addresses={devices.addresses} code={pairingCode} />
+                  <PairingQr addresses={devices.addresses} code={pairingCode} fingerprint={devices.fingerprint} />
                 ) : (
                   <div className="space-y-3">
                     <p className="text-body text-muted">This code has expired.</p>
@@ -209,6 +210,8 @@ function DesktopConnection() {
                         {address}
                       </p>
                     ))}
+                    <p className="font-medium text-fg">PC key fingerprint</p>
+                    <p className="select-all break-all">{devices.fingerprint}</p>
                     <p className="font-medium text-fg">Pairing code</p>
                     <p className="select-all text-heading tabular-nums text-fg">
                       {pairingCode ? `${pairingCode.slice(0, 4)} ${pairingCode.slice(4)}` : 'Show a new code first'}
@@ -309,6 +312,7 @@ function PhoneConnection() {
   const connection = useLanSync();
   const [host, setHost] = useState('');
   const [code, setCode] = useState('');
+  const [fingerprint, setFingerprint] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const scan = async () => {
@@ -339,7 +343,7 @@ function PhoneConnection() {
                 event.preventDefault();
                 setBusy(true);
                 setError('');
-                void pairLanDevice(host, code)
+                void pairLanDevice(host, code, fingerprint)
                   .then(() => setCode(''))
                   .catch((failure: unknown) => setError(message(failure)))
                   .finally(() => setBusy(false));
@@ -353,6 +357,16 @@ function PhoneConnection() {
                   autoCapitalize="none"
                   autoCorrect="off"
                   inputMode="url"
+                  required
+                  disabled={busy}
+                />
+              </Field>
+              <Field label="PC key fingerprint">
+                <TextInput
+                  value={fingerprint}
+                  onChange={(event) => setFingerprint(event.target.value)}
+                  autoCapitalize="none"
+                  autoCorrect="off"
                   required
                   disabled={busy}
                 />
@@ -441,6 +455,9 @@ export function DeviceSync() {
   if (!desktop && !native) return null;
   return (
     <div id="device-sync" className="settings-sync min-w-0 space-y-3">
+      <p className="text-body text-muted">
+        Devices paired before Beta 0.4 must be paired again to enable encrypted sync.
+      </p>
       {desktop ? <DesktopConnection /> : <PhoneConnection />}
       <details className={DETAILS}>
         <summary>Need help connecting?</summary>
@@ -454,9 +471,7 @@ export function DeviceSync() {
             phone reaches the PC from any network.
           </li>
         </ul>
-        <p className="pb-3 text-meta text-muted">
-          Use only trusted Wi-Fi. This connection is not encrypted. Tailscale encrypts it.
-        </p>
+        <p className="pb-3 text-meta text-muted">Sync is encrypted and checks both device keys.</p>
       </details>
     </div>
   );

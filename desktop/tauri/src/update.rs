@@ -2,7 +2,7 @@
 //!
 //! The window asks; this module talks to GitHub (the window's content policy
 //! only allows its own origin), downloads the Windows zip, checks it against
-//! the release's SHA256SUMS.txt and unpacks it into a pending folder. After
+//! the publisher-signed release manifest and unpacks it into a pending folder. After
 //! the window has saved and closed, the new build's own installer copies it
 //! over this install and reopens Memoria.
 
@@ -17,7 +17,7 @@ use sha2::{Digest, Sha256};
 
 pub const REPO: &str = "JanKonradK/Memoria";
 const ASSET_NAME: &str = "Memoria-win-x64.zip";
-const CHECKSUM_ASSET: &str = "SHA256SUMS.txt";
+const MANIFEST_ASSET: &str = "release-manifest.json";
 const MAX_DOWNLOAD_BYTES: u64 = 400 * 1024 * 1024;
 
 fn releases_api() -> String {
@@ -119,7 +119,7 @@ fn read_release(release: &Value) -> Value {
 }
 
 /// The newest final release, with the notes of every release newer than `since`.
-pub async fn fetch_latest_release(since: Option<&str>) -> Result<Option<Value>, String> {
+pub async fn fetch_latest_release(since: Option<&str>, paths: &Paths) -> Result<Option<Value>, String> {
     let response = client()?
         .get(releases_api())
         .header("accept", "application/vnd.github+json")
@@ -152,6 +152,31 @@ pub async fn fetch_latest_release(since: Option<&str>) -> Result<Option<Value>, 
     let Some(latest) = releases.first().cloned() else {
         return Ok(None);
     };
+    if since.is_some_and(|current| compare_versions(latest["version"].as_str().unwrap_or(""), current).is_gt()) {
+        let manifest_url = latest["assets"]
+            .as_array()
+            .and_then(|assets| assets.iter().find(|a| a["name"] == MANIFEST_ASSET))
+            .and_then(|a| a["url"].as_str())
+            .ok_or("This release has no publisher signature.")?;
+        let mut response = client()?.get(manifest_url).send().await.map_err(|e| e.to_string())?;
+        if !response.status().is_success() {
+            return Err("The signed release manifest could not be downloaded.".into());
+        }
+        let mut bytes = Vec::new();
+        while let Some(chunk) = response.chunk().await.map_err(|e| e.to_string())? {
+            if bytes.len() + chunk.len() > 2_000_000 {
+                return Err("The release manifest is too large.".into());
+            }
+            bytes.extend_from_slice(&chunk);
+        }
+        let envelope = serde_json::from_slice(&bytes).map_err(|_| "The release manifest is invalid.")?;
+        let previous = crate::store::read_json(&paths.update_dir.join("trust.json"));
+        let (manifest, stamp) = crate::publisher::verify(&envelope, crate::publisher::RELEASE, previous.as_ref())?;
+        if manifest["version"] != latest["version"] || manifest["tag"] != latest["tag"] {
+            return Err("The signed release does not match this version.".into());
+        }
+        crate::publisher::accept(&paths.update_dir.join("trust.json"), &stamp)?;
+    }
     let newer: Vec<&Value> = releases
         .iter()
         .filter(|r| since.is_none_or(|since| compare_versions(r["version"].as_str().unwrap(), since).is_gt()))
@@ -183,6 +208,7 @@ fn clear_pending(paths: &Paths) {
     let _ = fs::remove_dir_all(&paths.pending_dir);
 }
 
+#[cfg(test)]
 pub fn parse_checksums(text: &str) -> Vec<(String, String)> {
     text.lines()
         .filter_map(|line| {
@@ -292,12 +318,13 @@ pub async fn stage_release(
     release: &Value,
     progress: impl Fn(u64, u64) + Send + Sync,
 ) -> Result<Value, String> {
+    refuse_elevated()?;
     let record = release_record(root).ok_or("This copy of Memoria runs from source. Pull the new version instead.")?;
     let version = release["version"].as_str().unwrap_or("").to_string();
     if compare_versions(&version, record["version"].as_str().unwrap_or("0")).is_le() {
         return Err("This version is already installed.".into());
     }
-    if staged_version(root, paths).as_deref() == Some(version.as_str()) {
+    if staged_version(root, paths).as_deref() == Some(version.as_str()) && validate_pending(root, paths).is_ok() {
         return Ok(json!({ "version": version }));
     }
     let asset = |name: &str| {
@@ -307,8 +334,8 @@ pub async fn stage_release(
             .and_then(|asset| asset["url"].as_str())
             .map(str::to_string)
     };
-    let (Some(zip_url), Some(sums_url)) = (asset(ASSET_NAME), asset(CHECKSUM_ASSET)) else {
-        return Err(format!("Release {version} has no Windows download."));
+    let (Some(zip_url), Some(manifest_url)) = (asset(ASSET_NAME), asset(MANIFEST_ASSET)) else {
+        return Err(format!("Release {version} has no signed Windows download."));
     };
 
     let work = paths.update_dir.join("download");
@@ -318,17 +345,16 @@ pub async fn stage_release(
         let client = client()?;
         let zip = work.join(ASSET_NAME);
         download(&client, &zip_url, &zip, MAX_DOWNLOAD_BYTES, &progress).await?;
-        let sums = work.join(CHECKSUM_ASSET);
-        download(&client, &sums_url, &sums, 64_000, &|_, _| {}).await?;
-        // An unsigned zip from the internet is checked before a byte of it is unpacked.
-        let text = fs::read_to_string(&sums).map_err(|e| e.to_string())?;
-        let expected = parse_checksums(&text)
-            .into_iter()
-            .find(|(name, _)| name == ASSET_NAME)
-            .map(|(_, digest)| digest)
-            .ok_or(format!("{CHECKSUM_ASSET} does not list {ASSET_NAME}."))?;
-        if sha256_file(&zip)? != expected {
-            return Err("The download is damaged. Try again.".to_string());
+        let signed_file = work.join(MANIFEST_ASSET);
+        download(&client, &manifest_url, &signed_file, 2_000_000, &|_, _| {}).await?;
+        let envelope = crate::store::read_json(&signed_file).ok_or("The signed release manifest is invalid.")?;
+        let previous = crate::store::read_json(&paths.update_dir.join("trust.json"));
+        let (manifest, stamp) = crate::publisher::verify(&envelope, crate::publisher::RELEASE, previous.as_ref())?;
+        if manifest["version"] != version || manifest["tag"] != release["tag"] {
+            return Err("The signed release does not match this version.".into());
+        }
+        if manifest["files"][ASSET_NAME].as_str() != Some(sha256_file(&zip)?.as_str()) {
+            return Err("The signed update is damaged or modified. Try again.".into());
         }
         let unpacked = work.join("unpacked");
         extract_zip(&zip, &unpacked)?;
@@ -336,18 +362,21 @@ pub async fn stage_release(
         if !tree.join("release.json").exists() {
             return Err("The downloaded build has no release.json.".into());
         }
+        let _locks = verify_tree(&tree, &manifest)?;
+        drop(_locks);
         clear_pending(paths);
         fs::create_dir_all(&paths.update_dir).map_err(|e| e.to_string())?;
         fs::rename(&tree, &paths.pending_dir).map_err(|e| e.to_string())?;
-        let stamp = SystemTime::now()
+        let staged_at = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0);
         crate::store::write_json(
             &paths.pending_manifest,
-            &json!({ "version": version, "tag": release["tag"], "stagedAt": stamp }),
+            &json!({ "version": version, "tag": release["tag"], "stagedAt": staged_at, "signed": envelope }),
         )
         .map_err(|e| e.to_string())?;
+        crate::publisher::accept(&paths.update_dir.join("trust.json"), &stamp)?;
         Ok(json!({ "version": version }))
     }
     .await;
@@ -373,50 +402,222 @@ pub fn status(root: &Path, paths: &Paths) -> Value {
 /// install with its own installer, then reopens Memoria: the new build, or the
 /// old one if the install failed and rolled back.
 pub fn run_staged_installer(root: &Path, paths: &Paths) -> std::io::Result<()> {
-    let installer = paths.pending_dir.join("desktop").join("Install-Shortcut.ps1");
-    let quote = |p: &Path| format!("'{}'", p.display().to_string().replace('\'', "''"));
-    let script = [
-        "$ErrorActionPreference = 'Continue'".to_string(),
-        format!("$log = {}", quote(&paths.update_dir.join("install.log"))),
-        format!("Wait-Process -Id {} -Timeout 60 -ErrorAction SilentlyContinue", std::process::id()),
-        "$installed = $false".into(),
-        "foreach ($attempt in 1..20) {".into(),
-        format!("  & {} -InstallRoot {} -NoShortcuts *> $log", quote(&installer), quote(root)),
-        "  if ($?) { $installed = $true; break }".into(),
-        "  Start-Sleep -Milliseconds 500".into(),
-        "}".into(),
-        format!(
-            "if ($installed) {{ Remove-Item -LiteralPath {} -Recurse -Force -ErrorAction SilentlyContinue; Remove-Item -LiteralPath {} -Force -ErrorAction SilentlyContinue }}",
-            quote(&paths.pending_dir),
-            quote(&paths.pending_manifest)
-        ),
-        format!(
-            "Start-Process -FilePath {} -WorkingDirectory {}",
-            quote(&root.join("Memoria.exe")),
-            quote(root)
-        ),
-    ]
-    .join("\n");
-    let file = paths.update_dir.join("install-update.ps1");
-    fs::create_dir_all(&paths.update_dir)?;
-    // A byte-order mark keeps Windows PowerShell from misreading non-ASCII paths.
-    fs::write(&file, format!("\u{FEFF}{script}\n"))?;
-    // PowerShell started straight from a detached child can exit without
-    // running anything, so `start` launches it on its own.
-    let mut command = Command::new(std::env::var_os("ComSpec").unwrap_or_else(|| "cmd.exe".into()));
+    refuse_elevated().map_err(std::io::Error::other)?;
+    let _locks = validate_pending(root, paths).map_err(std::io::Error::other)?;
+    // Native helper: no editable command file runs after the app exits.
+    let mut command = Command::new(paths.pending_dir.join("Memoria.exe"));
+    command
+        .arg("--apply-signed-update")
+        .arg(root)
+        .arg(&paths.update_dir)
+        .arg(std::process::id().to_string());
+    hide_console(&mut command);
+    command.spawn().map(|_| ())
+}
+
+pub fn refuse_elevated() -> Result<(), String> {
+    #[cfg(windows)]
+    unsafe {
+        use windows_sys::Win32::{
+            Foundation::CloseHandle,
+            Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY},
+            System::Threading::{GetCurrentProcess, OpenProcessToken},
+        };
+        let mut token = std::ptr::null_mut();
+        if OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token) == 0 {
+            return Err("Could not check update permissions.".into());
+        }
+        let mut elevation = TOKEN_ELEVATION { TokenIsElevated: 0 };
+        let mut size = 0;
+        let ok = GetTokenInformation(
+            token,
+            TokenElevation,
+            &mut elevation as *mut _ as *mut _,
+            std::mem::size_of::<TOKEN_ELEVATION>() as u32,
+            &mut size,
+        );
+        CloseHandle(token);
+        if ok == 0 || elevation.TokenIsElevated != 0 {
+            return Err("Close Memoria and open it without administrator rights before updating.".into());
+        }
+    }
+    Ok(())
+}
+
+/// Hold read-only handles on every signed source until the installer finishes.
+/// Refuse extra files, links and junctions; these could inject installer code.
+fn verify_tree(root: &Path, manifest: &Value) -> Result<Vec<fs::File>, String> {
+    use std::io::Read;
+    let expected = manifest["windows"]
+        .as_object()
+        .filter(|m| !m.is_empty())
+        .ok_or("The signed Windows file list is missing.")?;
+    fn walk(
+        root: &Path,
+        dir: &Path,
+        expected: &serde_json::Map<String, Value>,
+        locks: &mut Vec<fs::File>,
+        directories: &mut Vec<fs::File>,
+    ) -> Result<(), String> {
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::OpenOptionsExt;
+            // Deny directory deletion/rename while any verified path is in use.
+            directories.push(
+                fs::OpenOptions::new()
+                    .read(true)
+                    .share_mode(1)
+                    .custom_flags(0x02000000)
+                    .open(dir)
+                    .map_err(|e| e.to_string())?,
+            );
+        }
+        let metadata = fs::symlink_metadata(dir).map_err(|e| e.to_string())?;
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::MetadataExt;
+            if metadata.file_attributes() & 0x400 != 0 {
+                return Err("Update folders cannot contain links or junctions.".into());
+            }
+        }
+        if metadata.file_type().is_symlink() {
+            return Err("Update folders cannot contain links.".into());
+        }
+        for entry in fs::read_dir(dir).map_err(|e| e.to_string())? {
+            let file = entry.map_err(|e| e.to_string())?.path();
+            let meta = fs::symlink_metadata(&file).map_err(|e| e.to_string())?;
+            #[cfg(windows)]
+            {
+                use std::os::windows::fs::MetadataExt;
+                if meta.file_attributes() & 0x400 != 0 {
+                    return Err("Update files cannot contain links or junctions.".into());
+                }
+            }
+            if meta.file_type().is_symlink() {
+                return Err("Update files cannot contain links.".into());
+            }
+            if meta.is_dir() {
+                walk(root, &file, expected, locks, directories)?;
+                continue;
+            }
+            let name = file
+                .strip_prefix(root)
+                .map_err(|e| e.to_string())?
+                .to_string_lossy()
+                .replace('\\', "/");
+            let digest = expected
+                .get(&name)
+                .and_then(Value::as_str)
+                .ok_or("The staged update contains an unsigned file.")?;
+            let mut options = fs::OpenOptions::new();
+            options.read(true);
+            #[cfg(windows)]
+            {
+                use std::os::windows::fs::OpenOptionsExt;
+                options.share_mode(1);
+            }
+            let mut handle = options.open(&file).map_err(|e| e.to_string())?;
+            let mut bytes = Vec::new();
+            handle.read_to_end(&mut bytes).map_err(|e| e.to_string())?;
+            if hex::encode(Sha256::digest(bytes)) != digest {
+                return Err(format!("The staged update was modified: {name}. Download it again."));
+            }
+            locks.push(handle);
+        }
+        Ok(())
+    }
+    let mut locks = Vec::new();
+    let mut directories = Vec::new();
+    walk(root, root, expected, &mut locks, &mut directories)?;
+    if locks.len() != expected.len() {
+        return Err("The staged update is incomplete. Download it again.".into());
+    }
+    locks.extend(directories);
+    Ok(locks)
+}
+
+pub fn validate_pending(root: &Path, paths: &Paths) -> Result<(Vec<fs::File>, Value), String> {
+    refuse_elevated()?;
+    let pending = crate::store::read_json(&paths.pending_manifest).ok_or("Download a signed update first.")?;
+    let previous = crate::store::read_json(&paths.update_dir.join("trust.json"));
+    let (manifest, _) = crate::publisher::verify(&pending["signed"], crate::publisher::RELEASE, previous.as_ref())?;
+    let current = release_record(root).ok_or("This install has no version record.")?;
+    if !compare_versions(
+        manifest["version"].as_str().unwrap_or(""),
+        current["version"].as_str().unwrap_or("0"),
+    )
+    .is_gt()
+    {
+        return Err("This update is older than the installed version.".into());
+    }
+    Ok((verify_tree(&paths.pending_dir, &manifest)?, manifest))
+}
+
+pub fn apply_helper(args: &[String]) -> Result<(), String> {
+    if args.len() != 5 {
+        return Err("Invalid update command.".into());
+    }
+    refuse_elevated()?;
+    let root = PathBuf::from(&args[2]);
+    let paths = Paths::new(Path::new(&args[3]).parent().ok_or("Invalid update directory.")?);
+    #[cfg(windows)]
+    unsafe {
+        use windows_sys::Win32::{
+            Foundation::CloseHandle,
+            System::Threading::{OpenProcess, WaitForSingleObject, PROCESS_SYNCHRONIZE},
+        };
+        let pid = args[4].parse::<u32>().map_err(|_| "Invalid process.")?;
+        let process = OpenProcess(PROCESS_SYNCHRONIZE, 0, pid);
+        if !process.is_null() {
+            let result = WaitForSingleObject(process, 60_000);
+            CloseHandle(process);
+            if result != 0 {
+                return Err("Memoria did not close in time.".into());
+            }
+        }
+    }
+    // Recheck AFTER waiting and keep locks until all source files have been copied.
+    let (locks, manifest) = validate_pending(&root, &paths)?;
+    let mut installer = Command::new("powershell.exe");
+    installer
+        .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File"])
+        .arg(paths.pending_dir.join("desktop/Install-Shortcut.ps1"))
+        .arg("-InstallRoot")
+        .arg(&root)
+        .arg("-NoShortcuts");
+    hide_console(&mut installer);
+    // Copy only signed names, so a file inserted after verification is ignored.
+    let names: Vec<&String> = manifest["windows"]
+        .as_object()
+        .ok_or("Missing file list.")?
+        .keys()
+        .collect();
+    let names_file = paths.update_dir.join("install-files.json");
+    let mut options = fs::OpenOptions::new();
+    options.read(true).write(true).create(true).truncate(true);
     #[cfg(windows)]
     {
-        use std::os::windows::process::CommandExt;
-        const DETACHED_PROCESS: u32 = 0x0000_0008;
-        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-        command
-            .creation_flags(DETACHED_PROCESS | CREATE_NO_WINDOW)
-            .raw_arg(format!(
-            "/d /s /c \"start \"\" /b powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{}\"\"",
-            file.display()
-        ));
+        use std::os::windows::fs::OpenOptionsExt;
+        options.share_mode(1);
     }
-    command.spawn().map(|_| ())
+    let mut names_lock = options.open(&names_file).map_err(|e| e.to_string())?;
+    names_lock
+        .write_all(&serde_json::to_vec(&names).map_err(|e| e.to_string())?)
+        .map_err(|e| e.to_string())?;
+    names_lock.flush().map_err(|e| e.to_string())?;
+    installer.arg("-VerifiedFilesFile").arg(&names_file);
+    let result = installer.status().map_err(|e| e.to_string())?;
+    drop(locks);
+    drop(names_lock);
+    if !result.success() {
+        return Err("The signed update installer failed. Your data was kept.".into());
+    }
+    clear_pending(&paths);
+    Command::new(root.join("Memoria.exe"))
+        .current_dir(&root)
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -481,10 +682,19 @@ mod tests {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let base = format!("http://{}", listener.local_addr().unwrap());
         let zip_bytes = fs::read(&zip).unwrap();
-        let sums = std::sync::Arc::new(std::sync::Mutex::new(format!(
-            "{digest}  {ASSET_NAME}
-"
-        )));
+        let signed = |digest: &str| {
+            let windows = json!({
+                "release.json": sha256_file(&build.join("Memoria/release.json")).unwrap(),
+                "Memoria.exe": sha256_file(&build.join("Memoria/Memoria.exe")).unwrap(),
+            });
+            crate::publisher::tests::signed(
+                json!({"version":"3.3.0", "tag":"v3.3.0", "files":{ASSET_NAME:digest},"windows":windows}),
+                1_793_836_800_010,
+            )
+            .0
+            .to_string()
+        };
+        let sums = std::sync::Arc::new(std::sync::Mutex::new(signed(&digest)));
         let served = sums.clone();
         let router = axum::Router::new()
             .route("/zip", axum::routing::get(move || async move { zip_bytes }))
@@ -498,25 +708,18 @@ mod tests {
             "version": "3.3.0", "tag": "v3.3.0",
             "assets": [
                 { "name": ASSET_NAME, "url": format!("{base}/zip") },
-                { "name": CHECKSUM_ASSET, "url": format!("{base}/sums") },
+                { "name": MANIFEST_ASSET, "url": format!("{base}/sums") },
             ],
         });
         let paths = Paths::new(&data);
 
         // A checksum that does not match stops before anything is unpacked.
-        *sums.lock().unwrap() = format!(
-            "{}  {ASSET_NAME}
-",
-            "0".repeat(64)
-        );
+        *sums.lock().unwrap() = signed(&"0".repeat(64));
         let damaged = stage_release(&install, &paths, &release, |_, _| {}).await.unwrap_err();
         assert!(damaged.contains("damaged"), "{damaged}");
         assert_eq!(staged_version(&install, &paths), None);
 
-        *sums.lock().unwrap() = format!(
-            "{digest}  {ASSET_NAME}
-"
-        );
+        *sums.lock().unwrap() = signed(&digest);
         let progress = std::sync::atomic::AtomicU64::new(0);
         stage_release(&install, &paths, &release, |received, _| {
             progress.store(received, std::sync::atomic::Ordering::Relaxed)
@@ -530,6 +733,27 @@ mod tests {
             "new program"
         );
         assert!(!paths.update_dir.join("download").exists());
+        // The later installer check rejects modified, extra and missing files.
+        let (manifest, _) = crate::publisher::verify(
+            &serde_json::from_str::<Value>(&signed(&digest)).unwrap(),
+            crate::publisher::RELEASE,
+            None,
+        )
+        .unwrap();
+        fs::write(paths.pending_dir.join("Memoria.exe"), "tampered").unwrap();
+        assert!(verify_tree(&paths.pending_dir, &manifest)
+            .unwrap_err()
+            .contains("modified"));
+        fs::write(paths.pending_dir.join("Memoria.exe"), "new program").unwrap();
+        fs::write(paths.pending_dir.join("injected.ps1"), "evil").unwrap();
+        assert!(verify_tree(&paths.pending_dir, &manifest)
+            .unwrap_err()
+            .contains("unsigned"));
+        fs::remove_file(paths.pending_dir.join("injected.ps1")).unwrap();
+        fs::remove_file(paths.pending_dir.join("Memoria.exe")).unwrap();
+        assert!(verify_tree(&paths.pending_dir, &manifest)
+            .unwrap_err()
+            .contains("incomplete"));
     }
 
     #[test]

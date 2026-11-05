@@ -1,4 +1,5 @@
-import { registerPlugin, type PluginListenerHandle } from '@capacitor/core';
+import { verifyPublished, RELEASE_CONTEXT, type ReleaseManifest, type TrustStamp } from '@memoria/shared/publisher';
+import { CapacitorHttp, registerPlugin, type PluginListenerHandle } from '@capacitor/core';
 import { create } from 'zustand';
 import { isDesktopApp, type ReleaseInfo } from './desktop-host';
 import { servedByLauncher } from './launcher';
@@ -19,7 +20,39 @@ export function displayVersion(version: string): string {
 const RELEASES_API = 'https://api.github.com/repos/JanKonradK/Memoria/releases?per_page=30';
 const RELEASES_PAGE = 'https://github.com/JanKonradK/Memoria/releases/latest';
 const APK_ASSET = 'Memoria-android.apk';
-const CHECKSUM_ASSET = 'SHA256SUMS.txt';
+const MANIFEST_ASSET = 'release-manifest.json';
+const TRUST_KEY = 'memoria-release-trust';
+async function verifiedManifest(release: ReleaseInfo): Promise<ReleaseManifest> {
+  const asset = release.assets.find((a) => a.name === MANIFEST_ASSET);
+  if (!asset) throw new Error('This release has no publisher signature.');
+  // GitHub release downloads have no browser CORS headers. The REST release
+  // body carries the same signed envelope for web readers.
+  const embedded = /<!-- memoria-signed-release (.+?) -->/.exec(release.notes)?.[1];
+  const text =
+    embedded ??
+    (isNativeApp
+      ? await CapacitorHttp.get({
+          url: asset.url,
+          responseType: 'text',
+          connectTimeout: 8000,
+          readTimeout: 15000,
+        }).then((response) => {
+          if (response.status !== 200) throw new Error('The signed release manifest could not be downloaded.');
+          return String(response.data);
+        })
+      : await fetch(asset.url).then((response) => {
+          if (!response.ok) throw new Error('The signed release manifest could not be downloaded.');
+          return response.text();
+        }));
+  if (typeof text !== 'string') throw new Error('The signed release manifest is missing.');
+  if (text.length > 2_000_000) throw new Error('The release manifest is too large.');
+  const previous = JSON.parse(localStorage.getItem(TRUST_KEY) ?? 'null') as TrustStamp | null;
+  const { data, stamp } = verifyPublished<ReleaseManifest>(JSON.parse(text), RELEASE_CONTEXT, previous);
+  if (data.version !== release.version || data.tag !== release.tag)
+    throw new Error('The signed release does not match this version.');
+  localStorage.setItem(TRUST_KEY, JSON.stringify(stamp));
+  return data;
+}
 const RATE_LIMITED = 'GitHub limits update checks. Try again in an hour.';
 const AUTO_KEY = 'memoria-update-auto';
 const CHECKED_KEY = 'memoria-update-checked-at';
@@ -27,7 +60,7 @@ const CHECKED_KEY = 'memoria-update-checked-at';
 const CHECK_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
 const AppUpdater = registerPlugin<{
-  install(options: { apkUrl: string; checksumUrl: string; version: string }): Promise<void>;
+  install(options: { apkUrl: string; expectedSha256: string; version: string }): Promise<void>;
   addListener(
     event: 'progress',
     listener: (progress: { received: number; total: number }) => void,
@@ -141,6 +174,7 @@ async function fetchRelease(): Promise<{ release: ReleaseInfo | null; staged: st
     .sort((a, b) => compareVersions(b.version, a.version));
   const latest = releases[0];
   if (!latest) return { release: null, staged: null };
+  if (compareVersions(latest.version, APP_VERSION) > 0) await verifiedManifest(latest);
   const newer = releases.filter((release) => compareVersions(release.version, APP_VERSION) > 0);
   return {
     release: {
@@ -211,11 +245,13 @@ export async function downloadUpdate(): Promise<void> {
       return;
     }
     const apk = release.assets.find((asset) => asset.name === APK_ASSET);
-    const sums = release.assets.find((asset) => asset.name === CHECKSUM_ASSET);
-    if (!apk || !sums) throw new Error(`Version ${release.version} has no Android download.`);
+    const manifest = await verifiedManifest(release);
+    const expectedSha256 = manifest.files[APK_ASSET];
+    if (!apk || !/^[a-f0-9]{64}$/.test(expectedSha256 ?? ''))
+      throw new Error(`Version ${release.version} has no Android download.`);
     // Android stops this app while it installs. Save the last edit first.
     await flushPersist();
-    await AppUpdater.install({ apkUrl: apk.url, checksumUrl: sums.url, version: release.version });
+    await AppUpdater.install({ apkUrl: apk.url, expectedSha256: expectedSha256!, version: release.version });
     useAppUpdate.setState({ status: 'available', progress: null });
   } catch (error) {
     useAppUpdate.setState({

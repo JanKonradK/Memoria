@@ -1,9 +1,10 @@
 /** A QR code carries connection details, never a saved device credential. */
 export interface PairingCode {
   kind: 'memoria-pair';
-  version: 1;
+  version: 2;
   addresses: string[];
   code: string;
+  fingerprint: string;
 }
 
 /**
@@ -48,7 +49,9 @@ export function parsePairingCode(text: string): PairingCode {
   if (
     !value ||
     value.kind !== 'memoria-pair' ||
-    value.version !== 1 ||
+    value.version !== 2 ||
+    typeof value.fingerprint !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(value.fingerprint) ||
     typeof value.code !== 'string' ||
     !/^\d{8}$/.test(value.code) ||
     !Array.isArray(value.addresses) ||
@@ -63,10 +66,10 @@ export function parsePairingCode(text: string): PairingCode {
   } catch {
     throw invalid();
   }
-  return { kind: 'memoria-pair', version: 1, addresses, code: value.code };
+  return { kind: 'memoria-pair', version: 2, addresses, code: value.code, fingerprint: value.fingerprint };
 }
 
-export function encodePairingCode(addresses: string[], code: string): string {
-  const value = { kind: 'memoria-pair', version: 1, addresses: addresses.slice(0, 8), code };
+export function encodePairingCode(addresses: string[], code: string, fingerprint: string): string {
+  const value = { kind: 'memoria-pair', version: 2, addresses: addresses.slice(0, 8), code, fingerprint };
   return JSON.stringify(parsePairingCode(JSON.stringify(value)));
 }
