@@ -107,6 +107,8 @@ test('event handles reorder with mouse, touch, and keyboard and persist across r
   // Holding an event picks it up and turns edit mode on.
   const edit = page.getByRole('button', { name: 'Edit events', exact: true });
   await expect(edit).toHaveAttribute('aria-pressed', 'false');
+  // On a short screen the last event can sit below the fold, where a press misses it.
+  await page.locator('[data-event-id="First"]').scrollIntoViewIfNeeded();
   const held = (await page.locator('[data-event-id="First"]').boundingBox())!;
   const top = (await page.locator('[data-event-id="Third"]').boundingBox())!;
   await page.mouse.move(held.x + held.width / 2, held.y + held.height / 2);
