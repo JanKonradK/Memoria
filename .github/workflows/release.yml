@@ -55,6 +55,21 @@ jobs:
       - run: npm run build:single
       - run: npm exec -- playwright install chromium
       - run: npm run check:release
+      # Windows 10 and 11 ship the WebView2 runtime the app draws with; the
+      # Windows Server runner image may not, so install it before the native check.
+      - name: Install the WebView2 runtime if it is missing
+        shell: pwsh
+        run: |
+          $key = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+          $version = (Get-ItemProperty $key -ErrorAction SilentlyContinue).pv
+          if (-not $version -or $version -eq '0.0.0.0') {
+            $setup = Join-Path $env:RUNNER_TEMP 'MicrosoftEdgeWebview2Setup.exe'
+            Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile $setup
+            Start-Process $setup -ArgumentList '/silent', '/install' -Wait
+            $version = (Get-ItemProperty $key -ErrorAction SilentlyContinue).pv
+          }
+          if (-not $version) { throw 'The WebView2 runtime could not be installed.' }
+          "WebView2 runtime $version"
       - run: npm run check:native
 
       # The Android app only accepts an update signed with the key it was
