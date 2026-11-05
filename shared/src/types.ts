@@ -5,12 +5,13 @@ import { detectLocalTz } from './timezone';
 export type Cadence = 'daily' | 'weekly' | 'monthly' | 'custom';
 export type ResourceKind = 'regen' | 'weekly' | 'counter';
 export type TaskMode = 'check' | 'timer' | 'count';
-/**
- * 9 (Beta 0.4) adds the optional `savings` plan and `pity` tracker on games. The data needs no
- * change; the bump makes older apps refuse a document they would otherwise
- * accept, strip the plan from and then write back over it.
- */
-export const CURRENT_SCHEMA_VERSION = 9;
+/** Schema 10 requires HLC-aware peers at every write boundary. */
+export const CURRENT_SCHEMA_VERSION = 10;
+export interface Hlc {
+  wall: number;
+  counter: number;
+  device: string;
+}
 export const MAX_GAME_IMAGE_LENGTH = 200_000;
 /**
  * A game image is always an embedded picture. A web address would load from
@@ -22,8 +23,10 @@ export function isSafeGameImage(value: unknown): value is string {
   return typeof value === 'string' && value.length <= MAX_GAME_IMAGE_LENGTH && GAME_IMAGE_PATTERN.test(value);
 }
 
-/** Everything syncable carries updatedAt (epoch ms) for last-write-wins merge. */
+/** updatedAt is for display; hlc orders changes, including clock rollback. */
 export interface Syncable {
+  hlc?: Hlc;
+  deviceId?: string;
   updatedAt: number;
   /** Soft delete — kept as tombstone so deletions sync across devices. */
   deleted?: boolean;
@@ -111,7 +114,7 @@ export interface ObservationProvenance {
   batchId?: string;
 }
 
-export interface Snapshot {
+export interface Snapshot extends Partial<Syncable> {
   id: string;
   resourceId: string;
   value: number;
@@ -289,6 +292,7 @@ export interface Settings extends Syncable {
   catchUpSeen?: Record<string, string[]>;
   /** Per-field clocks prevent unrelated settings edits on two devices from overwriting each other. */
   fieldUpdatedAt?: Partial<Record<SettingsField, number>>;
+  fieldHlc?: Partial<Record<SettingsField, Hlc>>;
 }
 
 export interface AppState {
@@ -306,6 +310,8 @@ export interface AppState {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  hlc: { wall: 0, counter: 0, device: 'Unknown device' },
+  deviceId: 'Unknown device',
   quietStart: 60, // 01:00
   quietEnd: 480, // 08:00
   localTz: 'UTC',

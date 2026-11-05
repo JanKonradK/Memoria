@@ -40,13 +40,26 @@ export const FUTURE_CLOCK_SKEW_TOLERANCE_MS = 5 * 60_000;
  * become now because it orders readings rather than resolving edits.
  */
 const syncClock = timestamp.transform((value) => (value > Date.now() + FUTURE_CLOCK_SKEW_TOLERANCE_MS ? 0 : value));
-const snapshotClock = timestamp.transform((value) =>
-  value > Date.now() + FUTURE_CLOCK_SKEW_TOLERANCE_MS ? Date.now() : value,
-);
+
+export const HlcSchema = z.object({
+  wall: z
+    .number()
+    .int()
+    .nonnegative()
+    .max(Number.MAX_SAFE_INTEGER - 1),
+  counter: z
+    .number()
+    .int()
+    .nonnegative()
+    .max(Number.MAX_SAFE_INTEGER - 1),
+  device: z.string().min(1).max(160),
+});
 
 const finite = z.number().finite();
 const syncable = {
-  updatedAt: syncClock,
+  updatedAt: timestamp,
+  hlc: HlcSchema.optional(),
+  deviceId: id.optional(),
   deleted: z.boolean().optional(),
 };
 
@@ -124,10 +137,12 @@ const resource = z.object({
 });
 
 const snapshot = z.object({
+  ...syncable,
+  updatedAt: timestamp.optional(),
   id,
   resourceId: id,
   value: finite.nonnegative(),
-  takenAt: snapshotClock,
+  takenAt: timestamp,
   reserve: finite.nonnegative().optional(),
   provenance: ObservationProvenanceSchema.optional(),
 });
@@ -228,6 +243,7 @@ const settings = z.object({
   remoteFeedVersion: RemoteFeedVersionSchema.optional(),
   /** Catch-up digests read, per game preset: `digestId@revision` keys. */
   catchUpSeen: z.record(z.string().min(1).max(40), z.array(z.string().min(1).max(80)).max(200)).optional(),
+  fieldHlc: z.record(z.string(), HlcSchema).optional(),
   fieldUpdatedAt: z.record(z.string(), syncClock).optional(),
 });
 
