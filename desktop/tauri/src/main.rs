@@ -127,10 +127,12 @@ pub fn shell_open(_target: &str) -> bool {
     false
 }
 
-/// A message box for failures before the window exists.
+/// A message box for failures before the window exists. A check run
+/// (MEMORIA_INSTANCE) has nobody to press OK, so it only logs.
 fn fatal(message: &str) -> ! {
+    eprintln!("Memoria could not start: {message}");
     #[cfg(windows)]
-    {
+    if std::env::var_os("MEMORIA_INSTANCE").is_none() {
         use windows_sys::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
         let wide = |s: &str| s.encode_utf16().chain(Some(0)).collect::<Vec<u16>>();
         let (text, title) = (wide(message), wide("Memoria could not start"));
@@ -143,7 +145,6 @@ fn fatal(message: &str) -> ! {
             )
         };
     }
-    eprintln!("Memoria could not start: {message}");
     std::process::exit(1);
 }
 
