@@ -505,10 +505,21 @@ mod tests {
                 .send()
         };
         assert_eq!(write(b"{}".to_vec(), "text/plain").await.unwrap().status(), 415);
-        let oversized = write(vec![b' '; MAX_STATE_BYTES + 10], "application/json")
+        // Prove rejection before upload. Sending the body races the early 413
+        // against a Windows socket write error when the server closes it.
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let mut socket = tokio::net::TcpStream::connect(("127.0.0.1", server.port)).await.unwrap();
+        let headers = format!(
+            "POST /api/sync HTTP/1.1\r\nHost: 127.0.0.1:{}\r\nAuthorization: Bearer {}\r\nOrigin: {base}\r\nSec-Fetch-Site: same-origin\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+            server.port, server.token, MAX_STATE_BYTES + 10
+        );
+        socket.write_all(headers.as_bytes()).await.unwrap();
+        let mut response = Vec::new();
+        tokio::time::timeout(std::time::Duration::from_secs(5), socket.read_to_end(&mut response))
             .await
+            .unwrap()
             .unwrap();
-        assert_eq!(oversized.status(), 413);
+        assert!(String::from_utf8(response).unwrap().starts_with("HTTP/1.1 413 "));
         // A document from a newer version of the app is refused, and nothing is saved.
         let mut newer = state["state"].clone();
         newer["schemaVersion"] = json!(999);
