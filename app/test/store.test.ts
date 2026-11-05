@@ -586,6 +586,7 @@ describe('addMissingPresetTasksEverywhere', () => {
         missing.map((task, index) => ({
           ...task,
           id: expect.any(String),
+          hlc: expect.objectContaining({ device: task.deviceId }),
           anchorAt: Date.now(),
           updatedAt: Date.now(),
           sort: 42 + index,
