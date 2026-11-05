@@ -104,7 +104,11 @@ The owner asked for real features instead of the small ones above. Two were buil
 - Firewall rules: Private networks on the local subnet, and Tailscale's range on any network. Public Wi-Fi is no longer allowed. Existing users must select **Allow phone sync through Windows** again to replace the old rule.
 - Game images must be embedded JPEG, PNG, WebP or GIF data. The Windows app's content security policy no longer allows remote images.
 - Pairing allows 5 attempts per address per minute and 30 overall, so one device cannot lock others out.
-- Not done: re-verifying a staged update at install time. It waits for signed updates, because without a signature it adds little.
+- Signed releases and event feeds use one Ed25519 publisher key with separate contexts and local replay records.
+- The updater checks signed Windows files again after the app exits. It holds read locks through installation and refuses elevated updates.
+- Phone sync uses X25519 device keys and XChaCha20-Poly1305 encryption. QR and manual pairing bind the PC fingerprint. Previous devices must pair again.
+- The release keeps `SHA256SUMS.txt` and the previous asset names for 3.3.1 users. Add `MEMORIA_SIGNING_KEY` to Actions before release.
+- Key management and transport details: [Publisher and device trust](publisher-trust.md).
 
 **Events as JSON**
 
