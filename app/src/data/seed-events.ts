@@ -67,7 +67,7 @@ function fingerprint(fields: {
 }
 
 /** What the bundle says this row should be. */
-function seedFingerprint(seed: SeedEvent, start: number, end: number): string {
+export function seedFingerprint(seed: SeedEvent, start: number, end: number): string {
   return fingerprint({
     bannerKind: seed.bannerKind,
     category: seed.category,

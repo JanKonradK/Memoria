@@ -38,13 +38,8 @@ import {
   RemoteEventFeedSchema,
   MAX_EVENT_FEED_BYTES,
 } from '@memoria/shared';
-import {
-  planSeedImport,
-  pruneRetiredSeedEvents,
-  SEED_RETENTION_MS,
-  SEED_UPDATED,
-  type PlannedSeed,
-} from './data/seed-events';
+import { pruneRetiredSeedEvents, SEED_RETENTION_MS, SEED_UPDATED, type PlannedSeed } from './data/seed-events';
+import { clearCalendarChanges, planCalendarImport as planSeedImport } from './data/calendar-changes';
 import { uid } from './util';
 import { sortTimelineEvents } from './timeline-sort';
 import { launcherFetch, servedByLauncher } from './launcher';
@@ -696,6 +691,7 @@ export const useApp = create<AppStore>((set, get) => ({
         // The same applies to the retired notification credentials, or the one
         // action a user takes to wipe the device leaves their bot token behind.
         purgeRetiredSecrets();
+        clearCalendarChanges();
         try {
           // Left by the retired readings import, which kept its undo records here.
           localStorage.removeItem('memoria-import-history');
