@@ -27,6 +27,13 @@ export function DesktopPresence() {
           onChange={(closeToTray) => void setPresence({ closeToTray })}
         />
       </SettingRow>
+      <SettingRow label="Reminders on this PC" hint="If phone reminders are also on, both devices will alert.">
+        <Toggle
+          ariaLabel="Reminders on this PC"
+          checked={presence.remindersOnPc}
+          onChange={(remindersOnPc) => void setPresence({ remindersOnPc })}
+        />
+      </SettingRow>
       {presence.gameWatch && (
         <SettingRow label="Notify when a game starts" hint="Shows that game's dailies left when you open it.">
           <Toggle

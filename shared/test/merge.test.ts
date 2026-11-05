@@ -215,6 +215,23 @@ describe('normalizeState', () => {
     expect(state.games[0]).not.toHaveProperty('image');
   });
 
+  it('keeps embedded pictures but drops web addresses and SVG, which could load from elsewhere', () => {
+    const jpeg = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
+    const state = normalizeState({
+      games: [
+        makeGame({ id: 'ok', image: jpeg }),
+        makeGame({ id: 'web', image: 'https://tracker.example/pixel.png' }),
+        makeGame({ id: 'svg', image: 'data:image/svg+xml;base64,PHN2Zz4=' }),
+        makeGame({ id: 'path', image: '//tracker.example/p.png' }),
+      ],
+    });
+    const image = (id: string) => state.games.find((game) => game.id === id)?.image;
+    expect(image('ok')).toBe(jpeg);
+    expect(image('web')).toBeUndefined();
+    expect(image('svg')).toBeUndefined();
+    expect(image('path')).toBeUndefined();
+  });
+
   it('drops one irreparable row without losing its siblings or other collections', () => {
     const state = normalizeState(
       makeState({

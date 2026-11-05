@@ -19,6 +19,7 @@ const ROUTES: Array<{ id: Tab; label: string; icon: string }> = [
     label: 'Today',
     icon: 'M10 2v2m0 12v2M2 10h2m12 0h2M4.3 4.3l1.4 1.4m8.6 8.6 1.4 1.4M4.3 15.7l1.4-1.4m8.6-8.6 1.4-1.4M14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
   },
+  { id: 'history', label: 'Pulls', icon: 'M3 17h14M5 17V9m4 8V4m4 13v-6m4 6V7' },
   { id: 'settings', label: 'Settings', icon: 'M3 5h14M3 10h14M3 15h14M6 3v4M14 8v4M8 13v4' },
 ];
 

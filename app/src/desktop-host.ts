@@ -43,6 +43,7 @@ export interface DesktopPreferences {
   openAtLogin: boolean;
   closeToTray: boolean;
   gameStartNotices: boolean;
+  remindersOnPc: boolean;
 }
 
 export interface DesktopPresence extends DesktopPreferences {

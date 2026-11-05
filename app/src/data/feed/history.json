@@ -1,0 +1,5192 @@
+{
+  "reviewed": "2026-11-05",
+  "games": {
+    "genshin": {
+      "currency": "Primogems",
+      "pullCost": 160,
+      "methodology": "Use opened community F2P estimates as of 2026-11-05, counting Intertwined Fates at 160 Primogems each and excluding Acquaint Fates and paid rewards, with UTC+8 global update dates, end equal to the next release date, numeric 6.0–6.7 aliases for Luna I–VIII, and null for unverified values.",
+      "archiveSince": "2026-07-11"
+    },
+    "hsr": {
+      "currency": "Stellar Jade",
+      "pullCost": 160,
+      "methodology": "Use full-version community F2P estimates with maximum participation where stated, convert included limited Special Passes or reported limited pulls to Jade equivalents at 160 each while excluding paid rewards and Standard Passes, use global UTC+8 launch dates and the next launch as the exclusive end, and leave unverified values null.",
+      "archiveSince": "2026-07-11"
+    },
+    "zzz": {
+      "currency": "Polychromes",
+      "pullCost": 160,
+      "methodology": "As of 2026-11-05, totals retain the selected community estimate, converting cited pull totals or explicitly included Master/Encrypted tapes at 160 each as detailed in gaps, with null for unverified exact totals or breakdowns and global dates expressed by the UTC+8 update calendar.",
+      "archiveSince": "2026-07-11"
+    },
+    "wuwa": {
+      "currency": "Astrites",
+      "pullCost": 160,
+      "methodology": "Community full-clear estimates are expressed as raw Astrite plus explicitly listed Radiant and Forging Tides at 160 each, excluding Lustrous Tides and paid rewards; dates use UTC+8 patch dates except the requested May 22 launch date, and missing or incomplete evidence remains null.",
+      "archiveSince": "2026-07-11"
+    }
+  },
+  "versions": [
+    {
+      "game": "genshin",
+      "version": "4.4",
+      "title": "Vibrant Harriers Aloft in Spring Breeze",
+      "start": "2024-01-31",
+      "end": "2024-03-13",
+      "currency": {
+        "total": 14420,
+        "events": null,
+        "daily": 2620,
+        "endgame": 1800,
+        "other": 2670,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Xianyun",
+        "Gaming"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-version-history/"
+        },
+        {
+          "label": "Version timeline, new characters and update notices",
+          "url": "https://wikiwiki.jp/genshinwiki/%E6%99%82%E7%B3%BB%E5%88%97%E3%83%87%E3%83%BC%E3%82%BF"
+        },
+        {
+          "label": "Dexerto 4.4 F2P estimate and partial breakdown (Spanish)",
+          "url": "https://www.dexerto.es/genshin-impact/jugadores-de-genshin-impact-se-alegran-con-la-filtracion-de-la-version-4-4-que-revela-miles-de-protogemas-gratis-1519916/"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "4.5",
+      "title": "Blades Weaving Betwixt Brocade",
+      "start": "2024-03-13",
+      "end": "2024-04-24",
+      "currency": {
+        "total": 8750,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Chiori"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-version-history/"
+        },
+        {
+          "label": "Version timeline, new characters and update notices",
+          "url": "https://wikiwiki.jp/genshinwiki/%E6%99%82%E7%B3%BB%E5%88%97%E3%83%87%E3%83%BC%E3%82%BF"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "4.6",
+      "title": "Two Worlds Aflame, the Crimson Night Fades",
+      "start": "2024-04-24",
+      "end": "2024-06-05",
+      "currency": {
+        "total": 11620,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Arlecchino"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-version-history/"
+        },
+        {
+          "label": "Version timeline, new characters and update notices",
+          "url": "https://wikiwiki.jp/genshinwiki/%E6%99%82%E7%B3%BB%E5%88%97%E3%83%87%E3%83%BC%E3%82%BF"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "4.7",
+      "title": "An Everlasting Dream Intertwined",
+      "start": "2024-06-05",
+      "end": "2024-07-17",
+      "currency": {
+        "total": 10916,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Clorinde",
+        "Sigewinne",
+        "Sethos"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-version-history/"
+        },
+        {
+          "label": "Version timeline, new characters and update notices",
+          "url": "https://wikiwiki.jp/genshinwiki/%E6%99%82%E7%B3%BB%E5%88%97%E3%83%87%E3%83%BC%E3%82%BF"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "4.8",
+      "title": "Summertide Scales and Tales",
+      "start": "2024-07-17",
+      "end": "2024-08-28",
+      "currency": {
+        "total": 9280,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Emilie"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-version-history/"
+        },
+        {
+          "label": "Version timeline, new characters and update notices",
+          "url": "https://wikiwiki.jp/genshinwiki/%E6%99%82%E7%B3%BB%E5%88%97%E3%83%87%E3%83%BC%E3%82%BF"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "5.0",
+      "title": "Flowers Resplendent on the Sun-Scorched Sojourn",
+      "start": "2024-08-28",
+      "end": "2024-10-09",
+      "currency": {
+        "total": 19940,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Mualani",
+        "Kinich",
+        "Kachina"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-version-history/"
+        },
+        {
+          "label": "Version timeline, new characters and update notices",
+          "url": "https://wikiwiki.jp/genshinwiki/%E6%99%82%E7%B3%BB%E5%88%97%E3%83%87%E3%83%BC%E3%82%BF"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "5.1",
+      "title": "The Rainbow Destined to Burn",
+      "start": "2024-10-09",
+      "end": "2024-11-20",
+      "currency": {
+        "total": 11110,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Xilonen"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-version-history/"
+        },
+        {
+          "label": "Version timeline, new characters and update notices",
+          "url": "https://wikiwiki.jp/genshinwiki/%E6%99%82%E7%B3%BB%E5%88%97%E3%83%87%E3%83%BC%E3%82%BF"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "5.2",
+      "title": "Tapestry of Spirit and Flame",
+      "start": "2024-11-20",
+      "end": "2025-01-01",
+      "currency": {
+        "total": 12980,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Chasca",
+        "Ororon"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-version-history/"
+        },
+        {
+          "label": "Version timeline, new characters and update notices",
+          "url": "https://wikiwiki.jp/genshinwiki/%E6%99%82%E7%B3%BB%E5%88%97%E3%83%87%E3%83%BC%E3%82%BF"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "5.3",
+      "title": "Incandescent Ode of Resurrection",
+      "start": "2025-01-01",
+      "end": "2025-02-12",
+      "currency": {
+        "total": 14380,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Mavuika",
+        "Citlali",
+        "Lan Yan"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-version-history/"
+        },
+        {
+          "label": "Version timeline, new characters and update notices",
+          "url": "https://wikiwiki.jp/genshinwiki/%E6%99%82%E7%B3%BB%E5%88%97%E3%83%87%E3%83%BC%E3%82%BF"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "5.4",
+      "title": "Moonlight Amidst Dreams",
+      "start": "2025-02-12",
+      "end": "2025-03-26",
+      "currency": {
+        "total": 10050,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Yumemizuki Mizuki"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-version-history/"
+        },
+        {
+          "label": "Version timeline, new characters and update notices",
+          "url": "https://wikiwiki.jp/genshinwiki/%E6%99%82%E7%B3%BB%E5%88%97%E3%83%87%E3%83%BC%E3%82%BF"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "5.5",
+      "title": "Day of the Flame's Return",
+      "start": "2025-03-26",
+      "end": "2025-05-07",
+      "currency": {
+        "total": 13205,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Varesa",
+        "Iansan"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-version-history/"
+        },
+        {
+          "label": "Version timeline, new characters and update notices",
+          "url": "https://wikiwiki.jp/genshinwiki/%E6%99%82%E7%B3%BB%E5%88%97%E3%83%87%E3%83%BC%E3%82%BF"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "5.6",
+      "title": "Paralogism",
+      "start": "2025-05-07",
+      "end": "2025-06-18",
+      "currency": {
+        "total": 9340,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Escoffier",
+        "Ifa"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-version-history/"
+        },
+        {
+          "label": "Version timeline, new characters and update notices",
+          "url": "https://wikiwiki.jp/genshinwiki/%E6%99%82%E7%B3%BB%E5%88%97%E3%83%87%E3%83%BC%E3%82%BF"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "5.7",
+      "title": "A Space and Time for You",
+      "start": "2025-06-18",
+      "end": "2025-07-30",
+      "currency": {
+        "total": 9160,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Skirk",
+        "Dahlia"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-version-history/"
+        },
+        {
+          "label": "Version timeline, new characters and update notices",
+          "url": "https://wikiwiki.jp/genshinwiki/%E6%99%82%E7%B3%BB%E5%88%97%E3%83%87%E3%83%BC%E3%82%BF"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "5.8",
+      "title": "Sunspray Summer Resort",
+      "start": "2025-07-30",
+      "end": "2025-09-10",
+      "currency": {
+        "total": 12580,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Ineffa"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-version-history/"
+        },
+        {
+          "label": "Version timeline, new characters and update notices",
+          "url": "https://wikiwiki.jp/genshinwiki/%E6%99%82%E7%B3%BB%E5%88%97%E3%83%87%E3%83%BC%E3%82%BF"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "6.0",
+      "title": "Song of the Welkin Moon: Segue — A Dance of Snowy Tides and Hoarfrost Groves",
+      "start": "2025-09-10",
+      "end": "2025-10-22",
+      "currency": {
+        "total": 17060,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Lauma",
+        "Flins",
+        "Aino"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-luna-versions-list/"
+        },
+        {
+          "label": "HoYoverse update details",
+          "url": "https://www.hoyolab.com/article/40980472"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "6.1",
+      "title": "Song of the Welkin Moon: Reprise — An Elegy for Faded Moonlight",
+      "start": "2025-10-22",
+      "end": "2025-12-03",
+      "currency": {
+        "total": 11300,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Nefer"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-luna-versions-list/"
+        },
+        {
+          "label": "HoYoverse update details",
+          "url": "https://www.hoyolab.com/article/41874586"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "6.2",
+      "title": "Song of the Welkin Moon: Interlude — A Nocturne of the Far North",
+      "start": "2025-12-03",
+      "end": "2026-01-14",
+      "currency": {
+        "total": 10370,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Durin",
+        "Jahoda"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-luna-versions-list/"
+        },
+        {
+          "label": "HoYoverse update details",
+          "url": "https://www.hoyolab.com/article/42588332"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "6.3",
+      "title": "Song of the Welkin Moon: Postlude — A Traveler on a Winter's Night",
+      "start": "2026-01-14",
+      "end": "2026-02-25",
+      "currency": {
+        "total": 17260,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Columbina",
+        "Zibai",
+        "Illuga"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-luna-versions-list/"
+        },
+        {
+          "label": "HoYoverse update details",
+          "url": "https://www.hoyolab.com/article/43220659"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "6.4",
+      "title": "Song of the Welkin Moon: Variation — Homeward, He Who Caught the Wind",
+      "start": "2026-02-25",
+      "end": "2026-04-08",
+      "currency": {
+        "total": 10560,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Varka"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-luna-versions-list/"
+        },
+        {
+          "label": "HoYoverse update details",
+          "url": "https://www.hoyolab.com/article/43935248"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "6.5",
+      "title": "Song of the Welkin Moon: Rondo — Augured Homecoming",
+      "start": "2026-04-08",
+      "end": "2026-05-20",
+      "currency": {
+        "total": 11880,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Linnea"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-luna-versions-list/"
+        },
+        {
+          "label": "HoYoverse update details",
+          "url": "https://www.hoyolab.com/article/44539280"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "6.6",
+      "title": "Song of the Welkin Moon: Andante — Truth Amongst the Pages of Purana",
+      "start": "2026-05-20",
+      "end": "2026-07-01",
+      "currency": {
+        "total": 8510,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Nicole",
+        "Lohen",
+        "Prune"
+      ],
+      "sources": [
+        {
+          "label": "r/Genshin_Impact: Approximately Every Primogem for Every Patch",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1t6nic4/approximately_every_primogem_for_every_patch/"
+        },
+        {
+          "label": "Community post's linked F2P estimate table (Intertwined Fates included)",
+          "url": "https://docs.google.com/spreadsheets/d/18VO_wczH3aWCI5WmTENk2V4usGsEskLmcQ8woRrri0w/edit?usp=sharing"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-luna-versions-list/"
+        },
+        {
+          "label": "HoYoverse update details",
+          "url": "https://www.hoyolab.com/article/45096719"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "6.7",
+      "title": "Song of the Welkin Moon: Scherzo — Sunny Summer Fontinalia",
+      "start": "2026-07-01",
+      "end": "2026-08-12",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Sandrone"
+      ],
+      "sources": [
+        {
+          "label": "Opened primocount post; image total not verified",
+          "url": "https://www.reddit.com/r/Genshin_Impact_Leaks/comments/1tlcev6/67_primocount_via_hiragara/"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-luna-versions-list/"
+        },
+        {
+          "label": "HoYoverse update details",
+          "url": "https://www.hoyolab.com/article/45670084"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "7.0",
+      "title": "Everwinter Without Mercy",
+      "start": "2026-08-12",
+      "end": "2026-09-23",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Odette",
+        "Alyosha"
+      ],
+      "sources": [
+        {
+          "label": "Opened primocount post; image total not verified",
+          "url": "https://www.reddit.com/r/Genshin_Impact_Leaks/comments/1ve749y/gi_70_primocount_via_hiragara/"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-luna-versions-list/"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "7.1",
+      "title": "A Rekviem for the Underworld",
+      "start": "2026-09-23",
+      "end": "2026-11-04",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Vesna",
+        "Vodyanitsa"
+      ],
+      "sources": [
+        {
+          "label": "Opened primocount post; image total not verified",
+          "url": "https://www.reddit.com/r/Genshin_Impact_Leaks/comments/1voyg93/71v1_primocount_via_hiragara/"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-luna-versions-list/"
+        }
+      ]
+    },
+    {
+      "game": "genshin",
+      "version": "7.2",
+      "title": "Hour of Ruin",
+      "start": "2026-11-04",
+      "end": null,
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Mitya",
+        "Valeriy"
+      ],
+      "sources": [
+        {
+          "label": "Opened primocount post; image total not verified",
+          "url": "https://www.reddit.com/r/Genshin_Impact/comments/1xdd0pu/version_72_hour_of_ruin_events_overview_genshin/"
+        },
+        {
+          "label": "Release history and official titles",
+          "url": "https://senseos.gg/guides/genshin-impact/genshin-luna-versions-list/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "2.0",
+      "title": "If One Dreams At Midnight",
+      "start": "2024-02-06",
+      "end": "2024-03-27",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Black Swan",
+        "Sparkle",
+        "Misha"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "2.1",
+      "title": "Into the Yawning Chasm",
+      "start": "2024-03-27",
+      "end": "2024-05-08",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Acheron",
+        "Aventurine",
+        "Gallagher"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "2.2",
+      "title": "Then Wake to Weep",
+      "start": "2024-05-08",
+      "end": "2024-06-19",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Robin",
+        "Boothill",
+        "Trailblazer (Harmony)"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "2.3",
+      "title": "Farewell, Penacony",
+      "start": "2024-06-19",
+      "end": "2024-07-31",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Firefly",
+        "Jade"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "2.4",
+      "title": "Finest Duel Under the Pristine Blue",
+      "start": "2024-07-31",
+      "end": "2024-09-10",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Yunli",
+        "Jiaoqiu",
+        "March 7th (The Hunt)"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "2.5",
+      "title": "Flying Aureus Shot to Lupine Rue",
+      "start": "2024-09-10",
+      "end": "2024-10-23",
+      "currency": {
+        "total": 15680,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Feixiao",
+        "Lingsha",
+        "Moze"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Reddit community comment: final estimated F2P pulls from HSR Bookkeeping",
+          "url": "https://www.reddit.com/r/HonkaiStarRail_leaks/comments/1i550mp/v1_stellar_jade_count_for_version_31_via_nivskisl/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "2.6",
+      "title": "Annals of Pinecany's Mappou Age",
+      "start": "2024-10-23",
+      "end": "2024-12-04",
+      "currency": {
+        "total": 17280,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Rappa"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Reddit community comment: final estimated F2P pulls from HSR Bookkeeping",
+          "url": "https://www.reddit.com/r/HonkaiStarRail_leaks/comments/1i550mp/v1_stellar_jade_count_for_version_31_via_nivskisl/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "2.7",
+      "title": "A New Venture on the Eighth Dawn",
+      "start": "2024-12-04",
+      "end": "2025-01-15",
+      "currency": {
+        "total": 14528,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Sunday",
+        "Fugue"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Reddit community comment: final estimated F2P pulls from HSR Bookkeeping",
+          "url": "https://www.reddit.com/r/HonkaiStarRail_leaks/comments/1i550mp/v1_stellar_jade_count_for_version_31_via_nivskisl/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.0",
+      "title": "Paean of Era Nova",
+      "start": "2025-01-15",
+      "end": "2025-02-26",
+      "currency": {
+        "total": 19104,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "The Herta",
+        "Aglaea",
+        "Trailblazer (Remembrance)"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Reddit community comment: final estimated F2P pulls from HSR Bookkeeping",
+          "url": "https://www.reddit.com/r/HonkaiStarRail_leaks/comments/1i550mp/v1_stellar_jade_count_for_version_31_via_nivskisl/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.1",
+      "title": "Light Slips the Gate, Shadow Greets the Throne",
+      "start": "2025-02-26",
+      "end": "2025-04-09",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Tribbie",
+        "Mydei"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.2",
+      "title": "Through the Petals in the Land of Repose",
+      "start": "2025-04-09",
+      "end": "2025-05-21",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Castorice",
+        "Anaxa"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.3",
+      "title": "The Fall at Dawn's Rise",
+      "start": "2025-05-21",
+      "end": "2025-07-02",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Hyacine",
+        "Cipher"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.4",
+      "title": "For the Sun is Set to Die",
+      "start": "2025-07-02",
+      "end": "2025-08-13",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Phainon",
+        "Saber",
+        "Archer"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.5",
+      "title": "Before Their Deaths",
+      "start": "2025-08-13",
+      "end": "2025-09-24",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Hysilens",
+        "Cerydra"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.6",
+      "title": "Back to Earth in Evernight",
+      "start": "2025-09-24",
+      "end": "2025-11-05",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Evernight",
+        "Dan Heng • Permansor Terrae"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.7",
+      "title": "As Tomorrow Became Yesterday",
+      "start": "2025-11-05",
+      "end": "2025-12-17",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Cyrene"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.8",
+      "title": "Memories are the Prelude to Dreams",
+      "start": "2025-12-17",
+      "end": "2026-02-13",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "The Dahlia"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Official new character announcement",
+          "url": "https://www.hoyoverse.com/en-us/news/161511"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "4.0",
+      "title": "No Aha At Full Moon",
+      "start": "2026-02-13",
+      "end": "2026-03-25",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Yao Guang",
+        "Sparxie"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "4.1",
+      "title": "Unraveled for Daybreak",
+      "start": "2026-03-25",
+      "end": "2026-04-22",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Ashveil"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "4.2",
+      "title": "So Laughed the Masses",
+      "start": "2026-04-22",
+      "end": "2026-06-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Silver Wolf LV.999",
+        "Evanescia",
+        "Trailblazer (Elation)"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "4.3",
+      "title": "The Lethe Below the Living",
+      "start": "2026-06-01",
+      "end": "2026-07-15",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Mortenax Blade"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "4.4",
+      "title": "In Ravages Does the Whistle Sound",
+      "start": "2026-07-15",
+      "end": "2026-08-26",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Himeko • Nova",
+        "Rin Tohsaka",
+        "Gilgamesh"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Official update notice on Reddit",
+          "url": "https://www.reddit.com/r/HonkaiStarRail/comments/1uwpg8x/version_44_in_ravages_does_the_whistle_sound/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "4.5",
+      "title": "To Roll the Stars in Astropolis",
+      "start": "2026-08-26",
+      "end": "2026-09-28",
+      "currency": {
+        "total": 12480,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Robin • Summeretto",
+        "Aventurine • Waveflair"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Reddit harkanaccount community estimate: approximately 78 F2P pulls",
+          "url": "https://www.reddit.com/r/HonkaiStarRail_leaks/comments/1vrqwd3/45_stellar_jades_count_via_nivskisl/"
+        },
+        {
+          "label": "HoYoverse update overview via Gematsu",
+          "url": "https://www.gematsu.com/2026/08/honkai-star-rail-version-4-5-update-to-roll-the-stars-in-astropolis-launches-august-26"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "4.6",
+      "title": "Dance With the Beast Before Moonrise",
+      "start": "2026-09-28",
+      "end": "2026-11-11",
+      "currency": {
+        "total": 16065,
+        "events": 2700,
+        "daily": 4240,
+        "endgame": 3600,
+        "other": 2600,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Pearl"
+      ],
+      "sources": [
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Supplementary community estimate by nivskis, transcribed by AstraVoy",
+          "url": "https://astravoy.net/hsr/pull-income"
+        },
+        {
+          "label": "HoYoverse 4.6 announcement via Games Press",
+          "url": "https://www.gamespress.com/uk-UA/Honkai-Star-Rail-Version-46-Dance-With-the-Beast-Before-Moonrise-is-Co"
+        },
+        {
+          "label": "HoYoverse 4.7 launch announcement: November 11",
+          "url": "https://www.gamespress.com/en-GB/Honkai-Star-Rail-Version-47-Now-Lay-Laughter-to-All-St-wwwhoyoversecom"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "1.0",
+      "title": null,
+      "start": "2024-07-04",
+      "end": "2024-08-14",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Alexandrina Sebastiane",
+        "Ellen Joe",
+        "Grace Howard",
+        "Koleda Belobog",
+        "Nekomiya Mana",
+        "Soldier 11",
+        "Von Lycaon",
+        "Zhu Yuan",
+        "Anby Demara",
+        "Anton Ivanov",
+        "Ben Bigger",
+        "Billy Kid",
+        "Corin Wickes",
+        "Luciana de Montefio",
+        "Nicole Demara",
+        "Piper Wheel",
+        "Soukaku"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/ZenlessZoneZero/comments/1e6avm6/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "1.1",
+      "title": "Undercover R&B",
+      "start": "2024-08-14",
+      "end": "2024-09-25",
+      "currency": {
+        "total": 14710,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Qingyi",
+        "Jane Doe",
+        "Seth Lowell"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Dexerto: early 1.1 F2P currency estimate",
+          "url": "https://www.dexerto.com/gaming/zenless-zone-zero-1-1-update-leak-reveals-all-free-polychromes-encrypted-master-tapes-2838841/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "1.2",
+      "title": "Tour de Inferno",
+      "start": "2024-09-25",
+      "end": "2024-11-06",
+      "currency": {
+        "total": 18496,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Caesar King",
+        "Burnice White"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1j0qwvw/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "1.3",
+      "title": "Virtual Revenge",
+      "start": "2024-11-06",
+      "end": "2024-12-18",
+      "currency": {
+        "total": 16848,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Tsukishiro Yanagi",
+        "Lighter"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1j0qwvw/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "1.4",
+      "title": "A Storm of Falling Stars",
+      "start": "2024-12-18",
+      "end": "2025-01-22",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Hoshimi Miyabi",
+        "Asaba Harumasa"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1hb4bv3/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "1.5",
+      "title": "Astra-nomical Moment",
+      "start": "2025-01-22",
+      "end": "2025-03-12",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Astra Yao",
+        "Evelyn Chevalier"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "1.6",
+      "title": "Among the Forgotten Ruins",
+      "start": "2025-03-12",
+      "end": "2025-04-23",
+      "currency": {
+        "total": 16944,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Soldier 0 - Anby",
+        "Trigger",
+        "Pulchra Fellini"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1j0qwvw/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "1.7",
+      "title": "Bury Your Tears With the Past",
+      "start": "2025-04-23",
+      "end": "2025-06-06",
+      "currency": {
+        "total": 15760,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Vivian Banshee",
+        "Hugo Vlad"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1tyq6cn/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.0",
+      "title": "Where Clouds Embrace the Dawn",
+      "start": "2025-06-06",
+      "end": "2025-07-16",
+      "currency": {
+        "total": 27840,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Yixuan",
+        "Ju Fufu",
+        "Pan Yinhu"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1oyc7ai/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.1",
+      "title": "The Impending Crash of Waves",
+      "start": "2025-07-16",
+      "end": "2025-09-04",
+      "currency": {
+        "total": 19200,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Ukinami Yuzuha",
+        "Alice Thymefield"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1n0ho0d/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.2",
+      "title": "Do Not Go Gentle Into That Good Night",
+      "start": "2025-09-04",
+      "end": "2025-10-15",
+      "currency": {
+        "total": 15264,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Seed",
+        "Orphie Magnusson & \"Magus\""
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1tyq6cn/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.3",
+      "title": "Memories of Dreams Bygone",
+      "start": "2025-10-15",
+      "end": "2025-11-26",
+      "currency": {
+        "total": 17504,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Lucia",
+        "Yidhari",
+        "Komano Manato"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1tyq6cn/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.4",
+      "title": "On the Precipice of the Abyss",
+      "start": "2025-11-26",
+      "end": "2025-12-30",
+      "currency": {
+        "total": 12800,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Dialyn",
+        "Banyue"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1oyc7ai/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.5",
+      "title": "To Be Fuel for the Night",
+      "start": "2025-12-30",
+      "end": "2026-02-06",
+      "currency": {
+        "total": 18400,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Ye Shunguang",
+        "Zhao"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1prlsc5/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.6",
+      "title": "Encore for an Old Dream",
+      "start": "2026-02-06",
+      "end": "2026-03-24",
+      "currency": {
+        "total": 24112,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Sunna",
+        "Aria"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1tyq6cn/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.7",
+      "title": "Champions Never Fall to the Past",
+      "start": "2026-03-24",
+      "end": "2026-05-06",
+      "currency": {
+        "total": 15040,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Nangong Yu",
+        "Cissia"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1tyq6cn/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.8",
+      "title": "New: Eridan Sunset",
+      "start": "2026-05-06",
+      "end": "2026-06-17",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Promeia",
+        "Starlight - Billy"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "3.0",
+      "title": "A Sleepwalker's Confession",
+      "start": "2026-06-17",
+      "end": "2026-07-29",
+      "currency": {
+        "total": 23200,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Velina Airgid",
+        "Norma Hollowell",
+        "Pyrois"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1tyq6cn/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "3.1",
+      "title": "The Long Goodbye",
+      "start": "2026-07-29",
+      "end": "2026-09-09",
+      "currency": {
+        "total": 20800,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Remielle Dan",
+        "Sigrid de L'Azur"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1v5aodl/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "3.2",
+      "title": "Their Secret Histories",
+      "start": "2026-09-09",
+      "end": "2026-10-21",
+      "currency": {
+        "total": 14560,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Claret Flint",
+        "Roxy Ifrita Pryce"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1w5a09t/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "3.3",
+      "title": "Journey to the Sky",
+      "start": "2026-10-21",
+      "end": "2026-12-02",
+      "currency": {
+        "total": 13150,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Phoenix Reffaella",
+        "Severian Lowell"
+      ],
+      "sources": [
+        {
+          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
+          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
+        },
+        {
+          "label": "Community estimate or retrospective bookkeeping discussion",
+          "url": "https://www.reddit.com/r/ZenlessZoneZero/comments/1xbvm5y/"
+        },
+        {
+          "label": "HoYoverse 3.3 update announcement (announced end boundary)",
+          "url": "https://zenless.hoyoverse.com/en-us/news/166963"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "1.0",
+      "title": null,
+      "start": "2024-05-22",
+      "end": "2024-06-28",
+      "currency": {
+        "total": 29160,
+        "events": 2445,
+        "daily": 2220,
+        "endgame": 2650,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Rover",
+        "Jiyan",
+        "Yinlin",
+        "Calcharo",
+        "Encore",
+        "Jianxin",
+        "Lingyang",
+        "Verina",
+        "Aalto",
+        "Baizhi",
+        "Chixia",
+        "Danjin",
+        "Mortefi",
+        "Sanhua",
+        "Taoqi",
+        "Yangyang",
+        "Yuanwu"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "r/WutheringWaves F2P launch calculation",
+          "url": "https://www.reddit.com/r/WutheringWaves/comments/1dh0iyk"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "1.1",
+      "title": "Thaw of Eons",
+      "start": "2024-06-28",
+      "end": "2024-08-15",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Jinhsi",
+        "Changli"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "1.2",
+      "title": "In the Turquoise Moonglow",
+      "start": "2024-08-15",
+      "end": "2024-09-29",
+      "currency": {
+        "total": 11860,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Zhezhi",
+        "Xiangli Yao"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "Community retrospective; fallback r/gachagaming",
+          "url": "https://www.reddit.com/r/gachagaming/comments/1kdv8uy"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "1.3",
+      "title": "To the Shore's End",
+      "start": "2024-09-29",
+      "end": "2024-11-14",
+      "currency": {
+        "total": 17480,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "The Shorekeeper",
+        "Youhu"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "Community retrospective; fallback r/gachagaming",
+          "url": "https://www.reddit.com/r/gachagaming/comments/1kdv8uy"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "1.4",
+      "title": "When the Night Knocks",
+      "start": "2024-11-14",
+      "end": "2025-01-02",
+      "currency": {
+        "total": 12880,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Camellya",
+        "Lumi"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "Community retrospective; fallback r/gachagaming",
+          "url": "https://www.reddit.com/r/gachagaming/comments/1kdv8uy"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.0",
+      "title": "All Silent Souls Can Sing",
+      "start": "2025-01-02",
+      "end": "2025-02-13",
+      "currency": {
+        "total": 27210,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Carlotta",
+        "Roccia"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "Community retrospective; fallback r/gachagaming",
+          "url": "https://www.reddit.com/r/gachagaming/comments/1kdv8uy"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.1",
+      "title": "Waves Sing, and the Cerulean Bird Calls",
+      "start": "2025-02-13",
+      "end": "2025-03-27",
+      "currency": {
+        "total": 16630,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Phoebe",
+        "Brant"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "Community retrospective; fallback r/gachagaming",
+          "url": "https://www.reddit.com/r/gachagaming/comments/1kdv8uy"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.2",
+      "title": "Tangled Truth in Inverted Tower",
+      "start": "2025-03-27",
+      "end": "2025-04-29",
+      "currency": {
+        "total": 15250,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Cantarella"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "Community retrospective; fallback r/gachagaming",
+          "url": "https://www.reddit.com/r/gachagaming/comments/1kdv8uy"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.3",
+      "title": "Fiery Arpeggio of Summer Reunion",
+      "start": "2025-04-29",
+      "end": "2025-06-12",
+      "currency": {
+        "total": 17260,
+        "events": 8060,
+        "daily": 2520,
+        "endgame": 3160,
+        "other": 3140,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Zani",
+        "Ciaccona"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "Destructoid pre-release estimate; fallback",
+          "url": "https://www.destructoid.com/wuthering-waves-2-3-astrite-and-total-pull-count-estimation/"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.4",
+      "title": "Lightly We Toss the Crown",
+      "start": "2025-06-12",
+      "end": "2025-07-24",
+      "currency": {
+        "total": 18430,
+        "events": 6390,
+        "daily": 2520,
+        "endgame": 3160,
+        "other": 3140,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Cartethyia",
+        "Lupa"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "TechWiser / Toskkur pre-release estimate; fallback",
+          "url": "https://techwiser.com/wuthering-waves-2-4-astrites-estimation-and-free-pulls-count-leaked/"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.5",
+      "title": "Unfading Melody of Life",
+      "start": "2025-07-24",
+      "end": "2025-08-28",
+      "currency": {
+        "total": 14580,
+        "events": 3260,
+        "daily": 2520,
+        "endgame": 3260,
+        "other": 3140,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Phrolova"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "TechWiser / Toskkur pre-release estimate; fallback",
+          "url": "https://techwiser.com/wuthering-waves-2-5-leak-how-many-astrites-and-free-pulls-you-get/"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.6",
+      "title": "By Sun's Scourge, By Moon's Revelation",
+      "start": "2025-08-28",
+      "end": "2025-10-09",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Augusta",
+        "Iuno"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.7",
+      "title": "Dawn Breaks on Dark Tides",
+      "start": "2025-10-09",
+      "end": "2025-11-20",
+      "currency": {
+        "total": 13462,
+        "events": 3180,
+        "daily": 2520,
+        "endgame": 3360,
+        "other": 3140,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Galbrena",
+        "Qiuyuan"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "TOPUPlive pre-release estimate; fallback",
+          "url": "https://www.topuplive.com/news/wuwa-2-7-how-many-pulls.html"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.8",
+      "title": "To the City Set in Amber",
+      "start": "2025-11-20",
+      "end": "2025-12-25",
+      "currency": {
+        "total": 14070,
+        "events": 3160,
+        "daily": 2100,
+        "endgame": 3200,
+        "other": 4460,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Chisa",
+        "Buling"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "Sportsdunia / Toskkur estimate; fallback",
+          "url": "https://www.sportsdunia.com/gaming/wuthering-waves-2-8-astrite-count-total-pull-rewards-leaked"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.0",
+      "title": "We Who See the Stars",
+      "start": "2025-12-25",
+      "end": "2026-02-05",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Lynae",
+        "Mornye"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.1",
+      "title": "For You Who Walk in Snow",
+      "start": "2026-02-05",
+      "end": "2026-03-19",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Aemeath",
+        "Luuk Herssen"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.2",
+      "title": "Resolution to Illuminate the Shadows",
+      "start": "2026-03-19",
+      "end": "2026-04-30",
+      "currency": {
+        "total": 13670,
+        "events": 3950,
+        "daily": 2520,
+        "endgame": 3760,
+        "other": 3140,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Sigrika"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "GAMES.GG estimate; fallback",
+          "url": "https://games.gg/wuthering-waves/guides/wuthering-waves-32-complete-guide/"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.3",
+      "title": "Reverbs From the End of Galaxies",
+      "start": "2026-04-30",
+      "end": "2026-06-08",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Hiyuki",
+        "Denia"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.4",
+      "title": "The Dream Not Dreamed",
+      "start": "2026-06-08",
+      "end": "2026-07-10",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Lucy",
+        "Rebecca",
+        "Lucilla"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "r/WutheringWaves preliminary calculation, disputed in comments",
+          "url": "https://www.reddit.com/r/WutheringWaves/comments/1tulas4/i_calculated_the_total_f2p_pulls_we_can_get_from/"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.5",
+      "title": "Blade of Past Resounds, Lingering Dream Hymns",
+      "start": "2026-07-10",
+      "end": "2026-08-20",
+      "currency": {
+        "total": 16630,
+        "events": null,
+        "daily": 2460,
+        "endgame": 3880,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Yangyang: Xuanling",
+        "Suisui"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "TOPUPlive estimate; fallback",
+          "url": "https://www.topuplive.com/fr/news/wuthering-waves-3-5-pulls-count.html"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.6",
+      "title": "Lamplight in Mirage, Sword's Resolve in Heart",
+      "start": "2026-08-20",
+      "end": "2026-09-30",
+      "currency": {
+        "total": 16040,
+        "events": null,
+        "daily": 2400,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Qingxiao",
+        "Jingran"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "GameMarket projection (~13000 raw Astrite); fallback",
+          "url": "https://gamemarket.gg/news/wuthering-waves/wuthering-waves-3-6-astrite-calculation-pull-income"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.7",
+      "title": "Prism's Illusion, Heart's Illumination",
+      "start": "2026-09-30",
+      "end": null,
+      "currency": {
+        "total": 19102,
+        "events": 6290,
+        "daily": 2520,
+        "endgame": 3760,
+        "other": 3320,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Hsin",
+        "Suoming"
+      ],
+      "sources": [
+        {
+          "label": "SenseOS version archive (Kuro patch-note index)",
+          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
+        },
+        {
+          "label": "AllThingsHow pre-release estimate; fallback",
+          "url": "https://allthings.how/wuthering-waves-3-7-how-many-free-astrites-and-pulls-you-can-get/"
+        }
+      ]
+    }
+  ],
+  "archiveSince": "2026-07-11",
+  "archive": [
+    {
+      "game": "genshin",
+      "name": "To Temper Thyself and Journey Far",
+      "type": "event",
+      "start": "2026-05-18 04:00",
+      "end": "2026-08-10 03:59",
+      "notify": false,
+      "notes": "Long-running quest campaign — no rush yet.",
+      "sourceKey": "seed:genshin:temper-journey"
+    },
+    {
+      "game": "genshin",
+      "name": "Spiral Abyss",
+      "type": "cycle",
+      "start": "2026-06-16 04:00",
+      "end": "2026-07-16 04:00",
+      "notes": "Resets the 16th, monthly.",
+      "sourceKey": "seed:genshin:abyss-2026-06"
+    },
+    {
+      "game": "genshin",
+      "name": "When We Look Up at the Moon",
+      "type": "event",
+      "start": "2026-06-29 12:00",
+      "end": "2026-09-22 14:59",
+      "notes": "400 Primogems.",
+      "sourceKey": "genshin:21750"
+    },
+    {
+      "game": "genshin",
+      "name": "Sandrone — To the Looking-Glass the Mademoiselle Said",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-07-01 04:00",
+      "end": "2026-07-21 17:59",
+      "sourceKey": "genshin:21743"
+    },
+    {
+      "game": "genshin",
+      "name": "Citlali — Starry Night's Whispers",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-07-01 04:00",
+      "end": "2026-07-21 17:59",
+      "sourceKey": "genshin:21744"
+    },
+    {
+      "game": "genshin",
+      "name": "Epitome Invocation — Sandrone/Citlali weapons",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-07-01 04:00",
+      "end": "2026-07-21 17:59",
+      "sourceKey": "genshin:21745"
+    },
+    {
+      "game": "genshin",
+      "name": "Lightrace Wish — Heavenlit Prophecy",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-07-01 04:00",
+      "end": "2026-07-21 17:59",
+      "notes": "New wish type (Witch's Revelation cast).",
+      "sourceKey": "genshin:21748"
+    },
+    {
+      "game": "genshin",
+      "name": "Sunny Summer Fontinalia — free Charlotte + outfit",
+      "type": "event",
+      "start": "2026-07-01 04:00",
+      "end": "2026-08-11 03:59",
+      "notes": "Flagship: aquarium on the Wingalet. Claim Charlotte before it ends.",
+      "sourceKey": "genshin:21749"
+    },
+    {
+      "game": "genshin",
+      "name": "Sunny Summer login rewards",
+      "type": "event",
+      "start": "2026-07-01 04:00",
+      "end": "2026-08-10 03:59",
+      "dailyTouch": true,
+      "sourceKey": "genshin:21755"
+    },
+    {
+      "game": "genshin",
+      "name": "Imaginarium Theater",
+      "type": "cycle",
+      "start": "2026-07-01 04:00",
+      "end": "2026-08-01 04:00",
+      "notes": "Resets the 1st, monthly.",
+      "sourceKey": "seed:genshin:theater-2026-07"
+    },
+    {
+      "game": "genshin",
+      "name": "Stygian Onslaught",
+      "type": "cycle",
+      "start": "2026-07-06 12:00",
+      "end": "2026-08-11 03:59",
+      "notes": "v6.7 rotation. Condensed Resin counts 60 Dire Prestige each.",
+      "sourceKey": "genshin:21168"
+    },
+    {
+      "game": "genshin",
+      "name": "Spiral Abyss",
+      "type": "cycle",
+      "start": "2026-07-16 04:00",
+      "end": "2026-08-16 04:00",
+      "notes": "Resets on the 16th each month.",
+      "sourceKey": "seed:genshin:abyss-2026-07"
+    },
+    {
+      "game": "genshin",
+      "name": "Final Long-Range Sightlines",
+      "type": "event",
+      "start": "2026-07-17 10:00",
+      "end": "2026-07-27 03:59",
+      "notes": "Shooting minigame — 420 primos.",
+      "sourceKey": "seed:genshin:6.7-sightlines"
+    },
+    {
+      "game": "genshin",
+      "name": "Columbina — Somnias a Luna (phase 2)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-07-21 18:00",
+      "end": "2026-08-11 14:59",
+      "sourceKey": "seed:genshin:6.7-columbina"
+    },
+    {
+      "game": "genshin",
+      "name": "Epitome Invocation — Nocturne's Curtain Call / Engulfing Lightning (phase 2)",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-07-21 18:00",
+      "end": "2026-08-11 14:59",
+      "sourceKey": "seed:genshin:6.7-epitome-p2"
+    },
+    {
+      "game": "genshin",
+      "name": "Raiden Shogun — Reign of Serenity (phase 2)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-07-21 18:00",
+      "end": "2026-08-11 14:59",
+      "sourceKey": "seed:genshin:6.7-raiden"
+    },
+    {
+      "game": "genshin",
+      "name": "Dance Dance Easy-Breezy Disco",
+      "type": "event",
+      "start": "2026-07-24 10:00",
+      "end": "2026-08-03 03:59",
+      "notes": "Dance minigame — 420 primos.",
+      "sourceKey": "seed:genshin:6.7-disco"
+    },
+    {
+      "game": "genshin",
+      "name": "Imaginarium Theater",
+      "type": "cycle",
+      "start": "2026-08-01 04:00",
+      "end": "2026-09-01 04:00",
+      "notify": false,
+      "notes": "Resets on the 1st each month. Estimated dates.",
+      "sourceKey": "seed:genshin:theater-2026-08"
+    },
+    {
+      "game": "genshin",
+      "name": "Ley Line Overflow — double Mora/EXP",
+      "type": "event",
+      "start": "2026-08-03 04:00",
+      "end": "2026-08-10 03:59",
+      "dailyTouch": true,
+      "notes": "Three double Ley Line claims a day — plan resin.",
+      "sourceKey": "seed:genshin:6.7-leyline"
+    },
+    {
+      "game": "genshin",
+      "name": "To Temper Thyself and Journey Far — Cycle 5",
+      "type": "event",
+      "start": "2026-08-10 04:00",
+      "end": "2026-11-02 03:59",
+      "notes": "Train 5 days a week for 8 of 12 weeks to earn a standard 5★ constellation.",
+      "sourceKey": "genshin:21761"
+    },
+    {
+      "game": "genshin",
+      "name": "v7.0 \"Everwinter Without Mercy\" update maintenance",
+      "type": "maintenance",
+      "start": "2026-08-11 23:00",
+      "end": "2026-08-12 04:00",
+      "sourceKey": "seed:genshin:6.8-maint"
+    },
+    {
+      "game": "genshin",
+      "name": "Arlecchino — The Hearth's Ashen Shadow (phase 1)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-08-12 04:00",
+      "end": "2026-09-01 17:59",
+      "sourceKey": "genshin:21804"
+    },
+    {
+      "game": "genshin",
+      "name": "Epitome Invocation — Whitelake Frostfeather / Crimson Moon’s Semblance (phase 1)",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-08-12 04:00",
+      "end": "2026-09-01 17:59",
+      "sourceKey": "genshin:21807"
+    },
+    {
+      "game": "genshin",
+      "name": "Archon Quest \"Everwinter Without Mercy\" — timed reward",
+      "type": "event",
+      "start": "2026-08-12 04:00",
+      "end": "2026-09-22 14:59",
+      "notes": "Complete Chapter VII for extra Primogems and ascension materials.",
+      "sourceKey": "genshin:21809"
+    },
+    {
+      "game": "genshin",
+      "name": "The Godforsaken Frostlands — Snezhnaya exploration",
+      "type": "event",
+      "start": "2026-08-12 04:00",
+      "end": "2026-11-03 14:59",
+      "notes": "Explore five Snezhnaya areas for 400 Primogems.",
+      "sourceKey": "genshin:21811"
+    },
+    {
+      "game": "genshin",
+      "name": "Frostfarer — Battle Pass",
+      "type": "event",
+      "start": "2026-08-12 04:00",
+      "end": "2026-09-21 03:59",
+      "notify": false,
+      "notes": "Gnostic Hymn and Chorus purchases close at 02:59, one hour earlier. Estimated dates.",
+      "sourceKey": "genshin:21818"
+    },
+    {
+      "game": "genshin",
+      "name": "Event Ode: Phantasmagoric Discourse",
+      "type": "event",
+      "category": "miliastra",
+      "start": "2026-08-12 04:00",
+      "end": "2026-09-22 14:59",
+      "notes": "",
+      "sourceKey": "seed:genshin:7.0-event-ode"
+    },
+    {
+      "game": "genshin",
+      "name": "The Forge Realm's Temper: Game of Wits",
+      "type": "event",
+      "start": "2026-08-12 04:00",
+      "end": "2026-09-22 14:59",
+      "notify": false,
+      "notes": "Estimated dates.",
+      "sourceKey": "seed:genshin:7.0-forge-realm"
+    },
+    {
+      "game": "genshin",
+      "name": "Mutual Aid in Bloom: Into the Frostlands",
+      "type": "event",
+      "start": "2026-08-12 04:00",
+      "end": "2026-08-24 03:59",
+      "notes": "Snezhnaya Expedition Operation.",
+      "sourceKey": "seed:genshin:7.0-frostlands"
+    },
+    {
+      "game": "genshin",
+      "name": "Miliastra Wonderland: Chronicle",
+      "type": "event",
+      "category": "miliastra",
+      "start": "2026-08-12 04:00",
+      "end": "2026-09-21 03:59",
+      "sourceKey": "seed:genshin:7.0-miliastra-chronicle"
+    },
+    {
+      "game": "genshin",
+      "name": "Odette — Swan's Shadow in Silken Ice (phase 1)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-08-12 04:00",
+      "end": "2026-09-01 17:59",
+      "sourceKey": "seed:genshin:7.0-p1"
+    },
+    {
+      "game": "genshin",
+      "name": "Raiment Collection: Gentle Warmth",
+      "type": "event",
+      "category": "miliastra",
+      "start": "2026-08-12 04:00",
+      "end": "2026-09-23 05:59",
+      "notes": "Outfit rewards.",
+      "sourceKey": "seed:genshin:7.0-raiment"
+    },
+    {
+      "game": "genshin",
+      "name": "Miliastra Wonderland: Phantasmagoric Season — Play Phase",
+      "type": "event",
+      "category": "miliastra",
+      "start": "2026-08-13 10:00",
+      "end": "2026-09-22 03:59",
+      "notes": "The showcase phase follows the play phase.",
+      "sourceKey": "seed:genshin:7.0-miliastra-play"
+    },
+    {
+      "game": "genshin",
+      "name": "Spiral Abyss",
+      "type": "cycle",
+      "start": "2026-08-16 04:00",
+      "end": "2026-09-16 04:00",
+      "notify": false,
+      "notes": "Resets on the 16th each month. Estimated dates.",
+      "sourceKey": "seed:genshin:abyss-2026-08"
+    },
+    {
+      "game": "genshin",
+      "name": "Spooky Summer Adventures — Spooky Boo Hat",
+      "type": "event",
+      "category": "miliastra",
+      "start": "2026-08-17 12:00",
+      "end": "2026-09-04 03:59",
+      "notes": "Spooky Boo Hat cosmetic; quests close August 31 at 03:59, reward claims September 4.",
+      "sourceKey": "genshin:21829"
+    },
+    {
+      "game": "genshin",
+      "name": "Stygian Onslaught",
+      "type": "cycle",
+      "start": "2026-08-19 10:00",
+      "end": "2026-09-22 03:59",
+      "notes": "v7.0 rotation: Disturbance-affected Ley Line challenges.",
+      "sourceKey": "genshin:21847"
+    },
+    {
+      "game": "genshin",
+      "name": "Great Expeditionist Challenge — free Diona",
+      "type": "event",
+      "start": "2026-08-28 10:00",
+      "end": "2026-09-14 03:59",
+      "notes": "Rank in four minigames to invite Diona; phases II and III unlock August 30 and September 1 at 04:00.",
+      "sourceKey": "seed:genshin:7.0-expeditionist"
+    },
+    {
+      "game": "genshin",
+      "name": "Genius Invokation TCG: Tactical Formation",
+      "type": "event",
+      "start": "2026-08-29 10:00",
+      "end": "2026-09-14 03:59",
+      "notes": "Heated Battle Mode with different deck-building rules.",
+      "sourceKey": "genshin:20748"
+    },
+    {
+      "game": "genshin",
+      "name": "Imaginarium Theater",
+      "type": "cycle",
+      "start": "2026-09-01 04:00",
+      "end": "2026-10-01 04:00",
+      "notify": false,
+      "notes": "Resets on the 1st each month. Estimated dates.",
+      "sourceKey": "seed:genshin:theater-2026-09"
+    },
+    {
+      "game": "genshin",
+      "name": "Flins — The Lone Light Knocks at Night (phase 2)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-09-01 18:00",
+      "end": "2026-09-22 14:59",
+      "sourceKey": "genshin:21805"
+    },
+    {
+      "game": "genshin",
+      "name": "Ineffa — Astral Actuation (phase 2)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-09-01 18:00",
+      "end": "2026-09-22 14:59",
+      "sourceKey": "genshin:21806"
+    },
+    {
+      "game": "genshin",
+      "name": "Epitome Invocation — Bloodsoaked Ruins / Fractured Halo (phase 2)",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-09-01 18:00",
+      "end": "2026-09-22 14:59",
+      "sourceKey": "genshin:21808"
+    },
+    {
+      "game": "genshin",
+      "name": "Flins & Ineffa (phase 2)",
+      "type": "banner",
+      "start": "2026-09-01 18:00",
+      "end": "2026-09-22 14:59",
+      "notify": false,
+      "notes": "Phase 2 is not in the feed yet — line-up and times unconfirmed.",
+      "sourceKey": "seed:genshin:7.0-p2"
+    },
+    {
+      "game": "genshin",
+      "name": "Trial of the Bastion",
+      "type": "event",
+      "start": "2026-09-07 10:00",
+      "end": "2026-09-17 03:59",
+      "notes": "Five trials, unlocked in order; requires AR20, Prologue Act III and Gunfire in the Silent Lands.",
+      "sourceKey": "genshin:21816"
+    },
+    {
+      "game": "genshin",
+      "name": "Starlight Voyage: Joyous Moment — claim rewards",
+      "type": "event",
+      "category": "miliastra",
+      "start": "2026-09-07 10:00",
+      "end": "2026-09-21 03:59",
+      "notes": "Claim Prismatic Crystals before this closes; quests end September 17 at 04:00.",
+      "sourceKey": "genshin:21831"
+    },
+    {
+      "game": "genshin",
+      "name": "Starlight Voyage: Joyous Moment — quests",
+      "type": "event",
+      "category": "miliastra",
+      "start": "2026-09-07 10:00",
+      "end": "2026-09-17 04:00",
+      "notes": "Requires an awakened Miliastra Wonderland Manekin; quests close before reward claims.",
+      "sourceKey": "seed:genshin:7.0-starlight-voyage-quests"
+    },
+    {
+      "game": "genshin",
+      "name": "Genshin 7.1 Special Program",
+      "type": "livestream",
+      "start": "2026-09-12 12:00",
+      "end": "2026-09-12 13:00",
+      "timezone": "UTC",
+      "notes": "Estimated window.",
+      "sourceKey": "seed:genshin:7.1-livestream"
+    },
+    {
+      "game": "genshin",
+      "name": "Overflowing Abundance — double drops",
+      "type": "event",
+      "start": "2026-09-14 04:00",
+      "end": "2026-09-21 03:59",
+      "dailyTouch": true,
+      "notes": "Three double talent-book or weapon-material rewards per day.",
+      "sourceKey": "seed:genshin:7.0-abundance"
+    },
+    {
+      "game": "genshin",
+      "name": "Spiral Abyss",
+      "type": "cycle",
+      "start": "2026-09-16 04:00",
+      "end": "2026-10-16 04:00",
+      "notes": "Resets on the 16th each month.",
+      "sourceKey": "seed:genshin:abyss-2026-09"
+    },
+    {
+      "game": "genshin",
+      "name": "v7.1 update maintenance",
+      "type": "maintenance",
+      "start": "2026-09-23 06:00",
+      "end": "2026-09-23 11:00",
+      "timezone": "UTC+8",
+      "notes": "Estimated dates.",
+      "sourceKey": "seed:genshin:7.1-maint"
+    },
+    {
+      "game": "genshin",
+      "name": "The Forge Realm's Temper: Clever Stratagems",
+      "type": "event",
+      "start": "2026-09-23 11:00",
+      "end": "2026-11-03 14:59",
+      "startTimezone": "UTC+8",
+      "notify": false,
+      "notes": "TCG challenge stages at The Cat’s Tail. Requires Adventure Rank 32. Runs all of version 7.1; estimated end.",
+      "sourceKey": "genshin:20508"
+    },
+    {
+      "game": "genshin",
+      "name": "When Warm Winds Cavort — Vesna",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-09-23 11:00",
+      "end": "2026-10-13 17:59",
+      "startTimezone": "UTC+8",
+      "notes": "",
+      "sourceKey": "genshin:21876"
+    },
+    {
+      "game": "genshin",
+      "name": "Surging Ballad — Vodyanitsa",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-09-23 11:00",
+      "end": "2026-10-13 17:59",
+      "startTimezone": "UTC+8",
+      "notes": "",
+      "sourceKey": "genshin:21877"
+    },
+    {
+      "game": "genshin",
+      "name": "Epitome Invocation — Beyond the Chrysalis / Hymn of the Maelstrom",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-09-23 11:00",
+      "end": "2026-10-13 17:59",
+      "startTimezone": "UTC+8",
+      "notes": "",
+      "sourceKey": "genshin:21878"
+    },
+    {
+      "game": "genshin",
+      "name": "Archon Quest \"A Rekviem for the Underworld\" — timed reward",
+      "type": "event",
+      "start": "2026-09-23 11:00",
+      "end": "2026-11-03 14:59",
+      "startTimezone": "UTC+8",
+      "notes": "Complete the Archon Quest for extra rewards and play the epilogue before this closes.",
+      "sourceKey": "genshin:21880"
+    },
+    {
+      "game": "genshin",
+      "name": "Moontrace — Battle Pass",
+      "type": "event",
+      "start": "2026-09-23 11:00",
+      "end": "2026-11-02 03:59",
+      "startTimezone": "UTC+8",
+      "notes": "",
+      "sourceKey": "genshin:21884"
+    },
+    {
+      "game": "genshin",
+      "name": "Wonderland Treasures: Moonlight After the Rain",
+      "type": "banner",
+      "category": "miliastra",
+      "bannerKind": "other",
+      "start": "2026-09-23 11:00",
+      "end": "2026-11-03 14:59",
+      "startTimezone": "UTC+8",
+      "notes": "Cosmetic draw with Osmanthus in the Moonlight.",
+      "sourceKey": "genshin:21895"
+    },
+    {
+      "game": "genshin",
+      "name": "Wonderland Treasures: Phantom Night Candlelight",
+      "type": "banner",
+      "category": "miliastra",
+      "bannerKind": "other",
+      "start": "2026-09-23 11:00",
+      "end": "2026-11-03 14:59",
+      "startTimezone": "UTC+8",
+      "notes": "Cosmetic draw with Candlelit Revelry.",
+      "sourceKey": "genshin:21896"
+    },
+    {
+      "game": "genshin",
+      "name": "Raiment Collection: Warmth of a Sunny Day",
+      "type": "event",
+      "category": "miliastra",
+      "start": "2026-09-23 11:00",
+      "end": "2026-11-04 05:59",
+      "startTimezone": "UTC+8",
+      "endTimezone": "UTC+8",
+      "notes": "Rewards have a weekly limit.",
+      "sourceKey": "genshin:21899"
+    },
+    {
+      "game": "genshin",
+      "name": "Tabletop Troupe: A Gathering on Adventure’s Eve — choose a limited 5★",
+      "type": "event",
+      "category": "teyvat",
+      "start": "2026-09-23 11:00",
+      "end": "2026-11-03 14:59",
+      "startTimezone": "UTC+8",
+      "notes": "Requires Adventure Rank 18 and Chapter VII Act IV. Choose one of Tartaglia, Nilou, Baizhu, Chiori, Clorinde or Varesa.",
+      "sourceKey": "seed:genshin:7.1-limited-selector"
+    },
+    {
+      "game": "genshin",
+      "name": "Silvery Moonlight Chronicle — Miliastra Pass",
+      "type": "event",
+      "category": "miliastra",
+      "start": "2026-09-23 11:00",
+      "end": "2026-11-02 03:59",
+      "startTimezone": "UTC+8",
+      "notes": "Claim pass rewards before this closes; purchases stop one hour earlier, at 02:59.",
+      "sourceKey": "seed:genshin:7.1-miliastra-chronicle"
+    },
+    {
+      "game": "genshin",
+      "name": "Across the Frozen Wilds, Honing One’s Edge — choose a standard 5★",
+      "type": "event",
+      "category": "teyvat",
+      "start": "2026-09-23 11:00",
+      "end": "2026-11-03 14:59",
+      "startTimezone": "UTC+8",
+      "notes": "Unlock Wishes, then log in to choose a standard five-star character.",
+      "sourceKey": "seed:genshin:7.1-standard-selector"
+    },
+    {
+      "game": "genshin",
+      "name": "Miliastra Wonderland: Moonlit Season — Play Phase",
+      "type": "event",
+      "category": "miliastra",
+      "start": "2026-09-24 10:00",
+      "end": "2026-11-03 03:59",
+      "notes": "The showcase phase follows the play phase.",
+      "sourceKey": "genshin:21900"
+    },
+    {
+      "game": "genshin",
+      "name": "Silverwing in Pursuit of the Moon",
+      "type": "event",
+      "start": "2026-09-24 10:00",
+      "end": "2026-10-12 03:59",
+      "notes": "Earn Silver Light and its refinement materials.",
+      "sourceKey": "seed:genshin:7.1-silverwing"
+    },
+    {
+      "game": "genshin",
+      "name": "Anniversary Memories Album — web event",
+      "type": "event",
+      "start": "2026-09-28 11:00",
+      "end": "2026-10-18 23:59",
+      "timezone": "UTC+8",
+      "notes": "Primogem rewards; requires AR10.",
+      "sourceKey": "genshin:21874"
+    },
+    {
+      "game": "genshin",
+      "name": "Disturbance Outbreak — Resin reward deadline",
+      "type": "event",
+      "category": "teyvat",
+      "start": "2026-09-30 10:00",
+      "end": "2026-10-10 03:59",
+      "notes": "Spend Resin for Domain rewards, Dire Prestige, extra Artifacts and Dust of Enlightenment before this closes.",
+      "sourceKey": "seed:genshin:7.1-disturbance-outbreak"
+    },
+    {
+      "game": "genshin",
+      "name": "Stygian Onslaught",
+      "type": "cycle",
+      "start": "2026-09-30 10:00",
+      "end": "2026-11-03 03:59",
+      "notes": "v7.1 rotation; Disturbance Outbreak ends October 10 at 03:59.",
+      "sourceKey": "seed:genshin:7.1-stygian"
+    },
+    {
+      "game": "genshin",
+      "name": "Resplendent Starlight — anniversary login rewards",
+      "type": "event",
+      "start": "2026-10-01 04:00",
+      "end": "2026-10-19 03:59",
+      "dailyTouch": true,
+      "notes": "Log in on seven days for ten Intertwined Fates.",
+      "sourceKey": "seed:genshin:7.1-resplendent-starlight"
+    },
+    {
+      "game": "genshin",
+      "name": "Imaginarium Theater",
+      "type": "cycle",
+      "start": "2026-10-01 04:00",
+      "end": "2026-11-01 04:00",
+      "notify": false,
+      "notes": "Resets on the 1st each month. Estimated dates.",
+      "sourceKey": "seed:genshin:theater-2026-10"
+    },
+    {
+      "game": "genshin",
+      "name": "Starlit Gala: Wonderland Selects",
+      "type": "event",
+      "category": "miliastra",
+      "start": "2026-10-01 12:00",
+      "end": "2026-10-22 03:59",
+      "timezone": "UTC+8",
+      "notes": "Play featured Wonderlands and complete Celebration Objectives.",
+      "sourceKey": "seed:genshin:7.1-wonderland-selects"
+    },
+    {
+      "game": "genshin",
+      "name": "Genius Invokation TCG: Automatic Artistry",
+      "type": "event",
+      "start": "2026-10-10 10:00",
+      "end": "2026-10-26 03:59",
+      "notes": "Heated Battle Mode; requires AR32.",
+      "sourceKey": "genshin:21368"
+    },
+    {
+      "game": "genshin",
+      "name": "Predictive Victory Dynamics",
+      "type": "event",
+      "start": "2026-10-12 10:00",
+      "end": "2026-10-20 09:59",
+      "timezone": "UTC+8",
+      "notes": "Results are available October 20 at 10:00 through October 23 at 09:59.",
+      "sourceKey": "seed:genshin:7.1-predictive-victory"
+    },
+    {
+      "game": "genshin",
+      "name": "Void Star’s Advent — Skirk",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-10-13 18:00",
+      "end": "2026-11-03 14:59",
+      "notes": "",
+      "sourceKey": "genshin:21888"
+    },
+    {
+      "game": "genshin",
+      "name": "La Chanson Cerise — Escoffier",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-10-13 18:00",
+      "end": "2026-11-03 14:59",
+      "notes": "",
+      "sourceKey": "genshin:21889"
+    },
+    {
+      "game": "genshin",
+      "name": "Epitome Invocation — Azurelight / Symphonist of Scents",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-10-13 18:00",
+      "end": "2026-11-03 14:59",
+      "notes": "",
+      "sourceKey": "genshin:21890"
+    },
+    {
+      "game": "genshin",
+      "name": "Spiral Abyss",
+      "type": "cycle",
+      "start": "2026-10-16 04:00",
+      "end": "2026-11-16 04:00",
+      "notes": "Resets on the 16th each month.",
+      "sourceKey": "seed:genshin:abyss-2026-10"
+    },
+    {
+      "game": "genshin",
+      "name": "Starlight Voyage: Heart Unbound",
+      "type": "event",
+      "start": "2026-10-19 10:00",
+      "end": "2026-11-02 03:59",
+      "notes": "Prismatic Crystals; quests close October 29 at 04:00. Requires an awakened Miliastra Wonderland Manekin.",
+      "sourceKey": "genshin:21901"
+    },
+    {
+      "game": "genshin",
+      "name": "Carefree Snowball Fight",
+      "type": "event",
+      "start": "2026-10-21 10:00",
+      "end": "2026-11-02 03:59",
+      "notes": "Co-Op snowball challenge. Requires Adventure Rank 20; the score cap rises on days 3 and 5.",
+      "sourceKey": "seed:genshin:7.1-snowball"
+    },
+    {
+      "game": "genshin",
+      "name": "Starlit Gala: Wonderland Year in Review — web event",
+      "type": "event",
+      "start": "2026-10-22 00:00",
+      "end": "2026-11-03 04:00",
+      "timezone": "UTC+8",
+      "notes": "View and share your report for 100 Geodes of Replication.",
+      "sourceKey": "genshin:21908"
+    },
+    {
+      "game": "genshin",
+      "name": "Genshin 7.2 Special Program",
+      "type": "livestream",
+      "start": "2026-10-23 12:00",
+      "end": "2026-10-23 13:00",
+      "timezone": "UTC",
+      "notes": "Estimated window. Recap and codes are in Livestreams.",
+      "sourceKey": "seed:genshin:7.2-livestream"
+    },
+    {
+      "game": "genshin",
+      "name": "Overflowing Favor",
+      "type": "event",
+      "start": "2026-10-26 04:00",
+      "end": "2026-11-02 03:59",
+      "dailyTouch": true,
+      "notes": "Double Artifact domain rewards up to 3 times a day.",
+      "sourceKey": "seed:genshin:7.1-overflowing-favor"
+    },
+    {
+      "game": "genshin",
+      "name": "Imaginarium Theater",
+      "type": "cycle",
+      "start": "2026-11-01 04:00",
+      "end": "2026-12-01 04:00",
+      "notify": false,
+      "notes": "Resets on the 1st each month. Estimated dates.",
+      "sourceKey": "seed:genshin:theater-2026-11"
+    },
+    {
+      "game": "genshin",
+      "name": "To Temper Thyself and Journey Far",
+      "type": "cycle",
+      "start": "2026-11-02 04:00",
+      "end": "2027-01-25 03:59",
+      "notes": "Daily and weekly training goals; 8 weekly goals earn a Stella Fortuna.",
+      "sourceKey": "genshin:21892"
+    },
+    {
+      "game": "hsr",
+      "name": "Stellar Companion — free 5★ selector",
+      "type": "event",
+      "start": "2026-04-22 04:00",
+      "end": "2026-08-25 23:00",
+      "notify": false,
+      "notes": "Free 5★ selector. Estimated dates.",
+      "sourceKey": "seed:hsr:stellar-companion"
+    },
+    {
+      "game": "hsr",
+      "name": "Anomaly Arbitration — The Humming Laughter",
+      "type": "cycle",
+      "start": "2026-06-01 04:00",
+      "end": "2026-07-13 03:59",
+      "sourceKey": "seed:hsr:aa-4.3"
+    },
+    {
+      "game": "hsr",
+      "name": "Pixel Plane Rumble",
+      "type": "event",
+      "start": "2026-06-01 12:00",
+      "end": "2026-07-14 23:00",
+      "notes": "Runs to the end of 4.3 — finish before maintenance.",
+      "sourceKey": "seed:hsr:4.3-pixel-plane"
+    },
+    {
+      "game": "hsr",
+      "name": "Apocalyptic Shadow — current phase",
+      "type": "cycle",
+      "start": "2026-06-08 04:00",
+      "end": "2026-07-20 03:59",
+      "sourceKey": "seed:hsr:as-4.3"
+    },
+    {
+      "game": "hsr",
+      "name": "Pure Fiction — current phase",
+      "type": "cycle",
+      "start": "2026-06-22 04:00",
+      "end": "2026-08-03 03:59",
+      "sourceKey": "seed:hsr:pf-4.3"
+    },
+    {
+      "game": "hsr",
+      "name": "Cyrene banner — 4.3 final phase",
+      "type": "banner",
+      "start": "2026-06-24 12:00",
+      "end": "2026-07-14 23:00",
+      "sourceKey": "seed:hsr:4.3-cyrene"
+    },
+    {
+      "game": "hsr",
+      "name": "Phainon banner — 4.3 final phase",
+      "type": "banner",
+      "start": "2026-06-24 12:00",
+      "end": "2026-07-14 23:00",
+      "sourceKey": "seed:hsr:4.3-phainon"
+    },
+    {
+      "game": "hsr",
+      "name": "Wispae Amusement Park",
+      "type": "event",
+      "start": "2026-06-24 12:00",
+      "end": "2026-07-14 23:00",
+      "notes": "Runs to the end of 4.3 — finish before maintenance.",
+      "sourceKey": "seed:hsr:4.3-wispae"
+    },
+    {
+      "game": "hsr",
+      "name": "Realm of the Strange — 2× cavern relics",
+      "type": "event",
+      "start": "2026-07-03 04:00",
+      "end": "2026-07-13 03:59",
+      "dailyTouch": true,
+      "notes": "Double relic drops from Caverns — dump Trailblaze Power.",
+      "sourceKey": "seed:hsr:4.3-realm"
+    },
+    {
+      "game": "hsr",
+      "name": "Memory of Chaos — current phase",
+      "type": "cycle",
+      "start": "2026-07-06 04:00",
+      "end": "2026-08-17 03:59",
+      "sourceKey": "seed:hsr:moc-4.3"
+    },
+    {
+      "game": "hsr",
+      "name": "v4.4 update maintenance",
+      "type": "maintenance",
+      "start": "2026-07-14 23:00",
+      "end": "2026-07-15 04:00",
+      "sourceKey": "seed:hsr:4.4-maint"
+    },
+    {
+      "game": "hsr",
+      "name": "Antigraft Brickbuster (flagship)",
+      "type": "event",
+      "start": "2026-07-15 04:00",
+      "end": "2026-08-25 20:59",
+      "sourceKey": "seed:hsr:4.4-brickbuster"
+    },
+    {
+      "game": "hsr",
+      "name": "A Star That Lights the Night — Light Cone Warp",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-07-15 04:00",
+      "end": "2026-08-25 15:00",
+      "sourceKey": "seed:hsr:4.4-himeko-lc"
+    },
+    {
+      "game": "hsr",
+      "name": "Himeko • Nova (runs all of 4.4)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-07-15 04:00",
+      "end": "2026-08-25 15:00",
+      "sourceKey": "seed:hsr:4.4-himeko-nova"
+    },
+    {
+      "game": "hsr",
+      "name": "4.4 Gift of Odyssey — 10 free pulls",
+      "type": "event",
+      "start": "2026-07-15 04:00",
+      "end": "2026-08-25 23:00",
+      "dailyTouch": true,
+      "notes": "Log in on 7 days.",
+      "sourceKey": "seed:hsr:4.4-login"
+    },
+    {
+      "game": "hsr",
+      "name": "Sparxie · Dan Heng PT · Evernight reruns (phase 1)",
+      "type": "banner",
+      "start": "2026-07-15 04:00",
+      "end": "2026-08-05 11:59",
+      "sourceKey": "seed:hsr:4.4-p1-reruns"
+    },
+    {
+      "game": "hsr",
+      "name": "Anomaly Arbitration",
+      "type": "cycle",
+      "start": "2026-07-15 04:00",
+      "end": "2026-08-25 23:00",
+      "notify": false,
+      "notes": "Enwreathed by the World; refreshes with the version update. Estimated dates.",
+      "sourceKey": "seed:hsr:aa-4.4"
+    },
+    {
+      "game": "hsr",
+      "name": "Apocalyptic Shadow",
+      "type": "cycle",
+      "start": "2026-07-20 04:00",
+      "end": "2026-08-31 03:59",
+      "notes": "Vanguard Knight.",
+      "sourceKey": "seed:hsr:as-4.4"
+    },
+    {
+      "game": "hsr",
+      "name": "Fate collab: Rin Tohsaka & Gilgamesh",
+      "type": "banner",
+      "start": "2026-07-24 12:00",
+      "end": "2026-08-25 23:00",
+      "sourceKey": "seed:hsr:4.4-fate-banners"
+    },
+    {
+      "game": "hsr",
+      "name": "Fate/Star Rail Night — collab event",
+      "type": "event",
+      "start": "2026-07-24 12:00",
+      "end": "2026-08-25 20:59",
+      "sourceKey": "seed:hsr:4.4-fate-event"
+    },
+    {
+      "game": "hsr",
+      "name": "Fate Gift — free collab Light Cone",
+      "type": "event",
+      "start": "2026-07-24 12:00",
+      "end": "2026-08-25 23:00",
+      "dailyTouch": true,
+      "notes": "Log in to claim the collab gift.",
+      "sourceKey": "seed:hsr:4.4-fate-gift"
+    },
+    {
+      "game": "hsr",
+      "name": "Fate Contract: Renewal — free Gilgamesh or Archer",
+      "type": "event",
+      "start": "2026-07-24 12:00",
+      "end": "2026-11-11 06:00",
+      "endTimezone": "UTC+8",
+      "notify": false,
+      "notes": "Claim Gilgamesh or Archer before Version 4.6 ends. Estimated dates.",
+      "sourceKey": "seed:hsr:4.4-free-servant"
+    },
+    {
+      "game": "hsr",
+      "name": "Planar Fissure — 2× Planar Ornaments",
+      "type": "event",
+      "start": "2026-07-27 04:00",
+      "end": "2026-08-10 03:59",
+      "dailyTouch": true,
+      "notes": "Double ornament drops — plan Trailblaze Power.",
+      "sourceKey": "seed:hsr:4.4-planar-fissure"
+    },
+    {
+      "game": "hsr",
+      "name": "Pure Fiction",
+      "type": "cycle",
+      "start": "2026-08-03 04:00",
+      "end": "2026-09-14 03:59",
+      "notes": "Fabricated Business.",
+      "sourceKey": "seed:hsr:pf-4.4"
+    },
+    {
+      "game": "hsr",
+      "name": "Phase 2 Light Cone Warps — Golden Blood · Cast to Flames · Unjust Destiny",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-08-05 12:00",
+      "end": "2026-08-25 15:00",
+      "sourceKey": "seed:hsr:4.4-p2-lc"
+    },
+    {
+      "game": "hsr",
+      "name": "Cerydra · Anaxa · Aventurine reruns (phase 2)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-08-05 12:00",
+      "end": "2026-08-25 15:00",
+      "sourceKey": "seed:hsr:4.4-p2-reruns"
+    },
+    {
+      "game": "hsr",
+      "name": "Garden of Plenty — 2× Calyx rewards",
+      "type": "event",
+      "start": "2026-08-14 04:00",
+      "end": "2026-08-24 03:59",
+      "dailyTouch": true,
+      "notes": "Double Calyx drops.",
+      "sourceKey": "seed:hsr:4.4-garden"
+    },
+    {
+      "game": "hsr",
+      "name": "Memory of Chaos",
+      "type": "cycle",
+      "start": "2026-08-17 04:00",
+      "end": "2026-09-27 23:00",
+      "notes": "Stormcleanse.",
+      "sourceKey": "seed:hsr:moc-4.5"
+    },
+    {
+      "game": "hsr",
+      "name": "v4.5 update maintenance",
+      "type": "maintenance",
+      "start": "2026-08-25 23:00",
+      "end": "2026-08-26 04:00",
+      "notes": "Estimated dates.",
+      "sourceKey": "seed:hsr:4.5-maint"
+    },
+    {
+      "game": "hsr",
+      "name": "Nameless Honor — Battle Pass",
+      "type": "event",
+      "start": "2026-08-26 03:00",
+      "end": "2026-09-27 19:59",
+      "timezone": "UTC",
+      "notes": "Purchases close one hour before rewards.",
+      "sourceKey": "hsr:1361"
+    },
+    {
+      "game": "hsr",
+      "name": "4.5 Gift of Odyssey — 10 free pulls",
+      "type": "event",
+      "start": "2026-08-26 04:00",
+      "end": "2026-09-27 23:00",
+      "dailyTouch": true,
+      "notes": "Log in on 7 days to claim ten pulls.",
+      "sourceKey": "seed:hsr:4.5-login"
+    },
+    {
+      "game": "hsr",
+      "name": "Overdrive: Whirlwind Grand Prix (flagship)",
+      "type": "event",
+      "start": "2026-08-26 04:00",
+      "end": "2026-09-27 20:59",
+      "notes": "",
+      "sourceKey": "seed:hsr:4.5-overdrive"
+    },
+    {
+      "game": "hsr",
+      "name": "Rise and Sing · Long May Rainbows Adorn the Sky — phase 1 Light Cone Warps",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-08-26 04:00",
+      "end": "2026-09-12 11:59",
+      "notes": "Brilliant Fixation: Rise and Sing; Bygone Reminiscence: Long May Rainbows Adorn the Sky.",
+      "sourceKey": "seed:hsr:4.5-p1-lc"
+    },
+    {
+      "game": "hsr",
+      "name": "Robin • Summeretto · Hyacine rerun (phase 1)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-08-26 04:00",
+      "end": "2026-09-12 11:59",
+      "notes": "Summer Chorus and A Rainbow onto Twilight.",
+      "sourceKey": "seed:hsr:4.5-p1-robin"
+    },
+    {
+      "game": "hsr",
+      "name": "Anomaly Arbitration",
+      "type": "cycle",
+      "start": "2026-08-26 04:00",
+      "end": "2026-09-27 23:00",
+      "notify": false,
+      "notes": "Return of the Legion; refreshes with the version update. Estimated dates.",
+      "sourceKey": "seed:hsr:aa-4.5"
+    },
+    {
+      "game": "hsr",
+      "name": "Apocalyptic Shadow",
+      "type": "cycle",
+      "start": "2026-08-31 04:00",
+      "end": "2026-10-05 03:59",
+      "notes": "Celestial Lupine; five-week rotation.",
+      "sourceKey": "seed:hsr:as-4.5"
+    },
+    {
+      "game": "hsr",
+      "name": "Planar Fissure",
+      "type": "event",
+      "start": "2026-09-07 04:00",
+      "end": "2026-09-21 03:59",
+      "notes": "Double Planar Ornament drops.",
+      "sourceKey": "hsr:1391"
+    },
+    {
+      "game": "hsr",
+      "name": "Minuscule Great Adventure",
+      "type": "event",
+      "start": "2026-09-12 12:00",
+      "end": "2026-09-27 20:59",
+      "notes": "Opens with phase 2.",
+      "sourceKey": "seed:hsr:4.5-minuscule"
+    },
+    {
+      "game": "hsr",
+      "name": "Aventurine • Waveflair · Ashveil rerun (phase 2)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-09-12 12:00",
+      "end": "2026-09-28 03:59",
+      "notify": false,
+      "notes": "Finish pulls before maintenance. Estimated dates.",
+      "sourceKey": "seed:hsr:4.5-p2-aventurine"
+    },
+    {
+      "game": "hsr",
+      "name": "Summer Rides the Surf · The Finale of a Lie — phase 2 Light Cone Warps",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-09-12 12:00",
+      "end": "2026-09-28 03:59",
+      "notify": false,
+      "notes": "Finish pulls before maintenance. Estimated dates.",
+      "sourceKey": "seed:hsr:4.5-p2-lc"
+    },
+    {
+      "game": "hsr",
+      "name": "Pure Fiction",
+      "type": "cycle",
+      "start": "2026-09-14 04:00",
+      "end": "2026-10-19 03:59",
+      "notes": "Domain Genesis; five-week rotation.",
+      "sourceKey": "seed:hsr:pf-4.5"
+    },
+    {
+      "game": "hsr",
+      "name": "Realm of the Strange",
+      "type": "event",
+      "start": "2026-09-19 04:00",
+      "end": "2026-09-28 03:59",
+      "endTimezone": "UTC+8",
+      "notes": "Double Cavern Relic drops.",
+      "sourceKey": "hsr:1392"
+    },
+    {
+      "game": "hsr",
+      "name": "HSR 4.6 Special Program",
+      "type": "livestream",
+      "start": "2026-09-20 11:30",
+      "end": "2026-09-20 12:30",
+      "timezone": "UTC",
+      "notes": "Estimated window. Recap and codes are in Livestreams.",
+      "sourceKey": "seed:hsr:4.6-livestream"
+    },
+    {
+      "game": "wuwa",
+      "name": "Cyberpunk collab: Lucy · Rebecca · Lucilla — final hours",
+      "type": "banner",
+      "start": "2026-06-04 10:00",
+      "end": "2026-07-09 23:00",
+      "notes": "Collab does not rerun — last chance.",
+      "sourceKey": "seed:wuwa:3.4-cyberpunk"
+    },
+    {
+      "game": "wuwa",
+      "name": "Cartethyia rerun — final hours (3.4)",
+      "type": "banner",
+      "start": "2026-06-18 10:00",
+      "end": "2026-07-09 23:00",
+      "sourceKey": "seed:wuwa:3.4-cartethyia"
+    },
+    {
+      "game": "wuwa",
+      "name": "v3.5 update maintenance",
+      "type": "maintenance",
+      "start": "2026-07-09 23:00",
+      "end": "2026-07-10 04:00",
+      "sourceKey": "seed:wuwa:3.5-maint"
+    },
+    {
+      "game": "wuwa",
+      "name": "Gifts of Starpath — free convenes",
+      "type": "event",
+      "start": "2026-07-10 04:00",
+      "end": "2026-08-19 03:59",
+      "notify": false,
+      "sourceKey": "seed:wuwa:3.5-gifts-starpath"
+    },
+    {
+      "game": "wuwa",
+      "name": "Gifts of Aftertune (login)",
+      "type": "event",
+      "start": "2026-07-10 04:00",
+      "end": "2026-08-19 03:59",
+      "dailyTouch": true,
+      "sourceKey": "seed:wuwa:3.5-login"
+    },
+    {
+      "game": "wuwa",
+      "name": "Mingshen Notices — commissions",
+      "type": "event",
+      "start": "2026-07-10 04:00",
+      "end": "2026-08-19 03:59",
+      "notify": false,
+      "sourceKey": "seed:wuwa:3.5-mingshen"
+    },
+    {
+      "game": "wuwa",
+      "name": "Lynae & Luuk Herssen reruns (phase 1)",
+      "type": "banner",
+      "start": "2026-07-10 04:00",
+      "end": "2026-07-31 09:59",
+      "sourceKey": "seed:wuwa:3.5-p1-reruns"
+    },
+    {
+      "game": "wuwa",
+      "name": "Shape of Yesterday",
+      "type": "event",
+      "start": "2026-07-10 04:00",
+      "end": "2026-08-20 23:00",
+      "notify": false,
+      "notes": "End TBC — verify in-game.",
+      "sourceKey": "seed:wuwa:3.5-shape"
+    },
+    {
+      "game": "wuwa",
+      "name": "Starpath Reverbs Convene — selectable 1.x rerun",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-07-10 04:00",
+      "end": "2026-08-19 11:59",
+      "notes": "Jiyan, Yinlin, Jinhsi, Changli, Zhezhi and Xiangli Yao; first 10-pull is free.",
+      "sourceKey": "seed:wuwa:3.5-starpath"
+    },
+    {
+      "game": "wuwa",
+      "name": "Tideforge Reverbs Convene — selectable weapon rerun",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-07-10 04:00",
+      "end": "2026-08-19 11:59",
+      "notify": false,
+      "sourceKey": "seed:wuwa:3.5-tideforge"
+    },
+    {
+      "game": "wuwa",
+      "name": "A Glimpse of Xuanfang",
+      "type": "event",
+      "start": "2026-07-10 04:00",
+      "end": "2026-08-19 03:59",
+      "notify": false,
+      "notes": "Explore to earn Astrite and materials. Estimated dates.",
+      "sourceKey": "seed:wuwa:3.5-xuanfang"
+    },
+    {
+      "game": "wuwa",
+      "name": "Yangyang: Xuanling + signature weapon (phase 1)",
+      "type": "banner",
+      "start": "2026-07-10 04:00",
+      "end": "2026-07-31 09:59",
+      "notes": "First SP character.",
+      "sourceKey": "seed:wuwa:3.5-xuanling"
+    },
+    {
+      "game": "wuwa",
+      "name": "Lament Recon: Tacet Crisis",
+      "type": "event",
+      "start": "2026-07-11 10:00",
+      "end": "2026-08-19 11:59",
+      "notify": false,
+      "notes": "1,200 Astrite and cosmetics. Estimated dates.",
+      "sourceKey": "seed:wuwa:3.5-lament"
+    },
+    {
+      "game": "wuwa",
+      "name": "Recaptured: Action Highlights",
+      "type": "event",
+      "start": "2026-07-16 04:00",
+      "end": "2026-08-06 03:59",
+      "sourceKey": "seed:wuwa:3.5-recaptured"
+    },
+    {
+      "game": "wuwa",
+      "name": "Bountiful Crescendo — double drops",
+      "type": "event",
+      "start": "2026-07-23 04:00",
+      "end": "2026-07-30 03:59",
+      "dailyTouch": true,
+      "notes": "Double leveling-material drops — plan Waveplates. One source says it runs to Aug 13 — verify in-game.",
+      "sourceKey": "seed:wuwa:3.5-crescendo"
+    },
+    {
+      "game": "wuwa",
+      "name": "Suisui + Aemeath rerun (phase 2)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-07-30 10:00",
+      "end": "2026-08-19 11:59",
+      "sourceKey": "seed:wuwa:3.5-p2"
+    },
+    {
+      "game": "wuwa",
+      "name": "Absolute Pulsation: Firstlight's Herald + Everbright Polestar (phase 2)",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-07-30 10:00",
+      "end": "2026-08-19 11:59",
+      "sourceKey": "seed:wuwa:3.5-p2-weapons"
+    },
+    {
+      "game": "wuwa",
+      "name": "Virtual Crisis: Quadrant Trials",
+      "type": "event",
+      "start": "2026-07-30 10:00",
+      "end": "2026-08-19 03:59",
+      "sourceKey": "seed:wuwa:3.5-quadrant"
+    },
+    {
+      "game": "wuwa",
+      "name": "Lollo Campaign: New Journey",
+      "type": "event",
+      "start": "2026-08-06 04:00",
+      "end": "2026-08-19 03:59",
+      "dailyTouch": true,
+      "notes": "Daily commissions and a stamp roulette for Astrite.",
+      "sourceKey": "seed:wuwa:3.5-lollo"
+    },
+    {
+      "game": "wuwa",
+      "name": "Chord Cleansing — double echo drops",
+      "type": "event",
+      "start": "2026-08-12 04:00",
+      "end": "2026-08-19 03:59",
+      "dailyTouch": true,
+      "notify": false,
+      "notes": "Double Echo drops. Estimated dates.",
+      "sourceKey": "seed:wuwa:3.5-chord"
+    },
+    {
+      "game": "wuwa",
+      "name": "v3.6 \"Lamplight in Mirage\" update maintenance",
+      "type": "maintenance",
+      "start": "2026-08-19 21:00",
+      "end": "2026-08-20 04:00",
+      "notes": "300 Astrite and 2 Crystal Solvents in compensation; maintenance may end early.",
+      "sourceKey": "seed:wuwa:3.6-maint"
+    },
+    {
+      "game": "wuwa",
+      "name": "Gifts of Drifting Mist (login)",
+      "type": "event",
+      "start": "2026-08-20 04:00",
+      "end": "2026-09-29 03:59",
+      "dailyTouch": true,
+      "notes": "",
+      "sourceKey": "seed:wuwa:3.6-login"
+    },
+    {
+      "game": "wuwa",
+      "name": "Qingxiao + Denia rerun (phase 1)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-08-20 04:00",
+      "end": "2026-09-10 09:59",
+      "notes": "",
+      "sourceKey": "seed:wuwa:3.6-p1"
+    },
+    {
+      "game": "wuwa",
+      "name": "Glint of Clouds + Forged Dwarf Star (phase 1 weapons)",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-08-20 04:00",
+      "end": "2026-09-10 09:59",
+      "notes": "",
+      "sourceKey": "seed:wuwa:3.6-p1-weapons"
+    },
+    {
+      "game": "wuwa",
+      "name": "Resonance Sim Realm",
+      "type": "event",
+      "start": "2026-08-22 10:00",
+      "end": "2026-09-29 11:59",
+      "sourceKey": "seed:wuwa:3.6-sim-realm"
+    },
+    {
+      "game": "wuwa",
+      "name": "Second Coming of Solaris: Coded Deception",
+      "type": "event",
+      "start": "2026-08-27 04:00",
+      "end": "2026-09-14 03:59",
+      "sourceKey": "seed:wuwa:3.6-solaris"
+    },
+    {
+      "game": "wuwa",
+      "name": "The Strings Remember",
+      "type": "event",
+      "start": "2026-09-03 04:00",
+      "end": "2026-09-21 03:59",
+      "sourceKey": "seed:wuwa:3.6-strings"
+    },
+    {
+      "game": "wuwa",
+      "name": "If Dreams Still Reverberate",
+      "type": "event",
+      "start": "2026-09-10 10:00",
+      "end": "2026-09-29 03:59",
+      "sourceKey": "seed:wuwa:3.6-dreams"
+    },
+    {
+      "game": "wuwa",
+      "name": "Jingran + Hiyuki/Mornye reruns (phase 2)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-09-10 10:00",
+      "end": "2026-09-29 11:59",
+      "notes": "",
+      "sourceKey": "seed:wuwa:3.6-p2"
+    },
+    {
+      "game": "wuwa",
+      "name": "Thousandfold Deliverance / Frostburn / Starfield Calibrator — weapons",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-09-10 10:00",
+      "end": "2026-09-29 11:59",
+      "notes": "",
+      "sourceKey": "seed:wuwa:3.6-p2-weapons"
+    },
+    {
+      "game": "wuwa",
+      "name": "Wuthering Exploration: Fogveil Pagoda",
+      "type": "event",
+      "start": "2026-09-17 04:00",
+      "end": "2026-09-29 03:59",
+      "notes": "",
+      "sourceKey": "seed:wuwa:3.6-fogveil"
+    },
+    {
+      "game": "wuwa",
+      "name": "WuWa 3.7 Special Broadcast",
+      "type": "livestream",
+      "start": "2026-09-19 11:00",
+      "end": "2026-09-19 12:00",
+      "timezone": "UTC",
+      "notes": "Estimated window. Recap is in Livestreams.",
+      "sourceKey": "seed:wuwa:3.7-livestream"
+    },
+    {
+      "game": "wuwa",
+      "name": "Chord Cleansing — double Echo drops",
+      "type": "event",
+      "start": "2026-09-22 04:00",
+      "end": "2026-09-29 03:59",
+      "dailyTouch": true,
+      "notes": "Double Tacet Suppression rewards for Waveplates; requires Union Level 19.",
+      "sourceKey": "seed:wuwa:3.6-chord"
+    },
+    {
+      "game": "zzz",
+      "name": "Return to Ridu — anniversary login",
+      "type": "event",
+      "start": "2026-06-06 20:30",
+      "end": "2026-07-17 03:59",
+      "dailyTouch": true,
+      "sourceKey": "zzz:1189"
+    },
+    {
+      "game": "zzz",
+      "name": "All-New Program",
+      "type": "event",
+      "start": "2026-06-15 13:00",
+      "end": "2026-07-28 03:59",
+      "notify": false,
+      "sourceKey": "zzz:1200"
+    },
+    {
+      "game": "zzz",
+      "name": "Celestial Nexus Intelligence Dossier",
+      "type": "event",
+      "start": "2026-06-15 18:30",
+      "end": "2026-07-29 05:59",
+      "notify": false,
+      "notes": "Roscaelifer exploration — runs to version end.",
+      "sourceKey": "zzz:1205"
+    },
+    {
+      "game": "zzz",
+      "name": "Commemorative Gift (anniversary)",
+      "type": "event",
+      "start": "2026-06-16 18:30",
+      "end": "2026-07-29 05:59",
+      "sourceKey": "zzz:203"
+    },
+    {
+      "game": "zzz",
+      "name": "Bangbang the Genius & Miracle Chip",
+      "type": "event",
+      "start": "2026-06-17 12:00",
+      "end": "2026-07-29 05:59",
+      "notify": false,
+      "sourceKey": "seed:zzz:3.0-bangbang"
+    },
+    {
+      "game": "zzz",
+      "name": "Gleaming Shadow Team Battle",
+      "type": "event",
+      "start": "2026-06-18 12:30",
+      "end": "2026-07-13 03:59",
+      "sourceKey": "zzz:1201"
+    },
+    {
+      "game": "zzz",
+      "name": "Assemble! Mock Exam Comeback Plan",
+      "type": "event",
+      "start": "2026-06-24 12:00",
+      "end": "2026-07-27 03:59",
+      "sourceKey": "zzz:1204"
+    },
+    {
+      "game": "zzz",
+      "name": "Tales of the Hobbling Crow",
+      "type": "event",
+      "start": "2026-07-01 12:30",
+      "end": "2026-07-20 03:59",
+      "sourceKey": "zzz:1203"
+    },
+    {
+      "game": "zzz",
+      "name": "Deadly Assault — current phase",
+      "type": "cycle",
+      "start": "2026-07-02 04:00",
+      "end": "2026-07-16 03:59",
+      "notes": "Biweekly Friday alternation — verify in-game.",
+      "sourceKey": "seed:zzz:da-2026-07-02"
+    },
+    {
+      "game": "zzz",
+      "name": "'En-Nah' Into Your Lap",
+      "type": "event",
+      "start": "2026-07-06 18:00",
+      "end": "2026-07-28 03:59",
+      "sourceKey": "zzz:1226"
+    },
+    {
+      "game": "zzz",
+      "name": "Art Is Bangboo!",
+      "type": "event",
+      "start": "2026-07-06 18:15",
+      "end": "2026-07-27 03:59",
+      "sourceKey": "zzz:212"
+    },
+    {
+      "game": "zzz",
+      "name": "The Final Callback",
+      "type": "event",
+      "start": "2026-07-08 12:00",
+      "end": "2026-07-28 03:59",
+      "sourceKey": "seed:zzz:3.0-final-callback"
+    },
+    {
+      "game": "zzz",
+      "name": "Norma (Outlier of Prodigies) + Sunna rerun — phase 2",
+      "type": "banner",
+      "start": "2026-07-08 12:00",
+      "end": "2026-07-28 14:59",
+      "sourceKey": "zzz:214"
+    },
+    {
+      "game": "zzz",
+      "name": "Shiyu Defense: Critical — current phase",
+      "type": "cycle",
+      "start": "2026-07-10 04:00",
+      "end": "2026-07-24 03:59",
+      "notes": "Biweekly Friday alternation — verify in-game.",
+      "sourceKey": "seed:zzz:shiyu-2026-07-10"
+    },
+    {
+      "game": "zzz",
+      "name": "Return to Ridu: Feathers of Reunion",
+      "type": "event",
+      "start": "2026-07-17 13:30",
+      "end": "2026-09-08 22:59",
+      "notes": "Rewards for returning players.",
+      "sourceKey": "seed:zzz:3.1-return-to-ridu"
+    },
+    {
+      "game": "zzz",
+      "name": "Data Bounty — Combat Simulation",
+      "type": "event",
+      "start": "2026-07-22 12:00",
+      "end": "2026-07-27 03:59",
+      "dailyTouch": true,
+      "notes": "Short combat-sim window.",
+      "sourceKey": "seed:zzz:3.0-data-bounty"
+    },
+    {
+      "game": "zzz",
+      "name": "v3.1 update maintenance",
+      "type": "maintenance",
+      "start": "2026-07-28 23:00",
+      "end": "2026-07-29 04:00",
+      "sourceKey": "seed:zzz:3.1-maint"
+    },
+    {
+      "game": "zzz",
+      "name": "Aria — Neon Angel rerun (phase 1)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-07-29 04:00",
+      "end": "2026-08-19 11:59",
+      "sourceKey": "seed:zzz:3.1-aria"
+    },
+    {
+      "game": "zzz",
+      "name": "Angel in the Shell — W-Engine (phase 1)",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-07-29 04:00",
+      "end": "2026-08-19 11:59",
+      "sourceKey": "seed:zzz:3.1-aria-engine"
+    },
+    {
+      "game": "zzz",
+      "name": "New Eridu City Fund 3.1",
+      "type": "event",
+      "start": "2026-07-29 04:00",
+      "end": "2026-09-07 03:59",
+      "notes": "Plan purchases close September 7 at 02:59; Expansion Tasks and reward claims close one hour later.",
+      "sourceKey": "seed:zzz:3.1-city-fund"
+    },
+    {
+      "game": "zzz",
+      "name": "Filmgoer Thank-You Gift",
+      "type": "event",
+      "start": "2026-07-29 04:00",
+      "end": "2026-09-08 22:59",
+      "notes": "Purchase rewards.",
+      "sourceKey": "seed:zzz:3.1-filmgoer"
+    },
+    {
+      "game": "zzz",
+      "name": "The Final Callback — audition stages",
+      "type": "event",
+      "start": "2026-07-29 04:00",
+      "end": "2026-09-08 14:59",
+      "notes": "First-clear rewards: Remielle until September 8 at 14:59, Aria until August 19 at 11:59; phase 2 trials open August 19 at 12:00.",
+      "sourceKey": "seed:zzz:3.1-final-callback"
+    },
+    {
+      "game": "zzz",
+      "name": "Gift From the Clouds — 10 free tapes",
+      "type": "event",
+      "start": "2026-07-29 04:00",
+      "end": "2026-09-08 03:59",
+      "dailyTouch": true,
+      "notes": "Log in on 7 days.",
+      "sourceKey": "seed:zzz:3.1-gift-clouds"
+    },
+    {
+      "game": "zzz",
+      "name": "Phaethon's Grand Reveal of the Year",
+      "type": "event",
+      "start": "2026-07-29 04:00",
+      "end": "2026-09-08 23:00",
+      "notes": "",
+      "sourceKey": "seed:zzz:3.1-grand-reveal"
+    },
+    {
+      "game": "zzz",
+      "name": "Potential Hypothesis: Hunting Game",
+      "type": "event",
+      "start": "2026-07-29 04:00",
+      "end": "2026-09-08 23:00",
+      "notes": "One-time trial stages.",
+      "sourceKey": "seed:zzz:3.1-hunting-game"
+    },
+    {
+      "game": "zzz",
+      "name": "Marcel Anniversary Gift — free S-Rank Agent + W-Engine",
+      "type": "event",
+      "start": "2026-07-29 04:00",
+      "end": "2026-09-08 23:00",
+      "notes": "Choose 1 of 5 limited S-Rank Agents and 1 of 5 limited S-Rank W-Engines; 1,600 Polychrome.",
+      "sourceKey": "seed:zzz:3.1-marcel"
+    },
+    {
+      "game": "zzz",
+      "name": "Remielle — Paradise Regained (flagship)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-07-29 04:00",
+      "end": "2026-09-08 14:59",
+      "notes": "Runs through both phases of 3.1.",
+      "sourceKey": "seed:zzz:3.1-remielle"
+    },
+    {
+      "game": "zzz",
+      "name": "Ode of Resurrected Wings — W-Engine (flagship)",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-07-29 04:00",
+      "end": "2026-09-08 14:59",
+      "sourceKey": "seed:zzz:3.1-remielle-engine"
+    },
+    {
+      "game": "zzz",
+      "name": "Summer Waves Roll In — Fantasy Resort summer event",
+      "type": "event",
+      "start": "2026-07-29 04:00",
+      "end": "2026-09-07 03:59",
+      "notes": "Lucy outfit, namecard and Hamster Cage.",
+      "sourceKey": "seed:zzz:3.1-summer-waves"
+    },
+    {
+      "game": "zzz",
+      "name": "Deadly Assault",
+      "type": "cycle",
+      "start": "2026-07-29 04:00",
+      "end": "2026-08-14 03:59",
+      "notify": false,
+      "notes": "Estimated dates.",
+      "sourceKey": "seed:zzz:da-2026-07-29"
+    },
+    {
+      "game": "zzz",
+      "name": "Shiyu Defense: Critical",
+      "type": "cycle",
+      "start": "2026-08-07 04:00",
+      "end": "2026-08-21 03:59",
+      "notify": false,
+      "notes": "Critical Node, 3.1 Phase I buffs. Estimated dates.",
+      "sourceKey": "seed:zzz:shiyu-2026-08-07"
+    },
+    {
+      "game": "zzz",
+      "name": "Snap! Focus Showdown!",
+      "type": "event",
+      "start": "2026-08-07 10:00",
+      "end": "2026-08-24 03:59",
+      "sourceKey": "seed:zzz:3.1-snap-showdown"
+    },
+    {
+      "game": "zzz",
+      "name": "Extensive Patrol: Triple Bounty",
+      "type": "event",
+      "start": "2026-08-12 04:00",
+      "end": "2026-08-17 03:59",
+      "dailyTouch": true,
+      "notes": "Triple Area Patrol rewards.",
+      "sourceKey": "seed:zzz:3.1-patrol-bounty"
+    },
+    {
+      "game": "zzz",
+      "name": "Deadly Assault",
+      "type": "cycle",
+      "start": "2026-08-14 04:00",
+      "end": "2026-08-28 03:59",
+      "notify": false,
+      "notes": "3.1 Phase II: Girtablullu, Ye Shiyuan the Thrall and Miasma Priest. Estimated dates.",
+      "sourceKey": "seed:zzz:da-2026-08-14"
+    },
+    {
+      "game": "zzz",
+      "name": "Crispy Meal Deployment Plan",
+      "type": "event",
+      "start": "2026-08-19 10:00",
+      "end": "2026-09-07 03:59",
+      "dailyTouch": true,
+      "notes": "Event commissions unlock daily.",
+      "sourceKey": "seed:zzz:3.1-crispy-meal"
+    },
+    {
+      "game": "zzz",
+      "name": "Great En-Nah Giveaway — 10 tapes + 10 Boopons",
+      "type": "event",
+      "start": "2026-08-19 10:00",
+      "end": "2026-09-08 03:59",
+      "dailyTouch": true,
+      "notes": "Log in on 7 days.",
+      "sourceKey": "seed:zzz:3.1-ennah-giveaway"
+    },
+    {
+      "game": "zzz",
+      "name": "W-Engine Reverberation — selectable rerun (phase 2)",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-08-19 12:00",
+      "end": "2026-09-08 14:59",
+      "sourceKey": "seed:zzz:3.1-engine-reverb"
+    },
+    {
+      "game": "zzz",
+      "name": "Exclusive Rescreening: Dialyn · Yuzuha · Harumasa (phase 2)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-08-19 12:00",
+      "end": "2026-09-08 14:59",
+      "notes": "Choose a rerun banner.",
+      "sourceKey": "seed:zzz:3.1-rescreening"
+    },
+    {
+      "game": "zzz",
+      "name": "Sigrid — Till the Ends of the Sky (phase 2)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-08-19 12:00",
+      "end": "2026-09-08 14:59",
+      "sourceKey": "seed:zzz:3.1-sigrid"
+    },
+    {
+      "game": "zzz",
+      "name": "Knight's Extolment — Sigrid W-Engine (phase 2)",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-08-19 12:00",
+      "end": "2026-09-08 14:59",
+      "sourceKey": "seed:zzz:3.1-sigrid-engine"
+    },
+    {
+      "game": "zzz",
+      "name": "Shiyu Defense: Critical",
+      "type": "cycle",
+      "start": "2026-08-21 04:00",
+      "end": "2026-09-04 03:59",
+      "notify": false,
+      "notes": "3.1 Phase II buffs. Estimated dates.",
+      "sourceKey": "seed:zzz:shiyu-2026-08-21"
+    },
+    {
+      "game": "zzz",
+      "name": "Dangerous Fugitive's Leisurely Vacation",
+      "type": "event",
+      "start": "2026-08-24 10:00",
+      "end": "2026-09-07 03:59",
+      "sourceKey": "seed:zzz:3.1-fugitive"
+    },
+    {
+      "game": "zzz",
+      "name": "Deadly Assault",
+      "type": "cycle",
+      "start": "2026-08-28 04:00",
+      "end": "2026-09-11 03:59",
+      "notify": false,
+      "notes": "Estimated dates.",
+      "sourceKey": "seed:zzz:da-2026-08-28"
+    },
+    {
+      "game": "zzz",
+      "name": "Ding-Dong! Delivery Training in Progress",
+      "type": "event",
+      "start": "2026-08-28 10:00",
+      "end": "2026-09-14 03:59",
+      "sourceKey": "seed:zzz:3.1-delivery-training"
+    },
+    {
+      "game": "zzz",
+      "name": "ZZZ 3.2 Special Program",
+      "type": "livestream",
+      "start": "2026-08-28 12:30",
+      "end": "2026-08-28 14:30",
+      "notes": "Officially announced: 19:30 UTC+8. Reveals the v3.2 slate — refresh this file after it airs.",
+      "sourceKey": "seed:zzz:3.2-livestream"
+    },
+    {
+      "game": "zzz",
+      "name": "Combat Training: Triple Bounty",
+      "type": "event",
+      "start": "2026-09-02 04:00",
+      "end": "2026-09-07 03:59",
+      "dailyTouch": true,
+      "notes": "Triple Combat Simulation rewards.",
+      "sourceKey": "seed:zzz:3.1-combat-bounty"
+    },
+    {
+      "game": "zzz",
+      "name": "Shiyu Defense: Critical",
+      "type": "cycle",
+      "start": "2026-09-04 04:00",
+      "end": "2026-09-18 03:59",
+      "notify": false,
+      "notes": "Estimated dates.",
+      "sourceKey": "seed:zzz:shiyu-2026-09-04"
+    },
+    {
+      "game": "zzz",
+      "name": "v3.2 update maintenance",
+      "type": "maintenance",
+      "start": "2026-09-08 22:00",
+      "end": "2026-09-09 03:00",
+      "timezone": "UTC",
+      "notes": "Estimated dates.",
+      "sourceKey": "seed:zzz:3.2-maint"
+    },
+    {
+      "game": "zzz",
+      "name": "All-New Program — 7-day login",
+      "type": "event",
+      "start": "2026-09-09 03:00",
+      "end": "2026-10-20 03:59",
+      "startTimezone": "UTC",
+      "dailyTouch": true,
+      "notes": "",
+      "sourceKey": "seed:zzz:3.2-all-new-program"
+    },
+    {
+      "game": "zzz",
+      "name": "Angels Support Operation",
+      "type": "event",
+      "start": "2026-09-09 03:00",
+      "end": "2026-11-30 03:59",
+      "startTimezone": "UTC",
+      "notes": "",
+      "sourceKey": "seed:zzz:3.2-angels-support"
+    },
+    {
+      "game": "zzz",
+      "name": "New Eridu City Fund",
+      "type": "event",
+      "start": "2026-09-09 03:00",
+      "end": "2026-10-19 03:59",
+      "startTimezone": "UTC",
+      "dailyTouch": true,
+      "notes": "",
+      "sourceKey": "seed:zzz:3.2-city-fund"
+    },
+    {
+      "game": "zzz",
+      "name": "Claret — Bloodmoon Rising (phase 1)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-09-09 03:00",
+      "end": "2026-09-30 11:59",
+      "startTimezone": "UTC",
+      "notes": "",
+      "sourceKey": "seed:zzz:3.2-claret"
+    },
+    {
+      "game": "zzz",
+      "name": "Final Callback — phase 1 auditions",
+      "type": "event",
+      "start": "2026-09-09 03:00",
+      "end": "2026-09-30 11:59",
+      "startTimezone": "UTC",
+      "notes": "",
+      "sourceKey": "seed:zzz:3.2-final-callback"
+    },
+    {
+      "game": "zzz",
+      "name": "Nangong Yu — Axiom of Captivation rerun (phase 1)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-09-09 03:00",
+      "end": "2026-09-30 11:59",
+      "startTimezone": "UTC",
+      "notes": "",
+      "sourceKey": "seed:zzz:3.2-nangong-yu"
+    },
+    {
+      "game": "zzz",
+      "name": "Crimson Thirst / Neon Fantasies — W-Engines (phase 1)",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-09-09 03:00",
+      "end": "2026-09-30 11:59",
+      "startTimezone": "UTC",
+      "notes": "",
+      "sourceKey": "seed:zzz:3.2-p1-engines"
+    },
+    {
+      "game": "zzz",
+      "name": "Potential Hypothesis: Reforged in Fire",
+      "type": "event",
+      "start": "2026-09-09 03:00",
+      "end": "2026-10-20 22:00",
+      "timezone": "UTC",
+      "notes": "",
+      "sourceKey": "seed:zzz:3.2-reforged"
+    },
+    {
+      "game": "zzz",
+      "name": "Clink, Clank, Pinball Knight!",
+      "type": "event",
+      "start": "2026-09-10 10:00",
+      "end": "2026-10-19 03:59",
+      "notes": "",
+      "sourceKey": "seed:zzz:3.2-pinball-knight"
+    },
+    {
+      "game": "zzz",
+      "name": "Deadly Assault",
+      "type": "cycle",
+      "start": "2026-09-11 04:00",
+      "end": "2026-09-25 03:59",
+      "notify": false,
+      "notes": "Estimated dates.",
+      "sourceKey": "seed:zzz:da-2026-09-11"
+    },
+    {
+      "game": "zzz",
+      "name": "Shadow Chase Showdown",
+      "type": "event",
+      "start": "2026-09-16 10:00",
+      "end": "2026-10-05 03:59",
+      "notes": "",
+      "sourceKey": "seed:zzz:3.2-shadow-chase"
+    },
+    {
+      "game": "zzz",
+      "name": "Shiyu Defense: Critical",
+      "type": "cycle",
+      "start": "2026-09-18 04:00",
+      "end": "2026-10-02 03:59",
+      "notify": false,
+      "notes": "Estimated dates.",
+      "sourceKey": "seed:zzz:shiyu-2026-09-18"
+    },
+    {
+      "game": "zzz",
+      "name": "Advanced Bounty: Area Patrol",
+      "type": "event",
+      "start": "2026-09-23 04:00",
+      "end": "2026-09-28 03:59",
+      "dailyTouch": true,
+      "notes": "",
+      "sourceKey": "seed:zzz:3.2-area-bounty"
+    },
+    {
+      "game": "zzz",
+      "name": "Surprise Screening Plan",
+      "type": "event",
+      "start": "2026-09-23 10:00",
+      "end": "2026-10-20 03:59",
+      "dailyTouch": true,
+      "notes": "",
+      "sourceKey": "seed:zzz:3.2-screening"
+    },
+    {
+      "game": "zzz",
+      "name": "En-Nah Into Your Lap",
+      "type": "event",
+      "start": "2026-09-30 10:00",
+      "end": "2026-10-20 03:59",
+      "dailyTouch": true,
+      "notes": "",
+      "sourceKey": "seed:zzz:3.2-en-nah"
+    },
+    {
+      "game": "zzz",
+      "name": "Diary of an Orbie Parent",
+      "type": "event",
+      "start": "2026-09-30 10:00",
+      "end": "2026-10-19 03:59",
+      "dailyTouch": true,
+      "notes": "",
+      "sourceKey": "seed:zzz:3.2-orbie-parent"
+    },
+    {
+      "game": "zzz",
+      "name": "Crimson Moon Casket / Frostfall Sickle — W-Engines (phase 2)",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-09-30 12:00",
+      "end": "2026-10-20 14:59",
+      "notify": false,
+      "notes": "Estimated dates.",
+      "sourceKey": "seed:zzz:3.2-p2-engines"
+    },
+    {
+      "game": "zzz",
+      "name": "Promeia — Cold Rain Wanes in the Night rerun (phase 2)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-09-30 12:00",
+      "end": "2026-10-20 14:59",
+      "notify": false,
+      "notes": "First rerun. Estimated dates.",
+      "sourceKey": "seed:zzz:3.2-promeia"
+    },
+    {
+      "game": "zzz",
+      "name": "Roxy — Cindernight Respite (phase 2)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-09-30 12:00",
+      "end": "2026-10-20 14:59",
+      "notify": false,
+      "notes": "Estimated dates.",
+      "sourceKey": "seed:zzz:3.2-roxy"
+    },
+    {
+      "game": "zzz",
+      "name": "Chronicles of the Hobbling Crow",
+      "type": "event",
+      "start": "2026-10-03 10:00",
+      "end": "2026-10-19 03:59",
+      "dailyTouch": false,
+      "notes": "",
+      "sourceKey": "seed:zzz:3.2-hobbling-crow"
+    },
+    {
+      "game": "zzz",
+      "name": "ZZZ 3.3 Special Program",
+      "type": "livestream",
+      "start": "2026-10-09 12:30",
+      "end": "2026-10-09 13:30",
+      "timezone": "UTC+1",
+      "notes": "Journey to the Sky. Estimated window.",
+      "sourceKey": "seed:zzz:3.3-livestream"
+    },
+    {
+      "game": "zzz",
+      "name": "Data Bounty: Combat Simulation",
+      "type": "event",
+      "start": "2026-10-14 04:00",
+      "end": "2026-10-19 03:59",
+      "dailyTouch": true,
+      "notes": "",
+      "sourceKey": "seed:zzz:3.2-data-bounty"
+    }
+  ]
+}

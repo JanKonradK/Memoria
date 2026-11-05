@@ -1,10 +1,26 @@
+import type { GamePity } from './pity';
+import type { GameSavings } from './savings';
 import { detectLocalTz } from './timezone';
 
 export type Cadence = 'daily' | 'weekly' | 'monthly' | 'custom';
 export type ResourceKind = 'regen' | 'weekly' | 'counter';
 export type TaskMode = 'check' | 'timer' | 'count';
-export const CURRENT_SCHEMA_VERSION = 8;
+/**
+ * 9 (Beta 0.4) adds the optional `savings` plan and `pity` tracker on games. The data needs no
+ * change; the bump makes older apps refuse a document they would otherwise
+ * accept, strip the plan from and then write back over it.
+ */
+export const CURRENT_SCHEMA_VERSION = 9;
 export const MAX_GAME_IMAGE_LENGTH = 200_000;
+/**
+ * A game image is always an embedded picture. A web address would load from
+ * someone else's server whenever the card shows, revealing the viewer's IP,
+ * so backups, sync and the shared folder can only carry raster data URLs.
+ */
+export const GAME_IMAGE_PATTERN = /^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/;
+export function isSafeGameImage(value: unknown): value is string {
+  return typeof value === 'string' && value.length <= MAX_GAME_IMAGE_LENGTH && GAME_IMAGE_PATTERN.test(value);
+}
 
 /** Everything syncable carries updatedAt (epoch ms) for last-write-wins merge. */
 export interface Syncable {
@@ -40,7 +56,7 @@ export interface Game extends Syncable {
   color3?: string;
   /** Emoji used as the game icon (fallback when no image is set). */
   icon: string;
-  /** Optional character/cover art (data URL or remote URL). Shown on the card. */
+  /** Optional character/cover art, always an embedded picture (see GAME_IMAGE_PATTERN). */
   image?: string;
   platform: 'pc' | 'mobile' | 'both';
   /** IANA timezone of the game server, e.g. "Etc/GMT-1" (fixed UTC+1). */
@@ -61,6 +77,10 @@ export interface Game extends Syncable {
   titleFont?: string;
   /** Absent uses the grouped default card. Stored with the game for backup/sync. */
   cardLayout?: GameLayoutItem[];
+  /** Savings planner balance and goals for this account. */
+  savings?: GameSavings;
+  /** Pity tracker: pulls since the last 5★ per banner type, and past 5★s. */
+  pity?: GamePity;
 }
 
 export interface Resource extends Syncable {

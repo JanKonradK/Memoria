@@ -35,7 +35,7 @@ beforeEach(() => {
 
 afterEach(() => useApp.setState({ load: originalLoad }));
 
-it('keeps three primary routes and makes timeline livestreams and settings reachable', () => {
+it('keeps four primary routes and makes timeline livestreams and settings reachable', () => {
   useUI.setState({ tab: 'today' });
   render(
     <>
@@ -48,7 +48,7 @@ it('keeps three primary routes and makes timeline livestreams and settings reach
     within(nav)
       .getAllByRole('button')
       .map((button) => button.textContent),
-  ).toEqual(['Timeline', 'Today', 'Settings']);
+  ).toEqual(['Timeline', 'Today', 'Pulls', 'Settings']);
   fireEvent.click(within(nav).getByRole('button', { name: 'Timeline' }));
   // Timeline's own views sit on the page, outside the app bar.
   expect(within(screen.getByRole('banner')).queryByRole('radio', { name: 'List' })).toBeNull();

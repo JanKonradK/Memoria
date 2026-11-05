@@ -217,6 +217,7 @@ export const MIGRATIONS: Readonly<Record<number, StateMigration>> = {
   5: stripGameCardDisplayToggles,
   6: migrateCrystalflyTrapTimer,
   7: migrateRoutineDefaults,
+  // 8 -> 9 changes nothing: it only marks documents that may carry savings plans.
 };
 
 /**

@@ -58,7 +58,6 @@ const required = [
   ['desktop/memoria.ico', 'desktop/memoria.ico'],
   ['desktop/Install-Shortcut.ps1', 'desktop/Install-Shortcut.ps1'],
   ['desktop/Install-Lock.ps1', 'desktop/Install-Lock.ps1'],
-  ['desktop/Enable-Phone-Sync.ps1', 'desktop/Enable-Phone-Sync.ps1'],
 ];
 for (const [source] of [...required, ['desktop/dist/core.js']]) {
   if (!existsSync(join(root, source))) fail(`missing ${source} — run "npm run build" before packaging`);

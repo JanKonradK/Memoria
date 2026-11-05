@@ -12,7 +12,7 @@ test.beforeEach(async ({ page }, info) => {
 
 test('Today starts a new roster and keeps all navigation reachable', async ({ page }, info) => {
   const primary = page.getByRole('navigation', { name: 'Primary', exact: true });
-  await expect(primary.getByRole('button')).toHaveText(['Timeline', 'Today', 'Settings']);
+  await expect(primary.getByRole('button')).toHaveText(['Timeline', 'Today', 'Pulls', 'Settings']);
   await expect(primary.getByRole('button', { name: 'Today' })).toHaveAttribute('aria-current', 'page');
   await page.getByRole('button', { name: 'Add a game', exact: true }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();

@@ -1,6 +1,9 @@
 import { z } from 'zod';
+import { IANAZone } from 'luxon';
 import type { AppState } from './types';
-import { CURRENT_SCHEMA_VERSION, MAX_GAME_IMAGE_LENGTH } from './types';
+import { GamePitySchema } from './pity';
+import { GameSavingsSchema } from './savings';
+import { CURRENT_SCHEMA_VERSION, GAME_IMAGE_PATTERN, MAX_GAME_IMAGE_LENGTH } from './types';
 
 // Browser CSP forbids code generation. Skip Zod's new Function probe instead
 // of causing a CSP violation before its interpreter fallback takes over.
@@ -87,9 +90,12 @@ const game = z.object({
   color2: z.string().max(32).optional(),
   color3: z.string().max(32).optional(),
   icon: z.string().max(64),
-  image: z.string().max(MAX_GAME_IMAGE_LENGTH).optional(),
+  image: z.string().max(MAX_GAME_IMAGE_LENGTH).regex(GAME_IMAGE_PATTERN).optional(),
   platform: z.enum(['pc', 'mobile', 'both']),
-  tz: z.string().max(100),
+  tz: z
+    .string()
+    .max(100)
+    .refine((zone) => IANAZone.isValidZone(zone), 'Unknown timezone.'),
   dailyResetHour: z.number().int().min(0).max(23),
   weeklyResetDay: z.number().int().min(1).max(7),
   monthlyResetDay: z.number().int().min(1).max(28),
@@ -99,6 +105,8 @@ const game = z.object({
   processNames: z.array(z.string().max(160)).max(20).optional(),
   titleFont: z.string().max(120).optional(),
   cardLayout: z.array(GameLayoutItemSchema).max(2000).optional(),
+  savings: GameSavingsSchema.optional(),
+  pity: GamePitySchema.optional(),
 });
 
 const resource = z.object({
@@ -206,7 +214,11 @@ const settings = z.object({
   ...syncable,
   quietStart: z.number().int().min(0).max(1439).nullable(),
   quietEnd: z.number().int().min(0).max(1439).nullable(),
-  localTz: z.string().min(1).max(100),
+  localTz: z
+    .string()
+    .min(1)
+    .max(100)
+    .refine((zone) => IANAZone.isValidZone(zone), 'Unknown timezone.'),
   sleepHours: finite.min(1).max(24),
   /** A SEED_UPDATED stamp: YYYY-MM-DD, or absent. */
   seedImportedVersion: z

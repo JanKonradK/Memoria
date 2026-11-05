@@ -1,6 +1,9 @@
 import type { ZodType } from 'zod';
+import { IANAZone } from 'luxon';
 import type { AppState, Resource, Settings, SettingsField, Snapshot, Syncable, Task } from './types';
-import { emptyState, MAX_GAME_IMAGE_LENGTH } from './types';
+import { emptyState, isSafeGameImage } from './types';
+import { GamePitySchema } from './pity';
+import { GameSavingsSchema } from './savings';
 import { groupBy, objectRecord } from './internal';
 import { migrateState } from './migrations';
 import { inferLegacyResource, inferLegacyTask } from './tracking';
@@ -166,8 +169,10 @@ function normalizeGame(raw: unknown): AppState['games'][number] | null {
     weeklyResetDay: clampInt(record.weeklyResetDay, 1, 7, 1),
     monthlyResetDay: clampInt(record.monthlyResetDay, 1, 28, 1),
     sort: finiteNumber(record.sort) ? record.sort : 0,
+    // A zone luxon cannot load would make every reset calculation throw, on every load.
+    tz: isZone(record.tz) ? record.tz : 'UTC',
   };
-  if (typeof game.image === 'string' && game.image.length > MAX_GAME_IMAGE_LENGTH) delete game.image;
+  if ('image' in game && !isSafeGameImage(game.image)) delete game.image;
   // A damaged optional layout must not discard the game and its tracking data.
   if (Array.isArray(game.cardLayout)) {
     const seen = new Set<string>();
@@ -178,6 +183,17 @@ function normalizeGame(raw: unknown): AppState['games'][number] | null {
       return [parsed.data];
     });
   } else delete game.cardLayout;
+  // A damaged savings plan is dropped on its own; the game and its tracking survive.
+  if ('savings' in game) {
+    const savings = GameSavingsSchema.safeParse(game.savings);
+    if (savings.success) game.savings = savings.data;
+    else delete game.savings;
+  }
+  if ('pity' in game) {
+    const pity = GamePitySchema.safeParse(game.pity);
+    if (pity.success) game.pity = pity.data;
+    else delete game.pity;
+  }
   return parseRow(ROWS.games, game);
 }
 
@@ -330,21 +346,26 @@ export function mergeState(a: AppState, b: AppState): AppState {
 
 const CATCH_UP_KEYS_PER_GAME = 200;
 
+function isZone(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0 && value.length <= 100 && IANAZone.isValidZone(value);
+}
+
 /** Keep well-formed entries only; a malformed one is dropped rather than failing every setting. */
 function normalizeCatchUpSeen(raw: unknown): Record<string, string[]> | undefined {
   const record = objectRecord(raw);
   if (!record) return undefined;
-  const out: Record<string, string[]> = {};
+  // A Map, so a key such as "constructor" or "__proto__" is only ever data.
+  const out = new Map<string, string[]>();
   for (const [game, keys] of Object.entries(record)) {
-    if (game.length < 1 || game.length > 40 || !Array.isArray(keys)) continue;
+    if (game.length < 1 || game.length > 40 || game === '__proto__' || !Array.isArray(keys)) continue;
     const valid = [
       ...new Set(keys.filter((key): key is string => typeof key === 'string' && key.length > 0 && key.length <= 80)),
     ]
       .sort()
       .slice(-CATCH_UP_KEYS_PER_GAME);
-    if (valid.length > 0) out[game] = valid;
+    if (valid.length > 0) out.set(game, valid);
   }
-  return Object.keys(out).length > 0 ? out : undefined;
+  return out.size > 0 ? Object.fromEntries(out) : undefined;
 }
 
 /** Union per game: reading something on one device never unreads it on another. */
@@ -353,11 +374,11 @@ function mergeCatchUpSeen(
   b: Record<string, string[]> | undefined,
 ): Record<string, string[]> | undefined {
   if (!a && !b) return undefined;
-  const merged: Record<string, string[]> = {};
+  const merged = new Map<string, string[]>();
   for (const side of [a, b]) {
-    for (const [game, keys] of Object.entries(side ?? {})) merged[game] = [...(merged[game] ?? []), ...keys];
+    for (const [game, keys] of Object.entries(side ?? {})) merged.set(game, [...(merged.get(game) ?? []), ...keys]);
   }
-  return normalizeCatchUpSeen(merged);
+  return normalizeCatchUpSeen(Object.fromEntries(merged));
 }
 
 function normalizeSettings(raw: unknown): Settings {
@@ -376,10 +397,7 @@ function normalizeSettings(raw: unknown): Settings {
   const candidate = {
     quietStart: record.quietStart === null ? null : clampInt(record.quietStart, 0, 1439, base.quietStart ?? 0),
     quietEnd: record.quietEnd === null ? null : clampInt(record.quietEnd, 0, 1439, base.quietEnd ?? 0),
-    localTz:
-      typeof record.localTz === 'string' && record.localTz.length > 0 && record.localTz.length <= 100
-        ? record.localTz
-        : base.localTz,
+    localTz: isZone(record.localTz) ? record.localTz : base.localTz,
     sleepHours: finiteNumber(record.sleepHours) ? Math.min(24, Math.max(1, record.sleepHours)) : base.sleepHours,
     // Malformed becomes absent rather than rejected: an unreadable stamp means
     // "never refreshed", which costs one redundant refresh. Letting it through

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /** Reactive CSS media query — drives the bottom-sheet → centered-dialog switch. */
 export function useMediaQuery(query: string): boolean {
@@ -55,4 +55,29 @@ export function useOnline(): boolean {
     };
   }, []);
   return online;
+}
+
+/** A callback ref and the element's width in whole pixels, kept current as it resizes. */
+export function useElementWidth() {
+  const observerRef = useRef<ResizeObserver | null>(null);
+  const [width, setWidth] = useState(0);
+
+  const setElement = useCallback((element: HTMLElement | null) => {
+    observerRef.current?.disconnect();
+    observerRef.current = null;
+    if (!element) return;
+    const updateWidth = (nextWidth: number) => setWidth(Math.ceil(nextWidth));
+    updateWidth(element.getBoundingClientRect().width);
+
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) updateWidth(entry.target.getBoundingClientRect().width);
+    });
+    observer.observe(element);
+    observerRef.current = observer;
+  }, []);
+
+  useEffect(() => () => observerRef.current?.disconnect(), []);
+
+  return [setElement, width] as const;
 }

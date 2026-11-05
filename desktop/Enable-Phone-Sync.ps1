@@ -1,45 +1,39 @@
-# Allow the paired phone to reach this app on the local network, or through a
-# private network app such as Tailscale (100.64.0.0/10), only.
+# Allow the paired phone to reach Memoria on a private network, or through
+# Tailscale (100.64.0.0/10), only.
+#
+# This file is compiled into Memoria.exe and run elevated from memory. It is
+# never read from the install folder, so editing a copy on disk changes nothing.
+# Memoria puts `$program = '<path to Memoria.exe>'` in front of it.
 $ErrorActionPreference = 'Stop'
-$identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-$principal = New-Object Security.Principal.WindowsPrincipal($identity)
-if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-  # Windows shows its normal administrator consent prompt. Never bypass it.
-  $scriptPath = $MyInvocation.MyCommand.Path
-  $child = Start-Process powershell.exe -Verb RunAs -WindowStyle Hidden -Wait -PassThru -ArgumentList @(
-    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $scriptPath + '"')
-  )
-  exit $child.ExitCode
-}
-
-$install = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-if (-not (Test-Path -LiteralPath (Join-Path $install 'Memoria.exe'))) {
-  $install = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Programs\Memoria'
-}
-$program = Join-Path $install 'Memoria.exe'
-$release = Join-Path $install 'release.json'
-if (-not (Test-Path -LiteralPath $program) -or -not (Test-Path -LiteralPath $release)) {
+if (-not $program -or -not (Test-Path -LiteralPath $program)) {
   throw 'Install Memoria before you enable phone sync.'
 }
-$record = Get-Content -LiteralPath $release -Raw | ConvertFrom-Json
-if ($record.name -ne 'Memoria' -or @('tauri', 'electron') -notcontains $record.runtime) {
-  throw 'The selected folder is not a standalone Memoria install.'
-}
-$ruleName = 'Memoria-Native-Phone-Sync-17820'
-$options = @{
+$common = @{
   Direction = 'Inbound'
   Action = 'Allow'
   Enabled = 'True'
-  Profile = @('Private', 'Public')
   Program = $program
   Protocol = 'TCP'
   LocalPort = 17820
-  RemoteAddress = @('LocalSubnet', '100.64.0.0/10')
   EdgeTraversalPolicy = 'Block'
+  Group = 'Memoria'
 }
-if (Get-NetFirewallRule -Name $ruleName -ErrorAction SilentlyContinue) {
-  Set-NetFirewallRule -Name $ruleName @options | Out-Null
-} else {
-  New-NetFirewallRule -Name $ruleName -DisplayName 'Memoria phone sync (local network)' -Group 'Memoria' @options | Out-Null
+# The Tailscale rule comes first and every rule is changed in place, so a
+# failure part-way leaves the phone with the access it already had.
+$rules = @(
+  # Tailscale's address range only, on any profile, so sync away from home keeps working.
+  @{ Name = 'Memoria-Native-Phone-Sync-Tailscale-17820'; DisplayName = 'Memoria phone sync (Tailscale)';
+     Profile = 'Any'; RemoteAddress = '100.64.0.0/10' },
+  # Home Wi-Fi: devices on the same subnet, on networks Windows marks Private.
+  @{ Name = 'Memoria-Native-Phone-Sync-17820'; DisplayName = 'Memoria phone sync (private network)';
+     Profile = 'Private'; RemoteAddress = 'LocalSubnet' }
+)
+foreach ($rule in $rules) {
+  $options = $common + @{ Profile = $rule.Profile; RemoteAddress = $rule.RemoteAddress }
+  if (Get-NetFirewallRule -Name $rule.Name -ErrorAction SilentlyContinue) {
+    $options.Remove('Group')
+    Set-NetFirewallRule -Name $rule.Name -NewDisplayName $rule.DisplayName @options | Out-Null
+  } else {
+    New-NetFirewallRule -Name $rule.Name -DisplayName $rule.DisplayName @options | Out-Null
+  }
 }
-Write-Output 'Memoria phone sync is allowed on this local network.'

@@ -31,7 +31,7 @@ use crate::update;
 
 pub const PORTS: [u16; 3] = [17817, 17818, 17819];
 const CALENDAR_URL: &str = "https://raw.githubusercontent.com/JanKonradK/Memoria/main/app/public/events.json";
-const CONTENT_SECURITY_POLICY: &str = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' http://ipc.localhost ipc:; font-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+const CONTENT_SECURITY_POLICY: &str = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' http://ipc.localhost ipc:; font-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 pub struct Server {
     pub port: u16,

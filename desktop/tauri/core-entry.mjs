@@ -4,13 +4,18 @@
 // the PC merges phone and window edits with exactly the code the app runs.
 // Rust does the file reads and writes; everything about the document's shape
 // stays here.
-import { mergeState, normalizeState, safeParseAppState } from '@memoria/shared';
+import { buildNotificationPlan, mergeState, normalizeState, safeParseAppState } from '@memoria/shared';
 
 const parse = (raw) => (raw == null ? null : JSON.parse(raw));
 
 /** The saved document, normalized, as JSON. `raw` is null when there is no file yet. */
 export function read(raw) {
   return JSON.stringify(normalizeState(parse(raw)));
+}
+
+/** The same device plan as Android, evaluated against the current PC data file. */
+export function notificationPlan(raw, now) {
+  return JSON.stringify(buildNotificationPlan(normalizeState(parse(raw)), now));
 }
 
 /**

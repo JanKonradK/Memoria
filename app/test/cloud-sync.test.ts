@@ -270,7 +270,8 @@ describe('connecting a file', () => {
     Object.assign(window, { showSaveFilePicker: async () => handle });
     const games = Array.from({ length: 51 }, (_, index) => ({
       ...game(`local-${index}`, `Local ${index}`, 1),
-      image: 'a'.repeat(200_000),
+      // Valid embedded pictures as big as a game image may be.
+      image: `data:image/jpeg;base64,${'A'.repeat(199_976)}`,
     }));
     useApp.setState({ state: withGames(...games) });
 
