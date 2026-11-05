@@ -1,3 +1,4 @@
+import { verifyPublished, FEED_CONTEXT, type SignedFile, type TrustStamp } from '@memoria/shared/publisher';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { MAX_EVENT_FEED_BYTES, RemoteEventFeedSchema, type RemoteEventFeed } from '@memoria/shared';
 import { create } from 'zustand';
@@ -6,6 +7,11 @@ import { useApp } from '../store';
 
 export const PUBLIC_EVENT_FEED_URL = 'https://raw.githubusercontent.com/JanKonradK/Memoria/main/app/public/events.json';
 const CACHE_KEY = 'memoria-public-calendar';
+const TRUST_KEY = 'memoria-feed-trust';
+function verified(payload: unknown) {
+  const previous = JSON.parse(localStorage.getItem(TRUST_KEY) ?? 'null') as TrustStamp | null;
+  return verifyPublished<RemoteEventFeed>(payload, FEED_CONTEXT, previous);
+}
 const REFRESH_MS = 6 * 60 * 60_000;
 
 export const useRemoteFeed = create<{
@@ -81,8 +87,10 @@ export function refreshRemoteFeed(): Promise<void> {
       const payload = await requestFeed();
       if (new TextEncoder().encode(JSON.stringify(payload)).byteLength > MAX_EVENT_FEED_BYTES)
         throw new Error('Event update is too large.');
-      const parsed = RemoteEventFeedSchema.safeParse(payload);
+      const { data, stamp } = verified(payload);
+      const parsed = RemoteEventFeedSchema.safeParse(data);
       if (!parsed.success) throw new Error('Event update was invalid. Kept saved events.');
+      localStorage.setItem(TRUST_KEY, JSON.stringify(stamp));
       const result = useApp.getState().importRemoteEvents(parsed.data);
       if (result.error) throw new Error(result.error);
       // Do not replace the offline cache with an older feed rejected by the store.
@@ -91,7 +99,7 @@ export function refreshRemoteFeed(): Promise<void> {
         cached = parsed.data;
         const receivedAt = Date.now();
         try {
-          localStorage.setItem(CACHE_KEY, JSON.stringify({ receivedAt, feed: cached }));
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ receivedAt, signed: payload }));
         } catch {
           /* Offline cache is best effort. */
         }
@@ -118,8 +126,8 @@ export function initRemoteFeed(): () => void {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (raw && raw.length <= MAX_EVENT_FEED_BYTES + 100) {
-      const entry = JSON.parse(raw) as { receivedAt?: unknown; feed?: unknown };
-      const parsed = RemoteEventFeedSchema.safeParse(entry.feed);
+      const entry = JSON.parse(raw) as { receivedAt?: unknown; signed?: SignedFile };
+      const parsed = RemoteEventFeedSchema.safeParse(verified(entry.signed).data);
       if (parsed.success) {
         cached = parsed.data;
         useApp.getState().importRemoteEvents(cached);

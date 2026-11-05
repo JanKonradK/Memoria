@@ -1,3 +1,4 @@
+import { signPublished, readPublished } from './publisher-signing.mjs';
 import { build } from 'esbuild';
 import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
@@ -24,17 +25,21 @@ const { SEED_EVENTS, SEED_UPDATED, SEED_WITHDRAWN_KEYS, RemoteEventFeedSchema, M
 const check = process.argv.includes('--check');
 const outputPath = path.join(root, 'app/public/events.json');
 let published;
+let signed;
 try {
   const existing = await readFile(outputPath, 'utf8');
   if (Buffer.byteLength(existing) > MAX_EVENT_FEED_BYTES) throw new Error('The public calendar exceeds 512 KB.');
-  published = RemoteEventFeedSchema.parse(JSON.parse(existing));
+  signed = JSON.parse(existing);
+  published = RemoteEventFeedSchema.parse(
+    signed.payload ? readPublished(signed, 'memoria-event-feed-v1').data : signed,
+  );
 } catch (error) {
   if (check || error.code !== 'ENOENT') throw error;
 }
 const timestampArgument = process.argv.indexOf('--generated-at');
 const content = { seedUpdated: SEED_UPDATED, events: SEED_EVENTS, withdrawn: SEED_WITHDRAWN_KEYS };
 const revision = createHash('sha256').update(JSON.stringify(content)).digest('hex');
-const changed = published?.revision !== revision;
+const changed = published?.revision !== revision || !signed?.payload;
 const at = Date.now();
 const generatedAt = check
   ? published.generatedAt
@@ -47,14 +52,24 @@ if (!check) {
   const timestamp = Date.parse(generatedAt);
   if (!Number.isFinite(timestamp) || timestamp > at + 300_000)
     throw new Error('The public calendar publication timestamp is invalid or too far in the future.');
-  if (changed && published && timestamp <= Date.parse(published.generatedAt))
+  if (
+    (changed || generatedAt !== published?.generatedAt) &&
+    published &&
+    timestamp <= Date.parse(published.generatedAt)
+  )
     throw new Error('Changed calendar content needs a later publication timestamp.');
 }
 const feed = RemoteEventFeedSchema.parse({ version: 2, generatedAt, revision, ...content });
-const json = `${JSON.stringify(feed)}\n`;
+const envelope =
+  !changed && generatedAt === published?.generatedAt && signed?.payload
+    ? signed
+    : check
+      ? null
+      : signPublished('memoria-event-feed-v1', feed, Date.parse(generatedAt));
+const json = `${JSON.stringify(envelope)}\n`;
 if (Buffer.byteLength(json) > MAX_EVENT_FEED_BYTES) throw new Error('The public calendar exceeds 512 KB.');
 if (check) {
-  if (!isDeepStrictEqual(published, JSON.parse(json)))
+  if (!envelope || !isDeepStrictEqual(published, feed))
     throw new Error('app/public/events.json is stale. Run npm run export:events and include the updated feed.');
   console.log(`Public calendar matches ${feed.events.length} reviewed events, revision ${revision.slice(0, 12)}.`);
 } else {

@@ -1,7 +1,29 @@
+import { ed25519 } from '@noble/curves/ed25519.js';
+import { bytesToHex } from '@noble/hashes/utils.js';
 import { emptyState, mergeState, type RemoteEventFeed } from '@memoria/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeGame } from '../../shared/test/helpers';
 
+vi.mock('@memoria/shared/publisher', async (original) => {
+  const actual = await original<typeof import('@memoria/shared/publisher')>();
+  return {
+    ...actual,
+    verifyPublished: (
+      file: unknown,
+      context: string,
+      previous: import('@memoria/shared/publisher').TrustStamp | null,
+    ) => actual.verifyPublished(file, context, previous, bytesToHex(ed25519.getPublicKey(new Uint8Array(32).fill(42)))),
+  };
+});
+const sign = (data: RemoteEventFeed) => {
+  const bytes = new TextEncoder().encode(
+    JSON.stringify({ context: 'memoria-event-feed-v1', sequence: Date.parse(data.generatedAt), data }),
+  );
+  return {
+    payload: btoa(String.fromCharCode(...bytes)),
+    signature: bytesToHex(ed25519.sign(bytes, new Uint8Array(32).fill(42))),
+  };
+};
 const idb = vi.hoisted(() => new Map<string, unknown>());
 vi.mock('idb-keyval', () => ({
   get: vi.fn(async (key: string) => idb.get(key)),
@@ -167,7 +189,7 @@ describe('reviewed public calendar imports', () => {
 
 describe('public calendar refresh', () => {
   it('fetches only the fixed public feed without credentials and records a successful check', async () => {
-    const request = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(feed())));
+    const request = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(sign(feed()))));
     await refreshRemoteFeed();
     expect(request).toHaveBeenCalledWith(
       PUBLIC_EVENT_FEED_URL,
@@ -178,7 +200,7 @@ describe('public calendar refresh', () => {
   });
 
   it('preserves events and last success when a later network check fails', async () => {
-    const request = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(feed())));
+    const request = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(sign(feed()))));
     await refreshRemoteFeed();
     const before = useApp.getState().state;
     request.mockRejectedValue(new Error('Offline'));
@@ -186,4 +208,18 @@ describe('public calendar refresh', () => {
     expect(useRemoteFeed.getState()).toMatchObject({ status: 'error', lastSuccessAt: now });
     expect(useApp.getState().state).toBe(before);
   });
+});
+
+it('rejects unsigned, tampered and replayed network feeds before import', async () => {
+  const request = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(sign(feed()))));
+  await refreshRemoteFeed();
+  const before = useApp.getState().state;
+  const bad = sign(feed());
+  bad.signature = '00'.repeat(64);
+  for (const file of [feed(), bad, sign(feed({ generatedAt: '2026-11-09T09:00:00Z', revision: 'replayed' }))]) {
+    request.mockResolvedValue(new Response(JSON.stringify(file)));
+    await refreshRemoteFeed();
+    expect(useRemoteFeed.getState().status).toBe('error');
+    expect(useApp.getState().state).toBe(before);
+  }
 });

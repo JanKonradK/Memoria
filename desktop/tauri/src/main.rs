@@ -8,6 +8,7 @@
 
 mod core;
 mod lan;
+mod publisher;
 mod launch;
 mod presence;
 mod reminders;
@@ -883,7 +884,7 @@ async fn update_check(app: AppHandle, webview: tauri::Webview) -> CommandResult<
     let state = app.state::<App>();
     trusted(&webview, &state)?;
     let installed = update::release_record(&state.root).and_then(|r| r["version"].as_str().map(str::to_string));
-    let release = update::fetch_latest_release(installed.as_deref()).await?;
+    let release = update::fetch_latest_release(installed.as_deref(), &state.update_paths).await?;
     *state.latest_release.lock().unwrap() = release.clone();
     let _ = store::write_json(
         &state.update_paths.last_check,
@@ -931,6 +932,7 @@ fn update_install(app: AppHandle, webview: tauri::Webview) -> CommandResult<bool
     if update::staged_version(&state.root, &state.update_paths).is_none() {
         return Err("Download the update first.".into());
     }
+    update::validate_pending(&state.root, &state.update_paths)?;
     state.close.lock().unwrap().install_on_quit = true;
     request_close(&app);
     Ok(true)
@@ -1087,6 +1089,11 @@ fn already_running(_identifier: &str) -> bool {
 }
 
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    if args.get(1).is_some_and(|arg| arg == "--apply-signed-update") {
+        if let Err(error) = update::apply_helper(&args) { fatal(&error); }
+        return;
+    }
     let mut context = tauri::generate_context!();
     // A check run against a scratch data folder must not hand off to the
     // player's own running copy, which shares the app id.
@@ -1248,7 +1255,9 @@ fn main() {
             }
             let install = std::mem::take(&mut state.close.lock().unwrap().install_on_quit);
             if install {
-                let _ = update::run_staged_installer(&state.root, &state.update_paths);
+                if let Err(error) = update::run_staged_installer(&state.root, &state.update_paths) {
+                    fatal(&format!("Update refused: {error}"));
+                }
             }
         }
         _ => {}

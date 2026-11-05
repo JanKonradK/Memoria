@@ -16,6 +16,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
+import { signRelease } from './publisher-signing.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const releaseDir = join(root, 'dist', 'release');
@@ -201,6 +202,7 @@ const otherSums = existsSync(sumsPath)
 writeFileSync(sumsPath, [...otherSums, `${digest}  ${ZIP_NAME}`, ''].join('\n'), 'utf8');
 
 const megabytes = (statSync(zipPath).size / 1024 / 1024).toFixed(1);
+signRelease(releaseDir);
 console.log(`\n${basename(zipPath)}  ${megabytes} MB`);
 console.log(`sha256  ${digest}`);
 console.log(`\nStaged tree: ${stageDir}`);
