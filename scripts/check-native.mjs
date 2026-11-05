@@ -211,7 +211,7 @@ async function launch() {
           [
             '-NoProfile',
             '-Command',
-            `(Get-CimInstance Win32_Process -Filter "Name='msedgewebview2.exe'" | Where-Object { $_.CommandLine -notmatch '--type=' } | Select-Object -First 1).CommandLine; Get-ChildItem 'HKLM:\SOFTWARE\Policies\Microsoft' -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match 'Edge|WebView' } | ForEach-Object { $_.Name + ' ' + (($_.Property) -join ',') }`,
+            `(Get-CimInstance Win32_Process -Filter "Name='msedgewebview2.exe'" | Where-Object { $_.CommandLine -notmatch '--type=' } | Select-Object -First 1).CommandLine; Get-ChildItem 'HKLM:\\SOFTWARE\\Policies\\Microsoft' -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match 'Edge|WebView' } | ForEach-Object { $_.Name + ' ' + (($_.Property) -join ',') }`,
           ],
           { windowsHide: true },
         ).then(
