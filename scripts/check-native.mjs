@@ -178,6 +178,41 @@ async function launch() {
         exitCode,
         stderr: output.join('').slice(-2000),
         debugPort: await probe(`http://127.0.0.1:${debugPort}/json/version`),
+        debugPortV6: await probe(`http://[::1]:${debugPort}/json/version`),
+        devToolsActivePort: (() => {
+          try {
+            return readFileSync(join(dataDir, 'webview', 'EBWebView', 'DevToolsActivePort'), 'utf8');
+          } catch (error) {
+            return String(error.code);
+          }
+        })(),
+        webviewFiles: (() => {
+          try {
+            return readdirSync(join(dataDir, 'webview'), { recursive: true }).slice(0, 40);
+          } catch (error) {
+            return String(error.code);
+          }
+        })(),
+        processes: await run(
+          'powershell',
+          [
+            '-NoProfile',
+            '-Command',
+            `$all = Get-CimInstance Win32_Process; $tree = @(${started.pid}); do { $added = @($all | Where-Object { $tree -contains $_.ParentProcessId -and $tree -notcontains $_.ProcessId } | ForEach-Object ProcessId); $tree += $added } while ($added.Count); $all | Where-Object { $tree -contains $_.ProcessId } | ForEach-Object { $_.Name + ' ' + $_.CommandLine.Substring(0, [Math]::Min(160, $_.CommandLine.Length)) }`,
+          ],
+          { windowsHide: true },
+        ).then(
+          ({ stdout }) => stdout.trim().split(/\s*\n/),
+          (error) => error.message,
+        ),
+        session: await run(
+          'powershell',
+          ['-NoProfile', '-Command', '[Environment]::UserInteractive; (Get-Process -Id $PID).SessionId; whoami'],
+          { windowsHide: true },
+        ).then(
+          ({ stdout }) => stdout.trim().split(/\s*\n/),
+          (error) => error.message,
+        ),
         appServer: await probe(`http://127.0.0.1:${appPort}/`),
         pages,
       })}`,
