@@ -8,6 +8,7 @@
 
 mod core;
 mod lan;
+mod lan_crypto;
 mod publisher;
 mod launch;
 mod presence;

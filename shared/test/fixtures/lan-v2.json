@@ -1,0 +1,18 @@
+{
+  "pcSecret": "1111111111111111111111111111111111111111111111111111111111111111",
+  "phoneSecret": "2222222222222222222222222222222222222222222222222222222222222222",
+  "pc": "7b4e909bbe7ffe44c465a220037d608ee35897d31ef972f07f74892cb0f73f13",
+  "phone": "0faa684ed28867b97f4a6a2dee5df8ce974e76b7018e3f22a1c4cf2678570f20",
+  "request": {
+    "publicKey": "0faa684ed28867b97f4a6a2dee5df8ce974e76b7018e3f22a1c4cf2678570f20",
+    "challenge": "abababababababababababababababababababababababababababababababab",
+    "nonce": "a2cf555eaed7b438196b9a73dd0b95f1fd22710011793cfd",
+    "ciphertext": "d5fa864286d088fb5b65794dd0ce3ac7e069b8eb836fe1be76c9ef6c69526c6d77553a"
+  },
+  "response": {
+    "publicKey": "7b4e909bbe7ffe44c465a220037d608ee35897d31ef972f07f74892cb0f73f13",
+    "challenge": "abababababababababababababababababababababababababababababababab",
+    "nonce": "215958b5c30bc2b612866e64a679b24409a5f9ce82247e61",
+    "ciphertext": "08a60b26937a5419464eccd9ac293d732d9bddc2fad688bedec6abbaec943e631df8cb8a6d96"
+  }
+}
