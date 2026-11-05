@@ -1,6 +1,7 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import {
   APP_VERSION,
+  displayVersion,
   dismissUpdateNotice,
   downloadUpdate,
   installUpdate,
@@ -85,7 +86,7 @@ export function UpdateScreen() {
         >
           <header className="mx-auto w-full max-w-2xl px-6 pt-10 pb-6">
             <p className="text-meta text-muted">
-              {APP_VERSION} → {release.version}
+              {displayVersion(APP_VERSION)} → {displayVersion(release.version)}
             </p>
             <DialogPrimitive.Title className="mt-1 text-hero font-black tracking-tight text-fg">
               Update available
@@ -95,9 +96,9 @@ export function UpdateScreen() {
           <div className="min-h-0 flex-1 overflow-y-auto">
             <div className="mx-auto w-full max-w-2xl space-y-8 px-6 pb-8">
               {changes.map((change) => (
-                <section key={change.version} aria-label={`Version ${change.version}`}>
+                <section key={change.version} aria-label={displayVersion(change.version)}>
                   <h2 className="flex items-baseline gap-3 border-b border-line pb-2 text-title font-semibold text-fg">
-                    {change.version}
+                    {displayVersion(change.version)}
                     <span className="text-meta font-normal text-muted">{date(change.publishedAt)}</span>
                   </h2>
                   <div className="pt-3">

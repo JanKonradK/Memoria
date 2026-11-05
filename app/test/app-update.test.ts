@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { compareVersions, releaseChanges, releaseNotes } from '../src/app-update';
+import { compareVersions, displayVersion, releaseChanges, releaseNotes } from '../src/app-update';
 
 describe('app updates', () => {
+  it('shows versions as betas with a 0. in front, while ordering keeps the real numbers', () => {
+    expect(displayVersion('3.3.0')).toBe('Beta 0.3.3');
+    expect(displayVersion('v3.0.1')).toBe('Beta 0.3.0.1');
+    expect(displayVersion('3.4.0-rc.1')).toBe('Beta 0.3.4-rc.1');
+    expect(compareVersions('3.3.0', '3.2.0')).toBeGreaterThan(0);
+  });
+
   it('orders versions numerically and treats a prerelease as older', () => {
     expect(compareVersions('3.10.0', '3.9.9')).toBe(1);
     expect(compareVersions('v3.1.0', '3.1.0')).toBe(0);

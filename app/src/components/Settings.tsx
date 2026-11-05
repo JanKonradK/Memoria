@@ -7,7 +7,7 @@ import { syncNow } from '../sync';
 import { deviceSyncAvailable, DeviceSync } from './settings/DeviceSync';
 import { SettingRow, SettingsGroup } from './settings/SettingRow';
 import { usePresence } from '../presence';
-import { APP_VERSION, updateTarget, useAppUpdate } from '../app-update';
+import { APP_VERSION, displayVersion, updateTarget, useAppUpdate } from '../app-update';
 import { useMediaQuery } from '../hooks';
 import type { SettingsSection } from '../ui-store';
 import { DeviceNotifications } from './settings/DeviceNotifications';
@@ -139,7 +139,7 @@ export function SettingsPage() {
     sections.push({
       key: 'updates',
       label: 'Updates',
-      badge: update.release ? <span className="settings-nav-new">New</span> : APP_VERSION,
+      badge: update.release ? <span className="settings-nav-new">New</span> : displayVersion(APP_VERSION),
     });
   sections.push({ key: 'data', label: 'Data' });
   const active = sections.some((section) => section.key === requestedSection) ? requestedSection : 'games';

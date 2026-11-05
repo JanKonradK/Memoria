@@ -6,6 +6,16 @@ import { isNativeApp } from './native';
 import { flushPersist } from './store';
 
 export const APP_VERSION = __APP_VERSION__;
+
+/**
+ * How a version reads to people: 3.3.0 shows as "Beta 0.3.3", with a trailing
+ * .0 dropped. Only the label changes; the real number still decides updates,
+ * so copies already installed keep finding newer releases.
+ */
+export function displayVersion(version: string): string {
+  const [core = '', prerelease] = version.replace(/^v/, '').split('-', 2);
+  return `Beta 0.${core.replace(/\.0$/, '')}${prerelease ? `-${prerelease}` : ''}`;
+}
 const RELEASES_API = 'https://api.github.com/repos/JanKonradK/Memoria/releases?per_page=30';
 const RELEASES_PAGE = 'https://github.com/JanKonradK/Memoria/releases/latest';
 const APK_ASSET = 'Memoria-android.apk';

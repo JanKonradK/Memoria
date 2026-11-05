@@ -105,11 +105,16 @@ jobs:
       # The app shows everything above "## Download" as the release notes.
       # Write them in docs/releases/<tag>.md before tagging.
       - name: Write the release notes
+        id: notes
         shell: bash
         env:
           RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
           tag="$RELEASE_TAG"
+          # People see versions as betas with a 0. in front (v3.3.0 reads "Beta 0.3.3").
+          # The tag keeps the real number, which is what installed copies compare.
+          version="${tag#v}"
+          echo "title=Memoria Beta 0.${version%.0}" >> "$GITHUB_OUTPUT"
           notes="docs/releases/$tag.md"
           download="https://github.com/JanKonradK/Memoria/releases/download/$tag"
           {
@@ -132,7 +137,7 @@ jobs:
       - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-          name: Memoria ${{ github.event.inputs.tag || github.ref_name }}
+          name: ${{ steps.notes.outputs.title }}
           generate_release_notes: true
           draft: false
           prerelease: false
