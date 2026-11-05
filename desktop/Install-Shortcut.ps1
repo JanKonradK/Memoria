@@ -2,7 +2,8 @@
 # %APPDATA%\memoria. Use -NoShortcuts with -InstallRoot for an isolated check.
 param(
   [string]$InstallRoot = (Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Programs\Memoria'),
-  [switch]$NoShortcuts
+  [switch]$NoShortcuts,
+  [string]$VerifiedFilesFile
 )
 
 $ErrorActionPreference = 'Stop'
@@ -76,7 +77,19 @@ if (-not $source.Equals($destination, [StringComparison]::OrdinalIgnoreCase)) {
   $programLocks = Lock-MemoriaProgramTree $destination
   try {
     New-Item -ItemType Directory -Path $stage | Out-Null
-    Get-ChildItem -LiteralPath $source -Force | Copy-Item -Destination $stage -Recurse -Force
+    if ($VerifiedFilesFile) {
+      $names = Get-Content -LiteralPath $VerifiedFilesFile -Raw -Encoding UTF8 | ConvertFrom-Json
+      foreach ($name in $names) {
+        $from = [IO.Path]::GetFullPath((Join-Path $source $name))
+        $to = [IO.Path]::GetFullPath((Join-Path $stage $name))
+        if (-not $from.StartsWith($source + '\', [StringComparison]::OrdinalIgnoreCase) -or
+            -not $to.StartsWith($stage + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Invalid signed file path.' }
+        New-Item -ItemType Directory -Path (Split-Path -Parent $to) -Force | Out-Null
+        Copy-Item -LiteralPath $from -Destination $to -Force
+      }
+    } else {
+      Get-ChildItem -LiteralPath $source -Force | Copy-Item -Destination $stage -Recurse -Force
+    }
     Assert-NativeBundle $stage
     if (Test-Path -LiteralPath $destination) {
       Move-Item -LiteralPath $destination -Destination $previous
