@@ -113,6 +113,7 @@ const env = {
   MEMORIA_PORTS: String(appPort),
   MEMORIA_LAN_PORT: '0',
   WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${debugPort}`,
+  MEMORIA_DEBUG_PORT: String(debugPort),
 };
 let app;
 let browser;
@@ -203,6 +204,18 @@ async function launch() {
           { windowsHide: true },
         ).then(
           ({ stdout }) => stdout.trim().split(/\s*\n/),
+          (error) => error.message,
+        ),
+        browser: await run(
+          'powershell',
+          [
+            '-NoProfile',
+            '-Command',
+            `(Get-CimInstance Win32_Process -Filter "Name='msedgewebview2.exe'" | Where-Object { $_.CommandLine -notmatch '--type=' } | Select-Object -First 1).CommandLine; Get-ChildItem 'HKLM:\SOFTWARE\Policies\Microsoft' -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match 'Edge|WebView' } | ForEach-Object { $_.Name + ' ' + (($_.Property) -join ',') }`,
+          ],
+          { windowsHide: true },
+        ).then(
+          ({ stdout }) => stdout.trim(),
           (error) => error.message,
         ),
         session: await run(

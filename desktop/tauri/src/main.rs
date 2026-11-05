@@ -626,7 +626,7 @@ fn create_window(app: &AppHandle, token: &str) -> tauri::Result<()> {
     let url: tauri::Url = format!("{origin}/").parse().expect("loopback URL");
     let nav_origin = origin.clone();
     let shown = Arc::new(Mutex::new(false));
-    let window = tauri::WebviewWindowBuilder::new(app, MAIN, WebviewUrl::External(url))
+    let builder = tauri::WebviewWindowBuilder::new(app, MAIN, WebviewUrl::External(url))
         .title("Memoria")
         .min_inner_size(360.0, 480.0)
         .visible(false)
@@ -659,8 +659,20 @@ fn create_window(app: &AppHandle, token: &str) -> tauri::Result<()> {
                     let _ = window.set_focus();
                 }
             }
-        })
-        .build()?;
+        });
+    // A check run (MEMORIA_INSTANCE) drives the window over the DevTools port.
+    // Some machines ignore WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS, so the port is
+    // passed here. Passing arguments replaces wry's defaults, so they are repeated.
+    let debug_port = std::env::var_os("MEMORIA_INSTANCE")
+        .and(std::env::var("MEMORIA_DEBUG_PORT").ok())
+        .and_then(|port| port.parse::<u16>().ok());
+    let builder = match debug_port {
+        Some(port) => builder.additional_browser_args(&format!(
+            "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --remote-debugging-port={port}"
+        )),
+        None => builder,
+    };
+    let window = builder.build()?;
 
     let saved = store::read_json(&state.bounds_file());
     let saved_bounds = saved.as_ref().filter(|v| v["physical"] == true).and_then(|v| {
