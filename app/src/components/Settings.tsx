@@ -1,5 +1,12 @@
+import { Activity } from './settings/Activity';
 import { useRef, useState, type ReactNode } from 'react';
-import { detectLocalTz, normalizeState, safeParseAppState } from '@memoria/shared';
+import {
+  assertSyncProtocol,
+  SyncProtocolError,
+  detectLocalTz,
+  normalizeState,
+  safeParseAppState,
+} from '@memoria/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { servedByLauncher } from '../launcher';
@@ -110,6 +117,7 @@ export function SettingsPage() {
           const candidate = raw && typeof raw === 'object' && 'state' in raw ? (raw as { state: unknown }).state : raw;
           if (!candidate || typeof candidate !== 'object' || (!('games' in candidate) && !('settings' in candidate)))
             throw new Error('Not a Memoria backup');
+          assertSyncProtocol(candidate);
           const parsed = safeParseAppState(candidate);
           if (!parsed.success) throw new Error(parsed.error);
           const incoming = normalizeState(candidate);
@@ -119,9 +127,9 @@ export function SettingsPage() {
             events: incoming.events.filter((e) => !e.deleted).length,
           });
           setStatusMessage('');
-        } catch {
+        } catch (error) {
           setImportDraft(null);
-          setStatusMessage('Import failed: not a Memoria backup.');
+          setStatusMessage(error instanceof SyncProtocolError ? error.message : 'Import failed: not a Memoria backup.');
         }
       })
       .catch((error: unknown) => {
@@ -141,7 +149,7 @@ export function SettingsPage() {
       label: 'Updates',
       badge: update.release ? <span className="settings-nav-new">New</span> : displayVersion(APP_VERSION),
     });
-  sections.push({ key: 'data', label: 'Data' });
+  sections.push({ key: 'data', label: 'Data' }, { key: 'activity', label: 'Activity' });
   const active = sections.some((section) => section.key === requestedSection) ? requestedSection : 'games';
   // A wide window shows one pane beside the menu; a narrow one is one page of every section.
   const pane = (key: SettingsSection) => ({
@@ -403,6 +411,9 @@ export function SettingsPage() {
               </SettingsPane>
             )}
 
+            <SettingsPane {...pane('activity')}>
+              <Activity />
+            </SettingsPane>
             <SettingsPane {...pane('data')}>
               <div className="settings-rows">
                 {launcher && (

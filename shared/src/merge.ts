@@ -1,3 +1,5 @@
+import { compareHlc, legacyHlc, recordHlc } from './hlc';
+import { HlcSchema } from './validation';
 import type { ZodType } from 'zod';
 import { IANAZone } from 'luxon';
 import type { AppState, Resource, Settings, SettingsField, Snapshot, Syncable, Task } from './types';
@@ -40,8 +42,8 @@ function mergeById<T extends Syncable & { id: string }>(a: T[], b: T[]): T[] {
       const cur = map.get(item.id);
       if (
         !cur ||
-        item.updatedAt > cur.updatedAt ||
-        (item.updatedAt === cur.updatedAt && canonical(item) > canonical(cur))
+        compareHlc(recordHlc(item), recordHlc(cur)) > 0 ||
+        (compareHlc(recordHlc(item), recordHlc(cur)) === 0 && canonical(item) > canonical(cur))
       ) {
         map.set(item.id, item);
       }
@@ -55,7 +57,12 @@ function mergeSnapshots(a: Snapshot[], b: Snapshot[]): Snapshot[] {
   for (const side of [a, b]) {
     for (const s of side) {
       const current = map.get(s.id);
-      if (!current || canonical(s) > canonical(current)) map.set(s.id, s);
+      if (
+        !current ||
+        compareHlc(recordHlc(s), recordHlc(current)) > 0 ||
+        (compareHlc(recordHlc(s), recordHlc(current)) === 0 && canonical(s) > canonical(current))
+      )
+        map.set(s.id, s);
     }
   }
   const out: Snapshot[] = [];
@@ -93,8 +100,19 @@ function observedClock(value: unknown): number | null {
 function syncableRecord(raw: unknown): Record<string, unknown> | null {
   const record = objectRecord(raw);
   if (!record) return null;
-  const updatedAt = observedClock(record.updatedAt);
-  return updatedAt === null ? null : { ...record, updatedAt };
+  const hlc = HlcSchema.safeParse(record.hlc);
+  const updatedAt =
+    hlc.success && finiteNumber(record.updatedAt)
+      ? Math.max(0, Math.round(record.updatedAt))
+      : observedClock(record.updatedAt);
+  return updatedAt === null
+    ? null
+    : {
+        ...record,
+        updatedAt,
+        hlc: hlc.success ? hlc.data : legacyHlc(updatedAt),
+        deviceId: hlc.success ? hlc.data.device : 'Unknown device',
+      };
 }
 
 function clampInt(value: unknown, min: number, max: number, fallback: number): number {
@@ -216,9 +234,16 @@ function normalizeResource(raw: unknown): Resource | null {
 function normalizeSnapshot(raw: unknown): Snapshot | null {
   const record = objectRecord(raw);
   if (!record || !finiteNumber(record.takenAt) || !finiteNumber(record.value)) return null;
-  const takenAt = observedClock(record.takenAt);
+  const hasHlc = HlcSchema.safeParse(record.hlc).success;
+  const takenAt = hasHlc ? scheduledClock(record.takenAt) : observedClock(record.takenAt);
   if (takenAt === null) return null;
-  const candidate: Record<string, unknown> = { ...record, value: Math.max(0, record.value), takenAt };
+  const candidate: Record<string, unknown> = {
+    ...record,
+    value: Math.max(0, record.value),
+    takenAt,
+    hlc: hasHlc ? record.hlc : legacyHlc(takenAt),
+    deviceId: hasHlc ? (record.hlc as { device: string }).device : 'Unknown device',
+  };
   reviseOptional(candidate, 'reserve', clampToZero);
   if (!ObservationProvenanceSchema.safeParse(candidate.provenance).success) delete candidate.provenance;
   return parseRow(ROWS.snapshots, candidate);
@@ -393,8 +418,12 @@ function normalizeSettings(raw: unknown): Settings {
         }),
       )
     : {};
-  const updatedAt = observedClock(record.updatedAt);
+  const metadata = syncableRecord(record);
+  const updatedAt = metadata?.updatedAt as number | undefined;
   const candidate = {
+    hlc: metadata?.hlc ?? legacyHlc(0),
+    deviceId: metadata?.deviceId ?? 'Unknown device',
+    fieldHlc: record.fieldHlc,
     quietStart: record.quietStart === null ? null : clampInt(record.quietStart, 0, 1439, base.quietStart ?? 0),
     quietEnd: record.quietEnd === null ? null : clampInt(record.quietEnd, 0, 1439, base.quietEnd ?? 0),
     localTz: isZone(record.localTz) ? record.localTz : base.localTz,
@@ -431,11 +460,20 @@ function mergeSettings(left: Partial<Settings> | undefined, right: Partial<Setti
   const b = normalizeSettings(right);
   const aClocks = settingsFieldClocks(a);
   const bClocks = settingsFieldClocks(b);
-  const merged = { ...a, fieldUpdatedAt: { ...a.fieldUpdatedAt } };
+  const winner =
+    compareHlc(recordHlc(a), recordHlc(b)) > 0 ||
+    (compareHlc(recordHlc(a), recordHlc(b)) === 0 && canonical(a) > canonical(b))
+      ? a
+      : b;
+  const merged = { ...winner, fieldUpdatedAt: { ...a.fieldUpdatedAt }, fieldHlc: { ...a.fieldHlc } };
   for (const field of SETTINGS_FIELDS) {
     const aTime = aClocks[field];
     const bTime = bClocks[field];
-    const useRight = bTime > aTime || (bTime === aTime && canonical(b[field]) > canonical(a[field]));
+    const ac = a.fieldHlc?.[field] ?? legacyHlc(aTime);
+    const bc = b.fieldHlc?.[field] ?? legacyHlc(bTime);
+    const order = compareHlc(bc, ac);
+    const useRight = order > 0 || (order === 0 && canonical(b[field]) > canonical(a[field]));
+    merged.fieldHlc[field] = useRight ? bc : ac;
     merged[field] = (useRight ? b[field] : a[field]) as never;
     merged.fieldUpdatedAt![field] = Math.max(aTime, bTime);
   }

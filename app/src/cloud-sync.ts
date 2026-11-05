@@ -1,3 +1,4 @@
+import { assertSyncProtocol } from '@memoria/shared';
 import { emptyState, mergeState, normalizeState, safeParseAppState, type AppState } from '@memoria/shared';
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import { useApp, type CloudStatus } from './store';
@@ -158,6 +159,7 @@ export function mergeCloudDocument(local: AppState, remoteText: string): { next:
   }
   // Validate before salvage: repair must never turn a corrupt or newer file
   // into a valid empty document that we then overwrite.
+  assertSyncProtocol(candidate);
   const parsed = safeParseAppState(candidate);
   if (!parsed.success) throw new Error(`The sync file is not a valid Memoria document: ${parsed.error}`);
   const next = mergeState(local, normalizeState(candidate));

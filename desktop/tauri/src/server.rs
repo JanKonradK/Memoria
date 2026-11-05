@@ -527,7 +527,7 @@ mod tests {
         let refused = write(json!({ "state": newer }).to_string().into_bytes(), "application/json")
             .await
             .unwrap();
-        assert_eq!(refused.status(), 400);
+        assert_eq!(refused.status(), 426);
         assert_eq!(std::fs::read(dir.join("state.json")).ok(), before);
     }
 }

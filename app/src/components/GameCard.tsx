@@ -750,10 +750,34 @@ function ChecklistControls({
 }) {
   const ground = useGround();
   const tickColor = gameInk(game, ground);
+  const completeDailies = useApp((store) => store.completeDailies);
+  const undoActivity = useApp((store) => store.undoActivity);
+  const history = useApp((store) => store.history);
+  const [completedAction, setCompletedAction] = useState<string>();
+  const canComplete = checklist.some((item) => item.cadence === 'daily' && item.mode === 'check' && !item.done);
+  const canUndo = completedAction && history.journal.some((entry) => entry.id === completedAction && !entry.undone);
   if (game.paused || checklist.length === 0) return null;
   const groups = groupChecklist(checklist);
   return (
     <div data-tour="tasks" className="mt-3.5">
+      <div className="flex flex-wrap gap-2">
+        {canComplete && (
+          <Btn className={TOUCH_BUTTON} onClick={() => setCompletedAction(completeDailies(game.id))}>
+            Complete dailies
+          </Btn>
+        )}
+        {canUndo && (
+          <Btn
+            className={TOUCH_BUTTON}
+            onClick={() => {
+              undoActivity(completedAction);
+              setCompletedAction(undefined);
+            }}
+          >
+            Undo dailies
+          </Btn>
+        )}
+      </div>
       {groups.map((group) => (
         <section key={group.cadence} aria-label={`${CADENCE_LABEL[group.cadence]} tasks for ${game.name}`}>
           <ChecklistGroupRule

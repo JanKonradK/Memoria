@@ -53,21 +53,19 @@ describe('safeParseAppState', () => {
     expect(safeParseAppState(state).success).toBe(false);
   });
 
-  it('bounds observation clocks without rejecting legitimately scheduled times', () => {
+  it('keeps readable times; normalization handles legacy skew and HLC orders current rows', () => {
     const future = Date.now() + FUTURE_CLOCK_SKEW_TOLERANCE_MS + 60_000;
 
     // Reset rather than refused: rejecting every locally stamped row would make
     // a fast-clock device unable to sync until its OS clock was repaired.
     const games = safeParseAppState(makeState({ games: [makeGame({ updatedAt: future })] }));
     expect(games.success).toBe(true);
-    if (games.success) expect(games.data.games[0]!.updatedAt).toBe(0);
+    if (games.success) expect(games.data.games[0]!.updatedAt).toBe(future);
 
-    const beforeSnapshotParse = Date.now();
     const snapshots = safeParseAppState(makeState({ snapshots: [makeSnapshot({ takenAt: future })] }));
     expect(snapshots.success).toBe(true);
     if (snapshots.success) {
-      expect(snapshots.data.snapshots[0]!.takenAt).toBeGreaterThanOrEqual(beforeSnapshotParse);
-      expect(snapshots.data.snapshots[0]!.takenAt).toBeLessThanOrEqual(Date.now());
+      expect(snapshots.data.snapshots[0]!.takenAt).toBe(future);
     }
 
     const scheduled = makeState({

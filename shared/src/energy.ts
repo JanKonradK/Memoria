@@ -167,6 +167,7 @@ export function sleepCheck(
 export function latestSnapshots(snapshots: Snapshot[]): Map<string, Snapshot> {
   const map = new Map<string, Snapshot>();
   for (const s of snapshots) {
+    if (s.deleted) continue;
     const cur = map.get(s.resourceId);
     const estimate = s.provenance?.kind === 'estimate';
     const currentEstimate = cur?.provenance?.kind === 'estimate';

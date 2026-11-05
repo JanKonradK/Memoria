@@ -176,7 +176,7 @@ describe('launcher errors', () => {
 
     expect(useApp.getState().state).toBe(local);
     expect(useApp.getState().syncStatus).toBe('error');
-    expect(useApp.getState().syncError).toMatch(/invalid data/i);
+    expect(useApp.getState().syncError).toMatch(/invalid data|Update Memoria/i);
   });
 
   it('does not retry a write after conflict recovery returns invalid data', async () => {

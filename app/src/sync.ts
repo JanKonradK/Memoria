@@ -1,3 +1,4 @@
+import { assertSyncProtocol } from '@memoria/shared';
 import { mergeState, normalizeState, safeParseAppState, type AppState } from '@memoria/shared';
 import { launcherFetch, servedByLauncher } from './launcher';
 import { useApp } from './store';
@@ -14,6 +15,7 @@ let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 async function mergeResponse(response: Response, sent?: AppState): Promise<boolean> {
   const data = (await response.json()) as { state: unknown; version?: number } | null;
   const remote = data?.state;
+  assertSyncProtocol(remote);
   // Repairing a damaged response can hide missing remote rows, then push that
   // incomplete document back to the launcher on the next sync.
   if (!safeParseAppState(remote).success)
