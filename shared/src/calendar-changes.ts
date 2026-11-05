@@ -7,6 +7,7 @@ const value = z.object({
   notes: z.string(),
   hash: z.string(),
 });
+const MAX_UNREAD = 300;
 export type CalendarValue = z.infer<typeof value>;
 const change = z.object({
   id: z.string(),
@@ -72,5 +73,6 @@ export function collectCalendarChanges(
     }
     baseline[row.key] = row.after ?? null;
   }
-  return { baseline, unread };
+  // Unread changes wait for confirmation, but a device left alone for years should not grow without end.
+  return { baseline, unread: unread.slice(-MAX_UNREAD) };
 }
