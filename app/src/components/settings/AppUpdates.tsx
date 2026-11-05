@@ -1,5 +1,6 @@
 import {
   APP_VERSION,
+  displayVersion,
   checkForUpdates,
   setAutoUpdateCheck,
   showUpdate,
@@ -16,13 +17,13 @@ export function AppUpdates() {
   return (
     <div className="min-w-0">
       <SettingRow
-        label={`Version ${APP_VERSION}`}
+        label={displayVersion(APP_VERSION)}
         hint={
           <span role="status">
             {status === 'checking'
               ? 'Checking…'
               : release
-                ? `${release.version} is available`
+                ? `${displayVersion(release.version)} is available`
                 : status === 'current'
                   ? 'Up to date'
                   : 'Not checked yet'}
