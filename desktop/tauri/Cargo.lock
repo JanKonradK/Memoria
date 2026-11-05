@@ -2162,7 +2162,7 @@ dependencies = [
 
 [[package]]
 name = "memoria"
-version = "3.3.1"
+version = "4.0.0"
 dependencies = [
  "axum",
  "base64 0.22.1",
