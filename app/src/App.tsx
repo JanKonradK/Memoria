@@ -24,7 +24,7 @@ import { AppBar } from './components/AppBar';
 import { Btn } from './components/ui';
 
 /** Primary pages lead their secondary and utility views in transition order. */
-const TAB_ORDER = ['timeline', 'today', 'settings'] as const;
+const TAB_ORDER = ['timeline', 'today', 'history', 'settings'] as const;
 /** A game's page sits just past Today: forward from it, and before Calendar. */
 const tabRank = (tab: Tab) => (tab === 'home' ? 1.5 : TAB_ORDER.indexOf(tab));
 
@@ -54,6 +54,7 @@ const toastMotion = {
 
 const TodayRoute = lazy(() => import('./components/Today').then((module) => ({ default: module.TodayRoute })));
 const TimelinePage = lazy(() => import('./components/Timeline').then((module) => ({ default: module.TimelinePage })));
+const PullsPage = lazy(() => import('./components/History').then((module) => ({ default: module.PullsPage })));
 const SettingsPage = lazy(() => import('./components/Settings').then((module) => ({ default: module.SettingsPage })));
 const GameDetailSheet = lazy(() =>
   import('./components/GameDetail').then((module) => ({ default: module.GameDetailSheet })),
@@ -357,7 +358,7 @@ export default function App() {
             The exit slide is what this gives up; the direction still reads. */}
         <Suspense fallback={<div className="px-5 py-12 text-center text-body text-dim">Loading view…</div>}>
           <PageFrame key={tab} tab={tab} direction={direction} positions={pagePositions}>
-            {tab === 'settings' ? <SettingsPage /> : <LivePage tab={tab} />}
+            {tab === 'settings' ? <SettingsPage /> : tab === 'history' ? <PullsPage /> : <LivePage tab={tab} />}
           </PageFrame>
         </Suspense>
       </main>

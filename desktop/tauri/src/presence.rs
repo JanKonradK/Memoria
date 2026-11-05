@@ -22,6 +22,8 @@ pub struct Preferences {
     pub close_to_tray: bool,
     /// Show a notification when a tracked game starts.
     pub game_start_notices: bool,
+    /// Device reminders are opt-in, independent of the phone's choice.
+    pub reminders_on_pc: bool,
 }
 
 impl Default for Preferences {
@@ -30,6 +32,7 @@ impl Default for Preferences {
             open_at_login: true,
             close_to_tray: true,
             game_start_notices: true,
+            reminders_on_pc: false,
         }
     }
 }
@@ -49,6 +52,7 @@ impl PreferenceFile {
                 open_at_login: flag("openAtLogin", current.open_at_login),
                 close_to_tray: flag("closeToTray", current.close_to_tray),
                 game_start_notices: flag("gameStartNotices", current.game_start_notices),
+                reminders_on_pc: flag("remindersOnPc", current.reminders_on_pc),
             };
         }
         Self {
@@ -75,6 +79,9 @@ impl PreferenceFile {
         if let Some(value) = flag("gameStartNotices") {
             next.game_start_notices = value;
         }
+        if let Some(value) = flag("remindersOnPc") {
+            next.reminders_on_pc = value;
+        }
         if let Ok(json) = serde_json::to_value(next) {
             let _ = crate::store::write_json(&self.file, &json);
         }
@@ -86,10 +93,10 @@ impl PreferenceFile {
 /// `Game.exe` and `game` name the same program.
 pub fn program_name(value: &str) -> String {
     let value = value.trim();
-    let value = if value.len() > 4 && value[value.len() - 4..].eq_ignore_ascii_case(".exe") {
-        &value[..value.len() - 4]
-    } else {
-        value
+    // `get` returns None off a character boundary, so non-ASCII names cannot panic.
+    let value = match value.len().checked_sub(4).filter(|&cut| cut > 0) {
+        Some(cut) if value.get(cut..).is_some_and(|s| s.eq_ignore_ascii_case(".exe")) => &value[..cut],
+        _ => value,
     };
     value.to_lowercase()
 }
@@ -270,6 +277,10 @@ mod tests {
     #[test]
     fn names_and_watch_lists_are_cleaned() {
         assert_eq!(program_name(" GenshinImpact.EXE "), "genshinimpact");
+        assert_eq!(program_name("游戏"), "游戏");
+        assert_eq!(program_name("😀a"), "😀a");
+        assert_eq!(program_name("原神.exe"), "原神");
+        assert_eq!(program_name(".exe"), ".exe");
         let watch = clean_watch_list(&json!({ "g": ["Game.exe", "", 5], "": ["x"], "h": "nope" }));
         assert_eq!(watch.len(), 1);
         assert_eq!(watch["g"], set(&["game"]));
@@ -303,5 +314,21 @@ mod tests {
         let reloaded = PreferenceFile::new(&dir).get();
         assert!(!reloaded.close_to_tray);
         assert!(reloaded.open_at_login);
+    }
+
+    #[test]
+    fn reminders_default_off_for_existing_installs_and_stay_local() {
+        let dir = std::env::temp_dir().join(format!("memoria-reminder-prefs-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        crate::store::write_json(&dir.join("desktop-preferences.json"), &json!({ "closeToTray": true })).unwrap();
+        let prefs = PreferenceFile::new(&dir);
+        assert!(!prefs.get().reminders_on_pc);
+        prefs.set(&json!({ "remindersOnPc": true }));
+        assert!(PreferenceFile::new(&dir).get().reminders_on_pc);
+        prefs.set(&json!({ "remindersOnPc": "false" }));
+        assert!(prefs.get().reminders_on_pc);
+        prefs.set(&json!({ "remindersOnPc": false }));
+        assert!(!PreferenceFile::new(&dir).get().reminders_on_pc);
+        assert!(!dir.join("state.json").exists());
     }
 }

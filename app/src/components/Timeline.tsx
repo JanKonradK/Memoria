@@ -4,7 +4,7 @@ import { DateTime } from 'luxon';
 import type { Game, GameEvent } from '@memoria/shared';
 import { m } from 'motion/react';
 import { useApp } from '../store';
-import { useMediaQuery } from '../hooks';
+import { useElementWidth, useMediaQuery } from '../hooks';
 import { cycleKey, sortTimelineEvents } from '../timeline-sort';
 import { useUI } from '../ui-store';
 import { slideIn } from '../motion';
@@ -81,30 +81,6 @@ function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; 
       </Btn>
     </section>
   );
-}
-
-function useElementWidth() {
-  const observerRef = useRef<ResizeObserver | null>(null);
-  const [width, setWidth] = useState(0);
-
-  const setElement = useCallback((element: HTMLElement | null) => {
-    observerRef.current?.disconnect();
-    observerRef.current = null;
-    if (!element) return;
-    const updateWidth = (nextWidth: number) => setWidth(Math.ceil(nextWidth));
-    updateWidth(element.getBoundingClientRect().width);
-
-    if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(([entry]) => {
-      if (entry) updateWidth(entry.target.getBoundingClientRect().width);
-    });
-    observer.observe(element);
-    observerRef.current = observer;
-  }, []);
-
-  useEffect(() => () => observerRef.current?.disconnect(), []);
-
-  return [setElement, width] as const;
 }
 
 /**

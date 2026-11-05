@@ -1,0 +1,250 @@
+/* Version history: charts drawn on the page ground with the game's own ink. */
+
+.history-card {
+  border-top: 1px solid var(--color-line-hairline);
+  padding-top: 1rem;
+}
+
+.history-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-color: var(--color-line-edge);
+  color: var(--color-muted);
+  background: transparent;
+  transition:
+    color 120ms,
+    background-color 120ms,
+    border-color 120ms;
+}
+.history-chip:hover {
+  color: var(--color-fg-soft);
+}
+.history-chip[aria-pressed='true'] {
+  color: var(--color-fg);
+  background: var(--color-fill-2);
+  border-color: var(--color-line-strong);
+}
+.history-chip[aria-pressed='false'] .history-chip-dot {
+  opacity: 0.4;
+}
+.history-chip-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.4rem;
+  border-radius: 999px;
+  vertical-align: 0.05em;
+}
+.history-chip .history-chip-dot {
+  margin-right: 0;
+}
+
+.history-tile {
+  background: var(--color-fill-1);
+}
+
+.history-chart {
+  position: relative;
+  width: 100%;
+  touch-action: pan-y;
+}
+.history-chart svg {
+  display: block;
+  overflow: visible;
+}
+
+.history-grid {
+  stroke: var(--color-line);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+.history-axis {
+  fill: var(--color-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.history-label {
+  fill: var(--color-fg-soft);
+  font-size: 12px;
+  font-weight: 600;
+}
+.history-dot {
+  stroke: var(--color-surface-0);
+  stroke-width: 2;
+}
+.history-missing {
+  stroke: var(--color-faint);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* Hit targets bigger than the marks; the marks themselves ignore the pointer. */
+.history-hit {
+  position: absolute;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: default;
+  border-radius: var(--radius-ui-sm);
+}
+.history-hit:focus-visible {
+  outline: 2px solid var(--color-fg);
+  outline-offset: -2px;
+}
+.history-hit-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+}
+
+.history-tip {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-width: min(18rem, 80%);
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-ui-sm);
+  background: var(--color-popover);
+  color: var(--color-muted);
+  font-size: var(--text-caption);
+  line-height: var(--text-caption--line-height);
+  pointer-events: none;
+  transform: translateY(-100%);
+}
+.history-tip strong {
+  color: var(--color-fg);
+  font-size: var(--text-meta, 0.875rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.history-key-line {
+  display: inline-block;
+  width: 14px;
+  height: 2px;
+  border-radius: 2px;
+}
+.history-key-box {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.history-table th,
+.history-table td {
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--color-line-hairline);
+  white-space: nowrap;
+}
+.history-table td:nth-last-child(2) {
+  white-space: normal;
+  min-width: 9rem;
+}
+.history-source {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.history-table thead th {
+  color: var(--color-muted);
+  font-weight: 600;
+}
+.history-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Savings planner */
+.savings-card {
+  border-top: 1px solid var(--color-line-hairline);
+  padding: 1rem 0;
+}
+.savings-goal {
+  border-top: 1px solid var(--color-line-hairline);
+}
+.savings-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-fg);
+}
+.savings-status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-muted);
+}
+.savings-status-ok .savings-status-dot {
+  background: var(--color-ok);
+}
+.savings-status-warn .savings-status-dot {
+  background: var(--color-warn);
+}
+.savings-status-danger .savings-status-dot {
+  background: var(--color-danger);
+}
+.savings-status-muted {
+  color: var(--color-muted);
+}
+.savings-now {
+  stroke: var(--color-line-strong);
+  stroke-width: 1;
+}
+.savings-target {
+  stroke: var(--color-fg-soft);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.savings-target-dot {
+  fill: var(--color-fg);
+  stroke: var(--color-surface-0);
+  stroke-width: 2;
+}
+
+/* Pity tracker */
+.pity-tracks {
+  display: grid;
+  gap: 1.25rem;
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .pity-tracks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.pity-track {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-ui-md);
+  background: var(--color-fill-1);
+  min-width: 0;
+}
+.pity-meter {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-fill-3);
+  overflow: hidden;
+}
+.pity-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 200ms;
+}
+.pity-meter-soft {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-fg-soft);
+  opacity: 0.6;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pity-meter-fill {
+    transition: none;
+  }
+}

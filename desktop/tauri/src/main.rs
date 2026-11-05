@@ -10,6 +10,7 @@ mod core;
 mod lan;
 mod launch;
 mod presence;
+mod reminders;
 mod server;
 mod store;
 mod update;
@@ -52,6 +53,7 @@ struct TrayItems {
     open_at_login: Option<CheckMenuItem<tauri::Wry>>,
     notices: CheckMenuItem<tauri::Wry>,
     close_to_tray: CheckMenuItem<tauri::Wry>,
+    reminders: CheckMenuItem<tauri::Wry>,
 }
 
 struct App {
@@ -63,6 +65,7 @@ struct App {
     origin: String,
     launch: launch::GameLaunch,
     prefs: presence::PreferenceFile,
+    reminders_enabled: tokio::sync::watch::Sender<bool>,
     watcher: Mutex<Option<presence::GameWatcher>>,
     update_paths: update::Paths,
     latest_release: Mutex<Option<Value>>,
@@ -92,6 +95,7 @@ impl App {
             "openAtLogin": prefs.open_at_login,
             "closeToTray": prefs.close_to_tray,
             "gameStartNotices": prefs.game_start_notices,
+            "remindersOnPc": prefs.reminders_on_pc,
             "canStartWithWindows": self.packaged,
             "gameWatch": cfg!(windows),
         })
@@ -467,6 +471,11 @@ fn hide_to_tray(app: &AppHandle) {
 fn apply_preferences(app: &AppHandle) {
     let state = app.state::<App>();
     let prefs = state.prefs.get();
+    state.reminders_enabled.send_if_modified(|enabled| {
+        let changed = *enabled != prefs.reminders_on_pc;
+        *enabled = prefs.reminders_on_pc;
+        changed
+    });
     if state.packaged {
         set_open_at_login(prefs.open_at_login);
     }
@@ -483,25 +492,68 @@ fn apply_preferences(app: &AppHandle) {
         }
         let _ = items.notices.set_checked(prefs.game_start_notices);
         let _ = items.close_to_tray.set_checked(prefs.close_to_tray);
+        let _ = items.reminders.set_checked(prefs.reminders_on_pc);
     }
     emit(app, "memoria:presence-changed", state.presence_state());
 }
 
+/// Built into the binary so the elevated step never runs a file someone could edit.
+const PHONE_SYNC_SCRIPT: &str = include_str!("../../Enable-Phone-Sync.ps1");
+
+/// The elevated script: the fixed text above, told which Memoria.exe to allow.
+fn phone_sync_command(program: &std::path::Path) -> String {
+    let quoted = program.display().to_string().replace('\'', "''");
+    format!("$program = '{quoted}'\n{PHONE_SYNC_SCRIPT}")
+}
+
+/// Runs PowerShell elevated with the script passed in memory; None if the prompt was declined.
+#[cfg(windows)]
+fn run_elevated_powershell(script: &str) -> Option<u32> {
+    use base64::Engine;
+    use windows_sys::Win32::Foundation::CloseHandle;
+    use windows_sys::Win32::System::Threading::{GetExitCodeProcess, WaitForSingleObject, INFINITE};
+    use windows_sys::Win32::UI::Shell::{ShellExecuteExW, SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW};
+    use windows_sys::Win32::UI::WindowsAndMessaging::SW_HIDE;
+    let utf16: Vec<u8> = script.encode_utf16().flat_map(u16::to_le_bytes).collect();
+    let encoded = base64::engine::general_purpose::STANDARD.encode(utf16);
+    let wide = |s: &str| s.encode_utf16().chain(Some(0)).collect::<Vec<u16>>();
+    let verb = wide("runas");
+    let file = wide("powershell.exe");
+    let params = wide(&format!("-NoProfile -NonInteractive -EncodedCommand {encoded}"));
+    let mut info: SHELLEXECUTEINFOW = unsafe { std::mem::zeroed() };
+    info.cbSize = std::mem::size_of::<SHELLEXECUTEINFOW>() as u32;
+    info.fMask = SEE_MASK_NOCLOSEPROCESS;
+    info.lpVerb = verb.as_ptr();
+    info.lpFile = file.as_ptr();
+    info.lpParameters = params.as_ptr();
+    info.nShow = SW_HIDE;
+    unsafe {
+        if ShellExecuteExW(&mut info) == 0 || info.hProcess.is_null() {
+            return None;
+        }
+        WaitForSingleObject(info.hProcess, INFINITE);
+        let mut code = 1u32;
+        GetExitCodeProcess(info.hProcess, &mut code);
+        CloseHandle(info.hProcess);
+        Some(code)
+    }
+}
+
+#[cfg(not(windows))]
+fn run_elevated_powershell(_script: &str) -> Option<u32> {
+    None
+}
+
 fn allow_phone_sync(app: &AppHandle) {
-    let script = app.state::<App>().root.join("desktop").join("Enable-Phone-Sync.ps1");
     let handle = app.clone();
     std::thread::spawn(move || {
-        let mut command = std::process::Command::new("powershell.exe");
-        command
-            .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
-            .arg(&script);
-        update::hide_console(&mut command);
-        let (kind, text) = match command.status() {
-            Ok(status) if status.success() => (
+        let (kind, text) = match std::env::current_exe().map(|exe| run_elevated_powershell(&phone_sync_command(&exe))) {
+            Ok(Some(0)) => (
                 MessageDialogKind::Info,
-                "Windows now allows your phone to connect to Memoria on this local network.",
+                "Windows now allows your phone to connect to Memoria on private networks and Tailscale.",
             ),
-            Ok(_) => (
+            Ok(Some(_)) => (MessageDialogKind::Error, "Windows could not change the network setting."),
+            Ok(None) => (
                 MessageDialogKind::Warning,
                 "Windows did not allow the network change. Approve the administrator prompt to enable phone sync.",
             ),
@@ -535,6 +587,14 @@ fn create_tray(app: &AppHandle) -> tauri::Result<()> {
         prefs.game_start_notices,
         None::<&str>,
     )?;
+    let reminders = CheckMenuItem::with_id(
+        app,
+        "reminders",
+        "Reminders on this PC",
+        true,
+        prefs.reminders_on_pc,
+        None::<&str>,
+    )?;
     let keep = CheckMenuItem::with_id(
         app,
         "tray",
@@ -554,6 +614,7 @@ fn create_tray(app: &AppHandle) -> tauri::Result<()> {
         menu.append(login)?;
     }
     menu.append(&notices)?;
+    menu.append(&reminders)?;
     menu.append(&keep)?;
     menu.append(&PredefinedMenuItem::separator(app)?)?;
     menu.append(&phone)?;
@@ -578,6 +639,11 @@ fn create_tray(app: &AppHandle) -> tauri::Result<()> {
                 "notices" => {
                     let flag = !state.prefs.get().game_start_notices;
                     state.prefs.set(&json!({ "gameStartNotices": flag }));
+                    apply_preferences(app);
+                }
+                "reminders" => {
+                    let flag = !state.prefs.get().reminders_on_pc;
+                    state.prefs.set(&json!({ "remindersOnPc": flag }));
                     apply_preferences(app);
                 }
                 "tray" => {
@@ -612,6 +678,7 @@ fn create_tray(app: &AppHandle) -> tauri::Result<()> {
     *state.tray.lock().unwrap() = Some(TrayItems {
         open_at_login: login,
         notices,
+        reminders,
         close_to_tray: keep,
     });
     Ok(())
@@ -1061,6 +1128,7 @@ fn main() {
 
     let (changes, _) = broadcast::channel(16);
     let core = core::Core::start(data.join("state.json"), changes.clone());
+    let reminder_changes = changes.subscribe();
     let _state_watcher = store::watch_state_file(&data, changes.clone());
     let lan = lan::Lan::new(data.clone(), core.clone(), lan_port);
     let token = store::new_token();
@@ -1071,7 +1139,7 @@ fn main() {
         root.clone(),
         root.join("app").join("dist"),
         token.clone(),
-        core,
+        core.clone(),
         lan.clone(),
         changes,
         update::Paths::new(&data),
@@ -1082,13 +1150,16 @@ fn main() {
     // The user's choice survives restarts. A bind failure does not block local work.
     tauri::async_runtime::spawn(async move { lan.restore().await });
 
+    let prefs = presence::PreferenceFile::new(&data);
+    let (reminders_enabled, reminder_preferences) = tokio::sync::watch::channel(prefs.get().reminders_on_pc);
     let state = App {
         root: root.clone(),
         data: data.clone(),
         packaged,
         origin,
         launch: launch::GameLaunch::new(&data),
-        prefs: presence::PreferenceFile::new(&data),
+        prefs,
+        reminders_enabled,
         watcher: Mutex::new(None),
         update_paths: update::Paths::new(&data),
         latest_release: Mutex::new(None),
@@ -1142,6 +1213,22 @@ fn main() {
             create_window(&handle, &token)?;
             create_tray(&handle)?;
             apply_preferences(&handle);
+            let notices = handle.clone();
+            reminders::start(core, reminder_changes, reminder_preferences, data.clone(), move |notice| {
+                if !notices.state::<App>().prefs.get().reminders_on_pc {
+                    return;
+                }
+                let clicked = notices.clone();
+                show_notice(
+                    &notices,
+                    &notice.title,
+                    &notice.body,
+                    Some(Box::new(move || {
+                        let handle = clicked.clone();
+                        let _ = clicked.run_on_main_thread(move || focus_window(&handle));
+                    })),
+                );
+            });
             Ok(())
         })
         .build(context)
@@ -1171,6 +1258,15 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn phone_sync_script_is_built_in_and_quotes_the_path() {
+        let command = phone_sync_command(std::path::Path::new(r"C:\Users\O'Neil\Memoria.exe"));
+        assert!(command.starts_with("$program = 'C:\\Users\\O''Neil\\Memoria.exe'\n"));
+        assert!(command.contains("Profile = 'Private'"));
+        assert!(!command.contains("Public"));
+        assert!(!command.contains("RunAs"));
+    }
 
     #[test]
     fn zoom_steps_through_browser_levels() {

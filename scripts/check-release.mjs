@@ -26,7 +26,6 @@ for (const required of [
   'Memoria/app/dist/index.html',
   'Memoria/desktop/Install-Shortcut.ps1',
   'Memoria/desktop/Install-Lock.ps1',
-  'Memoria/desktop/Enable-Phone-Sync.ps1',
   'Memoria/desktop/memoria.ico',
 ]) {
   expect(entries, `${required} is in the zip`).toContain(required);

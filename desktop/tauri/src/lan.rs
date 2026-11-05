@@ -25,6 +25,11 @@ use crate::store;
 
 pub const LAN_PORT: u16 = 17820;
 const CODE_TTL_MS: u64 = 5 * 60_000;
+/// Pairing guesses one address may make each minute.
+const PAIR_ATTEMPTS_PER_SOURCE: usize = 5;
+/// Guesses all addresses together may make each minute. Well above what one
+/// noisy neighbour can use up, and still about 150 guesses per 8-digit code.
+const PAIR_ATTEMPTS_TOTAL: usize = 30;
 const MAX_DEVICES: usize = 10;
 const UNREADABLE: &str =
     "Saved phone connections could not be read. Your progress is safe. Reset phone connections to pair again.";
@@ -124,7 +129,8 @@ struct Inner {
     config: Config,
     load_error: Option<&'static str>,
     pairing: Option<Pairing>,
-    failures: Vec<u64>,
+    /// Recent pairing attempts and where they came from.
+    failures: Vec<(u64, IpAddr)>,
     /// The bound port and the switch that stops the listener.
     running: Option<(u16, oneshot::Sender<()>)>,
 }
@@ -321,7 +327,7 @@ impl Lan {
         inner.running.is_some() && inner.config.devices.iter().any(|d| d.id == device_id)
     }
 
-    async fn route(&self, request: Request) -> Result<Value, LanError> {
+    async fn route(&self, peer: IpAddr, request: Request) -> Result<Value, LanError> {
         let path = request
             .uri()
             .path_and_query()
@@ -335,11 +341,9 @@ impl Lan {
             {
                 let mut inner = self.inner.lock().unwrap();
                 let now = now_ms();
-                inner.failures.retain(|at| *at + 60_000 > now);
-                if inner.failures.len() >= 5 {
+                if !pairing_allowed(&mut inner.failures, peer, now) {
                     return Err(fail(429, "Too many pairing attempts. Wait one minute and try again."));
                 }
-                inner.failures.push(now);
             }
             let body = read_json(&headers, request.into_body(), 1024).await?;
             let candidate: String = body
@@ -495,6 +499,18 @@ pub fn json_response(status: u16, body: &Value) -> Response {
         .into_response()
 }
 
+/// Records one pairing attempt unless its address, or everyone together, is over the limit.
+/// Per-address limits keep one device on the network from locking everyone else out.
+fn pairing_allowed(attempts: &mut Vec<(u64, IpAddr)>, peer: IpAddr, now: u64) -> bool {
+    attempts.retain(|(at, _)| *at + 60_000 > now);
+    let from_peer = attempts.iter().filter(|(_, ip)| *ip == peer).count();
+    if from_peer >= PAIR_ATTEMPTS_PER_SOURCE || attempts.len() >= PAIR_ATTEMPTS_TOTAL {
+        return false;
+    }
+    attempts.push((now, peer));
+    true
+}
+
 async fn handle(State(lan): State<Lan>, ConnectInfo(peer): ConnectInfo<SocketAddr>, request: Request) -> Response {
     // A native HTTP client sends no Origin. Browser pages are never admitted,
     // even when someone shares a pairing code with a page by accident.
@@ -505,7 +521,7 @@ async fn handle(State(lan): State<Lan>, ConnectInfo(peer): ConnectInfo<SocketAdd
             &json!({ "error": "Use the Memoria Android app on your home Wi-Fi or private network." }),
         );
     }
-    let result = tokio::time::timeout(std::time::Duration::from_secs(15), lan.route(request)).await;
+    let result = tokio::time::timeout(std::time::Duration::from_secs(15), lan.route(peer.ip(), request)).await;
     match result {
         Ok(Ok(body)) => json_response(200, &body),
         Ok(Err(error)) => {
@@ -523,6 +539,29 @@ async fn handle(State(lan): State<Lan>, ConnectInfo(peer): ConnectInfo<SocketAdd
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn one_noisy_address_cannot_lock_out_pairing() {
+        let (noisy, phone): (IpAddr, IpAddr) = ("192.168.1.66".parse().unwrap(), "192.168.1.20".parse().unwrap());
+        let mut attempts = Vec::new();
+        for _ in 0..PAIR_ATTEMPTS_PER_SOURCE {
+            assert!(pairing_allowed(&mut attempts, noisy, 1_000));
+        }
+        assert!(!pairing_allowed(&mut attempts, noisy, 1_000));
+        assert!(pairing_allowed(&mut attempts, phone, 1_000));
+        // A minute later the noisy address may try again.
+        assert!(pairing_allowed(&mut attempts, noisy, 61_001));
+    }
+
+    #[test]
+    fn many_addresses_together_still_hit_a_ceiling() {
+        let mut attempts = Vec::new();
+        for n in 0..PAIR_ATTEMPTS_TOTAL {
+            let ip: IpAddr = format!("10.0.0.{}", n + 1).parse().unwrap();
+            assert!(pairing_allowed(&mut attempts, ip, 5));
+        }
+        assert!(!pairing_allowed(&mut attempts, "10.0.1.1".parse().unwrap(), 5));
+    }
     use tokio::sync::broadcast;
 
     fn scratch(name: &str) -> PathBuf {

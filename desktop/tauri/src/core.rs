@@ -39,6 +39,7 @@ impl CoreError {
 
 enum Job {
     Read(oneshot::Sender<Result<String, CoreError>>),
+    NotificationPlan(i64, oneshot::Sender<Result<String, CoreError>>),
     /// The JSON request body (`{ "state": ... }`) and a check that the caller is still allowed.
     Merge(
         String,
@@ -68,6 +69,13 @@ impl Core {
         let (reply, answer) = oneshot::channel();
         self.send(Job::Read(reply))?;
         answer.await.map_err(|_| stopped())?
+    }
+
+    pub async fn notification_plan(&self, now: i64) -> Result<Vec<crate::reminders::Notice>, CoreError> {
+        let (reply, answer) = oneshot::channel();
+        self.send(Job::NotificationPlan(now, reply))?;
+        let json = answer.await.map_err(|_| stopped())??;
+        serde_json::from_str(&json).map_err(|_| CoreError::new(500, "The reminder plan could not be read."))
     }
 
     /// Merges `body` (`{ "state": ... }`) into the saved document and returns the result.
@@ -101,15 +109,21 @@ fn run(state_file: PathBuf, inbox: mpsc::Receiver<Job>, changes: broadcast::Send
         ctx.globals()
             .set("__memoriaTimeZone", timezone)
             .expect("set the time zone");
-        // QuickJS has no Intl. The shared code only asks it for the local time
-        // zone and whether a zone name is valid.
-        ctx.eval::<(), _>(
-            r#"globalThis.Intl = { DateTimeFormat: function () {
-                 return { resolvedOptions: () => ({ timeZone: globalThis.__memoriaTimeZone }),
-                          format: () => '', formatToParts: () => [] };
-               } };"#,
-        )
-        .expect("install the time zone shim");
+        // QuickJS has no Intl. Supply the IANA offsets Luxon needs for game
+        // resets and quiet hours. Jiff already ships with the Windows dependency tree.
+        ctx.globals()
+            .set(
+                "__memoriaZoneOffset",
+                Function::new(ctx.clone(), |zone: String, at: f64| {
+                    let zone = jiff::tz::TimeZone::get(&zone).ok()?;
+                    let at = jiff::Timestamp::from_millisecond(at as i64).ok()?;
+                    Some(zone.to_offset(at).seconds())
+                })
+                .expect("create the time zone bridge"),
+            )
+            .expect("set the time zone bridge");
+        ctx.eval::<(), _>(include_str!("intl.js"))
+            .expect("install the time zone shim");
         ctx.eval::<(), _>(SOURCE).expect("load the shared app code");
     });
 
@@ -117,6 +131,16 @@ fn run(state_file: PathBuf, inbox: mpsc::Receiver<Job>, changes: broadcast::Send
         match job {
             Job::Read(reply) => {
                 let result = store::read_raw(&state_file).and_then(|raw| call_read(&context, raw));
+                let _ = reply.send(result);
+            }
+            Job::NotificationPlan(now, reply) => {
+                let result = store::read_raw(&state_file).and_then(|raw| {
+                    context.with(|ctx| {
+                        let core: Object = ctx.globals().get("MemoriaCore").map_err(|_| exception(&ctx))?;
+                        let plan: Function = core.get("notificationPlan").map_err(|_| exception(&ctx))?;
+                        plan.call::<_, String>((raw, now as f64)).map_err(|_| exception(&ctx))
+                    })
+                });
                 let _ = reply.send(result);
             }
             Job::Merge(body, authorized, reply) => {
@@ -236,5 +260,75 @@ mod tests {
             .await
             .unwrap_err();
         assert_eq!(error.status, 401);
+    }
+
+    #[tokio::test]
+    async fn plans_reminders_and_energy_from_disk_with_real_quiet_hours() {
+        let file = scratch("reminders");
+        let core = Core::start(file.clone(), broadcast::channel(4).0);
+        let now = 1_791_288_000_000i64; // 2026-10-06 12:00 UTC
+        assert!(core.notification_plan(now).await.unwrap().is_empty());
+        let mut state: serde_json::Value = serde_json::from_str(&core.read().await.unwrap()).unwrap();
+        state["settings"] = serde_json::json!({
+            "quietStart": null, "quietEnd": null, "localTz": "UTC", "sleepHours": 8, "updatedAt": 1
+        });
+        state["games"] = serde_json::json!([{
+            "id": "g1", "name": "Test", "short": "T", "color": "#88bbff", "icon": "",
+            "platform": "both", "tz": "Asia/Tokyo", "dailyResetHour": 4, "weeklyResetDay": 1,
+            "monthlyResetDay": 1, "paused": false, "sort": 0, "updatedAt": 1
+        }]);
+        state["resources"] = serde_json::json!([{
+            "id": "r1", "gameId": "g1", "name": "Energy", "cap": 100, "regenMinutes": 6,
+            "reserveCap": 0, "sort": 0, "updatedAt": 1
+        }]);
+        state["snapshots"] = serde_json::json!([{
+            "id": "s1", "resourceId": "r1", "value": 80, "takenAt": now
+        }]);
+        state["reminders"] = serde_json::json!([{
+            "id": "reminder", "gameId": null, "message": "Check in", "at": now + 3_600_000, "updatedAt": 1
+        }]);
+        store::write_json(&file, &state).unwrap();
+        let plan = core.notification_plan(now).await.unwrap();
+        assert_eq!(plan.len(), 2);
+        assert_eq!(plan[0].body, "Check in");
+        assert_eq!(plan[1].at, now + 90 * 60_000);
+
+        state["settings"]["quietStart"] = serde_json::json!(21 * 60);
+        state["settings"]["quietEnd"] = serde_json::json!(7 * 60);
+        state["settings"]["localTz"] = serde_json::json!("Asia/Tokyo");
+        store::write_json(&file, &state).unwrap();
+        assert!(core.notification_plan(now).await.unwrap().is_empty());
+        state["settings"]["localTz"] = serde_json::json!("UTC");
+        store::write_json(&file, &state).unwrap();
+        assert_eq!(core.notification_plan(now).await.unwrap().len(), 2);
+    }
+
+    #[tokio::test]
+    async fn plans_game_resets_across_both_dst_transitions() {
+        let file = scratch("reminder-dst");
+        let core = Core::start(file.clone(), broadcast::channel(4).0);
+        let mut state: serde_json::Value = serde_json::from_str(&core.read().await.unwrap()).unwrap();
+        state["settings"] = serde_json::json!({
+            "quietStart": null, "quietEnd": null, "localTz": "UTC", "sleepHours": 8, "updatedAt": 1
+        });
+        state["games"] = serde_json::json!([{
+            "id": "g1", "name": "Test", "short": "T", "color": "#88bbff", "icon": "",
+            "platform": "both", "tz": "America/New_York", "dailyResetHour": 4, "weeklyResetDay": 1,
+            "monthlyResetDay": 1, "paused": false, "sort": 0, "updatedAt": 1
+        }]);
+        state["tasks"] = serde_json::json!([{
+            "id": "t1", "gameId": "g1", "name": "Dailies", "cadence": "daily",
+            "intervalDays": 1, "anchorAt": 0, "sort": 0, "updatedAt": 1
+        }]);
+        store::write_json(&file, &state).unwrap();
+        for (now, expected) in [
+            ("2026-03-08T05:00:00Z", "2026-03-08T07:30:00Z"),
+            ("2026-11-01T04:00:00Z", "2026-11-01T08:30:00Z"),
+        ] {
+            let millis = |text: &str| text.parse::<jiff::Timestamp>().unwrap().as_millisecond();
+            let plan = core.notification_plan(millis(now)).await.unwrap();
+            assert_eq!(plan.len(), 1);
+            assert_eq!(plan[0].at, millis(expected));
+        }
     }
 }

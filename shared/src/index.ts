@@ -17,3 +17,6 @@ export * from './notification-plan';
 export * from './event-parts';
 export * from './glance';
 export * from './event-twins';
+export * from './version-history';
+export * from './savings';
+export * from './pity';
