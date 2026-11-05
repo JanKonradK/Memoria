@@ -1453,7 +1453,8 @@ export const useApp = create<AppStore>((set, get) => ({
       // launcher would later reject, leaving the device wedged. Refuse the
       // whole import instead: unlike a load, there is a real user standing here
       // who can be told the file is bad, and their existing state is intact.
-      assertSyncProtocol(raw);
+      // A backup file is not a peer: an older one is migrated like local data
+      // (the schema refuses a newer one). The protocol gate is for live sync.
       const parsed = safeParseAppState(raw);
       if (!parsed.success) return false;
       // Imports do not go through stateForStorage, so apply the shared schema

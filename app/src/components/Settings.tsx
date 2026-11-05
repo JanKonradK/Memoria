@@ -1,12 +1,6 @@
 import { Activity } from './settings/Activity';
 import { useRef, useState, type ReactNode } from 'react';
-import {
-  assertSyncProtocol,
-  SyncProtocolError,
-  detectLocalTz,
-  normalizeState,
-  safeParseAppState,
-} from '@memoria/shared';
+import { detectLocalTz, normalizeState, safeParseAppState } from '@memoria/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { servedByLauncher } from '../launcher';
@@ -117,7 +111,7 @@ export function SettingsPage() {
           const candidate = raw && typeof raw === 'object' && 'state' in raw ? (raw as { state: unknown }).state : raw;
           if (!candidate || typeof candidate !== 'object' || (!('games' in candidate) && !('settings' in candidate)))
             throw new Error('Not a Memoria backup');
-          assertSyncProtocol(candidate);
+          // Older backups migrate on import; only a newer one is refused, by the schema.
           const parsed = safeParseAppState(candidate);
           if (!parsed.success) throw new Error(parsed.error);
           const incoming = normalizeState(candidate);
@@ -129,7 +123,11 @@ export function SettingsPage() {
           setStatusMessage('');
         } catch (error) {
           setImportDraft(null);
-          setStatusMessage(error instanceof SyncProtocolError ? error.message : 'Import failed: not a Memoria backup.');
+          setStatusMessage(
+            error instanceof Error && /newer|schemaVersion/i.test(error.message)
+              ? 'This backup needs a newer version of Memoria. Update the app, then import it.'
+              : 'Import failed: not a Memoria backup.',
+          );
         }
       })
       .catch((error: unknown) => {

@@ -96,12 +96,13 @@ it('journals migrations, sync arrivals and feed imports, with automatic checkpoi
     expect.arrayContaining(['Before migration', 'Before sync', 'Daily checkpoint']),
   );
 });
-it('refuses old cloud and backup protocols before writing', () => {
+it('refuses an old sync peer but still imports an old backup file', () => {
   const old = { ...emptyState(), schemaVersion: 9 };
   const before = useApp.getState().state;
   expect(() => mergeCloudDocument(before, JSON.stringify(old))).toThrow(/Update Memoria/);
-  expect(useApp.getState().importJson(JSON.stringify(old))).toBe(false);
   expect(useApp.getState().state).toBe(before);
+  expect(useApp.getState().importJson(JSON.stringify(old))).toBe(true);
+  expect(useApp.getState().importJson(JSON.stringify({ ...emptyState(), schemaVersion: 99 }))).toBe(false);
 });
 it('checkpoint restore survives the next peer sync and removes later additions', () => {
   const gameId = useApp.getState().addBlankGame('Keep');
