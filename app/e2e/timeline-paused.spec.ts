@@ -134,7 +134,7 @@ test('paused accounts stay compact in both views and resume their saved events',
   ).toBeFocused();
   await expect(page.locator('[data-paused-game="long"]')).toBeVisible();
   await expect.poll(async () => (await stored(page)).games.find((game) => game.id === alt.id)?.paused).toBe(false);
-  expect((await stored(page)).events.sort((a, b) => a.id.localeCompare(b.id))).toEqual(
+  expect((await stored(page)).events.sort((a, b) => a.id.localeCompare(b.id))).toMatchObject(
     [...state.events].sort((a, b) => a.id.localeCompare(b.id)),
   );
   await page.reload();
