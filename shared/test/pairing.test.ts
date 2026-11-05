@@ -3,22 +3,33 @@ import { encodePairingCode, parsePairingCode } from '../src/pairing';
 
 describe('phone connection codes', () => {
   it('round trips private addresses and a single-use code without credentials', () => {
-    const text = encodePairingCode(['192.168.1.20', 'http://10.0.0.2:17820', '192.168.1.20'], '01234567');
+    const text = encodePairingCode(
+      ['192.168.1.20', 'http://10.0.0.2:17820', '192.168.1.20'],
+      '01234567',
+      'a'.repeat(64),
+    );
     expect(parsePairingCode(text)).toEqual({
       kind: 'memoria-pair',
-      version: 1,
+      version: 2,
       addresses: ['http://192.168.1.20:17820', 'http://10.0.0.2:17820'],
       code: '01234567',
+      fingerprint: 'a'.repeat(64),
     });
     expect(text).not.toContain('token');
   });
   it('rejects unrelated QR codes, newer formats, credentials and nonlocal destinations', () => {
-    const base = { kind: 'memoria-pair', version: 1, addresses: ['http://192.168.1.20:17820'], code: '12345678' };
+    const base = {
+      kind: 'memoria-pair',
+      version: 2,
+      addresses: ['http://192.168.1.20:17820'],
+      code: '12345678',
+      fingerprint: 'a'.repeat(64),
+    };
     for (const value of [
       'https://example.com',
       'null',
       'x'.repeat(2049),
-      JSON.stringify({ ...base, version: 2 }),
+      JSON.stringify({ ...base, version: 1 }),
       JSON.stringify({ ...base, code: '1234567é' }),
       JSON.stringify({ ...base, addresses: [] }),
       ...[

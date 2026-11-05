@@ -70,7 +70,10 @@ jobs:
 
       # The downloadable zip, plus the single-file HTML for anyone who just
       # wants to try it without unpacking anything.
+      # Add MEMORIA_SIGNING_KEY (the PEM contents) as an Actions secret before releasing.
       - run: npm run package
+        env:
+          MEMORIA_SIGNING_KEY: ${{ secrets.MEMORIA_SIGNING_KEY }}
       - run: npm run build:single
       - run: npm exec -- playwright install chromium
       - run: npm run check:release
@@ -121,6 +124,11 @@ jobs:
           sha256sum Memoria.html >> SHA256SUMS.txt
           cat SHA256SUMS.txt
 
+      - name: Sign all release assets
+        run: node scripts/sign-release.mjs
+        env:
+          MEMORIA_SIGNING_KEY: ${{ secrets.MEMORIA_SIGNING_KEY }}
+
       # The app shows everything above "## Download" as the release notes.
       # Write them in docs/releases/<tag>.md before tagging.
       - name: Write the release notes
@@ -150,6 +158,9 @@ jobs:
             echo "Your data stays on each device and is never touched by an update."
             echo
             echo "Verify a download against \`SHA256SUMS.txt\` if you like: \`Get-FileHash .\Memoria-win-x64.zip -Algorithm SHA256\`"
+            # Browsers can read the release body through GitHub's CORS-enabled API.
+            # The asset download endpoint does not allow browser cross-origin reads.
+            node -e "process.stdout.write('<!-- memoria-signed-release ' + require('node:fs').readFileSync('dist/release/release-manifest.json', 'utf8').trim() + ' -->\n')"
           } > dist/release-notes.md
           cat dist/release-notes.md
 
@@ -165,4 +176,5 @@ jobs:
             dist/release/Memoria-android.apk
             dist/release/Memoria.html
             dist/release/SHA256SUMS.txt
+            dist/release/release-manifest.json
           body_path: dist/release-notes.md

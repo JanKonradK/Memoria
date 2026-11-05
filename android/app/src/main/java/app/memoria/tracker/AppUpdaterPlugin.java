@@ -11,7 +11,6 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -20,7 +19,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -28,13 +26,12 @@ import java.util.concurrent.Executors;
 
 /**
  * Installs a Memoria release from GitHub. The APK is checked against the
- * release's SHA256SUMS.txt, then Android's own installer asks the user to
+ * publisher-signed digest verified by app-update.ts, then Android's own installer asks the user to
  * confirm. Android only accepts it when it carries this app's signature.
  */
 @CapacitorPlugin(name = "AppUpdater")
 public class AppUpdaterPlugin extends Plugin {
     private static final String RELEASES = "https://github.com/JanKonradK/Memoria/releases/download/";
-    private static final String APK_NAME = "Memoria-android.apk";
     private static final long MAX_APK_BYTES = 300L * 1024 * 1024;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private volatile boolean busy = false;
@@ -42,9 +39,9 @@ public class AppUpdaterPlugin extends Plugin {
     @PluginMethod
     public void install(PluginCall call) {
         String apkUrl = call.getString("apkUrl");
-        String checksumUrl = call.getString("checksumUrl");
+        String expected = call.getString("expectedSha256", "");
         String version = call.getString("version", "").replaceAll("[^0-9A-Za-z.-]", "");
-        if (apkUrl == null || checksumUrl == null || !apkUrl.startsWith(RELEASES) || !checksumUrl.startsWith(RELEASES)) {
+        if (apkUrl == null || !apkUrl.startsWith(RELEASES) || !expected.matches("[0-9a-f]{64}")) {
             call.reject("This download does not come from Memoria's releases.");
             return;
         }
@@ -62,7 +59,6 @@ public class AppUpdaterPlugin extends Plugin {
         busy = true;
         executor.execute(() -> {
             try {
-                String expected = expectedDigest(checksumUrl);
                 File directory = new File(context.getCacheDir(), "updates");
                 if (!directory.isDirectory() && !directory.mkdirs()) throw new IOException("No room for the update.");
                 File apk = new File(directory, "Memoria-" + version + ".apk");
@@ -108,28 +104,6 @@ public class AppUpdaterPlugin extends Plugin {
             throw new IOException("GitHub responded " + status + ". Try again later.");
         }
         return connection;
-    }
-
-    private static String expectedDigest(String checksumUrl) throws IOException {
-        HttpURLConnection connection = open(checksumUrl);
-        try (InputStream input = connection.getInputStream()) {
-            ByteArrayOutputStream text = new ByteArrayOutputStream();
-            byte[] buffer = new byte[8192];
-            int read;
-            while ((read = input.read(buffer)) != -1) {
-                text.write(buffer, 0, read);
-                if (text.size() > 64_000) throw new IOException("The checksum list is too large.");
-            }
-            for (String line : text.toString(StandardCharsets.UTF_8.name()).split("\\r?\\n")) {
-                String[] parts = line.trim().split("\\s+\\*?", 2);
-                if (parts.length == 2 && parts[1].equals(APK_NAME) && parts[0].matches("[0-9a-fA-F]{64}")) {
-                    return parts[0].toLowerCase(Locale.ROOT);
-                }
-            }
-        } finally {
-            connection.disconnect();
-        }
-        throw new IOException("This release does not list an Android checksum.");
     }
 
     private void download(String url, File destination) throws IOException {

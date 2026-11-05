@@ -1,3 +1,11 @@
+import {
+  newDeviceKey,
+  devicePublicKey,
+  deviceFingerprint,
+  lanKeys,
+  sealLan,
+  openLan,
+} from '../shared/src/lan-crypto.ts';
 /* global window, document, location */
 // Exercises the packaged Windows program (dist/release/Memoria) end to end:
 // the real Memoria.exe, its WebView2 window, loopback server and Wi-Fi sync.
@@ -400,23 +408,32 @@ try {
       })
     ).json(),
   );
-  const paired = await fetch(`http://127.0.0.1:${wifi.port}/pair`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ code: wifi.code, name: 'Check phone' }),
-  });
-  expect(paired.status).toBe(200);
-  const { token } = await paired.json();
+  const secret = newDeviceKey();
+  const phone = devicePublicKey(secret);
+  const encrypted = async (path, data) => {
+    const url = `http://127.0.0.1:${wifi.port}`;
+    const post = (path, data) =>
+      fetch(`${url}${path}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    const hello = await (await post('/hello', {})).json();
+    expect(deviceFingerprint(hello.publicKey)).toBe(wifi.fingerprint);
+    const keys = lanKeys(secret, hello.publicKey, hello.publicKey, phone);
+    const request = sealLan(keys.request, path, phone, hello.challenge, data);
+    const response = await post(path, request);
+    expect(response.status).toBe(200);
+    return openLan(keys.response, path, await response.json(), request.nonce);
+  };
+  const paired = await encrypted('/pair', { code: wifi.code, name: 'Check phone' });
+  expect(paired.deviceId).toBeTruthy();
   await expect(page.getByText('Device connected', { exact: true })).toBeVisible();
   const phoneState = readState();
   phoneState.games[0].name = 'Phone archive';
   phoneState.games[0].updatedAt = Date.now();
-  const phoneSync = await fetch(`http://127.0.0.1:${wifi.port}/sync`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-    body: JSON.stringify({ state: phoneState }),
-  });
-  expect(phoneSync.status).toBe(200);
+  const phoneSync = await encrypted('/sync', { state: phoneState });
+  expect(phoneSync.state).toBeTruthy();
   await page.getByRole('button', { name: 'Today', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Phone archive', exact: true })).toBeVisible({ timeout: 15_000 });
 

@@ -2,14 +2,18 @@
 // sync flow can be tested in a browser. The shipped listener is Rust
 // (desktop/tauri/src/lan.rs) and speaks the same protocol.
 import { createServer } from 'node:http';
-import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
+import { randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
+import { x25519 } from '@noble/curves/ed25519.js';
+import { xchacha20poly1305 } from '@noble/ciphers/chacha.js';
+import { hkdf } from '@noble/hashes/hkdf.js';
+import { sha256 } from '@noble/hashes/sha2.js';
 import { networkInterfaces } from 'node:os';
 import { rejectRequestBody } from './http-response.mjs';
 
 export const LAN_PORT = 17820;
 const MAX_BYTES = 1_000_000;
 const CODE_TTL = 5 * 60_000;
-const hash = (value) => createHash('sha256').update(value).digest('hex');
+const hash = (value) => Buffer.from(sha256(value)).toString('hex');
 const fail = (status, message) => Object.assign(new Error(message), { status });
 
 export function privateAddress(value) {
@@ -105,6 +109,9 @@ export function createLanSync({
   now = Date.now,
   port = LAN_PORT,
 }) {
+  const secret = randomBytes(32);
+  const publicKey = Buffer.from(x25519.getPublicKey(secret)).toString('hex');
+  const challenges = new Map();
   let config = { enabled: false, devices: [] };
   let loadError = null;
   try {
@@ -120,7 +127,7 @@ export function createLanSync({
             (d) =>
               !d ||
               typeof d.id !== 'string' ||
-              !/^[a-f0-9]{64}$/.test(d.hash) ||
+              !/^[a-f0-9]{64}$/.test(d.publicKey) ||
               typeof d.name !== 'string' ||
               !Number.isFinite(d.pairedAt) ||
               d.pairedAt < 0,
@@ -147,6 +154,7 @@ export function createLanSync({
   const active = (device) => Boolean(server && config.devices.includes(device));
   const status = () => ({
     enabled: Boolean(server),
+    fingerprint: hash(Buffer.from(publicKey, 'hex')),
     error: loadError,
     port: server?.address().port ?? port,
     addresses: server
@@ -165,18 +173,56 @@ export function createLanSync({
     return status();
   };
   async function handle(req, res) {
+    let reply = (status, body) => json(res, status, body);
     try {
       // A native HTTP client sends no Origin. Browser pages are never admitted,
       // even when a user has accidentally shared a pairing code with a page.
       if (req.headers.origin || req.headers['sec-fetch-site'] || !privateAddress(req.socket.remoteAddress))
         throw fail(403, 'Use the Memoria Android app on the same private Wi-Fi network.');
-      if (req.method !== 'POST' || !['/pair', '/sync', '/disconnect'].includes(req.url))
+      if (req.method !== 'POST' || !['/hello', '/pair', '/sync', '/disconnect'].includes(req.url))
         throw fail(404, 'Route not found.');
+      if (req.url === '/hello') {
+        for (const [key, expires] of challenges) if (expires <= now()) challenges.delete(key);
+        if (challenges.size >= 256) throw fail(429, 'Too many connection requests.');
+        const challenge = randomBytes(32).toString('hex');
+        challenges.set(challenge, now() + 60000);
+        return json(res, 200, { publicKey, challenge });
+      }
+      const packet = await readJson(req, MAX_BYTES * 2 + 2048);
+      if (!challenges.has(packet.challenge) || challenges.get(packet.challenge) <= now())
+        throw fail(403, 'Sync challenge expired or was already used.');
+      challenges.delete(packet.challenge);
+      const phone = packet.publicKey;
+      const shared = x25519.getSharedSecret(secret, Buffer.from(phone, 'hex'));
+      const salt = sha256(Buffer.from(`memoria-lan-v2\n${publicKey}\n${phone}`));
+      const key = (direction) => hkdf(sha256, shared, salt, Buffer.from(direction), 32);
+      const aad = (replyTo) => Buffer.from(`memoria-lan-v2\n${req.url}\n${packet.challenge}\n${replyTo}`);
+      const body = JSON.parse(
+        Buffer.from(
+          xchacha20poly1305(key('request'), Buffer.from(packet.nonce, 'hex'), aad('')).decrypt(
+            Buffer.from(packet.ciphertext, 'hex'),
+          ),
+        ),
+      );
+      reply = (status, body) => {
+        const nonce = randomBytes(24);
+        const data = status === 200 ? body : { ...body, status };
+        const ciphertext = xchacha20poly1305(key('response'), nonce, aad(packet.nonce)).encrypt(
+          Buffer.from(JSON.stringify(data)),
+        );
+        json(res, 200, {
+          publicKey,
+          challenge: packet.challenge,
+          nonce: nonce.toString('hex'),
+          ciphertext: Buffer.from(ciphertext).toString('hex'),
+        });
+      };
       if (req.url === '/pair') {
-        failures = failures.filter((at) => at > now() - 60_000);
-        if (failures.length >= 5) throw fail(429, 'Too many pairing attempts. Wait one minute and try again.');
-        failures.push(now());
-        const body = await readJson(req, 1024);
+        failures = failures.filter(([at]) => at > now() - 60_000);
+        if (failures.length >= 30 || failures.filter(([, ip]) => ip === req.socket.remoteAddress).length >= 5)
+          throw fail(429, 'Too many pairing attempts. Wait one minute and try again.');
+        failures.push([now(), req.socket.remoteAddress]);
+
         const candidate = typeof body?.code === 'string' ? body.code.replace(/\s/g, '') : '';
         if (
           !pairing ||
@@ -187,30 +233,27 @@ export function createLanSync({
           throw fail(401, 'The pairing code is wrong or has expired. Get a new code from PC Settings.');
         if (config.devices.length >= 10)
           throw fail(409, 'Remove an old device from PC Settings before pairing another.');
-        const token = randomBytes(32).toString('base64url');
         const device = {
           id: randomBytes(12).toString('hex'),
-          hash: hash(token),
+          publicKey: phone,
           name: typeof body.name === 'string' ? body.name.trim().slice(0, 60) || 'Android phone' : 'Android phone',
           pairedAt: now(),
         };
         commitConfig({ ...config, devices: [...config.devices, device] });
         pairing = undefined;
-        json(res, 200, { token, deviceId: device.id });
+        reply(200, { deviceId: device.id });
         return;
       }
-      const match = /^Bearer ([A-Za-z0-9_-]{43})$/.exec(req.headers.authorization ?? '');
-      const device = match && config.devices.find((d) => d.hash === hash(match[1]));
+      const device = config.devices.find((d) => d.publicKey === phone);
       if (!device || !active(device)) throw fail(401, 'This phone is no longer paired. Pair it again in Settings.');
       if (req.url === '/disconnect') {
         commitConfig({ ...config, devices: config.devices.filter((d) => d !== device) });
-        json(res, 200, { ok: true });
+        reply(200, { ok: true });
         return;
       }
-      const body = await readJson(req);
       const merged = await state.merge(body?.state, () => active(device));
       if (!active(device)) throw fail(401, 'This device was disconnected.');
-      json(res, 200, { state: merged });
+      reply(200, { state: merged });
     } catch (error) {
       if (!res.headersSent) {
         const message = error.status ? error.message : 'PC sync could not save data. Check the PC and try again.';
@@ -218,7 +261,7 @@ export function createLanSync({
           rejectRequestBody(req, res, message);
           return;
         }
-        json(res, error.status ?? 500, {
+        reply(error.status ?? 500, {
           error: message,
         });
       }

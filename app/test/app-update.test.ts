@@ -1,5 +1,26 @@
-import { describe, expect, it } from 'vitest';
-import { compareVersions, displayVersion, releaseChanges, releaseNotes } from '../src/app-update';
+import { ed25519 } from '@noble/curves/ed25519.js';
+import { bytesToHex } from '@noble/hashes/utils.js';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  compareVersions,
+  displayVersion,
+  releaseChanges,
+  releaseNotes,
+  checkForUpdates,
+  useAppUpdate,
+} from '../src/app-update';
+
+vi.mock('@memoria/shared/publisher', async (original) => {
+  const actual = await original<typeof import('@memoria/shared/publisher')>();
+  return {
+    ...actual,
+    verifyPublished: (
+      file: unknown,
+      context: string,
+      previous: import('@memoria/shared/publisher').TrustStamp | null,
+    ) => actual.verifyPublished(file, context, previous, bytesToHex(ed25519.getPublicKey(new Uint8Array(32).fill(42)))),
+  };
+});
 
 describe('app updates', () => {
   it('shows versions as betas with a 0. in front, while ordering keeps the real numbers', () => {
@@ -50,4 +71,51 @@ describe('app updates', () => {
       ['3.1.1', '- One'],
     ]);
   });
+});
+
+it('rejects unsigned, altered and replayed releases before offering the update', async () => {
+  localStorage.clear();
+  const secret = new Uint8Array(32).fill(42);
+  const sequence = Date.now();
+  const sign = (sequence: number) => {
+    const bytes = new TextEncoder().encode(
+      JSON.stringify({
+        context: 'memoria-release-v1',
+        sequence,
+        data: { version: '4.1.0', tag: 'v4.1.0', files: {}, windows: {} },
+      }),
+    );
+    return { payload: btoa(String.fromCharCode(...bytes)), signature: bytesToHex(ed25519.sign(bytes, secret)) };
+  };
+  let file: unknown = sign(sequence);
+  const request = vi.spyOn(globalThis, 'fetch').mockImplementation(
+    async (url) =>
+      new Response(
+        JSON.stringify(
+          String(url).includes('api.github.com')
+            ? [
+                {
+                  tag_name: 'v4.1.0',
+                  body: `<!-- memoria-signed-release ${JSON.stringify(file)} -->`,
+                  assets: [{ name: 'release-manifest.json', browser_download_url: 'https://example.test/manifest' }],
+                },
+              ]
+            : file,
+        ),
+      ),
+  );
+  try {
+    await checkForUpdates();
+    expect(useAppUpdate.getState().status).toBe('available');
+    expect(request).toHaveBeenCalledTimes(1);
+    for (const bad of [{}, { ...sign(sequence), signature: '00'.repeat(64) }, sign(sequence - 1)]) {
+      file = bad;
+      await checkForUpdates();
+      expect(useAppUpdate.getState().status).toBe('error');
+      expect(useAppUpdate.getState().error).toMatch(/signature|older/);
+    }
+  } finally {
+    request.mockRestore();
+    localStorage.clear();
+  }
 });

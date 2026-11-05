@@ -1,8 +1,8 @@
 //! Wi-Fi sync with the Android app.
 //!
 //! A separate listener from the window's loopback server. The phone pairs with
-//! an eight-digit code shown in PC Settings, then syncs with a bearer token
-//! whose hash is all the PC keeps. The protocol matches the phone app exactly.
+//! a code and pinned PC key fingerprint shown in Settings. All data and
+//! pairing codes use X25519 + XChaCha20-Poly1305 authenticated encryption.
 
 use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
@@ -17,10 +17,10 @@ use axum::Router;
 use rand::{Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use sha2::{Digest, Sha256};
 use tokio::sync::oneshot;
 
 use crate::core::{Core, CoreError, MAX_STATE_BYTES};
+use crate::lan_crypto as crypto;
 use crate::store;
 
 pub const LAN_PORT: u16 = 17820;
@@ -39,10 +39,6 @@ fn now_ms() -> u64 {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_millis() as u64)
         .unwrap_or(0)
-}
-
-fn sha256_hex(value: &str) -> String {
-    hex::encode(Sha256::digest(value.as_bytes()))
 }
 
 /// Private IPv4 ranges, loopback, and 100.64.0.0/10, the range private network
@@ -73,15 +69,25 @@ pub fn private_address(ip: IpAddr) -> bool {
 #[serde(rename_all = "camelCase")]
 struct Device {
     id: String,
-    hash: String,
+    public_key: String,
     name: String,
     paired_at: f64,
 }
 
-#[derive(Clone, Default, Serialize)]
+#[derive(Clone, Serialize)]
 struct Config {
     enabled: bool,
     devices: Vec<Device>,
+    secret: String,
+}
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            devices: Vec::new(),
+            secret: crypto::random_hex::<32>(),
+        }
+    }
 }
 
 fn parse_config(value: &Value) -> Option<Config> {
@@ -91,16 +97,25 @@ fn parse_config(value: &Value) -> Option<Config> {
         Some(Value::Bool(flag)) => *flag,
         Some(_) => return None,
     };
+    // Legacy bearer credentials are deliberately retired. Keep the enabled preference.
+    if object.get("secret").is_none() {
+        return Some(Config {
+            enabled,
+            ..Config::default()
+        });
+    }
+    let secret = object.get("secret")?.as_str()?.to_string();
+    crypto::public(&secret).ok()?;
     let devices = match object.get("devices") {
         None => Vec::new(),
         Some(Value::Array(items)) => {
             let mut devices = Vec::new();
             for item in items {
                 let id = item.get("id")?.as_str()?;
-                let hash = item.get("hash")?.as_str()?;
+                let public_key = item.get("publicKey")?.as_str()?;
                 let name = item.get("name")?.as_str()?;
                 let paired_at = item.get("pairedAt")?.as_f64()?;
-                if hash.len() != 64 || !hash.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
+                if crypto::fingerprint(public_key).is_err() {
                     return None;
                 }
                 if !paired_at.is_finite() || paired_at < 0.0 {
@@ -108,7 +123,7 @@ fn parse_config(value: &Value) -> Option<Config> {
                 }
                 devices.push(Device {
                     id: id.into(),
-                    hash: hash.into(),
+                    public_key: public_key.into(),
                     name: name.into(),
                     paired_at,
                 });
@@ -117,7 +132,11 @@ fn parse_config(value: &Value) -> Option<Config> {
         }
         Some(_) => return None,
     };
-    Some(Config { enabled, devices })
+    Some(Config {
+        enabled,
+        devices,
+        secret,
+    })
 }
 
 struct Pairing {
@@ -131,6 +150,7 @@ struct Inner {
     pairing: Option<Pairing>,
     /// Recent pairing attempts and where they came from.
     failures: Vec<(u64, IpAddr)>,
+    challenges: Vec<(String, IpAddr, u64)>,
     /// The bound port and the switch that stops the listener.
     running: Option<(u16, oneshot::Sender<()>)>,
 }
@@ -186,6 +206,7 @@ impl Lan {
                 load_error,
                 pairing: None,
                 failures: Vec::new(),
+                challenges: Vec::new(),
                 running: None,
             })),
             control_lock: Arc::new(tokio::sync::Mutex::new(())),
@@ -333,10 +354,51 @@ impl Lan {
             .path_and_query()
             .map(|p| p.as_str().to_string())
             .unwrap_or_default();
-        if request.method() != axum::http::Method::POST || !["/pair", "/sync", "/disconnect"].contains(&path.as_str()) {
+        if request.method() != axum::http::Method::POST
+            || !["/hello", "/pair", "/sync", "/disconnect"].contains(&path.as_str())
+        {
             return Err(fail(404, "Route not found."));
         }
+        if path == "/hello" {
+            let mut inner = self.inner.lock().unwrap();
+            inner.challenges.retain(|(_, _, expires)| *expires > now_ms());
+            if inner.challenges.len() >= 256 || inner.challenges.iter().filter(|(_, ip, _)| *ip == peer).count() >= 8 {
+                return Err(fail(429, "Too many connection requests. Try again in a minute."));
+            }
+            let challenge = crypto::random_hex::<32>();
+            inner.challenges.push((challenge.clone(), peer, now_ms() + 60_000));
+            let public_key = crypto::public(&inner.config.secret).map_err(|e| fail(500, e))?;
+            return Ok(json!({ "publicKey": public_key, "challenge": challenge }));
+        }
         let headers = request.headers().clone();
+        let envelope = read_json(&headers, request.into_body(), MAX_STATE_BYTES * 2 + 2048).await?;
+        let packet: crypto::Packet = serde_json::from_value(envelope)
+            .map_err(|_| fail(400, "Encrypted sync is required. Update both devices and pair again."))?;
+        let (pc, keys) = {
+            let mut inner = self.inner.lock().unwrap();
+            let index = inner
+                .challenges
+                .iter()
+                .position(|(c, ip, expires)| c == &packet.challenge && *ip == peer && *expires > now_ms())
+                .ok_or_else(|| fail(403, "Sync challenge expired or was already used."))?;
+            inner.challenges.swap_remove(index);
+            let pc = crypto::public(&inner.config.secret).map_err(|e| fail(500, e))?;
+            let keys = crypto::keys(&inner.config.secret, &packet.public_key, &pc, &packet.public_key)
+                .map_err(|e| fail(403, e))?;
+            (pc, keys)
+        };
+        let body = crypto::open(&keys.0, &path, &packet, "").map_err(|e| fail(403, e))?;
+        let result = self.route_decrypted(peer, &path, &packet.public_key, body).await;
+        let body = match result {
+            Ok(body) => body,
+            Err(error) => json!({ "error": error.message, "status": error.status }),
+        };
+        let reply =
+            crypto::seal(&keys.1, &path, &pc, &packet.challenge, &body, &packet.nonce).map_err(|e| fail(500, e))?;
+        serde_json::to_value(reply).map_err(|e| fail(500, e.to_string()))
+    }
+
+    async fn route_decrypted(&self, peer: IpAddr, path: &str, phone_key: &str, body: Value) -> Result<Value, LanError> {
         if path == "/pair" {
             {
                 let mut inner = self.inner.lock().unwrap();
@@ -345,7 +407,9 @@ impl Lan {
                     return Err(fail(429, "Too many pairing attempts. Wait one minute and try again."));
                 }
             }
-            let body = read_json(&headers, request.into_body(), 1024).await?;
+            if serde_json::to_vec(&body).unwrap_or_default().len() > 1024 {
+                return Err(fail(413, "Pairing request is too large."));
+            }
             let candidate: String = body
                 .get("code")
                 .and_then(Value::as_str)
@@ -372,7 +436,6 @@ impl Lan {
                     "Remove an old device from PC Settings before pairing another.",
                 ));
             }
-            let token = store::new_token();
             let mut id = [0u8; 12];
             rand::thread_rng().fill_bytes(&mut id);
             let name = body
@@ -383,32 +446,27 @@ impl Lan {
                 .unwrap_or_else(|| "Android phone".into());
             let device = Device {
                 id: hex::encode(id),
-                hash: sha256_hex(&token),
+                public_key: phone_key.into(),
                 name,
                 paired_at: now_ms() as f64,
             };
             let mut next = inner.config.clone();
+            next.devices.retain(|d| d.public_key != phone_key);
             next.devices.push(device.clone());
             self.commit(&mut inner, next)?;
             inner.pairing = None;
-            return Ok(json!({ "token": token, "deviceId": device.id }));
+            return Ok(json!({ "deviceId": device.id }));
         }
 
-        let token = headers
-            .get(header::AUTHORIZATION)
-            .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.strip_prefix("Bearer "))
-            .filter(|t| store::is_token(t));
-        let device_id = token.and_then(|token| {
-            let hash = sha256_hex(token);
-            let inner = self.inner.lock().unwrap();
-            inner
-                .config
-                .devices
-                .iter()
-                .find(|d| d.hash == hash)
-                .map(|d| d.id.clone())
-        });
+        let device_id = self
+            .inner
+            .lock()
+            .unwrap()
+            .config
+            .devices
+            .iter()
+            .find(|d| d.public_key == phone_key)
+            .map(|d| d.id.clone());
         let Some(device_id) = device_id.filter(|id| self.active(id)) else {
             return Err(fail(401, "This phone is no longer paired. Pair it again in Settings."));
         };
@@ -419,7 +477,10 @@ impl Lan {
             self.commit(&mut inner, next)?;
             return Ok(json!({ "ok": true }));
         }
-        let body = read_body(&headers, request.into_body(), MAX_STATE_BYTES).await?;
+        let body = serde_json::to_string(&body).map_err(|e| fail(400, e.to_string()))?;
+        if body.len() > MAX_STATE_BYTES {
+            return Err(fail(413, "Request exceeds the sync size limit."));
+        }
         let lan = self.clone();
         let check = device_id.clone();
         let merged = self.core.merge(body, move || lan.active(&check)).await?;
@@ -449,6 +510,7 @@ fn status_of(inner: &Inner, default_port: u16) -> Value {
     let pairing = inner.pairing.as_ref().filter(|p| p.expires_at > now_ms());
     json!({
         "enabled": inner.running.is_some(),
+        "fingerprint": crypto::public(&inner.config.secret).and_then(|p| crypto::fingerprint(&p)).ok(),
         "error": inner.load_error,
         "port": port,
         "addresses": addresses,
@@ -607,7 +669,7 @@ mod tests {
             .send()
             .await
             .unwrap();
-        assert_eq!(wrong.status(), 401);
+        assert_eq!(wrong.status(), 400);
         let browser = client
             .post(format!("{base}/pair"))
             .header("origin", "https://example.com")
@@ -617,42 +679,63 @@ mod tests {
             .unwrap();
         assert_eq!(browser.status(), 403);
 
-        let paired: Value = client
-            .post(format!("{base}/pair"))
-            .json(&json!({ "code": code, "name": "  Galaxy S23  " }))
-            .send()
-            .await
-            .unwrap()
-            .json()
-            .await
-            .unwrap();
-        let token = paired["token"].as_str().unwrap().to_string();
-        assert!(store::is_token(&token));
+        let secret = crypto::random_hex::<32>();
+        let public = crypto::public(&secret).unwrap();
+        let pc = {
+            let inner = lan.inner.lock().unwrap();
+            crypto::public(&inner.config.secret).unwrap()
+        };
+        let keys = crypto::keys(&secret, &pc, &pc, &public).unwrap();
+        async fn send(
+            client: &reqwest::Client,
+            base: &str,
+            path: &str,
+            public: &str,
+            keys: &([u8; 32], [u8; 32]),
+            body: Value,
+        ) -> Value {
+            let hello: Value = client
+                .post(format!("{base}/hello"))
+                .json(&json!({}))
+                .send()
+                .await
+                .unwrap()
+                .json()
+                .await
+                .unwrap();
+            let packet = crypto::seal(&keys.0, path, public, hello["challenge"].as_str().unwrap(), &body, "").unwrap();
+            let reply: crypto::Packet = client
+                .post(format!("{base}{path}"))
+                .json(&packet)
+                .send()
+                .await
+                .unwrap()
+                .json()
+                .await
+                .unwrap();
+            // Replaying the exact packet is rejected before it reaches the merge.
+            let replay = client.post(format!("{base}{path}")).json(&packet).send().await.unwrap();
+            assert_eq!(replay.status(), 403);
+            crypto::open(&keys.1, path, &reply, &packet.nonce).unwrap()
+        }
+        let paired = send(
+            &client,
+            &base,
+            "/pair",
+            &public,
+            &keys,
+            json!({ "code": code, "name": "  Galaxy S23  " }),
+        )
+        .await;
         assert_eq!(lan.status()["devices"][0]["name"], "Galaxy S23");
-
         let state: Value = serde_json::from_str(&core.read().await.unwrap()).unwrap();
-        let synced = client
-            .post(format!("{base}/sync"))
-            .bearer_auth(&token)
-            .json(&json!({ "state": state }))
-            .send()
-            .await
-            .unwrap();
-        assert_eq!(synced.status(), 200);
-        let synced: Value = synced.json().await.unwrap();
+        let synced = send(&client, &base, "/sync", &public, &keys, json!({"state":state})).await;
         assert!(synced["state"]["games"].is_array());
         assert!(synced["addresses"].is_array());
-
         let id = paired["deviceId"].as_str().unwrap();
-        lan.control(&json!({ "action": "revoke", "id": id })).await.unwrap();
-        let revoked = client
-            .post(format!("{base}/sync"))
-            .bearer_auth(&token)
-            .json(&json!({ "state": state }))
-            .send()
-            .await
-            .unwrap();
-        assert_eq!(revoked.status(), 401);
+        lan.control(&json!({"action":"revoke","id":id})).await.unwrap();
+        let revoked = send(&client, &base, "/sync", &public, &keys, json!({"state":state})).await;
+        assert_eq!(revoked["status"], 401);
 
         // Saved settings survive a restart.
         lan.control(&json!({ "action": "stop" })).await.unwrap();
