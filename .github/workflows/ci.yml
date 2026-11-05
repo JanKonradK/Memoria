@@ -2,7 +2,6 @@ name: CI
 
 on:
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -14,6 +13,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  browser:
+    uses: ./.github/workflows/browser-gates.yml
+    with:
+      ref: ${{ github.sha }}
+
   check:
     # The launcher, the packaging script and the shortcut installer are all
     # Windows-specific, so the checks that matter run where users run them.
