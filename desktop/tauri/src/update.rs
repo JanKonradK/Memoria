@@ -416,7 +416,9 @@ pub fn run_staged_installer(root: &Path, paths: &Paths) -> std::io::Result<()> {
 }
 
 pub fn refuse_elevated() -> Result<(), String> {
-    #[cfg(windows)]
+    // Not in tests: CI's Windows runners are elevated, and the staging tests
+    // would then exercise this refusal instead of the update itself.
+    #[cfg(all(windows, not(test)))]
     unsafe {
         use windows_sys::Win32::{
             Foundation::CloseHandle,
