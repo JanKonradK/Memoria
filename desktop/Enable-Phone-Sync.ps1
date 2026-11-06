@@ -3,7 +3,7 @@
 #
 # This file is compiled into Memoria.exe and run elevated from memory. It is
 # never read from the install folder, so editing a copy on disk changes nothing.
-# Memoria puts `$program = '<path to Memoria.exe>'` in front of it.
+# Memoria puts `$program` (the path to Memoria.exe) and `$makePrivate` in front of it.
 $ErrorActionPreference = 'Stop'
 if (-not $program -or -not (Test-Path -LiteralPath $program)) {
   throw 'Install Memoria before you enable phone sync.'
@@ -36,4 +36,11 @@ foreach ($rule in $rules) {
   } else {
     New-NetFirewallRule -Name $rule.Name -DisplayName $rule.DisplayName @options | Out-Null
   }
+}
+# Asked for in Settings: Windows treats this home Wi-Fi as a public network,
+# which keeps phones out. Mark the connected public networks private instead.
+if ($makePrivate) {
+  Get-NetConnectionProfile |
+    Where-Object { $_.NetworkCategory -eq 'Public' -and $_.IPv4Connectivity -ne 'Disconnected' -and $_.InterfaceAlias -notlike 'vEthernet*' } |
+    Set-NetConnectionProfile -NetworkCategory Private
 }

@@ -217,6 +217,28 @@ impl Server {
                     Err(error) => self.error(error.status, &error.message),
                 }
             }
+            (Method::GET, "/api/firewall") => {
+                let status = tokio::task::spawn_blocking(crate::firewall::check)
+                    .await
+                    .unwrap_or_else(|_| json!({ "supported": false }));
+                self.json(200, &status)
+            }
+            (Method::POST, "/api/firewall") => {
+                let headers = request.headers().clone();
+                let make_private = match lan::read_json(&headers, request.into_body(), 1024).await {
+                    Ok(body) => body.get("makePrivate").and_then(Value::as_bool).unwrap_or(false),
+                    Err(error) => return self.error(error.status, &error.message),
+                };
+                let result = tokio::task::spawn_blocking(move || {
+                    let outcome = crate::firewall::allow(make_private);
+                    let mut status = crate::firewall::check();
+                    status["outcome"] = json!(outcome);
+                    status
+                })
+                .await
+                .unwrap_or_else(|_| json!({ "supported": false, "outcome": "failed" }));
+                self.json(200, &result)
+            }
             (Method::GET, "/api/calendar") => self.calendar().await,
             (Method::GET, "/api/update") => self.json(200, &update::status(&self.root, &self.update_paths)),
             _ => self.error(404, "API route not found."),

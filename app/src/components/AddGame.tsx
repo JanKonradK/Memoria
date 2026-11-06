@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import type { Game, GamePreset } from '@memoria/shared';
-import { PRESETS, presetForGame, SERVER_TZ_OPTIONS } from '@memoria/shared';
+import { PRESETS, presetForGame } from '@memoria/shared';
 import { resolveGameIdentityColors } from '../game-color';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import '../surfaces.css';
+import type { ServerPick } from '../server-choice';
 import { intOr } from '../util';
 import { GameLogo } from './GameLogo';
+import { ServerSelect } from './ServerSelect';
 import { Sheet } from './Sheet';
-import { Btn, Field, NumInput, SectionTitle, Select, TextInput } from './ui';
+import { Btn, Field, NumInput, SectionTitle, TextInput } from './ui';
 
 export function AddGameSheet({ open }: { open: boolean }) {
   const games = useApp((s) => s.state.games);
@@ -21,7 +23,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
   const [picked, setPicked] = useState<GamePreset | null>(null);
   const [sourceGame, setSourceGame] = useState<Game | null>(null);
   const [sourcePreset, setSourcePreset] = useState<GamePreset | null>(null);
-  const [tz, setTz] = useState('');
+  const [server, setServer] = useState<ServerPick | null>(null);
   const [caps, setCaps] = useState<Record<number, string>>({});
   const [customName, setCustomName] = useState('');
   const [accountLabel, setAccountLabel] = useState('');
@@ -53,14 +55,14 @@ export function AddGameSheet({ open }: { open: boolean }) {
   };
 
   const confirm = () => {
-    if (!picked) return;
+    if (!picked || !server) return;
     const capOverrides: Record<number, number> = {};
     for (const [i, v] of Object.entries(caps)) {
       const n = intOr(v, 0);
       if (n > 0) capOverrides[Number(i)] = n;
     }
     const gameId = addGameFromPreset(picked, {
-      tz: tz || undefined,
+      ...server,
       capOverrides,
       accountLabel: accountLabel.trim() || undefined,
     });
@@ -69,9 +71,9 @@ export function AddGameSheet({ open }: { open: boolean }) {
   };
 
   const confirmAccount = () => {
-    if (!sourceGame || !sourcePreset) return;
+    if (!sourceGame || !sourcePreset || !server) return;
     const gameId = addGameFromPreset(sourcePreset, {
-      tz: tz || sourceGame.tz,
+      ...server,
       accountLabel: accountLabel.trim() || undefined,
       short: short.trim() || sourceGame.short,
       name: sourceGame.name,
@@ -108,7 +110,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
                       onClick={() => {
                         setSourceGame(game);
                         setSourcePreset(preset);
-                        setTz(game.tz);
+                        setServer(null);
                         setShort(game.short);
                       }}
                       className="surface-row flex min-h-11 w-full items-center gap-3 text-left"
@@ -134,7 +136,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
                 type="button"
                 onClick={() => {
                   setPicked(p);
-                  setTz(p.tz);
+                  setServer(null);
                 }}
                 className="surface-row flex min-h-11 w-full items-center gap-3 text-left"
               >
@@ -173,16 +175,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
               <TextInput maxLength={4} value={short} onChange={(event) => setShort(event.target.value)} />
             </Field>
             <Field label="Server">
-              <Select value={tz} onChange={(event) => setTz(event.target.value)}>
-                {SERVER_TZ_OPTIONS.map((option) => (
-                  <option key={option.tz} value={option.tz}>
-                    {option.label}
-                  </option>
-                ))}
-                {!SERVER_TZ_OPTIONS.some((option) => option.tz === sourceGame.tz) && (
-                  <option value={sourceGame.tz}>{sourceGame.tz}</option>
-                )}
-              </Select>
+              <ServerSelect game={sourceGame} value={server} onChange={setServer} />
             </Field>
             {sourceEnergyResource && (
               <Field label={`Current ${sourceEnergyResource.name}`}>
@@ -195,7 +188,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
               onClick={() => {
                 setSourceGame(null);
                 setSourcePreset(null);
-                setTz('');
+                setServer(null);
                 setAccountLabel('');
                 setShort('');
                 setEnergyInput('');
@@ -203,7 +196,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
             >
               ← Back
             </Btn>
-            <Btn kind="primary" onClick={confirmAccount}>
+            <Btn kind="primary" disabled={!server} onClick={confirmAccount}>
               Add account
             </Btn>
           </div>
@@ -222,14 +215,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
               />
             </Field>
             <Field label="Server">
-              <Select value={tz} onChange={(e) => setTz(e.target.value)}>
-                {SERVER_TZ_OPTIONS.map((o) => (
-                  <option key={o.tz} value={o.tz}>
-                    {o.label}
-                  </option>
-                ))}
-                {!SERVER_TZ_OPTIONS.some((o) => o.tz === picked.tz) && <option value={picked.tz}>{picked.tz}</option>}
-              </Select>
+              <ServerSelect game={{ ...picked, presetKey: picked.key }} value={server} onChange={setServer} />
             </Field>
             {picked.resources.map((r, i) => (
               <Field key={r.name} label={`${r.name} cap${r.promptCap ? ' (yours!)' : ''}`}>
@@ -258,7 +244,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
             >
               ← Back
             </Btn>
-            <Btn kind="primary" onClick={confirm}>
+            <Btn kind="primary" disabled={!server} onClick={confirm}>
               Add {picked.short}
             </Btn>
           </div>

@@ -7,6 +7,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod core;
+mod firewall;
 mod lan;
 mod lan_crypto;
 mod publisher;
@@ -499,67 +500,19 @@ fn apply_preferences(app: &AppHandle) {
     emit(app, "memoria:presence-changed", state.presence_state());
 }
 
-/// Built into the binary so the elevated step never runs a file someone could edit.
-const PHONE_SYNC_SCRIPT: &str = include_str!("../../Enable-Phone-Sync.ps1");
-
-/// The elevated script: the fixed text above, told which Memoria.exe to allow.
-fn phone_sync_command(program: &std::path::Path) -> String {
-    let quoted = program.display().to_string().replace('\'', "''");
-    format!("$program = '{quoted}'\n{PHONE_SYNC_SCRIPT}")
-}
-
-/// Runs PowerShell elevated with the script passed in memory; None if the prompt was declined.
-#[cfg(windows)]
-fn run_elevated_powershell(script: &str) -> Option<u32> {
-    use base64::Engine;
-    use windows_sys::Win32::Foundation::CloseHandle;
-    use windows_sys::Win32::System::Threading::{GetExitCodeProcess, WaitForSingleObject, INFINITE};
-    use windows_sys::Win32::UI::Shell::{ShellExecuteExW, SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW};
-    use windows_sys::Win32::UI::WindowsAndMessaging::SW_HIDE;
-    let utf16: Vec<u8> = script.encode_utf16().flat_map(u16::to_le_bytes).collect();
-    let encoded = base64::engine::general_purpose::STANDARD.encode(utf16);
-    let wide = |s: &str| s.encode_utf16().chain(Some(0)).collect::<Vec<u16>>();
-    let verb = wide("runas");
-    let file = wide("powershell.exe");
-    let params = wide(&format!("-NoProfile -NonInteractive -EncodedCommand {encoded}"));
-    let mut info: SHELLEXECUTEINFOW = unsafe { std::mem::zeroed() };
-    info.cbSize = std::mem::size_of::<SHELLEXECUTEINFOW>() as u32;
-    info.fMask = SEE_MASK_NOCLOSEPROCESS;
-    info.lpVerb = verb.as_ptr();
-    info.lpFile = file.as_ptr();
-    info.lpParameters = params.as_ptr();
-    info.nShow = SW_HIDE;
-    unsafe {
-        if ShellExecuteExW(&mut info) == 0 || info.hProcess.is_null() {
-            return None;
-        }
-        WaitForSingleObject(info.hProcess, INFINITE);
-        let mut code = 1u32;
-        GetExitCodeProcess(info.hProcess, &mut code);
-        CloseHandle(info.hProcess);
-        Some(code)
-    }
-}
-
-#[cfg(not(windows))]
-fn run_elevated_powershell(_script: &str) -> Option<u32> {
-    None
-}
-
 fn allow_phone_sync(app: &AppHandle) {
     let handle = app.clone();
     std::thread::spawn(move || {
-        let (kind, text) = match std::env::current_exe().map(|exe| run_elevated_powershell(&phone_sync_command(&exe))) {
-            Ok(Some(0)) => (
+        let (kind, text) = match firewall::allow(false) {
+            "ok" => (
                 MessageDialogKind::Info,
                 "Windows now allows your phone to connect to Memoria on private networks and Tailscale.",
             ),
-            Ok(Some(_)) => (MessageDialogKind::Error, "Windows could not change the network setting."),
-            Ok(None) => (
+            "declined" => (
                 MessageDialogKind::Warning,
                 "Windows did not allow the network change. Approve the administrator prompt to enable phone sync.",
             ),
-            Err(_) => (MessageDialogKind::Error, "Windows could not open the network setup."),
+            _ => (MessageDialogKind::Error, "Windows could not change the network setting."),
         };
         message(&handle, kind, "Memoria phone sync", text);
     });
@@ -1268,15 +1221,6 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn phone_sync_script_is_built_in_and_quotes_the_path() {
-        let command = phone_sync_command(std::path::Path::new(r"C:\Users\O'Neil\Memoria.exe"));
-        assert!(command.starts_with("$program = 'C:\\Users\\O''Neil\\Memoria.exe'\n"));
-        assert!(command.contains("Profile = 'Private'"));
-        assert!(!command.contains("Public"));
-        assert!(!command.contains("RunAs"));
-    }
 
     #[test]
     fn zoom_steps_through_browser_levels() {

@@ -25,6 +25,9 @@ test('daily task rules can change on the card, including Tacet counts and new ta
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Add a game' }).click();
   await page.getByRole('button', { name: /Wuthering Waves/ }).click();
+  // No server is chosen for you: pick the game's first one.
+  await page.getByRole('combobox', { name: 'Server' }).click();
+  await page.getByRole('option').nth(1).click();
   await page.getByRole('button', { name: 'Add WuWa', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.screenshot({ path: info.outputPath('game-cards.png') });

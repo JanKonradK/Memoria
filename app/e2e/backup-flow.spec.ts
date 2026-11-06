@@ -8,6 +8,9 @@ test('backup export and merge preview stay within the viewport', async ({ page }
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Add a game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
+  // No server is chosen for you: pick the game's first one.
+  await page.getByRole('combobox', { name: 'Server' }).click();
+  await page.getByRole('option').nth(1).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   const phoneOpen = gameRow(page, 'Genshin Impact');

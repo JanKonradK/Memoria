@@ -51,7 +51,8 @@ it('keeps an expired additional-phone code visible until a new phone connects', 
   await act(async () => {
     await vi.advanceTimersByTimeAsync(2000);
   });
-  expect(screen.getByText('Device connected')).toBeVisible();
+  expect(screen.getByRole('heading', { name: 'Devices' })).toBeVisible();
+  expect(screen.getAllByText('Not synced since Memoria started')).toHaveLength(2);
   expect(screen.queryByRole('img')).toBeNull();
 });
 

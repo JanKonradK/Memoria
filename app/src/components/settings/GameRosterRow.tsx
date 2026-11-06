@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import type { Game } from '@memoria/shared';
 import { useApp } from '../../store';
 import { useUI } from '../../ui-store';
-import { serverChoices } from '../../server-choice';
 import { localResetLabel } from '../../util';
 import type { GameColors } from '../../game-color';
 import { GameLogo } from '../GameLogo';
+import { ServerSelect } from '../ServerSelect';
 import { Pill } from '../primitives';
-import { Btn, Segmented, TextInput } from '../ui';
+import { Btn, TextInput } from '../ui';
 
 /**
  * One game in Settings, with the two things people change most — the nickname
@@ -64,17 +64,16 @@ export function GameRosterRow({ game, colors, localTz }: { game: Game; colors: G
           }}
         />
       </label>
-      <div className="settings-roster-field settings-roster-server">
-        <span className="text-label text-muted" aria-hidden>
-          Server
-        </span>
-        <Segmented
-          ariaLabel={`Server for ${label}`}
-          options={serverChoices(game)}
-          value={game.tz}
-          onChange={(tz) => updateGame(game.id, { tz })}
+      <label className="settings-roster-field settings-roster-server">
+        <span className="text-label text-muted">Server</span>
+        <ServerSelect
+          className="!min-h-11 sm:!min-h-9 sm:!py-1"
+          aria-label={`Server for ${label}`}
+          game={game}
+          value={{ server: game.server, tz: game.tz }}
+          onChange={(pick) => updateGame(game.id, pick)}
         />
-      </div>
+      </label>
       <Btn
         className="settings-roster-edit !min-h-11 sm:!min-h-9"
         aria-label={`Game settings for ${label}`}

@@ -137,20 +137,33 @@ interface SelectOpt {
   value: string;
   label: ReactNode;
   disabled: boolean;
+  /** The `<optgroup>` label this option sits under. */
+  group?: string;
 }
 
-function collectOptions(children: ReactNode): SelectOpt[] {
+function collectOptions(children: ReactNode, group?: string): SelectOpt[] {
   const out: SelectOpt[] = [];
   Children.forEach(children, (child) => {
     if (!isValidElement(child)) return;
-    const props = child.props as { value?: unknown; children?: ReactNode; disabled?: boolean };
+    const props = child.props as { value?: unknown; children?: ReactNode; disabled?: boolean; label?: string };
     if (child.type === 'option') {
-      out.push({ value: String(props.value ?? ''), label: props.children, disabled: Boolean(props.disabled) });
+      out.push({ value: String(props.value ?? ''), label: props.children, disabled: Boolean(props.disabled), group });
     } else if (props.children) {
-      out.push(...collectOptions(props.children));
+      out.push(...collectOptions(props.children, child.type === 'optgroup' ? props.label : group));
     }
   });
   return out;
+}
+
+/** Options in runs that share a group, in order, so each run gets one heading. */
+function groupRuns(options: SelectOpt[]): { group?: string; options: SelectOpt[] }[] {
+  const runs: { group?: string; options: SelectOpt[] }[] = [];
+  for (const option of options) {
+    const last = runs.at(-1);
+    if (last && last.group === option.group) last.options.push(option);
+    else runs.push({ group: option.group, options: [option] });
+  }
+  return runs;
 }
 
 const RADIX_EMPTY_VALUE = '__void_empty_value__';
@@ -211,19 +224,28 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
           className="popover-motion z-[80] max-h-[min(15rem,var(--radix-select-content-available-height))] w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-16px)] overflow-hidden rounded-ui-lg bg-popover p-1 shadow-float ring-1 ring-line-strong"
         >
           <SelectPrimitive.Viewport className="max-h-[inherit] overflow-y-auto scrollbar-thin">
-            {opts.map((option) => (
-              <SelectPrimitive.Item
-                key={option.value}
-                value={toRadixValue(option.value)}
-                disabled={option.disabled}
-                textValue={typeof option.label === 'string' ? option.label : undefined}
-                className="relative flex min-h-11 cursor-default select-none items-center rounded-ui-md px-3 py-2 pr-8 text-body text-fg-soft [overflow-wrap:anywhere] outline-none transition data-[disabled]:opacity-40 data-[highlighted]:bg-fill-3 data-[state=checked]:bg-fill-4 data-[state=checked]:font-semibold sm:min-h-9 sm:py-1.5"
-              >
-                <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
-                <SelectPrimitive.ItemIndicator className="absolute right-2 text-accent">
-                  ✓
-                </SelectPrimitive.ItemIndicator>
-              </SelectPrimitive.Item>
+            {groupRuns(opts).map((run, index) => (
+              <SelectPrimitive.Group key={`${run.group ?? ''}-${index}`}>
+                {run.group && (
+                  <SelectPrimitive.Label className="px-3 pb-1 pt-2 text-label font-semibold text-muted">
+                    {run.group}
+                  </SelectPrimitive.Label>
+                )}
+                {run.options.map((option) => (
+                  <SelectPrimitive.Item
+                    key={option.value}
+                    value={toRadixValue(option.value)}
+                    disabled={option.disabled}
+                    textValue={typeof option.label === 'string' ? option.label : undefined}
+                    className="relative flex min-h-11 cursor-default select-none items-center rounded-ui-md px-3 py-2 pr-8 text-body text-fg-soft [overflow-wrap:anywhere] outline-none transition data-[disabled]:opacity-40 data-[highlighted]:bg-fill-3 data-[state=checked]:bg-fill-4 data-[state=checked]:font-semibold sm:min-h-9 sm:py-1.5"
+                  >
+                    <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
+                    <SelectPrimitive.ItemIndicator className="absolute right-2 text-accent">
+                      ✓
+                    </SelectPrimitive.ItemIndicator>
+                  </SelectPrimitive.Item>
+                ))}
+              </SelectPrimitive.Group>
             ))}
           </SelectPrimitive.Viewport>
         </SelectPrimitive.Content>

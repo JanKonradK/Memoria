@@ -1,12 +1,11 @@
-import { SERVER_TZ_OPTIONS } from '@memoria/shared';
 import { useState } from 'react';
 import { useApp } from '../store';
 import { useUI, type GameEditorSection } from '../ui-store';
-import { serverChoices } from '../server-choice';
+import { ServerSelect } from './ServerSelect';
 import { useGameDraft } from './game-detail/useGameDraft';
 import { GameEditor } from './settings/GameEditor';
 import { Sheet } from './Sheet';
-import { Btn, COMPACT_INPUT, Field, Segmented, Select, TextInput } from './ui';
+import { Btn, COMPACT_INPUT, Field, TextInput } from './ui';
 
 const ACCOUNT_DRAFT_FIELDS = ['accountLabel'] as const;
 
@@ -51,7 +50,6 @@ export function GameDetailSheet({
     commitDraft();
     closeSheet();
   };
-  const serverOptions = serverChoices(game);
 
   return (
     <Sheet
@@ -95,31 +93,14 @@ export function GameDetailSheet({
           </div>
         }
         serverControl={
-          <div className="space-y-3">
-            <span className="mb-1 block text-meta font-medium text-muted">Server</span>
-            <Segmented
-              options={serverOptions}
-              value={game.tz}
-              onChange={(tz) => updateGame(game.id, { tz })}
-              ariaLabel="Server"
+          <Field label="Server">
+            <ServerSelect
+              className={COMPACT_INPUT}
+              game={game}
+              value={{ server: game.server, tz: game.tz }}
+              onChange={(pick) => updateGame(game.id, pick)}
             />
-            <Field label="Server timezone">
-              <Select
-                className={COMPACT_INPUT}
-                value={game.tz}
-                onChange={(event) => updateGame(game.id, { tz: event.target.value })}
-              >
-                {SERVER_TZ_OPTIONS.map((option) => (
-                  <option key={option.tz} value={option.tz}>
-                    {option.label}
-                  </option>
-                ))}
-                {!SERVER_TZ_OPTIONS.some((option) => option.tz === game.tz) && (
-                  <option value={game.tz}>{game.tz}</option>
-                )}
-              </Select>
-            </Field>
-          </div>
+          </Field>
         }
         dangerControls={
           <div>

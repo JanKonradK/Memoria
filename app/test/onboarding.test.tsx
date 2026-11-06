@@ -25,9 +25,10 @@ async function freshStore(): Promise<void> {
   await useApp.getState().load();
 }
 
-function selectGenshin(): void {
+function selectGenshin(server = 'Europe'): void {
   fireEvent.click(screen.getByRole('button', { name: /Genshin Impact/ }));
   fireEvent.click(screen.getByRole('button', { name: /^Next/ }));
+  fireEvent.click(screen.getByRole('button', { name: `Add a Genshin Impact account on ${server}` }));
 }
 
 describe('Onboarding energy entry', () => {
@@ -66,7 +67,7 @@ describe('Onboarding energy entry', () => {
   it('records a snapshot when a value is actually entered', () => {
     render(<Onboarding onComplete={vi.fn()} />);
     selectGenshin();
-    fireEvent.change(screen.getByLabelText(/Current Original Resin/), { target: { value: '84' } });
+    fireEvent.change(screen.getByLabelText(/current Original Resin/i), { target: { value: '84' } });
     fireEvent.click(screen.getByRole('button', { name: 'Create dashboard' }));
 
     const state = useApp.getState().state;
@@ -81,7 +82,7 @@ describe('Onboarding energy entry', () => {
   it('treats a whitespace-only entry as blank, so the resource keeps its seeded zero', () => {
     render(<Onboarding onComplete={vi.fn()} />);
     selectGenshin();
-    fireEvent.change(screen.getByLabelText(/Current Original Resin/), { target: { value: '   ' } });
+    fireEvent.change(screen.getByLabelText(/current Original Resin/i), { target: { value: '   ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Create dashboard' }));
 
     const state = useApp.getState().state;
@@ -102,13 +103,38 @@ describe('Onboarding energy entry', () => {
 
   it('sets the server and nickname picked on the second step', () => {
     render(<Onboarding onComplete={vi.fn()} />);
-    selectGenshin();
-    fireEvent.click(screen.getByRole('radio', { name: 'NA' }));
-    fireEvent.change(screen.getByLabelText(/Nickname/), { target: { value: ' Main ' } });
+    selectGenshin('America');
+    fireEvent.change(screen.getByLabelText(/nickname/i), { target: { value: ' Main ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Create dashboard' }));
 
     const game = useApp.getState().state.games.find((g) => !g.deleted)!;
     expect(game.tz).toBe('Etc/GMT+5');
+    expect(game.server).toBe('na');
     expect(game.accountLabel).toBe('Main');
+  });
+
+  it('picks no server for you, and adds one account per tap, twice on one server too', () => {
+    render(<Onboarding onComplete={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /Genshin Impact/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Next/ }));
+    expect(screen.getByRole('button', { name: 'Create dashboard' })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add a Genshin Impact account on TW, HK, MO' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add a Genshin Impact account on Europe' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add a Genshin Impact account on Europe (1 added)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add a Genshin Impact account on another server' }));
+    // The "other" account has no server yet, so it holds the dashboard back.
+    expect(screen.getByRole('button', { name: 'Create dashboard' })).toBeDisabled();
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Genshin Impact account 4 server' }), { key: 'Enter' });
+    fireEvent.click(screen.getByRole('option', { name: 'Japan (UTC+9)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create dashboard' }));
+
+    const games = useApp.getState().state.games.filter((g) => !g.deleted);
+    expect(games.map((g) => [g.server, g.tz, g.accountLabel])).toEqual([
+      ['tw', 'Etc/GMT-8', undefined],
+      ['eu', 'Etc/GMT-1', undefined],
+      ['eu', 'Etc/GMT-1', 'Account 2'],
+      [undefined, 'Asia/Tokyo', undefined],
+    ]);
   });
 });

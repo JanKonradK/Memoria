@@ -156,29 +156,34 @@ describe('GameDetail drafts and server', () => {
     expect(updateGame).toHaveBeenCalledWith(game.id, { accountLabel: 'Main EU' });
   });
 
-  it('writes the preset timezone for each server', () => {
-    const updateGame = renderDetail();
+  it("writes the server and its timezone for each of the game's servers", () => {
+    const updateGame = renderDetail({ ...game, name: 'Genshin Impact', presetKey: 'genshin', short: 'Genshin' });
     fireEvent.click(screen.getByRole('tab', { name: 'Game', exact: true }));
+    const pick = (name: string) => {
+      fireEvent.keyDown(screen.getByRole('combobox', { name: 'Server' }), { key: 'Enter' });
+      fireEvent.click(screen.getByRole('option', { name }));
+    };
 
-    fireEvent.click(screen.getByRole('radio', { name: 'EU' }));
-    expect(updateGame).toHaveBeenLastCalledWith(game.id, { tz: serverTz(1) });
+    pick('Europe (UTC+1)');
+    expect(updateGame).toHaveBeenLastCalledWith(game.id, { server: 'eu', tz: serverTz(1) });
 
-    fireEvent.click(screen.getByRole('radio', { name: 'NA' }));
-    expect(updateGame).toHaveBeenLastCalledWith(game.id, { tz: serverTz(-5) });
+    pick('America (UTC−5)');
+    expect(updateGame).toHaveBeenLastCalledWith(game.id, { server: 'na', tz: serverTz(-5) });
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Asia' }));
-    expect(updateGame).toHaveBeenLastCalledWith(game.id, { tz: serverTz(8) });
+    pick('TW, HK, MO (UTC+8)');
+    expect(updateGame).toHaveBeenLastCalledWith(game.id, { server: 'tw', tz: serverTz(8) });
   });
 
-  it('shows an uncommon timezone as a disabled selected option', () => {
+  it('keeps an uncommon timezone selected and offers it with the others', () => {
     const updateGame = renderDetail({ ...game, tz: 'Pacific/Auckland' });
     fireEvent.click(screen.getByRole('tab', { name: 'Game', exact: true }));
-    const uncommonServer = screen.getByRole('radio', { name: /UTC/ });
+    const server = screen.getByRole('combobox', { name: 'Server' });
 
-    expect(uncommonServer).toBeChecked();
-    expect(uncommonServer).toBeDisabled();
-    fireEvent.click(uncommonServer);
-    expect(updateGame).not.toHaveBeenCalled();
+    expect(server).toHaveTextContent('Pacific/Auckland');
+    fireEvent.keyDown(server, { key: 'Enter' });
+    expect(screen.getByRole('option', { name: 'Pacific/Auckland' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('option', { name: 'Japan (UTC+9)' }));
+    expect(updateGame).toHaveBeenLastCalledWith(game.id, { server: undefined, tz: 'Asia/Tokyo' });
   });
 });
 

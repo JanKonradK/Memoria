@@ -30,6 +30,9 @@ test('a game page lays out livestreams and notes, tracking, and events side by s
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Add a game', exact: true }).click();
   await page.getByRole('button', { name: /Zenless Zone Zero/ }).click();
+  // No server is chosen for you: pick the game's first one.
+  await page.getByRole('combobox', { name: 'Server' }).click();
+  await page.getByRole('option').nth(1).click();
   await page.getByRole('button', { name: 'Add ZZZ', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   // A legacy game saved before preset keys existed gets its artwork and face back on load.

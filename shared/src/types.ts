@@ -64,6 +64,8 @@ export interface Game extends Syncable {
   /** Optional character/cover art, always an embedded picture (see GAME_IMAGE_PATTERN). */
   image?: string;
   platform: 'pc' | 'mobile' | 'both';
+  /** Which of its game's servers this account is on (see GAME_SERVERS); unset for a custom timezone. */
+  server?: string;
   /** IANA timezone of the game server, e.g. "Etc/GMT-1" (fixed UTC+1). */
   tz: string;
   /** Hour of day (0-23, server time) when dailies reset. */

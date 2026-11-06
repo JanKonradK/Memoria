@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { encodePairingCode } from '@memoria/shared';
 import { launcherFetch, servedByLauncher } from '../../launcher';
 import {
@@ -20,8 +20,17 @@ type Devices = {
   addresses: string[];
   code: string | null;
   expiresAt: number | null;
-  devices: { id: string; name: string; pairedAt: number }[];
+  /** This PC's name. */
+  name?: string;
+  devices: { id: string; name: string; pairedAt: number; lastSeenAt?: number | null }[];
 };
+type Firewall = {
+  supported: boolean;
+  networks?: { name: string; category: string; allowed: boolean }[];
+  outcome?: 'ok' | 'declined' | 'failed';
+};
+/** A device syncs every 15 seconds while Memoria is open on it. */
+const LIVE_MS = 45_000;
 const DETAILS =
   'border-t border-line text-body text-muted [&>summary]:min-h-11 [&>summary]:cursor-pointer [&>summary]:rounded-ui-sm [&>summary]:py-3 [&>summary]:font-medium [&>summary]:text-fg-soft';
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
@@ -57,6 +66,112 @@ function PairingQr({ addresses, code, fingerprint }: { addresses: string[]; code
     <p className="flex min-h-64 items-center text-body text-muted" role="status">
       {error || 'Preparing your code…'}
     </p>
+  );
+}
+
+function ago(at: number, now: number): string {
+  const minutes = Math.round((now - at) / 60_000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  return new Date(at).toLocaleDateString();
+}
+
+type DeviceRow = { key: string; name: string; detail: string; live: boolean; action?: ReactNode };
+
+/** Every device on this sync, like a browser's list of signed-in sessions. */
+function DeviceList({ rows }: { rows: DeviceRow[] }) {
+  return (
+    <section className="space-y-2" aria-labelledby="sync-devices-heading">
+      <h3 id="sync-devices-heading" className="text-body font-semibold text-fg">
+        Devices
+      </h3>
+      <ul className="settings-devices">
+        {rows.map((row) => (
+          <li key={row.key} className="settings-device">
+            <span className="settings-device-dot" data-live={row.live || undefined} aria-hidden />
+            <span className="min-w-0 flex-1">
+              <span className="block text-body font-medium text-fg [overflow-wrap:anywhere]">{row.name}</span>
+              <span className="block text-meta text-muted">{row.detail}</span>
+            </span>
+            {row.action}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/**
+ * The usual reason a phone cannot connect: Windows Firewall has no rule for
+ * this copy of Memoria, or treats the home Wi-Fi as a public network.
+ */
+function FirewallCheck({ enabled }: { enabled: boolean }) {
+  const [status, setStatus] = useState<Firewall | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+  useEffect(() => {
+    if (!enabled) return;
+    let current = true;
+    void launcherFetch('/api/firewall')
+      .then((response) => (response.ok ? (response.json() as Promise<Firewall>) : null))
+      .then((body) => {
+        if (current && body) setStatus(body);
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [enabled]);
+  const blocked = status?.supported && Array.isArray(status.networks) ? status.networks.filter((n) => !n.allowed) : [];
+  if (!enabled || blocked.length === 0) return null;
+  const isPublic = blocked.some((network) => network.category === 'Public');
+  const names = blocked.map((network) => `“${network.name}”`).join(', ');
+  const allow = async () => {
+    setBusy(true);
+    setNote('');
+    try {
+      const response = await launcherFetch('/api/firewall', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ makePrivate: isPublic }),
+      });
+      if (!response.ok) throw new Error();
+      const body = (await response.json()) as Firewall;
+      setStatus(body);
+      if (body.outcome === 'declined') setNote('Windows needs your approval. Try again and choose Yes.');
+      else if (body.outcome !== 'ok') setNote('Windows could not change the setting.');
+    } catch {
+      setNote('Windows could not change the setting.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="surface-notice surface-notice-warn space-y-2" aria-labelledby="sync-firewall-heading">
+      <h3 id="sync-firewall-heading" className="text-body font-semibold text-fg">
+        Windows is blocking phones
+      </h3>
+      <p className="text-body text-fg-soft">
+        {isPublic
+          ? `Windows treats ${names} as a public network, so phones and tablets cannot reach Memoria.`
+          : 'Windows Firewall does not let phones and tablets reach this copy of Memoria.'}
+      </p>
+      <Btn kind="primary" className={TOUCH_BUTTON} disabled={busy} onClick={() => void allow()}>
+        {busy ? 'Waiting for Windows…' : isPublic ? 'Allow phones on this Wi-Fi' : 'Allow through Windows Firewall'}
+      </Btn>
+      <p className="text-meta text-fg-soft">
+        {isPublic
+          ? 'Windows asks for permission, then marks this Wi-Fi as your private home network. Only do this on your own Wi-Fi.'
+          : 'Windows asks for permission first.'}
+      </p>
+      {note && (
+        <p role="alert" className="text-body text-danger-fg">
+          {note}
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -150,12 +265,41 @@ function DesktopConnection() {
         </div>
       ) : (
         <>
-          {paired && !pairingVisible && (
-            <div role="status" className="space-y-1">
-              <p className="text-body font-semibold text-ok-fg">
-                {devices.enabled ? 'Device connected' : 'Sync paused'}
-              </p>
-            </div>
+          <FirewallCheck enabled={devices.enabled} />
+          {paired && (
+            <DeviceList
+              rows={[
+                {
+                  key: 'pc',
+                  name: devices.name || 'This PC',
+                  detail: devices.enabled ? 'This PC' : 'This PC · sync paused',
+                  live: devices.enabled,
+                },
+                ...devices.devices.map((device) => {
+                  const live = devices.enabled && !!device.lastSeenAt && now - device.lastSeenAt < LIVE_MS;
+                  return {
+                    key: device.id,
+                    name: device.name,
+                    live,
+                    detail: live
+                      ? 'Connected'
+                      : device.lastSeenAt
+                        ? `Last synced ${ago(device.lastSeenAt, now)}`
+                        : 'Not synced since Memoria started',
+                    action: (
+                      <Btn
+                        className={TOUCH_BUTTON}
+                        disabled={busy}
+                        aria-label={`Disconnect ${device.name} ${device.id}`}
+                        onClick={() => void control('revoke', device.id)}
+                      >
+                        Disconnect
+                      </Btn>
+                    ),
+                  };
+                }),
+              ]}
+            />
           )}
           {!pairingVisible && (
             <Btn
@@ -225,19 +369,7 @@ function DesktopConnection() {
             <details className={DETAILS}>
               <summary>Manage connection</summary>
               <div className="space-y-3 pb-3">
-                {devices.devices.map((device) => (
-                  <div key={device.id} className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="min-w-0 [overflow-wrap:anywhere]">{device.name}</span>
-                    <Btn
-                      className={TOUCH_BUTTON}
-                      disabled={busy}
-                      aria-label={`Disconnect ${device.name} ${device.id}`}
-                      onClick={() => void control('revoke', device.id)}
-                    >
-                      Disconnect device
-                    </Btn>
-                  </div>
-                ))}
+                <p>Pausing stops every device from syncing until you resume.</p>
                 <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => void control('stop')}>
                   Pause sync
                 </Btn>
@@ -410,6 +542,42 @@ function PhoneConnection() {
               </p>
             )}
           </div>
+          <DeviceList
+            rows={[
+              {
+                key: 'pc',
+                name: connection.pcName || 'Your PC',
+                detail:
+                  connection.status === 'ok'
+                    ? 'PC · connected'
+                    : connection.status === 'offline'
+                      ? 'PC · not reachable'
+                      : 'PC',
+                live: connection.status === 'ok',
+              },
+              {
+                key: 'self',
+                name: connection.peers.find((peer) => peer.id === connection.deviceId)?.name ?? 'This device',
+                detail: 'This device',
+                live: connection.status === 'ok',
+              },
+              ...connection.peers
+                .filter((peer) => peer.id !== connection.deviceId)
+                .map((peer) => {
+                  const live = !!peer.lastSeenAt && Date.now() - peer.lastSeenAt < LIVE_MS;
+                  return {
+                    key: peer.id,
+                    name: peer.name,
+                    live,
+                    detail: live
+                      ? 'Connected'
+                      : peer.lastSeenAt
+                        ? `Last synced ${ago(peer.lastSeenAt, Date.now())}`
+                        : 'Not synced lately',
+                  };
+                }),
+            ]}
+          />
           <details className={DETAILS}>
             <summary>Connection options</summary>
             <div className="space-y-3 pb-3">
@@ -464,7 +632,7 @@ export function DeviceSync() {
         <ul className="list-disc space-y-2 pb-3 pl-5">
           <li>Connect both devices to the same Wi-Fi.</li>
           <li>Keep Memoria open on your PC.</li>
-          <li>Allow Memoria through the Windows firewall on private networks.</li>
+          <li>If the PC says Windows is blocking phones, select Allow there and approve the prompt.</li>
           <li>Code expired? Show a new one on the PC.</li>
           <li>
             Away from home? Install Tailscale on both devices and sign in to the same account. After the next sync, the
