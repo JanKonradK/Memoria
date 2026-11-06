@@ -75,7 +75,8 @@ test('shared game focus, event editing, and the guide work at every size', async
 test('first launch opens a spotlight tour and skip persists', async ({ page }, testInfo) => {
   test.skip(!['desktop', 'mobile-390'].includes(testInfo.project.name), 'First-run guide at desktop and phone sizes');
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
+  // Skipping setup still opens the tour, over the empty app.
+  await page.getByRole('button', { name: 'Skip for now', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Pages' })).toBeVisible();
   await page.getByRole('button', { name: 'Skip tour', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);

@@ -73,10 +73,15 @@ test('an event on the calendar opens a quick view where it is pinned and ticked 
   await expect(page.locator('[data-event-id="quick-event"] [data-event-bar]')).toHaveAttribute('data-pinned', 'true');
 
   await bar.click();
-  await view.getByRole('button', { name: 'Mark done', exact: true }).click();
-  await expect(view.getByRole('button', { name: 'Done — undo', exact: true })).toBeVisible();
   await view.getByRole('button', { name: 'Edit', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Edit event' }).getByRole('textbox', { name: 'Name' })).toHaveValue(
     'Anniversary story',
   );
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  await bar.click();
+  await view.getByRole('button', { name: 'Mark done', exact: true }).click();
+  // Marking done is the last thing you do in the quick view, so it closes.
+  await expect(view).toHaveCount(0);
 });

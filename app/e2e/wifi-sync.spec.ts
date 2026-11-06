@@ -81,11 +81,7 @@ for (const method of ['scan', 'manual']) {
     });
     try {
       await page.goto('/');
-      await page
-        .getByRole('navigation', { name: 'Primary' })
-        .getByRole('button', { name: 'Today', exact: true })
-        .click();
-      await expect(page.getByRole('dialog')).toHaveCount(0);
+      // A fresh phone starts on setup, which offers the PC before any game.
       await page.getByRole('button', { name: 'Connect to PC', exact: true }).click();
       await expect(page.getByRole('heading', { name: 'Device sync', exact: true })).toBeVisible();
       await expect(page.getByLabel('PC address', { exact: true })).not.toBeVisible();

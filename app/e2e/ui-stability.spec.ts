@@ -95,9 +95,19 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Add a game' })).toBeVisible();
 });
 
-test('first run opens the spotlight tour and fits the viewport', async ({ page }) => {
+test('first run sets up games, then opens the spotlight tour, and fits the viewport', async ({ page }) => {
   await page.addInitScript(() => localStorage.removeItem('memoria-onboarding'));
   await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Which games do you play?' })).toBeVisible();
+  await expectNoPageOverflow(page);
+  await expectNoSeriousAccessibilityViolations(page);
+  await page.getByRole('button', { name: /Genshin Impact/ }).click();
+  await page.getByRole('button', { name: /^Next/ }).click();
+  await expect(page.getByRole('heading', { name: 'Set up your games' })).toBeVisible();
+  await page.getByLabel(/Nickname/).fill('Main');
+  await expectNoPageOverflow(page);
+  await expectNoSeriousAccessibilityViolations(page);
+  await page.getByRole('button', { name: 'Create dashboard' }).click();
   await expect(page.getByRole('dialog', { name: 'Pages' })).toBeVisible();
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);

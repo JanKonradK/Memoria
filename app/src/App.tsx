@@ -12,7 +12,6 @@ import { applyPwaUpdate } from './pwa';
 import { initAppUpdates } from './app-update';
 import { UpdateScreen } from './components/UpdateScreen';
 import { servedByLauncher } from './launcher';
-import { isNativeApp } from './native';
 import { closeWorkspace, initWorkspaceHistory } from './workspace-navigation';
 import { initDesktopHost } from './desktop-host';
 import { dismissLaunchNotice, initGameLaunch, useGameLaunch } from './game-launch';
@@ -21,6 +20,7 @@ import { initHomeWidget } from './home-widget';
 import { easing, duration } from './motion';
 import { useTabSwipe } from './gestures';
 import { AppBar } from './components/AppBar';
+import { Onboarding } from './components/Onboarding';
 import { Btn } from './components/ui';
 
 /** Primary pages lead their secondary and utility views in transition order. */
@@ -33,7 +33,19 @@ const ONBOARDING_KEY = 'memoria-onboarding';
 const LEGACY_ONBOARDING_KEY = 'void-onboarding';
 
 function onboardingComplete(): boolean {
-  return localStorage.getItem(ONBOARDING_KEY) !== null || localStorage.getItem(LEGACY_ONBOARDING_KEY) !== null;
+  try {
+    return localStorage.getItem(ONBOARDING_KEY) !== null || localStorage.getItem(LEGACY_ONBOARDING_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
+function markOnboardingComplete(): void {
+  try {
+    localStorage.setItem(ONBOARDING_KEY, 'complete');
+  } catch {
+    // Without storage the setup shows again next time, which is harmless.
+  }
 }
 
 const toastMotion = {
@@ -191,6 +203,7 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [launchNotice]);
   const autoTourStarted = useRef(false);
+  const [setup, setSetup] = useState(false);
   const reportLoadError = (error: unknown) => {
     useApp.setState({ loadError: error instanceof Error ? error.message : 'Local data operation failed.' });
   };
@@ -251,8 +264,9 @@ export default function App() {
       return;
     if (servedByLauncher() && (syncStatus === 'idle' || syncStatus === 'syncing')) return;
     autoTourStarted.current = true;
-    // Existing synced rosters already know the app. Fresh installs start in the live UI.
-    if (!hasGames && !isNativeApp) useUI.getState().openSheet({ kind: 'guide' });
+    // Existing synced rosters already know the app. A fresh install starts by
+    // picking its games; the tour follows, over the real dashboard.
+    if (!hasGames) setSetup(true);
   }, [loaded, loadError, syncStatus, hasGames]);
 
   if (loadError) {
@@ -297,6 +311,16 @@ export default function App() {
       </div>
     );
   }
+
+  if (setup && !hasGames)
+    return (
+      <Onboarding
+        onComplete={() => {
+          markOnboardingComplete();
+          setSetup(false);
+        }}
+      />
+    );
 
   return (
     <div className="relative min-h-dvh">

@@ -27,6 +27,7 @@ async function freshStore(): Promise<void> {
 
 function selectGenshin(): void {
   fireEvent.click(screen.getByRole('button', { name: /Genshin Impact/ }));
+  fireEvent.click(screen.getByRole('button', { name: /^Next/ }));
 }
 
 describe('Onboarding energy entry', () => {
@@ -97,5 +98,17 @@ describe('Onboarding energy entry', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Skip for now' }));
 
     expect(useApp.getState().state.settings.localTz).toBe(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  });
+
+  it('sets the server and nickname picked on the second step', () => {
+    render(<Onboarding onComplete={vi.fn()} />);
+    selectGenshin();
+    fireEvent.click(screen.getByRole('radio', { name: 'NA' }));
+    fireEvent.change(screen.getByLabelText(/Nickname/), { target: { value: ' Main ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create dashboard' }));
+
+    const game = useApp.getState().state.games.find((g) => !g.deleted)!;
+    expect(game.tz).toBe('Etc/GMT+5');
+    expect(game.accountLabel).toBe('Main');
   });
 });

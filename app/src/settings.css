@@ -259,3 +259,7 @@
     transition: none;
   }
 }
+
+.settings-roster-server > .ui-segmented {
+  justify-self: start;
+}
