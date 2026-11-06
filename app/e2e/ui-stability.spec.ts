@@ -75,6 +75,9 @@ async function addPreset(page: Page, name: string, short: string, first = false)
   else await openAddMenu(page, 'Add game');
   await expect(page.getByRole('dialog', { name: 'Add a game' })).toBeVisible();
   await page.getByRole('button', { name: new RegExp(name) }).click();
+  // No server is chosen for you: pick the game's first one.
+  await page.getByRole('combobox', { name: 'Server' }).click();
+  await page.getByRole('option').nth(1).click();
   await page.getByRole('button', { name: `Add ${short}` }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   // Its row opens the page on a phone and brings its card beside the list on desktop.
@@ -103,8 +106,11 @@ test('first run sets up games, then opens the spotlight tour, and fits the viewp
   await expectNoSeriousAccessibilityViolations(page);
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: /^Next/ }).click();
-  await expect(page.getByRole('heading', { name: 'Set up your games' })).toBeVisible();
-  await page.getByLabel(/Nickname/).fill('Main');
+  await expect(page.getByRole('heading', { name: 'Where do you play?' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Create dashboard' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Add a Genshin Impact account on Europe' }).click();
+  await page.getByRole('button', { name: 'Add a Genshin Impact account on Asia' }).click();
+  await page.getByLabel('Genshin Impact account 1 nickname').fill('Main');
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
   await page.getByRole('button', { name: 'Create dashboard' }).click();
@@ -147,7 +153,7 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('heading', { name: 'Resources' })).toBeVisible();
   await dialog.getByRole('tab', { name: 'Game', exact: true }).click();
-  await expect(dialog.getByRole('radiogroup', { name: 'Server' })).toBeVisible();
+  await expect(dialog.getByRole('combobox', { name: 'Server' })).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Delete game…' })).toBeVisible();
   await expectNoSeriousAccessibilityViolations(page);
   // Only the selected tab's panel is mounted, and quick spends sit under Energy.
@@ -190,6 +196,8 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   await openAddMenu(page, 'Add game');
   await page.getByRole('button', { name: /Neverness to Everness/ }).click();
   await page.locator('label:has-text("City Stamina cap") input').fill('100');
+  await page.getByRole('combobox', { name: 'Server' }).click();
+  await page.getByRole('option').nth(1).click();
   await page.getByRole('button', { name: 'Add NTE' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   // A new game opens the same page at every width.

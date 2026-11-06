@@ -8,7 +8,7 @@ import { useGround } from '../theme';
 import { endTone, fmtDur } from '../util';
 import { useIdentityColors } from './roster';
 import { Btn, serverLabelClass } from './ui';
-import { serverRegionLabel } from '../server-region';
+import { gameServerLabel } from '../server-choice';
 import { PinMark, togglePinned } from './EventPeek';
 import '../calendar-list.css';
 import '../pinned.css';
@@ -201,7 +201,7 @@ export function TimelineList({
                 const game = gamesById.get(event.gameId)!;
                 const colors = identityColors[game.id] ?? game;
                 const account = game.accountLabel?.trim();
-                const serverLabel = serverRegionLabel(game.tz, now);
+                const serverLabel = gameServerLabel(game, now);
                 const countdown = countdownOf(event, now);
                 const baseLabel = gameLabel(game);
                 const controlLabel =

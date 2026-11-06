@@ -6,7 +6,7 @@ const SERVER_REGIONS: Record<string, string> = {
   'Etc/GMT-8': 'ASIA',
 };
 
-function offsetLabel(offsetMinutes: number): string {
+export function offsetLabel(offsetMinutes: number): string {
   if (offsetMinutes === 0) return 'UTC';
 
   const absoluteMinutes = Math.abs(offsetMinutes);

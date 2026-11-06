@@ -1,8 +1,7 @@
-import { DateTime } from 'luxon';
-import { detectLocalTz, PRESETS, type GamePreset } from '@memoria/shared';
-import { useState } from 'react';
+import { detectLocalTz, PRESETS } from '@memoria/shared';
+import { useRef, useState } from 'react';
 import { isNativeApp } from '../native';
-import { serverChoices } from '../server-choice';
+import { gameServers, type ServerPick } from '../server-choice';
 import { useApp } from '../store';
 import '../onboarding.css';
 import { resolveHomeTimeZone, SYSTEM_TIMEZONE_VALUE } from '../timezone';
@@ -10,24 +9,26 @@ import { useUI } from '../ui-store';
 import { intOr } from '../util';
 import { GameLogo } from './GameLogo';
 import { HomeTimeZoneField } from './HomeTimeZoneField';
-import { Btn, NumInput, Segmented, TextInput } from './ui';
+import { ServerSelect } from './ServerSelect';
+import { Btn, NumInput, TextInput } from './ui';
 
-/** The server region a player in this timezone most likely plays on. */
-function nearestRegion(tz: string): 'EU' | 'NA' | 'Asia' {
-  const hours = DateTime.now().setZone(tz).offset / 60;
-  if (hours <= -2) return 'NA';
-  if (hours <= 4) return 'EU';
-  return 'Asia';
-}
+type Account = { key: number; pick: ServerPick | null; nickname: string; energy: string };
 
-function defaultServer(preset: GamePreset, homeTz: string): string {
-  const options = serverChoices({ name: preset.name, short: preset.short, presetKey: preset.key, tz: preset.tz });
-  return options.find((option) => option.label === nearestRegion(homeTz) && !option.disabled)?.value ?? preset.tz;
+const sameServer = (a: ServerPick | null, b: ServerPick | null) => a?.server === b?.server && a?.tz === b?.tz;
+
+/** A second account on the same server with no nickname still needs a name to tell them apart. */
+function labelFor(accounts: Account[], index: number): string | undefined {
+  const own = accounts[index].nickname.trim();
+  if (own) return own;
+  const position = accounts
+    .filter((account) => sameServer(account.pick, accounts[index].pick))
+    .indexOf(accounts[index]);
+  return position > 0 ? `Account ${position + 1}` : undefined;
 }
 
 /**
- * First run, in two steps: pick the games you play, then set each one up —
- * server, nickname, current energy — so the dashboard is right from the start.
+ * First run, in two steps: pick the games you play, then add an account for
+ * each server you play them on — as many as you have, nothing chosen for you.
  */
 export function Onboarding({ onComplete }: { onComplete: () => void }) {
   const addGameFromPreset = useApp((store) => store.addGameFromPreset);
@@ -37,27 +38,36 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
   const [homeTzChoice, setHomeTzChoice] = useState(SYSTEM_TIMEZONE_VALUE);
   const [step, setStep] = useState<'pick' | 'setup'>('pick');
   const [selected, setSelected] = useState<string[]>([]);
-  const [energy, setEnergy] = useState<Record<string, string>>({});
-  const [servers, setServers] = useState<Record<string, string>>({});
-  const [nicknames, setNicknames] = useState<Record<string, string>>({});
+  const [accounts, setAccounts] = useState<Record<string, Account[]>>({});
+  const nextKey = useRef(0);
   const chosenTz = homeTzChoice === SYSTEM_TIMEZONE_VALUE ? detectedTz : homeTzChoice;
   const picked = PRESETS.filter((preset) => selected.includes(preset.key));
+  const missing = picked.find(
+    (preset) => !(accounts[preset.key] ?? []).length || accounts[preset.key].some((account) => !account.pick),
+  );
+  const editAccounts = (key: string, change: (items: Account[]) => Account[]) =>
+    setAccounts((all) => ({ ...all, [key]: change(all[key] ?? []) }));
+  const addAccount = (key: string, pick: ServerPick | null) =>
+    editAccounts(key, (items) => [...items, { key: nextKey.current++, pick, nickname: '', energy: '' }]);
+  const editAccount = (key: string, account: number, patch: Partial<Account>) =>
+    editAccounts(key, (items) => items.map((item) => (item.key === account ? { ...item, ...patch } : item)));
 
   const finish = () => {
     updateSettings({ localTz: resolveHomeTimeZone(homeTzChoice) });
     for (const preset of picked) {
-      const gameId = addGameFromPreset(preset, {
-        tz: servers[preset.key] ?? defaultServer(preset, chosenTz),
-        accountLabel: nicknames[preset.key]?.trim() || undefined,
+      const list = accounts[preset.key] ?? [];
+      list.forEach((account, index) => {
+        if (!account.pick) return;
+        const gameId = addGameFromPreset(preset, { ...account.pick, accountLabel: labelFor(list, index) });
+        const resource = useApp
+          .getState()
+          .state.resources.find((item) => item.gameId === gameId && !item.deleted && item.regenMinutes > 0);
+        // A blank field is "I don't know yet", not zero. Committing 0 here would let
+        // Memoria project a confident refill time from a reading the user never gave it.
+        const entered = account.energy.trim();
+        if (resource && entered !== '')
+          setEnergyValue(resource.id, Math.min(resource.cap, Math.max(0, intOr(entered, 0))));
       });
-      const resource = useApp
-        .getState()
-        .state.resources.find((item) => item.gameId === gameId && !item.deleted && item.regenMinutes > 0);
-      // A blank field is "I don't know yet", not zero. Committing 0 here would let
-      // Memoria project a confident refill time from a reading the user never gave it.
-      const entered = (energy[preset.key] ?? '').trim();
-      if (resource && entered !== '')
-        setEnergyValue(resource.id, Math.min(resource.cap, Math.max(0, intOr(entered, 0))));
     }
     onComplete();
     useUI.getState().openSheet({ kind: 'guide' });
@@ -163,62 +173,121 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
         </>
       ) : (
         <>
-          <h1 className="text-display font-black tracking-tight text-fg">Set up your games</h1>
+          <h1 className="text-display font-black tracking-tight text-fg">Where do you play?</h1>
           <p className="mt-2 max-w-2xl text-body text-muted">
-            The server sets when each day resets. Energy is what the game shows right now; leave it blank if you are not
-            sure. Everything here can be changed later in Settings.
+            Add an account for each server you play on, and tap a server again for another account there. Energy is what
+            the game shows right now; leave it blank if you are not sure. You can change all of it later in Settings.
           </p>
 
           <ul className="onboarding-setup" aria-label="Your games">
             {picked.map((game) => {
               const resource = game.resources.find((item) => item.regenMinutes > 0) ?? game.resources[0];
-              const server = servers[game.key] ?? defaultServer(game, chosenTz);
+              const list = accounts[game.key] ?? [];
+              const presetGame = { ...game, presetKey: game.key };
               return (
-                <li key={game.key} className="onboarding-setup-row">
+                <li key={game.key} className="onboarding-setup-game">
                   <div className="onboarding-setup-name">
-                    <GameLogo game={{ ...game, presetKey: game.key }} size={40} className="shrink-0" />
+                    <GameLogo game={presetGame} size={40} className="shrink-0" />
                     <h2 className="min-w-0 truncate text-body font-semibold text-fg">{game.name}</h2>
                   </div>
-                  <div className="onboarding-field">
-                    <span className="text-label text-muted" aria-hidden>
-                      Server
-                    </span>
-                    <Segmented
-                      ariaLabel={`${game.name} server`}
-                      options={serverChoices({ name: game.name, short: game.short, presetKey: game.key, tz: server })}
-                      value={server}
-                      onChange={(tz) => setServers({ ...servers, [game.key]: tz })}
-                    />
+                  <div className="onboarding-servers" role="group" aria-label={`${game.name} servers`}>
+                    {gameServers(presetGame).map((server) => {
+                      const count = list.filter((account) => account.pick?.server === server.id).length;
+                      return (
+                        <button
+                          key={server.id}
+                          type="button"
+                          className="onboarding-server"
+                          data-active={count > 0 || undefined}
+                          aria-label={`Add a ${game.name} account on ${server.label}${count ? ` (${count} added)` : ''}`}
+                          onClick={() => addAccount(game.key, { server: server.id, tz: server.tz })}
+                        >
+                          <span aria-hidden>+</span> {server.label}
+                          {count > 0 && <span className="onboarding-server-count numeral">×{count}</span>}
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      className="onboarding-server"
+                      aria-label={`Add a ${game.name} account on another server`}
+                      onClick={() => addAccount(game.key, null)}
+                    >
+                      <span aria-hidden>+</span> Other
+                    </button>
                   </div>
-                  <label className="onboarding-field">
-                    <span className="text-label text-muted">Nickname (optional)</span>
-                    <TextInput
-                      placeholder="Your in-game name"
-                      value={nicknames[game.key] ?? ''}
-                      onChange={(event) => setNicknames({ ...nicknames, [game.key]: event.target.value })}
-                    />
-                  </label>
-                  {resource && (
-                    <label className="onboarding-field">
-                      <span className="text-label text-muted">
-                        Current {resource.name} <span className="numeral">(max {resource.cap})</span>
-                      </span>
-                      <NumInput
-                        min={0}
-                        max={resource.cap}
-                        placeholder="Not sure"
-                        value={energy[game.key] ?? ''}
-                        onChange={(event) => setEnergy({ ...energy, [game.key]: event.target.value })}
-                      />
-                    </label>
+                  {list.length > 0 && (
+                    <ol className="onboarding-accounts" aria-label={`${game.name} accounts`}>
+                      {list.map((account, index) => {
+                        const name = `${game.name} account ${index + 1}`;
+                        return (
+                          <li key={account.key} className="onboarding-account">
+                            <label className="onboarding-field">
+                              <span className="text-label text-muted">Server</span>
+                              <ServerSelect
+                                aria-label={`${name} server`}
+                                game={presetGame}
+                                value={account.pick}
+                                onChange={(pick) => editAccount(game.key, account.key, { pick })}
+                              />
+                            </label>
+                            <label className="onboarding-field">
+                              <span className="text-label text-muted">Nickname (optional)</span>
+                              <TextInput
+                                aria-label={`${name} nickname`}
+                                placeholder="Your in-game name"
+                                value={account.nickname}
+                                onChange={(event) =>
+                                  editAccount(game.key, account.key, { nickname: event.target.value })
+                                }
+                              />
+                            </label>
+                            {resource && (
+                              <label className="onboarding-field">
+                                <span className="text-label text-muted">
+                                  Current {resource.name} <span className="numeral">(max {resource.cap})</span>
+                                </span>
+                                <NumInput
+                                  aria-label={`${name} current ${resource.name}`}
+                                  min={0}
+                                  max={resource.cap}
+                                  placeholder="Not sure"
+                                  value={account.energy}
+                                  onChange={(event) =>
+                                    editAccount(game.key, account.key, { energy: event.target.value })
+                                  }
+                                />
+                              </label>
+                            )}
+                            <Btn
+                              className="onboarding-account-remove"
+                              aria-label={`Remove ${name}`}
+                              onClick={() =>
+                                editAccounts(game.key, (items) => items.filter((item) => item.key !== account.key))
+                              }
+                            >
+                              Remove
+                            </Btn>
+                          </li>
+                        );
+                      })}
+                    </ol>
                   )}
                 </li>
               );
             })}
           </ul>
 
+          {missing && (
+            <p className="mt-4 text-meta text-muted" role="status">
+              {(accounts[missing.key] ?? []).length
+                ? `Choose a server for each ${missing.name} account.`
+                : `Tap the server you play ${missing.name} on.`}
+            </p>
+          )}
+
           <div className="onboarding-actions">
-            <Btn kind="primary" onClick={finish}>
+            <Btn kind="primary" disabled={Boolean(missing)} onClick={finish}>
               Create dashboard
             </Btn>
             <Btn onClick={() => setStep('pick')}>Back</Btn>

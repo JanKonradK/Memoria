@@ -32,19 +32,46 @@ const MAX_HOSTS = 8;
 type LanStatus = 'off' | 'pairing' | 'syncing' | 'choosing' | 'ok' | 'offline' | 'error';
 /** Both sides hold games the other has never seen, so combining them is the owner's call. */
 export type FirstSyncChoice = { deviceGames: number; pcGames: number };
+/** A device paired with the same PC, as the PC last reported it. */
+export type LanPeer = { id: string; name: string; lastSeenAt: number | null };
 export const useLanSync = create<{
   status: LanStatus;
   host: string;
   error: string;
   lastSyncAt: number | null;
   choice: FirstSyncChoice | null;
+  /** This device's id on the PC, to pick it out of `peers`. */
+  deviceId: string;
+  pcName: string;
+  peers: LanPeer[];
 }>(() => ({
   status: 'off',
   host: '',
   error: '',
   lastSyncAt: null,
   choice: null,
+  deviceId: '',
+  pcName: '',
+  peers: [],
 }));
+
+/** What the PC lists this device as, so the phone and the tablet are told apart. */
+export function lanDeviceName(): string {
+  const tablet = Math.min(window.screen.width, window.screen.height) >= 600;
+  const kind = tablet ? 'Android tablet' : 'Android phone';
+  const model = /Android [\d.]+; ([^;)]+?)(?: Build\/[^;)]*)?[;)]/.exec(navigator.userAgent)?.[1]?.trim();
+  return model && model !== 'K' && model.length <= 40 ? `${kind} (${model})` : kind;
+}
+
+function peersFrom(value: unknown): LanPeer[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== 'object') return [];
+    const { id, name, lastSeenAt } = item as Record<string, unknown>;
+    if (typeof id !== 'string' || typeof name !== 'string') return [];
+    return [{ id, name, lastSeenAt: typeof lastSeenAt === 'number' ? lastSeenAt : null }];
+  });
+}
 export const isNativeDevice = () => Capacitor.isNativePlatform();
 let pair: Pair | null = null;
 let generation = 0;
@@ -111,7 +138,10 @@ async function request(
     response = await send(`${host}${path}`, packet);
   } catch (error) {
     if (error instanceof LanError) throw error;
-    throw new LanError('Cannot reach your PC. Open Memoria there and use the same Wi-Fi or private network.', 0);
+    throw new LanError(
+      'Cannot reach your PC. Keep Memoria open there, use the same Wi-Fi, and check Device sync in Settings on the PC: Windows may be blocking phones.',
+      0,
+    );
   }
   if (response.status !== 200)
     throw new LanError('Encrypted connection failed. Update both devices and pair again.', 403);
@@ -130,7 +160,7 @@ async function request(
 function savePair(next: Pair) {
   pair = next;
   localStorage.setItem(PAIR_KEY, JSON.stringify(next));
-  useLanSync.setState({ host: next.host });
+  useLanSync.setState({ host: next.host, deviceId: next.deviceId });
 }
 
 /** Valid addresses from a PC reply, the working one first. Unknown entries are dropped. */
@@ -216,7 +246,7 @@ async function connectToPc(hosts: string[], code: string, fingerprint: string): 
     for (const candidate of hosts) {
       if (current !== generation) return;
       try {
-        body = await request(candidate, '/pair', { code: code.replace(/\s/g, ''), name: 'Android phone' }, credentials);
+        body = await request(candidate, '/pair', { code: code.replace(/\s/g, ''), name: lanDeviceName() }, credentials);
         host = candidate;
         break;
       } catch (error) {
@@ -261,7 +291,7 @@ export async function disconnectLanSync(): Promise<void> {
   clearTimeout(debounce);
   localStorage.removeItem(PAIR_KEY);
   clearFirstSync();
-  useLanSync.setState({ host: '', lastSyncAt: null });
+  useLanSync.setState({ host: '', lastSyncAt: null, deviceId: '', pcName: '', peers: [] });
   setStatus('off');
   // Forget locally immediately even when the PC is off. Its Settings can revoke
   // the old device if this best-effort request cannot reach it.
@@ -380,6 +410,10 @@ export async function syncLanNow(): Promise<void> {
     useApp.getState().replaceState(mergeState(local, normalizeState(response.state)));
     const hosts = knownHosts(reached.host, response.addresses, reached.hosts);
     if (hosts.join() !== reached.hosts.join()) savePair({ ...reached, hosts });
+    useLanSync.setState({
+      pcName: typeof response.pc === 'string' ? response.pc : '',
+      peers: peersFrom(response.devices),
+    });
     setStatus('ok');
     success = true;
   } catch (error) {
@@ -426,7 +460,7 @@ export function initLanSync(): void {
         fingerprint: saved.fingerprint,
         deviceId: saved.deviceId,
       };
-      useLanSync.setState({ host });
+      useLanSync.setState({ host, deviceId: saved.deviceId });
     } else if (saved) {
       localStorage.removeItem(PAIR_KEY);
       clearFirstSync();

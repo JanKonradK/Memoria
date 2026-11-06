@@ -200,7 +200,7 @@
 }
 @media (min-width: 760px) {
   .settings-roster-row {
-    grid-template-columns: auto minmax(11rem, 17rem) minmax(10rem, 22rem) auto auto;
+    grid-template-columns: auto minmax(11rem, 17rem) minmax(11rem, 15rem) minmax(13rem, 17rem) auto;
     justify-content: start;
     grid-template-areas: none;
   }
@@ -260,6 +260,26 @@
   }
 }
 
-.settings-roster-server > .ui-segmented {
-  justify-self: start;
+/* Devices on Wi-Fi sync, one per row with a dot for "syncing now". */
+.settings-devices {
+  display: grid;
+  border-top: 1px solid var(--color-line);
+}
+.settings-device {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--color-line);
+}
+.settings-device-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--color-line-strong);
+}
+.settings-device-dot[data-live] {
+  background: var(--color-ok-fg);
 }

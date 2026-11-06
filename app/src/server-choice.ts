@@ -1,38 +1,48 @@
-import { presetForGame } from '@memoria/shared';
-import { serverRegionLabel } from './server-region';
+import { DateTime } from 'luxon';
+import { gameServer, presetForGame, SERVER_TZ_OPTIONS, serversFor, type GameServer } from '@memoria/shared';
+import { offsetLabel, serverRegionLabel } from './server-region';
 
-/**
- * The three regions offered as a one-tap choice, left to right — the HoYo/Kuro
- * rows of SERVER_TZ_OPTIONS, which is where these strings come from.
- *
- * Mind the sign: `Etc/GMT-1` is UTC**+**1. The POSIX zones invert, which is the
- * trap documented alongside SERVER_TZ_OPTIONS itself. game-detail-draft.test.tsx
- * derives the same three from their real UTC offsets and asserts they match, so
- * a typo here fails a test rather than silently sending a European account to
- * the wrong reset hour.
- */
-export const SERVER_OPTIONS = [
-  { value: 'Etc/GMT-1', label: 'EU' },
-  { value: 'Etc/GMT+5', label: 'NA' },
-  { value: 'Etc/GMT-8', label: 'Asia' },
-];
+/** What a server picker sets on a game: one of its servers, or just a timezone. */
+export type ServerPick = { server?: string; tz: string };
+type GameLike = { name: string; short: string; presetKey?: string };
 
-/**
- * The server choices for one game. A game whose own Europe server follows
- * summer time (NTE) keeps that clock behind its EU choice, so picking EU never
- * moves its reset by an hour. A server outside the three is shown, disabled,
- * rather than quietly swapped for one of them.
- */
-export function serverChoices(
-  game: { name: string; short: string; presetKey?: string; tz: string },
-  now = Date.now(),
-): { value: string; label: string; disabled?: boolean }[] {
-  const presetTz = presetForGame(game)?.tz;
-  const ownEurope =
-    presetTz && !presetTz.startsWith('Etc/') && serverRegionLabel(presetTz, now) === 'EU' ? presetTz : null;
-  const regions = ownEurope
-    ? SERVER_OPTIONS.map((option) => (option.label === 'EU' ? { ...option, value: ownEurope } : option))
-    : SERVER_OPTIONS;
-  if (regions.some((option) => option.value === game.tz)) return regions;
-  return [...regions, { value: game.tz, label: serverRegionLabel(game.tz, now), disabled: true }];
+/** The preset key for a game, also for an old game saved before presetKey. */
+export function presetKeyOf(game: GameLike): string | undefined {
+  return game.presetKey ?? presetForGame(game)?.key;
+}
+
+export function gameServers(game: GameLike): readonly GameServer[] {
+  return serversFor(presetKeyOf(game));
+}
+
+/** The chip beside a game's name: its server, or its clock when the server is unknown. */
+export function gameServerLabel(game: GameLike & { server?: string; tz: string }, now: number): string {
+  return gameServer({ ...game, presetKey: presetKeyOf(game) })?.short ?? serverRegionLabel(game.tz, now);
+}
+
+export function utcLabel(tz: string, now = Date.now()): string {
+  const zone = DateTime.fromMillis(now, { zone: tz });
+  return zone.isValid ? offsetLabel(zone.offset) : tz;
+}
+
+/** The `<select>` value for a pick: `server:<id>` for one of the game's servers, else `tz:<zone>`. */
+export function serverValue(game: GameLike, pick: ServerPick | null): string {
+  if (!pick) return '';
+  const named = gameServer({ ...pick, presetKey: presetKeyOf(game) });
+  return named ? `server:${named.id}` : `tz:${pick.tz}`;
+}
+
+export function parseServerValue(game: GameLike, value: string): ServerPick {
+  if (value.startsWith('server:')) {
+    const server = gameServers(game).find((item) => item.id === value.slice('server:'.length));
+    if (server) return { server: server.id, tz: server.tz };
+  }
+  return { server: undefined, tz: value.replace(/^tz:/, '') };
+}
+
+/** Timezones offered under "Other", with the game's own one kept when it is none of them. */
+export function otherZones(current: string | undefined): { label: string; tz: string }[] {
+  return current && !SERVER_TZ_OPTIONS.some((option) => option.tz === current)
+    ? [...SERVER_TZ_OPTIONS, { label: current, tz: current }]
+    : SERVER_TZ_OPTIONS;
 }

@@ -20,7 +20,7 @@ import { CalendarFeedStatus } from './CalendarFeedStatus';
 import { TimelineList } from './TimelineList';
 import { PinnedEvents } from './PinnedEvents';
 import { PinMark } from './EventPeek';
-import { serverRegionLabel } from '../server-region';
+import { gameServerLabel } from '../server-choice';
 import { titleStyle } from '../fonts';
 import { assignGameInks, gameTitleInk, mix, onColor } from '../game-color';
 import { THEME_PANEL, useGround, useInset, useTheme } from '../theme';
@@ -50,7 +50,7 @@ export const MIN_LABEL_PX = 40;
 /** Pausing keeps the account visible without exposing any of its event rows. */
 function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; onResume: () => void }) {
   const ground = useGround();
-  const server = serverRegionLabel(game.tz, now);
+  const server = gameServerLabel(game, now);
   const account = game.accountLabel?.trim();
   return (
     <section
@@ -1224,7 +1224,7 @@ export function TimelinePage({ now }: { now: number }) {
                   const running = evs.filter((event) => !event.done && event.end > now);
                   const finishedCount = evs.length - running.length;
                   const shown = showFinished ? evs : running;
-                  const serverLabel = serverRegionLabel(game.tz, now);
+                  const serverLabel = gameServerLabel(game, now);
                   const accountLabel = game.accountLabel?.trim();
                   // The lane's colour: assigned in one distinct-lanes pass, with
                   // the game's own primary as the fallback. Bars, connectors and

@@ -4,6 +4,7 @@
 //! a code and pinned PC key fingerprint shown in Settings. All data and
 //! pairing codes use X25519 + XChaCha20-Poly1305 authenticated encryption.
 
+use std::collections::HashMap;
 use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -153,6 +154,8 @@ struct Inner {
     challenges: Vec<(String, IpAddr, u64)>,
     /// The bound port and the switch that stops the listener.
     running: Option<(u16, oneshot::Sender<()>)>,
+    /// When each device last synced, since Memoria started.
+    seen: HashMap<String, u64>,
 }
 
 #[derive(Clone)]
@@ -208,6 +211,7 @@ impl Lan {
                 failures: Vec::new(),
                 challenges: Vec::new(),
                 running: None,
+                seen: HashMap::new(),
             })),
             control_lock: Arc::new(tokio::sync::Mutex::new(())),
             file,
@@ -487,23 +491,35 @@ impl Lan {
         if !self.active(&device_id) {
             return Err(fail(401, "This device was disconnected."));
         }
+        self.inner.lock().unwrap().seen.insert(device_id, now_ms());
         let state: Value = serde_json::from_str(&merged).map_err(|e| fail(500, e.to_string()))?;
-        // The phone keeps this list, so it still finds the PC after its address
-        // changes or when it switches between home Wi-Fi and a private network app.
-        let addresses = self.status()["addresses"].clone();
-        Ok(json!({ "state": state, "addresses": addresses }))
+        // The phone keeps the address list, so it still finds the PC after its
+        // address changes or when it switches between home Wi-Fi and a private
+        // network app. The device list lets every device show what is connected.
+        let status = self.status();
+        Ok(json!({
+            "state": state,
+            "addresses": status["addresses"],
+            "pc": status["name"],
+            "devices": status["devices"],
+        }))
     }
 }
 
 fn status_of(inner: &Inner, default_port: u16) -> Value {
     let port = inner.running.as_ref().map(|(port, _)| *port).unwrap_or(default_port);
     let addresses: Vec<String> = if inner.running.is_some() {
-        if_addrs::get_if_addrs()
+        let mut found: Vec<(u8, String)> = if_addrs::get_if_addrs()
             .unwrap_or_default()
             .into_iter()
-            .filter(|i| !i.is_loopback() && i.ip().is_ipv4() && private_address(i.ip()))
-            .map(|i| format!("http://{}:{port}", i.ip()))
-            .collect()
+            .filter(|i| {
+                !i.is_loopback() && i.ip().is_ipv4() && private_address(i.ip()) && !virtual_adapter(&i.name)
+            })
+            .map(|i| (address_rank(i.ip()), format!("http://{}:{port}", i.ip())))
+            .collect();
+        found.sort();
+        found.dedup();
+        found.into_iter().map(|(_, address)| address).collect()
     } else {
         Vec::new()
     };
@@ -516,10 +532,47 @@ fn status_of(inner: &Inner, default_port: u16) -> Value {
         "addresses": addresses,
         "code": pairing.map(|p| p.code.clone()),
         "expiresAt": pairing.map(|p| p.expires_at),
+        "name": pc_name(),
         "devices": inner.config.devices.iter()
-            .map(|d| json!({ "id": d.id, "name": d.name, "pairedAt": d.paired_at }))
+            .map(|d| json!({
+                "id": d.id,
+                "name": d.name,
+                "pairedAt": d.paired_at,
+                "lastSeenAt": inner.seen.get(&d.id),
+            }))
             .collect::<Vec<_>>(),
     })
+}
+
+/// What phones call this PC.
+fn pc_name() -> String {
+    std::env::var("COMPUTERNAME")
+        .or_else(|_| std::env::var("HOSTNAME"))
+        .ok()
+        .map(|name| name.trim().chars().take(60).collect::<String>())
+        .filter(|name| !name.is_empty())
+        .unwrap_or_else(|| "This PC".into())
+}
+
+/// Network adapters a phone can never reach: WSL, Hyper-V, Docker and other VMs.
+fn virtual_adapter(name: &str) -> bool {
+    let name = name.to_ascii_lowercase();
+    ["vethernet", "wsl", "hyper-v", "virtualbox", "vmware", "docker", "vbox"]
+        .iter()
+        .any(|word| name.contains(word))
+}
+
+/// Home Wi-Fi addresses first, then Tailscale, then the rest. The phone tries them in this order.
+fn address_rank(ip: IpAddr) -> u8 {
+    match ip {
+        IpAddr::V4(v4) => match v4.octets() {
+            [192, 168, ..] => 0,
+            [10, ..] => 1,
+            [100, ..] => 2,
+            _ => 3,
+        },
+        IpAddr::V6(_) => 4,
+    }
 }
 
 /// The request body as text, refusing anything that is not JSON or is too large.
@@ -634,6 +687,21 @@ mod tests {
     }
 
     #[test]
+    fn addresses_skip_virtual_adapters_and_put_home_wifi_first() {
+        assert!(virtual_adapter("vEthernet (WSL (Hyper-V firewall))"));
+        assert!(virtual_adapter("vEthernet (Default Switch)"));
+        assert!(!virtual_adapter("WiFi"));
+        assert!(!virtual_adapter("Ethernet"));
+        let mut ranks = ["172.22.144.1", "100.101.2.3", "192.168.1.17", "10.0.0.4"]
+            .map(|ip| (address_rank(ip.parse().unwrap()), ip));
+        ranks.sort();
+        assert_eq!(
+            ranks.map(|(_, ip)| ip),
+            ["192.168.1.17", "10.0.0.4", "100.101.2.3", "172.22.144.1"]
+        );
+    }
+
+    #[test]
     fn private_ranges() {
         for ip in [
             "10.1.2.3",
@@ -732,6 +800,9 @@ mod tests {
         let synced = send(&client, &base, "/sync", &public, &keys, json!({"state":state})).await;
         assert!(synced["state"]["games"].is_array());
         assert!(synced["addresses"].is_array());
+        assert!(synced["pc"].is_string());
+        assert_eq!(synced["devices"][0]["name"], "Galaxy S23");
+        assert!(synced["devices"][0]["lastSeenAt"].is_u64());
         let id = paired["deviceId"].as_str().unwrap();
         lan.control(&json!({"action":"revoke","id":id})).await.unwrap();
         let revoked = send(&client, &base, "/sync", &public, &keys, json!({"state":state})).await;

@@ -11,7 +11,7 @@ import { ResourceEditor } from '../game-detail/ResourceEditor';
 import { GameEvents } from '../GameEvents';
 import { GameLogo } from '../GameLogo';
 import { useGameDraft } from '../game-detail/useGameDraft';
-import { serverRegionLabel } from '../../server-region';
+import { gameServerLabel } from '../../server-choice';
 import { TrackingItem } from './TrackingItem';
 import { TASK_CADENCES as CADENCES, TaskFields, taskSettingsSummary } from './TaskFields';
 import { createReminderDraft, GameReminders, reminderDraftChanged } from './GameReminders';
@@ -80,7 +80,7 @@ function GamePreview({ game, name, short }: { game: Game; name: string; short: s
   const ground = useGround();
   const colors: GameColors = { color: game.color, color2: game.color2, color3: game.color3 };
   const now = Date.now();
-  const server = serverRegionLabel(game.tz, now);
+  const server = gameServerLabel(game, now);
   // A name is never blank on a card, so it is never blank here either.
   const displayName = name.trim() || game.name.trim() || 'Untitled game';
   const displayShort = short.trim() || game.short.trim() || '?';

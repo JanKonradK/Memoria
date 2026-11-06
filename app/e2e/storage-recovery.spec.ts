@@ -15,6 +15,9 @@ test('failed local saves keep edits available for retry and backup', async ({ pa
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Add a game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
+  // No server is chosen for you: pick the game's first one.
+  await page.getByRole('combobox', { name: 'Server' }).click();
+  await page.getByRole('option').nth(1).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   const open = gameRow(page, 'Genshin Impact');

@@ -44,7 +44,7 @@ import { TaskFields, taskSettingsSummary } from './settings/TaskFields';
 import { Btn, Field, TextInput, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
 import { useGameDraft } from './game-detail/useGameDraft';
 import { useIdentityColors } from './roster';
-import { serverRegionLabel } from '../server-region';
+import { gameServerLabel } from '../server-choice';
 import { groupGameEvents } from '../event-category';
 import { calendarSchedule } from '../event-schedule';
 import { readingSource } from '../reading-source';
@@ -860,7 +860,7 @@ function GameControlsHeader({
   const completed = dailies.filter((daily) => daily.done).length;
   const accountLabel = game.accountLabel?.trim();
   const resetLabel = localResetLabel(game, localTz, now);
-  const regionLabel = serverRegionLabel(game.tz, now);
+  const regionLabel = gameServerLabel(game, now);
   return (
     <div className="game-card-heading relative z-10 flex items-center gap-3">
       {onBack && (

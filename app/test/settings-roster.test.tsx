@@ -46,8 +46,10 @@ describe('Settings game roster', () => {
         <GameRosterRow game={game()} colors={game()} localTz="Europe/Warsaw" />
       </ul>,
     );
-    fireEvent.click(screen.getByRole('radio', { name: 'NA' }));
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Server for Genshin Impact, Main' }), { key: 'Enter' });
+    fireEvent.click(screen.getByRole('option', { name: 'America (UTC−5)' }));
     expect(game().tz).toBe('Etc/GMT+5');
+    expect(game().server).toBe('na');
     expect(screen.getByRole('button', { name: 'Game settings for Genshin Impact, Main' })).toBeInTheDocument();
   });
 });

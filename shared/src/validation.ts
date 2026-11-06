@@ -105,6 +105,7 @@ const game = z.object({
   icon: z.string().max(64),
   image: z.string().max(MAX_GAME_IMAGE_LENGTH).regex(GAME_IMAGE_PATTERN).optional(),
   platform: z.enum(['pc', 'mobile', 'both']),
+  server: z.string().max(20).optional(),
   tz: z
     .string()
     .max(100)

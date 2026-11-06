@@ -8,6 +8,9 @@ test('game tracking controls keep energy, task, reset and reminder edits', async
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Add a game' }).click();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
+  // No server is chosen for you: pick the game's first one.
+  await page.getByRole('combobox', { name: 'Server' }).click();
+  await page.getByRole('option').nth(1).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   const openEditor = async () => {
@@ -33,7 +36,7 @@ test('game tracking controls keep energy, task, reset and reminder edits', async
   await dialog.getByLabel('Count target for Daily Commissions ×4').fill('4');
   await page.screenshot({ path: info.outputPath('task-editor.png') });
   await dialog.getByRole('tab', { name: 'Game', exact: true }).click();
-  await dialog.getByRole('combobox', { name: 'Server timezone' }).click();
+  await dialog.getByRole('combobox', { name: 'Server' }).click();
   await page.getByRole('option', { name: 'NIKKE, all regions (UTC+9)', exact: true }).click();
   await dialog.getByLabel('Daily reset hour', { exact: true }).fill('5');
   await dialog.getByRole('tab', { name: 'Reminders', exact: true }).click();
@@ -64,7 +67,7 @@ test('game tracking controls keep energy, task, reset and reminder edits', async
   await expect(dialog.getByLabel('Count target for Daily Commissions ×4')).toHaveValue('4');
   await dialog.getByRole('tab', { name: 'Game', exact: true }).click();
   await expect(dialog.getByLabel('Daily reset hour', { exact: true })).toHaveValue('5');
-  await expect(dialog.getByRole('combobox', { name: 'Server timezone' })).toContainText('NIKKE');
+  await expect(dialog.getByRole('combobox', { name: 'Server' })).toContainText('NIKKE');
   await dialog.getByRole('tab', { name: 'Reminders', exact: true }).click();
   await expect(dialog.getByText('Claim rewards before reset', { exact: true })).toBeVisible();
 });

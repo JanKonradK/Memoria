@@ -586,6 +586,7 @@ export interface AppStore {
     preset: GamePreset,
     over: {
       tz?: string;
+      server?: string;
       capOverrides?: Record<number, number>;
       name?: string;
       short?: string;
@@ -887,6 +888,7 @@ export const useApp = create<AppStore>((set, get) => ({
         titleFont: preset.titleFont,
         icon: preset.icon,
         platform: preset.platform,
+        server: over.server,
         tz: over.tz ?? preset.tz,
         dailyResetHour: preset.dailyResetHour,
         weeklyResetDay: preset.weeklyResetDay,

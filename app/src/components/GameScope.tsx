@@ -1,7 +1,7 @@
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { Select } from './ui';
-import { serverRegionLabel } from '../server-region';
+import { gameServerLabel } from '../server-choice';
 
 /** One selection follows the player across Calendar and Settings. */
 export function GameScope() {
@@ -22,7 +22,7 @@ export function GameScope() {
         <option value="">All games</option>
         {active.map((game) => (
           <option key={game.id} value={game.id}>
-            {game.name} · {serverRegionLabel(game.tz, Date.now())}
+            {game.name} · {gameServerLabel(game, Date.now())}
             {game.accountLabel ? ` · ${game.accountLabel}` : ''}
           </option>
         ))}

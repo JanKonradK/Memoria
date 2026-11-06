@@ -24,6 +24,9 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
         await page.getByRole('menuitem', { name: 'Add game', exact: true }).click();
       }
       await page.getByRole('button', { name: new RegExp(name) }).click();
+      // No server is chosen for you: pick the game's first one.
+      await page.getByRole('combobox', { name: 'Server' }).click();
+      await page.getByRole('option').nth(1).click();
       await page.getByRole('button', { name: `Add ${short}`, exact: true }).click();
       await expect(page.getByRole('dialog')).toHaveCount(0);
     }

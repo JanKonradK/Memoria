@@ -44,7 +44,10 @@ describe('Add another account', () => {
     fireEvent.click(screen.getByRole('button', { name: /Main EU/ }));
     fireEvent.change(screen.getByLabelText(/^Nickname/), { target: { value: 'Alt NA' } });
     fireEvent.change(screen.getByLabelText(/^Short name/), { target: { value: 'G2' } });
-    expect(screen.getByRole('combobox')).toHaveTextContent('HoYo/Kuro America (UTC-5)');
+    // No server is assumed for the new account; it waits for one.
+    expect(screen.getByRole('button', { name: 'Add account' })).toBeDisabled();
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Enter' });
+    fireEvent.click(screen.getByRole('option', { name: 'America (UTC−5)' }));
     fireEvent.click(screen.getByRole('button', { name: 'Add account' }));
 
     const state = useApp.getState().state;
