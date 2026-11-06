@@ -250,7 +250,9 @@ async function launch() {
   await page.context().addInitScript(() => {
     window.cspViolations = [];
     document.addEventListener('securitypolicyviolation', (event) =>
-      window.cspViolations.push(`${event.violatedDirective} ${event.blockedURI}`),
+      window.cspViolations.push(
+        `${event.violatedDirective} ${event.blockedURI} at ${event.sourceFile}:${event.lineNumber}:${event.columnNumber}`,
+      ),
     );
     try {
       window.localStorage.setItem('memoria-onboarding', 'complete');

@@ -9,6 +9,9 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <script>
+      // Before any module: the content policy forbids code generation, and Zod
+      // probes for it with new Function() the first time anything is parsed.
+      globalThis.__zod_globalConfig = Object.assign(globalThis.__zod_globalConfig || {}, { jitless: true });
       // Runs before first paint. A theme applied inside React flashes the dark
       // ground on a light-theme load, and the ground is the whole page.
       try {
