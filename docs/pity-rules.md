@@ -29,3 +29,16 @@ Sources:
 - HSR: https://gachawiki.com/honkai-star-rail/wiki/warps and https://github.com/OneBST/GGanalysis/blob/main/GGanalysis/games/honkai_star_rail/gacha_model.py
 - ZZZ: https://www.icy-veins.com/zenless-zone-zero/signal-search and https://github.com/OneBST/GGanalysis/blob/main/GGanalysis/games/zenless_zone_zero/gacha_model.py
 - WuWa: https://wutheringwaves.gg/convene-details/ and https://www.wutheringtools.com/convene
+
+## Paid passes in the savings forecast
+
+Turning on a pass in Savings adds its currency to the daily income, outside the free-content share. Values are in `PAID_PASSES` (shared/src/savings.ts):
+
+| Game      | Monthly pass                                            | Battle pass, per version (42 days)                            |
+| --------- | ------------------------------------------------------- | ------------------------------------------------------------- |
+| Genshin   | Blessing of the Welkin Moon: 90 a day + 300 on purchase | Gnostic Hymn: 680 Primogems + 4 Intertwined Fates             |
+| Star Rail | Express Supply Pass: 90 a day + 300 on purchase         | Nameless Glory: 680 Stellar Jade + 4 Star Rail Special Passes |
+| ZZZ       | Inter-Knot Membership: 90 a day + 300 on purchase       | New Eridu City Fund: 680 Polychrome                           |
+| WuWa      | Lunite Subscription: 90 a day + 300 on purchase         | Insider Channel: 680 Astrite                                  |
+
+Pull tickets count at the game's pull cost. ZZZ and WuWa battle pass tickets are left out until a current source confirms them.

@@ -9,8 +9,10 @@ test('Activity undoes dailies, keeps a later note and restores a deleted game', 
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await openGame(page, 'Genshin Impact');
-  await page.getByRole('button', { name: 'Complete dailies', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Undo dailies', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Complete all dailies for Genshin Impact', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Undo completing dailies for Genshin Impact', exact: true }),
+  ).toBeVisible();
   // A second independent edit must survive undo of the earlier bulk action.
   await page.evaluate(async () => {
     const path = '/src/store.ts';
@@ -47,7 +49,9 @@ test('Activity undoes dailies, keeps a later note and restores a deleted game', 
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await expect(gameRow(page, 'Genshin Impact')).toBeVisible();
   await openGame(page, 'Genshin Impact');
-  await expect(page.getByRole('button', { name: 'Complete dailies', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Complete all dailies for Genshin Impact', exact: true }),
+  ).toBeVisible();
   await expect(page.getByText('Keep my later note')).toBeVisible();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
   expect(overflow).toBe(false);

@@ -3,6 +3,9 @@ import { DateTime } from 'luxon';
 import {
   GameSavingsSchema,
   incomeRange,
+  PAID_PASSES,
+  paidPerDay,
+  type PaidPasses,
   MAX_SAVINGS_GOALS,
   pityRulesFor,
   planGoals,
@@ -28,7 +31,7 @@ import { useGround } from '../theme';
 import { assignGameInks } from '../game-color';
 import { uid } from '../util';
 import { rosterGames } from './roster';
-import { Btn, Field, GameBadge, NumInput, Segmented, Select, TextInput } from './ui';
+import { Btn, Field, GameBadge, NumInput, Segmented, Select, TextInput, Toggle } from './ui';
 import { ChartTip, fmt, niceMax, tickLabel, ticks } from './chart';
 
 /**
@@ -125,7 +128,9 @@ function SavingsCard({
   const currency = meta?.currency ?? 'Currency';
   const pullCost = savings?.pullCost ?? meta?.pullCost ?? FALLBACK_PULL_COST;
   const today = DateTime.fromMillis(now, { zone: tz }).toISODate() ?? '';
-  const income = useMemo(() => incomeRange(rows, today, savings?.perDay), [rows, today, savings?.perDay]);
+  const passes = presetKey ? PAID_PASSES[presetKey] : undefined;
+  const paid = paidPerDay(savings, passes, pullCost);
+  const income = useMemo(() => incomeRange(rows, today, savings?.perDay, paid), [rows, today, savings?.perDay, paid]);
   const [error, setError] = useState('');
   // Checked here, not just by the inputs: a value out of range must say so, not throw.
   const save = (next: GameSavings) => {
@@ -185,7 +190,7 @@ function SavingsCard({
         </p>
       )}
 
-      <Income savings={savings} income={income} currency={currency} onSave={save} />
+      <Income savings={savings} income={income} currency={currency} passes={passes} onSave={save} />
 
       {plans.length > 0 && (
         <>
@@ -290,11 +295,13 @@ function Income({
   savings,
   income,
   currency,
+  passes,
   onSave,
 }: {
   savings: GameSavings;
   income: IncomeRange;
   currency: string;
+  passes?: PaidPasses;
   onSave: (next: GameSavings) => void;
 }) {
   const [perDay, setPerDay] = useState(String(savings.perDay ?? ''));
@@ -309,6 +316,11 @@ function Income({
             {fmt(Math.round(income.high * savings.participation))}, from versions {income.versions[0]}–
             {income.versions.at(-1)}.
           </>
+        )}
+        {income.paid > 0 && (
+          <p className="mt-1">
+            Plus <strong className="text-fg">{fmt(Math.round(income.paid))}</strong> a day from passes you buy.
+          </p>
         )}
         {income.source !== 'history' && (
           <form
@@ -332,6 +344,23 @@ function Income({
           </form>
         )}
       </div>
+      {passes && (
+        <fieldset className="savings-passes">
+          <legend className="mb-1 block text-caption text-muted">You buy</legend>
+          <Toggle
+            className="text-meta"
+            label={`${passes.monthly.name}, every month`}
+            checked={Boolean(savings.monthlyPass)}
+            onChange={(on) => onSave({ ...savings, monthlyPass: on || undefined })}
+          />
+          <Toggle
+            className="text-meta"
+            label={`${passes.battle.name}, every version`}
+            checked={Boolean(savings.battlePass)}
+            onChange={(on) => onSave({ ...savings, battlePass: on || undefined })}
+          />
+        </fieldset>
+      )}
       <div>
         <span className="mb-1 block text-caption text-muted">Free content you do</span>
         <Segmented
@@ -519,7 +548,7 @@ function SavingsChart({
   const steps = 48;
   const at = (i: number) => start + ((end - start) * i) / steps;
   const series = (perDay: number) =>
-    Array.from({ length: steps + 1 }, (_, i) => pullsAt(savings, perDay, pullCost, at(i)));
+    Array.from({ length: steps + 1 }, (_, i) => pullsAt(savings, perDay, pullCost, at(i), income.paid));
   const [low, mid, high] = [series(income.low), series(income.mid), series(income.high)];
   const yMax = niceMax(Math.max(...high, ...future.map((plan) => plan.needed)) * 1.05);
   const plotW = Math.max(width - PAD.left - PAD.right, 1);

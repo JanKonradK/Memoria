@@ -42,7 +42,7 @@ describe('Add another account', () => {
     // Match on the account label: the preset grid below has its own Genshin
     // button, so /Genshin Impact/ alone is ambiguous.
     fireEvent.click(screen.getByRole('button', { name: /Main EU/ }));
-    fireEvent.change(screen.getByLabelText(/^Account label/), { target: { value: 'Alt NA' } });
+    fireEvent.change(screen.getByLabelText(/^Nickname/), { target: { value: 'Alt NA' } });
     fireEvent.change(screen.getByLabelText(/^Short name/), { target: { value: 'G2' } });
     expect(screen.getByRole('combobox')).toHaveTextContent('HoYo/Kuro America (UTC-5)');
     fireEvent.click(screen.getByRole('button', { name: 'Add account' }));

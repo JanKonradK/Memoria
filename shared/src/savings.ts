@@ -45,10 +45,58 @@ export const GameSavingsSchema = z.object({
   /** Free currency per day when Version history has none for this game. */
   perDay: z.number().min(0).max(1_000_000).optional(),
   goals: z.array(SavingsGoalSchema).max(MAX_SAVINGS_GOALS).default([]),
+  /** The player buys the monthly pass (Welkin Moon and the like) every month. */
+  monthlyPass: z.boolean().optional(),
+  /** The player buys the paid battle pass every version. */
+  battlePass: z.boolean().optional(),
 });
 
 export type SavingsGoal = z.infer<typeof SavingsGoalSchema>;
 export type GameSavings = z.infer<typeof GameSavingsSchema>;
+
+export interface PaidPasses {
+  monthly: { name: string; perDay: number; upfront: number };
+  battle: { name: string; currency: number; tickets: number };
+}
+
+/** A version lasts six weeks in each of these games. */
+export const VERSION_DAYS = 42;
+
+/**
+ * What each pass pays in premium currency (or limited pull tickets), per
+ * docs/pity-rules.md. The monthly pass's up-front crystals convert one for one.
+ */
+export const PAID_PASSES: Record<string, PaidPasses> = {
+  genshin: {
+    monthly: { name: 'Blessing of the Welkin Moon', perDay: 90, upfront: 300 },
+    battle: { name: 'Gnostic Hymn', currency: 680, tickets: 4 },
+  },
+  hsr: {
+    monthly: { name: 'Express Supply Pass', perDay: 90, upfront: 300 },
+    battle: { name: 'Nameless Glory', currency: 680, tickets: 4 },
+  },
+  zzz: {
+    monthly: { name: 'Inter-Knot Membership', perDay: 90, upfront: 300 },
+    battle: { name: 'New Eridu City Fund', currency: 680, tickets: 0 },
+  },
+  wuwa: {
+    monthly: { name: 'Lunite Subscription', perDay: 90, upfront: 300 },
+    battle: { name: 'Insider Channel', currency: 680, tickets: 0 },
+  },
+};
+
+/** Currency a day from the passes the player buys. Not scaled by participation: it is paid for. */
+export function paidPerDay(
+  savings: Pick<GameSavings, 'monthlyPass' | 'battlePass'> | undefined,
+  passes: PaidPasses | undefined,
+  pullCost: number,
+): number {
+  if (!savings || !passes) return 0;
+  let perDay = 0;
+  if (savings.monthlyPass) perDay += passes.monthly.perDay + passes.monthly.upfront / 30;
+  if (savings.battlePass) perDay += (passes.battle.currency + passes.battle.tickets * pullCost) / VERSION_DAYS;
+  return perDay;
+}
 
 /** Free currency per day: the lowest, middle and highest of recent versions. */
 export interface IncomeRange {
@@ -58,6 +106,8 @@ export interface IncomeRange {
   /** Versions the range was taken from, newest last. */
   versions: string[];
   source: 'history' | 'manual' | 'none';
+  /** Currency a day from passes the player buys, on top of the free range. */
+  paid: number;
 }
 
 function median(sorted: number[]): number {
@@ -70,7 +120,7 @@ function median(sorted: number[]): number {
  * `today` (YYYY-MM-DD), or the player's own figure. A running version's total
  * is still an estimate, so it waits until the version is over.
  */
-export function incomeRange(rows: VersionRow[], today: string, manualPerDay?: number): IncomeRange {
+export function incomeRange(rows: VersionRow[], today: string, manualPerDay?: number, paid = 0): IncomeRange {
   const recent = rows
     .filter((row) => row.perDay !== null && !!row.record.end && row.record.end < today)
     .slice(-SAVINGS_RECENT_VERSIONS);
@@ -82,31 +132,38 @@ export function incomeRange(rows: VersionRow[], today: string, manualPerDay?: nu
       high: rates.at(-1)!,
       versions: recent.map((row) => row.record.version),
       source: 'history',
+      paid,
     };
   }
   if (manualPerDay !== undefined) {
-    return { low: manualPerDay, mid: manualPerDay, high: manualPerDay, versions: [], source: 'manual' };
+    return { low: manualPerDay, mid: manualPerDay, high: manualPerDay, versions: [], source: 'manual', paid };
   }
-  return { low: 0, mid: 0, high: 0, versions: [], source: 'none' };
+  return { low: 0, mid: 0, high: 0, versions: [], source: 'none', paid };
 }
 
 export const savedPulls = (savings: Pick<GameSavings, 'currency' | 'tickets'>, pullCost: number) =>
   savings.tickets + Math.floor(savings.currency / pullCost);
 
-/** Currency expected on hand at `at`, for one daily rate. Never earns backwards in time. */
-export function currencyAt(savings: GameSavings, perDay: number, at: number): number {
+/** Currency expected on hand at `at`, for one free daily rate plus paid passes. Never earns backwards in time. */
+export function currencyAt(savings: GameSavings, perDay: number, at: number, paid = 0): number {
   const days = Math.max(0, (at - savings.takenAt) / DAY_MS);
-  return savings.currency + Math.floor(perDay * savings.participation * days);
+  return savings.currency + Math.floor((perDay * savings.participation + paid) * days);
 }
 
-export const pullsAt = (savings: GameSavings, perDay: number, pullCost: number, at: number) =>
-  savings.tickets + Math.floor(currencyAt(savings, perDay, at) / pullCost);
+export const pullsAt = (savings: GameSavings, perDay: number, pullCost: number, at: number, paid = 0) =>
+  savings.tickets + Math.floor(currencyAt(savings, perDay, at, paid) / pullCost);
 
 /** The first day the balance reaches `pulls`, or null if income cannot get there. */
-export function dateForPulls(savings: GameSavings, perDay: number, pullCost: number, pulls: number): number | null {
+export function dateForPulls(
+  savings: GameSavings,
+  perDay: number,
+  pullCost: number,
+  pulls: number,
+  paid = 0,
+): number | null {
   const needed = (pulls - savings.tickets) * pullCost - savings.currency;
   if (needed <= 0) return savings.takenAt;
-  const rate = perDay * savings.participation;
+  const rate = perDay * savings.participation + paid;
   if (rate <= 0) return null;
   return savings.takenAt + Math.ceil(needed / rate) * DAY_MS;
 }
@@ -136,7 +193,7 @@ export function planGoals(savings: GameSavings, income: IncomeRange, pullCost: n
     // A goal that has ended no longer holds any pulls back.
     if (goal.deadline >= now) reserved += goal.targetPulls;
     const needed = reserved;
-    const at = (perDay: number) => pullsAt(savings, perDay, pullCost, goal.deadline);
+    const at = (perDay: number) => pullsAt(savings, perDay, pullCost, goal.deadline, income.paid);
     const expected = { low: at(income.low), mid: at(income.mid), high: at(income.high) };
     const now_ = savedPulls(savings, pullCost);
     const status: GoalPlan['status'] =
@@ -154,7 +211,7 @@ export function planGoals(savings: GameSavings, income: IncomeRange, pullCost: n
       needed,
       expected,
       shortfall: Math.max(0, needed - expected.mid),
-      reachedAt: dateForPulls(savings, income.mid, pullCost, needed),
+      reachedAt: dateForPulls(savings, income.mid, pullCost, needed, income.paid),
       status,
     };
   });
