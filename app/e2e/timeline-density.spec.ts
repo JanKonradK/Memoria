@@ -104,7 +104,8 @@ test('24 events remain reachable in the rounded timeline board with controls in 
 test('the tour highlights live controls, walks pages, and finishes only once', async ({ page }, info) => {
   test.skip(!['desktop', 'mobile-390'].includes(info.project.name), 'Tour keyboard and phone flow');
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
+  // Skipping setup still opens the tour, over the empty app.
+  await page.getByRole('button', { name: 'Skip for now', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Pages' })).toBeVisible();
   await expect(page.locator('[data-tour-highlight]')).toBeVisible();
   await page.getByRole('button', { name: 'Next', exact: true }).click();
@@ -112,6 +113,9 @@ test('the tour highlights live controls, walks pages, and finishes only once', a
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Pages' })).toBeVisible();
   for (let i = 0; i < 5; i++) await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Pulls' })).toBeVisible();
+  await expect(page.locator('[data-tour="pulls"]')).toBeVisible();
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Settings' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Finish', exact: true })).toBeEnabled();
   await expect(page.locator('[data-tour="settings"]')).toBeVisible();

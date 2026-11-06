@@ -29,19 +29,19 @@ export function UserGuide({ open }: { open: boolean }) {
     () => [
       {
         title: 'Pages',
-        body: 'Today, Timeline and Settings.',
+        body: 'Today is what needs doing now. Timeline shows every event. Pulls plans your savings and pity.',
         target: '[data-tour="pages"]',
         tab: 'today',
       },
       {
         title: 'Add menu',
-        body: 'Add games, events and reminders.',
+        body: 'Add another game or account, an event, or a reminder.',
         target: '[data-tour="add"]',
         tab: 'today',
       },
       {
         title: 'Filter by game',
-        body: 'Show one game across pages. All games clears it.',
+        body: 'Show one game on every page. All games brings the rest back.',
         target: '[data-tour="focus"]',
         tab: 'timeline',
       },
@@ -49,14 +49,14 @@ export function UserGuide({ open }: { open: boolean }) {
         ? [
             {
               title: 'Energy',
-              body: 'Enter the value from your game. Use minus or quick spends after a run.',
+              body: 'Type the number your game shows. Memoria counts it up and warns you before it caps.',
               target: '[data-tour="resources"]',
               tab: 'home' as const,
               focus: true,
             },
             {
               title: 'Tasks',
-              body: 'Click a task when done. A red timer ring means it is ready again.',
+              body: 'Tick a task when you finish it. Tick all does every daily at once.',
               target: '[data-tour="tasks"]',
               tab: 'home' as const,
               focus: true,
@@ -65,7 +65,7 @@ export function UserGuide({ open }: { open: boolean }) {
         : []),
       {
         title: 'Timeline',
-        body: 'Every event by game. Open one to pin it, mark it done or edit it.',
+        body: 'Every event by game. Click one to open it; right-click to mark it done.',
         target: '[data-tour="timeline"]',
         tab: 'timeline',
       },
@@ -76,8 +76,14 @@ export function UserGuide({ open }: { open: boolean }) {
         tab: 'timeline',
       },
       {
+        title: 'Pulls',
+        body: 'Pick a game to see pulls saved, the passes you buy, your goals and your pity.',
+        target: '[data-tour="pulls"]',
+        tab: 'history',
+      },
+      {
         title: 'Settings',
-        body: 'Games, device sync, backups and updates. Replay this guide from here.',
+        body: 'Nicknames and servers, device sync, backups and updates. Replay this guide from here.',
         target: '[data-tour="settings"]',
         tab: 'settings',
       },

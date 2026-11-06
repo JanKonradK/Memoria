@@ -1,0 +1,133 @@
+/* First run: two quiet steps on the page ground, one column of choices. */
+.onboarding {
+  width: 100%;
+  max-width: 56rem;
+  min-height: 100dvh;
+  margin-inline: auto;
+  padding: 2.5rem 1rem 3rem;
+}
+@media (min-width: 640px) {
+  .onboarding {
+    padding: 4rem 1.25rem;
+  }
+}
+.onboarding-step {
+  margin-bottom: 0.5rem;
+}
+
+.onboarding-pc,
+.onboarding-tz {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  margin-top: 1.75rem;
+  padding: 1rem;
+  border-radius: var(--radius-ui-lg);
+  background: var(--color-fill-1);
+  box-shadow: inset 0 0 0 1px var(--color-line-hairline);
+}
+.onboarding-tz {
+  background: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.onboarding-games {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: 0.5rem;
+  margin-top: 1.75rem;
+}
+.onboarding-game {
+  display: flex;
+  width: 100%;
+  min-height: 4rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.875rem 0.5rem 0.5rem;
+  border-radius: var(--radius-ui-lg);
+  background: var(--color-fill-1);
+  box-shadow: inset 0 0 0 1px var(--color-line-hairline);
+  text-align: left;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    scale var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .onboarding-game:hover {
+    background: var(--color-fill-2);
+  }
+}
+.onboarding-game:active {
+  scale: 0.985;
+}
+.onboarding-game[aria-pressed='true'] {
+  background: var(--color-fill-2);
+  box-shadow: inset 0 0 0 1.5px var(--color-line-strong);
+}
+.onboarding-check {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1.5px var(--color-line-strong);
+  color: var(--color-fg-invert);
+}
+.onboarding-game[aria-pressed='true'] .onboarding-check {
+  background: var(--color-fg);
+  box-shadow: none;
+}
+
+.onboarding-setup {
+  display: grid;
+  margin-top: 1.75rem;
+  border-top: 1px solid var(--color-line);
+}
+.onboarding-setup-row {
+  display: grid;
+  gap: 0.75rem 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--color-line);
+}
+@media (min-width: 640px) {
+  .onboarding-setup-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .onboarding-setup-name {
+    grid-column: 1 / -1;
+  }
+}
+.onboarding-setup-name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+}
+.onboarding-field {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 0.25rem;
+}
+
+.onboarding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 2rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-game {
+    transition: none;
+  }
+}
+
+.onboarding-field > .ui-segmented {
+  justify-self: start;
+}

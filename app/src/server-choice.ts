@@ -1,4 +1,4 @@
-import { presetForGame, type Game } from '@memoria/shared';
+import { presetForGame } from '@memoria/shared';
 import { serverRegionLabel } from './server-region';
 
 /**
@@ -21,9 +21,12 @@ export const SERVER_OPTIONS = [
  * The server choices for one game. A game whose own Europe server follows
  * summer time (NTE) keeps that clock behind its EU choice, so picking EU never
  * moves its reset by an hour. A server outside the three is shown, disabled,
- * rather than quietly rounded to one of them.
+ * rather than quietly swapped for one of them.
  */
-export function serverChoices(game: Game, now = Date.now()): { value: string; label: string; disabled?: boolean }[] {
+export function serverChoices(
+  game: { name: string; short: string; presetKey?: string; tz: string },
+  now = Date.now(),
+): { value: string; label: string; disabled?: boolean }[] {
   const presetTz = presetForGame(game)?.tz;
   const ownEurope =
     presetTz && !presetTz.startsWith('Etc/') && serverRegionLabel(presetTz, now) === 'EU' ? presetTz : null;

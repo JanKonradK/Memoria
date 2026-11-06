@@ -754,6 +754,8 @@ function ChecklistControls({
 }) {
   const ground = useGround();
   const tickColor = gameInk(game, ground);
+  // Small text, so it needs body-text contrast, not the 3:1 a tick mark needs.
+  const actionInk = gameTitleInk(game, ground, 4.5);
   const completeDailies = useApp((store) => store.completeDailies);
   const undoActivity = useApp((store) => store.undoActivity);
   const history = useApp((store) => store.history);
@@ -777,7 +779,7 @@ function ChecklistControls({
                 <button
                   type="button"
                   className="-my-1.5 shrink-0 rounded-ui-sm px-2 py-1.5 text-caption font-semibold hover:bg-fill-2 focus-visible:bg-fill-2"
-                  style={{ color: tickColor }}
+                  style={{ color: actionInk }}
                   aria-label={`Undo completing dailies for ${game.name}`}
                   onClick={() => {
                     undoActivity(completedAction);
@@ -790,7 +792,7 @@ function ChecklistControls({
                 <button
                   type="button"
                   className="-my-1.5 shrink-0 rounded-ui-sm px-2 py-1.5 text-caption font-semibold hover:bg-fill-2 focus-visible:bg-fill-2"
-                  style={{ color: tickColor }}
+                  style={{ color: actionInk }}
                   aria-label={`Complete all dailies for ${game.name}`}
                   onClick={() => setCompletedAction(completeDailies(game.id))}
                 >
