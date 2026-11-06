@@ -1,30 +1,14 @@
-import { presetForGame, SERVER_TZ_OPTIONS } from '@memoria/shared';
+import { SERVER_TZ_OPTIONS } from '@memoria/shared';
 import { useState } from 'react';
 import { useApp } from '../store';
 import { useUI, type GameEditorSection } from '../ui-store';
-import { serverRegionLabel } from '../server-region';
+import { serverChoices } from '../server-choice';
 import { useGameDraft } from './game-detail/useGameDraft';
 import { GameEditor } from './settings/GameEditor';
 import { Sheet } from './Sheet';
 import { Btn, COMPACT_INPUT, Field, Segmented, Select, TextInput } from './ui';
 
 const ACCOUNT_DRAFT_FIELDS = ['accountLabel'] as const;
-
-/**
- * The three regions this control offers, left to right — the HoYo/Kuro rows of
- * SERVER_TZ_OPTIONS, which is where these strings come from.
- *
- * Mind the sign: `Etc/GMT-1` is UTC**+**1. The POSIX zones invert, which is the
- * trap documented alongside SERVER_TZ_OPTIONS itself. game-detail-draft.test.tsx
- * derives the same three from their real UTC offsets and asserts they match, so
- * a typo here fails a test rather than silently sending a European account to
- * the wrong reset hour.
- */
-const SERVER_OPTIONS = [
-  { value: 'Etc/GMT-1', label: 'EU' },
-  { value: 'Etc/GMT+5', label: 'NA' },
-  { value: 'Etc/GMT-8', label: 'Asia' },
-];
 
 /**
  * Everything about one game, in one place, reached from the card's own Edit
@@ -67,25 +51,7 @@ export function GameDetailSheet({
     commitDraft();
     closeSheet();
   };
-  // A game whose own Europe server follows summer time (NTE) keeps that clock
-  // behind its EU choice, so picking EU never moves its reset by an hour.
-  const presetTz = presetForGame(game)?.tz;
-  const ownEurope =
-    presetTz && !presetTz.startsWith('Etc/') && serverRegionLabel(presetTz, Date.now()) === 'EU' ? presetTz : null;
-  const regions = ownEurope
-    ? SERVER_OPTIONS.map((option) => (option.label === 'EU' ? { ...option, value: ownEurope } : option))
-    : SERVER_OPTIONS;
-  const knownServer = regions.some((option) => option.value === game.tz);
-  const serverOptions = knownServer
-    ? regions
-    : [
-        ...regions,
-        {
-          value: game.tz,
-          label: serverRegionLabel(game.tz, Date.now()),
-          disabled: true,
-        },
-      ];
+  const serverOptions = serverChoices(game);
 
   return (
     <Sheet
