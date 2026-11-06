@@ -43,8 +43,11 @@ jobs:
 
       # Proves the download can actually be assembled from this commit, so a
       # packaging break is caught on the PR that causes it rather than at tag
-      # time. The zip is not published from here.
+      # time. The zip is not published from here, so it is not signed: the
+      # publisher key is only given to the release workflow.
       - run: npm run package
+        env:
+          MEMORIA_SKIP_SIGNING: '1'
       - run: npm run build:single
       - run: npm exec -- playwright install chromium
       - run: npm run check:release

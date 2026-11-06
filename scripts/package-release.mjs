@@ -202,7 +202,10 @@ const otherSums = existsSync(sumsPath)
 writeFileSync(sumsPath, [...otherSums, `${digest}  ${ZIP_NAME}`, ''].join('\n'), 'utf8');
 
 const megabytes = (statSync(zipPath).size / 1024 / 1024).toFixed(1);
-signRelease(releaseDir);
+// CI's packaging check proves the zip builds; only the release workflow holds
+// the publisher key and signs (scripts/sign-release.mjs).
+if (process.env.MEMORIA_SKIP_SIGNING === '1') console.log('\nNot signed: packaging check only.');
+else signRelease(releaseDir);
 console.log(`\n${basename(zipPath)}  ${megabytes} MB`);
 console.log(`sha256  ${digest}`);
 console.log(`\nStaged tree: ${stageDir}`);
