@@ -20,7 +20,8 @@ use crate::store;
 
 const SOURCE: &str = include_str!("../../dist/core.js");
 /// The phone and the window refuse documents larger than this.
-pub const MAX_STATE_BYTES: usize = 1_000_000;
+/// Matches MAX_SYNC_BYTES in shared/src/types.ts.
+pub const MAX_STATE_BYTES: usize = 8_000_000;
 
 #[derive(Debug)]
 pub struct CoreError {
@@ -100,7 +101,7 @@ fn stopped() -> CoreError {
 
 fn run(state_file: PathBuf, inbox: mpsc::Receiver<Job>, changes: broadcast::Sender<()>) {
     let runtime = Runtime::new().expect("start QuickJS");
-    // A 1 MB document and its parsed copies stay far below this.
+    // An 8 MB document and its parsed copies stay far below this.
     runtime.set_memory_limit(512 * 1024 * 1024);
     runtime.set_max_stack_size(4 * 1024 * 1024);
     let context = Context::full(&runtime).expect("create a QuickJS context");
@@ -157,7 +158,7 @@ fn run(state_file: PathBuf, inbox: mpsc::Receiver<Job>, changes: broadcast::Send
                     if outgoing.len() > MAX_STATE_BYTES - 100 {
                         return Err(CoreError::new(
                             413,
-                            "Combined data exceeds the 1 MB sync limit. Export a backup and reduce old data.",
+                            "Combined data exceeds the 8 MB sync limit. Export a backup and reduce old data.",
                         ));
                     }
                     if changed {

@@ -1,10 +1,10 @@
-import { assertSyncProtocol } from '@memoria/shared';
+import { assertSyncProtocol, MAX_SYNC_BYTES } from '@memoria/shared';
 import { mergeState, normalizeState, safeParseAppState, type AppState } from '@memoria/shared';
 import { launcherFetch, servedByLauncher } from './launcher';
 import { useApp } from './store';
 
 /** The launcher refuses a larger document; warn before the write fails. */
-const SYNC_WARNING_BYTES = 900_000;
+const SYNC_WARNING_BYTES = MAX_SYNC_BYTES * 0.95;
 
 let syncing: Promise<void> | null = null;
 let syncAgain = false;
@@ -46,7 +46,7 @@ export async function syncNow(): Promise<void> {
   if (stateBytes > SYNC_WARNING_BYTES) {
     store.setSyncStatus(
       'error',
-      `Data is ${stateBytes.toLocaleString()} bytes, close to the 1 MB limit. Remove large images or old data.`,
+      `Data is ${stateBytes.toLocaleString()} bytes, close to the 8 MB limit. Remove large images or old data.`,
     );
     return;
   }

@@ -146,7 +146,7 @@ export function checkpoint(
   at: number,
   id: string,
 ): LocalHistory {
-  return { ...history, checkpoints: bounded([...history.checkpoints, { id, at, label, state }], 12, 4_000_000) };
+  return { ...history, checkpoints: bounded([...history.checkpoints, { id, at, label, state }], 12, 16_000_000) };
 }
 export function recordAction(
   history: LocalHistory,

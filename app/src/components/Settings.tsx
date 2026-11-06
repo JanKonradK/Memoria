@@ -37,6 +37,8 @@ import { Btn, NumInput, Page, TOUCH_BUTTON } from './ui';
 import '../today.css';
 import '../settings.css';
 
+const MAX_BACKUP_BYTES = 20_000_000;
+
 export function SettingsPage() {
   const state = useApp((store) => store.state);
   const syncStatus = useApp((store) => store.syncStatus);
@@ -98,8 +100,8 @@ export function SettingsPage() {
     const request = ++importRequest.current;
     setImportDraft(null);
     setStatusMessage('');
-    if (file.size > 1_000_000) {
-      setStatusMessage('Import failed: backup is over 1 MB.');
+    if (file.size > MAX_BACKUP_BYTES) {
+      setStatusMessage('Import failed: backup is over 20 MB.');
       return;
     }
     void file

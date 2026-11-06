@@ -20,8 +20,8 @@ import {
 
 const SNAPSHOTS_KEPT_PER_RESOURCE = 200;
 export const TOMBSTONE_RETENTION_MS = 90 * 86_400_000;
-// Completion history is not rendered today. Bounding it protects the 1 MB sync
-// document, but a future streak/history feature will need a separate durable model.
+// Completion history is not rendered today. Bounding it keeps the synced document
+// under its size limit, but a future streak/history feature will need a separate durable model.
 export const COMPLETION_RETENTION_MS = 120 * 86_400_000;
 
 function canonical(value: unknown): string {

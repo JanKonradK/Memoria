@@ -167,7 +167,7 @@ The owner asked for real features instead of the small ones above. Two were buil
 
 - Schema 10 uses a hybrid logical clock (HLC) to order record changes. The HLC contains `wall`, `counter` and `device`. New changes use received clocks, including after clock rollback. Migration gives old records a deterministic HLC and “Unknown device”. Readings now support tombstones.
 - The local journal keeps a maximum of 500 actions, with a 4 MB limit. Each action contains the records before and after the change. State, device clock, journal and checkpoints use one atomic IndexedDB write. The PC core uses one atomic file write. Sync and backup exports exclude local history.
-- The app keeps a maximum of 12 checkpoints, with a 4 MB limit. It saves checkpoints each day and before migrations, imports and sync merges. Restore creates new changes and tombstones. The next sync keeps the restored result.
+- The app keeps a maximum of 12 checkpoints, with a 16 MB limit. Devices sync up to 8 MB of data. It saves checkpoints each day and before migrations, imports and sync merges. Restore creates new changes and tombstones. The next sync keeps the restored result.
 - Settings → Activity shows changes, source devices, Undo and deleted-item recovery. A deleted game returns with its tasks, readings, completions and events. Undo keeps fields that later actions changed.
 - Complete dailies marks daily checkbox tasks only. Activity also supplies Undo for this action.
 - LAN, launcher, cloud-file sync and backup import reject older protocols before a write. Update both devices together. Local data from older versions still migrates.
