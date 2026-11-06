@@ -430,12 +430,14 @@ try {
   };
   const paired = await encrypted('/pair', { code: wifi.code, name: 'Check phone' });
   expect(paired.deviceId).toBeTruthy();
-  await expect(page.getByText('Device connected', { exact: true })).toBeVisible();
+  await expect(page.getByText('Check phone', { exact: true })).toBeVisible();
   const phoneState = readState();
   phoneState.games[0].name = 'Phone archive';
   phoneState.games[0].updatedAt = Date.now();
   const phoneSync = await encrypted('/sync', { state: phoneState });
   expect(phoneSync.state).toBeTruthy();
+  expect(phoneSync.devices.map((device) => device.name)).toEqual(['Check phone']);
+  await expect(page.getByText('Connected', { exact: true })).toBeVisible({ timeout: 10_000 });
   await page.getByRole('button', { name: 'Today', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Phone archive', exact: true })).toBeVisible({ timeout: 15_000 });
 
