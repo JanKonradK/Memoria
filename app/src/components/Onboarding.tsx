@@ -1,4 +1,4 @@
-import { detectLocalTz, PRESETS } from '@memoria/shared';
+import { detectLocalTz, PRESETS, SERVER_TZ_OPTIONS } from '@memoria/shared';
 import { useState } from 'react';
 import { isNativeApp } from '../native';
 import { useApp } from '../store';
@@ -9,7 +9,7 @@ import { useUI } from '../ui-store';
 import { intOr } from '../util';
 import { GameLogo } from './GameLogo';
 import { HomeTimeZoneField } from './HomeTimeZoneField';
-import { Btn, NumInput } from './ui';
+import { Btn, NumInput, Select, TextInput } from './ui';
 
 export function Onboarding({ onComplete }: { onComplete: () => void }) {
   const addGameFromPreset = useApp((store) => store.addGameFromPreset);
@@ -20,6 +20,8 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
   const [homeTzChoice, setHomeTzChoice] = useState(SYSTEM_TIMEZONE_VALUE);
   const [selected, setSelected] = useState<string[]>([]);
   const [energy, setEnergy] = useState<Record<string, string>>({});
+  const [servers, setServers] = useState<Record<string, string>>({});
+  const [nicknames, setNicknames] = useState<Record<string, string>>({});
   const chosenTz = homeTzChoice === SYSTEM_TIMEZONE_VALUE ? detectedTz : homeTzChoice;
 
   const finish = () => {
@@ -27,7 +29,10 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
     for (const key of selected) {
       const preset = PRESETS.find((item) => item.key === key);
       if (!preset) continue;
-      const gameId = addGameFromPreset(preset, {});
+      const gameId = addGameFromPreset(preset, {
+        tz: servers[key] || undefined,
+        accountLabel: nicknames[key]?.trim() || undefined,
+      });
       const resource = useApp
         .getState()
         .state.resources.find((item) => item.gameId === gameId && !item.deleted && item.regenMinutes > 0);
@@ -111,16 +116,45 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
                 </span>
               </button>
               {active && (
-                <label className="mt-3 block text-label font-semibold text-muted">
-                  Current {game.resources[0]?.name ?? 'energy'}
-                  <NumInput
-                    className="mt-1"
-                    min={0}
-                    max={game.resources[0]?.cap}
-                    value={energy[game.key] ?? ''}
-                    onChange={(event) => setEnergy({ ...energy, [game.key]: event.target.value })}
-                  />
-                </label>
+                <div className="mt-3 space-y-2">
+                  <label className="block text-label font-semibold text-muted">
+                    Server
+                    <Select
+                      className="mt-1"
+                      aria-label={`${game.name} server`}
+                      value={servers[game.key] ?? game.tz}
+                      onChange={(event) => setServers({ ...servers, [game.key]: event.target.value })}
+                    >
+                      {SERVER_TZ_OPTIONS.map((option) => (
+                        <option key={option.tz} value={option.tz}>
+                          {option.label}
+                        </option>
+                      ))}
+                      {!SERVER_TZ_OPTIONS.some((option) => option.tz === game.tz) && (
+                        <option value={game.tz}>{game.tz}</option>
+                      )}
+                    </Select>
+                  </label>
+                  <label className="block text-label font-semibold text-muted">
+                    Nickname (optional)
+                    <TextInput
+                      className="mt-1"
+                      placeholder="Your in-game name"
+                      value={nicknames[game.key] ?? ''}
+                      onChange={(event) => setNicknames({ ...nicknames, [game.key]: event.target.value })}
+                    />
+                  </label>
+                  <label className="block text-label font-semibold text-muted">
+                    Current {game.resources[0]?.name ?? 'energy'}
+                    <NumInput
+                      className="mt-1"
+                      min={0}
+                      max={game.resources[0]?.cap}
+                      value={energy[game.key] ?? ''}
+                      onChange={(event) => setEnergy({ ...energy, [game.key]: event.target.value })}
+                    />
+                  </label>
+                </div>
               )}
             </section>
           );

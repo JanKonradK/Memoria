@@ -138,12 +138,15 @@ function ChecklistGroupRule({
   total,
   resetAt,
   now,
+  action,
 }: {
   cadence: ChecklistItem['cadence'];
   done: number;
   total: number;
   resetAt: number | null;
   now: number;
+  /** A small control at the end of the rule, such as ticking every daily at once. */
+  action?: ReactNode;
 }) {
   const left = resetAt == null ? null : resetAt - now;
   const complete = done >= total;
@@ -165,6 +168,7 @@ function ChecklistGroupRule({
           <span className={`shrink-0 text-caption tabular-nums ${tone}`}>{fmtDur(left)}</span>
         </Tooltip>
       )}
+      {action}
     </BandRule>
   );
 }
@@ -760,24 +764,6 @@ function ChecklistControls({
   const groups = groupChecklist(checklist);
   return (
     <div data-tour="tasks" className="mt-3.5">
-      <div className="flex flex-wrap gap-2">
-        {canComplete && (
-          <Btn className={TOUCH_BUTTON} onClick={() => setCompletedAction(completeDailies(game.id))}>
-            Complete dailies
-          </Btn>
-        )}
-        {canUndo && (
-          <Btn
-            className={TOUCH_BUTTON}
-            onClick={() => {
-              undoActivity(completedAction);
-              setCompletedAction(undefined);
-            }}
-          >
-            Undo dailies
-          </Btn>
-        )}
-      </div>
       {groups.map((group) => (
         <section key={group.cadence} aria-label={`${CADENCE_LABEL[group.cadence]} tasks for ${game.name}`}>
           <ChecklistGroupRule
@@ -786,6 +772,32 @@ function ChecklistControls({
             total={group.items.length}
             resetAt={group.resetAt}
             now={now}
+            action={
+              group.cadence !== 'daily' ? undefined : canUndo ? (
+                <button
+                  type="button"
+                  className="-my-1.5 shrink-0 rounded-ui-sm px-2 py-1.5 text-caption font-semibold hover:bg-fill-2 focus-visible:bg-fill-2"
+                  style={{ color: tickColor }}
+                  aria-label={`Undo completing dailies for ${game.name}`}
+                  onClick={() => {
+                    undoActivity(completedAction);
+                    setCompletedAction(undefined);
+                  }}
+                >
+                  Undo
+                </button>
+              ) : canComplete ? (
+                <button
+                  type="button"
+                  className="-my-1.5 shrink-0 rounded-ui-sm px-2 py-1.5 text-caption font-semibold hover:bg-fill-2 focus-visible:bg-fill-2"
+                  style={{ color: tickColor }}
+                  aria-label={`Complete all dailies for ${game.name}`}
+                  onClick={() => setCompletedAction(completeDailies(game.id))}
+                >
+                  Tick all
+                </button>
+              ) : undefined
+            }
           />
           <div className="mt-0.5 space-y-0.5">
             {group.items.map((item) => (

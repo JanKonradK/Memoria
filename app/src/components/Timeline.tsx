@@ -861,7 +861,17 @@ export function ReorderableEventRows({
         e.stopPropagation();
       }}
       onContextMenu={(e) => {
-        if (hold.current || gesture.current) e.preventDefault();
+        if (hold.current || gesture.current) {
+          e.preventDefault();
+          return;
+        }
+        // Right-click ticks an event off (or back on). A long press on touch is the reorder gesture.
+        if ((e.nativeEvent as PointerEvent).pointerType === 'touch') return;
+        const id = (e.target as HTMLElement).closest<HTMLElement>('[data-timeline-event-row]')?.dataset.eventId;
+        const event = id ? events.find((item) => item.id === id) : undefined;
+        if (!event) return;
+        e.preventDefault();
+        rowProps.onToggleEvent(event);
       }}
       onPointerMove={(e) => {
         const pending = hold.current;

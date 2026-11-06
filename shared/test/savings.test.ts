@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   currencyAt,
+  PAID_PASSES,
+  paidPerDay,
   dateForPulls,
   GameSavingsSchema,
   incomeRange,
@@ -81,7 +83,7 @@ describe('savings planner', () => {
     });
     const [old, first, second] = planGoals(
       plan,
-      { low: 160, mid: 240, high: 320, versions: [], source: 'history' },
+      { low: 160, mid: 240, high: 320, versions: [], source: 'history', paid: 0 },
       160,
       T0,
     );
@@ -117,5 +119,17 @@ describe('savings and older apps', () => {
     const v8 = { schemaVersion: 8, games: [makeGame({ id: 'g' })] };
     expect((migrateState(v8) as { schemaVersion: number }).schemaVersion).toBe(10);
     expect(() => migrateState({ schemaVersion: 11 })).toThrow(/newer version/);
+  });
+});
+
+describe('paid passes', () => {
+  it('adds the monthly and battle pass to income, outside the free-content share', () => {
+    const passes = PAID_PASSES.genshin;
+    expect(paidPerDay({ monthlyPass: true }, passes, 160)).toBe(100);
+    expect(paidPerDay({ battlePass: true }, passes, 160)).toBeCloseTo((680 + 4 * 160) / 42);
+    expect(paidPerDay({}, passes, 160)).toBe(0);
+    const savings = { currency: 0, tickets: 0, takenAt: 0, participation: 0.5, goals: [] };
+    // 10 days: free 200/day at half share, plus 100/day paid.
+    expect(currencyAt(savings, 200, 10 * 86_400_000, 100)).toBe(2000);
   });
 });

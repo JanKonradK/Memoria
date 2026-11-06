@@ -35,6 +35,16 @@ export function AddGameSheet({ open }: { open: boolean }) {
     return preset ? [{ game, preset }] : [];
   });
   const sourceEnergyResource = sourcePreset?.resources.find((resource) => resource.regenMinutes > 0);
+  const pickedEnergyResource = picked?.resources.find((resource) => resource.regenMinutes > 0);
+
+  const applyEnergy = (gameId: string) => {
+    const entered = energy.trim();
+    if (entered === '') return;
+    const resource = useApp
+      .getState()
+      .state.resources.find((item) => item.gameId === gameId && !item.deleted && item.regenMinutes > 0);
+    if (resource) setEnergy(resource.id, Math.min(resource.cap, Math.max(0, intOr(entered, 0))));
+  };
 
   const close = () => {
     // The keyed sheet unmounts after its exit. Keep its current form visible
@@ -49,7 +59,12 @@ export function AddGameSheet({ open }: { open: boolean }) {
       const n = intOr(v, 0);
       if (n > 0) capOverrides[Number(i)] = n;
     }
-    addGameFromPreset(picked, { tz: tz || undefined, capOverrides });
+    const gameId = addGameFromPreset(picked, {
+      tz: tz || undefined,
+      capOverrides,
+      accountLabel: accountLabel.trim() || undefined,
+    });
+    applyEnergy(gameId);
     close();
   };
 
@@ -61,13 +76,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
       short: short.trim() || sourceGame.short,
       name: sourceGame.name,
     });
-    const entered = energy.trim();
-    if (entered !== '') {
-      const resource = useApp
-        .getState()
-        .state.resources.find((item) => item.gameId === gameId && !item.deleted && item.regenMinutes > 0);
-      if (resource) setEnergy(resource.id, Math.min(resource.cap, Math.max(0, intOr(entered, 0))));
-    }
+    applyEnergy(gameId);
     close();
   };
 
@@ -153,7 +162,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
       ) : sourceGame && sourcePreset ? (
         <>
           <div className="space-y-3">
-            <Field label="Account label">
+            <Field label="Nickname">
               <TextInput
                 placeholder="e.g. Alt NA"
                 value={accountLabel}
@@ -163,7 +172,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
             <Field label="Short name">
               <TextInput maxLength={4} value={short} onChange={(event) => setShort(event.target.value)} />
             </Field>
-            <Field label="Server timezone">
+            <Field label="Server">
               <Select value={tz} onChange={(event) => setTz(event.target.value)}>
                 {SERVER_TZ_OPTIONS.map((option) => (
                   <option key={option.tz} value={option.tz}>
@@ -205,7 +214,14 @@ export function AddGameSheet({ open }: { open: boolean }) {
             <p className="surface-notice surface-notice-warn mb-4 text-meta text-warn-fg">{picked.notes}</p>
           )}
           <div className="space-y-3">
-            <Field label="Server timezone">
+            <Field label="Nickname (optional)">
+              <TextInput
+                placeholder="Your in-game name, or e.g. Main EU"
+                value={accountLabel}
+                onChange={(event) => setAccountLabel(event.target.value)}
+              />
+            </Field>
+            <Field label="Server">
               <Select value={tz} onChange={(e) => setTz(e.target.value)}>
                 {SERVER_TZ_OPTIONS.map((o) => (
                   <option key={o.tz} value={o.tz}>
@@ -223,12 +239,25 @@ export function AddGameSheet({ open }: { open: boolean }) {
                 />
               </Field>
             ))}
+            {pickedEnergyResource && (
+              <Field label={`Current ${pickedEnergyResource.name} (optional)`}>
+                <NumInput min={0} value={energy} onChange={(event) => setEnergyInput(event.target.value)} />
+              </Field>
+            )}
             <p className="text-label text-dim">
               Daily reset {String(picked.dailyResetHour).padStart(2, '0')}:00 server time
             </p>
           </div>
           <div className="mt-5 flex gap-2">
-            <Btn onClick={() => setPicked(null)}>← Back</Btn>
+            <Btn
+              onClick={() => {
+                setPicked(null);
+                setAccountLabel('');
+                setEnergyInput('');
+              }}
+            >
+              ← Back
+            </Btn>
             <Btn kind="primary" onClick={confirm}>
               Add {picked.short}
             </Btn>

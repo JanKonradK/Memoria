@@ -11,6 +11,7 @@ import { selectTodayAgenda, TODAY_AGENDA_HOURS, type TodayAgendaItem } from '../
 import { gameInk } from '../game-color';
 import { gameShellVars, useGround, useTheme } from '../theme';
 import { openGame } from '../workspace-navigation';
+import { isDesktopApp } from '../desktop-host';
 import { readingSource } from '../reading-source';
 import { useIdentityColors } from './roster';
 import { GameControls } from './GameCard';
@@ -289,7 +290,7 @@ export function TodayPage({ now }: { now: number }) {
             <Btn kind="primary" onClick={() => openSheet({ kind: 'addGame' })}>
               Add a game
             </Btn>
-            <Btn onClick={() => useUI.getState().openSettings('sync')}>Connect to PC</Btn>
+            {!isDesktopApp() && <Btn onClick={() => useUI.getState().openSettings('sync')}>Connect to PC</Btn>}
           </div>
         </section>
       ) : (

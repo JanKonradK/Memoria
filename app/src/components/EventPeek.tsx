@@ -100,7 +100,11 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
             kind="primary"
             className={TOUCH_BUTTON}
             aria-pressed={Boolean(event.done)}
-            onClick={() => setProgress(event.done ? 'none' : 'done')}
+            onClick={() => {
+              setProgress(event.done ? 'none' : 'done');
+              // Marking done is the last thing you do here; undoing keeps the sheet open.
+              if (!event.done) closeSheet();
+            }}
           >
             {event.done ? 'Done — undo' : 'Mark done'}
           </Btn>
