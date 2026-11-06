@@ -56,6 +56,8 @@ try {
   await standalone.goto(pathToFileURL(join(root, 'app/dist-single/Memoria.html')).href);
   await standalone.getByRole('button', { name: 'Add a game' }).click();
   await standalone.getByRole('button', { name: /Genshin Impact/ }).click();
+  await standalone.getByRole('combobox', { name: 'Server' }).click();
+  await standalone.getByRole('option', { name: /^Europe/ }).click();
   await standalone.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await standalone.getByRole('button', { name: 'Review Genshin Impact', exact: true }).click();
   await expect(standalone.getByRole('heading', { name: 'Genshin Impact', exact: true })).toBeVisible();
