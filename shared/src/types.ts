@@ -13,6 +13,8 @@ export interface Hlc {
   device: string;
 }
 export const MAX_GAME_IMAGE_LENGTH = 200_000;
+/** The largest document devices sync with each other. The PC enforces the same number (desktop/tauri/src/core.rs). */
+export const MAX_SYNC_BYTES = 8_000_000;
 /**
  * A game image is always an embedded picture. A web address would load from
  * someone else's server whenever the card shows, revealing the viewer's IP,

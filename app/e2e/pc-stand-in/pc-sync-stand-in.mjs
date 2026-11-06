@@ -11,7 +11,7 @@ import { networkInterfaces } from 'node:os';
 import { rejectRequestBody } from './http-response.mjs';
 
 export const LAN_PORT = 17820;
-const MAX_BYTES = 1_000_000;
+const MAX_BYTES = 8_000_000;
 const CODE_TTL = 5 * 60_000;
 const hash = (value) => Buffer.from(sha256(value)).toString('hex');
 const fail = (status, message) => Object.assign(new Error(message), { status });

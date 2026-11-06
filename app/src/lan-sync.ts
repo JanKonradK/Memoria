@@ -1,4 +1,4 @@
-import { assertSyncProtocol } from '@memoria/shared';
+import { assertSyncProtocol, MAX_SYNC_BYTES } from '@memoria/shared';
 import {
   newDeviceKey,
   devicePublicKey,
@@ -353,8 +353,8 @@ export async function syncLanNow(): Promise<void> {
   const connection = pair;
   const current = generation;
   const sent = useApp.getState().state;
-  if (new TextEncoder().encode(JSON.stringify({ state: sent })).byteLength > 1_000_000) {
-    setStatus('error', 'Data is over the 1 MB sync limit.');
+  if (new TextEncoder().encode(JSON.stringify({ state: sent })).byteLength > MAX_SYNC_BYTES) {
+    setStatus('error', 'Data is over the 8 MB sync limit.');
     return;
   }
   let complete!: () => void;
