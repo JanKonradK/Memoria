@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { DateTime } from 'luxon';
 import {
   addPulls,
@@ -18,11 +18,8 @@ import {
 } from '@memoria/shared';
 import { useApp } from '../store';
 import { useElementWidth } from '../hooks';
-import { useGround } from '../theme';
-import { assignGameInks } from '../game-color';
 import { uid } from '../util';
-import { rosterGames } from './roster';
-import { Btn, Field, GameBadge, NumInput, Segmented, TextInput } from './ui';
+import { Btn, Field, NumInput, Segmented, TextInput } from './ui';
 import { ChartTip, fmt } from './chart';
 
 /**
@@ -38,41 +35,20 @@ const OUTCOME_LABEL: Record<PityFiveStar['outcome'], string> = {
   standard: '5★',
 };
 
-export function PityView() {
-  const state = useApp((s) => s.state);
-  const ground = useGround();
-  const games = useMemo(() => rosterGames(state.games), [state.games]);
-  const inks = useMemo(() => assignGameInks(games, ground), [games, ground]);
-  const tracked = games.filter((game) => pityRulesFor(presetForGame(game)?.key).length > 0);
-  const untracked = games.filter((game) => !tracked.includes(game));
-
-  if (tracked.length === 0)
-    return (
-      <p className="py-8 text-center text-body text-dim">
-        Pity tracking covers Genshin Impact, Honkai: Star Rail, Zenless Zone Zero and Wuthering Waves. Add one of them
-        to start.
-      </p>
-    );
-
-  return (
-    <div className="savings-list">
-      {tracked.map((game) => (
-        <PityCard key={game.id} game={game} ink={inks[game.id]!} tz={state.settings.localTz} />
-      ))}
-      <p className="mt-6 text-caption text-dim">
-        Hard pity and 50/50 odds are each game’s published rules. “About” figures use the community-measured soft-pity
-        curve, so they are estimates. Memoria does not read your in-game history: record pulls here as you make them.
-        {untracked.length > 0 && ` No pity rules yet for ${untracked.map((game) => game.short).join(', ')}.`}
-      </p>
-    </div>
-  );
+/** Games Memoria has no pity rules for, so the page can say so. */
+export function hasPityRules(game: Game): boolean {
+  return pityRulesFor(presetForGame(game)?.key).length > 0;
 }
 
-function PityCard({ game, ink, tz }: { game: Game; ink: string; tz: string }) {
+/**
+ * One account's pity: a panel per banner track. The player taps in pulls as
+ * they make them and records each 5★; Memoria keeps the count, the 50/50
+ * guarantee and a log of where 5★s landed.
+ */
+export function GamePityPanel({ game, ink, tz }: { game: Game; ink: string; tz: string }) {
   const updateGame = useApp((s) => s.updateGame);
   const rules = pityRulesFor(presetForGame(game)?.key);
   const [error, setError] = useState('');
-  const title = game.accountLabel ? `${game.name} · ${game.accountLabel}` : game.name;
   const save = (rule: PityRule, track: PityTrack) => {
     const next: GamePity = { tracks: { ...game.pity?.tracks, [rule.id]: track } };
     const parsed = GamePitySchema.safeParse(next);
@@ -83,18 +59,24 @@ function PityCard({ game, ink, tz }: { game: Game; ink: string; tz: string }) {
     setError('');
     updateGame(game.id, { pity: parsed.data });
   };
+  if (rules.length === 0)
+    return (
+      <div className="pulls-panel">
+        <h2 className="pulls-panel-heading text-lead font-semibold text-fg">Pity</h2>
+        <p className="text-meta text-muted">
+          Pity tracking covers Genshin Impact, Honkai: Star Rail, Zenless Zone Zero and Wuthering Waves.
+        </p>
+      </div>
+    );
   return (
-    <section className="savings-card" aria-label={title}>
-      <h2 className="flex items-center gap-2 text-body font-semibold text-fg">
-        <GameBadge short={game.short} color={game.color} color2={game.color2} color3={game.color3} size="sm" />
-        {title}
-      </h2>
+    <div className="pulls-panel">
+      <h2 className="pulls-panel-heading text-lead font-semibold text-fg">Pity</h2>
       {error && (
         <p role="alert" className="mt-2 text-meta text-danger-fg">
           {error}
         </p>
       )}
-      <div className="pity-tracks mt-3">
+      <div className="pity-tracks">
         {rules.map((rule) => (
           <PityTrackPanel
             key={rule.id}
@@ -106,7 +88,11 @@ function PityCard({ game, ink, tz }: { game: Game; ink: string; tz: string }) {
           />
         ))}
       </div>
-    </section>
+      <p className="mt-4 text-caption text-dim">
+        Hard pity and 50/50 odds are the game’s published rules. “About” figures use the community-measured soft-pity
+        curve. Memoria does not read your in-game history: record pulls here as you make them.
+      </p>
+    </div>
   );
 }
 
