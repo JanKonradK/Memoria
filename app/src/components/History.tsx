@@ -8,20 +8,17 @@ import {
   type VersionRow,
 } from '@memoria/shared';
 import { useApp } from '../store';
-import { useElementWidth } from '../hooks';
+import { useElementWidth, useNow } from '../hooks';
 import { useGround } from '../theme';
 import { assignGameInks } from '../game-color';
-import { Page, SectionTitle, Segmented } from './ui';
-import { SavingsView } from './Savings';
-import { PityView } from './Pity';
+import { Page, SectionTitle } from './ui';
+import { GameSavingsPanel, useOpenBanners } from './Savings';
+import { GamePityPanel } from './Pity';
+import { GameLogo } from './GameLogo';
+import { rosterGames } from './roster';
+import { useUI } from '../ui-store';
 import { ChartTip, fmt, Legend, niceMax, shortDate, signed, tickLabel, ticks } from './chart';
 import '../history.css';
-
-/**
- * The Pulls page: Savings (can I afford my next banner?) and Version history
- * (what did each version give a free player?). The history file loads only when
- * this page opens, so the timeline never carries years of old patches.
- */
 
 interface GameMeta {
   key: string;
@@ -56,48 +53,122 @@ export function useHistory(): { history: VersionHistory | null; error: string } 
   return result;
 }
 
-type PullsView = 'savings' | 'pity' | 'history';
+const HISTORY = 'history';
+const PICK_KEY = 'memoria-pulls-view';
 
-const VIEW_TEXT: Record<PullsView, { title: string; lead: string }> = {
-  savings: {
-    title: 'Savings',
-    lead: 'How many pulls you have, and how many you can expect by each banner you are saving for.',
-  },
-  pity: {
-    title: 'Pity',
-    lead: 'Pulls since your last 5★ on each banner, whether the next one is guaranteed, and where past 5★s landed.',
-  },
-  history: {
-    title: 'Version history',
-    lead: 'Free premium currency each version gave a player who spends nothing, version by version.',
-  },
-};
+function readPick(): string | null {
+  try {
+    return localStorage.getItem(PICK_KEY);
+  } catch {
+    return null;
+  }
+}
 
+/**
+ * The Pulls page: one game at a time — its savings and its pity side by side —
+ * or Version history (what did each version give a free player?). The history
+ * file loads only when this page opens, so the timeline never carries years of
+ * old patches.
+ */
 export function PullsPage() {
   const loaded = useHistory();
-  const [view, setView] = useState<PullsView>('savings');
+  const state = useApp((s) => s.state);
+  const focusedGameId = useUI((ui) => ui.focusedGameId);
+  const ground = useGround();
+  const now = useNow(60_000);
+  const games = useMemo(() => rosterGames(state.games), [state.games]);
+  const inks = useMemo(() => assignGameInks(games, ground), [games, ground]);
+  const banners = useOpenBanners(now);
+  const [pick, setPick] = useState<string | null>(() => focusedGameId ?? readPick());
+  const choose = (value: string) => {
+    setPick(value);
+    try {
+      localStorage.setItem(PICK_KEY, value);
+    } catch {
+      // Remembering the choice is a convenience; the page works without it.
+    }
+  };
+  // Focusing a game elsewhere in the app brings it up here; a chip still switches away.
+  useEffect(() => {
+    if (focusedGameId) setPick(focusedGameId);
+  }, [focusedGameId]);
+  const view = pick === HISTORY || games.some((game) => game.id === pick) ? pick! : (games[0]?.id ?? HISTORY);
+  const game = games.find((candidate) => candidate.id === view);
+  // Two accounts of one game share a short name; the nickname tells them apart.
+  const shortCount = new Map<string, number>();
+  for (const g of games) shortCount.set(g.short, (shortCount.get(g.short) ?? 0) + 1);
+  const options = [
+    ...games.map((g) => ({
+      value: g.id,
+      label: (shortCount.get(g.short) ?? 0) > 1 && g.accountLabel ? `${g.short} · ${g.accountLabel}` : g.short,
+      game: g,
+    })),
+    { value: HISTORY, label: 'Version history', game: undefined },
+  ];
+  const title = game ? (game.accountLabel ? `${game.name} · ${game.accountLabel}` : game.name) : 'Version history';
+
   return (
     <Page className="history-page">
-      <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-title font-semibold text-fg">{VIEW_TEXT[view].title}</h1>
-          <p className="mt-1 text-meta text-muted">{VIEW_TEXT[view].lead}</p>
+      <header className="pulls-header">
+        <div role="radiogroup" aria-label="Pulls view" className="pulls-switch">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="radio"
+              aria-checked={option.value === view}
+              className="pulls-switch-item"
+              onClick={() => choose(option.value)}
+            >
+              {option.game && (
+                <span
+                  aria-hidden
+                  className="pulls-switch-dot"
+                  style={{ background: inks[option.game.id] ?? option.game.color }}
+                />
+              )}
+              {option.label}
+            </button>
+          ))}
         </div>
-        <Segmented<PullsView>
-          ariaLabel="Pulls view"
-          value={view}
-          onChange={setView}
-          options={[
-            { value: 'savings', label: 'Savings' },
-            { value: 'pity', label: 'Pity' },
-            { value: 'history', label: 'Version history' },
-          ]}
-        />
       </header>
       {loaded.error && <p className="mb-4 text-body text-danger-fg">{loaded.error}</p>}
-      {view === 'savings' && <SavingsView history={loaded.history} />}
-      {view === 'pity' && <PityView />}
-      {view === 'history' && <HistoryView {...loaded} />}
+      {game ? (
+        <section className="pulls-game" aria-label={title}>
+          <div className="pulls-game-heading">
+            <GameLogo game={game} size={44} />
+            <h1 className="text-title font-semibold text-fg">{title}</h1>
+          </div>
+          <div className="pulls-game-grid">
+            <GameSavingsPanel
+              game={game}
+              history={loaded.history}
+              ink={inks[game.id]!}
+              banners={banners.get(game.id) ?? []}
+              tz={state.settings.localTz}
+              now={now}
+            />
+            <GamePityPanel game={game} ink={inks[game.id]!} tz={state.settings.localTz} />
+          </div>
+          <p className="mt-6 text-caption text-dim">
+            Free income is the currency per day of the game’s last six finished versions, from Version history: what the
+            game gives out, not what you will collect. Enter your balance again whenever you pull or top up.
+          </p>
+        </section>
+      ) : (
+        <>
+          <div className="mb-4">
+            <h1 className="text-title font-semibold text-fg">Version history</h1>
+            <p className="mt-1 text-meta text-muted">
+              Free premium currency each version gave a player who spends nothing, version by version.
+            </p>
+          </div>
+          {games.length === 0 && (
+            <p className="mb-4 text-meta text-muted">Add a game to plan savings and track pity for it.</p>
+          )}
+          <HistoryView {...loaded} />
+        </>
+      )}
     </Page>
   );
 }

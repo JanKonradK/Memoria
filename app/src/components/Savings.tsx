@@ -26,12 +26,9 @@ import {
   type VersionHistory,
 } from '@memoria/shared';
 import { useApp } from '../store';
-import { useElementWidth, useNow } from '../hooks';
-import { useGround } from '../theme';
-import { assignGameInks } from '../game-color';
+import { useElementWidth } from '../hooks';
 import { uid } from '../util';
-import { rosterGames } from './roster';
-import { Btn, Field, GameBadge, NumInput, Segmented, Select, TextInput, Toggle } from './ui';
+import { Btn, Field, NumInput, Segmented, Select, TextInput, Toggle } from './ui';
 import { ChartTip, fmt, niceMax, tickLabel, ticks } from './chart';
 
 /**
@@ -63,48 +60,30 @@ function ago(at: number, now: number): string {
   return days <= 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`;
 }
 
-export function SavingsView({ history }: { history: VersionHistory | null }) {
-  const state = useApp((s) => s.state);
-  const ground = useGround();
-  const now = useNow(60_000);
-  const games = useMemo(() => rosterGames(state.games), [state.games]);
-  const inks = useMemo(() => assignGameInks(games, ground), [games, ground]);
-  const banners = useMemo(() => {
+/** Each game's banners that have not ended yet, soonest first. */
+export function useOpenBanners(now: number): Map<string, GameEvent[]> {
+  const events = useApp((s) => s.state.events);
+  return useMemo(() => {
     const byGame = new Map<string, GameEvent[]>();
-    for (const event of state.events) {
+    for (const event of events) {
       if (event.deleted || event.type !== 'banner' || event.end <= now) continue;
       byGame.set(event.gameId, [...(byGame.get(event.gameId) ?? []), event]);
     }
     for (const list of byGame.values()) list.sort((a, b) => a.end - b.end);
     return byGame;
-  }, [state.events, now]);
-
-  if (games.length === 0)
-    return <p className="py-8 text-center text-body text-dim">Add a game to start saving for its banners.</p>;
-
-  return (
-    <div className="savings-list">
-      {games.map((game) => (
-        <SavingsCard
-          key={game.id}
-          game={game}
-          history={history}
-          ink={inks[game.id]!}
-          banners={banners.get(game.id) ?? []}
-          tz={state.settings.localTz}
-          now={now}
-        />
-      ))}
-      <p className="mt-6 text-caption text-dim">
-        Income is the free currency per day of each game’s last six finished versions, from Version history. It is an
-        estimate of what the game gives out, not what you will collect. Enter your balance again whenever you pull or
-        top up.
-      </p>
-    </div>
-  );
+  }, [events, now]);
 }
 
-function SavingsCard({
+/** Nothing saved yet: the same shape, so every field works before the first save. */
+function blankSavings(): GameSavings {
+  return { currency: 0, tickets: 0, takenAt: Date.now(), participation: 1, goals: [] };
+}
+
+/**
+ * One account's savings: balance, income (free and paid), and goals. There is
+ * no separate "start" step; the first save of any of them starts the plan.
+ */
+export function GameSavingsPanel({
   game,
   history,
   ink,
@@ -124,13 +103,14 @@ function SavingsCard({
   const presetKey = presetForGame(game)?.key;
   const meta = presetKey ? history?.games[presetKey] : undefined;
   const rows = useMemo(() => (history && presetKey ? versionRows(history, presetKey) : []), [history, presetKey]);
-  const savings = game.savings;
+  const stored = game.savings;
+  const savings = stored ?? blankSavings();
   const currency = meta?.currency ?? 'Currency';
-  const pullCost = savings?.pullCost ?? meta?.pullCost ?? FALLBACK_PULL_COST;
+  const pullCost = savings.pullCost ?? meta?.pullCost ?? FALLBACK_PULL_COST;
   const today = DateTime.fromMillis(now, { zone: tz }).toISODate() ?? '';
   const passes = presetKey ? PAID_PASSES[presetKey] : undefined;
   const paid = paidPerDay(savings, passes, pullCost);
-  const income = useMemo(() => incomeRange(rows, today, savings?.perDay, paid), [rows, today, savings?.perDay, paid]);
+  const income = useMemo(() => incomeRange(rows, today, savings.perDay, paid), [rows, today, savings.perDay, paid]);
   const [error, setError] = useState('');
   // Checked here, not just by the inputs: a value out of range must say so, not throw.
   const save = (next: GameSavings) => {
@@ -142,35 +122,17 @@ function SavingsCard({
     setError('');
     updateGame(game.id, { savings: parsed.data });
   };
-  const title = game.accountLabel ? `${game.name} · ${game.accountLabel}` : game.name;
-
-  if (!savings) {
-    return (
-      <section className="savings-card flex flex-wrap items-center justify-between gap-3" aria-label={title}>
-        <h2 className="flex items-center gap-2 text-body font-semibold text-fg">
-          <GameBadge short={game.short} color={game.color} color2={game.color2} color3={game.color3} size="sm" />
-          {title}
-        </h2>
-        <Btn onClick={() => save({ currency: 0, tickets: 0, takenAt: Date.now(), participation: 1, goals: [] })}>
-          Start saving
-        </Btn>
-      </section>
-    );
-  }
 
   const plans = planGoals(savings, income, pullCost, now);
   const onHand = savedPulls(savings, pullCost);
 
   return (
-    <section className="savings-card" aria-label={title}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <h2 className="flex items-center gap-2 text-body font-semibold text-fg">
-          <GameBadge short={game.short} color={game.color} color2={game.color2} color3={game.color3} size="sm" />
-          {title}
-        </h2>
+    <div className="pulls-panel">
+      <div className="pulls-panel-heading">
+        <h2 className="text-lead font-semibold text-fg">Savings</h2>
         <div className="text-right">
-          <div className="text-numeral font-semibold leading-none text-fg tabular-nums">{fmt(onHand)}</div>
-          <div className="text-caption text-muted">pulls saved</div>
+          <span className="text-numeral font-semibold leading-none text-fg tabular-nums">{fmt(onHand)}</span>{' '}
+          <span className="text-meta text-muted">pulls saved</span>
         </div>
       </div>
 
@@ -181,7 +143,7 @@ function SavingsCard({
         customCost={!meta?.pullCost}
         pullCost={pullCost}
         onSave={save}
-        entered={ago(savings.takenAt, now)}
+        entered={stored ? ago(stored.takenAt, now) : null}
       />
 
       {error && (
@@ -190,8 +152,9 @@ function SavingsCard({
         </p>
       )}
 
-      <Income savings={savings} income={income} currency={currency} passes={passes} onSave={save} />
+      <Income savings={savings} income={income} currency={currency} passes={passes} pullCost={pullCost} onSave={save} />
 
+      <h3 className="pulls-subheading text-meta font-semibold text-fg-soft">Goals</h3>
       {plans.length > 0 && (
         <>
           <SavingsChart
@@ -226,10 +189,19 @@ function SavingsCard({
         />
       )}
 
-      <div className="mt-3 flex justify-end">
-        <Btn onClick={() => updateGame(game.id, { savings: undefined })}>Stop saving</Btn>
-      </div>
-    </section>
+      {stored && (
+        <div className="mt-3 flex justify-end">
+          <Btn
+            onClick={() => {
+              if (window.confirm(`Clear the balance, passes and goals saved for ${game.name}?`))
+                updateGame(game.id, { savings: undefined });
+            }}
+          >
+            Clear savings
+          </Btn>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -245,7 +217,7 @@ function BalanceForm({
   currency: string;
   customCost: boolean;
   pullCost: number;
-  entered: string;
+  entered: string | null;
   onSave: (next: GameSavings) => void;
 }) {
   const [amount, setAmount] = useState(String(savings.currency));
@@ -263,7 +235,7 @@ function BalanceForm({
     });
   };
   return (
-    <form className="savings-balance mt-3 grid grid-cols-2 items-end gap-3 sm:grid-cols-4" onSubmit={submit}>
+    <form className="savings-balance" onSubmit={submit}>
       <Field label={currency}>
         <NumInput min={0} max={MAX_AMOUNT} value={amount} onChange={(e) => setAmount(e.target.value)} />
       </Field>
@@ -275,11 +247,11 @@ function BalanceForm({
           <NumInput min={1} max={MAX_PULL_COST} value={cost} onChange={(e) => setCost(e.target.value)} />
         </Field>
       )}
-      <div className="col-span-2 flex items-center gap-3 sm:col-span-1">
-        <Btn type="submit" kind="primary">
+      <div className="savings-balance-save">
+        <Btn type="submit" kind="primary" className="whitespace-nowrap">
           Save balance
         </Btn>
-        <span className="text-caption text-dim">Entered {entered}</span>
+        <span className="text-caption text-dim">{entered ? `Entered ${entered}` : 'Not entered yet'}</span>
       </div>
     </form>
   );
@@ -296,30 +268,43 @@ function Income({
   income,
   currency,
   passes,
+  pullCost,
   onSave,
 }: {
   savings: GameSavings;
   income: IncomeRange;
   currency: string;
   passes?: PaidPasses;
+  pullCost: number;
   onSave: (next: GameSavings) => void;
 }) {
   const [perDay, setPerDay] = useState(String(savings.perDay ?? ''));
   const share = String(savings.participation);
+  const free = Math.round(income.mid * savings.participation);
+  const total = free + Math.round(income.paid);
+  const monthlyPerDay = passes ? paidPerDay({ monthlyPass: true }, passes, pullCost) : 0;
+  const battlePerDay = passes ? paidPerDay({ battlePass: true }, passes, pullCost) : 0;
   return (
-    <div className="savings-income mt-4 flex flex-wrap items-end justify-between gap-3">
-      <div className="text-meta text-muted">
+    <div className="pulls-income">
+      <div className="pulls-income-total">
+        <span className="text-meta text-muted">Income</span>
+        <p className="text-body text-fg-soft">
+          About <strong className="numeral text-fg">{fmt(total)}</strong> {currency} a day
+          {income.paid > 0 && (
+            <span className="text-muted">
+              {' '}
+              ({fmt(free)} free + {fmt(Math.round(income.paid))} paid)
+            </span>
+          )}
+        </p>
+      </div>
+
+      <div className="pulls-income-free">
+        <h3 className="pulls-subheading text-meta font-semibold text-fg-soft">Free</h3>
         {income.source === 'history' && (
-          <>
-            About <strong className="text-fg">{fmt(Math.round(income.mid * savings.participation))}</strong> {currency}{' '}
-            a day, between {fmt(Math.round(income.low * savings.participation))} and{' '}
-            {fmt(Math.round(income.high * savings.participation))}, from versions {income.versions[0]}–
-            {income.versions.at(-1)}.
-          </>
-        )}
-        {income.paid > 0 && (
-          <p className="mt-1">
-            Plus <strong className="text-fg">{fmt(Math.round(income.paid))}</strong> a day from passes you buy.
+          <p className="text-meta text-muted">
+            {fmt(Math.round(income.low * savings.participation))}–{fmt(Math.round(income.high * savings.participation))}{' '}
+            a day in versions {income.versions[0]}–{income.versions.at(-1)}.
           </p>
         )}
         {income.source !== 'history' && (
@@ -343,33 +328,53 @@ function Income({
             <Btn type="submit">Save</Btn>
           </form>
         )}
+        <div className="mt-3">
+          <span className="mb-1 block text-caption text-muted">Free content you do</span>
+          <Segmented
+            ariaLabel="Free content you do"
+            value={PARTICIPATION.some((option) => option.value === share) ? share : '1'}
+            onChange={(value) => onSave({ ...savings, participation: Number(value) })}
+            options={PARTICIPATION}
+          />
+        </div>
       </div>
+
       {passes && (
-        <fieldset className="savings-passes">
-          <legend className="mb-1 block text-caption text-muted">You buy</legend>
-          <Toggle
-            className="text-meta"
+        <fieldset className="pulls-income-passes">
+          <legend className="pulls-subheading text-meta font-semibold text-fg-soft">Passes you buy</legend>
+          <PassToggle
             label={`${passes.monthly.name}, every month`}
+            note={`+${fmt(Math.round(monthlyPerDay))} a day`}
             checked={Boolean(savings.monthlyPass)}
             onChange={(on) => onSave({ ...savings, monthlyPass: on || undefined })}
           />
-          <Toggle
-            className="text-meta"
+          <PassToggle
             label={`${passes.battle.name}, every version`}
+            note={`+${fmt(Math.round(battlePerDay))} a day`}
             checked={Boolean(savings.battlePass)}
             onChange={(on) => onSave({ ...savings, battlePass: on || undefined })}
           />
         </fieldset>
       )}
-      <div>
-        <span className="mb-1 block text-caption text-muted">Free content you do</span>
-        <Segmented
-          ariaLabel="Free content you do"
-          value={PARTICIPATION.some((option) => option.value === share) ? share : '1'}
-          onChange={(value) => onSave({ ...savings, participation: Number(value) })}
-          options={PARTICIPATION}
-        />
-      </div>
+    </div>
+  );
+}
+
+function PassToggle({
+  label,
+  note,
+  checked,
+  onChange,
+}: {
+  label: string;
+  note: string;
+  checked: boolean;
+  onChange: (on: boolean) => void;
+}) {
+  return (
+    <div className="pulls-pass">
+      <Toggle className="text-meta" label={label} checked={checked} onChange={onChange} />
+      <span className="numeral text-caption text-muted">{note}</span>
     </div>
   );
 }

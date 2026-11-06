@@ -51,19 +51,23 @@ test('saving for a banner shows pulls on hand and a forecast range from version 
   await loadGenshin(page, now);
 
   const card = page.getByRole('region', { name: genshin.name });
-  await card.getByRole('button', { name: 'Start saving' }).click();
   await card.getByLabel('Primogems').fill('8000');
   await card.getByLabel('Pull tickets').fill('12');
   await card.getByRole('button', { name: 'Save balance' }).click();
   await expect(card.getByText('pulls saved')).toBeVisible();
   // 12 tickets + 8000 / 160.
   await expect(card.getByText('62', { exact: true })).toBeVisible();
-  await expect(card.getByText(/Primogems a day, between/)).toBeVisible();
+  await expect(card.getByText(/Primogems a day/)).toBeVisible();
+  await expect(card.getByText(/a day in versions/)).toBeVisible();
+
+  // A pass you buy adds to the daily income.
+  await card.getByRole('switch', { name: /Welkin Moon/ }).click();
+  await expect(card.getByText(/free \+ 100 paid/)).toBeVisible();
 
   await card.getByRole('button', { name: 'Add goal' }).isDisabled();
   await card.getByRole('combobox', { name: 'Save for' }).click();
   await page.getByRole('option', { name: /Columbina/ }).click();
-  await card.getByLabel('Pulls').fill('90');
+  await card.getByLabel('Pulls', { exact: true }).fill('90');
   await card.getByRole('button', { name: 'Add goal' }).click();
 
   const goal = card.getByRole('list', { name: 'Goals' }).getByRole('listitem').first();
@@ -123,21 +127,19 @@ test('an out-of-range number says so instead of failing silently', async ({ page
   await page.clock.setFixedTime(new Date(now));
   await loadGenshin(page, now);
   const card = page.getByRole('region', { name: genshin.name });
-  await card.getByRole('button', { name: 'Start saving' }).click();
   const amount = card.getByLabel('Primogems');
   // Skip the browser's own range check to reach the app's.
   await amount.evaluate((input) => input.removeAttribute('max'));
   await amount.fill('100000001');
   await card.getByRole('button', { name: 'Save balance' }).click();
   await expect(card.getByRole('alert')).toHaveText(/out of range/);
-  await expect(card.getByText('0', { exact: true })).toBeVisible();
+  await expect(card.getByText('pulls saved').locator('..')).toContainText('0 pulls saved');
 });
 
 test('the pity tracker counts pulls, records a lost 50/50 and feeds the savings goal', async ({ page }, info) => {
   const now = Date.parse('2026-11-05T12:00:00Z');
   await page.clock.setFixedTime(new Date(now));
   await loadGenshin(page, now);
-  await page.getByRole('radio', { name: 'Pity' }).click();
 
   const card = page.getByRole('region', { name: genshin.name });
   const track = card.getByRole('group', { name: 'Character event' });
@@ -165,17 +167,14 @@ test('the pity tracker counts pulls, records a lost 50/50 and feeds the savings 
   expect(axe.violations).toEqual([]);
 
   // A character banner goal starts from the pulls the tracker says guarantee it.
-  await page.getByRole('radio', { name: 'Savings' }).click();
-  await card.getByRole('button', { name: 'Start saving' }).click();
   await card.getByRole('combobox', { name: 'Save for' }).click();
   await page.getByRole('option', { name: /Columbina/ }).click();
-  await expect(card.getByLabel('Pulls')).toHaveValue('87');
+  await expect(card.getByLabel('Pulls', { exact: true })).toHaveValue('87');
   await expect(card.getByRole('button', { name: /Typical · \d+/ })).toBeVisible();
 
   // Stored with the game, so it survives a reload.
   await page.reload();
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Pulls', exact: true }).click();
-  await page.getByRole('radio', { name: 'Pity' }).click();
   await expect(
     card.getByRole('group', { name: 'Character event' }).getByRole('meter', { name: 'Character event pity' }),
   ).toHaveAttribute('aria-valuenow', '3');
