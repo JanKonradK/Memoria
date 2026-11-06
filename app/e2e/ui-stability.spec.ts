@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { gameRow, openGame } from './support';
+import { gameRow, openGame, openSettings } from './support';
 
 async function expectNoPageOverflow(page: Page) {
   const overflow = await page.evaluate(() => ({
@@ -201,7 +201,7 @@ test('tabs, timeline controls, and settings fit after adding a game', async ({ p
   await expect(page.getByRole('dialog', { name: 'New event' })).toBeVisible();
   await page.keyboard.press('Escape');
 
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openSettings(page, 'General');
   await expect(page.getByLabel('Sleep window (hours)')).toHaveValue('8');
   await page.getByRole('button', { name: 'Switch to light theme' }).click();
   await expect.poll(() => page.locator('html').getAttribute('data-theme')).toBe('light');
@@ -211,6 +211,7 @@ test('tabs, timeline controls, and settings fit after adding a game', async ({ p
   await page.getByRole('button', { name: 'Switch to dark theme' }).click();
   await expectNoPageOverflow(page);
 
+  await openSettings(page, 'Games');
   const gameSettings = page.getByRole('region', { name: 'Games' });
   await expect(gameSettings.getByText('Genshin Impact', { exact: true })).toBeVisible();
   await gameSettings.getByRole('button', { name: 'Game settings for Genshin Impact' }).click();

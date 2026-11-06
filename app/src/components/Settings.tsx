@@ -14,7 +14,7 @@ import type { SettingsSection } from '../ui-store';
 import { DeviceNotifications } from './settings/DeviceNotifications';
 import { AppUpdates } from './settings/AppUpdates';
 import { DesktopPresence } from './settings/DesktopPresence';
-import { GameLogo } from './GameLogo';
+import { GameRosterRow } from './settings/GameRosterRow';
 import { disconnectLanSync } from '../lan-sync';
 import { exportNativeBackup, isNativeApp } from '../native';
 import { useUnsavedDraft } from '../desktop-host';
@@ -28,9 +28,8 @@ import {
   reconnectCloudFile,
 } from '../cloud-sync';
 import { resolveHomeTimeZone, SYSTEM_TIMEZONE_VALUE } from '../timezone';
-import { fmtClock, intOr, localResetLabel } from '../util';
+import { fmtClock, intOr } from '../util';
 import { HomeTimeZoneField } from './HomeTimeZoneField';
-import { Pill } from './primitives';
 import { rosterGames, useIdentityColors } from './roster';
 import { Btn, NumInput, Page, TOUCH_BUTTON } from './ui';
 // Today is lazy-loaded, so its heading rule is brought in here as well.
@@ -140,6 +139,7 @@ export function SettingsPage() {
   const syncBadge = cloudConnected && cloudStatus === 'ok' ? cloudFileName : undefined;
   const sections: Array<{ key: SettingsSection; label: string; badge?: ReactNode }> = [
     { key: 'games', label: 'Games', badge: <span className="numeral">{games.length}</span> },
+    { key: 'general', label: 'General' },
     { key: 'sync', label: 'Device sync', badge: syncBadge },
   ];
   if (presence || isNativeApp) sections.push({ key: 'device', label: isNativeApp ? 'On this device' : 'On this PC' });
@@ -191,8 +191,45 @@ export function SettingsPage() {
           )}
 
           <div className="settings-panes">
-            <SettingsPane {...pane('games')}>
+            <SettingsPane
+              {...pane('games')}
+              action={
+                <Btn className={TOUCH_BUTTON} onClick={() => openSheet({ kind: 'addGame' })}>
+                  Add a game
+                </Btn>
+              }
+            >
+              {games.length > 0 ? (
+                <ul className="settings-roster" aria-label="Your games">
+                  {listedGames.map((game) => (
+                    <GameRosterRow
+                      key={game.id}
+                      game={game}
+                      colors={identityColors[game.id] ?? game}
+                      localTz={settings.localTz}
+                    />
+                  ))}
+                </ul>
+              ) : (
+                <p className="settings-note text-body text-dim">No games yet.</p>
+              )}
+              {listedGames.length < games.length && (
+                <p className="settings-note pt-2 text-meta text-muted">
+                  Showing the focused game. Clear the focus to see all {games.length}.
+                </p>
+              )}
+            </SettingsPane>
+
+            <SettingsPane {...pane('general')}>
               <div className="settings-rows">
+                <SettingRow label="Home timezone" hint="Resets and countdowns are shown on this clock.">
+                  <HomeTimeZoneField
+                    value={settings.localTz === detectedTz ? SYSTEM_TIMEZONE_VALUE : settings.localTz}
+                    resolvedTz={settings.localTz}
+                    detectedTz={detectedTz}
+                    onChange={(value) => updateSettings({ localTz: resolveHomeTimeZone(value) })}
+                  />
+                </SettingRow>
                 <SettingRow
                   label="Sleep window"
                   hint="How long you are away overnight. Today checks what caps in that time."
@@ -213,85 +250,7 @@ export function SettingsPage() {
                     <span className="text-label text-dim">hours</span>
                   </div>
                 </SettingRow>
-                <SettingRow label="Home timezone" hint="Resets and countdowns are shown on this clock.">
-                  <HomeTimeZoneField
-                    value={settings.localTz === detectedTz ? SYSTEM_TIMEZONE_VALUE : settings.localTz}
-                    resolvedTz={settings.localTz}
-                    detectedTz={detectedTz}
-                    onChange={(value) => updateSettings({ localTz: resolveHomeTimeZone(value) })}
-                  />
-                </SettingRow>
               </div>
-
-              <SettingsGroup
-                title="Your games"
-                action={
-                  <Btn className={TOUCH_BUTTON} onClick={() => openSheet({ kind: 'addGame' })}>
-                    Add a game
-                  </Btn>
-                }
-              >
-                {games.length > 0 ? (
-                  <div className="settings-game-list">
-                    {listedGames.map((game) => {
-                      const colors = identityColors[game.id] ?? game;
-                      const resources = state.resources.filter((r) => r.gameId === game.id && !r.deleted).length;
-                      const tasks = state.tasks.filter((t) => t.gameId === game.id && !t.deleted).length;
-                      return (
-                        // One button, one destination: the game's full editor.
-                        <button
-                          key={game.id}
-                          type="button"
-                          aria-label={`Game settings for ${game.name}${game.accountLabel ? `, ${game.accountLabel}` : ''}`}
-                          onClick={() => openSheet({ kind: 'game', gameId: game.id })}
-                          className="settings-game-row group flex min-h-14 w-full items-center rounded-ui-lg text-left transition duration-(--dur-fast) hover:bg-fill-1"
-                        >
-                          {/* The identity trio is merged in so two accounts of one game draw one ring. */}
-                          <GameLogo game={{ ...game, ...colors }} size={52} className="shrink-0" />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="min-w-0 text-body font-semibold text-fg [overflow-wrap:anywhere]">
-                                {game.name}
-                              </span>
-                              {game.paused && <Pill variant="paused">paused</Pill>}
-                            </div>
-                            <span className="aside block text-label text-muted [overflow-wrap:anywhere]">
-                              {game.accountLabel ? `${game.accountLabel} · ` : ''}reset{' '}
-                              {localResetLabel(game, settings.localTz, Date.now())}
-                            </span>
-                            <p className="aside numeral text-label text-muted">
-                              {resources} resource{resources === 1 ? '' : 's'} · {tasks} task{tasks === 1 ? '' : 's'}
-                            </p>
-                          </div>
-                          {/* The row's own pressed state made visible, not a second control. */}
-                          <span
-                            aria-hidden="true"
-                            className="settings-game-action btn-compact flex min-h-11 shrink-0 items-center gap-1.5 rounded-ui-md bg-fill-2 px-3 text-meta font-semibold text-muted ring-1 ring-line-hairline transition duration-(--dur-fast) group-hover:bg-fill-3 group-hover:text-fg-soft group-hover:ring-line-strong group-focus-visible:bg-fill-3 group-focus-visible:text-fg-soft group-focus-visible:ring-line-strong group-active:scale-[0.97] sm:min-h-8"
-                          >
-                            <svg
-                              viewBox="0 0 20 20"
-                              fill="none"
-                              stroke="currentColor"
-                              className="icon h-4 w-4"
-                              aria-hidden
-                            >
-                              <path
-                                d="M13.4 3.3a1.8 1.8 0 0 1 2.5 2.5l-8.2 8.2-3.3.8.8-3.3 8.2-8.2z"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <path d="M12.6 4.6l2.5 2.5" strokeLinecap="round" />
-                            </svg>
-                            Edit
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="settings-note text-body text-dim">No games yet.</p>
-                )}
-              </SettingsGroup>
             </SettingsPane>
 
             <SettingsPane {...pane('sync')}>
@@ -540,11 +499,14 @@ function SettingsPane({
   id,
   title,
   hidden,
+  action,
   children,
 }: {
   id: SettingsSection;
   title: string;
   hidden: boolean;
+  /** A control for the whole section, at the end of its heading. */
+  action?: ReactNode;
   children: ReactNode;
 }) {
   if (hidden) return null;
@@ -555,6 +517,7 @@ function SettingsPane({
           {title}
         </h2>
         <span aria-hidden />
+        {action}
       </div>
       {children}
     </section>

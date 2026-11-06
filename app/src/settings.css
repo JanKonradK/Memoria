@@ -150,6 +150,70 @@
   padding: 0.625rem 0.5rem;
 }
 
+/* The roster: one row per game, nickname and server editable in place. On a
+   phone the fields wrap under the name; on a wide pane they line up as columns. */
+.settings-pane-heading > .btn,
+.settings-pane-heading > button {
+  flex-shrink: 0;
+}
+.settings-roster {
+  display: grid;
+  max-width: 72rem;
+}
+.settings-roster-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'logo name edit'
+    'fields fields fields';
+  align-items: center;
+  gap: 0.75rem 0.875rem;
+  padding: 0.875rem 0.5rem;
+  border-bottom: 1px solid var(--color-line);
+}
+.settings-roster-logo {
+  grid-area: logo;
+}
+.settings-roster-name {
+  grid-area: name;
+}
+.settings-roster-edit {
+  grid-area: edit;
+  justify-self: end;
+}
+.settings-roster-field {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+.settings-roster-nickname {
+  grid-column: 1 / 3;
+}
+.settings-roster-server {
+  grid-column: 3 / 4;
+}
+@media (max-width: 379px) {
+  .settings-roster-nickname,
+  .settings-roster-server {
+    grid-column: 1 / -1;
+  }
+}
+@media (min-width: 760px) {
+  .settings-roster-row {
+    grid-template-columns: auto minmax(11rem, 17rem) minmax(10rem, 22rem) auto auto;
+    justify-content: start;
+    grid-template-areas: none;
+  }
+  .settings-roster-logo,
+  .settings-roster-name,
+  .settings-roster-edit,
+  .settings-roster-nickname,
+  .settings-roster-server {
+    grid-area: auto;
+    grid-column: auto;
+  }
+}
+
 /* Wi-Fi and shared-folder sync sit side by side once both have room. */
 .settings-sync-grid {
   display: grid;
