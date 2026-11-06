@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 import { describe, expect, it } from 'vitest';
-import { GAME_SERVERS, gameServer, PRESETS, serversFor } from '../src';
+import { gameServer, PRESETS, serversFor } from '../src';
 
 const utcOffset = (tz: string) => DateTime.fromISO('2026-01-15T12:00:00Z', { zone: tz }).offset / 60;
 
@@ -13,9 +13,9 @@ describe('game servers', () => {
       for (const server of servers) expect(DateTime.now().setZone(server.tz).isValid, server.tz).toBe(true);
     }
     // Etc zones invert the sign; a slip here moves every reset by hours.
-    expect(utcOffset(GAME_SERVERS.genshin.find((s) => s.id === 'na')!.tz)).toBe(-5);
-    expect(utcOffset(GAME_SERVERS.genshin.find((s) => s.id === 'eu')!.tz)).toBe(1);
-    expect(utcOffset(GAME_SERVERS.genshin.find((s) => s.id === 'tw')!.tz)).toBe(8);
+    expect(utcOffset(serversFor('genshin').find((s) => s.id === 'na')!.tz)).toBe(-5);
+    expect(utcOffset(serversFor('genshin').find((s) => s.id === 'eu')!.tz)).toBe(1);
+    expect(utcOffset(serversFor('genshin').find((s) => s.id === 'tw')!.tz)).toBe(8);
   });
 
   it('names a server only when it knows which one', () => {
