@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { buildNotificationPlan, NOTIFICATION_HORIZON_DAYS, type PlannedNotification } from '@memoria/shared';
+import {
+  buildNotificationPlan,
+  notificationId,
+  NOTIFICATION_HORIZON_DAYS,
+  type PlannedNotification,
+} from '@memoria/shared';
+import { allCodes, liveCodes } from './codes';
+import { useRemoteFeed } from './data/remote-feed';
 import { isNativeApp } from './native';
 import { useApp } from './store';
 import { useUI } from './ui-store';
@@ -56,6 +63,63 @@ function writeDelivery(delivery: Delivery) {
     // Without storage a reminder may repeat after a rebuild; it is never lost.
   }
 }
+const CODES_SEEN_KEY = 'memoria-codes-announced';
+const CODE_LEAD_MS = 6 * 3_600_000;
+
+/**
+ * A new code is announced once, soon; an unredeemed one again six hours before
+ * it expires. Codes live in the signed feed, so these are planned on the device.
+ */
+export function codeNotices(now: number): PlannedNotification[] {
+  let seen: string[] = [];
+  try {
+    seen = JSON.parse(localStorage.getItem(CODES_SEEN_KEY) ?? '[]') as string[];
+    if (!Array.isArray(seen)) seen = [];
+  } catch {
+    seen = [];
+  }
+  let redeemed: string[] = [];
+  try {
+    redeemed = JSON.parse(localStorage.getItem('memoria-redeemed-codes') ?? '[]') as string[];
+  } catch {
+    redeemed = [];
+  }
+  const codes = liveCodes(useApp.getState().state.games, allCodes(useRemoteFeed.getState().codes), redeemed, now);
+  const plan: PlannedNotification[] = [];
+  const firstRun = localStorage.getItem(CODES_SEEN_KEY) === null;
+  for (const code of codes) {
+    const key = `${code.key}:${code.code.toUpperCase()}`;
+    // The first run only learns what exists; announcing every old code would be noise.
+    if (!seen.includes(key)) {
+      seen.push(key);
+      if (!firstRun)
+        plan.push({
+          id: notificationId(`code-new:${key}`),
+          kind: 'reminder',
+          title: `New ${code.game.short} code: ${code.code}`,
+          body: code.rewards,
+          at: now + 5_000,
+          gameId: code.game.id,
+        });
+    }
+    if (code.expiresAt && code.expiresAt - CODE_LEAD_MS > now)
+      plan.push({
+        id: notificationId(`code-expiry:${key}`),
+        kind: 'reminder',
+        title: `${code.game.short} code ${code.code} expires in 6 h`,
+        body: code.rewards,
+        at: code.expiresAt - CODE_LEAD_MS,
+        gameId: code.game.id,
+      });
+  }
+  try {
+    localStorage.setItem(CODES_SEEN_KEY, JSON.stringify(seen.slice(-500)));
+  } catch {
+    // Without storage a new code may be announced again; never missed.
+  }
+  return plan;
+}
+
 /**
  * Android cannot rebuild the plan without the app, and the plan covers a week.
  * Half a day before it runs out, say so, rather than going silent.
@@ -113,7 +177,10 @@ export function rescheduleNotifications(): Promise<void> {
     const now = Date.now();
     const delivery = readDelivery();
     const plan = useNotifications.getState().enabled
-      ? withRunway(unseenPlan(buildNotificationPlan(useApp.getState().state, now), delivery, now), now)
+      ? withRunway(
+          unseenPlan([...buildNotificationPlan(useApp.getState().state, now), ...codeNotices(now)], delivery, now),
+          now,
+        )
       : [];
     if (owned.length) await LocalNotifications.cancel({ notifications: owned.map(({ id }) => ({ id })) });
     // A later scheduling failure must not leave the old count visible after cancellation.
@@ -201,6 +268,9 @@ export function initNotifications(): () => void {
   const unsubscribe = useApp.subscribe((next, prior) => {
     if (next.state !== prior.state) update();
   });
+  const stopCodes = useRemoteFeed.subscribe((next, prior) => {
+    if (next.codes !== prior.codes) update();
+  });
   const listener = LocalNotifications.addListener('localNotificationActionPerformed', (event) => {
     const extra = event.notification.extra as
       { memoria?: boolean; gameId?: string | null; eventIds?: string[] } | undefined;
@@ -229,6 +299,7 @@ export function initNotifications(): () => void {
     active = false;
     clearTimeout(timer);
     unsubscribe();
+    stopCodes();
     document.removeEventListener('visibilitychange', update);
     void listener.then((handle) => handle?.remove()).catch(() => undefined);
   };

@@ -21,6 +21,7 @@ import { TickNumber } from './TickNumber';
 import { behindGames, behindText, useFeedDate } from './CalendarBehind';
 import { GamePage } from './GamePage';
 import { TodayNotices } from './TodayNotices';
+import { TodayCodes } from './TodayCodes';
 import { ProgressBar } from './primitives';
 import { Btn, Page, Tooltip } from './ui';
 import '../today.css';
@@ -341,6 +342,7 @@ export function TodayPage({ now }: { now: number }) {
         <p className="aside text-meta text-muted">{date}</p>
       </div>
       <TodayNotices now={now} />
+      <TodayCodes games={derived.state.games} now={now} />
       {order.length === 0 ? (
         <section className="today-empty">
           <h2 className="text-heading font-semibold text-fg">No games yet</h2>

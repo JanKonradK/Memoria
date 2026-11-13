@@ -24,7 +24,16 @@ const mocks = vi.hoisted(() => ({
     | undefined,
 }));
 vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: mocks }));
-vi.mock('@memoria/shared', () => ({ buildNotificationPlan: mocks.plan, NOTIFICATION_HORIZON_DAYS: 7 }));
+vi.mock('@memoria/shared', () => ({
+  buildNotificationPlan: mocks.plan,
+  NOTIFICATION_HORIZON_DAYS: 7,
+  notificationId: (key: string) => key.length,
+}));
+// Codes are planned on the device; covered in codes.test.ts.
+vi.mock('../src/codes', () => ({ allCodes: () => [], liveCodes: () => [] }));
+vi.mock('../src/data/remote-feed', () => ({
+  useRemoteFeed: { getState: () => ({ codes: [] }), subscribe: () => () => undefined },
+}));
 vi.mock('../src/native', () => ({ isNativeApp: true }));
 vi.mock('../src/store', () => ({
   useApp: {

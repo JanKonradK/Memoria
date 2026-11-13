@@ -57,6 +57,26 @@ export const PublicFeedEventSchema = z.object({
   sourceKey: z.string().min(1).max(300),
 });
 
+/**
+ * A reward code in the signed feed. Livestream codes last about a day, so they
+ * travel with the calendar instead of waiting for an app release.
+ */
+export const FeedCodeSchema = z.object({
+  /** Preset key of the game. */
+  game: z.string().min(1).max(20),
+  code: z.string().regex(/^[A-Za-z0-9]{3,40}$/),
+  rewards: z.string().max(300),
+  /** When the code stops working, as an ISO date-time with its offset. Absent: unknown. */
+  expiresAt: z.iso.datetime({ offset: true }).optional(),
+  redeemUrl: z
+    .string()
+    .url()
+    .max(500)
+    .refine((url) => url.startsWith('https://'), 'Redeem links must use https.')
+    .optional(),
+});
+export type FeedCode = z.infer<typeof FeedCodeSchema>;
+
 export const RemoteEventFeedSchema = z
   .object({
     version: z.literal(2),
@@ -64,6 +84,7 @@ export const RemoteEventFeedSchema = z
     seedUpdated: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     revision: z.string().min(1).max(80),
     events: z.array(PublicFeedEventSchema).max(3000),
+    codes: z.array(FeedCodeSchema).max(200).optional(),
     withdrawn: z.array(z.string().min(1).max(300)).max(1000),
   })
   .superRefine((feed, context) => {
