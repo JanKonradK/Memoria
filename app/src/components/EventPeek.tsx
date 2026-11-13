@@ -133,7 +133,7 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
           >
             {ended ? 'Ended' : fmtDur(remaining)}
           </span>
-          <span className="aside text-meta text-muted">
+          <span className="text-meta text-muted">
             {ended ? '' : upcoming ? 'until it starts' : 'left'}
             {calendar ? ` · ${calendar.label}` : ''}
           </span>

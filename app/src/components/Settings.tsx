@@ -176,7 +176,7 @@ export function SettingsPage() {
                     >
                       <span className="min-w-0 truncate text-body font-semibold">{section.label}</span>
                       {section.badge !== undefined && (
-                        <span className="settings-nav-badge aside truncate text-caption">{section.badge}</span>
+                        <span className="settings-nav-badge truncate text-caption">{section.badge}</span>
                       )}
                     </button>
                   </li>

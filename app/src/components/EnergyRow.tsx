@@ -413,7 +413,7 @@ export const EnergyRow = memo(function EnergyRow({
               </button>
             )}
             {note && (
-              <span data-reading-status className="aside ml-auto text-label tabular-nums text-muted">
+              <span data-reading-status className="ml-auto text-label tabular-nums text-muted">
                 {note}
               </span>
             )}
