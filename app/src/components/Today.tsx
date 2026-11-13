@@ -5,7 +5,7 @@ import { useDerived, type Derived } from '../selectors';
 import { selectAllClear, type AllClear } from '../all-clear';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
-import { useMediaQuery } from '../hooks';
+import { haptic, useMediaQuery } from '../hooks';
 import { useFlip } from '../flip';
 import { fmtClock, fmtDur } from '../util';
 import { calendarSchedule } from '../event-schedule';
@@ -168,6 +168,7 @@ function PriorityRow({
           aria-label={canUndo ? `Undo ticking ${game.name} dailies` : `Tick all ${game.name} dailies`}
           title={canUndo ? 'Undo' : 'Tick all dailies'}
           onClick={() => {
+            haptic();
             if (canUndo) {
               undoActivity(ticked!);
               setTicked(undefined);

@@ -18,7 +18,7 @@ import {
 import { useDerived } from '../selectors';
 import { useApp, type AppStore } from '../store';
 import { useUI } from '../ui-store';
-import { useMediaQuery, useReducedMotion } from '../hooks';
+import { haptic, useMediaQuery, useReducedMotion } from '../hooks';
 import { titleStyle } from '../fonts';
 import { GameLogo } from './GameLogo';
 import { PinMark } from './EventPeek';
@@ -374,7 +374,10 @@ function TaskRow({
   return (
     <button
       type="button"
-      onClick={onToggle}
+      onClick={() => {
+        haptic();
+        onToggle();
+      }}
       // A check task is a toggle, unlike its restart/advance siblings, so state
       // rides on aria-pressed. Deliberately no aria-label: it would override the
       // content and take the urgency countdown out of the accessible name.
