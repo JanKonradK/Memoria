@@ -74,6 +74,9 @@ const GameDetailSheet = lazy(() =>
 const AddGameSheet = lazy(() => import('./components/AddGame').then((module) => ({ default: module.AddGameSheet })));
 const EventSheet = lazy(() => import('./components/EventSheet').then((module) => ({ default: module.EventSheet })));
 const EventPeek = lazy(() => import('./components/EventPeek').then((module) => ({ default: module.EventPeek })));
+const SessionSheet = lazy(() =>
+  import('./components/SessionSheet').then((module) => ({ default: module.SessionSheet })),
+);
 const ReminderSheet = lazy(() =>
   import('./components/ReminderSheet').then((module) => ({ default: module.ReminderSheet })),
 );
@@ -145,6 +148,7 @@ function AppSheets() {
           )}
           {sheet.kind === 'eventPeek' && <EventPeek key={`peek-${sheet.eventId}`} open eventId={sheet.eventId} />}
           {sheet.kind === 'reminder' && <ReminderSheet key="reminder" open />}
+          {sheet.kind === 'session' && <SessionSheet key={`session-${sheet.gameId}`} open gameId={sheet.gameId} />}
           {sheet.kind === 'guide' && <UserGuide key="guide" open />}
           {sheet.kind === 'catchUp' && <CatchUpSheet key={`catch-up-${sheet.gameId}`} open gameId={sheet.gameId} />}
         </Suspense>
