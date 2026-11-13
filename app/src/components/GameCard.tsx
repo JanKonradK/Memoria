@@ -731,6 +731,8 @@ function TaskControl({
         )
       }
     />
+  ) : item.link ? (
+    <LinkedTaskRow item={item} color={tickColor} now={now} showDeadline={showDeadline} actions={actions} />
   ) : (
     <TaskRow
       item={item}
@@ -739,6 +741,64 @@ function TaskControl({
       showDeadline={showDeadline}
       onToggle={() => actions.setTaskDone(item.taskId, item.periodKey, !item.done)}
     />
+  );
+}
+
+/**
+ * A task done on another site, like a HoYoLAB check-in: Open goes there, and
+ * coming back offers Mark done, so the common answer is one tap.
+ */
+function LinkedTaskRow({
+  item,
+  color,
+  now,
+  showDeadline,
+  actions,
+}: {
+  item: ChecklistItem;
+  color: string;
+  now: number;
+  showDeadline: boolean;
+  actions: GameControlActions;
+}) {
+  const [opened, setOpened] = useState(false);
+  const done = () => {
+    actions.setTaskDone(item.taskId, item.periodKey, true);
+    setOpened(false);
+  };
+  return (
+    <div className="flex items-center gap-1">
+      <div className="min-w-0 flex-1">
+        <TaskRow
+          item={item}
+          color={color}
+          now={now}
+          showDeadline={showDeadline}
+          onToggle={() => actions.setTaskDone(item.taskId, item.periodKey, !item.done)}
+        />
+      </div>
+      {!item.done &&
+        (opened ? (
+          <button
+            type="button"
+            className="min-h-11 shrink-0 rounded-ui-sm px-2 text-caption font-semibold text-fg hover:bg-fill-2 sm:min-h-8"
+            onClick={done}
+          >
+            Mark done
+          </button>
+        ) : (
+          <a
+            href={item.link}
+            target="_blank"
+            rel="noreferrer"
+            className="min-h-11 shrink-0 content-center rounded-ui-sm px-2 text-caption font-semibold text-accent-fg hover:bg-fill-2 sm:min-h-8"
+            aria-label={`Open ${item.name}`}
+            onClick={() => setOpened(true)}
+          >
+            Open
+          </a>
+        ))}
+    </div>
   );
 }
 

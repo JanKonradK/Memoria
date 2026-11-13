@@ -77,6 +77,8 @@ export interface PresetTask {
   key: string;
   name: string;
   cadence: Cadence;
+  /** A page the task is done on, outside the game: a companion app's check-in. */
+  link?: string;
   /** For cadence "custom": rotation length in days (endgame cycles). */
   intervalDays?: number;
   mode?: TaskMode;
@@ -256,7 +258,12 @@ export const PRESETS: GamePreset[] = [
       // check-in lives on the HoYoLAB site/app, not in the game, and pays about
       // 60 Primogems plus mats a month on a 28-day streak. It also resets on the
       // 1st, so a missed day near the end of a month costs the streak too.
-      { key: 'genshin-hoyolab', name: 'HoYoLAB daily check-in', cadence: 'daily' },
+      {
+        key: 'genshin-hoyolab',
+        name: 'HoYoLAB daily check-in',
+        cadence: 'daily',
+        link: 'https://act.hoyolab.com/ys/event/signin-sea-v3/index.html?act_id=e202102251931481',
+      },
       { key: 'genshin-weekly-bosses', name: 'Weekly Bosses ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
       { key: 'genshin-reputation', name: 'Reputation bounties + requests', cadence: 'weekly' },
       // 6d22h cooldown from use, not a game-wide window — it starts when you
@@ -333,7 +340,12 @@ export const PRESETS: GamePreset[] = [
       },
       // Off-client and therefore invisible to every in-game reminder: the
       // HoYoLAB check-in pays Stellar Jade and mats daily and resets on the 1st.
-      { key: 'hsr-hoyolab', name: 'HoYoLAB daily check-in', cadence: 'daily' },
+      {
+        key: 'hsr-hoyolab',
+        name: 'HoYoLAB daily check-in',
+        cadence: 'daily',
+        link: 'https://act.hoyolab.com/bbs/event/signin/hkrpg/index.html?act_id=e202303301540311',
+      },
       // The largest repeatable Jade block outside the endgame modes.
       { key: 'hsr-universe', name: 'Simulated/Divergent Universe', cadence: 'weekly', core: true },
       { key: 'hsr-echo-of-war', name: 'Echo of War ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
@@ -382,7 +394,12 @@ export const PRESETS: GamePreset[] = [
       { key: 'zzz-coffee', name: 'Coffee (+60 Battery)', cadence: 'daily' },
       // Same off-client claim as the other two HoYo games — Polychrome and mats
       // from the HoYoLAB site, on a streak that resets on the 1st.
-      { key: 'zzz-hoyolab', name: 'HoYoLAB daily check-in', cadence: 'daily' },
+      {
+        key: 'zzz-hoyolab',
+        name: 'HoYoLAB daily check-in',
+        cadence: 'daily',
+        link: 'https://act.hoyolab.com/bbs/event/signin/zzz/e202406031448091.html?act_id=e202406031448091',
+      },
       // The track runs to 2100 points since v2.5, but all four Polychrome tiers
       // are paid by 800 — past that you are farming Denny, not pulls.
       { key: 'zzz-ridu', name: 'Ridu Weekly (800 for all Polychrome)', cadence: 'weekly', core: true },
@@ -754,3 +771,13 @@ export const PRESETS: GamePreset[] = [
     processNames: ['Endfield'],
   },
 ];
+
+/** The page a preset task is done on, by its preset task key. */
+let taskLinks: Map<string, string> | undefined;
+export function presetTaskLink(presetTaskKey: string | undefined): string | undefined {
+  if (!presetTaskKey) return undefined;
+  taskLinks ??= new Map(
+    PRESETS.flatMap((preset) => preset.tasks.flatMap((task) => (task.link ? [[task.key, task.link] as const] : []))),
+  );
+  return taskLinks.get(presetTaskKey);
+}
