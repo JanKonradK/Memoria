@@ -28,9 +28,12 @@ export function DesktopPresence() {
         />
       </SettingRow>
       {presence.gameWatch && (
-        <SettingRow label="Notify when a game starts" hint="Shows that game's dailies left when you open it.">
+        <SettingRow
+          label="Notices when a game starts or closes"
+          hint="On start: that game's dailies left. On closing after a session: a prompt to record what is left."
+        >
           <Toggle
-            ariaLabel="Notify when a game starts"
+            ariaLabel="Notices when a game starts or closes"
             checked={presence.gameStartNotices}
             onChange={(gameStartNotices) => void setPresence({ gameStartNotices })}
           />

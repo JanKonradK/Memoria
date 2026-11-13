@@ -537,7 +537,7 @@ fn create_tray(app: &AppHandle) -> tauri::Result<()> {
     let notices = CheckMenuItem::with_id(
         app,
         "notices",
-        "Notify when a game starts",
+        "Notices when a game starts or closes",
         true,
         prefs.game_start_notices,
         None::<&str>,
@@ -921,7 +921,7 @@ fn game_notify(app: AppHandle, webview: tauri::Webview, notice: Value) -> Comman
     let state = app.state::<App>();
     trusted(&webview, &state)?;
     let game_id = notice["gameId"].as_str().unwrap_or("").to_string();
-    // Only a game the watcher just reported can show a notice, once.
+    // Only a game the watcher just reported starting or stopping can show a notice, once.
     let reported = state.started_games.lock().unwrap().remove(&game_id);
     if !reported.is_some_and(|at| at.elapsed() < Duration::from_secs(60)) {
         return Ok(false);
@@ -1159,18 +1159,38 @@ fn main() {
                 register_notice_identity(&state.root);
             }
             let notices = handle.clone();
-            *state.watcher.lock().unwrap() = Some(presence::GameWatcher::new(move |game_id| {
-                let state = notices.state::<App>();
-                if !state.close.lock().unwrap().ready || !state.prefs.get().game_start_notices {
-                    return;
-                }
-                state
-                    .started_games
-                    .lock()
-                    .unwrap()
-                    .insert(game_id.clone(), Instant::now());
-                emit(&notices, "memoria:game-started", json!(game_id));
-            }));
+            let stops = handle.clone();
+            *state.watcher.lock().unwrap() = Some(presence::GameWatcher::new(
+                move |game_id| {
+                    let state = notices.state::<App>();
+                    if !state.close.lock().unwrap().ready || !state.prefs.get().game_start_notices {
+                        return;
+                    }
+                    state
+                        .started_games
+                        .lock()
+                        .unwrap()
+                        .insert(game_id.clone(), Instant::now());
+                    emit(&notices, "memoria:game-started", json!(game_id));
+                },
+                move |game_id, ran| {
+                    // A session worth recording: the moment it ends is when the
+                    // player knows what is left. A quick launch and exit is not one.
+                    let state = stops.state::<App>();
+                    if ran < Duration::from_secs(5 * 60)
+                        || !state.close.lock().unwrap().ready
+                        || !state.prefs.get().game_start_notices
+                    {
+                        return;
+                    }
+                    state
+                        .started_games
+                        .lock()
+                        .unwrap()
+                        .insert(game_id.clone(), Instant::now());
+                    emit(&stops, "memoria:game-stopped", json!(game_id));
+                },
+            ));
             create_window(&handle, &token)?;
             create_tray(&handle)?;
             apply_preferences(&handle);
