@@ -1202,12 +1202,6 @@ input[type='number'] {
     width var(--dur-base) var(--ease-out);
 }
 
-.tour-dialog {
-  transition:
-    left var(--dur-base) var(--ease-out),
-    top var(--dur-base) var(--ease-out);
-}
-
 @media (prefers-reduced-motion: reduce) {
   /* Pseudo-elements need naming explicitly — a bare `*` does not match them, and
      the attention indicator must remain static too. */

@@ -33,7 +33,9 @@ it('keeps countdown ticks and sheet navigation out of unrelated views', async ()
   vi.useFakeTimers();
   vi.spyOn(useApp.getState(), 'load').mockResolvedValue();
   useApp.setState({ state: emptyState(), loaded: true, loadError: '' });
-  useUI.setState({ tab: 'today', sheet: null, tourSeenVersion: 1 });
+  useUI.setState({ tab: 'today', sheet: null });
+  // Past first-run setup, which would otherwise take the whole screen.
+  localStorage.setItem('memoria-onboarding', 'complete');
   const { unmount } = render(<App />);
   await act(() => vi.dynamicImportSettled());
   vi.clearAllMocks();

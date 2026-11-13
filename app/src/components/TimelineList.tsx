@@ -167,7 +167,7 @@ export function TimelineList({
   const hiddenFinished = showFinished ? 0 : buckets.finished.length;
 
   return (
-    <div data-tour="timeline" className="timeline-board timeline-list-board relative">
+    <div className="timeline-board timeline-list-board relative">
       {sections.length === 0 ? (
         <p className="timeline-empty text-center text-body text-muted">
           {games.length > 0 && games.every((game) => game.paused)

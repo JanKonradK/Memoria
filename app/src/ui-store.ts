@@ -45,6 +45,8 @@ export function systemTheme(): Theme {
 export const resolveTheme = (preference: ThemePreference): Theme =>
   preference === 'system' ? systemTheme() : preference;
 export type TimelineView = 'list' | 'lanes';
+export const HINT_KEYS = ['energy', 'tasks', 'events'] as const;
+export type HintKey = (typeof HINT_KEYS)[number];
 
 /**
  * The theme is a token re-point on the root element — see index.css. Nothing
@@ -83,7 +85,6 @@ export type SheetRoute =
   | { kind: 'reminder' }
   /** A game closed on this PC after a real session: record what is left. */
   | { kind: 'session'; gameId: string }
-  | { kind: 'guide' }
   /** What a game added since the player last caught up. */
   | { kind: 'catchUp'; gameId: string }
   | null;
@@ -108,8 +109,11 @@ interface UIStore {
   setTimelineGameId(gameId: string | null): void;
   setTimelineView(view: TimelineView): void;
   setTimelineShowFinished(show: boolean): void;
-  tourSeenVersion: number;
-  finishTour(): void;
+  /** Set when first-run setup finishes: only a new install sees the hints. */
+  hintsArmed: boolean;
+  hintsSeen: Partial<Record<HintKey, true>>;
+  armHints(): void;
+  dismissHint(key: HintKey): void;
   setFocusedGameId(gameId: string | null): void;
   setTab(tab: Tab): void;
   /** The Settings pane shown beside its menu on wide windows. Session only. */
@@ -147,8 +151,10 @@ export const useUI = create<UIStore>()(
       setTimelineGameId: (timelineGameId) => set({ timelineGameId }),
       setTimelineView: (timelineView) => set({ timelineView }),
       setTimelineShowFinished: (timelineShowFinished) => set({ timelineShowFinished }),
-      tourSeenVersion: 0,
-      finishTour: () => set({ tourSeenVersion: 1, sheet: null }),
+      hintsArmed: false,
+      hintsSeen: {},
+      armHints: () => set({ hintsArmed: true, hintsSeen: {} }),
+      dismissHint: (key) => set((s) => ({ hintsSeen: { ...s.hintsSeen, [key]: true } })),
       setFocusedGameId: (focusedGameId) => set({ focusedGameId }),
       todayGameId: null,
       setTodayGameId: (todayGameId) => set({ todayGameId }),
@@ -187,7 +193,8 @@ export const useUI = create<UIStore>()(
         themePreference: state.themePreference,
         reserveOpen: state.reserveOpen,
         logoFlipped: state.logoFlipped,
-        tourSeenVersion: state.tourSeenVersion,
+        hintsArmed: state.hintsArmed,
+        hintsSeen: state.hintsSeen,
       }),
       merge: (persisted, current) => {
         // Rebuilt from a whitelist rather than spread over the defaults. This
@@ -221,7 +228,13 @@ export const useUI = create<UIStore>()(
                     .map((key) => [key, true as const]),
                 )
               : current.logoFlipped,
-          tourSeenVersion: typeof stored.tourSeenVersion === 'number' ? stored.tourSeenVersion : 0,
+          hintsArmed: stored.hintsArmed === true,
+          hintsSeen:
+            stored.hintsSeen && typeof stored.hintsSeen === 'object'
+              ? Object.fromEntries(
+                  HINT_KEYS.filter((key) => stored.hintsSeen![key] === true).map((key) => [key, true as const]),
+                )
+              : {},
         };
       },
     },
