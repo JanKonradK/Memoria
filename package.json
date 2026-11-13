@@ -29,7 +29,6 @@
     "icons": "node app/scripts/gen-mark.mjs && node app/scripts/gen-icons.mjs && node app/scripts/gen-ico.mjs",
     "ico": "node app/scripts/gen-ico.mjs",
     "install:desktop": "powershell -ExecutionPolicy Bypass -File desktop/Install-Shortcut.ps1",
-    "build:single": "npm -w app run build:single",
     "package": "node scripts/package-release.mjs",
     "export:events": "node scripts/export-event-feed.mjs",
     "feed:archive": "node scripts/archive-feed.mjs",

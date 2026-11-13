@@ -48,7 +48,6 @@ jobs:
       - run: npm run package
         env:
           MEMORIA_SKIP_SIGNING: '1'
-      - run: npm run build:single
       - run: npm exec -- playwright install chromium
       - run: npm run check:release
       # Windows 10 and 11 ship the WebView2 runtime the app draws with; the

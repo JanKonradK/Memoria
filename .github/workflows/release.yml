@@ -71,13 +71,11 @@ jobs:
             exit 1
           fi
 
-      # The downloadable zip, plus the single-file HTML for anyone who just
-      # wants to try it without unpacking anything.
+      # The downloadable Windows zip.
       # Add MEMORIA_SIGNING_KEY (the PEM contents) as an Actions secret before releasing.
       - run: npm run package
         env:
           MEMORIA_SIGNING_KEY: ${{ secrets.MEMORIA_SIGNING_KEY }}
-      - run: npm run build:single
       - run: npm exec -- playwright install chromium
       - run: npm run check:release
       # A release must not ship a main game's calendar days behind its update.
@@ -133,14 +131,6 @@ jobs:
           MEMORIA_KEYSTORE_PASSWORD: ${{ secrets.MEMORIA_KEYSTORE_PASSWORD }}
           MEMORIA_KEY_PASSWORD: ${{ secrets.MEMORIA_KEY_PASSWORD }}
 
-      - name: Add the single-file build to the checksums
-        shell: bash
-        run: |
-          cp app/dist-single/Memoria.html dist/release/Memoria.html
-          cd dist/release
-          sha256sum Memoria.html >> SHA256SUMS.txt
-          cat SHA256SUMS.txt
-
       - name: Sign all release assets
         run: node scripts/sign-release.mjs
         env:
@@ -169,7 +159,6 @@ jobs:
             echo "|---|---|"
             echo "| **[Memoria-win-x64.zip]($download/Memoria-win-x64.zip)** | Standalone Windows app. Extract the ZIP and run \`Add Memoria to Start Menu.cmd\`. Uses the WebView2 runtime built into Windows. |"
             echo "| **[Memoria-android.apk]($download/Memoria-android.apk)** | Android app. Open the APK on your phone or tablet and install it over the existing app. |"
-            echo "| [Memoria.html]($download/Memoria.html) | The whole app in one file. Double-click to open in any browser. |"
             echo
             echo "Installed apps update themselves: open **Settings → Updates**, or follow the notice when Memoria finds a new version."
             echo "Your data stays on each device and is never touched by an update."
@@ -191,7 +180,6 @@ jobs:
           files: |
             dist/release/Memoria-win-x64.zip
             dist/release/Memoria-android.apk
-            dist/release/Memoria.html
             dist/release/SHA256SUMS.txt
             dist/release/release-manifest.json
           body_path: dist/release-notes.md
