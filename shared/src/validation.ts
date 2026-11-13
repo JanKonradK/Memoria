@@ -190,6 +190,7 @@ const event = z.object({
   start: timestamp,
   end: timestamp,
   dailyTouch: z.boolean(),
+  reward: z.number().int().min(1).max(1_000_000).optional(),
   notify: z.boolean(),
   done: z.boolean().optional(),
   pinned: z.boolean().optional(),

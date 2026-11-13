@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { DateTime } from 'luxon';
-import { actBy, nextQuietWindow, type GameUrgency } from '@memoria/shared';
+import { actBy, eventReward, nextQuietWindow, type Game, type GameUrgency } from '@memoria/shared';
 import { useDerived, type Derived } from '../selectors';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
@@ -187,14 +187,18 @@ const CADENCE_NOUN: Record<string, [string, string]> = {
 };
 const AGENDA_PREVIEW = 10;
 
-function agendaText(item: TodayAgendaItem, gameName: (id: string) => string) {
+function agendaText(item: TodayAgendaItem, gameName: (id: string) => string, game?: Game) {
   const games = item.gameIds.map(gameName).join(', ');
   if (item.kind === 'energy') return { title: item.label, detail: games };
   if (item.kind === 'reset') {
     const [one, many] = CADENCE_NOUN[item.cadence] ?? CADENCE_NOUN.custom!;
     return { title: `${item.left} ${item.left === 1 ? one : many} reset`, detail: games };
   }
-  return { title: item.event.name, detail: `${item.edge === 'ends' ? 'Ends' : 'Starts'} · ${games}` };
+  const reward = item.edge === 'ends' && !item.event.done ? eventReward(item.event, game) : null;
+  return {
+    title: item.event.name,
+    detail: `${item.edge === 'ends' ? 'Ends' : 'Starts'} · ${games}${reward ? ` · ${reward.label} unclaimed` : ''}`,
+  };
 }
 
 /** Everything due across every game in the next day, under the list. */
@@ -239,7 +243,7 @@ function TodayAgenda({ derived, onSelectGame }: { derived: Derived; onSelectGame
       ) : (
         <ul className="today-agenda-list">
           {shown.map((item, index) => {
-            const { title, detail } = agendaText(item, gameName);
+            const { title, detail } = agendaText(item, gameName, byId.get(item.gameIds[0]!));
             const left = item.at - now;
             const actLeft = actBy(state.settings, item.at, now) - now;
             const calendar = item.kind === 'event' ? calendarSchedule(item.event) : undefined;
