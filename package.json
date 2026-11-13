@@ -33,6 +33,7 @@
     "package": "node scripts/package-release.mjs",
     "export:events": "node scripts/export-event-feed.mjs",
     "feed:archive": "node scripts/archive-feed.mjs",
+    "feed:draft": "node scripts/feed-draft.mjs",
     "desktop": "npm run build && cargo run --manifest-path desktop/tauri/Cargo.toml",
     "check:native": "node scripts/check-native.mjs",
     "test:rust": "npm run build:desktop && cargo test --manifest-path desktop/tauri/Cargo.toml --quiet"
