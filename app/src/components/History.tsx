@@ -16,7 +16,6 @@ import { GameSavingsPanel, useOpenBanners } from './Savings';
 import { GamePityPanel } from './Pity';
 import { GameLogo } from './GameLogo';
 import { rosterGames } from './roster';
-import { useUI } from '../ui-store';
 import { ChartTip, fmt, Legend, niceMax, shortDate, signed, tickLabel, ticks } from './chart';
 import '../history.css';
 
@@ -73,13 +72,12 @@ function readPick(): string | null {
 export function PullsPage() {
   const loaded = useHistory();
   const state = useApp((s) => s.state);
-  const focusedGameId = useUI((ui) => ui.focusedGameId);
   const ground = useGround();
   const now = useNow(60_000);
   const games = useMemo(() => rosterGames(state.games), [state.games]);
   const inks = useMemo(() => assignGameInks(games, ground), [games, ground]);
   const banners = useOpenBanners(now);
-  const [pick, setPick] = useState<string | null>(() => focusedGameId ?? readPick());
+  const [pick, setPick] = useState<string | null>(() => readPick());
   const choose = (value: string) => {
     setPick(value);
     try {
@@ -88,10 +86,6 @@ export function PullsPage() {
       // Remembering the choice is a convenience; the page works without it.
     }
   };
-  // Focusing a game elsewhere in the app brings it up here; a chip still switches away.
-  useEffect(() => {
-    if (focusedGameId) setPick(focusedGameId);
-  }, [focusedGameId]);
   const view = pick === HISTORY || games.some((game) => game.id === pick) ? pick! : (games[0]?.id ?? HISTORY);
   const game = games.find((candidate) => candidate.id === view);
   // Two accounts of one game share a short name; the nickname tells them apart.

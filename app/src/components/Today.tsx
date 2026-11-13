@@ -124,7 +124,9 @@ function PriorityRow({
               )}
             </>
           )}
-          <span className="today-row-what aside truncate text-caption">{next?.label ?? 'No deadlines'}</span>
+          <span className="today-row-what aside truncate text-caption">
+            {next?.label ?? (resource && !known ? `Enter ${resource.name}` : 'No deadlines')}
+          </span>
         </span>
         <span className="today-row-ring">
           {dailies.length > 0 && (

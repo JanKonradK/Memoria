@@ -346,15 +346,19 @@
   }
 }
 
-/* Narrow lists drop the deadline label and the reading's age; the countdown
-   and the screen reader summary still say what is next. */
+/* Narrow lists drop the reading's age and move the deadline label to its own
+   line, so a countdown never stands alone without saying what it is for. */
 @container (max-width: 34rem) {
   .today-row-reading {
     grid-template-columns: minmax(0, 1fr) 4.5rem;
+    row-gap: 0.125rem;
   }
-  .today-row-source,
-  .today-row-what {
+  .today-row-source {
     display: none;
+  }
+  .today-row-what {
+    grid-column: 1 / -1;
+    justify-self: start;
   }
 }
 @container (max-width: 20rem) {

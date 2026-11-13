@@ -91,7 +91,7 @@ it('says when the value was entered and labels current projections as estimates'
   expect(screen.queryByText(/live/i)).not.toBeInTheDocument();
 });
 
-it('distinguishes starting estimates and clamps age when the device clock moves back', () => {
+it('treats a starting guess as no reading, and clamps age when the device clock moves back', () => {
   const state = fixture();
   state.snapshots[0]!.provenance = {
     kind: 'estimate',
@@ -100,7 +100,8 @@ it('distinguishes starting estimates and clamps age when the device clock moves 
   };
   useApp.setState({ state });
   show(<TodayPage now={NOW} />);
-  expect(row('Near cap')).toHaveAccessibleDescription(/Estimated 195 of 200 Energy, from a starting estimate/);
+  // A guess must not project a confident cap time (F2).
+  expect(row('Near cap')).toHaveAccessibleDescription(/No Energy reading yet/);
   state.snapshots[0]!.provenance = { kind: 'manual', observedAt: NOW + 60_000, importedAt: NOW };
   act(() => useApp.setState({ state: { ...state, snapshots: [...state.snapshots] } }));
   expect(row('Near cap')).toHaveAccessibleDescription(/Estimated 195 of 200 Energy, entered just now/);

@@ -80,7 +80,7 @@ The app tries the supplied addresses until it reaches the PC. It does not scan t
 Manual entry remains available. A failed replacement scan keeps the previous connection.
 The camera permission request occurs only after the user selects Scan PC code. The scanner does not save images.
 
-Wi-Fi sync uses HTTP on a trusted private network. It does not encrypt network traffic.
+Wi-Fi sync uses HTTP, but every request and reply is encrypted and authenticated by the app itself; see `docs/publisher-trust.md`.
 Both sides also accept 100.64.0.0/10, the range Tailscale uses, so sync works away from home over an encrypted tailnet.
 Every `/sync` reply lists the PC's current addresses. The phone keeps up to eight and tries the others when the last working one cannot be reached.
 Keep the PC on and Memoria open. The phone syncs while its app is open and after it returns to the foreground.

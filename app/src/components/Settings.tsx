@@ -58,15 +58,9 @@ export function SettingsPage() {
   const update = useAppUpdate();
   const launcher = servedByLauncher();
   const settings = state.settings;
-  const focusedGameId = useUI((s) => s.focusedGameId);
   const detectedTz = detectLocalTz();
   const games = rosterGames(state.games);
   const identityColors = useIdentityColors(state.games);
-  // A focused game narrows this page too, so the roster shows the one game the
-  // rest of the app is showing. A focus on a game that is gone narrows nothing.
-  const listedGames = games.some((game) => game.id === focusedGameId)
-    ? games.filter((game) => game.id === focusedGameId)
-    : games;
   const [statusMessage, setStatusMessage] = useState('');
   const [importDraft, setImportDraft] = useState<{ text: string; games: number; events: number } | null>(null);
   useUnsavedDraft(importDraft !== null);
@@ -202,7 +196,7 @@ export function SettingsPage() {
             >
               {games.length > 0 ? (
                 <ul className="settings-roster" aria-label="Your games">
-                  {listedGames.map((game) => (
+                  {games.map((game) => (
                     <GameRosterRow
                       key={game.id}
                       game={game}
@@ -213,11 +207,6 @@ export function SettingsPage() {
                 </ul>
               ) : (
                 <p className="settings-note text-body text-dim">No games yet.</p>
-              )}
-              {listedGames.length < games.length && (
-                <p className="settings-note pt-2 text-meta text-muted">
-                  Showing the focused game. Clear the focus to see all {games.length}.
-                </p>
               )}
             </SettingsPane>
 

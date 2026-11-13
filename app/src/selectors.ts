@@ -1,5 +1,11 @@
 import type { AppState, EnergyProjection, Resource, ChecklistItem, GameUrgency, Snapshot } from '@memoria/shared';
-import { buildUrgencyContext, effectiveResourceKind, projectEnergy, urgencyOrder } from '@memoria/shared';
+import {
+  buildUrgencyContext,
+  effectiveResourceKind,
+  measuredSnapshot,
+  projectEnergy,
+  urgencyOrder,
+} from '@memoria/shared';
 import { useApp } from './store';
 import { selectAgendaData, type AgendaData, type AgendaMode } from './agenda-data';
 
@@ -50,7 +56,10 @@ function createDerived(state: AppState, now: number): Derived {
       const game = gameById.get(gameId);
       const result = {
         resource,
-        projection: resource && game ? projectEnergy(resource, snaps.get(resource.id), now, game) : null,
+        projection:
+          resource && game
+            ? projectEnergy(resource, measuredSnapshot(resource, snaps.get(resource.id)), now, game)
+            : null,
       };
       energyByGame.set(gameId, result);
       return result;
