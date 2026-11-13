@@ -1,3 +1,4 @@
+import { gzipSync } from 'node:zlib';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
@@ -23,15 +24,24 @@ const assets = await readdir(resolve(dist, 'assets'));
 const jsFiles = assets.filter((file) => file.endsWith('.js'));
 if (jsFiles.length === 0) throw new Error('No JavaScript bundle found in app/dist/assets');
 
+// What a phone downloads and parses before the first screen: the entry page's
+// scripts and styles, gzipped. Held at the measured size plus a little room; it
+// only moves up with a decision in review, never to make a failing build pass.
+const STARTUP_BUDGET = 380 * 1024;
+const startup = [...html.matchAll(/(?:src|href)="\/(assets\/[^"]+\.(?:js|css))"/g)].map((match) => match[1]);
+let startupBytes = 0;
+for (const file of startup) startupBytes += gzipSync(await readFile(resolve(dist, file)), { level: 9 }).length;
+if (startupBytes > STARTUP_BUDGET)
+  throw new Error(
+    `The startup path is ${startupBytes} bytes gzipped; the budget is ${STARTUP_BUDGET}. Load something later instead.`,
+  );
+
 const sizes = await Promise.all(
   jsFiles.map(async (file) => ({ file, bytes: (await stat(resolve(dist, 'assets', file))).size })),
 );
 const largest = sizes.sort((a, b) => b.bytes - a.bytes)[0];
-// A backstop against runaway growth, not a tight fit. The old 350 KB line had
-// been under water for a while, so it reported nothing except its own staleness
-// and CI learned to ignore it. What actually governs load is the compressed
-// size, and this bundle gzips to roughly a third of the figure measured here.
-const budget = 1024 * 1024;
+// A backstop for any single chunk, lazy ones included.
+const budget = 512 * 1024;
 
 if (largest.bytes > budget) {
   throw new Error(
@@ -39,7 +49,6 @@ if (largest.bytes > budget) {
   );
 }
 
-const used = ((largest.bytes / budget) * 100).toFixed(0);
 console.log(
-  `PWA artifacts present; largest JavaScript bundle is ${largest.bytes} bytes (${used}% of the ${budget}-byte budget).`,
+  `PWA artifacts present; startup path ${startupBytes} bytes gzipped (budget ${STARTUP_BUDGET}); largest chunk ${largest.bytes} bytes (budget ${budget}).`,
 );

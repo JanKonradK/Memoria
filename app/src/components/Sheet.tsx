@@ -160,7 +160,7 @@ export function Sheet({
             >
               <DialogPrimitive.Overlay forceMount asChild>
                 <m.div
-                  className="pointer-events-auto fixed inset-0 bg-scrim-veil backdrop-blur-[2px]"
+                  className="sheet-scrim pointer-events-auto fixed inset-0 bg-scrim-veil backdrop-blur-[2px]"
                   variants={backdropFade}
                 />
               </DialogPrimitive.Overlay>

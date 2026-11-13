@@ -1402,6 +1402,23 @@ input[type='number'] {
     height: 20px;
   }
 }
+/* A blur behind the dock and sheets is recomputed on every scroll frame. On a
+   phone that is the hot path, so touch screens get a solid tint instead. */
+@media (pointer: coarse) {
+  .app-nav {
+    background: color-mix(in srgb, var(--color-surface-1) 94%, transparent);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .glass {
+    background: var(--color-surface-1);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .sheet-scrim {
+    backdrop-filter: none;
+  }
+}
 @media (prefers-reduced-transparency: reduce) {
   .app-nav {
     background: var(--color-surface-1);

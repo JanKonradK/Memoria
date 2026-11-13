@@ -160,7 +160,8 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   await dialog.getByRole('tab', { name: 'Energy', exact: true }).click();
   // By role: the section heading and the "Add quick spend" button share text.
   await dialog.getByRole('heading', { name: 'Quick spend' }).scrollIntoViewIfNeeded();
-  await dialog.getByPlaceholder('Label, e.g. Domain').fill('Domain');
+  // Genshin ships Domain −20; this adds a spend of its own.
+  await dialog.getByPlaceholder('Label, e.g. Domain').fill('Ley line');
   await dialog.getByRole('button', { name: 'Add quick spend' }).click();
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
@@ -171,6 +172,7 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   const openControls = gameRow(page, 'Genshin Impact');
   if (await openControls.isVisible()) await openControls.click();
   await expect(page.getByRole('button', { name: /Domain -20/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ley line -20/ })).toBeVisible();
   const timer = page.getByRole('button', { name: 'Crystalfly Trap (Crystal Cores): mark collected and resent' });
   await timer.scrollIntoViewIfNeeded();
   await expect(timer).toBeVisible();

@@ -1,7 +1,7 @@
-import genshinArtwork from '../assets/livestreams/genshin-7.2.jpg';
-import nteArtwork from '../assets/livestreams/nte-1.5.jpg';
-import wuwaArtwork from '../assets/livestreams/wuwa-3.7.jpg';
-import hsrArtwork from '../assets/livestreams/hsr-4.7.jpg';
+import genshinArtwork from '../assets/livestreams/genshin-7.2.webp';
+import nteArtwork from '../assets/livestreams/nte-1.5.webp';
+import wuwaArtwork from '../assets/livestreams/wuwa-3.7.webp';
+import hsrArtwork from '../assets/livestreams/hsr-4.7.webp';
 
 /**
  * What each game version added, curated by hand from official notices and

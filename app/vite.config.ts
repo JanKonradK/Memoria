@@ -7,6 +7,21 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { singleFile } from './scripts/vite-single-file.ts';
 
 /**
+ * Every browser Memoria runs in (WebView2, the Android WebView) reads WOFF2, so
+ * the legacy WOFF copy each @fontsource face lists as a fallback only adds weight.
+ */
+function woff2Only() {
+  return {
+    name: 'memoria-woff2-only',
+    enforce: 'pre' as const,
+    transform(code: string, id: string) {
+      if (!id.includes('@fontsource') || !id.endsWith('.css')) return null;
+      return { code: code.replace(/,\s*url\([^)]*\.woff\)\s*format\(['"]woff['"]\)/g, ''), map: null };
+    },
+  };
+}
+
+/**
  * `--mode singlefile` builds the shareable copy: one self-contained
  * dist-single/Memoria.html that runs off a double-click. See scripts/vite-single-file.ts.
  */
@@ -55,6 +70,7 @@ export default defineConfig(({ mode }) => {
       alias,
     },
     plugins: [
+      woff2Only(),
       react(),
       tailwindcss(),
       ...(single
