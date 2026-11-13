@@ -48,7 +48,8 @@ export const DEFAULT_ALERT_MINUTES: Record<AlertType, number> = {
 /** Event kinds whose end costs the player something. Banners count only when pinned. */
 const LOSABLE_EVENTS = new Set<GameEvent['type']>(['event', 'cycle', 'custom']);
 
-function notificationId(key: string): number {
+/** A stable notification id for a key, so a rebuilt plan replaces rather than repeats. */
+export function notificationId(key: string): number {
   let hash = 2166136261;
   for (const char of key) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
   return ((hash >>> 0) % 2000000000) + 1;
