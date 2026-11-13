@@ -55,13 +55,6 @@ Download **Memoria-android.apk** from the [latest release](https://github.com/Ja
 The app works offline and stores your data on the phone. Use **Settings → Data → Export backup** to save a separate copy.
 Memoria updates itself from **Settings → Updates**. Uninstalling the app removes its local data.
 
-### Try it as one file
-
-Download **Memoria.html** from the same page. Open the file with **Chrome or Edge**.
-
-This version works offline and saves your progress in that browser. It does not update itself.
-Keep the file in the same location, and use the same browser each time.
-
 ## Add your games
 
 1. Open Memoria.

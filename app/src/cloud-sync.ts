@@ -9,9 +9,9 @@ import { useApp, type CloudStatus } from './store';
  * share. Memoria never talks to any of them. It writes one JSON file where you
  * point it, and the folder's own client carries that file between machines.
  *
- * This exists for the browser builds, above all the single-file `Memoria.html`,
- * which has no launcher behind it and therefore no `%APPDATA%\memoria\state.json`
- * for two windows to agree through (see sync.ts). Point every device at the same
+ * This exists for the browser build, which has no launcher behind it and
+ * therefore no `%APPDATA%\memoria\state.json` for two windows to agree through
+ * (see sync.ts). Point every device at the same
  * file inside the same synced folder and they converge.
  *
  * WHY A FILE AND NOT AN ACCOUNT. Every one of those providers has an API, and
@@ -90,9 +90,7 @@ const JSON_TYPE: FilePickerType = {
 };
 
 /**
- * Verified present on `file://` in Chromium, which is the case that matters:
- * the single-file build is opened by double-clicking it. Firefox and Safari ship
- * neither picker, and there is no polyfill that can hold a handle across a
+ * Present in Chromium-based browsers. Firefox and Safari ship neither picker, and there is no polyfill that can hold a handle across a
  * reload — those browsers get told to use Export/Import instead.
  */
 export function cloudSyncSupported(): boolean {
