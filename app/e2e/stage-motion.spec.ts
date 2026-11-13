@@ -41,7 +41,7 @@ test('saved sheets animate out and lazy editors can open after dismissal', async
   await expect(page.getByRole('dialog', { name: 'Motion preview' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Switch to light theme' }).click();
+  await page.emulateMedia({ colorScheme: 'light' });
   await page.screenshot({ path: testInfo.outputPath('light-dashboard.png') });
 });
 

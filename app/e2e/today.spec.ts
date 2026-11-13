@@ -30,7 +30,7 @@ test('Today starts a new roster and keeps all navigation reachable', async ({ pa
       ['serious', 'critical'].includes(issue.impact ?? ''),
     ),
   ).toEqual([]);
-  await page.getByRole('button', { name: 'Switch to light theme' }).click();
+  await page.emulateMedia({ colorScheme: 'light' });
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await expect(primary.getByRole('button', { name: 'Timeline' })).toHaveCSS('color', 'rgb(53, 55, 64)');
   expect(

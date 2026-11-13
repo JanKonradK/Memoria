@@ -32,7 +32,11 @@
             break;
           }
         }
-        const theme = JSON.parse(stored || '{}')?.state?.theme;
+        const saved = JSON.parse(stored || '{}')?.state ?? {};
+        // Follows the device unless a theme was chosen.
+        const choice = saved.themePreference ?? saved.theme ?? 'system';
+        const theme =
+          choice === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : choice;
         document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark';
         if (theme === 'light') {
           document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f6f7f9');

@@ -94,7 +94,7 @@ test('paused accounts stay compact in both views and resume their saved events',
   const altRows = page.locator('[data-event-id^="alt-"], [data-list-event^="alt-"]');
   const altPause = page.locator('[data-paused-game="alt"]');
   for (const theme of ['dark', 'light']) {
-    if (theme === 'light') await page.getByRole('button', { name: 'Switch to light theme', exact: true }).click();
+    if (theme === 'light') await page.emulateMedia({ colorScheme: 'light' });
     for (const mode of ['Timeline', 'List']) {
       await view.getByRole('radio', { name: mode, exact: true }).click();
       await expect(altPause).toBeVisible();

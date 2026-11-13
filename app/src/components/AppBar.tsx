@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { DateTime } from 'luxon';
-import { useNow, useReducedMotion } from '../hooks';
+import { useReducedMotion } from '../hooks';
 import { useApp } from '../store';
 import { syncNow } from '../sync';
 import { cloudSyncNow } from '../cloud-sync';
@@ -68,16 +67,6 @@ const SYNC_TONE = {
   error: 'bg-danger',
 } as const;
 
-function AppBarClock() {
-  const now = useNow(30_000);
-  const localTz = useApp((state) => state.state.settings.localTz);
-  return (
-    <span className="numeral text-meta text-muted">
-      {DateTime.fromMillis(now, { zone: localTz }).toFormat('HH:mm')}
-    </span>
-  );
-}
-
 function SyncIndicator() {
   const desktop = useApp((s) => s.syncStatus);
   const desktopError = useApp((s) => s.syncError);
@@ -102,20 +91,30 @@ function SyncIndicator() {
         ? 'ok'
         : 'idle';
 
+  // Healthy sync says nothing; trouble says so in words and leads to the fix.
   return (
-    <span
-      className="flex items-center gap-1.5"
-      role="status"
-      aria-live="polite"
-      title={issue || SYNC_ANNOUNCEMENT[status]}
-    >
-      <span className="sr-only">{issue || SYNC_ANNOUNCEMENT[status]}</span>
-      <span aria-hidden className={`h-1.5 w-1.5 rounded-ui-md ${SYNC_TONE[status]}`} />
+    <span className="flex items-center gap-1.5" role="status" aria-live="polite" title={issue || undefined}>
+      {issue ? (
+        <button
+          type="button"
+          className="flex min-h-11 items-center gap-1.5 rounded-ui-md px-2 text-meta font-semibold text-danger-fg hover:bg-fill-2 md:min-h-9"
+          onClick={() => useUI.getState().openSettings('sync')}
+        >
+          <span aria-hidden className={`h-1.5 w-1.5 rounded-ui-md ${SYNC_TONE[status]}`} />
+          <span className="hidden sm:inline">Sync needs attention</span>
+          <span className="sr-only sm:hidden">{issue}</span>
+        </button>
+      ) : (
+        <span className="sr-only">{SYNC_ANNOUNCEMENT[status]}</span>
+      )}
     </span>
   );
 }
 
-/** Bring what you are looking at up to date. */
+/**
+ * Retry loading and syncing. Only shown when something failed: otherwise the app
+ * refreshes on its own when it comes back into view.
+ */
 function RefreshButton() {
   const load = useApp((s) => s.load);
   const reducedMotion = useReducedMotion();
@@ -198,8 +197,11 @@ export function AppBar() {
   const tab = useUI((s) => s.tab);
   const setTab = useUI((s) => s.setTab);
   const { navRef, slider } = useRouteSlider(tab);
-  const theme = useUI((s) => s.theme);
-  const toggleTheme = useUI((s) => s.toggleTheme);
+  // Refresh is a retry: shown when loading, saving or syncing has failed.
+  const needsRefresh = useApp(
+    (s) => Boolean(s.loadError || s.saveError) || s.syncStatus === 'error' || s.cloudStatus === 'error',
+  );
+  const lanTrouble = useLanSync((s) => s.status === 'error');
   const barRef = useMeasuredBarHeight();
 
   return (
@@ -208,14 +210,10 @@ export function AppBar() {
       data-desktop={isDesktopApp() || undefined}
       className="app-bar sticky top-0 z-40 border-b border-line bg-surface-0/92 px-3 py-2 backdrop-blur-sm sm:px-4"
     >
-      {/* Tabular clock digits keep the brand width stable while time changes. */}
       <div className="app-brand flex items-center gap-2.5">
         {/* Sized to the bar's 44px controls, so it grows without making the bar taller. */}
         <Logo className="[&>svg]:h-7 [&>svg]:w-14" />
         <span className="text-heading leading-none font-semibold tracking-[-0.02em] text-fg">Memoria</span>
-        <span className="hidden sm:inline">
-          <AppBarClock />
-        </span>
       </div>
 
       <nav
@@ -277,34 +275,7 @@ export function AppBar() {
       <div className="app-utilities flex items-center justify-end gap-1 sm:gap-2">
         <SyncIndicator />
         <AddMenu />
-        <RefreshButton />
-        <button
-          type="button"
-          onClick={toggleTheme}
-          aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-          className="shell-control"
-        >
-          <svg
-            key={theme}
-            aria-hidden
-            viewBox="0 0 20 20"
-            className="theme-icon icon h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            {theme === 'dark' ? (
-              <>
-                <circle cx="10" cy="10" r="3.25" />
-                <path d="M10 1.5v1.25m0 14.5v1.25M1.5 10h1.25m14.5 0h1.25M4 4l1 1m10 10 1 1M4 16l1-1M15 5l1-1" />
-              </>
-            ) : (
-              <path d="M17 12A7.5 7.5 0 0 1 8 3a7.5 7.5 0 1 0 9 9Z" />
-            )}
-          </svg>
-          <span className="hidden sm:inline">{theme === 'dark' ? 'Light' : 'Dark'}</span>
-        </button>
+        {(needsRefresh || lanTrouble) && <RefreshButton />}
       </div>
     </header>
   );
