@@ -103,20 +103,32 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      # A dedicated release key (docs/android-signing.md) is used once its alias
+      # secret exists; until then, the legacy key installed devices already trust.
       - name: Restore the Android signing key
         shell: bash
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          MEMORIA_KEY_ALIAS: ${{ secrets.MEMORIA_KEY_ALIAS }}
         run: |
           if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
             echo "The ANDROID_KEYSTORE_BASE64 secret is missing."
             exit 1
           fi
           mkdir -p "$HOME/.android"
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$HOME/.android/debug.keystore"
+          if [ -n "$MEMORIA_KEY_ALIAS" ]; then
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$HOME/.android/memoria-release.jks"
+            echo "MEMORIA_KEYSTORE=$HOME/.android/memoria-release.jks" >> "$GITHUB_ENV"
+          else
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$HOME/.android/debug.keystore"
+          fi
 
       # Appends Memoria-android.apk to SHA256SUMS.txt, which the app checks.
       - run: npm run build:android
+        env:
+          MEMORIA_KEY_ALIAS: ${{ secrets.MEMORIA_KEY_ALIAS }}
+          MEMORIA_KEYSTORE_PASSWORD: ${{ secrets.MEMORIA_KEYSTORE_PASSWORD }}
+          MEMORIA_KEY_PASSWORD: ${{ secrets.MEMORIA_KEY_PASSWORD }}
 
       - name: Add the single-file build to the checksums
         shell: bash

@@ -98,7 +98,7 @@ npm run build:android
 
 The output is `dist/release/Memoria-android.apk`, a release build. Its version comes from `package.json`.
 The APK contains the app assets and supports offline startup. The minimum version is Android 7 (API 24).
-It is signed with `~/.android/debug.keystore`, the key already on installed devices. Set `MEMORIA_KEYSTORE` and its password variables to use another.
+It is signed with `~/.android/debug.keystore`, the key already on installed devices, until the move to a dedicated release key described in `docs/android-signing.md`. Set `MEMORIA_KEYSTORE` and its password variables to use another.
 Android refuses an update signed with a different key, so every published APK must use this one.
 The release workflow restores it from the `ANDROID_KEYSTORE_BASE64` repository secret.
 
