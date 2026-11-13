@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addPulls,
+  chanceOfFeatured,
   EMPTY_TRACK,
   expectedPullsToFiveStar,
   GamePitySchema,
@@ -159,5 +160,30 @@ describe('stored pity', () => {
     const bad = state.games.find((g) => g.id === 'bad');
     expect(bad).toBeDefined();
     expect(bad).not.toHaveProperty('pity');
+  });
+});
+
+describe('chance of the featured 5★', () => {
+  const rule = PITY_RULES.genshin![0]!;
+  it('is certain by worst-case pity, and rises with pulls', () => {
+    const fresh = { count: 0, guaranteed: false };
+    expect(chanceOfFeatured(rule, fresh, 0)).toBe(0);
+    expect(chanceOfFeatured(rule, fresh, 180)).toBeCloseTo(1, 9);
+    const ninety = chanceOfFeatured(rule, fresh, 90);
+    expect(ninety).toBeGreaterThanOrEqual(0.55);
+    expect(ninety).toBeLessThan(0.7);
+    expect(chanceOfFeatured(rule, fresh, 60)).toBeLessThan(ninety);
+  });
+
+  it('uses the pity already built and a guarantee', () => {
+    expect(chanceOfFeatured(rule, { count: 89, guaranteed: true }, 1)).toBeCloseTo(1, 9);
+    expect(chanceOfFeatured(rule, { count: 89, guaranteed: false }, 1)).toBeCloseTo(0.55, 6);
+    expect(
+      chanceOfFeatured(
+        PITY_RULES.genshin!.find((item) => item.id === 'standard')!,
+        { count: 0, guaranteed: false },
+        90,
+      ),
+    ).toBeCloseTo(1, 9);
   });
 });

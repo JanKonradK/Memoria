@@ -261,6 +261,41 @@ export function pullsForFeatured(rule: PityRule, track: PityTrack): PullsNeeded 
   };
 }
 
+/**
+ * The chance of the featured 5★ within `pulls` pulls from where the track
+ * stands: its pity count and whether the next 5★ is guaranteed. On a standard
+ * banner, the chance of any 5★.
+ */
+export function chanceOfFeatured(
+  rule: PityRule,
+  track: Pick<PityTrack, 'count' | 'guaranteed'>,
+  pulls: number,
+): number {
+  const certain = rule.featured === undefined || rule.featured >= 1;
+  const start = Math.min(Math.max(0, track.count), rule.hard - 1);
+  // waiting[g][c]: still without the featured 5★, `c` pulls into pity, guaranteed if g = 1.
+  let waiting = [new Float64Array(rule.hard), new Float64Array(rule.hard)];
+  waiting[track.guaranteed || certain ? 1 : 0]![start] = 1;
+  let won = 0;
+  // Past two full pities the featured 5★ is certain.
+  for (let pull = 0; pull < Math.min(Math.max(0, Math.floor(pulls)), rule.hard * 2); pull++) {
+    const next = [new Float64Array(rule.hard), new Float64Array(rule.hard)];
+    for (let guaranteed = 0; guaranteed < 2; guaranteed++)
+      for (let count = 0; count < rule.hard; count++) {
+        const mass = waiting[guaranteed]![count]!;
+        if (!mass) continue;
+        const five = rateAt(rule, count + 1);
+        if (count + 1 < rule.hard) next[guaranteed]![count + 1]! += mass * (1 - five);
+        const featured = guaranteed ? 1 : rule.featured!;
+        won += mass * five * featured;
+        // Lost the 50/50: the next 5★ is guaranteed.
+        next[1]![0]! += mass * five * (1 - featured);
+      }
+    waiting = next;
+  }
+  return Math.min(1, won);
+}
+
 export interface PityStats {
   fiveStars: number;
   /** Average pull a 5★ came on, or null with none logged. */
