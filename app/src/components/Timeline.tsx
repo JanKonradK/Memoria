@@ -22,7 +22,6 @@ import { TimelineList } from './TimelineList';
 import { PinnedEvents } from './PinnedEvents';
 import { PinMark } from './EventPeek';
 import { gameServerLabel } from '../server-choice';
-import { titleStyle } from '../fonts';
 import { assignGameInks, gameTitleInk, mix, onColor } from '../game-color';
 import { THEME_PANEL, useGround, useInset, useTheme } from '../theme';
 import { EventTags } from './EventTags';
@@ -63,7 +62,7 @@ function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; 
       <div className="min-w-0 flex-1">
         <h2
           className="truncate text-body"
-          style={{ ...titleStyle(game.titleFont), color: gameTitleInk(game, ground, 4.5) }}
+          style={{ color: gameTitleInk(game, ground, 4.5) }}
         >
           {game.name}
         </h2>
@@ -1245,7 +1244,7 @@ export function TimelinePage({ now }: { now: number }) {
                           <GameLogo game={{ ...game, ...colors }} size={compact ? 30 : 36} />
                           <span
                             className="min-w-0 truncate text-body"
-                            style={{ ...titleStyle(game.titleFont), color: gameTitleInk(colors, titleGround, 4.5) }}
+                            style={{ color: gameTitleInk(colors, titleGround, 4.5) }}
                           >
                             {game.name}
                           </span>

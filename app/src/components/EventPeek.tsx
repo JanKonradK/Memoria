@@ -12,7 +12,6 @@ import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { endTone, fmtDur } from '../util';
 import { gameInk } from '../game-color';
-import { titleStyle } from '../fonts';
 import { useGround } from '../theme';
 import { EventTags } from './EventTags';
 import { GameLogo } from './GameLogo';
@@ -116,7 +115,7 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
         <div className="flex min-w-0 items-center gap-3">
           <GameLogo game={visualGame} size={56} flippable />
           <div className="min-w-0">
-            <p className="truncate text-body" style={{ ...titleStyle(game.titleFont), color: ink }}>
+            <p className="truncate text-body" style={{ color: ink }}>
               {game.name}
             </p>
             <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-muted">
