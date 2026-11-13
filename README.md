@@ -9,13 +9,13 @@ You enter your progress yourself, in a tap or two per game.
 Memoria does not play games or collect rewards for you.
 You do not need a Memoria account or any coding knowledge.
 
-## Version 3.0
+## What it does
 
 - **Flexible layouts** adapt to phone screens, small PC windows, and large displays.
 - **Today** ranks every game by what is lost first, then lists what ends, caps or resets in the next two days across every game. Select a game for its complete controls.
-- **Calendar** shows events, banners, resets, and livestreams.
+- **Timeline** shows events, banners, resets, and livestreams, and says when a game's calendar is behind its latest version.
 - **Catch up**, in each game's heading, sums up what recent versions added: characters, weapons, gear sets, outfits, events, quality-of-life changes and codes.
-- **Launch** starts a game from its card in the Windows app. Select the pencil button on the card to choose what it starts.
+- **Launch** starts a game from its page in the Windows app. Choose what it starts in the game's **Game settings**.
 
 Each energy estimate shows how long ago you entered its value.
 The header status refers to device sync. Memoria never reads your game account.
@@ -36,7 +36,7 @@ The header status refers to device sync. Memoria never reads your game account.
 Memoria opens in its own desktop window. The download includes its own runtime.
 You do not need a browser or developer tools.
 Press **Alt** to show the desktop menu.
-Phone sync is available while the window is open. Closing the window quits Memoria.
+Closing the window keeps Memoria in the tray, so phone sync and reminders keep working. Quit from the tray icon.
 
 To install Memoria, close the app and double-click **Add Memoria to Start Menu.cmd**.
 The installer copies the app to `%LOCALAPPDATA%\Programs\Memoria` and creates Desktop and Start Menu shortcuts.

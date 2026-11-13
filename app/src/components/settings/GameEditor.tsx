@@ -10,6 +10,7 @@ import { fileToImageDataUrl, intOr, localResetLabel } from '../../util';
 import { ResourceEditor } from '../game-detail/ResourceEditor';
 import { GameEvents } from '../GameEvents';
 import { GameLogo } from '../GameLogo';
+import { LaunchSettings } from '../GameLaunch';
 import { useGameDraft } from '../game-detail/useGameDraft';
 import { gameServerLabel } from '../../server-choice';
 import { TrackingItem } from './TrackingItem';
@@ -437,6 +438,8 @@ export function GameEditor({
                 onBlur={commitDraft}
               />
             </section>
+
+            <LaunchSettings game={game} />
 
             <section>
               <SectionTitle>Pause or delete</SectionTitle>
