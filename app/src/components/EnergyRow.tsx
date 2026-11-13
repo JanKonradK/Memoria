@@ -124,9 +124,12 @@ function ValueStepper({
   onEndEdit,
   onCommit,
   onCancel,
+  step = 1,
 }: {
   /** The text in the field: the caller's draft, or the live reading. */
   value: string;
+  /** How far one press of − or + moves the value. */
+  step?: number;
   cap: number;
   color: string;
   /** Names the ± buttons — "Increase Trailblaze Power". */
@@ -148,7 +151,7 @@ function ValueStepper({
   const inputRef = useRef<HTMLInputElement>(null);
   return (
     <span className="energy-value-stepper ml-auto flex shrink-0 items-center justify-end gap-1">
-      <StepBtn delta={-1} onStep={onStep} label={label} />
+      <StepBtn delta={-step} onStep={onStep} label={label} />
       {/* One pill: editable value + "/ cap" together inside the same box. */}
       <span
         className="energy-value-box focus-ring-group flex h-11 cursor-text items-center rounded-ui-full bg-fill-2 px-2.5 ring-1 ring-line-hairline transition focus-within:bg-fill-3 md:h-8"
@@ -197,7 +200,7 @@ function ValueStepper({
         />
         <span className="inline-block min-w-[6ch] pl-1 text-left text-label tabular-nums text-dim">/ {cap}</span>
       </span>
-      <StepBtn delta={1} onStep={onStep} label={label} />
+      <StepBtn delta={step} onStep={onStep} label={label} />
     </span>
   );
 }
@@ -394,6 +397,21 @@ export const EnergyRow = memo(function EnergyRow({
             >
               {subtitle}
             </span>
+            {kind === 'regen' && (
+              <button
+                type="button"
+                className="energy-spent min-h-11 rounded-ui-md px-1 text-label font-semibold text-fg-soft underline-offset-4 hover:text-fg hover:underline sm:min-h-6"
+                title="Long-press or right-click: full"
+                aria-label={`Spent all ${res.name}`}
+                onClick={() => commit(0)}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  commit(res.cap);
+                }}
+              >
+                Spent all
+              </button>
+            )}
             {note && (
               <span data-reading-status className="aside ml-auto text-label tabular-nums text-muted">
                 {note}
@@ -416,6 +434,8 @@ export const EnergyRow = memo(function EnergyRow({
                         label={reserveLabel}
                         ariaLabel={`${reserveLabel} for ${res.name}`}
                         valueClassName="text-body font-bold"
+                        // A 2,400 reserve moved by 1 is not a control; large ones move by 10.
+                        step={res.reserveCap >= 200 ? 10 : 1}
                         onStep={reserveStep}
                         onBeginEdit={() => {
                           reserveEdit.current = { dirty: false, cancelled: false };

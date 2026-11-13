@@ -148,6 +148,34 @@
   max-width: 100%;
   color: var(--color-muted);
 }
+.today-priority-item {
+  position: relative;
+}
+/* A button over the ring, beside (not inside) the row's own button. */
+.today-ring-action {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  width: 3.75rem;
+  height: 3.75rem;
+  translate: 0 -50%;
+  border-radius: 999px;
+}
+.today-ring-action:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.today-ring-undo {
+  position: absolute;
+  left: 50%;
+  bottom: -0.5rem;
+  translate: -50% 0;
+  padding: 0 0.375rem;
+  border-radius: 999px;
+  background: var(--color-surface-0);
+  color: var(--color-fg);
+  box-shadow: 0 0 0 1px var(--color-line-edge);
+}
 .today-row-ring {
   grid-area: ring;
   display: flex;
@@ -344,6 +372,11 @@
   .today-row-time {
     font-size: var(--text-body);
   }
+  .today-ring-action {
+    right: 0.25rem;
+    width: 3rem;
+    height: 3rem;
+  }
 }
 
 /* Narrow lists drop the reading's age and move the deadline label to its own
@@ -370,6 +403,10 @@
 /* Large text on a phone leaves no room for four columns. The badge and ring
    share the first line, and the name, countdown and reading each take a full one. */
 @container (max-width: 14rem) {
+  /* The ring moves to the first line here; ticking stays on the game's card. */
+  .today-ring-action {
+    display: none;
+  }
   .today-priority-row {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:

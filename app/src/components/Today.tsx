@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { DateTime } from 'luxon';
 import { actBy, nextQuietWindow, type GameUrgency } from '@memoria/shared';
 import { useDerived, type Derived } from '../selectors';
+import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { useMediaQuery } from '../hooks';
 import { useFlip } from '../flip';
@@ -48,6 +49,13 @@ function PriorityRow({
   const known = Boolean(resource && projection?.hasSnapshot);
   const dailies = (derived.checklistByGame.get(game.id) ?? []).filter((item) => item.cadence === 'daily');
   const done = dailies.filter((item) => item.done).length;
+  // The ring ticks every check-type daily from Today, with Undo, without opening the game.
+  const completeDailies = useApp((store) => store.completeDailies);
+  const undoActivity = useApp((store) => store.undoActivity);
+  const journal = useApp((store) => store.history.journal);
+  const [ticked, setTicked] = useState<string>();
+  const canTick = !game.paused && dailies.some((item) => item.mode === 'check' && !item.done);
+  const canUndo = Boolean(ticked && journal.some((entry) => entry.id === ticked && !entry.undone));
   const left = next ? next.at - now : null;
   // With quiet hours set, a reset at 03:00 is due when they begin, not at 03:00.
   const actLeft = next ? actBy(derived.state.settings, next.at, now) - now : null;
@@ -68,7 +76,7 @@ function PriorityRow({
     .join('. ');
 
   return (
-    <li>
+    <li className="today-priority-item">
       <button
         type="button"
         className="today-priority-row"
@@ -150,6 +158,23 @@ function PriorityRow({
           )}
         </span>
       </button>
+      {(canTick || canUndo) && (
+        <button
+          type="button"
+          className="today-ring-action"
+          data-undo={canUndo || undefined}
+          aria-label={canUndo ? `Undo ticking ${game.name} dailies` : `Tick all ${game.name} dailies`}
+          title={canUndo ? 'Undo' : 'Tick all dailies'}
+          onClick={() => {
+            if (canUndo) {
+              undoActivity(ticked!);
+              setTicked(undefined);
+            } else setTicked(completeDailies(game.id));
+          }}
+        >
+          {canUndo && <span className="today-ring-undo text-caption font-semibold">Undo</span>}
+        </button>
+      )}
     </li>
   );
 }
