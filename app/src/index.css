@@ -815,13 +815,23 @@ input[type='number'] {
    an entrance whose failure mode is "no animation" rather than "no page". */
 @keyframes pageEnterForward {
   from {
-    opacity: 0.88;
+    opacity: 0.6;
+    transform: translateX(1.5rem);
   }
 }
 @keyframes pageEnterBack {
   from {
-    opacity: 0.88;
+    opacity: 0.6;
+    transform: translateX(-1.5rem);
   }
+}
+/* A sideways drag moves the page a little with the finger, so the swipe answers
+   before it commits. Damped, and it springs back if released short. */
+.page-enter[data-swiping] {
+  transform: translateX(var(--swipe-x, 0px));
+}
+.page-enter[data-swipe-release] {
+  transition: transform var(--dur-base) var(--ease-out);
 }
 .page-enter[data-direction='1'] {
   animation: pageEnterForward var(--dur-base) var(--ease-out);
