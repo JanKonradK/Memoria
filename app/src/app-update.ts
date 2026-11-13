@@ -130,6 +130,21 @@ export function compareVersions(left: string, right: string): number {
   return a.prerelease < b.prerelease ? -1 : 1;
 }
 
+/**
+ * A release earns the full-screen page when it changes the major or minor
+ * number. A patch is fixes: it waits quietly in Settings → Updates.
+ */
+export function worthAScreen(version: string, current = APP_VERSION): boolean {
+  const head = (value: string) =>
+    value
+      .replace(/^v/, '')
+      .split(/[.-]/, 2)
+      .map((part) => Number.parseInt(part, 10) || 0);
+  const [major, minor] = head(version);
+  const [currentMajor, currentMinor] = head(current);
+  return major !== currentMajor || minor !== currentMinor;
+}
+
 /** The release notes above the download table the release workflow appends. */
 export function releaseNotes(release: Pick<ReleaseInfo, 'notes'>): string {
   return release.notes.split(/^##\s+Downloads?\b/im)[0]?.trim() ?? '';
@@ -209,8 +224,11 @@ export function checkForUpdates({ quiet = false } = {}): Promise<void> {
         release: newer ? release : null,
         checkedAt,
         progress: null,
-        // An automatic check opens the update screen once per launch; Later keeps it closed.
-        open: Boolean(newer) && (!quiet || state.open || state.dismissed !== release?.version),
+        // An automatic check opens the update screen once per launch, and only for a
+        // release with something to say; Later keeps it closed. Asking always opens it.
+        open:
+          Boolean(newer) &&
+          (!quiet || state.open || (state.dismissed !== release?.version && worthAScreen(release!.version))),
       }));
     } catch (error) {
       useAppUpdate.setState(
@@ -307,11 +325,9 @@ export function initAppUpdates(onShowRequested: () => void): () => void {
     const listener = AppUpdater.addListener('progress', trackProgress);
     cleanups.push(() => void listener.then((handle) => handle.remove()));
   }
-  // The downloadable standalone file makes no network requests on its own, and
-  // development servers (and the browser tests run against them) leave
+  // Development servers (and the browser tests run against them) leave
   // GitHub's shared hourly limit to installed copies.
-  if (window.location.protocol === 'file:' || import.meta.env.DEV)
-    return () => cleanups.forEach((cleanup) => cleanup());
+  if (import.meta.env.DEV) return () => cleanups.forEach((cleanup) => cleanup());
   const automaticCheck = () => {
     if (useAppUpdate.getState().auto) void checkForUpdates({ quiet: true });
   };

@@ -8,6 +8,7 @@ import {
   releaseNotes,
   checkForUpdates,
   useAppUpdate,
+  worthAScreen,
 } from '../src/app-update';
 
 vi.mock('@memoria/shared/publisher', async (original) => {
@@ -118,4 +119,11 @@ it('rejects unsigned, altered and replayed releases before offering the update',
     request.mockRestore();
     localStorage.clear();
   }
+});
+
+it('gives a new major or minor version the full screen, and leaves patches in Settings', () => {
+  expect(worthAScreen('4.1.0', '4.0.3')).toBe(true);
+  expect(worthAScreen('v5.0.0', '4.9.9')).toBe(true);
+  expect(worthAScreen('4.0.4', '4.0.3')).toBe(false);
+  expect(worthAScreen('v4.0.9-beta.1', '4.0.3')).toBe(false);
 });

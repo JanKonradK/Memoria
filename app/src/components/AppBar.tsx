@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useAppUpdate } from '../app-update';
 import { useReducedMotion } from '../hooks';
 import { useApp } from '../store';
 import { syncNow } from '../sync';
@@ -203,6 +204,8 @@ export function AppBar() {
   );
   const lanTrouble = useLanSync((s) => s.status === 'error');
   const barRef = useMeasuredBarHeight();
+  // A waiting update is a dot on Settings, not a page in front of the app.
+  const updateWaiting = useAppUpdate((s) => s.status === 'available' || s.status === 'ready');
 
   return (
     <header
@@ -262,6 +265,12 @@ export function AppBar() {
                 <path d={route.icon} />
               </svg>
               <span>{route.label}</span>
+              {route.id === 'settings' && updateWaiting && (
+                <>
+                  <span aria-hidden className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-ui-md bg-accent-fg" />
+                  <span className="sr-only">, update available</span>
+                </>
+              )}
             </button>
           );
         })}
