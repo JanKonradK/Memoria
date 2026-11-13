@@ -17,6 +17,7 @@ import { GameLogo } from './GameLogo';
 import { TimelineTools } from './TimelineTools';
 import { CalendarToolbar } from './CalendarToolbar';
 import { CalendarFeedStatus } from './CalendarFeedStatus';
+import { CalendarBehindNote } from './CalendarBehind';
 import { TimelineList } from './TimelineList';
 import { PinnedEvents } from './PinnedEvents';
 import { PinMark } from './EventPeek';
@@ -1278,6 +1279,7 @@ export function TimelinePage({ now }: { now: number }) {
                       triggerClassName="timeline-game-heading relative z-20 rounded-ui-md transition hover:bg-fill-1"
                       contentClassName="timeline-lane-content"
                     >
+                      <CalendarBehindNote gameId={game.id} now={now} className="mb-2" />
                       {evs.length === 0 ? (
                         <p className="py-1 text-label text-muted">No events in this window.</p>
                       ) : shown.length === 0 ? (

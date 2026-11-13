@@ -17,6 +17,7 @@ import { useIdentityColors } from './roster';
 import { GameControls } from './GameCard';
 import { GameLogo } from './GameLogo';
 import { TickNumber } from './TickNumber';
+import { behindGames, behindText, useFeedDate } from './CalendarBehind';
 import { GamePage } from './GamePage';
 import { TodayNotices } from './TodayNotices';
 import { ProgressBar } from './primitives';
@@ -182,6 +183,8 @@ function TodayAgenda({ derived, onSelectGame }: { derived: Derived; onSelectGame
     return game ? (game.accountLabel ? `${game.name} (${game.accountLabel})` : game.name) : '';
   };
   const shown = expanded ? items : items.slice(0, AGENDA_PREVIEW);
+  const behind = behindGames(state, now);
+  const feedDate = useFeedDate();
   // Everything above this line has to happen before quiet hours begin.
   const quiet = nextQuietWindow(state.settings, now);
   const quietIndex = quiet ? shown.findIndex((item) => item.at >= quiet.start) : -1;
@@ -195,6 +198,15 @@ function TodayAgenda({ derived, onSelectGame }: { derived: Derived; onSelectGame
         <span aria-hidden />
         <span className="numeral text-caption text-muted">{items.length}</span>
       </div>
+      {behind.length > 0 && (
+        <ul className="today-agenda-behind">
+          {behind.map(({ game, behind: status }) => (
+            <li key={game.id} className="text-meta text-warn-fg" data-calendar-behind={game.id}>
+              <span className="font-semibold">{gameName(game.id)}:</span> {behindText(status, feedDate)}
+            </li>
+          ))}
+        </ul>
+      )}
       {items.length === 0 ? (
         <p className="aside today-clear text-meta text-muted">Nothing ends, caps or resets.</p>
       ) : (
