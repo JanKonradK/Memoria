@@ -34,6 +34,9 @@ jobs:
   release:
     needs: [source, browser]
     runs-on: windows-latest
+    # The signing keys are environment secrets. Give the "release" environment
+    # required reviewers (Settings → Environments) so no run reaches them unapproved.
+    environment: release
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
