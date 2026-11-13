@@ -44,7 +44,7 @@ test.beforeEach(async ({ page }, info) => {
   await openWorkspace(page);
 });
 
-test('cards add, rename, change behavior, and delete finished events from Edit layout', async ({ page }, info) => {
+test('cards add, rename, change behavior, and delete finished events from Manage events', async ({ page }, info) => {
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Event', exact: true }).click();
   let dialog = page.getByRole('dialog', { name: 'New event' });
@@ -58,9 +58,7 @@ test('cards add, rename, change behavior, and delete finished events from Edit l
   await dialog.getByRole('switch', { name: 'Count toward next action' }).click();
   await dialog.getByRole('button', { name: 'Add event', exact: true }).click();
   await expect(dialog).toHaveCount(0);
-  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
-  await page.getByRole('button', { name: 'Edit item Events', exact: true }).click();
-  await page.getByRole('button', { name: 'Edit event details', exact: true }).click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Manage events');
   const panel = page.getByRole('region', { name: 'Events for Genshin Impact' });
   await expect(panel.getByRole('heading', { name: 'Events', exact: true })).toBeFocused();
   await panel.getByRole('searchbox', { name: 'Find event' }).fill('My personal window');
@@ -110,10 +108,13 @@ test('pause survives reload and resumes saved daily progress from the game page'
   await page.getByRole('button', { name: /Daily Commissions/ }).click();
   await expect.poll(async () => (await stored(page)).completions.length).toBeGreaterThan(0);
   const before = await stored(page);
-  // Pausing sits with the card's other settings, under Edit.
-  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
-  await page.getByRole('button', { name: 'Pause tracking', exact: true }).click();
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  // Pausing sits in Game settings, under Edit.
+  await chooseFromEdit(page, 'Genshin Impact', 'Game settings');
+  const settings = page.getByRole('dialog', { name: 'Genshin Impact' });
+  await settings.getByRole('tab', { name: 'Game', exact: true }).click();
+  await settings.getByRole('switch', { name: 'Pause tracking' }).click();
+  await page.keyboard.press('Escape');
+  await expect(settings).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Resume tracking', exact: true })).toBeVisible();
   await expect.poll(async () => (await stored(page)).games[0]?.paused).toBe(true);
   await chooseFromEdit(page, 'Genshin Impact', 'Manage events');

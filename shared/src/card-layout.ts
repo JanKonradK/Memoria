@@ -3,7 +3,11 @@ import { effectiveResourceKind } from './tracking';
 
 const cadenceOrder = { daily: 0, custom: 1, weekly: 2, monthly: 3 } as const;
 
-/** Resolve only against this game's live entities, never its currently active checklist. */
+/**
+ * The card's rows with their saved visibility. The drag-and-drop layout editor
+ * is gone; what it saved still hides rows, and Game settings changes it.
+ * Resolve only against this game's live entities, never its currently active checklist.
+ */
 export function resolveGameLayout(game: Game, resources: Resource[], tasks: Task[]): GameLayoutItem[] {
   const defaults: GameLayoutItem[] = [
     ...resources
@@ -38,13 +42,4 @@ export function resolveGameLayout(game: Game, resources: Resource[], tasks: Task
     ...saved.map(({ id, hidden }) => ({ id, ...(hidden === undefined ? {} : { hidden }) })),
     ...defaults.filter((item) => !seen.has(item.id)),
   ];
-}
-
-export function moveLayoutItem(items: GameLayoutItem[], id: string, to: number): GameLayoutItem[] {
-  const from = items.findIndex((item) => item.id === id);
-  if (from < 0 || from === to) return items;
-  const next = [...items];
-  const [item] = next.splice(from, 1);
-  next.splice(Math.max(0, Math.min(to, next.length)), 0, item!);
-  return next;
 }
