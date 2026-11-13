@@ -4,6 +4,7 @@ import { projectEnergy } from './energy';
 import { effectiveResourceKind } from './tracking';
 import { DateTime } from 'luxon';
 import { quietWindowAt } from './quiet';
+import { eventReward } from './event-reward';
 import { nextDailyReset, nextMonthlyReset, nextWeeklyReset } from './periods';
 
 export interface PlannedNotification {
@@ -290,7 +291,12 @@ export function buildNotificationPlan(state: AppState, now: number): PlannedNoti
           group.length === 1
             ? `${title}: event ends in ${formatLead(eventLead)}`
             : `${title}: ${group.length} events end in ${formatLead(eventLead)}`,
-          group.map((event) => event.name).join(', '),
+          group
+            .map((event) => {
+              const reward = eventReward(event, game);
+              return reward ? `${event.name} (${reward.label})` : event.name;
+            })
+            .join(', '),
           first.end - eventLead * MINUTE,
           game.id,
           first.end,

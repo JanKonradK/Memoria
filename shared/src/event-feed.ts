@@ -17,6 +17,8 @@ export interface PublicFeedEvent {
   startTimezone?: string;
   endTimezone?: string;
   dailyTouch?: boolean;
+  /** Premium currency the event pays in total, as the notice states it. */
+  reward?: number;
   notify?: boolean;
   notes?: string;
   sourceKey: string;
@@ -49,6 +51,7 @@ export const PublicFeedEventSchema = z.object({
   startTimezone: timezone.optional(),
   endTimezone: timezone.optional(),
   dailyTouch: z.boolean().optional(),
+  reward: z.number().int().min(1).max(1_000_000).optional(),
   notify: z.boolean().optional(),
   notes: z.string().max(20_000).optional(),
   sourceKey: z.string().min(1).max(300),

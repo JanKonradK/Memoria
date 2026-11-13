@@ -1,4 +1,5 @@
 import {
+  eventReward,
   EVENT_PROGRESS_LABEL,
   eventProgress,
   setEventProgress,
@@ -149,6 +150,9 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
           }))}
         />
 
+        {event.reward && game && (
+          <p className="text-meta font-semibold text-fg">Pays {eventReward(event, game)?.label}</p>
+        )}
         {event.notes.trim() && <p className="event-peek-notes text-meta text-fg-soft">{event.notes}</p>}
       </div>
     </Sheet>

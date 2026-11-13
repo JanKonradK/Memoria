@@ -99,6 +99,10 @@ export function draftRow(game, notice, versionStarts) {
     notes: '',
     sourceKey: `${game}:${notice.ann_id}`,
   };
+  // A reward stated once ("Primogems ×420") is the event's total. Several
+  // amounts are per stage, and adding them up would be a guess.
+  const amounts = [...html.replace(/<[^>]+>/g, ' ').matchAll(/(?:Primogems|Stellar Jade)\s*[×x]\s*(\d[\d,]*)/gi)];
+  if (amounts.length === 1) row.reward = Number(amounts[0][1].replace(/,/g, ''));
   if (start.global && end.global) row.timezone = 'UTC+8';
   else {
     if (start.global) row.startTimezone = 'UTC+8';

@@ -210,6 +210,8 @@ export interface GameEvent extends Syncable {
   end: number;
   /** Requires a daily touch (login/claim) — always shown on the game card's event strip while active. */
   dailyTouch: boolean;
+  /** Premium currency the event pays in total (Primogems, Stellar Jade, …), when the notice states it. */
+  reward?: number;
   /** Include the event in time-sensitive in-app next actions. */
   notify: boolean;
   /** User marked it complete — collapsed on the timeline and off the card. */

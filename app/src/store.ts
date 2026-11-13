@@ -368,6 +368,7 @@ function applySeedPlan(state: AppState, plan: PlannedSeed[], version = SEED_UPDA
       start: item.start,
       end: item.end,
       dailyTouch: seed.dailyTouch ?? false,
+      reward: seed.reward,
       notify: seed.notify ?? true,
       notes: seed.notes ?? '',
       sourceKey: seed.sourceKey,

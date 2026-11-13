@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   actBy,
   alertMinutes,
+  eventReward,
   buildNotificationPlan,
   completionId,
   formatLead,
@@ -343,5 +344,19 @@ describe('repeating reminders', () => {
     const weekly = { ...base, at: utc('2026-10-24T08:00:00Z'), repeatDays: 7 };
     expect(nextReminderAt(weekly, utc('2026-10-25T00:00:00Z'), 'Europe/London')).toBe(utc('2026-10-31T09:00:00Z'));
     expect(nextReminderAt({ ...base, at: now - HOUR }, now, 'UTC')).toBeNull();
+  });
+});
+
+describe('event rewards', () => {
+  it('reads the feed reward or an amount in the notes, and names it in the reminder', () => {
+    const game = makeGame({ presetKey: 'genshin' });
+    expect(eventReward({ reward: 420, notes: '' }, game)?.label).toBe('420 Primogems');
+    expect(eventReward({ notes: 'Explore five areas for 1,600 Primogems.' })?.amount).toBe(1600);
+    expect(eventReward({ notes: 'No currency here.' })).toBeNull();
+    const state = dailyState({
+      games: [game],
+      events: [makeEvent({ type: 'event', name: 'Flagship', start: now - HOUR, end: now + 10 * HOUR, reward: 1600 })],
+    });
+    expect(ofKind(state, 'event')[0]?.body).toBe('Flagship (1,600 Primogems)');
   });
 });
