@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   checkExactNotificationSetting: vi.fn(),
   registerActionTypes: vi.fn(),
   completeDailies: vi.fn(),
+  upsertEvent: vi.fn(),
   addListener: vi.fn(),
   remove: vi.fn(),
   unsubscribe: vi.fn(),
@@ -16,7 +17,10 @@ const mocks = vi.hoisted(() => ({
   setTab: vi.fn(),
   change: undefined as ((next: { state: object }, prior: { state: object }) => void) | undefined,
   action: undefined as
-    | ((event: { actionId?: string; notification: { extra?: { memoria: unknown; gameId?: string } } }) => void)
+    | ((event: {
+        actionId?: string;
+        notification: { extra?: { memoria: unknown; gameId?: string; eventIds?: string[] } };
+      }) => void)
     | undefined,
 }));
 vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: mocks }));
@@ -24,7 +28,17 @@ vi.mock('@memoria/shared', () => ({ buildNotificationPlan: mocks.plan, NOTIFICAT
 vi.mock('../src/native', () => ({ isNativeApp: true }));
 vi.mock('../src/store', () => ({
   useApp: {
-    getState: () => ({ state: {}, loaded: true, completeDailies: mocks.completeDailies }),
+    getState: () => ({
+      state: {
+        events: [
+          { id: 'open', gameId: 'game', done: false },
+          { id: 'ticked', gameId: 'game', done: true },
+        ],
+      },
+      loaded: true,
+      completeDailies: mocks.completeDailies,
+      upsertEvent: mocks.upsertEvent,
+    }),
     subscribe: (callback: typeof mocks.change) => {
       mocks.change = callback;
       return mocks.unsubscribe;
@@ -91,8 +105,10 @@ describe('native notification lifecycle', () => {
           isExactNotification: false,
           schedule: { at: expect.any(Date), allowWhileIdle: true },
           actionTypeId: 'memoria-daily',
-          extra: { memoria: true, gameId: 'game', kind: 'daily' },
+          extra: { memoria: true, gameId: 'game', kind: 'daily', eventIds: [] },
         }),
+        // Half a day before the week runs out, unless the app is opened first.
+        expect.objectContaining({ id: 1_999_999_999, title: 'Open Memoria to keep reminders coming' }),
       ],
     });
     expect(useNotifications.getState()).toMatchObject({ enabled: true, scheduled: 1, error: '', exact: false });
@@ -112,12 +128,21 @@ describe('native notification lifecycle', () => {
     vi.advanceTimersByTime(120_000);
     mocks.plan.mockReturnValue([
       { id: 42, title: 'Game', body: 'Moved', at: Date.now() + 3_600_000, gameId: 'game', kind: 'weekly' },
-      { id: 43, title: 'Game', body: 'New', at: Date.now() + 3_600_000, gameId: 'game', kind: 'event' },
+      {
+        id: 43,
+        title: 'Game',
+        body: 'New',
+        at: Date.now() + 3_600_000,
+        gameId: 'game',
+        kind: 'event',
+        eventIds: ['open'],
+      },
     ]);
     await rescheduleNotifications();
     const sent = mocks.schedule.mock.calls[1]?.[0].notifications as { id: number; actionTypeId?: string }[];
-    expect(sent.map((item) => item.id)).toEqual([43]);
-    expect(sent[0]?.actionTypeId).toBeUndefined();
+    expect(sent.map((item) => item.id)).toEqual([43, 1_999_999_999]);
+    expect(sent[0]?.actionTypeId).toBe('memoria-event');
+    expect(useNotifications.getState().scheduled).toBe(1);
   });
 
   it('keeps reminders disabled when opt-in permission is denied', async () => {
@@ -212,10 +237,16 @@ describe('native notification lifecycle', () => {
     expect(mocks.completeDailies).not.toHaveBeenCalled();
     mocks.action?.({ actionId: 'dailies-done', notification: { extra: { memoria: true, gameId: 'game' } } });
     expect(mocks.completeDailies).toHaveBeenCalledWith('game');
+    mocks.action?.({
+      actionId: 'events-done',
+      notification: { extra: { memoria: true, gameId: 'game', eventIds: ['open', 'ticked', 'gone'] } },
+    });
+    expect(mocks.upsertEvent).toHaveBeenCalledOnce();
+    expect(mocks.upsertEvent).toHaveBeenCalledWith({ id: 'open', gameId: 'game', done: true });
     cleanup();
     mocks.action?.({ notification: { extra: { memoria: true } } });
     await vi.advanceTimersByTimeAsync(2000);
-    expect(mocks.setTab).toHaveBeenCalledTimes(2);
+    expect(mocks.setTab).toHaveBeenCalledTimes(3);
     expect(mocks.getPending).not.toHaveBeenCalled();
     expect(mocks.remove).toHaveBeenCalledOnce();
     expect(mocks.unsubscribe).toHaveBeenCalledOnce();

@@ -3,7 +3,7 @@ import { HlcSchema } from './validation';
 import type { ZodType } from 'zod';
 import { IANAZone } from 'luxon';
 import type { AppState, Resource, Settings, SettingsField, Snapshot, Syncable, Task } from './types';
-import { emptyState, isSafeGameImage } from './types';
+import { emptyState, isSafeGameImage, SETTINGS_FIELDS } from './types';
 import { GamePitySchema } from './pity';
 import { GameSavingsSchema } from './savings';
 import { groupBy, objectRecord } from './internal';
@@ -444,6 +444,9 @@ function normalizeSettings(raw: unknown): Settings {
     ...normalizeQuietHours(record),
     localTz: isZone(record.localTz) ? record.localTz : base.localTz,
     sleepHours: finiteNumber(record.sleepHours) ? Math.min(24, Math.max(1, record.sleepHours)) : base.sleepHours,
+    ...(Number.isInteger(record.digestAt) && (record.digestAt as number) >= 0 && (record.digestAt as number) < 1440
+      ? { digestAt: record.digestAt as number }
+      : {}),
     // Malformed becomes absent rather than rejected: an unreadable stamp means
     // "never refreshed", which costs one redundant refresh. Letting it through
     // would fail the parse below and reset every other setting to defaults.
@@ -461,8 +464,6 @@ function normalizeSettings(raw: unknown): Settings {
   const parsed = AppStateSchema.shape.settings.safeParse(candidate);
   return parsed.success ? (parsed.data as Settings) : base;
 }
-
-const SETTINGS_FIELDS: SettingsField[] = ['quietStart', 'quietEnd', 'localTz', 'sleepHours'];
 
 /** Capture legacy fallback clocks before a writer advances the overall settings clock. */
 export function settingsFieldClocks(settings: Settings): Record<SettingsField, number> {

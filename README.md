@@ -12,7 +12,7 @@ You do not need a Memoria account or any coding knowledge.
 ## Version 3.0
 
 - **Flexible layouts** adapt to phone screens, small PC windows, and large displays.
-- **Today** shows approaching energy caps and unfinished routines within your sleep window, then the Tonight summary across every game. Select a game for its complete controls.
+- **Today** ranks every game by what is lost first, then lists what ends, caps or resets in the next two days across every game. Select a game for its complete controls.
 - **Calendar** shows events, banners, resets, and livestreams.
 - **Catch up**, in each game's heading, sums up what recent versions added: characters, weapons, gear sets, outfits, events, quality-of-life changes and codes.
 - **Launch** starts a game from its card in the Windows app. Select the pencil button on the card to choose what it starts.
@@ -103,8 +103,8 @@ Memoria estimates energy from your last entry. Enter a new value after you spend
 Task resets use each game's server time. Dates and clocks use your **Home timezone** in **Settings**.
 
 Some games include event dates with the app. These dates can change, so check important deadlines in your game.
-The Android and Windows apps send reminders for the next 7 days: an hour before each daily reset that still has dailies left, before the weekly reset (one hour ahead per game still owing weeklies, up to 10 hours), three hours before an unfinished event ends, and two hours before a freshly read bar caps. Nothing is sent for work you have ticked off. Setup offers them; you can also turn them on in **Settings**.
-Quiet hours are off by default. If you set them, a reminder that falls inside them arrives just before they begin. On Android, allow **Alarms & reminders** in **Settings** so reminders arrive on the minute. Opening Memoria refreshes the schedule.
+The Android and Windows apps send reminders for the next 7 days: an hour before each daily reset that still has dailies left, before the weekly reset (one hour ahead per game still owing weeklies, up to 10 hours), three hours before an unfinished event ends, and two hours before a freshly read bar caps. Nothing is sent for work you have ticked off. Setup offers them; you can also turn them on in **Settings → Reminders**.
+Quiet hours are off by default. If you set them, a reminder that falls inside them arrives just before they begin, and Today marks what has to happen before they start. **Settings → Reminders** also has an optional evening digest and your own reminders, once or on repeat. On Android, allow **Alarms & reminders** so reminders arrive on the minute, and the dailies and event notifications have **Dailies done** and **Done** buttons. Opening Memoria refreshes the schedule; if the phone goes a week without it, one notification says so before reminders run out.
 
 ## Keep a backup
 

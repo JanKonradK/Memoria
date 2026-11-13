@@ -1,8 +1,9 @@
-import { DateTime } from 'luxon';
-import type { AlertType, AppState, Game, GameEvent } from './types';
+import type { AlertType, AppState, Game, GameEvent, Reminder } from './types';
 import { buildUrgencyContext } from './urgency';
 import { projectEnergy } from './energy';
 import { effectiveResourceKind } from './tracking';
+import { DateTime } from 'luxon';
+import { quietWindowAt } from './quiet';
 import { nextDailyReset, nextMonthlyReset, nextWeeklyReset } from './periods';
 
 export interface PlannedNotification {
@@ -12,7 +13,14 @@ export interface PlannedNotification {
   at: number;
   gameId: string | null;
   /** What the notification is about, so a device can offer the matching action. */
-  kind: 'daily' | 'weekly' | 'monthly' | 'event' | 'energy' | 'reminder';
+  kind: 'daily' | 'weekly' | 'monthly' | 'event' | 'energy' | 'reminder' | 'digest';
+  /** The events an event notification is about, so "Done" can tick them. */
+  eventIds?: string[];
+  /**
+   * The deadline the notification warns about. A device that wakes late still
+   * shows it until then; after it, the warning is useless.
+   */
+  until?: number;
 }
 
 const MINUTE = 60_000;
@@ -72,6 +80,32 @@ function resetsUntil(first: number, step: (after: number) => number, until: numb
   return out;
 }
 
+/**
+ * When a reminder fires between now and `until`. A repeating one keeps its
+ * home-time clock across daylight-saving changes.
+ */
+export function reminderTimes(reminder: Reminder, now: number, until: number, zone: string): number[] {
+  if (!reminder.repeatDays) return reminder.at > now && reminder.at <= until ? [reminder.at] : [];
+  const first = DateTime.fromMillis(reminder.at).setZone(zone);
+  if (!first.isValid) return [];
+  const step = reminder.repeatDays;
+  // Skip whole cycles already past, without walking years of them.
+  let index = Math.max(0, Math.floor((now - reminder.at) / (step * 86_400_000)) - 1);
+  const out: number[] = [];
+  for (let at = first.plus({ days: index * step }).toMillis(); at <= until && out.length < 60;) {
+    if (at > now) out.push(at);
+    index++;
+    at = first.plus({ days: index * step }).toMillis();
+  }
+  return out;
+}
+
+/** The next time a reminder fires after `now`, or null when it has finished. */
+export function nextReminderAt(reminder: Reminder, now: number, zone: string): number | null {
+  if (!reminder.repeatDays) return reminder.at > now ? reminder.at : null;
+  return reminderTimes(reminder, now, now + (reminder.repeatDays + 1) * 86_400_000, zone)[0] ?? null;
+}
+
 function gameTitle(game: Game): string {
   return game.accountLabel ? `${game.name} (${game.accountLabel})` : game.name;
 }
@@ -83,30 +117,16 @@ function gameTitle(game: Game): string {
  */
 export function buildNotificationPlan(state: AppState, now: number): PlannedNotification[] {
   const horizon = now + NOTIFICATION_HORIZON_DAYS * 24 * HOUR;
-  const zone = state.settings.localTz || 'UTC';
 
-  /** The start of the quiet window that contains `at`, or null when `at` is outside quiet hours. */
-  const quietWindowStart = (at: number): number | null => {
-    const { quietStart: start, quietEnd: end } = state.settings;
-    if (start == null || end == null || start === end) return null;
-    const local = DateTime.fromMillis(at).setZone(zone);
-    if (!local.isValid) return null;
-    const minute = local.hour * 60 + local.minute;
-    const inside = start < end ? minute >= start && minute < end : minute >= start || minute < end;
-    if (!inside) return null;
-    let opening = local.startOf('day').set({ hour: Math.floor(start / 60), minute: start % 60 });
-    if (opening.toMillis() > at) opening = opening.minus({ days: 1 });
-    return opening.toMillis();
-  };
   /**
    * Inside quiet hours, a notification moves to the last minute before they
    * begin. If that minute has already passed, it keeps its own time: a late
    * notification can be dismissed, a missing one costs the reset.
    */
   const deliverAt = (at: number): number => {
-    const opening = quietWindowStart(at);
-    if (opening == null) return at;
-    const moved = opening - MINUTE;
+    const window = quietWindowAt(state.settings, at);
+    if (!window) return at;
+    const moved = window.start - MINUTE;
     return moved > now + 1000 ? moved : at;
   };
 
@@ -118,19 +138,38 @@ export function buildNotificationPlan(state: AppState, now: number): PlannedNoti
     body: string,
     at: number,
     gameId: string | null,
+    until?: number,
+    eventIds?: string[],
   ) => {
     if (!Number.isFinite(at) || at > horizon) return;
     const when = deliverAt(at);
     if (when <= now + 1000) return;
     let id = notificationId(key);
     while (plan.some((item) => item.id === id)) id = (id % 2000000000) + 1;
-    plan.push({ id, kind, title: title.slice(0, 100), body: body.slice(0, 200), at: when, gameId });
+    plan.push({
+      id,
+      kind,
+      title: title.slice(0, 100),
+      body: body.slice(0, 200),
+      at: when,
+      gameId,
+      ...(until != null && until > when ? { until } : {}),
+      ...(eventIds ? { eventIds } : {}),
+    });
   };
 
   const active = state.games.filter((game) => !game.deleted && !game.paused);
   for (const reminder of state.reminders) {
     if (reminder.deleted || (reminder.gameId && !active.some((game) => game.id === reminder.gameId))) continue;
-    add(`reminder:${reminder.id}`, 'reminder', 'Memoria reminder', reminder.message, reminder.at, reminder.gameId);
+    for (const at of reminderTimes(reminder, now, horizon, state.settings.localTz || 'UTC'))
+      add(
+        at === reminder.at ? `reminder:${reminder.id}` : `reminder:${reminder.id}:${at}`,
+        'reminder',
+        'Memoria reminder',
+        reminder.message,
+        at,
+        reminder.gameId,
+      );
   }
 
   const context = buildUrgencyContext(state, now);
@@ -142,6 +181,15 @@ export function buildNotificationPlan(state: AppState, now: number): PlannedNoti
         snapshot.provenance?.kind !== 'estimate' && snapshot.takenAt >= now - 24 * HOUR && snapshot.takenAt <= now,
     ),
   );
+
+  interface DailyDue {
+    game: Game;
+    /** The current period's daily reset; later days owe every daily. */
+    resetAt: number;
+    left: number;
+    total: number;
+  }
+  const dailyDue: DailyDue[] = [];
 
   interface WeeklyDue {
     game: Game;
@@ -162,6 +210,7 @@ export function buildNotificationPlan(state: AppState, now: number): PlannedNoti
     const dailyLead = alertMinutes(state, game.id, 'daily_undone');
     if (dailies.length && dailyLead != null) {
       const left = dailies.filter((item) => !item.done).length;
+      dailyDue.push({ game, resetAt: nextDailyReset(game, now), left, total: dailies.length });
       const resets = resetsUntil(
         nextDailyReset(game, now),
         (at) => nextDailyReset(game, at),
@@ -179,6 +228,7 @@ export function buildNotificationPlan(state: AppState, now: number): PlannedNoti
           body,
           resetAt - dailyLead * MINUTE,
           game.id,
+          resetAt,
         );
       });
     }
@@ -211,6 +261,7 @@ export function buildNotificationPlan(state: AppState, now: number): PlannedNoti
         monthlyLeft.map((item) => item.name).join(', '),
         resetAt - monthlyLead * MINUTE,
         game.id,
+        resetAt,
       );
     }
 
@@ -242,6 +293,8 @@ export function buildNotificationPlan(state: AppState, now: number): PlannedNoti
           group.map((event) => event.name).join(', '),
           first.end - eventLead * MINUTE,
           game.id,
+          first.end,
+          group.map((event) => event.id),
         );
         start = stop;
       }
@@ -261,6 +314,7 @@ export function buildNotificationPlan(state: AppState, now: number): PlannedNoti
           'Estimate from your last reading.',
           projection.fullAt - capLead * MINUTE,
           game.id,
+          projection.fullAt,
         );
       }
     }
@@ -292,8 +346,34 @@ export function buildNotificationPlan(state: AppState, now: number): PlannedNoti
         : `${names}. ${group.reduce((sum, item) => sum + item.left, 0)} weeklies still to do.`,
       anchor.resetAt - lead * MINUTE,
       group.length === 1 ? anchor.game.id : null,
+      anchor.resetAt,
     );
     start = stop;
+  }
+
+  // The evening digest: one optional notification a day with what is still open.
+  const digestAt = state.settings.digestAt;
+  if (digestAt != null && dailyDue.length) {
+    const zone = state.settings.localTz || 'UTC';
+    let day = DateTime.fromMillis(now).setZone(zone).startOf('day');
+    if (day.isValid) {
+      for (let count = 0; count <= NOTIFICATION_HORIZON_DAYS; count++, day = day.plus({ days: 1 })) {
+        const at = day.set({ hour: Math.floor(digestAt / 60), minute: digestAt % 60 }).toMillis();
+        if (at <= now) continue;
+        const open = dailyDue
+          .map((due) => ({ due, left: at < due.resetAt ? due.left : due.total }))
+          .filter((item) => item.left > 0);
+        if (!open.length) continue;
+        add(
+          `digest:${at}`,
+          'digest',
+          open.length === 1 ? `Still open: ${gameTitle(open[0]!.due.game)}` : `Still open: ${open.length} games`,
+          `${open.map((item) => `${item.due.game.short || item.due.game.name} ${item.left}`).join(', ')} dailies left.`,
+          at,
+          null,
+        );
+      }
+    }
   }
 
   return plan.sort((a, b) => a.at - b.at || a.id - b.id).slice(0, MAX_PLANNED_NOTIFICATIONS);

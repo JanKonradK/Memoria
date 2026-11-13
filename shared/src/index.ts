@@ -13,6 +13,7 @@ export * from './redemption';
 export * from './card-layout';
 export * from './pairing';
 export * from './event-feed';
+export * from './quiet';
 export * from './notification-plan';
 export * from './event-parts';
 export * from './glance';

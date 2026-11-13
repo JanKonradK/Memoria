@@ -2,7 +2,7 @@ import { setPresence, usePresence } from '../../presence';
 import { Toggle } from '../ui';
 import { SettingRow } from './SettingRow';
 
-/** Windows app only: start with Windows, stay in the tray, notice games starting. */
+/** Windows app only: start with Windows, stay in the tray, notice games starting. Reminders live in their own section. */
 export function DesktopPresence() {
   const { presence, error } = usePresence();
   if (!presence) return null;
@@ -25,13 +25,6 @@ export function DesktopPresence() {
           ariaLabel="Keep running in the tray when closed"
           checked={presence.closeToTray}
           onChange={(closeToTray) => void setPresence({ closeToTray })}
-        />
-      </SettingRow>
-      <SettingRow label="Reminders on this PC" hint="If phone reminders are also on, both devices will alert.">
-        <Toggle
-          ariaLabel="Reminders on this PC"
-          checked={presence.remindersOnPc}
-          onChange={(remindersOnPc) => void setPresence({ remindersOnPc })}
         />
       </SettingRow>
       {presence.gameWatch && (

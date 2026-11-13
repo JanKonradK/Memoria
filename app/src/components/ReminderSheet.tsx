@@ -5,6 +5,7 @@ import { fmtDateTimeLocalInput, parseDateTimeLocalInput } from '../util';
 import { rosterGames } from './roster';
 import { Sheet } from './Sheet';
 import { Btn, Field, Select, TextInput } from './ui';
+import { REPEAT_OPTIONS } from './settings/reminder-repeat';
 
 export function ReminderSheet({ open }: { open: boolean }) {
   const state = useApp((s) => s.state);
@@ -17,6 +18,7 @@ export function ReminderSheet({ open }: { open: boolean }) {
   const [when, setWhen] = useState(() => fmtDateTimeLocalInput(Date.now() + 3600_000, draftZone));
   const at = parseDateTimeLocalInput(when, draftZone);
   const [gameId, setGameId] = useState('');
+  const [repeatDays, setRepeatDays] = useState(0);
   const formId = useId();
   const dateErrorId = useId();
   const unavailableGame = Boolean(gameId && !games.some((game) => game.id === gameId));
@@ -29,6 +31,7 @@ export function ReminderSheet({ open }: { open: boolean }) {
       setMessage('');
       setWhen(nextWhen);
       setGameId('');
+      setRepeatDays(0);
       setSavedDraft(JSON.stringify({ message: '', when: nextWhen, gameId: '' }));
     }
     // The editor owns its draft until it closes, including during background sync.
@@ -39,7 +42,7 @@ export function ReminderSheet({ open }: { open: boolean }) {
     <Sheet
       open={open}
       onClose={closeSheet}
-      dirty={JSON.stringify({ message, when, gameId }) !== savedDraft}
+      dirty={JSON.stringify({ message, when, gameId }) !== savedDraft || repeatDays !== 0}
       title="New reminder"
       footer={
         <Btn
@@ -59,7 +62,7 @@ export function ReminderSheet({ open }: { open: boolean }) {
         onSubmit={(event) => {
           event.preventDefault();
           if (!message.trim() || at == null || unavailableGame) return;
-          addReminder(message.trim(), at, gameId || null);
+          addReminder(message.trim(), at, gameId || null, repeatDays || undefined);
           closeSheet();
         }}
       >
@@ -101,6 +104,15 @@ export function ReminderSheet({ open }: { open: boolean }) {
             </Select>
           </Field>
         </div>
+        <Field label="Repeat">
+          <Select value={String(repeatDays)} onChange={(e) => setRepeatDays(Number(e.target.value))}>
+            {REPEAT_OPTIONS.map((option) => (
+              <option key={option.days} value={option.days}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
         {unavailableGame && (
           <p role="alert" className="text-meta text-warn-fg">
             This game was removed. Pick another game or No game.

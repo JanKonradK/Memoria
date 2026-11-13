@@ -39,15 +39,15 @@ test('PC reminders use the native preference bridge and show the two-device hint
     };
   });
   await page.goto('/');
-  await openSettings(page, 'On this PC');
+  await openSettings(page, 'Reminders');
   const toggle = page.getByRole('switch', { name: 'Reminders on this PC', exact: true });
   await expect(toggle).not.toBeChecked();
-  await expect(page.getByText('If phone reminders are also on, both devices will alert.')).toBeVisible();
+  await expect(page.getByText('If phone reminders are also on, both devices alert.')).toBeVisible();
   await toggle.click();
   await expect(toggle).toBeChecked();
   expect(await page.evaluate(async () => (await window.memoriaDesktop!.presence!.get()).remindersOnPc)).toBe(true);
   await page.reload();
-  await openSettings(page, 'On this PC');
+  await openSettings(page, 'Reminders');
   await expect(toggle).toBeChecked();
   // Tray changes reach the same Settings control through the existing event bridge.
   await page.evaluate(() => window.dispatchEvent(new Event('test-tray-reminders-off')));

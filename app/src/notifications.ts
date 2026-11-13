@@ -9,6 +9,10 @@ const KEY = 'memoria-device-notifications';
 /** What this device last handed to Android, and what has already been shown. Never synced. */
 const DELIVERY_KEY = 'memoria-notification-delivery';
 const DAILY_ACTIONS = 'memoria-daily';
+const EVENT_ACTIONS = 'memoria-event';
+/** Fires only if the app is not opened for most of a week, before the plan runs out. */
+const RUNWAY_ID = 1_999_999_999;
+const RUNWAY_LEAD_MS = 12 * 3_600_000;
 function enabledOnDevice() {
   try {
     return localStorage.getItem(KEY) === 'enabled';
@@ -53,6 +57,25 @@ function writeDelivery(delivery: Delivery) {
   }
 }
 /**
+ * Android cannot rebuild the plan without the app, and the plan covers a week.
+ * Half a day before it runs out, say so, rather than going silent.
+ */
+export function withRunway(plan: PlannedNotification[], now: number): PlannedNotification[] {
+  const at = now + NOTIFICATION_HORIZON_DAYS * 24 * 3_600_000 - RUNWAY_LEAD_MS;
+  return [
+    ...plan.filter((item) => item.id !== RUNWAY_ID),
+    {
+      id: RUNWAY_ID,
+      kind: 'reminder',
+      title: 'Open Memoria to keep reminders coming',
+      body: 'Reminders are planned a week ahead. Opening the app plans the next week.',
+      at,
+      gameId: null,
+    },
+  ];
+}
+
+/**
  * Anything scheduled earlier whose time has passed was shown by Android. Keep
  * those ids for the plan's horizon, so a rebuilt weekly reminder whose lead
  * shrank after a tick is not shown a second time.
@@ -70,7 +93,10 @@ let actionsRegistered = false;
 async function registerActions() {
   if (actionsRegistered) return;
   await LocalNotifications.registerActionTypes({
-    types: [{ id: DAILY_ACTIONS, actions: [{ id: 'dailies-done', title: 'Dailies done' }] }],
+    types: [
+      { id: DAILY_ACTIONS, actions: [{ id: 'dailies-done', title: 'Dailies done' }] },
+      { id: EVENT_ACTIONS, actions: [{ id: 'events-done', title: 'Done' }] },
+    ],
   });
   actionsRegistered = true;
 }
@@ -87,7 +113,7 @@ export function rescheduleNotifications(): Promise<void> {
     const now = Date.now();
     const delivery = readDelivery();
     const plan = useNotifications.getState().enabled
-      ? unseenPlan(buildNotificationPlan(useApp.getState().state, now), delivery, now)
+      ? withRunway(unseenPlan(buildNotificationPlan(useApp.getState().state, now), delivery, now), now)
       : [];
     if (owned.length) await LocalNotifications.cancel({ notifications: owned.map(({ id }) => ({ id })) });
     // A later scheduling failure must not leave the old count visible after cancellation.
@@ -110,12 +136,14 @@ export function rescheduleNotifications(): Promise<void> {
           isExactNotification: exact,
           schedule: { at: new Date(item.at), allowWhileIdle: true },
           ...(item.kind === 'daily' && item.gameId ? { actionTypeId: DAILY_ACTIONS } : {}),
-          extra: { memoria: true, gameId: item.gameId, kind: item.kind },
+          ...(item.kind === 'event' && item.eventIds?.length ? { actionTypeId: EVENT_ACTIONS } : {}),
+          extra: { memoria: true, gameId: item.gameId, kind: item.kind, eventIds: item.eventIds ?? [] },
         })),
       });
     }
     writeDelivery(delivery);
-    useNotifications.setState({ scheduled: plan.length, error: '', exact, plannedAt: now });
+    const reminders = plan.filter((item) => item.id !== RUNWAY_ID).length;
+    useNotifications.setState({ scheduled: reminders, error: '', exact, plannedAt: now });
   };
   queue = queue.catch(() => undefined).then(run);
   return queue.catch((cause: unknown) => {
@@ -174,11 +202,20 @@ export function initNotifications(): () => void {
     if (next.state !== prior.state) update();
   });
   const listener = LocalNotifications.addListener('localNotificationActionPerformed', (event) => {
-    const extra = event.notification.extra as { memoria?: boolean; gameId?: string | null } | undefined;
+    const extra = event.notification.extra as
+      { memoria?: boolean; gameId?: string | null; eventIds?: string[] } | undefined;
     if (!active || extra?.memoria !== true) return;
     useUI.getState().setTab('today');
     if (event.actionId === 'dailies-done' && extra.gameId)
       whenLoaded(() => useApp.getState().completeDailies(extra.gameId!));
+    if (event.actionId === 'events-done' && extra.gameId && extra.eventIds?.length)
+      whenLoaded(() => {
+        const { state, upsertEvent } = useApp.getState();
+        for (const id of extra.eventIds!) {
+          const found = state.events.find((item) => item.id === id && !item.deleted);
+          if (found && !found.done) upsertEvent({ id, gameId: found.gameId, done: true });
+        }
+      });
   }).catch((cause: unknown) => {
     if (active && useNotifications.getState().enabled)
       useNotifications.setState({

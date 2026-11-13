@@ -253,6 +253,17 @@
   display: grid;
   gap: 1px;
 }
+.today-agenda-quiet {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.5rem 0.25rem;
+}
+.today-agenda-quiet > span[aria-hidden] {
+  height: 1px;
+  flex: 1;
+  background: var(--color-line);
+}
 .today-agenda-row {
   display: grid;
   width: 100%;
