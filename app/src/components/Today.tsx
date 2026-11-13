@@ -133,7 +133,7 @@ function PriorityRow({
               )}
             </>
           )}
-          <span className="today-row-what aside truncate text-caption">
+          <span className="today-row-what truncate text-caption">
             {next?.label ?? (resource && !known ? `Enter ${resource.name}` : 'No deadlines')}
           </span>
         </span>
@@ -294,9 +294,7 @@ function TodayAgenda({ derived, onSelectGame }: { derived: Derived; onSelectGame
                       <>
                         <span className="text-meta font-semibold">{left <= 0 ? 'Now' : fmtDur(left)}</span>
                         {left > 0 && (
-                          <span className="aside text-caption text-muted">
-                            {fmtClock(item.at, state.settings.localTz)}
-                          </span>
+                          <span className="text-caption text-muted">{fmtClock(item.at, state.settings.localTz)}</span>
                         )}
                       </>
                     )}
@@ -339,7 +337,7 @@ export function TodayPage({ now }: { now: number }) {
     <Page className="today-page">
       <div className="today-heading">
         <h1 className="text-title font-semibold tracking-[-0.02em] text-fg">Today</h1>
-        <p className="aside text-meta text-muted">{date}</p>
+        <p className="text-meta text-muted">{date}</p>
       </div>
       <TodayNotices now={now} />
       {order.length === 0 ? (

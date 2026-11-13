@@ -76,7 +76,7 @@ export function GameContext({ game, state, now }: { game: Game; state: AppState;
                 Version {last.version}
                 {last.title ? ` · ${last.title}` : ''}
               </span>
-              <span className="aside block text-meta text-muted">
+              <span className="block text-meta text-muted">
                 {at(Date.parse(last.stream.aired), 'd LLL')} · Watch replay ↗
               </span>
             </span>

@@ -980,7 +980,7 @@ function GameControlsHeader({
             </Pill>
           )}
         </div>
-        <div className="game-card-status aside mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-label text-muted">
+        <div className="game-card-status mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-label text-muted">
           <ServerChip label={regionLabel} className="max-w-20 truncate" />
           {layout === 'focus' && accountLabel && <span className="[overflow-wrap:anywhere]">{accountLabel}</span>}
           <span>reset {resetLabel}</span>

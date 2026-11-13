@@ -73,7 +73,7 @@ function EventSchedule({ event, localTz, now }: { event: GameEvent; localTz: str
   const calendar = calendarSchedule(event);
   if (calendar)
     return (
-      <div className="timeline-event-schedule aside text-caption text-muted" title={calendar.description}>
+      <div className="timeline-event-schedule text-caption text-muted" title={calendar.description}>
         <span>{calendar.label}</span>
         <span>{calendar.zone}</span>
       </div>
@@ -84,7 +84,7 @@ function EventSchedule({ event, localTz, now }: { event: GameEvent; localTz: str
   const showYear = start.year !== end.year || start.year !== currentYear || end.year !== currentYear;
   const format = showYear ? 'd LLL yyyy HH:mm' : 'd LLL HH:mm';
   return (
-    <div className="timeline-event-schedule aside text-caption text-muted">
+    <div className="timeline-event-schedule text-caption text-muted">
       <span className="timeline-schedule-endpoint">
         <span>Starts</span>
         <time dateTime={start.toISO() ?? undefined}>{start.toFormat(format)}</time>
@@ -241,10 +241,7 @@ export function TimelineList({
                     <EventSchedule event={event} localTz={localTz} now={now} />
 
                     <div className="timeline-event-deadline">
-                      <span
-                        className="timeline-countdown aside tabular-nums text-meta"
-                        style={{ color: countdown.tone }}
-                      >
+                      <span className="timeline-countdown tabular-nums text-meta" style={{ color: countdown.tone }}>
                         {countdown.label}
                       </span>
                     </div>

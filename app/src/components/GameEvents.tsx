@@ -102,7 +102,7 @@ export function GameEvents({ game, now, onBeforeOpen }: { game: Game; now: numbe
                             {event.dailyTouch && <span>Daily check-in</span>}
                             {!event.notify && <span>Next actions off</span>}
                           </span>
-                          <span className="mt-1 block aside text-label text-muted">
+                          <span className="mt-1 block text-label text-muted">
                             {calendar ? (
                               `${calendar.label} (${calendar.zone})`
                             ) : (

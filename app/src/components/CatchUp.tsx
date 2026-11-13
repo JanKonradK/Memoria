@@ -181,7 +181,7 @@ function VersionHeading({ digest, unread }: { digest: VersionDigest; unread: boo
         {digest.title && <span className="text-body text-fg-soft">{digest.title}</span>}
         {unread && <span className="catch-up-new">New to you</span>}
       </span>
-      <span className="aside mt-1 block text-meta text-muted">
+      <span className="mt-1 block text-meta text-muted">
         {digest.status === 'announced'
           ? `Arrives ${day(digest.release, 'd LLL yyyy')}`
           : `${day(digest.release, 'd LLL')}${digest.ends ? ` – ${day(digest.ends, 'd LLL yyyy')}` : ' onward'}`}

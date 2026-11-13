@@ -291,7 +291,8 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* The quiet voice: secondary detail is lighter and slanted rather than bold. */
+/* The quiet voice: secondary detail is lighter and slanted rather than bold.
+   Never on a time, a date or a count: those are what the product exists to show. */
 .aside {
   font-style: italic;
   font-weight: 300;
