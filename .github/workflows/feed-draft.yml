@@ -1,0 +1,51 @@
+name: Calendar draft
+
+# Reads the publishers' announcement feeds and opens a pull request with any
+# new rows for review. It never holds a signing key: publishing stays a
+# reviewed, signed release step (docs/publisher-trust.md).
+on:
+  schedule:
+    # Daily, and twice more on Wednesdays and Thursdays, when most version updates land.
+    - cron: '0 5 * * *'
+    - cron: '0 13 * * 3,4'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: feed-draft
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24.21.0
+      - name: Draft rows from the announcement feeds
+        run: node scripts/feed-draft.mjs --report "$RUNNER_TEMP/feed-draft.md"
+      - name: Open or update the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- app/src/data/feed/current.json; then
+            echo "No new rows."
+            cat "$RUNNER_TEMP/feed-draft.md"
+            exit 0
+          fi
+          branch="feed/draft"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -C "$branch"
+          git add app/src/data/feed/current.json
+          git commit -m "Calendar draft from announcement feeds"
+          git push --force origin "$branch"
+          if gh pr view "$branch" --json state --jq .state 2>/dev/null | grep -q OPEN; then
+            gh pr edit "$branch" --body-file "$RUNNER_TEMP/feed-draft.md"
+          else
+            gh pr create --head "$branch" --title "Calendar draft from announcement feeds" --body-file "$RUNNER_TEMP/feed-draft.md"
+          fi
