@@ -254,7 +254,7 @@ test('wide Today opens integrated game pages while timeline bars stay in scale',
   const workspace = page.getByRole('region', { name: 'Honkai: Star Rail focus workspace' });
   await expect(workspace).toBeVisible();
   await expect(workspace).not.toHaveClass(/card-shell/);
-  await expect(page.getByRole('combobox', { name: 'Focus game' })).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Filter by game' })).toHaveCount(0);
   await expectNoPageOverflow(page);
   await page.getByRole('button', { name: 'Back to Today', exact: true }).click();
   await expect(starRailTrigger).toBeFocused();

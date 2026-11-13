@@ -64,7 +64,7 @@ test('24 events remain reachable in the rounded timeline board with controls in 
     .setInputFiles({ name: 'density.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
-  await expect(page.locator('.calendar-toolbar').getByRole('combobox', { name: 'Focus game' })).toBeVisible();
+  await expect(page.locator('.calendar-toolbar').getByRole('combobox', { name: 'Filter by game' })).toBeVisible();
   await expect(page.getByRole('button', { name: '+ Event', exact: true })).toHaveCount(0);
   await expect(page.locator('[data-timeline-event-row]')).toHaveCount(24);
   await page.waitForTimeout(350);

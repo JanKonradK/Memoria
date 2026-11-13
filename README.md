@@ -157,7 +157,7 @@ These actions keep your saved data.
 If an older PC launcher remains active after an update, restart Windows and open the updated app.
 This starts the new Wi-Fi listener without a change to your saved data.
 
-Wi-Fi sync uses HTTP without encryption. Use a trusted private network.
+Wi-Fi sync is end-to-end encrypted: the phone checks the PC's key from the pairing code, and every request and reply is encrypted and authenticated (X25519, XChaCha20-Poly1305). It runs over plain HTTP, which carries only public handshake fields and ciphertext. Details are in [docs/publisher-trust.md](docs/publisher-trust.md).
 
 #### Sync away from home
 

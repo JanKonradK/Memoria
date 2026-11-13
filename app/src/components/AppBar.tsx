@@ -8,7 +8,6 @@ import { syncLanNow, useLanSync } from '../lan-sync';
 import { useUI, type Tab } from '../ui-store';
 import { AddMenu } from './AddMenu';
 import { Logo } from './Logo';
-import { GameScope } from './GameScope';
 import { isDesktopApp } from '../desktop-host';
 import { closeWorkspace } from '../workspace-navigation';
 
@@ -274,13 +273,6 @@ export function AppBar() {
           );
         })}
       </nav>
-
-      {/* Calendar's controls live on its page. Settings keeps the game filter here. */}
-      {tab === 'settings' && (
-        <div className="app-route-actions flex min-w-0 items-center">
-          <GameScope />
-        </div>
-      )}
 
       <div className="app-utilities flex items-center justify-end gap-1 sm:gap-2">
         <SyncIndicator />

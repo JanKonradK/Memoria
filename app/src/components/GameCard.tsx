@@ -17,6 +17,7 @@ import {
   EVENT_STEPS,
   eventPartsDone,
   eventProgress,
+  measuredSnapshot,
   nextEventProgress,
   projectEnergy,
   resolveGameLayout,
@@ -577,7 +578,7 @@ function EnergyControlRow({
   note?: string;
 }) {
   const ground = useGround();
-  const projection = useMemo(() => projectEnergy(res, snap, now, game), [game, now, res, snap]);
+  const projection = useMemo(() => projectEnergy(res, measuredSnapshot(res, snap), now, game), [game, now, res, snap]);
   const commit = useCallback(
     (value: number, reserve?: number) => setEnergy(res.id, value, reserve),
     [res.id, setEnergy],
@@ -1338,8 +1339,10 @@ export function GameControlsView({
               {resources}
               {tasks}
             </div>
-            {aside && <div className="focus-context min-w-0">{aside}</div>}
+            {/* One column (a phone) reads in this order: events come before
+                livestreams, Catch up and notes. Wider grids place them by area. */}
             <div className="focus-events min-w-0">{events}</div>
+            {aside && <div className="focus-context min-w-0">{aside}</div>}
           </div>
         ) : (
           <>

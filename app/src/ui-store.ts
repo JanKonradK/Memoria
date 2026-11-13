@@ -88,6 +88,9 @@ interface UIStore {
   /** Session-only route controls survive navigation, without entering backups. */
   timelineView: TimelineView | null;
   timelineShowFinished: boolean;
+  /** The Timeline's own game filter. Opening a game never sets it. Null = all games. */
+  timelineGameId: string | null;
+  setTimelineGameId(gameId: string | null): void;
   setTimelineView(view: TimelineView): void;
   setTimelineShowFinished(show: boolean): void;
   tourSeenVersion: number;
@@ -122,6 +125,8 @@ export const useUI = create<UIStore>()(
       focusedGameId: null,
       timelineView: null,
       timelineShowFinished: false,
+      timelineGameId: null,
+      setTimelineGameId: (timelineGameId) => set({ timelineGameId }),
       setTimelineView: (timelineView) => set({ timelineView }),
       setTimelineShowFinished: (timelineShowFinished) => set({ timelineShowFinished }),
       tourSeenVersion: 0,

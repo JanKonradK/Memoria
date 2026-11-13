@@ -919,7 +919,9 @@ export function ReorderableEventRows({
       <span className="sr-only" role="status">
         {announcement}
       </span>
-      <CycleConnectors events={visible} ws={rowProps.ws} we={rowProps.we} ink={rowProps.ink} />
+      {/* On a phone each bar has a name line above it, so a hand-off between
+          bars would cross that line and read as a stray stroke. */}
+      {!rowProps.compact && <CycleConnectors events={visible} ws={rowProps.ws} we={rowProps.we} ink={rowProps.ink} />}
       {visible.map((event) => (
         <EventRow
           key={event.id}
@@ -986,7 +988,7 @@ export function TimelinePage({ now }: { now: number }) {
   const titleGround = THEME_PANEL[theme][0];
   const laneInset = useInset();
   const [timelineScaleRef, timelineWidth] = useElementWidth();
-  const focusedGameId = useUI((s) => s.focusedGameId);
+  const focusedGameId = useUI((s) => s.timelineGameId);
   // Time bars on every width: a phone gives each event a name line above its bar.
   const view = useUI((s) => s.timelineView) ?? 'lanes';
   const compact = useMediaQuery('(max-width: 639px)');

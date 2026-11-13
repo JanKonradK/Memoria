@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { latestSnapshots, projectEnergy, sleepCheck } from '../src/energy';
+import { latestSnapshots, measuredSnapshot, projectEnergy, sleepCheck } from '../src/energy';
 import { makeGame, makeResource, makeSnapshot, makeState, utc } from './helpers';
 
 const MIN = 60_000;
@@ -159,5 +159,17 @@ describe('sleepCheck', () => {
     expect(sleepCheck(state, game, 8, MIN)).toEqual({ caps: false, fullAt: null });
     state.resources[0] = { ...resource, kind: 'regen' };
     expect(sleepCheck(state, game, 8, MIN)).toEqual({ caps: true, fullAt: MIN });
+  });
+});
+
+describe('measuredSnapshot', () => {
+  it('hides a starting guess on a regenerating bar, and keeps real readings and weekly stock', () => {
+    const regen = makeResource();
+    const guess = makeSnapshot({ provenance: { kind: 'estimate', observedAt: 0, importedAt: 0 } });
+    expect(measuredSnapshot(regen, guess)).toBeUndefined();
+    const real = makeSnapshot();
+    expect(measuredSnapshot(regen, real)).toBe(real);
+    const weekly = makeResource({ kind: 'weekly' });
+    expect(measuredSnapshot(weekly, guess)).toBe(guess);
   });
 });

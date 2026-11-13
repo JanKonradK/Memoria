@@ -175,8 +175,15 @@ test('pointer dragging reorders widgets and cancellation leaves saved order inta
       .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-layout-item')));
   const original = await order();
   const first = grid.locator(':scope > [data-layout-item]').first();
-  await first.scrollIntoViewIfNeeded();
   const handle = first.getByRole('button', { name: /^Move / });
+  // Both the dragged item and its target must be on screen, whatever the heading's height.
+  const top = (await handle.boundingBox())!.y;
+  const next = (await grid.locator(':scope > [data-layout-item]').nth(1).boundingBox())!;
+  if (next.y + next.height / 2 > page.viewportSize()!.height - 100) {
+    await page.mouse.move(page.viewportSize()!.width / 2, page.viewportSize()!.height / 2);
+    await page.mouse.wheel(0, top - page.viewportSize()!.height / 4);
+    await expect.poll(async () => (await handle.boundingBox())!.y).toBeLessThan(page.viewportSize()!.height / 2);
+  }
   const a = (await handle.boundingBox())!;
   const b = (await grid.locator(':scope > [data-layout-item]').nth(1).boundingBox())!;
   const start = { x: a.x + a.width / 2, y: a.y + a.height / 2 };
