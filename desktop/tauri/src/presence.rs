@@ -22,7 +22,8 @@ pub struct Preferences {
     pub close_to_tray: bool,
     /// Show a notification when a tracked game starts.
     pub game_start_notices: bool,
-    /// Device reminders are opt-in, independent of the phone's choice.
+    /// Device reminders, independent of the phone's choice. On for a new
+    /// install; an install from before 4.1 keeps the off it was given.
     pub reminders_on_pc: bool,
 }
 
@@ -32,7 +33,7 @@ impl Default for Preferences {
             open_at_login: true,
             close_to_tray: true,
             game_start_notices: true,
-            reminders_on_pc: false,
+            reminders_on_pc: true,
         }
     }
 }
@@ -52,7 +53,8 @@ impl PreferenceFile {
                 open_at_login: flag("openAtLogin", current.open_at_login),
                 close_to_tray: flag("closeToTray", current.close_to_tray),
                 game_start_notices: flag("gameStartNotices", current.game_start_notices),
-                reminders_on_pc: flag("remindersOnPc", current.reminders_on_pc),
+                // Never switch reminders on silently for someone who already had the app.
+                reminders_on_pc: flag("remindersOnPc", false),
             };
         }
         Self {
@@ -317,9 +319,11 @@ mod tests {
     }
 
     #[test]
-    fn reminders_default_off_for_existing_installs_and_stay_local() {
+    fn reminders_default_on_for_new_installs_off_for_existing_ones_and_stay_local() {
         let dir = std::env::temp_dir().join(format!("memoria-reminder-prefs-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
+        assert!(PreferenceFile::new(&dir).get().reminders_on_pc);
         crate::store::write_json(&dir.join("desktop-preferences.json"), &json!({ "closeToTray": true })).unwrap();
         let prefs = PreferenceFile::new(&dir);
         assert!(!prefs.get().reminders_on_pc);

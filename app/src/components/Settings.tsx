@@ -12,6 +12,7 @@ import { APP_VERSION, displayVersion, updateTarget, useAppUpdate } from '../app-
 import { useMediaQuery } from '../hooks';
 import type { SettingsSection } from '../ui-store';
 import { DeviceNotifications } from './settings/DeviceNotifications';
+import { QuietHoursField } from './settings/QuietHoursField';
 import { AppUpdates } from './settings/AppUpdates';
 import { DesktopPresence } from './settings/DesktopPresence';
 import { GameRosterRow } from './settings/GameRosterRow';
@@ -230,6 +231,7 @@ export function SettingsPage() {
                     onChange={(value) => updateSettings({ localTz: resolveHomeTimeZone(value) })}
                   />
                 </SettingRow>
+                <QuietHoursField />
                 <SettingRow
                   label="Sleep window"
                   hint="How long you are away overnight. Today checks what caps in that time."

@@ -103,9 +103,8 @@ Memoria estimates energy from your last entry. Enter a new value after you spend
 Task resets use each game's server time. Dates and clocks use your **Home timezone** in **Settings**.
 
 Some games include event dates with the app. These dates can change, so check important deadlines in your game.
-The Android app can schedule optional reminders. Enable **Reminders on this device** in **Settings** and allow Android notifications.
-The schedule covers the next 24 hours, with custom reminders and one approaching deadline per game.
-Quiet hours apply. Android can delay delivery. Open Memoria regularly to update the schedule.
+The Android and Windows apps send reminders for the next 7 days: an hour before each daily reset that still has dailies left, before the weekly reset (one hour ahead per game still owing weeklies, up to 10 hours), three hours before an unfinished event ends, and two hours before a freshly read bar caps. Nothing is sent for work you have ticked off. Setup offers them; you can also turn them on in **Settings**.
+Quiet hours are off by default. If you set them, a reminder that falls inside them arrives just before they begin. On Android, allow **Alarms & reminders** in **Settings** so reminders arrive on the minute. Opening Memoria refreshes the schedule.
 
 ## Keep a backup
 

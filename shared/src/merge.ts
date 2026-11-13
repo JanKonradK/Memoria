@@ -406,6 +406,23 @@ function mergeCatchUpSeen(
   return normalizeCatchUpSeen(Object.fromEntries(merged));
 }
 
+/** The hidden default every document carried before quiet hours had a control. */
+const LEGACY_QUIET = { start: 60, end: 480 };
+
+function normalizeQuietHours(
+  record: Record<string, unknown>,
+): Pick<Settings, 'quietStart' | 'quietEnd' | 'quietHoursChosen'> {
+  const read = (value: unknown) => (value == null ? null : clampInt(value, 0, 1439, 0));
+  const chosen = record.quietHoursChosen === true;
+  let quietStart = read(record.quietStart);
+  let quietEnd = read(record.quietEnd);
+  if (quietStart == null || quietEnd == null) quietStart = quietEnd = null;
+  // A reminder an hour before a 03:00 reset was silently dropped by that
+  // default. Nobody chose it, so it becomes "no quiet hours".
+  else if (!chosen && quietStart === LEGACY_QUIET.start && quietEnd === LEGACY_QUIET.end) quietStart = quietEnd = null;
+  return { quietStart, quietEnd, ...(chosen ? { quietHoursChosen: true } : {}) };
+}
+
 function normalizeSettings(raw: unknown): Settings {
   const base = emptyState().settings;
   const record = objectRecord(raw) ?? {};
@@ -424,8 +441,7 @@ function normalizeSettings(raw: unknown): Settings {
     hlc: metadata?.hlc ?? legacyHlc(0),
     deviceId: metadata?.deviceId ?? 'Unknown device',
     fieldHlc: record.fieldHlc,
-    quietStart: record.quietStart === null ? null : clampInt(record.quietStart, 0, 1439, base.quietStart ?? 0),
-    quietEnd: record.quietEnd === null ? null : clampInt(record.quietEnd, 0, 1439, base.quietEnd ?? 0),
+    ...normalizeQuietHours(record),
     localTz: isZone(record.localTz) ? record.localTz : base.localTz,
     sleepHours: finiteNumber(record.sleepHours) ? Math.min(24, Math.max(1, record.sleepHours)) : base.sleepHours,
     // Malformed becomes absent rather than rejected: an unreadable stamp means

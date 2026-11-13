@@ -230,6 +230,7 @@ const settings = z.object({
   ...syncable,
   quietStart: z.number().int().min(0).max(1439).nullable(),
   quietEnd: z.number().int().min(0).max(1439).nullable(),
+  quietHoursChosen: z.boolean().optional(),
   localTz: z
     .string()
     .min(1)

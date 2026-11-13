@@ -6,20 +6,25 @@ const mocks = vi.hoisted(() => ({
   getPending: vi.fn(),
   cancel: vi.fn(),
   schedule: vi.fn(),
+  checkExactNotificationSetting: vi.fn(),
+  registerActionTypes: vi.fn(),
+  completeDailies: vi.fn(),
   addListener: vi.fn(),
   remove: vi.fn(),
   unsubscribe: vi.fn(),
   plan: vi.fn(),
   setTab: vi.fn(),
   change: undefined as ((next: { state: object }, prior: { state: object }) => void) | undefined,
-  action: undefined as ((event: { notification: { extra?: { memoria: unknown } } }) => void) | undefined,
+  action: undefined as
+    | ((event: { actionId?: string; notification: { extra?: { memoria: unknown; gameId?: string } } }) => void)
+    | undefined,
 }));
 vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: mocks }));
-vi.mock('@memoria/shared', () => ({ buildNotificationPlan: mocks.plan }));
+vi.mock('@memoria/shared', () => ({ buildNotificationPlan: mocks.plan, NOTIFICATION_HORIZON_DAYS: 7 }));
 vi.mock('../src/native', () => ({ isNativeApp: true }));
 vi.mock('../src/store', () => ({
   useApp: {
-    getState: () => ({ state: {} }),
+    getState: () => ({ state: {}, loaded: true, completeDailies: mocks.completeDailies }),
     subscribe: (callback: typeof mocks.change) => {
       mocks.change = callback;
       return mocks.unsubscribe;
@@ -39,7 +44,10 @@ const cleanups: (() => void)[] = [];
 beforeEach(() => {
   vi.resetAllMocks();
   vi.useFakeTimers();
-  useNotifications.setState({ enabled: false, error: '', scheduled: 0 });
+  useNotifications.setState({ enabled: false, error: '', scheduled: 0, exact: null });
+  localStorage.removeItem('memoria-notification-delivery');
+  mocks.checkExactNotificationSetting.mockResolvedValue({ exact_alarm: 'denied' });
+  mocks.registerActionTypes.mockResolvedValue(undefined);
   mocks.checkPermissions.mockResolvedValue({ display: 'granted' });
   mocks.requestPermissions.mockResolvedValue({ display: 'granted' });
   mocks.getPending.mockResolvedValue({ notifications: [] });
@@ -50,7 +58,9 @@ beforeEach(() => {
     mocks.action = callback;
     return Promise.resolve({ remove: mocks.remove });
   });
-  mocks.plan.mockReturnValue([{ id: 42, title: 'Game', body: 'A reminder', at: Date.now() + 60_000, gameId: 'game' }]);
+  mocks.plan.mockReturnValue([
+    { id: 42, title: 'Game', body: 'A reminder', at: Date.now() + 60_000, gameId: 'game', kind: 'daily' },
+  ]);
 });
 afterEach(async () => {
   cleanups.splice(0).forEach((cleanup) => cleanup());
@@ -79,12 +89,35 @@ describe('native notification lifecycle', () => {
         expect.objectContaining({
           id: 42,
           isExactNotification: false,
-          schedule: { at: expect.any(Date) },
-          extra: { memoria: true, gameId: 'game' },
+          schedule: { at: expect.any(Date), allowWhileIdle: true },
+          actionTypeId: 'memoria-daily',
+          extra: { memoria: true, gameId: 'game', kind: 'daily' },
         }),
       ],
     });
-    expect(useNotifications.getState()).toMatchObject({ enabled: true, scheduled: 1, error: '' });
+    expect(useNotifications.getState()).toMatchObject({ enabled: true, scheduled: 1, error: '', exact: false });
+  });
+
+  it('uses exact alarms only once Android allows them, without opening settings itself', async () => {
+    mocks.checkExactNotificationSetting.mockResolvedValue({ exact_alarm: 'granted' });
+    useNotifications.setState({ enabled: true });
+    await rescheduleNotifications();
+    expect(mocks.schedule.mock.calls[0]?.[0].notifications[0].isExactNotification).toBe(true);
+    expect(useNotifications.getState().exact).toBe(true);
+  });
+
+  it('does not show a reminder again after its time has passed, even if a rebuilt plan moves it later', async () => {
+    useNotifications.setState({ enabled: true });
+    await rescheduleNotifications();
+    vi.advanceTimersByTime(120_000);
+    mocks.plan.mockReturnValue([
+      { id: 42, title: 'Game', body: 'Moved', at: Date.now() + 3_600_000, gameId: 'game', kind: 'weekly' },
+      { id: 43, title: 'Game', body: 'New', at: Date.now() + 3_600_000, gameId: 'game', kind: 'event' },
+    ]);
+    await rescheduleNotifications();
+    const sent = mocks.schedule.mock.calls[1]?.[0].notifications as { id: number; actionTypeId?: string }[];
+    expect(sent.map((item) => item.id)).toEqual([43]);
+    expect(sent[0]?.actionTypeId).toBeUndefined();
   });
 
   it('keeps reminders disabled when opt-in permission is denied', async () => {
@@ -176,10 +209,13 @@ describe('native notification lifecycle', () => {
     expect(mocks.setTab).not.toHaveBeenCalled();
     mocks.action?.({ notification: { extra: { memoria: true } } });
     expect(mocks.setTab).toHaveBeenCalledOnce();
+    expect(mocks.completeDailies).not.toHaveBeenCalled();
+    mocks.action?.({ actionId: 'dailies-done', notification: { extra: { memoria: true, gameId: 'game' } } });
+    expect(mocks.completeDailies).toHaveBeenCalledWith('game');
     cleanup();
     mocks.action?.({ notification: { extra: { memoria: true } } });
     await vi.advanceTimersByTimeAsync(2000);
-    expect(mocks.setTab).toHaveBeenCalledOnce();
+    expect(mocks.setTab).toHaveBeenCalledTimes(2);
     expect(mocks.getPending).not.toHaveBeenCalled();
     expect(mocks.remove).toHaveBeenCalledOnce();
     expect(mocks.unsubscribe).toHaveBeenCalledOnce();
