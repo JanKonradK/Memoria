@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { DateTime } from 'luxon';
 import {
+  chanceOfFeatured,
   GameSavingsSchema,
   incomeRange,
   PAID_PASSES,
@@ -99,6 +100,7 @@ export function GameSavingsPanel({
   now: number;
 }) {
   const updateGame = useApp((s) => s.updateGame);
+  const events = useApp((s) => s.state.events);
   // By preset, so an older account saved without a preset key still finds its game.
   const presetKey = presetForGame(game)?.key;
   const meta = presetKey ? history?.games[presetKey] : undefined;
@@ -180,6 +182,7 @@ export function GameSavingsPanel({
                 key={plan.goal.id}
                 plan={plan}
                 tz={tz}
+                chance={goalChance(plan, game, presetKey, events)}
                 onRemove={() => save({ ...savings, goals: savings.goals.filter((goal) => goal.id !== plan.goal.id) })}
               />
             ))}
@@ -416,7 +419,30 @@ function PassToggle({
   );
 }
 
-function GoalRow({ plan, tz, onRemove }: { plan: GoalPlan; tz: string; onRemove: () => void }) {
+/**
+ * For a goal tied to a calendar banner: the chance of its featured 5★ with the
+ * pulls expected by the deadline, after earlier goals take theirs.
+ */
+function goalChance(plan: GoalPlan, game: Game, presetKey: string | undefined, events: GameEvent[]): number | null {
+  if (!plan.goal.eventId || plan.status === 'past') return null;
+  const banner = events.find((event) => event.id === plan.goal.eventId);
+  const rule = ruleForBanner(pityRulesFor(presetKey), banner?.bannerKind);
+  if (!rule || rule.featured === undefined) return null;
+  const available = Math.max(0, plan.expected.mid - (plan.needed - plan.goal.targetPulls));
+  return chanceOfFeatured(rule, trackOf(game.pity, rule.id), available);
+}
+
+function GoalRow({
+  plan,
+  tz,
+  chance,
+  onRemove,
+}: {
+  plan: GoalPlan;
+  tz: string;
+  chance?: number | null;
+  onRemove: () => void;
+}) {
   const status = STATUS[plan.status];
   const date = DateTime.fromMillis(plan.goal.deadline, { zone: tz }).toLocaleString(DateTime.DATE_MED);
   const reached =
@@ -442,6 +468,11 @@ function GoalRow({ plan, tz, onRemove }: { plan: GoalPlan; tz: string; onRemove:
             <div className="text-caption text-dim tabular-nums">
               Expect {fmt(plan.expected.low)}–{fmt(plan.expected.high)} pulls
               {reached && `, ${fmt(plan.needed)} around ${reached}`}
+            </div>
+          )}
+          {chance != null && (
+            <div className="text-caption font-semibold text-fg-soft tabular-nums">
+              {chance >= 0.995 ? 'Certain' : `${Math.round(chance * 100)}%`} to get the featured 5★ by {date}
             </div>
           )}
         </div>
