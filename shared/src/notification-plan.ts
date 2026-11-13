@@ -5,6 +5,8 @@ import { effectiveResourceKind } from './tracking';
 import { DateTime } from 'luxon';
 import { quietWindowAt } from './quiet';
 import { eventReward } from './event-reward';
+import { presetForGame } from './presets';
+import { PAID_PASSES } from './savings';
 import { nextDailyReset, nextMonthlyReset, nextWeeklyReset } from './periods';
 
 export interface PlannedNotification {
@@ -356,6 +358,44 @@ export function buildNotificationPlan(state: AppState, now: number): PlannedNoti
       anchor.resetAt,
     );
     start = stop;
+  }
+
+  // Passes the player buys: the monthly pass three days before it runs out, and
+  // the battle pass a week before its row in the calendar ends.
+  for (const game of active) {
+    const savings = game.savings;
+    const key = game.presetKey ?? presetForGame(game)?.key;
+    const passes = key ? PAID_PASSES[key] : undefined;
+    if (!savings || !passes) continue;
+    const ends = savings.monthlyPassEnds;
+    if (savings.monthlyPass && ends && ends > now)
+      add(
+        `pass:${game.id}:${ends}`,
+        'reminder',
+        `${gameTitle(game)}: ${passes.monthly.name} runs out in 3 days`,
+        'Renew it if you mean to keep the daily currency.',
+        ends - 3 * 24 * HOUR,
+        game.id,
+        ends,
+      );
+    if (savings.battlePass) {
+      const battle = (context.eventsByGame.get(game.id) ?? []).find(
+        (event) =>
+          !event.deleted &&
+          event.end > now &&
+          (event.name.toLowerCase().includes(passes.battle.name.toLowerCase()) || /battle pass/i.test(event.name)),
+      );
+      if (battle)
+        add(
+          `battle:${game.id}:${battle.end}`,
+          'reminder',
+          `${gameTitle(game)}: ${passes.battle.name} ends in 7 days`,
+          'Claim its rewards, and buy levels if you intend to.',
+          battle.end - 7 * 24 * HOUR,
+          game.id,
+          battle.end,
+        );
+    }
   }
 
   // The evening digest: one optional notification a day with what is still open.

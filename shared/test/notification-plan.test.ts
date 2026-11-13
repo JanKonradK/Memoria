@@ -360,3 +360,39 @@ describe('event rewards', () => {
     expect(ofKind(state, 'event')[0]?.body).toBe('Flagship (1,600 Primogems)');
   });
 });
+
+describe('pass reminders', () => {
+  it('warns three days before the monthly pass runs out and a week before the battle pass ends', () => {
+    const ends = now + 5 * 24 * HOUR;
+    const game = makeGame({
+      presetKey: 'genshin',
+      savings: {
+        currency: 0,
+        tickets: 0,
+        takenAt: 1,
+        participation: 1,
+        goals: [],
+        monthlyPass: true,
+        battlePass: true,
+        monthlyPassEnds: ends,
+      },
+    });
+    const state = dailyState({
+      games: [game],
+      events: [
+        makeEvent({
+          type: 'event',
+          name: 'Gnostic Hymn — Battle Pass',
+          start: now - HOUR,
+          end: now + 10 * 24 * HOUR,
+          notify: false,
+        }),
+      ],
+    });
+    const reminders = ofKind(state, 'reminder');
+    expect(reminders.map((item) => [item.title, item.at])).toEqual([
+      ['Testland: Blessing of the Welkin Moon runs out in 3 days', ends - 3 * 24 * HOUR],
+      ['Testland: Gnostic Hymn ends in 7 days', now + 3 * 24 * HOUR],
+    ]);
+  });
+});

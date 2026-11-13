@@ -47,6 +47,8 @@ export const GameSavingsSchema = z.object({
   goals: z.array(SavingsGoalSchema).max(MAX_SAVINGS_GOALS).default([]),
   /** The player buys the monthly pass (Welkin Moon and the like) every month. */
   monthlyPass: z.boolean().optional(),
+  /** When the current monthly pass runs out, epoch ms; from the days left the player entered. */
+  monthlyPassEnds: z.number().int().positive().max(LATEST_DEADLINE).optional(),
   /** The player buys the paid battle pass every version. */
   battlePass: z.boolean().optional(),
 });
