@@ -219,6 +219,11 @@ export const PRESETS: GamePreset[] = [
         promptCap: true,
       },
     ],
+    chips: [
+      { label: 'Domain', delta: -20 },
+      { label: 'Boss', delta: -40 },
+      { label: 'Weekly boss', delta: -60 },
+    ],
     tasks: [
       {
         key: 'genshin-commissions',
@@ -312,6 +317,11 @@ export const PRESETS: GamePreset[] = [
         reserveLabel: 'Reserve TB Power',
       },
     ],
+    chips: [
+      { label: 'Calyx', delta: -10 },
+      { label: 'Shadow', delta: -30 },
+      { label: 'Cavern', delta: -40 },
+    ],
     tasks: [
       { key: 'hsr-daily-training', name: 'Daily Training (500)', cadence: 'daily', core: true },
       {
@@ -359,6 +369,11 @@ export const PRESETS: GamePreset[] = [
         kind: 'regen',
         reserveLabel: 'Backup Battery',
       },
+    ],
+    chips: [
+      { label: 'Routine', delta: -20 },
+      { label: 'Expert', delta: -40 },
+      { label: 'Hunt', delta: -60 },
     ],
     tasks: [
       { key: 'zzz-engagement', name: 'Daily Engagement (400)', cadence: 'daily', core: true },
@@ -408,6 +423,10 @@ export const PRESETS: GamePreset[] = [
         kind: 'regen',
         reserveLabel: 'Waveplate Crystals',
       },
+    ],
+    chips: [
+      { label: 'Forgery', delta: -40 },
+      { label: 'Tacet field', delta: -60 },
     ],
     tasks: [
       { key: 'wuwa-daily-activity', name: 'Daily Activity (100)', cadence: 'daily', core: true },

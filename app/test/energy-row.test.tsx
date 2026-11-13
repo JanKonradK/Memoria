@@ -167,7 +167,8 @@ describe('EnergyRow reserve controls', () => {
 
     fireEvent.click(reserveIncrement);
 
-    expect(onCommit).toHaveBeenCalledWith(300, 321);
+    // A large reserve moves by 10.
+    expect(onCommit).toHaveBeenCalledWith(300, 330);
   });
 
   it('steps via keyboard activation of the step button', () => {
@@ -178,7 +179,7 @@ describe('EnergyRow reserve controls', () => {
     // Keyboard activation surfaces as a click with detail 0.
     fireEvent.click(screen.getByRole('button', { name: 'Decrease Reserve TB Power' }), { detail: 0 });
 
-    expect(onCommit).toHaveBeenCalledWith(300, 319);
+    expect(onCommit).toHaveBeenCalledWith(300, 310);
   });
 
   it('does not commit when focus passes through without an edit', () => {
