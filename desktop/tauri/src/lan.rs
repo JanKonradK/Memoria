@@ -4,6 +4,7 @@
 //! a code and pinned PC key fingerprint shown in Settings. All data and
 //! pairing codes use X25519 + XChaCha20-Poly1305 authenticated encryption.
 
+use base64::Engine as _;
 use std::collections::HashMap;
 use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
@@ -66,6 +67,38 @@ pub fn private_address(ip: IpAddr) -> bool {
     }
 }
 
+/// 100.64.0.0/10 is carrier-grade NAT space in general, not Tailscale's alone.
+fn shared_address_space(ip: IpAddr) -> bool {
+    let ip = match ip {
+        IpAddr::V6(v6) => v6.to_ipv4_mapped().map(IpAddr::V4).unwrap_or(IpAddr::V6(v6)),
+        other => other,
+    };
+    matches!(ip, IpAddr::V4(v4) if v4.octets()[0] == 100 && (64..=127).contains(&v4.octets()[1]))
+}
+
+/// Whether this PC itself has an address in 100.64.0.0/10, as it does on a
+/// Tailscale network. Checked at most once a minute.
+fn on_tailnet() -> bool {
+    static CACHE: Mutex<Option<(std::time::Instant, bool)>> = Mutex::new(None);
+    let mut cache = CACHE.lock().unwrap();
+    if let Some((at, value)) = *cache {
+        if at.elapsed() < std::time::Duration::from_secs(60) {
+            return value;
+        }
+    }
+    let value = if_addrs::get_if_addrs()
+        .map(|items| items.iter().any(|item| shared_address_space(item.ip())))
+        .unwrap_or(false);
+    *cache = Some((std::time::Instant::now(), value));
+    value
+}
+
+/// A peer allowed to reach the sync routes: a private address, and an address
+/// in 100.64.0.0/10 only while this PC is on such a network itself.
+fn admitted(ip: IpAddr, tailnet: bool) -> bool {
+    private_address(ip) && (tailnet || !shared_address_space(ip))
+}
+
 #[derive(Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 struct Device {
@@ -99,13 +132,20 @@ fn parse_config(value: &Value) -> Option<Config> {
         Some(_) => return None,
     };
     // Legacy bearer credentials are deliberately retired. Keep the enabled preference.
-    if object.get("secret").is_none() {
+    if object.get("secret").is_none() && object.get("protectedSecret").is_none() {
         return Some(Config {
             enabled,
             ..Config::default()
         });
     }
-    let secret = object.get("secret")?.as_str()?.to_string();
+    let secret = match (object.get("protectedSecret"), object.get("secret")) {
+        (Some(protected), _) => {
+            let blob = base64::engine::general_purpose::STANDARD.decode(protected.as_str()?).ok()?;
+            String::from_utf8(crate::dpapi::unprotect(&blob)?).ok()?
+        }
+        (None, Some(plain)) => plain.as_str()?.to_string(),
+        (None, None) => unreachable!(),
+    };
     crypto::public(&secret).ok()?;
     let devices = match object.get("devices") {
         None => Vec::new(),
@@ -138,6 +178,22 @@ fn parse_config(value: &Value) -> Option<Config> {
         devices,
         secret,
     })
+}
+
+/// The config as written to disk. On Windows the private key is DPAPI-protected,
+/// so a copied `devices.json` is useless on another account or PC.
+fn stored_config(config: &Config) -> Value {
+    let mut value = serde_json::to_value(config).unwrap_or_default();
+    if let Some(blob) = crate::dpapi::protect(config.secret.as_bytes()) {
+        if let Some(object) = value.as_object_mut() {
+            object.remove("secret");
+            object.insert(
+                "protectedSecret".into(),
+                Value::String(base64::engine::general_purpose::STANDARD.encode(blob)),
+            );
+        }
+    }
+    value
 }
 
 struct Pairing {
@@ -198,7 +254,16 @@ impl Lan {
                 .as_ref()
                 .and_then(parse_config)
             {
-                Some(config) => (config, None),
+                Some(config) => {
+                    // A key saved in the clear by an older version is protected now.
+                    let stored = stored_config(&config);
+                    if stored.get("protectedSecret").is_some()
+                        && serde_json::from_slice::<Value>(&bytes).is_ok_and(|old| old.get("secret").is_some())
+                    {
+                        let _ = store::write_atomic(&file, stored.to_string().as_bytes());
+                    }
+                    (config, None)
+                }
                 // Never write over an unreadable file until the user asks to reset it.
                 None => (Config::default(), Some(UNREADABLE)),
             },
@@ -221,7 +286,7 @@ impl Lan {
     }
 
     fn save(&self, next: &Config) -> Result<(), LanError> {
-        store::write_atomic(&self.file, serde_json::to_string(next).unwrap_or_default().as_bytes())
+        store::write_atomic(&self.file, stored_config(next).to_string().as_bytes())
             .map_err(|error| fail(500, format!("Phone connections could not be saved: {error}")))
     }
 
@@ -630,7 +695,10 @@ async fn handle(State(lan): State<Lan>, ConnectInfo(peer): ConnectInfo<SocketAdd
     // A native HTTP client sends no Origin. Browser pages are never admitted,
     // even when someone shares a pairing code with a page by accident.
     let headers = request.headers();
-    if headers.contains_key(header::ORIGIN) || headers.contains_key("sec-fetch-site") || !private_address(peer.ip()) {
+    if headers.contains_key(header::ORIGIN)
+        || headers.contains_key("sec-fetch-site")
+        || !admitted(peer.ip(), shared_address_space(peer.ip()) && on_tailnet())
+    {
         return json_response(
             403,
             &json!({ "error": "Use the Memoria Android app on your home Wi-Fi or private network." }),
@@ -653,6 +721,31 @@ async fn handle(State(lan): State<Lan>, ConnectInfo(peer): ConnectInfo<SocketAdd
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn admits_shared_address_space_only_on_a_tailnet() {
+        let tailscale: IpAddr = "100.101.2.3".parse().unwrap();
+        let home: IpAddr = "192.168.1.20".parse().unwrap();
+        let public: IpAddr = "8.8.8.8".parse().unwrap();
+        assert!(admitted(home, false));
+        assert!(!admitted(tailscale, false));
+        assert!(admitted(tailscale, true));
+        assert!(!admitted(public, true));
+    }
+
+
+    #[cfg(windows)]
+    #[test]
+    fn stores_the_private_key_protected_and_reads_both_forms() {
+        let config = Config::default();
+        let stored = stored_config(&config);
+        assert!(stored.get("secret").is_none());
+        assert!(!stored.to_string().contains(&config.secret));
+        assert_eq!(parse_config(&stored).unwrap().secret, config.secret);
+        let legacy = serde_json::json!({ "enabled": true, "devices": [], "secret": config.secret });
+        assert_eq!(parse_config(&legacy).unwrap().secret, config.secret);
+    }
+
     use super::*;
 
     #[test]

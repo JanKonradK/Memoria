@@ -8,7 +8,7 @@ import {
   openLan,
   type LanPacket,
 } from '@memoria/shared/lan-crypto';
-import { Capacitor, CapacitorHttp } from '@capacitor/core';
+import { Capacitor, CapacitorHttp, registerPlugin } from '@capacitor/core';
 import {
   emptyState,
   mergeState,
@@ -28,6 +28,33 @@ const FIRST_SYNC_KEY = 'memoria-wifi-first-sync';
 const CHOOSE = 'Choose in Settings how this device joins your PC.';
 /** `hosts` lists every address the PC has reported, the last working one first. */
 type Pair = { host: string; hosts: string[]; secret: string; publicKey: string; fingerprint: string; deviceId: string };
+
+/** The Android Keystore seals the private key; WebView storage only ever holds the sealed text. */
+const DeviceKey = registerPlugin<{
+  seal(options: { value: string }): Promise<{ sealed: string }>;
+  unseal(options: { sealed: string }): Promise<{ value: string }>;
+}>('DeviceKey');
+
+let persisting = Promise.resolve();
+/** Writes the pairing with its key sealed. Falls back to the plain key only if the Keystore fails. */
+function persistPair(next: Pair) {
+  // The public key is derived from the secret on load, so it is not stored.
+  const { secret, host, hosts, fingerprint, deviceId } = next;
+  const rest = { host, hosts, fingerprint, deviceId };
+  persisting = persisting
+    .catch(() => undefined)
+    .then(async () => {
+      let stored: Record<string, unknown>;
+      try {
+        stored = { ...rest, sealedSecret: (await DeviceKey.seal({ value: secret })).sealed };
+      } catch {
+        stored = { ...rest, secret };
+      }
+      // A pairing replaced or forgotten meanwhile must not be written back.
+      if (pair?.secret === secret) localStorage.setItem(PAIR_KEY, JSON.stringify(stored));
+    });
+  return persisting;
+}
 const MAX_HOSTS = 8;
 type LanStatus = 'off' | 'pairing' | 'syncing' | 'choosing' | 'ok' | 'offline' | 'error';
 /** Both sides hold games the other has never seen, so combining them is the owner's call. */
@@ -159,7 +186,7 @@ async function request(
 
 function savePair(next: Pair) {
   pair = next;
-  localStorage.setItem(PAIR_KEY, JSON.stringify(next));
+  void persistPair(next);
   useLanSync.setState({ host: next.host, deviceId: next.deviceId });
 }
 
@@ -442,25 +469,37 @@ export function initLanSync(): void {
   if (initialized || !isNativeDevice()) return;
   initialized = true;
   try {
-    const saved = JSON.parse(localStorage.getItem(PAIR_KEY) ?? 'null') as Partial<Pair> | null;
-    if (
-      saved &&
-      typeof saved.secret === 'string' &&
-      /^[a-f0-9]{64}$/.test(saved.secret) &&
-      typeof saved.fingerprint === 'string' &&
-      /^[a-f0-9]{64}$/.test(saved.fingerprint) &&
-      typeof saved.deviceId === 'string'
-    ) {
+    const saved = JSON.parse(localStorage.getItem(PAIR_KEY) ?? 'null') as
+      (Partial<Pair> & { sealedSecret?: unknown }) | null;
+    const restore = (secret: string) => {
+      if (!saved || !/^[a-f0-9]{64}$/.test(secret)) return false;
       const host = normalizeLanHost(saved.host ?? '');
       pair = {
         host,
         hosts: knownHosts(host, saved.hosts, []),
-        secret: saved.secret,
-        publicKey: devicePublicKey(saved.secret),
-        fingerprint: saved.fingerprint,
-        deviceId: saved.deviceId,
+        secret,
+        publicKey: devicePublicKey(secret),
+        fingerprint: saved.fingerprint!,
+        deviceId: saved.deviceId!,
       };
-      useLanSync.setState({ host, deviceId: saved.deviceId });
+      useLanSync.setState({ host, deviceId: saved.deviceId! });
+      return true;
+    };
+    const described =
+      saved &&
+      typeof saved.fingerprint === 'string' &&
+      /^[a-f0-9]{64}$/.test(saved.fingerprint) &&
+      typeof saved.deviceId === 'string';
+    if (described && typeof saved.sealedSecret === 'string') {
+      void DeviceKey.unseal({ sealed: saved.sealedSecret }).then(
+        ({ value }) => {
+          if (!pair && restore(value)) void syncLanNow();
+        },
+        () => setStatus('error', 'Pair this PC again to enable encrypted sync.'),
+      );
+    } else if (described && typeof saved.secret === 'string' && restore(saved.secret)) {
+      // A key saved in the clear by an older version is sealed now.
+      void persistPair(pair!);
     } else if (saved) {
       localStorage.removeItem(PAIR_KEY);
       clearFirstSync();

@@ -11,6 +11,11 @@ import { emptyState, encodePairingCode, type Game } from '@memoria/shared';
 const native = vi.hoisted(() => ({ post: vi.fn() }));
 vi.mock('@capacitor/core', () => ({
   Capacitor: { isNativePlatform: () => true },
+  // A stand-in Keystore: sealed text that is plainly not the key.
+  registerPlugin: () => ({
+    seal: async ({ value }: { value: string }) => ({ sealed: btoa(`sealed:${value}`) }),
+    unseal: async ({ sealed }: { sealed: string }) => ({ value: atob(sealed).replace(/^sealed:/, '') }),
+  }),
   CapacitorHttp: {
     post: async (options: { url: string; data: LanPacket }) => {
       const pc = devicePublicKey('11'.repeat(32));
@@ -145,6 +150,11 @@ describe('native LAN sync', () => {
         reply({ state: emptyState(), addresses: ['http://192.168.1.20:17820', 'http://100.101.2.3:17820', 'x'] }),
       );
     await pairLanDevice('192.168.1.20:17820', '12345678', fingerprint);
+    // The private key is stored sealed by the Keystore, never in the clear.
+    await vi.waitFor(() =>
+      expect(JSON.parse(localStorage.getItem('memoria-wifi-device')!).sealedSecret).toBeTypeOf('string'),
+    );
+    expect(JSON.parse(localStorage.getItem('memoria-wifi-device')!).secret).toBeUndefined();
     expect(JSON.parse(localStorage.getItem('memoria-wifi-device')!).hosts).toEqual([
       'http://192.168.1.20:17820',
       'http://100.101.2.3:17820',
@@ -160,7 +170,10 @@ describe('native LAN sync', () => {
     ]);
     expect(useLanSync.getState().status).toBe('ok');
     expect(useLanSync.getState().host).toBe('http://100.101.2.3:17820');
-    expect(JSON.parse(localStorage.getItem('memoria-wifi-device')!).host).toBe('http://100.101.2.3:17820');
+    // The pairing is written once its key is sealed.
+    await vi.waitFor(() =>
+      expect(JSON.parse(localStorage.getItem('memoria-wifi-device')!).host).toBe('http://100.101.2.3:17820'),
+    );
   });
   it('reports the PC as offline once every known address fails', async () => {
     native.post

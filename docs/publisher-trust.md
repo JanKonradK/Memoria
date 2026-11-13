@@ -12,7 +12,7 @@ The script `node scripts/signing-key.mjs` creates a key pair. It refuses to repl
 It prints only the public key, its fingerprint, and the private key location.
 
 Before a release, add the PEM text to the GitHub Actions secret `MEMORIA_SIGNING_KEY`.
-Use a protected environment with manual approval where possible. Keep a separate, secure backup of the private key.
+The release job runs in the `release` environment. Move the signing secrets from repository secrets to that environment and give it required reviewers, so a run reaches the keys only after approval. Keep a separate, secure backup of the private key.
 Do not put the private key in a repository, artifact, log, or issue.
 
 ## Signed files
