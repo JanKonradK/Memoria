@@ -504,7 +504,7 @@ fn apply_preferences(app: &AppHandle) {
 fn allow_phone_sync(app: &AppHandle) {
     let handle = app.clone();
     std::thread::spawn(move || {
-        let (kind, text) = match firewall::allow(false) {
+        let (kind, text) = match firewall::allow() {
             "ok" => (
                 MessageDialogKind::Info,
                 "Windows now allows your phone to connect to Memoria on private networks and Tailscale.",

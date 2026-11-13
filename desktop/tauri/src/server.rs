@@ -226,12 +226,11 @@ impl Server {
             }
             (Method::POST, "/api/firewall") => {
                 let headers = request.headers().clone();
-                let make_private = match lan::read_json(&headers, request.into_body(), 1024).await {
-                    Ok(body) => body.get("makePrivate").and_then(Value::as_bool).unwrap_or(false),
-                    Err(error) => return self.error(error.status, &error.message),
-                };
+                if let Err(error) = lan::read_json(&headers, request.into_body(), 1024).await {
+                    return self.error(error.status, &error.message);
+                }
                 let result = tokio::task::spawn_blocking(move || {
-                    let outcome = crate::firewall::allow(make_private);
+                    let outcome = crate::firewall::allow();
                     let mut status = crate::firewall::check();
                     status["outcome"] = json!(outcome);
                     status
