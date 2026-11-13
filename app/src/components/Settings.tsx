@@ -156,10 +156,10 @@ export function SettingsPage() {
 
   return (
     <Page className="settings-page">
-      <div data-tour="settings" className="settings-shell">
+      <div className="settings-shell">
         <div className="settings-heading">
           <h1 className="text-title font-semibold tracking-[-0.02em] text-fg">Settings</h1>
-          <Btn onClick={() => openSheet({ kind: 'guide' })}>User guide</Btn>
+          <Btn onClick={() => useUI.getState().armHints()}>Show hints again</Btn>
         </div>
 
         <div className="settings-layout">

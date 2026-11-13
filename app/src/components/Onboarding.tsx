@@ -89,14 +89,14 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
       });
     }
     onComplete();
-    useUI.getState().openSheet({ kind: 'guide' });
+    useUI.getState().armHints();
   };
 
   const skip = () => {
     updateSettings({ localTz: detectLocalTz() });
     onComplete();
-    // On a phone the PC usually brings the games; elsewhere, show where things are.
-    if (!isNativeApp) useUI.getState().openSheet({ kind: 'guide' });
+    // The hints appear in place the first time each thing is on screen.
+    useUI.getState().armHints();
   };
 
   return (

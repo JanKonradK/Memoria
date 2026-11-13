@@ -24,7 +24,7 @@ test("a game's page keeps its actions in its heading", async ({ page }) => {
   for (const name of ['Add event', 'Readings', 'Pause tracking', 'Set up launch']) {
     await expect(page.getByRole('button', { name, exact: true })).toHaveCount(0);
   }
-  const resources = page.locator('[data-tour="resources"]').first();
+  const resources = page.locator('[data-section="resources"]').first();
   const barBox = await bar.boundingBox();
   const resourcesBox = await resources.boundingBox();
   expect(barBox!.y + barBox!.height).toBeLessThanOrEqual(resourcesBox!.y);
@@ -33,7 +33,7 @@ test("a game's page keeps its actions in its heading", async ({ page }) => {
   const desktop = (page.viewportSize()?.width ?? 0) >= 900;
   if (desktop) {
     // Tasks sit in the same column as the resources, below them.
-    const tasksBox = await page.locator('[data-tour="tasks"]').first().boundingBox();
+    const tasksBox = await page.locator('[data-section="tasks"]').first().boundingBox();
     expect(Math.abs(tasksBox!.x - resourcesBox!.x)).toBeLessThanOrEqual(2);
     expect(tasksBox!.y).toBeGreaterThan(resourcesBox!.y);
   }

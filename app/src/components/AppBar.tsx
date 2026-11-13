@@ -216,12 +216,7 @@ export function AppBar() {
         <span className="text-heading leading-none font-semibold tracking-[-0.02em] text-fg">Memoria</span>
       </div>
 
-      <nav
-        ref={navRef}
-        aria-label="Primary"
-        data-tour="pages"
-        className="app-nav relative flex gap-1 rounded-ui-md p-px"
-      >
+      <nav ref={navRef} aria-label="Primary" className="app-nav relative flex gap-1 rounded-ui-md p-px">
         {/* One persistent element that slides between the tabs, rather than a
             highlight that blinks out of one button and into the next.
             Deliberately not a motion `layoutId`: that has to unmount the pill

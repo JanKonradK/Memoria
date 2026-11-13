@@ -81,7 +81,6 @@ const ReminderSheet = lazy(() =>
   import('./components/ReminderSheet').then((module) => ({ default: module.ReminderSheet })),
 );
 const CatchUpSheet = lazy(() => import('./components/CatchUp').then((module) => ({ default: module.CatchUpSheet })));
-const UserGuide = lazy(() => import('./components/UserGuide').then((module) => ({ default: module.UserGuide })));
 
 type PagePosition = { page: number; board: number };
 
@@ -149,7 +148,6 @@ function AppSheets() {
           {sheet.kind === 'eventPeek' && <EventPeek key={`peek-${sheet.eventId}`} open eventId={sheet.eventId} />}
           {sheet.kind === 'reminder' && <ReminderSheet key="reminder" open />}
           {sheet.kind === 'session' && <SessionSheet key={`session-${sheet.gameId}`} open gameId={sheet.gameId} />}
-          {sheet.kind === 'guide' && <UserGuide key="guide" open />}
           {sheet.kind === 'catchUp' && <CatchUpSheet key={`catch-up-${sheet.gameId}`} open gameId={sheet.gameId} />}
         </Suspense>
       )}
@@ -258,14 +256,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (
-      !loaded ||
-      loadError ||
-      autoTourStarted.current ||
-      onboardingComplete() ||
-      useUI.getState().tourSeenVersion >= 1
-    )
-      return;
+    if (!loaded || loadError || autoTourStarted.current || onboardingComplete()) return;
     if (servedByLauncher() && (syncStatus === 'idle' || syncStatus === 'syncing')) return;
     autoTourStarted.current = true;
     // Existing synced rosters already know the app. A fresh install starts by

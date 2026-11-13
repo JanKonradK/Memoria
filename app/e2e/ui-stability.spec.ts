@@ -98,7 +98,7 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Add a game' })).toBeVisible();
 });
 
-test('first run sets up games, then opens the spotlight tour, and fits the viewport', async ({ page }) => {
+test('first run sets up games, then shows hints in place, and fits the viewport', async ({ page }) => {
   await page.addInitScript(() => localStorage.removeItem('memoria-onboarding'));
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Which games do you play?' })).toBeVisible();
@@ -114,7 +114,10 @@ test('first run sets up games, then opens the spotlight tour, and fits the viewp
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
   await page.getByRole('button', { name: 'Create dashboard' }).click();
-  await expect(page.getByRole('dialog', { name: 'Pages' })).toBeVisible();
+  // No tour over the app: hints wait where each thing is.
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Timeline', exact: true }).click();
+  await expect(page.locator('[data-hint="events"]')).toBeVisible();
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
 });
@@ -230,7 +233,9 @@ test('tabs, timeline controls, and settings fit after adding a game', async ({ p
   await theme.getByRole('radio', { name: 'Dark', exact: true }).click();
   await expect.poll(() => page.locator('html').getAttribute('data-theme')).toBe('dark');
   await expect
-    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('memoria-ui') || '{}')?.state?.themePreference as string))
+    .poll(() =>
+      page.evaluate(() => JSON.parse(localStorage.getItem('memoria-ui') || '{}')?.state?.themePreference as string),
+    )
     .toBe('dark');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');

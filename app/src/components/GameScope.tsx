@@ -11,7 +11,7 @@ export function GameScope() {
   const active = games.filter((game) => !game.deleted);
   const value = active.some((game) => game.id === focused) ? focused! : '';
   return (
-    <label data-tour="focus" className="app-game-scope flex min-w-0 items-center text-meta text-muted">
+    <label className="app-game-scope flex min-w-0 items-center text-meta text-muted">
       <span className="sr-only">Filter by game</span>
       <Select
         aria-label="Filter by game"

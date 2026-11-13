@@ -103,7 +103,7 @@ export function PullsPage() {
 
   return (
     <Page className="history-page">
-      <header className="pulls-header" data-tour="pulls">
+      <header className="pulls-header">
         <div role="radiogroup" aria-label="Pulls view" className="pulls-switch">
           {options.map((option) => (
             <button

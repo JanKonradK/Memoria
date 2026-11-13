@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Hint } from './Hint';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { DateTime } from 'luxon';
 import type { Game, GameEvent } from '@memoria/shared';
@@ -60,10 +61,7 @@ function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; 
     >
       <GameLogo game={game} size={36} />
       <div className="min-w-0 flex-1">
-        <h2
-          className="truncate text-body"
-          style={{ color: gameTitleInk(game, ground, 4.5) }}
-        >
+        <h2 className="truncate text-body" style={{ color: gameTitleInk(game, ground, 4.5) }}>
           {game.name}
         </h2>
         <div className="mt-1 flex min-w-0 items-center gap-2 text-caption text-muted">
@@ -1114,7 +1112,7 @@ export function TimelinePage({ now }: { now: number }) {
   const scopedEvents = view === 'lanes' ? [...eventsByGame.values()].flat() : events;
   const visibleCount = scopedEvents.filter((event) => showFinished || (!event.done && event.end > now)).length;
   const pausedRows = pausedGames.length > 0 && (
-    <div data-tour="timeline" className="mt-4 divide-y divide-line-hairline border-t border-line-edge">
+    <div className="mt-4 divide-y divide-line-hairline border-t border-line-edge">
       {pausedGames.map((game) => (
         <PausedTimelineGame
           key={game.id}
@@ -1153,6 +1151,7 @@ export function TimelinePage({ now }: { now: number }) {
         {pausedGames.length > 0 && <span>{pausedGames.length} paused</span>}
       </div>
 
+      <Hint id="events" className="mt-3" />
       <PinnedEvents events={events} games={games} now={now} onOpen={peekEvent} />
 
       {games.length > 0 && games.every((game) => game.paused) ? null : view === 'list' ? (
@@ -1166,11 +1165,7 @@ export function TimelinePage({ now }: { now: number }) {
           onToggleEvent={toggleEvent}
         />
       ) : (
-        <div
-          data-tour="timeline"
-          data-editing={editing || undefined}
-          className="timeline-board timeline-lanes-board relative"
-        >
+        <div data-editing={editing || undefined} className="timeline-board timeline-lanes-board relative">
           <div ref={timelineScaleRef} data-timeline-scale className="timeline-scale">
             <div data-timeline-ruler className="relative h-5 text-caption text-muted">
               {dayLabels.map(({ day, center, showMonth, week }) => (
