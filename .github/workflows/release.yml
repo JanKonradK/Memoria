@@ -77,6 +77,8 @@ jobs:
       - run: npm run build:single
       - run: npm exec -- playwright install chromium
       - run: npm run check:release
+      # A release must not ship a main game's calendar days behind its update.
+      - run: npm run check:calendar
       # Windows 10 and 11 ship the WebView2 runtime the app draws with; the
       # Windows Server runner image may not, so install it before the native check.
       - name: Install the WebView2 runtime if it is missing
