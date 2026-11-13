@@ -716,103 +716,11 @@ input[type='number'] {
   }
 }
 
-/* One neutral material for the attention hub and every game card. Game identity
-   is layered separately, so the shell stays reusable and colour-neutral.
-
-   --card-shell-hi / --card-shell-lo are the game's wash, set by gameShellVars in
-   theme.ts. The fallbacks are the neutral panel, so a surface that has not opted
-   in — the attention hub — is plain chrome. */
-.card-shell {
-  position: relative;
-  isolation: isolate;
-  background: linear-gradient(180deg, var(--card-shell-hi, var(--panel-hi)), var(--card-shell-lo, var(--panel-lo)));
-  border: 1px solid var(--color-line);
-}
-
-/* The game itself owns the light in its glass. Chrome stays quiet around it.
-   One material follows a roster card into its expanded workspace. */
-.game-card-surface {
-  --game-glint: rgba(255, 255, 255, 0.14);
-  --game-shadow: rgba(0, 0, 0, 0.28);
-  --game-tint: 11%;
-  --color-muted: #b0b2c0;
-  --color-dim: #a4a7b6;
-  border-radius: var(--radius-ui-card);
-  border-color: color-mix(in srgb, var(--game-primary, var(--color-fg)) 16%, var(--color-line));
-  background:
-    radial-gradient(
-      ellipse at 0% 0%,
-      color-mix(in srgb, var(--game-secondary, var(--color-fg)) var(--game-tint), transparent),
-      transparent 65%
-    ),
-    linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--card-shell-hi, var(--panel-hi)) 94%, transparent),
-      color-mix(in srgb, var(--card-shell-lo, var(--panel-lo)) 90%, transparent)
-    );
-  box-shadow:
-    0 12px 28px -16px var(--game-shadow),
-    inset 0 1px 0 var(--game-glint);
-  -webkit-backdrop-filter: blur(18px) saturate(1.25);
-  backdrop-filter: blur(18px) saturate(1.25);
-  transition:
-    border-color var(--dur-base) var(--ease-out),
-    box-shadow var(--dur-base) var(--ease-out);
-}
-.game-card-surface::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  corner-shape: inherit;
-  pointer-events: none;
-  background:
-    radial-gradient(
-      ellipse at 100% 0%,
-      color-mix(in srgb, var(--game-accent, var(--color-fg)) 7%, transparent),
-      transparent 52%
-    ),
-    linear-gradient(135deg, var(--game-glint), transparent 30%);
-  opacity: 0.6;
-}
-:root[data-theme='light'] .game-card-surface {
-  --game-glint: rgba(255, 255, 255, 0.95);
-  --game-shadow: rgba(40, 46, 72, 0.17);
-  --game-tint: 8%;
-  --color-muted: #555b6c;
-  --color-dim: #5f6473;
-  border-color: color-mix(in srgb, var(--game-secondary, var(--color-line)) 12%, var(--color-line));
-}
-@media (hover: hover) {
-  .game-card-surface:hover {
-    border-color: color-mix(in srgb, var(--game-primary, var(--color-fg)) 30%, var(--color-line));
-    box-shadow:
-      0 16px 32px -16px var(--game-shadow),
-      inset 0 1px 0 var(--game-glint);
-  }
-}
 .game-card-heading {
   position: relative;
 }
 .game-card-value {
   letter-spacing: -0.035em;
-}
-.game-card-surface .energy-value-box,
-.game-card-surface .energy-value-stepper > button {
-  border-radius: var(--radius-ui-full);
-}
-.game-card-surface .energy-value-stepper > button {
-  background: color-mix(in srgb, var(--game-ink, var(--color-fg)) 8%, transparent);
-}
-.game-card-surface .game-widget,
-.game-card-surface button[role='checkbox'] {
-  border-radius: var(--radius-ui-md);
-}
-.game-card-surface .game-energy-track {
-  margin-top: 10px;
-  background: color-mix(in srgb, var(--game-ink, var(--color-fg)) 13%, transparent);
-  box-shadow: inset 0 1px 2px var(--game-shadow);
 }
 .game-energy-track > div {
   background: linear-gradient(
@@ -1004,12 +912,10 @@ input[type='number'] {
 .attention-indicator[data-running='true'] {
   animation-play-state: running;
 }
-.card-shell:focus-within .attention-indicator,
 .today-card:focus-within .attention-indicator {
   animation-play-state: paused;
 }
 @media (hover: hover) {
-  .card-shell:hover .attention-indicator,
   .today-card:hover .attention-indicator {
     animation-play-state: paused;
   }
@@ -1324,15 +1230,7 @@ input[type='number'] {
   }
 }
 
-/* Widgets size their controls from their own width, including half-width phone layouts. */
-.game-widget {
-  container-type: inline-size;
-}
-.game-widget [data-task-name] {
-  white-space: normal;
-  overflow: visible;
-  overflow-wrap: anywhere;
-}
+/* Very narrow containers stack a row's controls under its name. */
 @container (max-width: 240px) {
   .game-task-row,
   .energy-row-line {
@@ -1386,8 +1284,6 @@ input[type='number'] {
   padding-inline: 16px;
 }
 @supports (corner-shape: superellipse(1.5)) {
-  .game-card-surface,
-  .card-shell,
   .glass {
     corner-shape: superellipse(1.5);
   }

@@ -31,7 +31,7 @@ export function LaunchButton({ game }: { game: Game }) {
   );
 }
 
-/** Lives with the card's other settings: what Launch starts, and a way to change it. */
+/** In Game settings: what Launch starts, and a way to change it. */
 export function LaunchSettings({ game }: { game: Game }) {
   const available = useGameLaunch((store) => store.available);
   const target = useGameLaunch((store) => store.targets[game.id]);

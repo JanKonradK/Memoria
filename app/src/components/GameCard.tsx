@@ -1,6 +1,6 @@
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import { EventTags } from './EventTags';
-import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
 import type { AppState, ChecklistItem, EventProgress, Game, GameEvent, GameUrgency, Snapshot } from '@memoria/shared';
 import {
   effectiveResourceKind,
@@ -14,19 +14,16 @@ import {
   resolveGameLayout,
   setEventProgress,
 } from '@memoria/shared';
-import { m } from 'motion/react';
 import { useDerived } from '../selectors';
 import { useApp, type AppStore } from '../store';
 import { useUI } from '../ui-store';
 import { useMediaQuery, useReducedMotion } from '../hooks';
-import { cardEnter } from '../motion';
 import { titleStyle } from '../fonts';
 import { GameLogo } from './GameLogo';
 import { PinMark } from './EventPeek';
-import { gameInk, gameRim, gameSupport, gameTitleInk, mix } from '../game-color';
-import { gameShellVars, useGround, useTheme } from '../theme';
-
-import { endTone, fmtDur, localResetLabel, tint } from '../util';
+import { gameInk, gameSupport, gameTitleInk } from '../game-color';
+import { useGround } from '../theme';
+import { endTone, fmtDur, localResetLabel } from '../util';
 import { EnergyRow } from './EnergyRow';
 import { AttentionIndicator } from './AttentionIndicator';
 import { Pill, ProgressBar, Tick } from './primitives';
@@ -1269,61 +1266,3 @@ export function GameControls({
     />
   );
 }
-
-export const GameCard = memo(function GameCard({
-  entry,
-  now,
-  index = 0,
-}: {
-  entry: GameUrgency;
-  now: number;
-  /** Position in the grid, so the rail lays itself out rather than blinking in. */
-  index?: number;
-}) {
-  const { game } = entry;
-  const games = useApp((store) => store.state.games);
-  const ground = useGround();
-  const theme = useTheme();
-  // Identity and glass treatment share the same shell as the roster and focus view.
-  const identityColors = useIdentityColors(games);
-  const visualColors = identityColors[game.id] ?? game;
-  const rim = gameRim(visualColors, ground);
-
-  return (
-    <m.div
-      data-game-card={game.id}
-      // No h-full: in the narrow grid the cell already stretches the card, and in
-      // the Cards columns it made a lone card grow to the height of the tallest
-      // column — the empty-card problem in a new place.
-      className="card-shell game-card-surface group relative flex flex-col overflow-hidden rounded-ui-card px-4 pb-6 pt-4"
-      variants={cardEnter}
-      custom={index}
-      initial="hidden"
-      animate="visible"
-      style={{
-        ...gameShellVars(game, theme, visualColors),
-      }}
-    >
-      {game.image && (
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-2/3 overflow-hidden rounded-r-ui-card">
-          <img
-            src={game.image}
-            alt=""
-            className="absolute right-0 top-1/2 h-[135%] max-w-none -translate-y-1/2 object-cover opacity-40 saturate-125 transition duration-(--dur-slow) group-hover:opacity-55"
-            style={{
-              WebkitMaskImage: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.55) 55%, #000 100%)',
-              maskImage: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.55) 55%, #000 100%)',
-            }}
-          />
-          <div
-            className="absolute inset-0 rounded-r-ui-card"
-            style={{
-              background: `linear-gradient(90deg, ${mix(ground, rim, 0.05)} 6%, transparent 60%), linear-gradient(0deg, ${tint(rim, 0.14)}, transparent 70%)`,
-            }}
-          />
-        </div>
-      )}
-      <GameControls entry={entry} now={now} />
-    </m.div>
-  );
-});

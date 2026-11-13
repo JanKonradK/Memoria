@@ -23,7 +23,7 @@ export type { Theme };
 /** Must match --color-inset for each theme in index.css. */
 export const THEME_INSET: Record<Theme, string> = { dark: '#101114', light: '#edeef2' };
 
-/** The two stops of .card-shell's default gradient: --panel-hi, --panel-lo. */
+/** The neutral panel each game's wash is mixed into: --panel-hi, --panel-lo. */
 export const THEME_PANEL: Record<Theme, [string, string]> = {
   dark: ['#151619', '#151619'],
   light: ['#ffffff', '#ffffff'],
@@ -44,7 +44,7 @@ export function useInset(): string {
   return THEME_INSET[useUI((store) => store.theme)];
 }
 
-/** One identity palette for the glass, its reflected light, and readable ink. */
+/** One identity palette for a game's page: its wash and readable ink. */
 export function gameShellVars(game: GameColors, theme: Theme, resolvedIdentity: GameColors = game): CSSProperties {
   const [hi, lo] = gameWash(resolvedIdentity, THEME_PANEL[theme], theme);
   const { primary, secondary, accent } = trioOf(resolvedIdentity);

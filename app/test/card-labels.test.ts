@@ -2,7 +2,7 @@ import { createElement, type ReactElement } from 'react';
 import { render, screen } from '@testing-library/react';
 import { emptyState, type Game, type GameUrgency } from '@memoria/shared';
 import { afterEach, describe, expect, it } from 'vitest';
-import { GameCard, GameControlsView, type GameControlActions } from '../src/components/GameCard';
+import { GameControls, GameControlsView, type GameControlActions } from '../src/components/GameCard';
 import { TooltipProvider } from '../src/components/ui';
 import { serverRegionLabel } from '../src/server-region';
 import { useApp } from '../src/store';
@@ -138,7 +138,7 @@ describe('reduced-motion card urgency', () => {
       next: { kind: 'daily', gameId: game.id, at: now + minutes * MINUTE, label: 'Daily reset' },
       actions: [],
     };
-    const view = renderCard(createElement(GameCard, { entry, now }));
+    const view = renderCard(createElement(GameControls, { entry, now }));
     const ring = view.container.querySelector('[data-urgency-indicator]');
     if (urgent) {
       expect(ring).toHaveClass('attention-indicator');
