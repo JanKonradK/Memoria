@@ -116,7 +116,10 @@ test('first run sets up games, then shows hints in place, and fits the viewport'
   await page.getByRole('button', { name: 'Create dashboard' }).click();
   // No tour over the app: hints wait where each thing is.
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Primary' })
+    .getByRole('button', { name: 'Timeline', exact: true })
+    .click();
   await expect(page.locator('[data-hint="events"]')).toBeVisible();
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
