@@ -224,6 +224,7 @@ const reminder = z.object({
   gameId: id.nullable(),
   message: longText,
   at: timestamp,
+  repeatDays: z.number().int().min(1).max(365).optional(),
 });
 
 const settings = z.object({
@@ -237,6 +238,7 @@ const settings = z.object({
     .max(100)
     .refine((zone) => IANAZone.isValidZone(zone), 'Unknown timezone.'),
   sleepHours: finite.min(1).max(24),
+  digestAt: z.number().int().min(0).max(1439).nullable().optional(),
   /** A SEED_UPDATED stamp: YYYY-MM-DD, or absent. */
   seedImportedVersion: z
     .string()

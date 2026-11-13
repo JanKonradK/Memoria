@@ -628,9 +628,9 @@ export interface AppStore {
   upsertRule(rule: Partial<AlertRule> & { type: AlertRule['type']; gameId: string | null }): void;
   clearRule(type: AlertRule['type'], gameId: string | null): void;
 
-  addReminder(message: string, at: number, gameId: string | null): void;
+  addReminder(message: string, at: number, gameId: string | null, repeatDays?: number): void;
   deleteReminder(id: string): void;
-  updateReminder(id: string, patch: Pick<Reminder, 'message' | 'at'>): void;
+  updateReminder(id: string, patch: Pick<Reminder, 'message' | 'at'> & { repeatDays?: number | null }): void;
 
   updateSettings(patch: Partial<Settings>): void;
   /** Record catch-up digests as read for a game preset, on every device. */
@@ -1388,10 +1388,11 @@ export const useApp = create<AppStore>((set, get) => ({
     }));
   },
 
-  addReminder(message, at, gameId) {
+  addReminder(message, at, gameId, repeatDays) {
+    const repeat = repeatDays && repeatDays >= 1 ? { repeatDays: Math.min(365, Math.round(repeatDays)) } : {};
     get().mutate((s) => ({
       ...s,
-      reminders: [...s.reminders, { id: uid(), gameId, message, at, updatedAt: now() } satisfies Reminder],
+      reminders: [...s.reminders, { id: uid(), gameId, message, at, ...repeat, updatedAt: now() } satisfies Reminder],
     }));
   },
 
@@ -1399,7 +1400,10 @@ export const useApp = create<AppStore>((set, get) => ({
     if (!patch.message.trim() || !Number.isFinite(patch.at)) return;
     get().mutate((s) => {
       if (!s.reminders.some((item) => item.id === id && !item.deleted)) return s;
-      return { ...s, reminders: patchIn(s.reminders, id, { message: patch.message.trim(), at: patch.at }) };
+      const changes: Partial<Reminder> = { message: patch.message.trim(), at: patch.at };
+      if (patch.repeatDays !== undefined)
+        changes.repeatDays = patch.repeatDays ? Math.min(365, Math.round(patch.repeatDays)) : undefined;
+      return { ...s, reminders: patchIn(s.reminders, id, changes) };
     });
   },
 

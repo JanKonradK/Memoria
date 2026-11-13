@@ -53,7 +53,7 @@ test('first run on the PC offers reminders before creating the dashboard', async
 test('quiet hours are off by default and move reminders rather than drop them', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await openSettings(page, 'General');
+  await openSettings(page, 'Reminders');
   const quiet = page.getByRole('switch', { name: 'Quiet hours' });
   await expect(quiet).not.toBeChecked();
   await expect(page.getByText('Off. Reminders arrive at any hour')).toBeVisible();
@@ -67,7 +67,7 @@ test('quiet hours are off by default and move reminders rather than drop them', 
     await flushPersist();
   });
   await page.reload();
-  await openSettings(page, 'General');
+  await openSettings(page, 'Reminders');
   await expect(page.getByRole('switch', { name: 'Quiet hours' })).toBeChecked();
   await expect(page.getByLabel('Quiet hours start')).toHaveValue('01:00');
 });

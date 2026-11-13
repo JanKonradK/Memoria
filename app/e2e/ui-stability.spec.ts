@@ -220,7 +220,6 @@ test('tabs, timeline controls, and settings fit after adding a game', async ({ p
   await page.keyboard.press('Escape');
 
   await openSettings(page, 'General');
-  await expect(page.getByLabel('Sleep window (hours)')).toHaveValue('8');
   await page.getByRole('button', { name: 'Switch to light theme' }).click();
   await expect.poll(() => page.locator('html').getAttribute('data-theme')).toBe('light');
   await expect

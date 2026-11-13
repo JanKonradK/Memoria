@@ -63,7 +63,7 @@ Three things a neighbouring tracker could not truthfully claim:
 
 ### Version 2.0 input and navigation
 
-Today is the default page. It groups approaching caps and unfinished routines within the configured sleep window.
+Today is the default page. It ranks what is lost first, and with quiet hours set it marks what must happen before they begin.
 Games contains the complete controls and the Tonight summary. Calendar contains events, including livestream rows. Each game's Catch up gathers what its recent versions added and its next livestream.
 Settings remains available from the header.
 
@@ -74,7 +74,7 @@ Device sync status and game data freshness are separate facts.
 
 The public calendar can update separately from app releases. Feed validation protects local changes and deleted events.
 The one-file version keeps the bundled calendar and does not request network access.
-Reminders protect the first goal: not missing dailies. The phone and the PC schedule seven days ahead: an hour before each daily reset with dailies left, before the weekly reset with one hour of lead per game owing weeklies (up to 10 hours), three hours before an unfinished event ends, and two hours before a measured bar caps. Done work is never announced. Quiet hours are off by default and, when set, move a reminder earlier instead of dropping it. Opening the app refreshes the schedule.
+Reminders protect the first goal: not missing dailies. The phone and the PC schedule seven days ahead: an hour before each daily reset with dailies left, before the weekly reset with one hour of lead per game owing weeklies (up to 10 hours), three hours before an unfinished event ends, and two hours before a measured bar caps. Done work is never announced. Quiet hours are off by default and, when set, move a reminder earlier instead of dropping it; Today then treats a deadline inside them as due when they begin. An evening digest and the player's own reminders, once or repeating, are optional. Everything that reaches the player outside the app lives in Settings → Reminders. Opening the app refreshes the schedule.
 
 - **The daily loop**: play → open Memoria → type what's actually left on each card
   (direct entry, or keyboard stepping **A −10 · S −1 · D +1 · F +10**, Enter
@@ -86,8 +86,8 @@ Reminders protect the first goal: not missing dailies. The phone and the PC sche
   fixed port `17817` and serves the canonical local `state.json`.
 - **Urgency stays in the app** — upcoming caps, resets, event deadlines and
   reminders appear in dashboard next actions while Memoria is open.
-- **Evening check ("safe to sleep")**: between 20:00 and 05:00 each card must
-  answer whether the resource survives the user's sleep window.
+- **Before quiet hours**: with quiet hours set, a deadline inside them is due
+  when they begin, and Today's agenda shows where they start.
 - **Events arrive in bulk**, either from the bundled seed feed (an "Import N"
   affordance on the Timeline) or by pasting AI-generated JSON.
 

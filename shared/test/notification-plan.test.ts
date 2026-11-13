@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
+  actBy,
   alertMinutes,
   buildNotificationPlan,
   completionId,
   formatLead,
   MAX_PLANNED_NOTIFICATIONS,
+  nextQuietWindow,
+  nextReminderAt,
   normalizeState,
+  quietWindowAt,
+  reminderTimes,
   taskPeriodKey,
 } from '../src';
 import type { AlertRule, AppState } from '../src/types';
@@ -274,5 +279,69 @@ describe('formatLead', () => {
       '45 min',
       '2 h 30 min',
     ]);
+  });
+});
+
+describe('evening digest', () => {
+  it('is off by default', () => {
+    expect(ofKind(dailyState(), 'digest')).toEqual([]);
+  });
+
+  it('lists the dailies still open once a day at the chosen time, and skips a day with nothing open', () => {
+    const state = dailyState({ settings: { ...quietOff, digestAt: 20 * 60 } });
+    const digest = ofKind(state, 'digest');
+    expect(digest[0]).toMatchObject({
+      at: utc('2026-10-06T20:00:00Z'),
+      title: 'Still open: Testland',
+      body: `${state.games[0]!.short} 2 dailies left.`,
+    });
+    expect(digest).toHaveLength(7);
+    tick(state, 't1');
+    tick(state, 't2');
+    expect(ofKind(state, 'digest')[0]?.at).toBe(utc('2026-10-07T20:00:00Z'));
+  });
+});
+
+describe('quiet hours helpers', () => {
+  const quiet = { quietStart: 23 * 60, quietEnd: 7 * 60, localTz: 'UTC' };
+  it('find the window around a time and the next one to begin', () => {
+    expect(quietWindowAt(quiet, utc('2026-10-07T03:00:00Z'))).toEqual({
+      start: utc('2026-10-06T23:00:00Z'),
+      end: utc('2026-10-07T07:00:00Z'),
+    });
+    expect(quietWindowAt(quiet, utc('2026-10-07T12:00:00Z'))).toBeNull();
+    expect(nextQuietWindow(quiet, now)?.start).toBe(utc('2026-10-06T23:00:00Z'));
+    expect(nextQuietWindow({ ...quiet, quietStart: null }, now)).toBeNull();
+  });
+
+  it('bring a deadline inside quiet hours forward to when they begin, unless they already have', () => {
+    const reset = utc('2026-10-07T03:00:00Z');
+    expect(actBy(quiet, reset, now)).toBe(utc('2026-10-06T23:00:00Z'));
+    expect(actBy(quiet, reset, utc('2026-10-07T01:00:00Z'))).toBe(reset);
+    expect(actBy(quiet, utc('2026-10-07T12:00:00Z'), now)).toBe(utc('2026-10-07T12:00:00Z'));
+    expect(actBy({ ...quiet, quietEnd: null }, reset, now)).toBe(reset);
+  });
+});
+
+describe('repeating reminders', () => {
+  const base = { id: 'r1', gameId: null, message: 'Claim the monthly pass', updatedAt: 1 };
+  it('fire once by default, and on every repeat inside the week when repeating', () => {
+    const once = { ...base, at: now + HOUR };
+    expect(reminderTimes(once, now, now + 7 * 24 * HOUR, 'UTC')).toEqual([now + HOUR]);
+    const daily = { ...base, at: now - 10 * 24 * HOUR + HOUR, repeatDays: 1 };
+    const times = reminderTimes(daily, now, now + 7 * 24 * HOUR, 'UTC');
+    expect(times[0]).toBe(now + HOUR);
+    expect(times).toHaveLength(7);
+    const state = dailyState({ reminders: [daily] });
+    const planned = ofKind(state, 'reminder');
+    expect(planned).toHaveLength(7);
+    expect(new Set(planned.map((item) => item.id)).size).toBe(7);
+  });
+
+  it('keep their home-time clock across a daylight-saving change', () => {
+    // 09:00 London on the Saturday before the clocks go back.
+    const weekly = { ...base, at: utc('2026-10-24T08:00:00Z'), repeatDays: 7 };
+    expect(nextReminderAt(weekly, utc('2026-10-25T00:00:00Z'), 'Europe/London')).toBe(utc('2026-10-31T09:00:00Z'));
+    expect(nextReminderAt({ ...base, at: now - HOUR }, now, 'UTC')).toBeNull();
   });
 });

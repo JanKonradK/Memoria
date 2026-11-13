@@ -262,10 +262,24 @@ export interface Reminder extends Syncable {
   id: string;
   gameId: string | null;
   message: string;
+  /** The first time it fires. */
   at: number;
+  /** Repeats every this many days from `at`. Absent = once. */
+  repeatDays?: number;
 }
 
-export type SettingsField = 'quietStart' | 'quietEnd' | 'localTz' | 'sleepHours';
+export const MAX_REMINDER_REPEAT_DAYS = 365;
+
+export type SettingsField = 'quietStart' | 'quietEnd' | 'quietHoursChosen' | 'localTz' | 'sleepHours' | 'digestAt';
+/** Settings merged one field at a time, so edits on two devices do not overwrite each other. */
+export const SETTINGS_FIELDS: SettingsField[] = [
+  'quietStart',
+  'quietEnd',
+  'quietHoursChosen',
+  'localTz',
+  'sleepHours',
+  'digestAt',
+];
 
 export interface Settings extends Syncable {
   /**
@@ -282,8 +296,13 @@ export interface Settings extends Syncable {
   quietHoursChosen?: boolean;
   /** IANA home timezone, used for quiet hours and notification timing. */
   localTz: string;
-  /** Hours of sleep used by the "safe to sleep" check. */
+  /** Kept for older devices; quiet hours replaced it. */
   sleepHours: number;
+  /**
+   * An optional evening digest, in minutes-from-midnight home time: one
+   * notification listing what is still open across games. Absent or null = off.
+   */
+  digestAt?: number | null;
   /**
    * The `SEED_UPDATED` stamp of the bundled event feed this device has already
    * taken a refresh from, as `YYYY-MM-DD`.

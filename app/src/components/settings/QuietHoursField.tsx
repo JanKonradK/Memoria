@@ -1,15 +1,7 @@
 import { useApp } from '../../store';
 import { TextInput, Toggle } from '../ui';
 import { SettingRow } from './SettingRow';
-
-const toClock = (minutes: number) =>
-  `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
-function fromClock(value: string): number | null {
-  const match = /^(\d{2}):(\d{2})$/.exec(value);
-  if (!match) return null;
-  const minutes = Number(match[1]) * 60 + Number(match[2]);
-  return minutes >= 0 && minutes < 1440 ? minutes : null;
-}
+import { fromClock, toClock } from './clock';
 
 /**
  * Off by default: a reminder at 02:00 that saves a reset beats a quiet night

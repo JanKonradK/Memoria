@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { DateTime } from 'luxon';
-import type { GameUrgency } from '@memoria/shared';
+import { actBy, nextQuietWindow, type GameUrgency } from '@memoria/shared';
 import { useDerived, type Derived } from '../selectors';
 import { useUI } from '../ui-store';
 import { useMediaQuery } from '../hooks';
@@ -48,7 +48,9 @@ function PriorityRow({
   const dailies = (derived.checklistByGame.get(game.id) ?? []).filter((item) => item.cadence === 'daily');
   const done = dailies.filter((item) => item.done).length;
   const left = next ? next.at - now : null;
-  const tone = left == null ? 'idle' : left <= 0 ? 'danger' : left < URGENT_MS ? 'warn' : 'calm';
+  // With quiet hours set, a reset at 03:00 is due when they begin, not at 03:00.
+  const actLeft = next ? actBy(derived.state.settings, next.at, now) - now : null;
+  const tone = left == null ? 'idle' : left <= 0 ? 'danger' : actLeft! < URGENT_MS ? 'warn' : 'calm';
   const compact = useMediaQuery('(max-width: 479px)');
   // The dailies ring matches the logo, so both ends of the row carry the same weight.
   const badge = compact ? 48 : 60;
@@ -180,6 +182,9 @@ function TodayAgenda({ derived, onSelectGame }: { derived: Derived; onSelectGame
     return game ? (game.accountLabel ? `${game.name} (${game.accountLabel})` : game.name) : '';
   };
   const shown = expanded ? items : items.slice(0, AGENDA_PREVIEW);
+  // Everything above this line has to happen before quiet hours begin.
+  const quiet = nextQuietWindow(state.settings, now);
+  const quietIndex = quiet ? shown.findIndex((item) => item.at >= quiet.start) : -1;
 
   return (
     <section className="today-agenda" aria-labelledby="today-agenda-heading">
@@ -194,15 +199,25 @@ function TodayAgenda({ derived, onSelectGame }: { derived: Derived; onSelectGame
         <p className="aside today-clear text-meta text-muted">Nothing ends, caps or resets.</p>
       ) : (
         <ul className="today-agenda-list">
-          {shown.map((item) => {
+          {shown.map((item, index) => {
             const { title, detail } = agendaText(item, gameName);
             const left = item.at - now;
+            const actLeft = actBy(state.settings, item.at, now) - now;
             const calendar = item.kind === 'event' ? calendarSchedule(item.event) : undefined;
             // Something starting soon is news, not a deadline.
             const deadline = item.kind !== 'event' || item.edge === 'ends';
             const tone =
-              item.kind === 'energy' && item.full ? 'danger' : deadline && left < URGENT_MS ? 'warn' : 'calm';
-            return (
+              item.kind === 'energy' && item.full ? 'danger' : deadline && actLeft < URGENT_MS ? 'warn' : 'calm';
+            const divider = index === quietIndex && quiet && (
+              <li key="quiet" className="today-agenda-quiet text-caption text-muted">
+                <span aria-hidden />
+                Quiet hours {fmtClock(quiet.start, state.settings.localTz)}–
+                {fmtClock(quiet.end, state.settings.localTz)}
+                <span aria-hidden />
+              </li>
+            );
+            return [
+              divider,
               <li key={item.key}>
                 <button
                   type="button"
@@ -243,8 +258,8 @@ function TodayAgenda({ derived, onSelectGame }: { derived: Derived; onSelectGame
                     )}
                   </span>
                 </button>
-              </li>
-            );
+              </li>,
+            ];
           })}
         </ul>
       )}

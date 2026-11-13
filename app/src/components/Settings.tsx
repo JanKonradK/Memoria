@@ -11,8 +11,7 @@ import { usePresence } from '../presence';
 import { APP_VERSION, displayVersion, updateTarget, useAppUpdate } from '../app-update';
 import { useMediaQuery } from '../hooks';
 import type { SettingsSection } from '../ui-store';
-import { DeviceNotifications } from './settings/DeviceNotifications';
-import { QuietHoursField } from './settings/QuietHoursField';
+import { RemindersPane } from './settings/RemindersPane';
 import { AppUpdates } from './settings/AppUpdates';
 import { DesktopPresence } from './settings/DesktopPresence';
 import { GameRosterRow } from './settings/GameRosterRow';
@@ -29,10 +28,10 @@ import {
   reconnectCloudFile,
 } from '../cloud-sync';
 import { resolveHomeTimeZone, SYSTEM_TIMEZONE_VALUE } from '../timezone';
-import { fmtClock, intOr } from '../util';
+import { fmtClock } from '../util';
 import { HomeTimeZoneField } from './HomeTimeZoneField';
 import { rosterGames, useIdentityColors } from './roster';
-import { Btn, NumInput, Page, TOUCH_BUTTON } from './ui';
+import { Btn, Page, TOUCH_BUTTON } from './ui';
 // Today is lazy-loaded, so its heading rule is brought in here as well.
 import '../today.css';
 import '../settings.css';
@@ -141,9 +140,10 @@ export function SettingsPage() {
   const sections: Array<{ key: SettingsSection; label: string; badge?: ReactNode }> = [
     { key: 'games', label: 'Games', badge: <span className="numeral">{games.length}</span> },
     { key: 'general', label: 'General' },
+    { key: 'reminders', label: 'Reminders' },
     { key: 'sync', label: 'Device sync', badge: syncBadge },
   ];
-  if (presence || isNativeApp) sections.push({ key: 'device', label: isNativeApp ? 'On this device' : 'On this PC' });
+  if (presence) sections.push({ key: 'device', label: 'On this PC' });
   if (updateTarget() !== 'none')
     sections.push({
       key: 'updates',
@@ -230,27 +230,6 @@ export function SettingsPage() {
                     detectedTz={detectedTz}
                     onChange={(value) => updateSettings({ localTz: resolveHomeTimeZone(value) })}
                   />
-                </SettingRow>
-                <QuietHoursField />
-                <SettingRow
-                  label="Sleep window"
-                  hint="How long you are away overnight. Today checks what caps in that time."
-                >
-                  <div className="flex items-center gap-2">
-                    <NumInput
-                      className="!min-h-11 !w-24 sm:!min-h-8 sm:!py-1"
-                      min={1}
-                      max={12}
-                      value={String(settings.sleepHours)}
-                      aria-label="Sleep window (hours)"
-                      onChange={(e) =>
-                        updateSettings({
-                          sleepHours: Math.min(12, Math.max(1, intOr(e.target.value, settings.sleepHours))),
-                        })
-                      }
-                    />
-                    <span className="text-label text-dim">hours</span>
-                  </div>
                 </SettingRow>
               </div>
             </SettingsPane>
@@ -355,11 +334,14 @@ export function SettingsPage() {
               </div>
             </SettingsPane>
 
-            {(presence || isNativeApp) && (
+            <SettingsPane {...pane('reminders')}>
+              <RemindersPane />
+            </SettingsPane>
+
+            {presence && (
               <SettingsPane {...pane('device')}>
                 <div className="settings-rows">
                   <DesktopPresence />
-                  <DeviceNotifications />
                 </div>
               </SettingsPane>
             )}

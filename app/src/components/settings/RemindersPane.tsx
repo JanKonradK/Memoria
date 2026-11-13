@@ -1,0 +1,92 @@
+import { nextReminderAt } from '@memoria/shared';
+import { isNativeApp } from '../../native';
+import { setPresence, usePresence } from '../../presence';
+import { useApp } from '../../store';
+import { useUI } from '../../ui-store';
+import { fmtDateTimeLocalInput } from '../../util';
+import { Btn, ConfirmDelete, Toggle } from '../ui';
+import { DeviceNotifications } from './DeviceNotifications';
+import { DigestField } from './DigestField';
+import { QuietHoursField } from './QuietHoursField';
+import { repeatLabel } from './reminder-repeat';
+import { SettingRow } from './SettingRow';
+
+/** Reminders on the Windows app. */
+function PcReminders() {
+  const { presence } = usePresence();
+  if (!presence) return null;
+  return (
+    <SettingRow
+      label="Reminders on this PC"
+      hint="An hour before each daily reset with dailies left, before weeklies and unfinished events run out, and before a bar caps. If phone reminders are also on, both devices alert."
+    >
+      <Toggle
+        ariaLabel="Reminders on this PC"
+        checked={presence.remindersOnPc}
+        onChange={(remindersOnPc) => void setPresence({ remindersOnPc })}
+      />
+    </SettingRow>
+  );
+}
+
+/** Every custom reminder, across games, with its next time. */
+function CustomReminders() {
+  const state = useApp((s) => s.state);
+  const deleteReminder = useApp((s) => s.deleteReminder);
+  const openSheet = useUI((s) => s.openSheet);
+  const zone = state.settings.localTz;
+  const now = Date.now();
+  const names = new Map(state.games.filter((game) => !game.deleted).map((game) => [game.id, game.name]));
+  const reminders = state.reminders
+    .filter((item) => !item.deleted)
+    .map((item) => ({ item, next: nextReminderAt(item, now, zone) }))
+    .sort((a, b) => (a.next ?? Infinity) - (b.next ?? Infinity));
+  return (
+    <SettingRow
+      label="Your reminders"
+      hint="Anything else you want to hear about, once or on repeat: a pass running out, a shop reset, a login on another app."
+    >
+      <Btn onClick={() => openSheet({ kind: 'reminder' })}>New reminder</Btn>
+      {reminders.length > 0 && (
+        <ul className="mt-3 w-full divide-y divide-line-hairline">
+          {reminders.map(({ item, next }) => (
+            <li key={item.id} className="flex flex-wrap items-center gap-2 py-2">
+              <div className="min-w-0 flex-1 basis-48">
+                <p className="break-words text-body text-fg">{item.message}</p>
+                <p className="mt-1 text-label text-muted">
+                  {[
+                    item.gameId ? (names.get(item.gameId) ?? 'Removed game') : null,
+                    repeatLabel(item.repeatDays),
+                    next == null ? 'Done' : `Next ${fmtDateTimeLocalInput(next, zone).replace('T', ' · ')}`,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
+              </div>
+              <ConfirmDelete what={`reminder ${item.message}`} onConfirm={() => deleteReminder(item.id)} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </SettingRow>
+  );
+}
+
+/** One place for everything that reaches you outside the app. */
+export function RemindersPane() {
+  const { presence } = usePresence();
+  return (
+    <div className="settings-rows">
+      <DeviceNotifications />
+      <PcReminders />
+      {!isNativeApp && !presence && (
+        <p className="settings-note text-body text-muted">
+          Reminders arrive through the Android app or the Windows app. The settings below are shared with them.
+        </p>
+      )}
+      <QuietHoursField />
+      <DigestField />
+      <CustomReminders />
+    </div>
+  );
+}
