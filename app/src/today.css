@@ -43,6 +43,11 @@
   padding: 0.75rem 0.5rem;
 }
 
+/* All clear: the list's own ground, no card; it simply says so first. */
+.today-all-clear {
+  padding: 0.75rem 0.5rem 1rem;
+}
+
 .today-priority-list {
   display: grid;
   gap: 2px;
