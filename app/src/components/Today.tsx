@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { DateTime } from 'luxon';
 import { actBy, eventReward, nextQuietWindow, type Game, type GameUrgency } from '@memoria/shared';
 import { useDerived, type Derived } from '../selectors';
+import { selectAllClear, type AllClear } from '../all-clear';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { useMediaQuery } from '../hooks';
@@ -318,6 +319,51 @@ function TodayAgenda({ derived, onSelectGame }: { derived: Derived; onSelectGame
   );
 }
 
+/**
+ * The best moment the product has: every daily done and nothing capping before
+ * the next reset. Quiet, and it says when it ends and what comes next.
+ */
+function AllClearNote({
+  clear,
+  zone,
+  folded,
+  gameCount,
+  onShowGames,
+}: {
+  clear: AllClear;
+  zone: string;
+  folded: boolean;
+  gameCount: number;
+  onShowGames: () => void;
+}) {
+  return (
+    <section className="today-all-clear" aria-labelledby="today-all-clear-heading" data-all-clear>
+      <h2 id="today-all-clear-heading" className="text-heading font-semibold text-fg">
+        All clear until <span className="numeral">{fmtClock(clear.until, zone)}</span>
+      </h2>
+      <p className="mt-1 text-meta text-muted">
+        {clear.next ? (
+          <>
+            Next: {clear.next.gameName} · {clear.next.label} at{' '}
+            <span className="numeral">{fmtClock(clear.next.at, zone)}</span>
+          </>
+        ) : (
+          'Every daily is done and nothing caps before then.'
+        )}
+      </p>
+      {folded && (
+        <button
+          type="button"
+          className="mt-2 min-h-11 rounded-ui-md px-2 -ml-2 text-meta font-semibold text-fg-soft hover:bg-fill-2"
+          onClick={onShowGames}
+        >
+          Show games <span className="numeral text-muted">{gameCount}</span>
+        </button>
+      )}
+    </section>
+  );
+}
+
 export function TodayPage({ now }: { now: number }) {
   const derived = useDerived(now);
   const { state, order } = derived;
@@ -332,6 +378,9 @@ export function TodayPage({ now }: { now: number }) {
   const selected = order.find((entry) => entry.game.id === selectedId) ?? games[0];
   const date = DateTime.fromMillis(now, { zone: state.settings.localTz }).toFormat('cccc, d LLLL');
   const listRef = useFlip<HTMLDivElement>('[data-roster-game]', (node) => node.dataset.rosterGame ?? null);
+  const allClear = selectAllClear(derived);
+  const [showGames, setShowGames] = useState(false);
+  const listFolded = Boolean(allClear) && !showGames && !desktop;
 
   return (
     <Page className="today-page">
@@ -353,7 +402,16 @@ export function TodayPage({ now }: { now: number }) {
       ) : (
         <div className="today-layout">
           <div className="today-list" ref={listRef}>
-            <ul className="today-priority-list" aria-label="Games">
+            {allClear && (
+              <AllClearNote
+                clear={allClear}
+                zone={state.settings.localTz}
+                folded={listFolded}
+                gameCount={games.length}
+                onShowGames={() => setShowGames(true)}
+              />
+            )}
+            <ul className="today-priority-list" aria-label="Games" hidden={listFolded}>
               {games.map((entry) => (
                 <PriorityRow
                   key={entry.game.id}
