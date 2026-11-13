@@ -152,7 +152,15 @@ export function GameSavingsPanel({
         </p>
       )}
 
-      <Income savings={savings} income={income} currency={currency} passes={passes} pullCost={pullCost} onSave={save} />
+      <Income
+        savings={savings}
+        income={income}
+        currency={currency}
+        passes={passes}
+        pullCost={pullCost}
+        now={now}
+        onSave={save}
+      />
 
       <h3 className="pulls-subheading text-meta font-semibold text-fg-soft">Goals</h3>
       {plans.length > 0 && (
@@ -269,6 +277,7 @@ function Income({
   currency,
   passes,
   pullCost,
+  now,
   onSave,
 }: {
   savings: GameSavings;
@@ -276,8 +285,11 @@ function Income({
   currency: string;
   passes?: PaidPasses;
   pullCost: number;
+  now: number;
   onSave: (next: GameSavings) => void;
 }) {
+  const daysLeft =
+    savings.monthlyPassEnds && savings.monthlyPassEnds > now ? Math.ceil((savings.monthlyPassEnds - now) / DAY) : null;
   const [perDay, setPerDay] = useState(String(savings.perDay ?? ''));
   const share = String(savings.participation);
   const free = Math.round(income.mid * savings.participation);
@@ -348,6 +360,31 @@ function Income({
             checked={Boolean(savings.monthlyPass)}
             onChange={(on) => onSave({ ...savings, monthlyPass: on || undefined })}
           />
+          {savings.monthlyPass && (
+            <label className="flex min-h-11 flex-wrap items-center gap-2 text-meta text-fg-soft">
+              Days left on it
+              <NumInput
+                className="!min-h-11 !w-20 sm:!min-h-8 sm:!py-1"
+                min={0}
+                max={180}
+                value={daysLeft == null ? '' : String(daysLeft)}
+                aria-label={`Days left on ${passes.monthly.name}`}
+                onChange={(event) => {
+                  const days = Number(event.target.value);
+                  onSave({
+                    ...savings,
+                    monthlyPassEnds:
+                      event.target.value === '' || !Number.isFinite(days) || days <= 0
+                        ? undefined
+                        : now + Math.min(180, Math.round(days)) * DAY,
+                  });
+                }}
+              />
+              <span className="aside text-caption text-muted">
+                {daysLeft == null ? 'Reminds you three days before it runs out.' : `Reminder three days before.`}
+              </span>
+            </label>
+          )}
           <PassToggle
             label={`${passes.battle.name}, every version`}
             note={`+${fmt(Math.round(battlePerDay))} a day`}
