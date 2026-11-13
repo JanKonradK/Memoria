@@ -284,7 +284,7 @@ mod tests {
             "reserveCap": 0, "sort": 0, "updatedAt": 1
         }]);
         state["snapshots"] = serde_json::json!([{
-            "id": "s1", "resourceId": "r1", "value": 80, "takenAt": now
+            "id": "s1", "resourceId": "r1", "value": 60, "takenAt": now
         }]);
         state["reminders"] = serde_json::json!([{
             "id": "reminder", "gameId": null, "message": "Check in", "at": now + 3_600_000, "updatedAt": 1
@@ -293,16 +293,22 @@ mod tests {
         let plan = core.notification_plan(now).await.unwrap();
         assert_eq!(plan.len(), 2);
         assert_eq!(plan[0].body, "Check in");
-        assert_eq!(plan[1].at, now + 90 * 60_000);
+        // Full in four hours, warned two hours ahead.
+        assert_eq!(plan[1].at, now + 120 * 60_000);
 
-        state["settings"]["quietStart"] = serde_json::json!(21 * 60);
+        // 14:00 UTC is 23:00 in Tokyo: inside quiet hours, so it moves to the
+        // minute before they begin instead of being dropped.
+        state["settings"]["quietStart"] = serde_json::json!(23 * 60);
         state["settings"]["quietEnd"] = serde_json::json!(7 * 60);
+        state["settings"]["quietHoursChosen"] = serde_json::json!(true);
         state["settings"]["localTz"] = serde_json::json!("Asia/Tokyo");
         store::write_json(&file, &state).unwrap();
-        assert!(core.notification_plan(now).await.unwrap().is_empty());
+        let quiet = core.notification_plan(now).await.unwrap();
+        assert_eq!(quiet.len(), 2);
+        assert_eq!(quiet[1].at, now + 119 * 60_000);
         state["settings"]["localTz"] = serde_json::json!("UTC");
         store::write_json(&file, &state).unwrap();
-        assert_eq!(core.notification_plan(now).await.unwrap().len(), 2);
+        assert_eq!(core.notification_plan(now).await.unwrap()[1].at, now + 120 * 60_000);
     }
 
     #[tokio::test]
@@ -323,14 +329,16 @@ mod tests {
             "intervalDays": 1, "anchorAt": 0, "sort": 0, "updatedAt": 1
         }]);
         store::write_json(&file, &state).unwrap();
-        for (now, expected) in [
-            ("2026-03-08T05:00:00Z", "2026-03-08T07:30:00Z"),
-            ("2026-11-01T04:00:00Z", "2026-11-01T08:30:00Z"),
+        // An hour before each 04:00 New York reset, on both sides of a DST change.
+        for (now, first, second) in [
+            ("2026-03-08T05:00:00Z", "2026-03-08T07:00:00Z", "2026-03-09T07:00:00Z"),
+            ("2026-11-01T04:00:00Z", "2026-11-01T08:00:00Z", "2026-11-02T08:00:00Z"),
         ] {
             let millis = |text: &str| text.parse::<jiff::Timestamp>().unwrap().as_millisecond();
             let plan = core.notification_plan(millis(now)).await.unwrap();
-            assert_eq!(plan.len(), 1);
-            assert_eq!(plan[0].at, millis(expected));
+            assert_eq!(plan.len(), 7);
+            assert_eq!(plan[0].at, millis(first));
+            assert_eq!(plan[1].at, millis(second));
         }
     }
 }

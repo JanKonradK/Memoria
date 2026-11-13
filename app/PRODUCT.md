@@ -74,8 +74,7 @@ Device sync status and game data freshness are separate facts.
 
 The public calendar can update separately from app releases. Feed validation protects local changes and deleted events.
 The one-file version keeps the bundled calendar and does not request network access.
-Android phone reminders are optional. The app schedules custom reminders and one approaching deadline per game for the next 24 hours.
-Quiet hours apply. Android can delay delivery. Opening the app refreshes the schedule.
+Reminders protect the first goal: not missing dailies. The phone and the PC schedule seven days ahead: an hour before each daily reset with dailies left, before the weekly reset with one hour of lead per game owing weeklies (up to 10 hours), three hours before an unfinished event ends, and two hours before a measured bar caps. Done work is never announced. Quiet hours are off by default and, when set, move a reminder earlier instead of dropping it. Opening the app refreshes the schedule.
 
 - **The daily loop**: play → open Memoria → type what's actually left on each card
   (direct entry, or keyboard stepping **A −10 · S −1 · D +1 · F +10**, Enter

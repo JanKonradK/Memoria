@@ -268,10 +268,19 @@ export interface Reminder extends Syncable {
 export type SettingsField = 'quietStart' | 'quietEnd' | 'localTz' | 'sleepHours';
 
 export interface Settings extends Syncable {
-  /** Reserved notification preference in minutes-from-midnight local time; null = disabled. */
+  /**
+   * Quiet hours in minutes-from-midnight home time; null = none (the default).
+   * Notifications that fall inside them move to just before they begin.
+   */
   quietStart: number | null;
   quietEnd: number | null;
-  /** IANA timezone reserved for future notification timing. */
+  /**
+   * The owner picked the quiet hours above. Before 4.1 every document carried a
+   * hidden 01:00–08:00 default nobody could see or change; without this mark
+   * that pair reads as "no quiet hours".
+   */
+  quietHoursChosen?: boolean;
+  /** IANA home timezone, used for quiet hours and notification timing. */
   localTz: string;
   /** Hours of sleep used by the "safe to sleep" check. */
   sleepHours: number;
@@ -316,8 +325,8 @@ export interface AppState {
 export const DEFAULT_SETTINGS: Settings = {
   hlc: { wall: 0, counter: 0, device: 'Unknown device' },
   deviceId: 'Unknown device',
-  quietStart: 60, // 01:00
-  quietEnd: 480, // 08:00
+  quietStart: null,
+  quietEnd: null,
   localTz: 'UTC',
   sleepHours: 8,
   fieldUpdatedAt: {},

@@ -1,6 +1,8 @@
 import { detectLocalTz, PRESETS } from '@memoria/shared';
 import { useRef, useState } from 'react';
 import { isNativeApp } from '../native';
+import { setNotificationsEnabled } from '../notifications';
+import { setPresence, usePresence } from '../presence';
 import { gameServers, type ServerPick } from '../server-choice';
 import { useApp } from '../store';
 import '../onboarding.css';
@@ -10,6 +12,7 @@ import { intOr } from '../util';
 import { GameLogo } from './GameLogo';
 import { HomeTimeZoneField } from './HomeTimeZoneField';
 import { ServerSelect } from './ServerSelect';
+import { QuietHoursField } from './settings/QuietHoursField';
 import { Btn, NumInput, TextInput } from './ui';
 
 type Account = { key: number; pick: ServerPick | null; nickname: string; energy: string };
@@ -27,8 +30,10 @@ function labelFor(accounts: Account[], index: number): string | undefined {
 }
 
 /**
- * First run, in two steps: pick the games you play, then add an account for
- * each server you play them on — as many as you have, nothing chosen for you.
+ * First run: pick the games you play, then add an account for each server you
+ * play them on — as many as you have, nothing chosen for you. On the phone and
+ * the PC a last step offers reminders, because the dashboard alone only helps
+ * while it is open.
  */
 export function Onboarding({ onComplete }: { onComplete: () => void }) {
   const addGameFromPreset = useApp((store) => store.addGameFromPreset);
@@ -36,7 +41,10 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
   const updateSettings = useApp((store) => store.updateSettings);
   const [detectedTz] = useState(detectLocalTz);
   const [homeTzChoice, setHomeTzChoice] = useState(SYSTEM_TIMEZONE_VALUE);
-  const [step, setStep] = useState<'pick' | 'setup'>('pick');
+  const [step, setStep] = useState<'pick' | 'setup' | 'remind'>('pick');
+  const onPc = usePresence((store) => store.presence != null);
+  const canRemind = isNativeApp || onPc;
+  const steps = canRemind ? 3 : 2;
   const [selected, setSelected] = useState<string[]>([]);
   const [accounts, setAccounts] = useState<Record<string, Account[]>>({});
   const nextKey = useRef(0);
@@ -51,6 +59,17 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
     editAccounts(key, (items) => [...items, { key: nextKey.current++, pick, nickname: '', energy: '' }]);
   const editAccount = (key: string, account: number, patch: Partial<Account>) =>
     editAccounts(key, (items) => items.map((item) => (item.key === account ? { ...item, ...patch } : item)));
+
+  /** Reminders are asked before the games exist: adding them ends onboarding. */
+  const finishWithReminders = async (on: boolean) => {
+    try {
+      if (isNativeApp && on) await setNotificationsEnabled(true);
+      if (onPc) await setPresence({ remindersOnPc: on });
+    } catch {
+      // A refused permission must not block setup; Settings offers it again.
+    }
+    finish();
+  };
 
   const finish = () => {
     updateSettings({ localTz: resolveHomeTimeZone(homeTzChoice) });
@@ -83,10 +102,29 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
   return (
     <main className="onboarding">
       <p className="onboarding-step text-meta text-muted" aria-live="polite">
-        Step {step === 'pick' ? 1 : 2} of 2
+        Step {step === 'pick' ? 1 : step === 'setup' ? 2 : 3} of {steps}
       </p>
 
-      {step === 'pick' ? (
+      {step === 'remind' ? (
+        <>
+          <h1 className="text-display font-black tracking-tight text-fg">Remind me before I lose something</h1>
+          <p className="mt-2 max-w-2xl text-body text-muted">
+            An hour before each daily reset that still has dailies left. Before weeklies reset, one hour ahead for each
+            game that still owes them. Three hours before an event you have not finished ends, and two hours before a
+            bar caps. Nothing is sent for work you have ticked off.
+          </p>
+          <div className="mt-6 max-w-2xl">
+            <QuietHoursField />
+          </div>
+          <div className="onboarding-actions">
+            <Btn kind="primary" onClick={() => void finishWithReminders(true)}>
+              Turn on reminders
+            </Btn>
+            <Btn onClick={() => void finishWithReminders(false)}>Not now</Btn>
+            <Btn onClick={() => setStep('setup')}>Back</Btn>
+          </div>
+        </>
+      ) : step === 'pick' ? (
         <>
           <h1 className="text-display font-black tracking-tight text-fg">Which games do you play?</h1>
           <p className="mt-2 max-w-2xl text-body text-muted">
@@ -287,8 +325,8 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
           )}
 
           <div className="onboarding-actions">
-            <Btn kind="primary" disabled={Boolean(missing)} onClick={finish}>
-              Create dashboard
+            <Btn kind="primary" disabled={Boolean(missing)} onClick={canRemind ? () => setStep('remind') : finish}>
+              {canRemind ? 'Next' : 'Create dashboard'}
             </Btn>
             <Btn onClick={() => setStep('pick')}>Back</Btn>
           </div>

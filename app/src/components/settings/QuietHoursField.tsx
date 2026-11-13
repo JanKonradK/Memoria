@@ -1,0 +1,67 @@
+import { useApp } from '../../store';
+import { TextInput, Toggle } from '../ui';
+import { SettingRow } from './SettingRow';
+
+const toClock = (minutes: number) =>
+  `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+function fromClock(value: string): number | null {
+  const match = /^(\d{2}):(\d{2})$/.exec(value);
+  if (!match) return null;
+  const minutes = Number(match[1]) * 60 + Number(match[2]);
+  return minutes >= 0 && minutes < 1440 ? minutes : null;
+}
+
+/**
+ * Off by default: a reminder at 02:00 that saves a reset beats a quiet night
+ * that loses it. When set, reminders inside them arrive just before they begin.
+ */
+export function QuietHoursField() {
+  const settings = useApp((s) => s.state.settings);
+  const updateSettings = useApp((s) => s.updateSettings);
+  const on = settings.quietStart != null && settings.quietEnd != null;
+  const start = settings.quietStart ?? 23 * 60;
+  const end = settings.quietEnd ?? 7 * 60;
+  const set = (quietStart: number | null, quietEnd: number | null) =>
+    updateSettings({ quietStart, quietEnd, quietHoursChosen: quietStart != null });
+  return (
+    <SettingRow
+      label="Quiet hours"
+      hint={
+        on
+          ? `Reminders that fall between ${toClock(start)} and ${toClock(end)} arrive at ${toClock((start + 1439) % 1440)} instead. None are dropped.`
+          : 'Off. Reminders arrive at any hour, including the one before a night-time reset.'
+      }
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <Toggle checked={on} onChange={(next) => (next ? set(start, end) : set(null, null))} ariaLabel="Quiet hours" />
+        {on && (
+          <>
+            <TextInput
+              type="time"
+              step={900}
+              className="!min-h-11 !w-28 sm:!min-h-8 sm:!py-1"
+              aria-label="Quiet hours start"
+              value={toClock(start)}
+              onChange={(e) => {
+                const next = fromClock(e.target.value);
+                if (next != null && next !== end) set(next, end);
+              }}
+            />
+            <span className="text-label text-dim">to</span>
+            <TextInput
+              type="time"
+              step={900}
+              className="!min-h-11 !w-28 sm:!min-h-8 sm:!py-1"
+              aria-label="Quiet hours end"
+              value={toClock(end)}
+              onChange={(e) => {
+                const next = fromClock(e.target.value);
+                if (next != null && next !== start) set(start, next);
+              }}
+            />
+          </>
+        )}
+      </div>
+    </SettingRow>
+  );
+}
