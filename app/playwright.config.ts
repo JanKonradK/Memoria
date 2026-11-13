@@ -13,6 +13,8 @@ export default defineConfig({
   use: {
     baseURL,
     reducedMotion: 'reduce',
+    // The app follows the device's theme; the suite's baseline is dark.
+    colorScheme: 'dark',
     trace: 'on-first-retry',
   },
   webServer: {

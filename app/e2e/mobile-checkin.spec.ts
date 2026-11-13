@@ -57,7 +57,7 @@ test('phone roster opens full controls and keeps edits across navigation', async
   await page.getByRole('textbox', { name: 'Message' }).fill(message);
   await page.getByRole('button', { name: 'Add reminder', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Switch to light theme' }).click();
+  await page.emulateMedia({ colorScheme: 'light' });
   // Scan the settled theme rather than an intermediate color transition.
   await expect(page.getByRole('button', { name: 'Timeline', exact: true })).toHaveCSS('color', 'rgb(53, 55, 64)');
   expect(

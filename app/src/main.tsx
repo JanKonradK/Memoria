@@ -41,6 +41,11 @@ const loadMotionFeatures = () => import('./motion-features').then((module) => mo
 // Before first paint: a theme applied inside React would flash the dark ground
 // on a light-theme load, and that flash is the whole reason this runs here.
 applyTheme(useUI.getState().theme);
+// Following the device: a change of its light or dark setting applies at once.
+window.matchMedia?.('(prefers-color-scheme: light)').addEventListener?.('change', () => {
+  const { themePreference, setThemePreference } = useUI.getState();
+  if (themePreference === 'system') setThemePreference('system');
+});
 if (isDesktopApp()) {
   // The installed app carries its own assets. A service worker from an older
   // build must not keep serving stale code after the PC package is updated.

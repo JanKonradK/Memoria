@@ -31,6 +31,19 @@ migrateLegacyUiStorage();
 
 export type Tab = 'today' | 'home' | 'timeline' | 'history' | 'settings';
 export type Theme = 'dark' | 'light';
+/** What the player chose. System follows the device, which is the default. */
+export type ThemePreference = Theme | 'system';
+
+/** The device's own light or dark setting. */
+export function systemTheme(): Theme {
+  try {
+    return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  } catch {
+    return 'dark';
+  }
+}
+export const resolveTheme = (preference: ThemePreference): Theme =>
+  preference === 'system' ? systemTheme() : preference;
 export type TimelineView = 'list' | 'lanes';
 
 /**
@@ -106,6 +119,9 @@ interface UIStore {
   closeSheet(): void;
   setReserveOpen(id: string, open: boolean | undefined): void;
   setTheme(theme: Theme): void;
+  /** A once-a-year choice, made in Settings. */
+  themePreference: ThemePreference;
+  setThemePreference(preference: ThemePreference): void;
   toggleTheme(): void;
 }
 
@@ -123,7 +139,7 @@ export const useUI = create<UIStore>()(
           else logoFlipped[key] = true;
           return { logoFlipped };
         }),
-      theme: 'dark',
+      theme: resolveTheme('system'),
       focusedGameId: null,
       timelineView: null,
       timelineShowFinished: false,
@@ -150,7 +166,13 @@ export const useUI = create<UIStore>()(
         }),
       setTheme: (theme) => {
         applyTheme(theme);
-        set({ theme });
+        set({ theme, themePreference: theme });
+      },
+      themePreference: 'system',
+      setThemePreference: (themePreference) => {
+        const theme = resolveTheme(themePreference);
+        applyTheme(theme);
+        set({ theme, themePreference });
       },
       toggleTheme: () => get().setTheme(get().theme === 'dark' ? 'light' : 'dark'),
     }),
@@ -162,6 +184,7 @@ export const useUI = create<UIStore>()(
       // re-hides a counter the user just said they wanted to watch.
       partialize: (state) => ({
         theme: state.theme,
+        themePreference: state.themePreference,
         reserveOpen: state.reserveOpen,
         logoFlipped: state.logoFlipped,
         tourSeenVersion: state.tourSeenVersion,
@@ -178,9 +201,17 @@ export const useUI = create<UIStore>()(
           stored.reserveOpen && typeof stored.reserveOpen === 'object'
             ? Object.fromEntries(Object.entries(stored.reserveOpen).filter(([, open]) => typeof open === 'boolean'))
             : current.reserveOpen;
+        // A theme saved before the preference existed was a choice; keep it.
+        const themePreference: ThemePreference =
+          stored.themePreference === 'system' || stored.themePreference === 'dark' || stored.themePreference === 'light'
+            ? stored.themePreference
+            : stored.theme === 'dark' || stored.theme === 'light'
+              ? stored.theme
+              : 'system';
         return {
           ...current,
-          theme: stored.theme === 'dark' || stored.theme === 'light' ? stored.theme : current.theme,
+          themePreference,
+          theme: resolveTheme(themePreference),
           reserveOpen,
           logoFlipped:
             stored.logoFlipped && typeof stored.logoFlipped === 'object'

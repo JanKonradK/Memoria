@@ -2,7 +2,7 @@ import { Activity } from './settings/Activity';
 import { useRef, useState, type ReactNode } from 'react';
 import { detectLocalTz, normalizeState, safeParseAppState } from '@memoria/shared';
 import { useApp } from '../store';
-import { useUI } from '../ui-store';
+import { useUI, type ThemePreference } from '../ui-store';
 import { servedByLauncher } from '../launcher';
 import { syncNow } from '../sync';
 import { deviceSyncAvailable, DeviceSync } from './settings/DeviceSync';
@@ -31,7 +31,7 @@ import { resolveHomeTimeZone, SYSTEM_TIMEZONE_VALUE } from '../timezone';
 import { fmtClock } from '../util';
 import { HomeTimeZoneField } from './HomeTimeZoneField';
 import { rosterGames, useIdentityColors } from './roster';
-import { Btn, Page, TOUCH_BUTTON } from './ui';
+import { Btn, Page, Segmented, TOUCH_BUTTON } from './ui';
 // Today is lazy-loaded, so its heading rule is brought in here as well.
 import '../today.css';
 import '../settings.css';
@@ -220,6 +220,7 @@ export function SettingsPage() {
                     onChange={(value) => updateSettings({ localTz: resolveHomeTimeZone(value) })}
                   />
                 </SettingRow>
+                <ThemeRow />
               </div>
             </SettingsPane>
 
@@ -468,6 +469,23 @@ export function SettingsPage() {
 }
 
 /** One section of Settings. Beside the menu only the chosen one is shown; on a phone, all are. */
+const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: 'system', label: 'Device' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'light', label: 'Light' },
+];
+
+/** Light or dark, following the device unless a theme is chosen. */
+function ThemeRow() {
+  const preference = useUI((s) => s.themePreference);
+  const setPreference = useUI((s) => s.setThemePreference);
+  return (
+    <SettingRow label="Theme" hint="Device follows this device's light or dark setting.">
+      <Segmented ariaLabel="Theme" options={THEME_OPTIONS} value={preference} onChange={setPreference} />
+    </SettingRow>
+  );
+}
+
 function SettingsPane({
   id,
   title,

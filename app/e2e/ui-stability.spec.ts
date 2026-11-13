@@ -222,12 +222,19 @@ test('tabs, timeline controls, and settings fit after adding a game', async ({ p
   await page.keyboard.press('Escape');
 
   await openSettings(page, 'General');
-  await page.getByRole('button', { name: 'Switch to light theme' }).click();
+  // The theme follows the device until one is chosen, and then stays chosen.
+  const theme = page.getByRole('radiogroup', { name: 'Theme' });
+  await expect(theme.getByRole('radio', { name: 'Device', exact: true })).toBeChecked();
+  await page.emulateMedia({ colorScheme: 'light' });
   await expect.poll(() => page.locator('html').getAttribute('data-theme')).toBe('light');
+  await theme.getByRole('radio', { name: 'Dark', exact: true }).click();
+  await expect.poll(() => page.locator('html').getAttribute('data-theme')).toBe('dark');
   await expect
-    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('memoria-ui') || '{}')?.state?.theme as string))
-    .toBe('light');
-  await page.getByRole('button', { name: 'Switch to dark theme' }).click();
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('memoria-ui') || '{}')?.state?.themePreference as string))
+    .toBe('dark');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.emulateMedia({ colorScheme: 'dark' });
   await expectNoPageOverflow(page);
 
   await openSettings(page, 'Games');
@@ -332,7 +339,7 @@ test('animated Add menu transfers focus to a sheet and releases pointer input', 
     .evaluate((node) => parseFloat(getComputedStyle(node).animationDuration));
   expect(duration).toBeLessThan(0.001);
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Switch to light theme' }).click();
+  await page.emulateMedia({ colorScheme: 'light' });
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await expectNoPageOverflow(page);
 });

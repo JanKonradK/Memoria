@@ -116,7 +116,7 @@ test('daily task rules can change on the card, including Tacet counts and new ta
   await page.screenshot({ path: info.outputPath('event-editor.png') });
   await event.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Switch to light theme', exact: true }).click();
+  await page.emulateMedia({ colorScheme: 'light' });
   const again = await openTaskSettings(page, 'Wuthering Waves');
   await again.getByRole('button', { name: /^Tacet Discord Nests/ }).click();
   await expect(again.getByLabel('Count target for Tacet Discord Nests', { exact: true })).toHaveValue('5');
