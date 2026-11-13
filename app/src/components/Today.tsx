@@ -342,7 +342,6 @@ export function TodayPage({ now }: { now: number }) {
         <p className="aside text-meta text-muted">{date}</p>
       </div>
       <TodayNotices now={now} />
-      <TodayCodes games={derived.state.games} now={now} />
       {order.length === 0 ? (
         <section className="today-empty">
           <h2 className="text-heading font-semibold text-fg">No games yet</h2>
@@ -368,6 +367,8 @@ export function TodayPage({ now }: { now: number }) {
                 />
               ))}
             </ul>
+            {/* Extras come after what is lost first: the games' own deadlines. */}
+            <TodayCodes games={derived.state.games} now={now} />
             <TodayAgenda
               derived={derived}
               onSelectGame={(gameId) => (desktop ? setSelectedId(gameId) : openGame(gameId))}

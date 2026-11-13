@@ -14,11 +14,11 @@ export async function openGame(page: Page, name: string): Promise<void> {
   await expect(page.locator('.focus-workspace')).toBeVisible();
 }
 
-/** A game's one Edit menu: its layout editor and its events panel. */
+/** A game's one Edit menu: its settings and its events panel. */
 export async function chooseFromEdit(
   page: Page,
   game: string,
-  item: 'Edit layout' | 'Manage events' | 'Close events',
+  item: 'Game settings' | 'Manage events' | 'Close events',
 ): Promise<void> {
   await page
     .getByRole('button', { name: `Edit ${game}`, exact: true })

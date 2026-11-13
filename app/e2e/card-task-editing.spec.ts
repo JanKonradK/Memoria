@@ -2,20 +2,12 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { chooseFromEdit, openGame } from './support';
 
-async function frameTaskEditor(page: Page) {
-  await page.getByLabel('Item title', { exact: true }).evaluate((node) => {
-    node.blur();
-    const editor = node.closest('[aria-label^="Edit item"]')!;
-    const headerHeight = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
-    window.scrollTo({ top: scrollY + editor.getBoundingClientRect().top - headerHeight - 12, behavior: 'instant' });
-  });
-  const title = await page.getByLabel('Item title', { exact: true }).boundingBox();
-  const close = await page.getByRole('button', { name: 'Close item', exact: true }).boundingBox();
-  const dock = await page.getByRole('navigation', { name: 'Primary', exact: true }).boundingBox();
-  expect(title!.y).toBeGreaterThan(0);
-  expect(close!.y + close!.height).toBeLessThanOrEqual(
-    page.viewportSize()!.width < 640 ? dock!.y : page.viewportSize()!.height,
-  );
+/** Game settings, on its Tasks tab. */
+async function openTaskSettings(page: Page, game: string) {
+  await chooseFromEdit(page, game, 'Game settings');
+  const dialog = page.getByRole('dialog', { name: game });
+  await dialog.getByRole('tab', { name: 'Tasks', exact: true }).click();
+  return dialog;
 }
 
 test('daily task rules can change on the card, including Tacet counts and new tasks', async ({ page }, info) => {
@@ -39,31 +31,27 @@ test('daily task rules can change on the card, including Tacet counts and new ta
   }
   await openGame(page, 'Wuthering Waves');
   await page.getByRole('button', { name: 'Tacet Fields ×5: 0 of 5 done, click to mark one more', exact: true }).click();
-  await chooseFromEdit(page, 'Wuthering Waves', 'Edit layout');
-  await page.getByRole('button', { name: 'Edit item Tacet Fields ×5', exact: true }).click();
-  await page.getByLabel('Count target for Tacet Fields ×5', { exact: true }).fill('6');
-  await page.getByLabel('Item title', { exact: true }).fill('My Tacet fields');
-  await expect(page.getByRole('button', { name: /Half width|Full width|Resize/ })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Close item', exact: true }).click();
-  await page.getByRole('button', { name: 'Add item', exact: true }).click();
-  await page.getByLabel('New item name').fill('Tacet Discord Nests');
-  await page.locator('form').getByRole('button', { name: 'Add', exact: true }).click();
-  await page.getByRole('combobox', { name: 'Mode for Tacet Discord Nests', exact: true }).click();
+  // Task rules live in Game settings; the card shows the result.
+  const settings = await openTaskSettings(page, 'Wuthering Waves');
+  await settings.getByRole('button', { name: /^Tacet Fields ×5/ }).click();
+  await settings.getByLabel('Count target for Tacet Fields ×5', { exact: true }).fill('6');
+  await settings.getByLabel('Task name: Tacet Fields ×5', { exact: true }).fill('My Tacet fields');
+  await settings.getByLabel('New task name').fill('Tacet Discord Nests');
+  await settings.getByRole('button', { name: 'Add task', exact: true }).click();
+  await settings.getByRole('button', { name: /^Tacet Discord Nests/ }).click();
+  await settings.getByRole('combobox', { name: 'Mode for Tacet Discord Nests', exact: true }).click();
   await page.getByRole('option', { name: 'Counter', exact: true }).click();
-  await page.getByLabel('Count target for Tacet Discord Nests', { exact: true }).fill('5');
-  await expect(page.getByLabel('Count target for Tacet Discord Nests', { exact: true })).toHaveValue('5');
-  await page.getByLabel('Count target for Tacet Discord Nests', { exact: true }).scrollIntoViewIfNeeded();
-  await expect(page.locator('[data-aria-hidden="true"]')).toHaveCount(0);
+  await settings.getByLabel('Count target for Tacet Discord Nests', { exact: true }).fill('5');
+  await expect(settings.getByLabel('Count target for Tacet Discord Nests', { exact: true })).toHaveValue('5');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(
-    (await new AxeBuilder({ page }).analyze()).violations.filter((issue) =>
+    (await new AxeBuilder({ page }).include('[role="dialog"]').analyze()).violations.filter((issue) =>
       ['serious', 'critical'].includes(issue.impact ?? ''),
     ),
   ).toEqual([]);
-  await frameTaskEditor(page);
   await page.screenshot({ path: info.outputPath('daily-task-editor.png') });
-  await page.getByRole('button', { name: 'Close item', exact: true }).click();
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(
     page.getByRole('button', { name: 'My Tacet fields: 1 of 6 done, click to mark one more', exact: true }),
   ).toBeVisible();
@@ -129,15 +117,13 @@ test('daily task rules can change on the card, including Tacet counts and new ta
   await event.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Switch to light theme', exact: true }).click();
-  await chooseFromEdit(page, 'Wuthering Waves', 'Edit layout');
-  await page.getByRole('button', { name: 'Edit item Tacet Discord Nests', exact: true }).click();
-  await expect(page.getByLabel('Count target for Tacet Discord Nests', { exact: true })).toHaveValue('5');
-  await expect(page.locator('[data-aria-hidden="true"]')).toHaveCount(0);
+  const again = await openTaskSettings(page, 'Wuthering Waves');
+  await again.getByRole('button', { name: /^Tacet Discord Nests/ }).click();
+  await expect(again.getByLabel('Count target for Tacet Discord Nests', { exact: true })).toHaveValue('5');
   expect(
-    (await new AxeBuilder({ page }).analyze()).violations.filter((issue) =>
+    (await new AxeBuilder({ page }).include('[role="dialog"]').analyze()).violations.filter((issue) =>
       ['serious', 'critical'].includes(issue.impact ?? ''),
     ),
   ).toEqual([]);
-  await frameTaskEditor(page);
   await page.screenshot({ path: info.outputPath('light-daily-task-editor.png') });
 });

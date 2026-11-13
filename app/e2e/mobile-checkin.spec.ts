@@ -45,9 +45,9 @@ test('phone roster opens full controls and keeps edits across navigation', async
   await openGame(page, 'Genshin Impact');
   await expect(value).toHaveValue('99');
   await expect(task).toHaveAttribute('aria-pressed', 'true');
-  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
-  await expect(page.getByRole('region', { name: 'Layout editor for Genshin Impact' })).toBeVisible();
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Game settings');
+  await expect(page.getByRole('dialog', { name: 'Genshin Impact' })).toBeVisible();
+  await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Back to Today', exact: true }).click();
   await expect(page.getByRole('list', { name: 'Games', exact: true })).toBeVisible();

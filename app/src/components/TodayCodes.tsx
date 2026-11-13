@@ -19,7 +19,7 @@ export function TodayCodes({ games, now }: { games: Game[]; now: number }) {
     }
   };
   return (
-    <section className="today-codes mb-4" aria-labelledby="today-codes-heading">
+    <section className="today-codes" aria-labelledby="today-codes-heading">
       <div className="today-group-rule">
         <h2 id="today-codes-heading" className="text-meta font-semibold text-fg-soft">
           Codes
@@ -27,37 +27,36 @@ export function TodayCodes({ games, now }: { games: Game[]; now: number }) {
         <span aria-hidden />
         <span className="numeral text-caption text-muted">{codes.length}</span>
       </div>
-      <ul className="grid gap-1">
+      <ul className="grid gap-0.5">
         {codes.map(({ game, key, code, rewards, expiresAt, redeemUrl }) => (
-          <li key={`${game.id}:${code}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-1.5">
-            <div className="min-w-0 flex-1 basis-48">
-              <p className="text-body text-fg">
+          <li key={`${game.id}:${code}`} className="flex items-center gap-2 px-2 py-1">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-meta text-fg">
                 <span className="text-muted">{game.short} · </span>
-                <code className="numeral select-all font-semibold tracking-wide">{code}</code>
+                <code className="numeral select-all font-semibold">{code}</code>
               </p>
-              <p className="aside text-caption text-muted">
+              <p className="aside truncate text-caption text-muted" title={rewards}>
+                {expiresAt ? `${fmtDur(expiresAt - now)} left · ` : ''}
                 {rewards}
-                {expiresAt ? ` · expires in ${fmtDur(expiresAt - now)}` : ''}
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Btn onClick={() => void copy(code)} aria-label={`Copy ${code}`}>
-                Copy
-              </Btn>
-              {redeemUrl && (
-                <a
-                  href={redeemUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="min-h-11 content-center px-2 text-meta font-semibold text-accent-fg underline underline-offset-4 sm:min-h-8"
-                >
-                  Redeem
-                </a>
-              )}
-              <Btn onClick={() => mark(key, code)} aria-label={`Mark ${code} redeemed`}>
-                Redeemed
-              </Btn>
-            </div>
+            <Btn className="shrink-0" onClick={() => void copy(code)} aria-label={`Copy ${code}`}>
+              Copy
+            </Btn>
+            {redeemUrl && (
+              <a
+                href={redeemUrl}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`Redeem ${code}`}
+                className="min-h-11 shrink-0 content-center px-1 text-meta font-semibold text-accent-fg underline underline-offset-4 sm:min-h-8"
+              >
+                Redeem
+              </a>
+            )}
+            <Btn className="shrink-0" onClick={() => mark(key, code)} aria-label={`Mark ${code} redeemed`}>
+              ✓
+            </Btn>
           </li>
         ))}
       </ul>
