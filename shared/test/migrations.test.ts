@@ -204,3 +204,60 @@ describe('seedMissingRegenSnapshots', () => {
     });
   });
 });
+
+describe('NTE 1.5 overflow storage', () => {
+  const nte = (over: Partial<AppState> = {}) =>
+    makeState({
+      schemaVersion: 10,
+      games: [
+        makeGame({ id: 'nte', name: 'Neverness to Everness', presetKey: 'nte' }),
+        makeGame({ id: 'hsr', presetKey: 'hsr' }),
+      ],
+      resources: [
+        makeResource({ id: 'px', gameId: 'nte', name: 'Character Pixels', cap: 240, regenMinutes: 6, reserveCap: 0 }),
+        makeResource({ id: 'cs', gameId: 'nte', name: 'City Stamina', cap: 100, kind: 'weekly', reserveCap: 0 }),
+        makeResource({
+          id: 'own',
+          gameId: 'nte',
+          name: 'City Stamina',
+          cap: 100,
+          reserveCap: 50,
+          reserveLabel: 'Mine',
+        }),
+        makeResource({ id: 'other', gameId: 'hsr', name: 'Character Pixels', reserveCap: 0 }),
+      ],
+      tasks: [
+        makeTask({
+          id: 'empty',
+          gameId: 'nte',
+          name: 'Empty City Stamina before Monday',
+          presetTaskKey: 'nte-city-stamina',
+        }),
+        makeTask({ id: 'renamed', gameId: 'nte', name: 'Spend stamina', presetTaskKey: 'nte-city-stamina' }),
+      ],
+      ...over,
+    });
+
+  it('adds both reserves, retires the Monday routine, and leaves the player’s own choices', () => {
+    const migrated = migrateState(nte()) as AppState;
+    const byId = (id: string) => migrated.resources.find((row) => row.id === id)!;
+    expect(byId('px')).toMatchObject({ reserveCap: 2400, reserveLabel: 'Photo Paper Supply' });
+    expect(byId('cs')).toMatchObject({ reserveCap: 1000, reserveLabel: 'City Stamina Reserve' });
+    expect(byId('own')).toMatchObject({ reserveCap: 50, reserveLabel: 'Mine' });
+    expect(byId('other').reserveCap).toBe(0);
+    expect(migrated.tasks.find((row) => row.id === 'empty')?.deleted).toBe(true);
+    expect(migrated.tasks.find((row) => row.id === 'renamed')?.deleted).toBeFalsy();
+  });
+
+  it('upgrades every device to the same, newer clock', () => {
+    const before = nte();
+    const px = before.resources.find((row) => row.id === 'px')!;
+    px.hlc = { wall: 1_000, counter: 2, device: 'pc' };
+    const first = migrateState(structuredClone(before)) as AppState;
+    const second = migrateState(structuredClone(before)) as AppState;
+    expect(first).toEqual(second);
+    const after = first.resources.find((row) => row.id === 'px')!;
+    expect(after.hlc!.counter).toBe(px.hlc!.counter + 1);
+    expect(after.hlc!.wall).toBe(px.hlc!.wall);
+  });
+});
