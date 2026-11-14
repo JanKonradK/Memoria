@@ -46,7 +46,9 @@ test('first run on the PC offers reminders before creating the dashboard', async
   const quiet = page.getByRole('switch', { name: 'Quiet hours' });
   await expect(quiet).not.toBeChecked();
   await page.getByRole('button', { name: 'Not now' }).click();
-  await expect(page.getByRole('dialog', { name: 'Pages' })).toBeVisible();
+  // Setup ends on Today, with no tour in the way.
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(await page.evaluate(async () => (await window.memoriaDesktop!.presence!.get()).remindersOnPc)).toBe(false);
 });
 
