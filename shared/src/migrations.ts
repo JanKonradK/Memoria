@@ -259,6 +259,62 @@ function migrateChangeClocks(raw: unknown): unknown {
   return result;
 }
 
+/**
+ * NTE 1.5 (2026-11-11) added overflow storage: Character Pixels overflow into
+ * Photo Paper Supply (2,400) and City Stamina into City Stamina Reserve
+ * (1,000), so Monday's refill no longer wipes the leftover and the "Empty City
+ * Stamina before Monday" routine has nothing left to protect.
+ *
+ * A changed row keeps its wall time and device and advances its counter by one,
+ * so every device upgrades to the same clock and the upgrade wins over the row
+ * it replaces. A reserve the player already set is left alone.
+ */
+function migrateNteReserves(raw: unknown): unknown {
+  const state = objectRecord(raw);
+  if (!state || !Array.isArray(state.games)) return raw;
+  const nteGames = new Set(
+    state.games
+      .map(objectRecord)
+      .filter((game): game is Record<string, unknown> => Boolean(game && !game.deleted && presetKeyOf(game) === 'nte'))
+      .map((game) => game.id),
+  );
+  if (nteGames.size === 0) return raw;
+  const bump = (row: Record<string, unknown>) => {
+    const clock = objectRecord(row.hlc);
+    const updatedAt = typeof row.updatedAt === 'number' && Number.isFinite(row.updatedAt) ? row.updatedAt : 0;
+    return {
+      updatedAt: updatedAt + 1,
+      ...(clock && typeof clock.wall === 'number' && typeof clock.counter === 'number'
+        ? { hlc: { ...clock, counter: clock.counter + 1 } }
+        : {}),
+    };
+  };
+  const RESERVES: Record<string, { reserveCap: number; reserveLabel: string }> = {
+    'Character Pixels': { reserveCap: 2400, reserveLabel: 'Photo Paper Supply' },
+    'City Stamina': { reserveCap: 1000, reserveLabel: 'City Stamina Reserve' },
+  };
+  const resources = Array.isArray(state.resources)
+    ? state.resources.map((rawRow) => {
+        const row = objectRecord(rawRow);
+        if (!row || row.deleted || !nteGames.has(row.gameId) || typeof row.name !== 'string') return rawRow;
+        const reserve = RESERVES[row.name];
+        if (!reserve || (typeof row.reserveCap === 'number' && row.reserveCap > 0)) return rawRow;
+        return { ...row, ...reserve, ...bump(row) };
+      })
+    : state.resources;
+  const tasks = Array.isArray(state.tasks)
+    ? state.tasks.map((rawRow) => {
+        const row = objectRecord(rawRow);
+        if (!row || row.deleted || !nteGames.has(row.gameId)) return rawRow;
+        // Only the routine as shipped; a renamed one is the player's own.
+        if (row.name !== 'Empty City Stamina before Monday') return rawRow;
+        if (row.presetTaskKey !== undefined && row.presetTaskKey !== 'nte-city-stamina') return rawRow;
+        return { ...row, deleted: true, ...bump(row) };
+      })
+    : state.tasks;
+  return { ...state, resources, tasks };
+}
+
 /** Keys are source versions; each migration advances its input by one version. */
 export const MIGRATIONS: Readonly<Record<number, StateMigration>> = {
   3: migrateGenshinPalette,
@@ -267,6 +323,7 @@ export const MIGRATIONS: Readonly<Record<number, StateMigration>> = {
   6: migrateCrystalflyTrapTimer,
   7: migrateRoutineDefaults,
   9: migrateChangeClocks,
+  10: migrateNteReserves,
   // 8 -> 9 changes nothing: it only marks documents that may carry savings plans.
 };
 
