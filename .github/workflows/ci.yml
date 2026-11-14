@@ -41,6 +41,15 @@ jobs:
       # lint, format:check, typecheck, tests, build, PWA budget.
       - run: npm run check
 
+      # The installer is built with NSIS. Runner images have usually carried it;
+      # install it when this one does not.
+      - name: Make sure NSIS is installed
+        shell: pwsh
+        run: |
+          $default = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
+          if (-not (Get-Command makensis -ErrorAction SilentlyContinue) -and -not (Test-Path $default)) {
+            choco install nsis --yes --no-progress
+          }
       # Proves the download can actually be assembled from this commit, so a
       # packaging break is caught on the PR that causes it rather than at tag
       # time. The zip is not published from here, so it is not signed: the

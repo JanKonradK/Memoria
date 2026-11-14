@@ -38,6 +38,13 @@ expect(record).toMatchObject({ name: 'Memoria', version, runtime: 'tauri', platf
 const digest = createHash('sha256').update(readFileSync(zip)).digest('hex');
 expect(readFileSync(join(release, 'SHA256SUMS.txt'), 'utf8')).toContain(`${digest}  Memoria-win-x64.zip`);
 
+// The installer: built from the same tree, listed and signed beside the zip.
+const setup = readFileSync(join(release, 'Memoria-setup-x64.exe'));
+const setupDigest = createHash('sha256').update(setup).digest('hex');
+expect(readFileSync(join(release, 'SHA256SUMS.txt'), 'utf8')).toContain(`${setupDigest}  Memoria-setup-x64.exe`);
+expect(setup.subarray(0, 2).toString()).toBe('MZ');
+console.log(JSON.stringify({ windowsSetup: `PASS: ${(setup.length / 1024 / 1024).toFixed(1)} MB, checksum listed` }));
+
 console.log(
   JSON.stringify({ windowsZip: `PASS: ${entries.length} files, release ${record.version}, checksum listed` }),
 );
