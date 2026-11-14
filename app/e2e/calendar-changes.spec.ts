@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('calendar changes need confirmation and keep edited events', async ({ page }) => {
-  await page.clock.setFixedTime(new Date('2026-11-09T12:00:00Z'));
+  await page.clock.setFixedTime(new Date('2026-12-09T12:00:00Z'));
   await page.route('https://raw.githubusercontent.com/**/events.json', (route) => route.abort());
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
@@ -18,8 +18,8 @@ test('calendar changes need confirmation and keep edited events', async ({ page 
     const { useApp } = await import(/* @vite-ignore */ path);
     const feed = {
       version: 2,
-      generatedAt: '2026-11-09T10:00:00Z',
-      seedUpdated: '2026-11-09',
+      generatedAt: '2026-12-09T10:00:00Z',
+      seedUpdated: '2026-12-09',
       revision: 'e2e-1',
       events: [
         {
@@ -27,8 +27,8 @@ test('calendar changes need confirmation and keep edited events', async ({ page 
           sourceKey: 'e2e:changes',
           name: 'Calendar test event',
           type: 'event',
-          start: '2026-11-10 10:00',
-          end: '2026-11-13 10:00',
+          start: '2026-12-10 10:00',
+          end: '2026-12-13 10:00',
           timezone: 'UTC',
         },
       ],
@@ -42,8 +42,8 @@ test('calendar changes need confirmation and keep edited events', async ({ page 
     useApp.getState().importRemoteEvents({
       ...feed,
       revision: 'e2e-2',
-      generatedAt: '2026-11-09T11:00:00Z',
-      events: [{ ...feed.events[0], end: '2026-11-14 10:00' }],
+      generatedAt: '2026-12-09T11:00:00Z',
+      events: [{ ...feed.events[0], end: '2026-12-14 10:00' }],
     });
   });
   await page
@@ -55,7 +55,7 @@ test('calendar changes need confirmation and keep edited events', async ({ page 
   const changes = page.getByRole('button', { name: /^Calendar changes \(/ });
   await changes.click();
   const dialog = page.getByRole('dialog', { name: 'Calendar changes' });
-  await expect(dialog.getByText(/^Feed published 9 Nov 2026 · /)).toBeVisible();
+  await expect(dialog.getByText(/^Feed published 9 Dec 2026 · /)).toBeVisible();
   const row = dialog.getByRole('article').filter({ hasText: 'rescheduled' }).filter({ hasText: 'Calendar test event' });
   await expect(row).toContainText('My calendar notes');
   await expect(row).toContainText('Your event was kept.');
