@@ -1,9 +1,11 @@
 apply plugin: 'com.android.application'
 
 // The version comes from the root package.json, like every other build. The
-// code orders releases for Android: 3.1.0 becomes 30100.
+// code orders releases for Android: 0.1.0 becomes 1000100. Versions restarted
+// at 0.1.0 after 4.0.3 (code 40003), so the restarted line adds 1000000 to stay
+// above it: Android only installs a higher code over an existing app.
 def memoriaVersion = new groovy.json.JsonSlurper().parse(rootProject.file('../package.json')).version
-def memoriaVersionCode = memoriaVersion.tokenize('.-').take(3).collect { it.toInteger() }.inject(0) { code, part -> code * 100 + part }
+def memoriaVersionCode = 1000000 + memoriaVersion.tokenize('.-').take(3).collect { it.toInteger() }.inject(0) { code, part -> code * 100 + part }
 
 android {
     namespace = "app.memoria.tracker"

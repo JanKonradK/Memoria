@@ -116,7 +116,7 @@ writeFileSync(
     {
       name: 'Memoria',
       version,
-      tag: `v${version}`,
+      tag: version,
       channel: 'stable',
       runtime: 'tauri',
       updateMode: 'manual',
