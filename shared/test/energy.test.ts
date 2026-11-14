@@ -32,6 +32,23 @@ describe('projectEnergy', () => {
       const spent = makeSnapshot({ value: 12, takenAt: monday + MIN });
       expect(projectEnergy(weekly, spent, monday + 2 * MIN, game).value).toBe(12);
     });
+
+    it('carries what is left at the refill into the reserve since NTE 1.5', () => {
+      const stored = { ...weekly, reserveCap: 1000 };
+      const left = makeSnapshot({ value: 12, takenAt: monday - MIN, reserve: 30 });
+      expect(projectEnergy(stored, left, monday + MIN, game)).toMatchObject({ value: 100, reserve: 42 });
+      // A week with no play keeps the whole refill too, up to the reserve's cap.
+      expect(projectEnergy(stored, left, monday + 7 * 24 * 60 * MIN + MIN, game).reserve).toBe(142);
+      expect(projectEnergy({ ...stored, reserveCap: 120 }, left, monday + 7 * 24 * 60 * MIN + MIN, game).reserve).toBe(
+        120,
+      );
+      // Inside the week nothing has carried yet.
+      expect(
+        projectEnergy(stored, makeSnapshot({ value: 12, takenAt: monday + MIN, reserve: 30 }), monday + 2 * MIN, game)
+          .reserve,
+      ).toBe(30);
+      expect(projectEnergy(weekly, left, monday + MIN, game).reserve).toBeNull();
+    });
   });
 
   it('projects regen forward from the snapshot', () => {

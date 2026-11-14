@@ -6,7 +6,7 @@ export type Cadence = 'daily' | 'weekly' | 'monthly' | 'custom';
 export type ResourceKind = 'regen' | 'weekly' | 'counter';
 export type TaskMode = 'check' | 'timer' | 'count';
 /** Schema 10 requires HLC-aware peers at every write boundary. */
-export const CURRENT_SCHEMA_VERSION = 10;
+export const CURRENT_SCHEMA_VERSION = 11;
 export interface Hlc {
   wall: number;
   counter: number;

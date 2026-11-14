@@ -61,6 +61,32 @@ function effectiveSnapshot(
   return snap;
 }
 
+/**
+ * A weekly refill with overflow storage (NTE's City Stamina Reserve, since 1.5):
+ * whatever is left when the week resets is kept in the reserve rather than
+ * lost, and every week that passes without play keeps a full bar's worth.
+ */
+function weeklyReserve(
+  res: EnergyResource,
+  snap: Pick<Snapshot, 'value' | 'takenAt' | 'reserve'>,
+  now: number,
+  game?: EnergyGame,
+): Pick<EnergyProjection, 'reserve' | 'reserveFullAt'> {
+  if (!res.reserveCap || res.reserveCap <= 0) return { reserve: null, reserveFullAt: null };
+  let reserve = Math.min(res.reserveCap, snap.reserve ?? 0);
+  if (game) {
+    let carried = snap.value;
+    // Bounded: a reserve fills within a few years of weeks even at one point a week.
+    for (let reset = nextWeeklyReset(game, snap.takenAt), weeks = 0; reset <= now && weeks < 520; weeks += 1) {
+      reserve = Math.min(res.reserveCap, reserve + Math.max(0, carried));
+      if (reserve >= res.reserveCap) break;
+      carried = res.cap;
+      reset = nextWeeklyReset(game, reset + 1);
+    }
+  }
+  return { reserve, reserveFullAt: null };
+}
+
 export function projectEnergy(
   res: EnergyResource,
   snap: Pick<Snapshot, 'value' | 'takenAt' | 'reserve'> | undefined,
@@ -97,6 +123,7 @@ export function projectEnergy(
     return {
       ...steadyProjection(live.value, res.cap, true),
       weeklyResetAt: game ? nextWeeklyReset(game, now) : null,
+      ...weeklyReserve(res, snap, now, game),
     };
   }
 

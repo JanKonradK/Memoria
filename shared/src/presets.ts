@@ -492,12 +492,26 @@ export const PRESETS: GamePreset[] = [
     weeklyResetDay: 1,
     monthlyResetDay: 1,
     resources: [
-      { name: 'Character Pixels', cap: 240, regenMinutes: 6, reserveCap: 0, kind: 'regen' },
+      // Version 1.5 (2026-11-11) added overflow storage for both, like HSR's
+      // reserve: https://nte.perfectworld.com/en/article/news/gamenews/20261109/264948.html
+      // The patch notes give the caps but not the fill rate; the reserve uses
+      // the app's default (half the bar's speed) until a source gives one.
+      {
+        name: 'Character Pixels',
+        cap: 240,
+        regenMinutes: 6,
+        reserveCap: 2400,
+        reserveLabel: 'Photo Paper Supply',
+        kind: 'regen',
+      },
+      // What is left when Monday refills the bar goes into the reserve instead
+      // of being lost.
       {
         name: 'City Stamina',
         cap: 100,
         regenMinutes: 0,
-        reserveCap: 0,
+        reserveCap: 1000,
+        reserveLabel: 'City Stamina Reserve',
         kind: 'weekly',
         promptCap: true,
       },
@@ -518,12 +532,8 @@ export const PRESETS: GamePreset[] = [
       { key: 'nte-ebisu', name: "Ebisu's Auction", cadence: 'weekly' },
       { key: 'nte-realm-of-greed', name: 'Realm of Greed', cadence: 'weekly' },
       { key: 'nte-special-commissions', name: 'Special Commissions', cadence: 'weekly' },
-      // The admitted exception to "no spend-your-energy tasks" above. City
-      // Stamina does not regenerate and does not carry: Monday's 05:00 refill
-      // overwrites the pool, so whatever is left is gone at 1,000 Fons a point.
-      // The resource row shows the level, but a level is not a deadline, and
-      // this is the one allowance the game never nags you about.
-      { key: 'nte-city-stamina', name: 'Empty City Stamina before Monday', cadence: 'weekly' },
+      // "Empty City Stamina before Monday" is gone: since 1.5 Monday's refill
+      // keeps the leftover in City Stamina Reserve, so nothing is lost.
       // Tycoon Incentive Fund — 1,000,000 Fons per 14-day period. v1.3 turned
       // what was Pink Paws Heist's own payout into one shared pool: Pink Paws
       // Heist, Volley Star's Weekly Match and the Going, Going, Gone! display
