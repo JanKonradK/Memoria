@@ -229,17 +229,17 @@ describe('planSeedImport', () => {
     const games = [account('eu', 'Etc/GMT-1'), account('us', 'Etc/GMT+5'), account('asia', 'Etc/GMT-8')].map(
       (game) => ({ ...game, presetKey: 'zzz', name: 'Zenless Zone Zero', short: 'ZZZ' }),
     );
-    const imported = planSeedImport({ ...emptyState(), games }, Date.parse('2026-09-08T00:00:00Z'));
-    const rows = imported.filter((row) => row.seed.sourceKey === 'seed:zzz:3.2-all-new-program');
+    const imported = planSeedImport({ ...emptyState(), games }, Date.parse('2026-10-20T00:00:00Z'));
+    const rows = imported.filter((row) => row.seed.sourceKey === 'seed:zzz:3.3-all-new-program');
     expect(rows).toHaveLength(3);
-    expect(rows.map((row) => row.start)).toEqual(Array(3).fill(Date.parse('2026-09-09T03:00:00Z')));
+    expect(rows.map((row) => row.start)).toEqual(Array(3).fill(Date.parse('2026-10-21T03:00:00Z')));
     expect(rows.map((row) => row.end)).toEqual([
-      Date.parse('2026-10-20T02:59:00Z'),
-      Date.parse('2026-10-20T08:59:00Z'),
-      Date.parse('2026-10-19T19:59:00Z'),
+      Date.parse('2026-12-01T02:59:00Z'),
+      Date.parse('2026-12-01T08:59:00Z'),
+      Date.parse('2026-11-30T19:59:00Z'),
     ]);
-    const maintenance = imported.filter((row) => row.seed.sourceKey === 'seed:zzz:3.2-maint');
-    expect(maintenance.map((row) => row.start)).toEqual(Array(3).fill(Date.parse('2026-09-08T22:00:00Z')));
+    const maintenance = imported.filter((row) => row.seed.sourceKey === 'seed:zzz:3.3-maint');
+    expect(maintenance.map((row) => row.start)).toEqual(Array(3).fill(Date.parse('2026-10-20T22:00:00Z')));
   });
   it('uses one global instant for the next Genshin broadcast on every server', () => {
     const state = {
