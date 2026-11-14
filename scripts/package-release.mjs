@@ -203,7 +203,7 @@ function findMakensis() {
   const candidates = [
     process.env.MAKENSIS,
     'makensis',
-    join(process.env['ProgramFiles(x86)'] ?? 'C:\Program Files (x86)', 'NSIS', 'makensis.exe'),
+    join(process.env['ProgramFiles(x86)'] ?? 'C:\\Program Files (x86)', 'NSIS', 'makensis.exe'),
   ].filter(Boolean);
   return candidates.find((candidate) => spawnSync(candidate, ['-VERSION'], { stdio: 'ignore' }).status === 0);
 }
