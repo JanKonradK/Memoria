@@ -645,7 +645,7 @@ export function DeviceSync() {
   return (
     <div id="device-sync" className="settings-sync min-w-0 space-y-3">
       <p className="text-body text-muted">
-        Devices paired before Beta 0.4 must be paired again to enable encrypted sync.
+        Devices paired before November 2026 must be paired again to enable encrypted sync.
       </p>
       {desktop ? <DesktopConnection /> : <PhoneConnection />}
       <details className={DETAILS}>

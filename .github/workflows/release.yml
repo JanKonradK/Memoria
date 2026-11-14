@@ -2,11 +2,13 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    # Bare numbers (0.1.0). Versions restarted at 0.1.0; the old line's tags
+    # start with v, and installed copies ignore them.
+    tags: ['[0-9]+.[0-9]+.[0-9]+*']
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to build and publish (e.g. v0.2.0)'
+        description: 'Tag to build and publish (e.g. 0.2.0)'
         required: true
 
 permissions:
@@ -63,7 +65,7 @@ jobs:
           RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
           tag="$RELEASE_TAG"
-          declared="v$(node -p "require('./package.json').version")"
+          declared="$(node -p "require('./package.json').version")"
           if [ "$tag" != "$declared" ]; then
             echo "Tag $tag does not match package.json ($declared)."
             echo "The updater compares the tag to release.json, which is written from package.json;"
@@ -154,10 +156,8 @@ jobs:
           RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
           tag="$RELEASE_TAG"
-          # People see versions as betas with a 0. in front (v3.3.0 reads "Beta 0.3.3").
-          # The tag keeps the real number, which is what installed copies compare.
-          version="${tag#v}"
-          echo "title=Memoria Beta 0.${version%.0}" >> "$GITHUB_OUTPUT"
+          # The title is the real number, as a beta: 0.1.0 reads "Memoria Beta 0.1.0".
+          echo "title=Memoria Beta $tag" >> "$GITHUB_OUTPUT"
           notes="docs/releases/$tag.md"
           download="https://github.com/JanKonradK/Memoria/releases/download/$tag"
           {
@@ -187,6 +187,9 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
+          # GitHub's default picks "latest" partly by version number, which would
+          # leave the old line's v4.0.3 above the restarted 0.x releases.
+          make_latest: 'true'
           files: |
             dist/release/Memoria-setup-x64.exe
             dist/release/Memoria-win-x64.zip

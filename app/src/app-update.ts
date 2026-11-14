@@ -8,14 +8,18 @@ import { flushPersist } from './store';
 
 export const APP_VERSION = __APP_VERSION__;
 
-/**
- * How a version reads to people: 3.3.0 shows as "Beta 0.3.3", with a trailing
- * .0 dropped. Only the label changes; the real number still decides updates,
- * so copies already installed keep finding newer releases.
- */
+/** How a version reads to people: the real number, as a beta. 0.1.0 shows as "Beta 0.1.0". */
 export function displayVersion(version: string): string {
-  const [core = '', prerelease] = version.replace(/^v/, '').split('-', 2);
-  return `Beta 0.${core.replace(/\.0$/, '')}${prerelease ? `-${prerelease}` : ''}`;
+  return `Beta ${version.replace(/^v/, '')}`;
+}
+
+/**
+ * Versions restarted at 0.1.0 in November 2026. Releases since then are tagged
+ * with the bare number (`0.1.0`); the earlier line was tagged `v2.0.0` to
+ * `v4.0.3`. Those old numbers are higher, so they must never count as updates.
+ */
+export function isCurrentLine(tag: string): boolean {
+  return /^\d+\.\d+\.\d+/.test(tag);
 }
 const RELEASES_API = 'https://api.github.com/repos/JanKonradK/Memoria/releases?per_page=30';
 const RELEASES_PAGE = 'https://github.com/JanKonradK/Memoria/releases/latest';
@@ -168,7 +172,7 @@ async function fetchRelease(): Promise<{ release: ReleaseInfo | null; staged: st
   if (!response.ok) throw new Error(`GitHub responded ${response.status}. Try again later.`);
   const body = (await response.json()) as unknown;
   const releases = (Array.isArray(body) ? (body as Record<string, unknown>[]) : [])
-    .filter((raw) => !raw['draft'] && !raw['prerelease'] && String(raw['tag_name'] ?? '').replace(/^v/, ''))
+    .filter((raw) => !raw['draft'] && !raw['prerelease'] && isCurrentLine(String(raw['tag_name'] ?? '')))
     .map((raw): ReleaseInfo => {
       const tag = String(raw['tag_name']);
       const assets = Array.isArray(raw['assets']) ? (raw['assets'] as Record<string, unknown>[]) : [];

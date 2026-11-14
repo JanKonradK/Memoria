@@ -63,7 +63,7 @@ export function signRelease(directory = resolve(import.meta.dirname, '../dist/re
     JSON.stringify(
       signPublished(
         'memoria-release-v1',
-        { version, tag: `v${version}`, files, windows },
+        { version, tag: version, files, windows },
         Math.max(Date.now(), previous + 1),
       ),
     ) + '\n',

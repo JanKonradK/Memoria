@@ -53,6 +53,17 @@ pub fn release_record(root: &Path) -> Option<Value> {
     crate::store::read_json(&root.join("release.json"))
 }
 
+/// Versions restarted at 0.1.0 in November 2026, tagged with the bare number.
+/// The earlier line was tagged `v2.0.0` to `v4.0.3`; its higher numbers are not updates.
+pub fn is_current_line(tag: &str) -> bool {
+    let mut parts = tag.split('.');
+    (0..3).all(|_| {
+        parts
+            .next()
+            .is_some_and(|part| part.chars().next().is_some_and(|c| c.is_ascii_digit()))
+    })
+}
+
 /// Compares `1.2.3` versions. A prerelease sorts below the same final release.
 pub fn compare_versions(left: &str, right: &str) -> std::cmp::Ordering {
     use std::cmp::Ordering;
@@ -144,7 +155,7 @@ pub async fn fetch_latest_release(since: Option<&str>, paths: &Paths) -> Result<
         .filter(|r| {
             !r["draft"].as_bool().unwrap_or(false)
                 && !r["prerelease"].as_bool().unwrap_or(false)
-                && !r["tag_name"].as_str().unwrap_or("").trim_start_matches('v').is_empty()
+                && is_current_line(r["tag_name"].as_str().unwrap_or(""))
         })
         .map(read_release)
         .collect();
@@ -195,6 +206,11 @@ pub fn staged_version(root: &Path, paths: &Paths) -> Option<String> {
     let record = release_record(root)?;
     let staged = crate::store::read_json(&paths.pending_manifest)?;
     if !paths.pending_dir.exists() {
+        return None;
+    }
+    // A build from the line before the restart, downloaded and never applied,
+    // has a higher number but is older.
+    if !is_current_line(staged["tag"].as_str()?) {
         return None;
     }
     let staged = staged["version"].as_str()?.to_string();
@@ -636,6 +652,15 @@ mod tests {
     }
 
     #[test]
+    fn only_the_restarted_line_counts() {
+        assert!(is_current_line("0.1.0"));
+        assert!(is_current_line("1.2.3-rc.1"));
+        assert!(!is_current_line("v4.0.3"));
+        assert!(!is_current_line("v0.1.0"));
+        assert!(!is_current_line("0.1"));
+    }
+
+    #[test]
     fn checksum_lines() {
         let digest = "a".repeat(64);
         let table = parse_checksums(&format!(
@@ -690,7 +715,7 @@ mod tests {
                 "Memoria.exe": sha256_file(&build.join("Memoria/Memoria.exe")).unwrap(),
             });
             crate::publisher::tests::signed(
-                json!({"version":"3.3.0", "tag":"v3.3.0", "files":{ASSET_NAME:digest},"windows":windows}),
+                json!({"version":"3.3.0", "tag":"3.3.0", "files":{ASSET_NAME:digest},"windows":windows}),
                 1_793_836_800_010,
             )
             .0
@@ -707,7 +732,7 @@ mod tests {
         tokio::spawn(async move { axum::serve(listener, router).await.unwrap() });
 
         let release = json!({
-            "version": "3.3.0", "tag": "v3.3.0",
+            "version": "3.3.0", "tag": "3.3.0",
             "assets": [
                 { "name": ASSET_NAME, "url": format!("{base}/zip") },
                 { "name": MANIFEST_ASSET, "url": format!("{base}/sums") },

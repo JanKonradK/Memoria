@@ -189,9 +189,11 @@ git push --follow-tags
 ```
 
 Use `minor` or `major` instead of `patch` when appropriate.
-Write the release notes in `docs/releases/v<version>.md` before tagging. The app shows them in **Settings → Updates**.
-A `v*` tag starts [the release workflow](../.github/workflows/release.yml).
-The tag must match the version in `package.json`.
+Write the release notes in `docs/releases/<version>.md` before tagging. The app shows them in **Settings → Updates**.
+Tags are the bare version (`0.2.0`); `.npmrc` makes `npm version` tag that way, and that tag starts [the release workflow](../.github/workflows/release.yml).
+The tag must match the version in `package.json`. The app shows it as "Beta 0.2.0".
+
+Versions restarted at 0.1.0 in November 2026. The earlier line was tagged `v2.0.0` to `v4.0.3` (and an unrelated `v0.1.0`); installed copies ignore every `v…` release, because those higher numbers would otherwise look like updates. Android adds 1000000 to its version code so the restarted line installs over 4.0.3. Copies on 4.0.3 or earlier do not see the new line and are updated once by hand.
 The workflow builds and publishes the Windows installer and zip, the Android app, checksums, and release notes.
 CI also assembles the Windows package on each push to `main` and each pull request.
 
