@@ -4,7 +4,7 @@ import { useDerived } from '../selectors';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { GameControlsView } from './GameCard';
-import { gameShellVars, useTheme } from '../theme';
+import { gameShellVars, useSurfaces } from '../theme';
 import { useIdentityColors } from './roster';
 import { Page } from './ui';
 import { GameContext } from './GameContext';
@@ -44,7 +44,7 @@ export function GamePage({ now }: { now: number }) {
   const focusedGameId = useUI((s) => s.focusedGameId);
   const focusedEntry = focusedGameId ? entryById.get(focusedGameId) : undefined;
   const workspaceId = focusedEntry?.game.id;
-  const theme = useTheme();
+  const surfaces = useSurfaces();
   const identityColors = useIdentityColors(state.games);
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export function GamePage({ now }: { now: number }) {
       <section
         key={focusedEntry.game.id}
         className="focus-workspace"
-        style={gameShellVars(focusedEntry.game, theme, identityColors[focusedEntry.game.id])}
+        style={gameShellVars(focusedEntry.game, surfaces, identityColors[focusedEntry.game.id])}
         aria-label={`${focusedEntry.game.name} focus workspace`}
       >
         <GameControlsView

@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import {
+  DEFAULT_PALETTE,
+  FAMILIES,
+  findPalette,
+  isPaletteId,
+  PALETTE_PROPERTIES,
+  paletteVars,
+  surfacesOf,
+} from './palettes';
+
 export const UI_STORAGE_KEY = 'memoria-ui';
 /**
  * Every previous name this store has shipped under, newest first. The app has
@@ -63,13 +73,36 @@ export type HintKey = (typeof HINT_KEYS)[number];
  */
 export const THEME_GROUND: Record<Theme, string> = { dark: '#0c0d0f', light: '#f6f7f9' };
 
-export function applyTheme(theme: Theme): void {
+/** What the pre-paint script in index.html reads: the properties for each theme, so a reload paints the chosen palette first. */
+export const PAINT_STORAGE_KEY = 'memoria-paint';
+
+/** The accent chosen for a palette family, or null for that family's default. */
+export function accentFor(accents: Partial<Record<string, string>>, palette: string): string | null {
+  return accents[findPalette(palette).family.id] ?? null;
+}
+
+export function applyTheme(theme: Theme, palette: string = DEFAULT_PALETTE, accent: string | null = null): void {
   if (typeof document === 'undefined') return;
-  document.documentElement.dataset.theme = theme;
+  const root = document.documentElement;
+  root.dataset.theme = theme;
+  for (const property of PALETTE_PROPERTIES) root.style.removeProperty(property);
+  for (const [property, value] of Object.entries(paletteVars(palette, theme, accent))) {
+    root.style.setProperty(property, value);
+  }
   // The pre-paint script in index.html sets this too, but only on load. Without
-  // it here, toggling to light leaves the mobile browser chrome and installed
-  // PWA system UI black against a cream page until the next reload.
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_GROUND[theme]);
+  // it here, switching theme leaves the mobile browser chrome and installed PWA
+  // system UI the old colour until the next reload.
+  const ground = surfacesOf(palette, theme).ground;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', ground);
+  try {
+    const paint = (forTheme: Theme) => ({
+      ground: surfacesOf(palette, forTheme).ground,
+      vars: paletteVars(palette, forTheme, accent),
+    });
+    localStorage.setItem(PAINT_STORAGE_KEY, JSON.stringify({ dark: paint('dark'), light: paint('light') }));
+  } catch {
+    // Without storage the palette still applies; a reload just paints Memoria first.
+  }
 }
 
 export type GameEditorSection = 'game' | 'resets' | 'resources' | 'spend' | 'tasks' | 'reminders' | 'events';
@@ -127,6 +160,12 @@ interface UIStore {
   themePreference: ThemePreference;
   setThemePreference(preference: ThemePreference): void;
   toggleTheme(): void;
+  /** A palette flavour id from palettes.ts. */
+  palette: string;
+  /** The accent chosen per palette family; a missing family uses its default. */
+  accents: Partial<Record<string, string>>;
+  setPalette(palette: string): void;
+  setAccent(accent: string): void;
 }
 
 export const useUI = create<UIStore>()(
@@ -171,14 +210,26 @@ export const useUI = create<UIStore>()(
           return { reserveOpen };
         }),
       setTheme: (theme) => {
-        applyTheme(theme);
+        applyTheme(theme, get().palette, accentFor(get().accents, get().palette));
         set({ theme, themePreference: theme });
       },
       themePreference: 'system',
       setThemePreference: (themePreference) => {
         const theme = resolveTheme(themePreference);
-        applyTheme(theme);
+        applyTheme(theme, get().palette, accentFor(get().accents, get().palette));
         set({ theme, themePreference });
+      },
+      palette: DEFAULT_PALETTE,
+      accents: {},
+      setPalette: (palette) => {
+        applyTheme(get().theme, palette, accentFor(get().accents, palette));
+        set({ palette });
+      },
+      setAccent: (accent) => {
+        const { palette, theme } = get();
+        const accents = { ...get().accents, [findPalette(palette).family.id]: accent };
+        applyTheme(theme, palette, accent);
+        set({ accents });
       },
       toggleTheme: () => get().setTheme(get().theme === 'dark' ? 'light' : 'dark'),
     }),
@@ -191,6 +242,8 @@ export const useUI = create<UIStore>()(
       partialize: (state) => ({
         theme: state.theme,
         themePreference: state.themePreference,
+        palette: state.palette,
+        accents: state.accents,
         reserveOpen: state.reserveOpen,
         logoFlipped: state.logoFlipped,
         hintsArmed: state.hintsArmed,
@@ -219,6 +272,15 @@ export const useUI = create<UIStore>()(
           ...current,
           themePreference,
           theme: resolveTheme(themePreference),
+          palette: isPaletteId(stored.palette) ? stored.palette : DEFAULT_PALETTE,
+          accents:
+            stored.accents && typeof stored.accents === 'object'
+              ? Object.fromEntries(
+                  Object.entries(stored.accents).filter(
+                    ([family, accent]) => typeof accent === 'string' && FAMILIES.some((known) => known.id === family),
+                  ),
+                )
+              : {},
           reserveOpen,
           logoFlipped:
             stored.logoFlipped && typeof stored.logoFlipped === 'object'

@@ -73,7 +73,7 @@ export function onColor(hex: string): string {
 }
 
 /** Keeps a palette role intact, lifting only as far as legibility demands. */
-function legible(color: string, ground: string, minimum = 3): string {
+export function legible(color: string, ground: string, minimum = 3): string {
   if (contrast(color, ground) >= minimum) return color;
   const liftLight = contrast('#ffffff', ground) >= contrast('#000000', ground);
   // The endpoint retains ~40% of the source, so a pale cream primary is still

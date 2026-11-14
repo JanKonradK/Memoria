@@ -6,7 +6,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { TooltipProvider } from './components/ui';
 import { initPwa } from './pwa';
 import { initNative, isNativeApp } from './native';
-import { applyTheme, useUI } from './ui-store';
+import { accentFor, applyTheme, useUI } from './ui-store';
 import { isDesktopApp } from './desktop-host';
 import './index.css';
 // These aggregate weight files are the ONLY @fontsource entry points that carry
@@ -40,7 +40,10 @@ const loadMotionFeatures = () => import('./motion-features').then((module) => mo
 
 // Before first paint: a theme applied inside React would flash the dark ground
 // on a light-theme load, and that flash is the whole reason this runs here.
-applyTheme(useUI.getState().theme);
+{
+  const { theme, palette, accents } = useUI.getState();
+  applyTheme(theme, palette, accentFor(accents, palette));
+}
 // Following the device: a change of its light or dark setting applies at once.
 window.matchMedia?.('(prefers-color-scheme: light)').addEventListener?.('change', () => {
   const { themePreference, setThemePreference } = useUI.getState();
