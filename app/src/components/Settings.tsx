@@ -6,6 +6,7 @@ import { useUI, type ThemePreference } from '../ui-store';
 import { servedByLauncher } from '../launcher';
 import { syncNow } from '../sync';
 import { deviceSyncAvailable, DeviceSync } from './settings/DeviceSync';
+import { PaletteSettings } from './settings/PaletteSettings';
 import { SettingRow, SettingsGroup } from './settings/SettingRow';
 import { usePresence } from '../presence';
 import { APP_VERSION, displayVersion, updateTarget, useAppUpdate } from '../app-update';
@@ -221,6 +222,7 @@ export function SettingsPage() {
                   />
                 </SettingRow>
                 <ThemeRow />
+                <PaletteSettings />
               </div>
             </SettingsPane>
 

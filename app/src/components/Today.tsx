@@ -11,7 +11,7 @@ import { fmtClock, fmtDur } from '../util';
 import { calendarSchedule } from '../event-schedule';
 import { selectTodayAgenda, TODAY_AGENDA_HOURS, type TodayAgendaItem } from '../today-agenda';
 import { gameInk } from '../game-color';
-import { gameShellVars, useGround, useTheme } from '../theme';
+import { gameShellVars, useGround, useSurfaces } from '../theme';
 import { openGame } from '../workspace-navigation';
 import { isDesktopApp } from '../desktop-host';
 import { readingSource } from '../reading-source';
@@ -369,7 +369,7 @@ export function TodayPage({ now }: { now: number }) {
   const derived = useDerived(now);
   const { state, order } = derived;
   const colors = useIdentityColors(state.games);
-  const theme = useTheme();
+  const surfaces = useSurfaces();
   const desktop = useMediaQuery('(min-width: 900px)');
   const selectedId = useUI((ui) => ui.todayGameId);
   const setSelectedId = useUI((ui) => ui.setTodayGameId);
@@ -436,7 +436,7 @@ export function TodayPage({ now }: { now: number }) {
               <section
                 key={selected.game.id}
                 className="today-card"
-                style={gameShellVars(selected.game, theme, colors[selected.game.id])}
+                style={gameShellVars(selected.game, surfaces, colors[selected.game.id])}
                 aria-label={`${selected.game.name} card`}
               >
                 <GameControls

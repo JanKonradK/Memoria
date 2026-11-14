@@ -40,13 +40,15 @@
   --color-warn-bg: #231a08;
 
   /* ── Interaction ───────────────────────────────────────────────────────────
-     This system has no brand accent. Interactivity is carried by the inset well,
-     the 1px edge ladder and the text ramp — the saturated colour on screen
-     belongs to the games. `accent` therefore resolves to the bright text step so
-     focus rings and selected states read as chrome, not as a second identity. */
-  --color-accent: var(--color-fg);
-  --color-accent-2: var(--color-fg-soft);
-  --color-accent-fg: var(--color-fg);
+     The accent marks the selected route, focus, text selection and links, and
+     nothing else: the saturated colour on screen belongs to the games. Players
+     pick it, with a colour palette, in Settings → General (palettes.ts), which
+     re-points these on the root element. These are Memoria's default, Blue;
+     Mono is the text colour. */
+  --color-accent: #80c3ff;
+  --color-accent-2: #80c3ff;
+  --color-accent-fg: #80c3ff;
+  --color-on-accent: #0a0a0b; /* text and thumbs on an accent fill */
   --color-gold: #d9b871; /* the app mark's own metal, and nothing else */
   --color-rose: #ff6fa5; /* the under-a-day countdown tone (see endTone in util.ts) */
 
@@ -150,7 +152,7 @@
   --glass-highlight: rgba(255, 255, 255, 0.1);
   --glass-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.42);
   --glass-blur: 24px;
-  --nav-ink: #80c3ff;
+  --nav-ink: var(--color-accent-fg);
 
   /* One easing for everything that is not the stage. Exponential deceleration
      from an already-visible default; real objects do not overshoot. */
@@ -167,9 +169,9 @@
      The fallback only has to be sane for the first paint before the measure lands. */
   --app-bar-h: 3rem;
 
-  /* A ring, not a glow: on charcoal the bright text step is the only thing that
-     reads at 2px against both the panel and the graphite ground. */
-  --focus-ring-color: var(--color-fg);
+  /* A ring, not a glow, in the accent: palettes.ts holds every accent to 4.5:1
+     against the ground, the panel and raised chrome. */
+  --focus-ring-color: var(--color-accent);
   --focus-ring-width: 2px;
   --focus-ring-offset: 1px;
 
@@ -197,7 +199,6 @@
   --glass-border: rgba(255, 255, 255, 0.85);
   --glass-highlight: rgba(255, 255, 255, 0.7);
   --glass-shadow: 0 12px 32px -12px rgba(35, 42, 58, 0.22);
-  --nav-ink: #005bbf;
 
   --panel-hi: #ffffff;
   --panel-lo: #ffffff;
@@ -223,9 +224,10 @@
   --color-danger-bg: #f6e6e1;
   --color-warn-bg: #f6edd9;
 
-  --color-accent: var(--color-fg);
-  --color-accent-2: var(--color-fg-soft);
-  --color-accent-fg: var(--color-fg);
+  --color-accent: #005bbf;
+  --color-accent-2: #005bbf;
+  --color-accent-fg: #005bbf;
+  --color-on-accent: #f4f4f6;
   --color-gold: #8a6a24;
   --color-rose: #b03566;
 
@@ -282,7 +284,7 @@ body {
 }
 
 ::selection {
-  background: color-mix(in oklab, var(--color-fg) 26%, transparent);
+  background: color-mix(in oklab, var(--color-accent) 30%, transparent);
 }
 
 /* Every number in the product is tabular, so digits never shift width as they

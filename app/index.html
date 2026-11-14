@@ -37,10 +37,18 @@
         const choice = saved.themePreference ?? saved.theme ?? 'system';
         const theme =
           choice === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : choice;
-        document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark';
-        if (theme === 'light') {
-          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f6f7f9');
+        const mode = theme === 'light' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = mode;
+        let ground = mode === 'light' ? '#f6f7f9' : null;
+        // A chosen colour palette, written by applyTheme in ui-store.ts.
+        const paint = JSON.parse(localStorage.getItem('memoria-paint') || '{}')?.[mode];
+        if (paint && typeof paint.vars === 'object') {
+          for (const name of Object.keys(paint.vars)) {
+            if (name.startsWith('--')) document.documentElement.style.setProperty(name, String(paint.vars[name]));
+          }
+          if (/^#[\da-f]{6}$/i.test(paint.ground)) ground = paint.ground;
         }
+        if (ground) document.querySelector('meta[name="theme-color"]').setAttribute('content', ground);
       } catch {
         document.documentElement.dataset.theme = 'dark';
       }

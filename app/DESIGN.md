@@ -8,13 +8,13 @@
 
 **Material:** A graphite ground (an off-white one in light mode), hairline rules, no cards around content. Sections are told apart by spacing and a small label over a hairline. Rows have no fill at rest, a quiet fill under a hovering pointer, and a pressed fill with an inset edge when chosen. Floating things (sheets, menus, popovers, the phone dock) are the only raised surfaces.
 
-**Colour:** A game's two logo colours identify it: its logo, its title, its energy meter and its timeline lane. Amber and red are reserved for deadlines and always come with their number. Gold marks a pinned event. Blue marks the selected route. Nothing else carries colour.
+**Colour:** A game's two logo colours identify it: its logo, its title, its energy meter and its timeline lane. Amber and red are reserved for deadlines and always come with their number. Gold marks a pinned event. The accent marks the selected route, focus, text selection, links and the one primary action; nothing else carries colour. Players choose a colour palette (Memoria, Catppuccin, Kanagawa, Rosé Pine, Gruvbox, Tokyo Night) and an accent within it in Settings → General; every palette is derived in `palettes.ts`, which lifts any colour below AA on its own surfaces.
 
 **Type:** DM Sans for language and numbers, tabular figures wherever a value can change (`.numeral`). Secondary detail may be light italic (`.aside`), but never a time, a date or a count: those are what the product exists to show. A game's own title face is used only for the heading of its page; lists and the timeline use DM Sans in the game's colour.
 
 ## Tokens
 
-Use the semantic tokens in `src/index.css`; no raw Tailwind palette colours. The JS mirrors in `theme.ts`, `ui-store.ts` and the pre-paint script in `index.html` must agree with CSS. The theme follows the device unless one is chosen in Settings → General.
+Use the semantic tokens in `src/index.css`; no raw Tailwind palette colours. The JS mirrors in `theme.ts`, `ui-store.ts` and the pre-paint script in `index.html` must agree with CSS. The theme follows the device unless one is chosen in Settings → General. Memoria's palette is the stylesheet; other palettes are written onto the root element, and the pre-paint script repeats the last one from `memoria-paint` so a reload never flashes.
 
 - Desktop body 16px, metadata 14px, labels and captions 13px. Phone body 17px, metadata 15px, labels 14px, captions 13px. Keep text scaling enabled.
 - Text contrast meets WCAG AA. Decorative colour never carries body text.
