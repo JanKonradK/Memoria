@@ -15,4 +15,3 @@ What is still open after Beta 0.1.0. The November 2026 improvement plan that pro
 ## Outside the repository
 
 - **Code signing** for `Memoria-setup-x64.exe` and `Memoria.exe`, then a **winget** listing: `docs/winget.md`.
-- **Cloudflare:** the old `technolibrary` Worker still builds from this repository and comments on pull requests. Delete it in the Cloudflare dashboard (Workers & Pages → technolibrary → Settings → Delete), or disconnect its Git repository there.
