@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { DateTime } from 'luxon';
 import {
+  chanceOfFeatured,
   GameSavingsSchema,
   incomeRange,
   PAID_PASSES,
@@ -99,6 +100,7 @@ export function GameSavingsPanel({
   now: number;
 }) {
   const updateGame = useApp((s) => s.updateGame);
+  const events = useApp((s) => s.state.events);
   // By preset, so an older account saved without a preset key still finds its game.
   const presetKey = presetForGame(game)?.key;
   const meta = presetKey ? history?.games[presetKey] : undefined;
@@ -152,7 +154,15 @@ export function GameSavingsPanel({
         </p>
       )}
 
-      <Income savings={savings} income={income} currency={currency} passes={passes} pullCost={pullCost} onSave={save} />
+      <Income
+        savings={savings}
+        income={income}
+        currency={currency}
+        passes={passes}
+        pullCost={pullCost}
+        now={now}
+        onSave={save}
+      />
 
       <h3 className="pulls-subheading text-meta font-semibold text-fg-soft">Goals</h3>
       {plans.length > 0 && (
@@ -172,6 +182,7 @@ export function GameSavingsPanel({
                 key={plan.goal.id}
                 plan={plan}
                 tz={tz}
+                chance={goalChance(plan, game, presetKey, events)}
                 onRemove={() => save({ ...savings, goals: savings.goals.filter((goal) => goal.id !== plan.goal.id) })}
               />
             ))}
@@ -269,6 +280,7 @@ function Income({
   currency,
   passes,
   pullCost,
+  now,
   onSave,
 }: {
   savings: GameSavings;
@@ -276,8 +288,11 @@ function Income({
   currency: string;
   passes?: PaidPasses;
   pullCost: number;
+  now: number;
   onSave: (next: GameSavings) => void;
 }) {
+  const daysLeft =
+    savings.monthlyPassEnds && savings.monthlyPassEnds > now ? Math.ceil((savings.monthlyPassEnds - now) / DAY) : null;
   const [perDay, setPerDay] = useState(String(savings.perDay ?? ''));
   const share = String(savings.participation);
   const free = Math.round(income.mid * savings.participation);
@@ -348,6 +363,31 @@ function Income({
             checked={Boolean(savings.monthlyPass)}
             onChange={(on) => onSave({ ...savings, monthlyPass: on || undefined })}
           />
+          {savings.monthlyPass && (
+            <label className="flex min-h-11 flex-wrap items-center gap-2 text-meta text-fg-soft">
+              Days left on it
+              <NumInput
+                className="!min-h-11 !w-20 sm:!min-h-8 sm:!py-1"
+                min={0}
+                max={180}
+                value={daysLeft == null ? '' : String(daysLeft)}
+                aria-label={`Days left on ${passes.monthly.name}`}
+                onChange={(event) => {
+                  const days = Number(event.target.value);
+                  onSave({
+                    ...savings,
+                    monthlyPassEnds:
+                      event.target.value === '' || !Number.isFinite(days) || days <= 0
+                        ? undefined
+                        : now + Math.min(180, Math.round(days)) * DAY,
+                  });
+                }}
+              />
+              <span className="aside text-caption text-muted">
+                {daysLeft == null ? 'Reminds you three days before it runs out.' : `Reminder three days before.`}
+              </span>
+            </label>
+          )}
           <PassToggle
             label={`${passes.battle.name}, every version`}
             note={`+${fmt(Math.round(battlePerDay))} a day`}
@@ -379,7 +419,30 @@ function PassToggle({
   );
 }
 
-function GoalRow({ plan, tz, onRemove }: { plan: GoalPlan; tz: string; onRemove: () => void }) {
+/**
+ * For a goal tied to a calendar banner: the chance of its featured 5★ with the
+ * pulls expected by the deadline, after earlier goals take theirs.
+ */
+function goalChance(plan: GoalPlan, game: Game, presetKey: string | undefined, events: GameEvent[]): number | null {
+  if (!plan.goal.eventId || plan.status === 'past') return null;
+  const banner = events.find((event) => event.id === plan.goal.eventId);
+  const rule = ruleForBanner(pityRulesFor(presetKey), banner?.bannerKind);
+  if (!rule || rule.featured === undefined) return null;
+  const available = Math.max(0, plan.expected.mid - (plan.needed - plan.goal.targetPulls));
+  return chanceOfFeatured(rule, trackOf(game.pity, rule.id), available);
+}
+
+function GoalRow({
+  plan,
+  tz,
+  chance,
+  onRemove,
+}: {
+  plan: GoalPlan;
+  tz: string;
+  chance?: number | null;
+  onRemove: () => void;
+}) {
   const status = STATUS[plan.status];
   const date = DateTime.fromMillis(plan.goal.deadline, { zone: tz }).toLocaleString(DateTime.DATE_MED);
   const reached =
@@ -405,6 +468,11 @@ function GoalRow({ plan, tz, onRemove }: { plan: GoalPlan; tz: string; onRemove:
             <div className="text-caption text-dim tabular-nums">
               Expect {fmt(plan.expected.low)}–{fmt(plan.expected.high)} pulls
               {reached && `, ${fmt(plan.needed)} around ${reached}`}
+            </div>
+          )}
+          {chance != null && (
+            <div className="text-caption font-semibold text-fg-soft tabular-nums">
+              {chance >= 0.995 ? 'Certain' : `${Math.round(chance * 100)}%`} to get the featured 5★ by {date}
             </div>
           )}
         </div>

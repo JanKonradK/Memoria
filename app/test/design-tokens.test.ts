@@ -269,8 +269,6 @@ describe('depth is tonal, not cast', () => {
       'components/GameCard.tsx',
       'components/TimelineTools.tsx',
       'components/UserGuide.tsx',
-      // A lifted widget overlays the grid only for the duration of its drag.
-      'components/GameLayoutCanvas.tsx',
     ]);
     const floating = FILES.filter(({ text }) => /\bshadow-float\b/.test(text)).map(({ path }) =>
       path.slice(SRC.length + 1).replace(/\\/g, '/'),

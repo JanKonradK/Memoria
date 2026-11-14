@@ -8,6 +8,7 @@ import { sortTimelineEvents } from '../timeline-sort';
 import { groupGameEvents } from '../event-category';
 import { calendarSchedule } from '../event-schedule';
 import { EventTags } from './EventTags';
+import { CalendarBehindNote } from './CalendarBehind';
 import { Btn, Field, Segmented, TextInput, TOUCH_BUTTON } from './ui';
 
 /** Complete event management, independent of the card's visible events widget. */
@@ -41,6 +42,7 @@ export function GameEvents({ game, now, onBeforeOpen }: { game: Game; now: numbe
           Add event
         </Btn>
       </div>
+      <CalendarBehindNote gameId={game.id} now={now} className="mt-2" />
       <Segmented
         ariaLabel="Game event status"
         value={filter}
@@ -100,7 +102,7 @@ export function GameEvents({ game, now, onBeforeOpen }: { game: Game; now: numbe
                             {event.dailyTouch && <span>Daily check-in</span>}
                             {!event.notify && <span>Next actions off</span>}
                           </span>
-                          <span className="mt-1 block aside text-label text-muted">
+                          <span className="mt-1 block text-label text-muted">
                             {calendar ? (
                               `${calendar.label} (${calendar.zone})`
                             ) : (

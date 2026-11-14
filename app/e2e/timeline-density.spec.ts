@@ -64,7 +64,7 @@ test('24 events remain reachable in the rounded timeline board with controls in 
     .setInputFiles({ name: 'density.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
-  await expect(page.locator('.calendar-toolbar').getByRole('combobox', { name: 'Focus game' })).toBeVisible();
+  await expect(page.locator('.calendar-toolbar').getByRole('combobox', { name: 'Filter by game' })).toBeVisible();
   await expect(page.getByRole('button', { name: '+ Event', exact: true })).toHaveCount(0);
   await expect(page.locator('[data-timeline-event-row]')).toHaveCount(24);
   await page.waitForTimeout(350);
@@ -101,36 +101,33 @@ test('24 events remain reachable in the rounded timeline board with controls in 
   await page.screenshot({ path: info.outputPath('24-reachable-rows.png') });
 });
 
-test('the tour highlights live controls, walks pages, and finishes only once', async ({ page }, info) => {
-  test.skip(!['desktop', 'mobile-390'].includes(info.project.name), 'Tour keyboard and phone flow');
+test('first-run hints appear in place, once, and can be shown again', async ({ page }, info) => {
+  test.skip(!['desktop', 'mobile-390'].includes(info.project.name), 'First-run hints at desktop and phone sizes');
   await page.goto('/');
-  // Skipping setup still opens the tour, over the empty app.
+  // Skipping setup opens no tour: the app is shown as it is.
   await page.getByRole('button', { name: 'Skip for now', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Pages' })).toBeVisible();
-  await expect(page.locator('[data-tour-highlight]')).toBeVisible();
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Add menu' })).toBeVisible();
-  await page.getByRole('button', { name: 'Back', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Pages' })).toBeVisible();
-  for (let i = 0; i < 5; i++) await page.getByRole('button', { name: 'Next', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Pulls' })).toBeVisible();
-  await expect(page.locator('[data-tour="pulls"]')).toBeVisible();
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Settings' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Finish', exact: true })).toBeEnabled();
-  await expect(page.locator('[data-tour="settings"]')).toBeVisible();
-  await page.waitForTimeout(250);
-  await page.screenshot({ path: info.outputPath('spotlight-guide.png') });
-  await page.getByRole('button', { name: 'Finish', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page
+    .getByRole('navigation', { name: 'Primary' })
+    .getByRole('button', { name: 'Timeline', exact: true })
+    .click();
+  const hint = page.locator('[data-hint="events"]');
+  await expect(hint).toContainText('Events live here');
+  await page.screenshot({ path: info.outputPath('events-hint.png') });
+  await hint.getByRole('button', { name: 'Got it', exact: true }).click();
+  await expect(hint).toHaveCount(0);
   await page.reload();
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Add a game' })).toBeVisible();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page
+    .getByRole('navigation', { name: 'Primary' })
+    .getByRole('button', { name: 'Timeline', exact: true })
+    .click();
+  await expect(page.getByRole('radiogroup', { name: 'Event view' })).toBeVisible();
+  await expect(hint).toHaveCount(0);
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByRole('button', { name: 'User guide', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Pages' })).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Settings', exact: true })).toHaveAttribute('aria-current', 'page');
+  await page.getByRole('button', { name: 'Show hints again', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Primary' })
+    .getByRole('button', { name: 'Timeline', exact: true })
+    .click();
+  await expect(hint).toBeVisible();
 });

@@ -1,5 +1,6 @@
 package app.memoria.tracker;
 
+import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
@@ -19,5 +20,13 @@ public class HomeWidgetPlugin extends Plugin {
         }
         MemoriaWidgetProvider.save(getContext(), snapshot);
         call.resolve();
+    }
+
+    /** Dailies ticked on the widget since the app last looked, as JSON. */
+    @PluginMethod
+    public void takeQueue(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("queue", MemoriaWidgetProvider.takeQueue(getContext()));
+        call.resolve(result);
     }
 }

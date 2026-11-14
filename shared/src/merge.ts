@@ -3,7 +3,7 @@ import { HlcSchema } from './validation';
 import type { ZodType } from 'zod';
 import { IANAZone } from 'luxon';
 import type { AppState, Resource, Settings, SettingsField, Snapshot, Syncable, Task } from './types';
-import { emptyState, isSafeGameImage } from './types';
+import { emptyState, isSafeGameImage, SETTINGS_FIELDS } from './types';
 import { GamePitySchema } from './pity';
 import { GameSavingsSchema } from './savings';
 import { groupBy, objectRecord } from './internal';
@@ -406,6 +406,23 @@ function mergeCatchUpSeen(
   return normalizeCatchUpSeen(Object.fromEntries(merged));
 }
 
+/** The hidden default every document carried before quiet hours had a control. */
+const LEGACY_QUIET = { start: 60, end: 480 };
+
+function normalizeQuietHours(
+  record: Record<string, unknown>,
+): Pick<Settings, 'quietStart' | 'quietEnd' | 'quietHoursChosen'> {
+  const read = (value: unknown) => (value == null ? null : clampInt(value, 0, 1439, 0));
+  const chosen = record.quietHoursChosen === true;
+  let quietStart = read(record.quietStart);
+  let quietEnd = read(record.quietEnd);
+  if (quietStart == null || quietEnd == null) quietStart = quietEnd = null;
+  // A reminder an hour before a 03:00 reset was silently dropped by that
+  // default. Nobody chose it, so it becomes "no quiet hours".
+  else if (!chosen && quietStart === LEGACY_QUIET.start && quietEnd === LEGACY_QUIET.end) quietStart = quietEnd = null;
+  return { quietStart, quietEnd, ...(chosen ? { quietHoursChosen: true } : {}) };
+}
+
 function normalizeSettings(raw: unknown): Settings {
   const base = emptyState().settings;
   const record = objectRecord(raw) ?? {};
@@ -424,10 +441,12 @@ function normalizeSettings(raw: unknown): Settings {
     hlc: metadata?.hlc ?? legacyHlc(0),
     deviceId: metadata?.deviceId ?? 'Unknown device',
     fieldHlc: record.fieldHlc,
-    quietStart: record.quietStart === null ? null : clampInt(record.quietStart, 0, 1439, base.quietStart ?? 0),
-    quietEnd: record.quietEnd === null ? null : clampInt(record.quietEnd, 0, 1439, base.quietEnd ?? 0),
+    ...normalizeQuietHours(record),
     localTz: isZone(record.localTz) ? record.localTz : base.localTz,
     sleepHours: finiteNumber(record.sleepHours) ? Math.min(24, Math.max(1, record.sleepHours)) : base.sleepHours,
+    ...(Number.isInteger(record.digestAt) && (record.digestAt as number) >= 0 && (record.digestAt as number) < 1440
+      ? { digestAt: record.digestAt as number }
+      : {}),
     // Malformed becomes absent rather than rejected: an unreadable stamp means
     // "never refreshed", which costs one redundant refresh. Letting it through
     // would fail the parse below and reset every other setting to defaults.
@@ -445,8 +464,6 @@ function normalizeSettings(raw: unknown): Settings {
   const parsed = AppStateSchema.shape.settings.safeParse(candidate);
   return parsed.success ? (parsed.data as Settings) : base;
 }
-
-const SETTINGS_FIELDS: SettingsField[] = ['quietStart', 'quietEnd', 'localTz', 'sleepHours'];
 
 /** Capture legacy fallback clocks before a writer advances the overall settings clock. */
 export function settingsFieldClocks(settings: Settings): Record<SettingsField, number> {

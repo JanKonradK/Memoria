@@ -33,6 +33,8 @@ export interface DesktopHost {
     notify(notice: { gameId: string; title: string; body: string }): Promise<boolean>;
     onChanged(listener: (presence: DesktopPresence) => void): () => void;
     onGameStarted(listener: (gameId: string) => void): () => void;
+    /** A watched game closed after a real session. Older hosts lack it. */
+    onGameStopped?(listener: (gameId: string) => void): () => void;
     onOpenGame(listener: (gameId: string) => void): () => void;
   };
   onCloseRequested(listener: (requestId: string) => void): () => void;

@@ -1,7 +1,7 @@
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { GameEditorSection } from '../../ui-store';
 import type { Cadence, Game } from '@memoria/shared';
-import { missingPresetTasks, presetForGame } from '@memoria/shared';
+import { missingPresetTasks, presetForGame, resolveGameLayout } from '@memoria/shared';
 import { FONT_OPTIONS, titleFontOption, titleStyle } from '../../fonts';
 import { gameTitleInk, trioOf, type GameColors } from '../../game-color';
 import { useApp } from '../../store';
@@ -10,6 +10,7 @@ import { fileToImageDataUrl, intOr, localResetLabel } from '../../util';
 import { ResourceEditor } from '../game-detail/ResourceEditor';
 import { GameEvents } from '../GameEvents';
 import { GameLogo } from '../GameLogo';
+import { LaunchSettings } from '../GameLaunch';
 import { useGameDraft } from '../game-detail/useGameDraft';
 import { gameServerLabel } from '../../server-choice';
 import { TrackingItem } from './TrackingItem';
@@ -214,6 +215,13 @@ export function GameEditor({
   const resources = state.resources.filter((r) => r.gameId === game.id && !r.deleted).sort((a, b) => a.sort - b.sort);
   const chips = state.chips.filter((c) => c.gameId === game.id && !c.deleted).sort((a, b) => a.sort - b.sort);
   const tasks = state.tasks.filter((t) => t.gameId === game.id && !t.deleted).sort((a, b) => a.sort - b.sort);
+  // Hiding a row keeps the task and its history; the card just leaves it out.
+  const layout = resolveGameLayout(game, state.resources, state.tasks);
+  const hiddenRows = new Set(layout.filter((item) => item.hidden).map((item) => item.id));
+  const setRowHidden = (id: string, hide: boolean) =>
+    updateGame(game.id, {
+      cardLayout: layout.map((item) => (item.id === id ? { id, hidden: hide } : item)),
+    });
   // Presets grow with the games; a game added last month keeps the routine list
   // it was born with, so offer the difference rather than silently backfilling.
   const presetGap = missingPresetTasks(
@@ -431,6 +439,8 @@ export function GameEditor({
               />
             </section>
 
+            <LaunchSettings game={game} />
+
             <section>
               <SectionTitle>Pause or delete</SectionTitle>
               <Toggle
@@ -519,11 +529,19 @@ export function GameEditor({
                     task={task}
                     showSaveHint={false}
                     actions={
-                      <ConfirmDelete
-                        label="Delete task"
-                        what={`task ${task.name}`}
-                        onConfirm={() => deleteTask(task.id)}
-                      />
+                      <>
+                        <Toggle
+                          ariaLabel={`Show ${task.name} on the card`}
+                          label="Show on the card"
+                          checked={!hiddenRows.has(`task:${task.id}`)}
+                          onChange={(show) => setRowHidden(`task:${task.id}`, !show)}
+                        />
+                        <ConfirmDelete
+                          label="Delete task"
+                          what={`task ${task.name}`}
+                          onConfirm={() => deleteTask(task.id)}
+                        />
+                      </>
                     }
                   />
                 </TrackingItem>

@@ -4,7 +4,7 @@
   "description": "The Memoria window, served by the app's own loopback server.",
   "windows": ["main"],
   "remote": {
-    "urls": ["http://127.0.0.1:*/*"]
+    "urls": ["http://127.0.0.1:17817/*", "http://127.0.0.1:17818/*", "http://127.0.0.1:17819/*"]
   },
   "permissions": [
     "core:default",

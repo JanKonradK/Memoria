@@ -143,8 +143,8 @@ describe('game page controls', () => {
     expect(grid).not.toBeNull();
     expect(grid!.children).toHaveLength(2);
     const [left, right] = Array.from(grid!.children) as HTMLElement[];
-    const resources = left!.querySelector('[data-tour="resources"]');
-    const tasks = left!.querySelector('[data-tour="tasks"]');
+    const resources = left!.querySelector('[data-section="resources"]');
+    const tasks = left!.querySelector('[data-section="tasks"]');
     expect(resources).not.toBeNull();
     expect(tasks).not.toBeNull();
     expect(resources!.compareDocumentPosition(tasks!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -199,7 +199,7 @@ describe('game page controls', () => {
     const bar = screen.getByLabelText('Testland tracking controls');
     expect(bar.closest('.game-card-heading')).not.toBeNull();
     expect(container.querySelector('.focus-bay-grid')).toBeNull();
-    const resources = container.querySelector('[data-tour="resources"]');
+    const resources = container.querySelector('[data-section="resources"]');
     expect(resources).not.toBeNull();
     expect(bar.compareDocumentPosition(resources!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });

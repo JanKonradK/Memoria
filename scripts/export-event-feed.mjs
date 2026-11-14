@@ -10,7 +10,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const bundled = await build({
   stdin: {
     contents:
-      "export { SEED_EVENTS, SEED_UPDATED, SEED_WITHDRAWN_KEYS } from './app/src/data/seed-feed.ts'; export { RemoteEventFeedSchema, MAX_EVENT_FEED_BYTES } from './shared/src/event-feed.ts';",
+      "export { SEED_CODES, SEED_EVENTS, SEED_UPDATED, SEED_WITHDRAWN_KEYS } from './app/src/data/seed-feed.ts'; export { RemoteEventFeedSchema, MAX_EVENT_FEED_BYTES } from './shared/src/event-feed.ts';",
     resolveDir: root,
   },
   bundle: true,
@@ -21,7 +21,8 @@ const bundled = await build({
 const module = await import(
   `data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`
 );
-const { SEED_EVENTS, SEED_UPDATED, SEED_WITHDRAWN_KEYS, RemoteEventFeedSchema, MAX_EVENT_FEED_BYTES } = module;
+const { SEED_CODES, SEED_EVENTS, SEED_UPDATED, SEED_WITHDRAWN_KEYS, RemoteEventFeedSchema, MAX_EVENT_FEED_BYTES } =
+  module;
 const check = process.argv.includes('--check');
 const outputPath = path.join(root, 'app/public/events.json');
 let published;
@@ -37,7 +38,14 @@ try {
   if (check || error.code !== 'ENOENT') throw error;
 }
 const timestampArgument = process.argv.indexOf('--generated-at');
-const content = { seedUpdated: SEED_UPDATED, events: SEED_EVENTS, withdrawn: SEED_WITHDRAWN_KEYS };
+// Codes join the signed content only when there are some, so a feed without
+// codes keeps the revision (and signature) it already has.
+const content = {
+  seedUpdated: SEED_UPDATED,
+  events: SEED_EVENTS,
+  withdrawn: SEED_WITHDRAWN_KEYS,
+  ...(SEED_CODES.length ? { codes: SEED_CODES } : {}),
+};
 const revision = createHash('sha256').update(JSON.stringify(content)).digest('hex');
 const changed = published?.revision !== revision || !signed?.payload;
 const at = Date.now();

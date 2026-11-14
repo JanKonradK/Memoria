@@ -3,6 +3,7 @@ import {
   buildUrgencyContext,
   gameGlance,
   presetForGame,
+  nextDailyReset,
   urgencyOrder,
   type AppState,
   type Game,
@@ -13,7 +14,45 @@ import { useApp } from './store';
 import { useUI } from './ui-store';
 import { openGame } from './workspace-navigation';
 
-const HomeWidget = registerPlugin<{ update(options: { snapshot: string }): Promise<void> }>('HomeWidget');
+const HomeWidget = registerPlugin<{
+  update(options: { snapshot: string }): Promise<void>;
+  takeQueue(): Promise<{ queue: string }>;
+}>('HomeWidget');
+
+/**
+ * Dailies ticked on the widget, applied once the saved data is in. A tick from
+ * before the game's latest daily reset belonged to a day that is over.
+ */
+export function applyWidgetTicks(raw: string, now: number): string[] {
+  let queue: unknown;
+  try {
+    queue = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(queue)) return [];
+  const applied: string[] = [];
+  const { state, completeDailies } = useApp.getState();
+  for (const item of queue as Array<{ gameId?: unknown; at?: unknown }>) {
+    if (typeof item?.gameId !== 'string' || typeof item.at !== 'number' || item.at > now) continue;
+    const game = state.games.find((candidate) => candidate.id === item.gameId && !candidate.deleted);
+    if (!game || applied.includes(game.id) || nextDailyReset(game, item.at) !== nextDailyReset(game, now)) continue;
+    completeDailies(game.id);
+    applied.push(game.id);
+  }
+  return applied;
+}
+
+async function takeWidgetTicks() {
+  const { queue } = await HomeWidget.takeQueue();
+  const run = () => applyWidgetTicks(queue, Date.now());
+  if (useApp.getState().loaded) return void run();
+  const stop = useApp.subscribe((next) => {
+    if (!next.loaded) return;
+    stop();
+    run();
+  });
+}
 
 /** Four rows of two. */
 const CELLS = 8;
@@ -130,8 +169,12 @@ export function initHomeWidget(): () => void {
   const stopUI = useUI.subscribe((next, prior) => {
     if (next.logoFlipped !== prior.logoFlipped) push();
   });
-  document.addEventListener('visibilitychange', push);
-  push();
+  const resume = () => {
+    push();
+    if (document.visibilityState === 'visible') void takeWidgetTicks().catch(() => undefined);
+  };
+  document.addEventListener('visibilitychange', resume);
+  resume();
   const listener = import('@capacitor/app').then(async ({ App }) => {
     const launch = await App.getLaunchUrl().catch(() => undefined);
     if (active && launch?.url) openFromWidget(launch.url);
@@ -144,7 +187,7 @@ export function initHomeWidget(): () => void {
     clearTimeout(timer);
     stopApp();
     stopUI();
-    document.removeEventListener('visibilitychange', push);
+    document.removeEventListener('visibilitychange', resume);
     void listener.then((handle) => handle.remove()).catch(() => undefined);
   };
 }

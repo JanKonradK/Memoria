@@ -8,14 +8,18 @@ import { flushPersist } from './store';
 
 export const APP_VERSION = __APP_VERSION__;
 
-/**
- * How a version reads to people: 3.3.0 shows as "Beta 0.3.3", with a trailing
- * .0 dropped. Only the label changes; the real number still decides updates,
- * so copies already installed keep finding newer releases.
- */
+/** How a version reads to people: the real number, as a beta. 0.1.0 shows as "Beta 0.1.0". */
 export function displayVersion(version: string): string {
-  const [core = '', prerelease] = version.replace(/^v/, '').split('-', 2);
-  return `Beta 0.${core.replace(/\.0$/, '')}${prerelease ? `-${prerelease}` : ''}`;
+  return `Beta ${version.replace(/^v/, '')}`;
+}
+
+/**
+ * Versions restarted at 0.1.0 in November 2026. Releases since then are tagged
+ * with the bare number (`0.1.0`); the earlier line was tagged `v2.0.0` to
+ * `v4.0.3`. Those old numbers are higher, so they must never count as updates.
+ */
+export function isCurrentLine(tag: string): boolean {
+  return /^\d+\.\d+\.\d+/.test(tag);
 }
 const RELEASES_API = 'https://api.github.com/repos/JanKonradK/Memoria/releases?per_page=30';
 const RELEASES_PAGE = 'https://github.com/JanKonradK/Memoria/releases/latest';
@@ -130,6 +134,21 @@ export function compareVersions(left: string, right: string): number {
   return a.prerelease < b.prerelease ? -1 : 1;
 }
 
+/**
+ * A release earns the full-screen page when it changes the major or minor
+ * number. A patch is fixes: it waits quietly in Settings → Updates.
+ */
+export function worthAScreen(version: string, current = APP_VERSION): boolean {
+  const head = (value: string) =>
+    value
+      .replace(/^v/, '')
+      .split(/[.-]/, 2)
+      .map((part) => Number.parseInt(part, 10) || 0);
+  const [major, minor] = head(version);
+  const [currentMajor, currentMinor] = head(current);
+  return major !== currentMajor || minor !== currentMinor;
+}
+
 /** The release notes above the download table the release workflow appends. */
 export function releaseNotes(release: Pick<ReleaseInfo, 'notes'>): string {
   return release.notes.split(/^##\s+Downloads?\b/im)[0]?.trim() ?? '';
@@ -153,7 +172,7 @@ async function fetchRelease(): Promise<{ release: ReleaseInfo | null; staged: st
   if (!response.ok) throw new Error(`GitHub responded ${response.status}. Try again later.`);
   const body = (await response.json()) as unknown;
   const releases = (Array.isArray(body) ? (body as Record<string, unknown>[]) : [])
-    .filter((raw) => !raw['draft'] && !raw['prerelease'] && String(raw['tag_name'] ?? '').replace(/^v/, ''))
+    .filter((raw) => !raw['draft'] && !raw['prerelease'] && isCurrentLine(String(raw['tag_name'] ?? '')))
     .map((raw): ReleaseInfo => {
       const tag = String(raw['tag_name']);
       const assets = Array.isArray(raw['assets']) ? (raw['assets'] as Record<string, unknown>[]) : [];
@@ -209,8 +228,11 @@ export function checkForUpdates({ quiet = false } = {}): Promise<void> {
         release: newer ? release : null,
         checkedAt,
         progress: null,
-        // An automatic check opens the update screen once per launch; Later keeps it closed.
-        open: Boolean(newer) && (!quiet || state.open || state.dismissed !== release?.version),
+        // An automatic check opens the update screen once per launch, and only for a
+        // release with something to say; Later keeps it closed. Asking always opens it.
+        open:
+          Boolean(newer) &&
+          (!quiet || state.open || (state.dismissed !== release?.version && worthAScreen(release!.version))),
       }));
     } catch (error) {
       useAppUpdate.setState(
@@ -307,11 +329,9 @@ export function initAppUpdates(onShowRequested: () => void): () => void {
     const listener = AppUpdater.addListener('progress', trackProgress);
     cleanups.push(() => void listener.then((handle) => handle.remove()));
   }
-  // The downloadable standalone file makes no network requests on its own, and
-  // development servers (and the browser tests run against them) leave
+  // Development servers (and the browser tests run against them) leave
   // GitHub's shared hourly limit to installed copies.
-  if (window.location.protocol === 'file:' || import.meta.env.DEV)
-    return () => cleanups.forEach((cleanup) => cleanup());
+  if (import.meta.env.DEV) return () => cleanups.forEach((cleanup) => cleanup());
   const automaticCheck = () => {
     if (useAppUpdate.getState().auto) void checkForUpdates({ quiet: true });
   };

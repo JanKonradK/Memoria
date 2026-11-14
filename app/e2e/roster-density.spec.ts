@@ -67,7 +67,7 @@ test('Today fits more games and keeps compact summaries readable and actionable'
   await expect(page.getByText('Your daily check-in', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toHaveCount(1);
   for (const theme of ['dark', 'light']) {
-    if (theme === 'light') await page.getByRole('button', { name: 'Switch to light theme', exact: true }).click();
+    if (theme === 'light') await page.emulateMedia({ colorScheme: 'light' });
     await page.evaluate(async () => {
       await document.fonts.ready;
       await Promise.all(

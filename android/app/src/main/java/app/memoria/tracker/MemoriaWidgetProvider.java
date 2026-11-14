@@ -38,6 +38,10 @@ public class MemoriaWidgetProvider extends AppWidgetProvider {
     static final String PREFERENCES = "memoria-widget";
     static final String SNAPSHOT = "snapshot";
     private static final String ACTION_REFRESH = "app.memoria.tracker.WIDGET_REFRESH";
+    private static final String ACTION_DAILIES = "app.memoria.tracker.WIDGET_DAILIES";
+    private static final String EXTRA_GAME = "gameId";
+    /** Dailies ticked on the widget, waiting for the app: a JSON array of {gameId, at}. */
+    static final String QUEUE = "dailiesDone";
     private static final int FG = Color.parseColor("#F4F4F6");
     private static final int MUTED = Color.parseColor("#9A9AA4");
     private static final int DANGER = Color.parseColor("#FF5A48");
@@ -74,7 +78,51 @@ public class MemoriaWidgetProvider extends AppWidgetProvider {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (ACTION_REFRESH.equals(intent.getAction())) redrawAll(context, stored(context));
+        else if (ACTION_DAILIES.equals(intent.getAction())) dailiesDone(context, intent.getStringExtra(EXTRA_GAME));
         else super.onReceive(context, intent);
+    }
+
+    /**
+     * The ring was tapped: queue "dailies done" for the app, which applies it when
+     * it next opens, and show the ring full straight away.
+     */
+    private static void dailiesDone(Context context, String gameId) {
+        if (gameId == null || gameId.isEmpty()) return;
+        long now = System.currentTimeMillis();
+        android.content.SharedPreferences preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+        try {
+            JSONArray queue = new JSONArray(preferences.getString(QUEUE, "[]"));
+            if (queue.length() < 200) queue.put(new JSONObject().put("gameId", gameId).put("at", now));
+            JSONObject snapshot = new JSONObject(stored(context));
+            JSONArray rows = snapshot.optJSONArray("rows");
+            for (int index = 0; rows != null && index < rows.length(); index++) {
+                JSONObject row = rows.optJSONObject(index);
+                if (row != null && gameId.equals(row.optString("id"))) row.put("dailyDone", row.optInt("dailyTotal"));
+            }
+            String text = snapshot.toString();
+            preferences.edit().putString(QUEUE, queue.toString()).putString(SNAPSHOT, text).apply();
+            redrawAll(context, text);
+        } catch (Exception error) {
+            // A damaged queue or snapshot is replaced by the app's next write.
+        }
+    }
+
+    /** Returns the queued widget ticks and clears them. */
+    static String takeQueue(Context context) {
+        android.content.SharedPreferences preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+        String queue = preferences.getString(QUEUE, "[]");
+        preferences.edit().remove(QUEUE).apply();
+        return queue;
+    }
+
+    private static PendingIntent dailiesIntent(Context context, String gameId, int request) {
+        Intent intent = new Intent(ACTION_DAILIES).setClass(context, MemoriaWidgetProvider.class).putExtra(EXTRA_GAME, gameId);
+        return PendingIntent.getBroadcast(
+            context,
+            request,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
     }
 
     @Override
@@ -152,6 +200,9 @@ public class MemoriaWidgetProvider extends AppWidgetProvider {
             if (game == null) continue;
             fillCell(views, cell, game, now);
             views.setOnClickPendingIntent(cell[0], open(context, "game/" + Uri.encode(game.optString("id")), index + 1));
+            // The ring is its own button: "dailies done". The rest of the cell opens the game.
+            if (game.optInt("dailyTotal") > 0)
+                views.setOnClickPendingIntent(cell[1], dailiesIntent(context, game.optString("id"), 100 + index));
         }
         return views;
     }

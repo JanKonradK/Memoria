@@ -57,8 +57,30 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
     buffer: Buffer.from(JSON.stringify(state)),
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
+  await expect(page.getByText('Backup merged.')).toBeVisible();
   // Loading the stored document is when the app safely refreshes bundled facts.
-  await page.getByRole('button', { name: 'Refresh data', exact: true }).click();
+  // Saving is debounced, so wait for the merged events to be stored before reopening.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          new Promise<number>((resolve) => {
+            const open = indexedDB.open('keyval-store');
+            open.onerror = () => resolve(-1);
+            open.onsuccess = () => {
+              try {
+                const read = open.result.transaction('keyval').objectStore('keyval').get('memoria-state');
+                read.onsuccess = () => resolve(read.result?.events?.length ?? 0);
+                read.onerror = () => resolve(-1);
+              } catch {
+                resolve(-1);
+              }
+            };
+          }),
+      ),
+    )
+    .toBeGreaterThan(0);
+  await page.reload();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
   const view = page.getByRole('radiogroup', { name: 'Event view' });
   await view.getByRole('radio', { name: 'Timeline', exact: true }).click();
@@ -92,7 +114,7 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
     await expect(open).toHaveAttribute('aria-description', /3 Nov 2026/);
   }
   for (const theme of ['dark', 'light']) {
-    if (theme === 'light') await page.getByRole('button', { name: 'Switch to light theme', exact: true }).click();
+    if (theme === 'light') await page.emulateMedia({ colorScheme: 'light' });
     await page.evaluate(async () => {
       await document.fonts.ready;
       await Promise.all(

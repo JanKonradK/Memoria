@@ -1,0 +1,43 @@
+import { useApp } from '../../store';
+import { TextInput, Toggle } from '../ui';
+import { SettingRow } from './SettingRow';
+import { fromClock, toClock } from './clock';
+
+/** Optional: one evening notification with what is still open. Adds to the reset reminders. */
+export function DigestField() {
+  const digestAt = useApp((s) => s.state.settings.digestAt ?? null);
+  const updateSettings = useApp((s) => s.updateSettings);
+  const on = digestAt != null;
+  const at = digestAt ?? 20 * 60;
+  return (
+    <SettingRow
+      label="Evening digest"
+      hint={
+        on
+          ? `At ${toClock(at)}, one notification lists the dailies still open in every game. The reminders before each reset still come.`
+          : 'Off. One notification a day listing what is still open, on top of the reminders before each reset.'
+      }
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <Toggle
+          checked={on}
+          onChange={(next) => updateSettings({ digestAt: next ? at : null })}
+          ariaLabel="Evening digest"
+        />
+        {on && (
+          <TextInput
+            type="time"
+            step={900}
+            className="!min-h-11 !w-28 sm:!min-h-8 sm:!py-1"
+            aria-label="Evening digest time"
+            value={toClock(at)}
+            onChange={(e) => {
+              const next = fromClock(e.target.value);
+              if (next != null) updateSettings({ digestAt: next });
+            }}
+          />
+        )}
+      </div>
+    </SettingRow>
+  );
+}

@@ -163,6 +163,16 @@ export function sleepCheck(
   return { caps: fullAt != null, fullAt };
 }
 
+/**
+ * The reading a screen may project from. A regenerating bar seeded with a
+ * starting guess has no reading yet: projecting from the guess would print a
+ * confident cap time the player never gave the app.
+ */
+export function measuredSnapshot(resource: Resource, snapshot: Snapshot | undefined): Snapshot | undefined {
+  if (!snapshot) return undefined;
+  return snapshot.provenance?.kind === 'estimate' && effectiveResourceKind(resource) === 'regen' ? undefined : snapshot;
+}
+
 /** Latest snapshot per resource id. */
 export function latestSnapshots(snapshots: Snapshot[]): Map<string, Snapshot> {
   const map = new Map<string, Snapshot>();

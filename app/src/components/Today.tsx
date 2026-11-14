@@ -1,15 +1,17 @@
 import { useState, type CSSProperties } from 'react';
 import { DateTime } from 'luxon';
-import type { GameUrgency } from '@memoria/shared';
+import { actBy, eventReward, nextQuietWindow, type Game, type GameUrgency } from '@memoria/shared';
 import { useDerived, type Derived } from '../selectors';
+import { selectAllClear, type AllClear } from '../all-clear';
+import { useApp } from '../store';
 import { useUI } from '../ui-store';
-import { useMediaQuery } from '../hooks';
+import { haptic, useMediaQuery } from '../hooks';
 import { useFlip } from '../flip';
 import { fmtClock, fmtDur } from '../util';
 import { calendarSchedule } from '../event-schedule';
 import { selectTodayAgenda, TODAY_AGENDA_HOURS, type TodayAgendaItem } from '../today-agenda';
 import { gameInk } from '../game-color';
-import { gameShellVars, useGround, useTheme } from '../theme';
+import { gameShellVars, useGround, useSurfaces } from '../theme';
 import { openGame } from '../workspace-navigation';
 import { isDesktopApp } from '../desktop-host';
 import { readingSource } from '../reading-source';
@@ -17,8 +19,10 @@ import { useIdentityColors } from './roster';
 import { GameControls } from './GameCard';
 import { GameLogo } from './GameLogo';
 import { TickNumber } from './TickNumber';
+import { behindGames, behindText, useFeedDate } from './CalendarBehind';
 import { GamePage } from './GamePage';
 import { TodayNotices } from './TodayNotices';
+import { TodayCodes } from './TodayCodes';
 import { ProgressBar } from './primitives';
 import { Btn, Page, Tooltip } from './ui';
 import '../today.css';
@@ -47,8 +51,17 @@ function PriorityRow({
   const known = Boolean(resource && projection?.hasSnapshot);
   const dailies = (derived.checklistByGame.get(game.id) ?? []).filter((item) => item.cadence === 'daily');
   const done = dailies.filter((item) => item.done).length;
+  // The ring ticks every check-type daily from Today, with Undo, without opening the game.
+  const completeDailies = useApp((store) => store.completeDailies);
+  const undoActivity = useApp((store) => store.undoActivity);
+  const journal = useApp((store) => store.history.journal);
+  const [ticked, setTicked] = useState<string>();
+  const canTick = !game.paused && dailies.some((item) => item.mode === 'check' && !item.done);
+  const canUndo = Boolean(ticked && journal.some((entry) => entry.id === ticked && !entry.undone));
   const left = next ? next.at - now : null;
-  const tone = left == null ? 'idle' : left <= 0 ? 'danger' : left < URGENT_MS ? 'warn' : 'calm';
+  // With quiet hours set, a reset at 03:00 is due when they begin, not at 03:00.
+  const actLeft = next ? actBy(derived.state.settings, next.at, now) - now : null;
+  const tone = left == null ? 'idle' : left <= 0 ? 'danger' : actLeft! < URGENT_MS ? 'warn' : 'calm';
   const compact = useMediaQuery('(max-width: 479px)');
   // The dailies ring matches the logo, so both ends of the row carry the same weight.
   const badge = compact ? 48 : 60;
@@ -65,7 +78,7 @@ function PriorityRow({
     .join('. ');
 
   return (
-    <li>
+    <li className="today-priority-item">
       <button
         type="button"
         className="today-priority-row"
@@ -121,7 +134,9 @@ function PriorityRow({
               )}
             </>
           )}
-          <span className="today-row-what aside truncate text-caption">{next?.label ?? 'No deadlines'}</span>
+          <span className="today-row-what truncate text-caption">
+            {next?.label ?? (resource && !known ? `Enter ${resource.name}` : 'No deadlines')}
+          </span>
         </span>
         <span className="today-row-ring">
           {dailies.length > 0 && (
@@ -145,6 +160,24 @@ function PriorityRow({
           )}
         </span>
       </button>
+      {(canTick || canUndo) && (
+        <button
+          type="button"
+          className="today-ring-action"
+          data-undo={canUndo || undefined}
+          aria-label={canUndo ? `Undo ticking ${game.name} dailies` : `Tick all ${game.name} dailies`}
+          title={canUndo ? 'Undo' : 'Tick all dailies'}
+          onClick={() => {
+            haptic();
+            if (canUndo) {
+              undoActivity(ticked!);
+              setTicked(undefined);
+            } else setTicked(completeDailies(game.id));
+          }}
+        >
+          {canUndo && <span className="today-ring-undo text-caption font-semibold">Undo</span>}
+        </button>
+      )}
     </li>
   );
 }
@@ -157,14 +190,18 @@ const CADENCE_NOUN: Record<string, [string, string]> = {
 };
 const AGENDA_PREVIEW = 10;
 
-function agendaText(item: TodayAgendaItem, gameName: (id: string) => string) {
+function agendaText(item: TodayAgendaItem, gameName: (id: string) => string, game?: Game) {
   const games = item.gameIds.map(gameName).join(', ');
   if (item.kind === 'energy') return { title: item.label, detail: games };
   if (item.kind === 'reset') {
     const [one, many] = CADENCE_NOUN[item.cadence] ?? CADENCE_NOUN.custom!;
     return { title: `${item.left} ${item.left === 1 ? one : many} reset`, detail: games };
   }
-  return { title: item.event.name, detail: `${item.edge === 'ends' ? 'Ends' : 'Starts'} · ${games}` };
+  const reward = item.edge === 'ends' && !item.event.done ? eventReward(item.event, game) : null;
+  return {
+    title: item.event.name,
+    detail: `${item.edge === 'ends' ? 'Ends' : 'Starts'} · ${games}${reward ? ` · ${reward.label} unclaimed` : ''}`,
+  };
 }
 
 /** Everything due across every game in the next day, under the list. */
@@ -180,6 +217,11 @@ function TodayAgenda({ derived, onSelectGame }: { derived: Derived; onSelectGame
     return game ? (game.accountLabel ? `${game.name} (${game.accountLabel})` : game.name) : '';
   };
   const shown = expanded ? items : items.slice(0, AGENDA_PREVIEW);
+  const behind = behindGames(state, now);
+  const feedDate = useFeedDate();
+  // Everything above this line has to happen before quiet hours begin.
+  const quiet = nextQuietWindow(state.settings, now);
+  const quietIndex = quiet ? shown.findIndex((item) => item.at >= quiet.start) : -1;
 
   return (
     <section className="today-agenda" aria-labelledby="today-agenda-heading">
@@ -190,19 +232,38 @@ function TodayAgenda({ derived, onSelectGame }: { derived: Derived; onSelectGame
         <span aria-hidden />
         <span className="numeral text-caption text-muted">{items.length}</span>
       </div>
+      {behind.length > 0 && (
+        <ul className="today-agenda-behind">
+          {behind.map(({ game, behind: status }) => (
+            <li key={game.id} className="text-meta text-warn-fg" data-calendar-behind={game.id}>
+              <span className="font-semibold">{gameName(game.id)}:</span> {behindText(status, feedDate)}
+            </li>
+          ))}
+        </ul>
+      )}
       {items.length === 0 ? (
         <p className="aside today-clear text-meta text-muted">Nothing ends, caps or resets.</p>
       ) : (
         <ul className="today-agenda-list">
-          {shown.map((item) => {
-            const { title, detail } = agendaText(item, gameName);
+          {shown.map((item, index) => {
+            const { title, detail } = agendaText(item, gameName, byId.get(item.gameIds[0]!));
             const left = item.at - now;
+            const actLeft = actBy(state.settings, item.at, now) - now;
             const calendar = item.kind === 'event' ? calendarSchedule(item.event) : undefined;
             // Something starting soon is news, not a deadline.
             const deadline = item.kind !== 'event' || item.edge === 'ends';
             const tone =
-              item.kind === 'energy' && item.full ? 'danger' : deadline && left < URGENT_MS ? 'warn' : 'calm';
-            return (
+              item.kind === 'energy' && item.full ? 'danger' : deadline && actLeft < URGENT_MS ? 'warn' : 'calm';
+            const divider = index === quietIndex && quiet && (
+              <li key="quiet" className="today-agenda-quiet text-caption text-muted">
+                <span aria-hidden />
+                Quiet hours {fmtClock(quiet.start, state.settings.localTz)}–
+                {fmtClock(quiet.end, state.settings.localTz)}
+                <span aria-hidden />
+              </li>
+            );
+            return [
+              divider,
               <li key={item.key}>
                 <button
                   type="button"
@@ -235,16 +296,14 @@ function TodayAgenda({ derived, onSelectGame }: { derived: Derived; onSelectGame
                       <>
                         <span className="text-meta font-semibold">{left <= 0 ? 'Now' : fmtDur(left)}</span>
                         {left > 0 && (
-                          <span className="aside text-caption text-muted">
-                            {fmtClock(item.at, state.settings.localTz)}
-                          </span>
+                          <span className="text-caption text-muted">{fmtClock(item.at, state.settings.localTz)}</span>
                         )}
                       </>
                     )}
                   </span>
                 </button>
-              </li>
-            );
+              </li>,
+            ];
           })}
         </ul>
       )}
@@ -261,11 +320,56 @@ function TodayAgenda({ derived, onSelectGame }: { derived: Derived; onSelectGame
   );
 }
 
+/**
+ * The best moment the product has: every daily done and nothing capping before
+ * the next reset. Quiet, and it says when it ends and what comes next.
+ */
+function AllClearNote({
+  clear,
+  zone,
+  folded,
+  gameCount,
+  onShowGames,
+}: {
+  clear: AllClear;
+  zone: string;
+  folded: boolean;
+  gameCount: number;
+  onShowGames: () => void;
+}) {
+  return (
+    <section className="today-all-clear" aria-labelledby="today-all-clear-heading" data-all-clear>
+      <h2 id="today-all-clear-heading" className="text-heading font-semibold text-fg">
+        All clear until <span className="numeral">{fmtClock(clear.until, zone)}</span>
+      </h2>
+      <p className="mt-1 text-meta text-muted">
+        {clear.next ? (
+          <>
+            Next: {clear.next.gameName} · {clear.next.label} at{' '}
+            <span className="numeral">{fmtClock(clear.next.at, zone)}</span>
+          </>
+        ) : (
+          'Every daily is done and nothing caps before then.'
+        )}
+      </p>
+      {folded && (
+        <button
+          type="button"
+          className="mt-2 min-h-11 rounded-ui-md px-2 -ml-2 text-meta font-semibold text-fg-soft hover:bg-fill-2"
+          onClick={onShowGames}
+        >
+          Show games <span className="numeral text-muted">{gameCount}</span>
+        </button>
+      )}
+    </section>
+  );
+}
+
 export function TodayPage({ now }: { now: number }) {
   const derived = useDerived(now);
   const { state, order } = derived;
   const colors = useIdentityColors(state.games);
-  const theme = useTheme();
+  const surfaces = useSurfaces();
   const desktop = useMediaQuery('(min-width: 900px)');
   const selectedId = useUI((ui) => ui.todayGameId);
   const setSelectedId = useUI((ui) => ui.setTodayGameId);
@@ -275,12 +379,15 @@ export function TodayPage({ now }: { now: number }) {
   const selected = order.find((entry) => entry.game.id === selectedId) ?? games[0];
   const date = DateTime.fromMillis(now, { zone: state.settings.localTz }).toFormat('cccc, d LLLL');
   const listRef = useFlip<HTMLDivElement>('[data-roster-game]', (node) => node.dataset.rosterGame ?? null);
+  const allClear = selectAllClear(derived);
+  const [showGames, setShowGames] = useState(false);
+  const listFolded = Boolean(allClear) && !showGames && !desktop;
 
   return (
     <Page className="today-page">
       <div className="today-heading">
         <h1 className="text-title font-semibold tracking-[-0.02em] text-fg">Today</h1>
-        <p className="aside text-meta text-muted">{date}</p>
+        <p className="text-meta text-muted">{date}</p>
       </div>
       <TodayNotices now={now} />
       {order.length === 0 ? (
@@ -296,7 +403,16 @@ export function TodayPage({ now }: { now: number }) {
       ) : (
         <div className="today-layout">
           <div className="today-list" ref={listRef}>
-            <ul className="today-priority-list" aria-label="Games">
+            {allClear && (
+              <AllClearNote
+                clear={allClear}
+                zone={state.settings.localTz}
+                folded={listFolded}
+                gameCount={games.length}
+                onShowGames={() => setShowGames(true)}
+              />
+            )}
+            <ul className="today-priority-list" aria-label="Games" hidden={listFolded}>
               {games.map((entry) => (
                 <PriorityRow
                   key={entry.game.id}
@@ -308,6 +424,8 @@ export function TodayPage({ now }: { now: number }) {
                 />
               ))}
             </ul>
+            {/* Extras come after what is lost first: the games' own deadlines. */}
+            <TodayCodes games={derived.state.games} now={now} />
             <TodayAgenda
               derived={derived}
               onSelectGame={(gameId) => (desktop ? setSelectedId(gameId) : openGame(gameId))}
@@ -318,7 +436,7 @@ export function TodayPage({ now }: { now: number }) {
               <section
                 key={selected.game.id}
                 className="today-card"
-                style={gameShellVars(selected.game, theme, colors[selected.game.id])}
+                style={gameShellVars(selected.game, surfaces, colors[selected.game.id])}
                 aria-label={`${selected.game.name} card`}
               >
                 <GameControls

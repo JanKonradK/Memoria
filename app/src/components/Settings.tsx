@@ -2,16 +2,17 @@ import { Activity } from './settings/Activity';
 import { useRef, useState, type ReactNode } from 'react';
 import { detectLocalTz, normalizeState, safeParseAppState } from '@memoria/shared';
 import { useApp } from '../store';
-import { useUI } from '../ui-store';
+import { useUI, type ThemePreference } from '../ui-store';
 import { servedByLauncher } from '../launcher';
 import { syncNow } from '../sync';
 import { deviceSyncAvailable, DeviceSync } from './settings/DeviceSync';
+import { PaletteSettings } from './settings/PaletteSettings';
 import { SettingRow, SettingsGroup } from './settings/SettingRow';
 import { usePresence } from '../presence';
 import { APP_VERSION, displayVersion, updateTarget, useAppUpdate } from '../app-update';
 import { useMediaQuery } from '../hooks';
 import type { SettingsSection } from '../ui-store';
-import { DeviceNotifications } from './settings/DeviceNotifications';
+import { RemindersPane } from './settings/RemindersPane';
 import { AppUpdates } from './settings/AppUpdates';
 import { DesktopPresence } from './settings/DesktopPresence';
 import { GameRosterRow } from './settings/GameRosterRow';
@@ -28,10 +29,10 @@ import {
   reconnectCloudFile,
 } from '../cloud-sync';
 import { resolveHomeTimeZone, SYSTEM_TIMEZONE_VALUE } from '../timezone';
-import { fmtClock, intOr } from '../util';
+import { fmtClock } from '../util';
 import { HomeTimeZoneField } from './HomeTimeZoneField';
 import { rosterGames, useIdentityColors } from './roster';
-import { Btn, NumInput, Page, TOUCH_BUTTON } from './ui';
+import { Btn, Page, Segmented, TOUCH_BUTTON } from './ui';
 // Today is lazy-loaded, so its heading rule is brought in here as well.
 import '../today.css';
 import '../settings.css';
@@ -58,15 +59,9 @@ export function SettingsPage() {
   const update = useAppUpdate();
   const launcher = servedByLauncher();
   const settings = state.settings;
-  const focusedGameId = useUI((s) => s.focusedGameId);
   const detectedTz = detectLocalTz();
   const games = rosterGames(state.games);
   const identityColors = useIdentityColors(state.games);
-  // A focused game narrows this page too, so the roster shows the one game the
-  // rest of the app is showing. A focus on a game that is gone narrows nothing.
-  const listedGames = games.some((game) => game.id === focusedGameId)
-    ? games.filter((game) => game.id === focusedGameId)
-    : games;
   const [statusMessage, setStatusMessage] = useState('');
   const [importDraft, setImportDraft] = useState<{ text: string; games: number; events: number } | null>(null);
   useUnsavedDraft(importDraft !== null);
@@ -140,9 +135,10 @@ export function SettingsPage() {
   const sections: Array<{ key: SettingsSection; label: string; badge?: ReactNode }> = [
     { key: 'games', label: 'Games', badge: <span className="numeral">{games.length}</span> },
     { key: 'general', label: 'General' },
+    { key: 'reminders', label: 'Reminders' },
     { key: 'sync', label: 'Device sync', badge: syncBadge },
   ];
-  if (presence || isNativeApp) sections.push({ key: 'device', label: isNativeApp ? 'On this device' : 'On this PC' });
+  if (presence) sections.push({ key: 'device', label: 'On this PC' });
   if (updateTarget() !== 'none')
     sections.push({
       key: 'updates',
@@ -161,10 +157,10 @@ export function SettingsPage() {
 
   return (
     <Page className="settings-page">
-      <div data-tour="settings" className="settings-shell">
+      <div className="settings-shell">
         <div className="settings-heading">
           <h1 className="text-title font-semibold tracking-[-0.02em] text-fg">Settings</h1>
-          <Btn onClick={() => openSheet({ kind: 'guide' })}>User guide</Btn>
+          <Btn onClick={() => useUI.getState().armHints()}>Show hints again</Btn>
         </div>
 
         <div className="settings-layout">
@@ -181,7 +177,7 @@ export function SettingsPage() {
                     >
                       <span className="min-w-0 truncate text-body font-semibold">{section.label}</span>
                       {section.badge !== undefined && (
-                        <span className="settings-nav-badge aside truncate text-caption">{section.badge}</span>
+                        <span className="settings-nav-badge truncate text-caption">{section.badge}</span>
                       )}
                     </button>
                   </li>
@@ -201,7 +197,7 @@ export function SettingsPage() {
             >
               {games.length > 0 ? (
                 <ul className="settings-roster" aria-label="Your games">
-                  {listedGames.map((game) => (
+                  {games.map((game) => (
                     <GameRosterRow
                       key={game.id}
                       game={game}
@@ -212,11 +208,6 @@ export function SettingsPage() {
                 </ul>
               ) : (
                 <p className="settings-note text-body text-dim">No games yet.</p>
-              )}
-              {listedGames.length < games.length && (
-                <p className="settings-note pt-2 text-meta text-muted">
-                  Showing the focused game. Clear the focus to see all {games.length}.
-                </p>
               )}
             </SettingsPane>
 
@@ -230,26 +221,8 @@ export function SettingsPage() {
                     onChange={(value) => updateSettings({ localTz: resolveHomeTimeZone(value) })}
                   />
                 </SettingRow>
-                <SettingRow
-                  label="Sleep window"
-                  hint="How long you are away overnight. Today checks what caps in that time."
-                >
-                  <div className="flex items-center gap-2">
-                    <NumInput
-                      className="!min-h-11 !w-24 sm:!min-h-8 sm:!py-1"
-                      min={1}
-                      max={12}
-                      value={String(settings.sleepHours)}
-                      aria-label="Sleep window (hours)"
-                      onChange={(e) =>
-                        updateSettings({
-                          sleepHours: Math.min(12, Math.max(1, intOr(e.target.value, settings.sleepHours))),
-                        })
-                      }
-                    />
-                    <span className="text-label text-dim">hours</span>
-                  </div>
-                </SettingRow>
+                <ThemeRow />
+                <PaletteSettings />
               </div>
             </SettingsPane>
 
@@ -353,11 +326,14 @@ export function SettingsPage() {
               </div>
             </SettingsPane>
 
-            {(presence || isNativeApp) && (
+            <SettingsPane {...pane('reminders')}>
+              <RemindersPane />
+            </SettingsPane>
+
+            {presence && (
               <SettingsPane {...pane('device')}>
                 <div className="settings-rows">
                   <DesktopPresence />
-                  <DeviceNotifications />
                 </div>
               </SettingsPane>
             )}
@@ -495,6 +471,23 @@ export function SettingsPage() {
 }
 
 /** One section of Settings. Beside the menu only the chosen one is shown; on a phone, all are. */
+const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: 'system', label: 'Device' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'light', label: 'Light' },
+];
+
+/** Light or dark, following the device unless a theme is chosen. */
+function ThemeRow() {
+  const preference = useUI((s) => s.themePreference);
+  const setPreference = useUI((s) => s.setThemePreference);
+  return (
+    <SettingRow label="Theme" hint="Device follows this device's light or dark setting.">
+      <Segmented ariaLabel="Theme" options={THEME_OPTIONS} value={preference} onChange={setPreference} />
+    </SettingRow>
+  );
+}
+
 function SettingsPane({
   id,
   title,

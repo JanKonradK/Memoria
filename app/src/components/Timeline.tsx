@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Hint } from './Hint';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { DateTime } from 'luxon';
 import type { Game, GameEvent } from '@memoria/shared';
@@ -17,13 +18,13 @@ import { GameLogo } from './GameLogo';
 import { TimelineTools } from './TimelineTools';
 import { CalendarToolbar } from './CalendarToolbar';
 import { CalendarFeedStatus } from './CalendarFeedStatus';
+import { CalendarBehindNote } from './CalendarBehind';
 import { TimelineList } from './TimelineList';
 import { PinnedEvents } from './PinnedEvents';
 import { PinMark } from './EventPeek';
 import { gameServerLabel } from '../server-choice';
-import { titleStyle } from '../fonts';
 import { assignGameInks, gameTitleInk, mix, onColor } from '../game-color';
-import { THEME_PANEL, useGround, useInset, useTheme } from '../theme';
+import { useGround, useInset, useSurfaces } from '../theme';
 import { EventTags } from './EventTags';
 import { groupGameEvents } from '../event-category';
 import { calendarSchedule } from '../event-schedule';
@@ -60,10 +61,7 @@ function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; 
     >
       <GameLogo game={game} size={36} />
       <div className="min-w-0 flex-1">
-        <h2
-          className="truncate text-body"
-          style={{ ...titleStyle(game.titleFont), color: gameTitleInk(game, ground, 4.5) }}
-        >
+        <h2 className="truncate text-body" style={{ color: gameTitleInk(game, ground, 4.5) }}>
           {game.name}
         </h2>
         <div className="mt-1 flex min-w-0 items-center gap-2 text-caption text-muted">
@@ -918,7 +916,9 @@ export function ReorderableEventRows({
       <span className="sr-only" role="status">
         {announcement}
       </span>
-      <CycleConnectors events={visible} ws={rowProps.ws} we={rowProps.we} ink={rowProps.ink} />
+      {/* On a phone each bar has a name line above it, so a hand-off between
+          bars would cross that line and read as a stray stroke. */}
+      {!rowProps.compact && <CycleConnectors events={visible} ws={rowProps.ws} we={rowProps.we} ink={rowProps.ink} />}
       {visible.map((event) => (
         <EventRow
           key={event.id}
@@ -981,11 +981,11 @@ export function TimelinePage({ now }: { now: number }) {
   const updateGame = useApp((s) => s.updateGame);
   const openSheet = useUI((s) => s.openSheet);
   const ground = useGround();
-  const theme = useTheme();
-  const titleGround = THEME_PANEL[theme][0];
+  const surfaces = useSurfaces();
+  const titleGround = surfaces.panel;
   const laneInset = useInset();
   const [timelineScaleRef, timelineWidth] = useElementWidth();
-  const focusedGameId = useUI((s) => s.focusedGameId);
+  const focusedGameId = useUI((s) => s.timelineGameId);
   // Time bars on every width: a phone gives each event a name line above its bar.
   const view = useUI((s) => s.timelineView) ?? 'lanes';
   const compact = useMediaQuery('(max-width: 639px)');
@@ -1112,7 +1112,7 @@ export function TimelinePage({ now }: { now: number }) {
   const scopedEvents = view === 'lanes' ? [...eventsByGame.values()].flat() : events;
   const visibleCount = scopedEvents.filter((event) => showFinished || (!event.done && event.end > now)).length;
   const pausedRows = pausedGames.length > 0 && (
-    <div data-tour="timeline" className="mt-4 divide-y divide-line-hairline border-t border-line-edge">
+    <div className="mt-4 divide-y divide-line-hairline border-t border-line-edge">
       {pausedGames.map((game) => (
         <PausedTimelineGame
           key={game.id}
@@ -1151,6 +1151,7 @@ export function TimelinePage({ now }: { now: number }) {
         {pausedGames.length > 0 && <span>{pausedGames.length} paused</span>}
       </div>
 
+      <Hint id="events" className="mt-3" />
       <PinnedEvents events={events} games={games} now={now} onOpen={peekEvent} />
 
       {games.length > 0 && games.every((game) => game.paused) ? null : view === 'list' ? (
@@ -1164,11 +1165,7 @@ export function TimelinePage({ now }: { now: number }) {
           onToggleEvent={toggleEvent}
         />
       ) : (
-        <div
-          data-tour="timeline"
-          data-editing={editing || undefined}
-          className="timeline-board timeline-lanes-board relative"
-        >
+        <div data-editing={editing || undefined} className="timeline-board timeline-lanes-board relative">
           <div ref={timelineScaleRef} data-timeline-scale className="timeline-scale">
             <div data-timeline-ruler className="relative h-5 text-caption text-muted">
               {dayLabels.map(({ day, center, showMonth, week }) => (
@@ -1242,7 +1239,7 @@ export function TimelinePage({ now }: { now: number }) {
                           <GameLogo game={{ ...game, ...colors }} size={compact ? 30 : 36} />
                           <span
                             className="min-w-0 truncate text-body"
-                            style={{ ...titleStyle(game.titleFont), color: gameTitleInk(colors, titleGround, 4.5) }}
+                            style={{ color: gameTitleInk(colors, titleGround, 4.5) }}
                           >
                             {game.name}
                           </span>
@@ -1278,6 +1275,7 @@ export function TimelinePage({ now }: { now: number }) {
                       triggerClassName="timeline-game-heading relative z-20 rounded-ui-md transition hover:bg-fill-1"
                       contentClassName="timeline-lane-content"
                     >
+                      <CalendarBehindNote gameId={game.id} now={now} className="mb-2" />
                       {evs.length === 0 ? (
                         <p className="py-1 text-label text-muted">No events in this window.</p>
                       ) : shown.length === 0 ? (

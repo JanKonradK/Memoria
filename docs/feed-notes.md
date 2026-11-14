@@ -4,6 +4,25 @@ Research notes for the bundled event feed in `app/src/data/feed/current.json`.
 They were comments in `seed-feed.ts` until Beta 0.4 moved the events to JSON.
 Read the rules at the top before changing any dates.
 
+## Reward codes
+
+Livestream codes go in a `codes` array in `current.json`, next to `events`, so they reach
+installed apps with the next signed feed instead of the next release:
+
+```json
+{
+  "game": "genshin",
+  "code": "HourofRuin",
+  "rewards": "100 Primogems + 10 Mystic Enhancement Ore",
+  "expiresAt": "2026-10-26T00:00:00-04:00",
+  "redeemUrl": "https://genshin.hoyoverse.com/en/gift?code=HourofRuin"
+}
+```
+
+`expiresAt` carries its offset. A code without one never shows as working. The app lists
+working, unredeemed codes on Today and, on Android, announces a new code and warns six hours
+before it expires.
+
 ## How to read publisher notices
 
 Bundled event feed — banners/events per game, reviewed against publisher

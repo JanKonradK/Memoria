@@ -1,5 +1,6 @@
 import type { AppState, Cadence, Completion, Game, GameEvent, Task, TaskMode } from './types';
 import { groupBy } from './internal';
+import { presetTaskLink } from './presets';
 import { taskNextReset, taskPeriodKey } from './periods';
 import { effectiveCountTarget, effectiveTaskMode, effectiveTimerDurationMinutes } from './tracking';
 
@@ -28,6 +29,8 @@ export interface ChecklistItem {
   sort: number;
   /** Pays the game's premium pull currency — see Task.core. */
   core: boolean;
+  /** Where the task is done when that is outside the game, such as a check-in page. */
+  link?: string;
 }
 
 /** Generic words that would create false timeline matches ("cycle" appears everywhere). */
@@ -187,6 +190,7 @@ export function checklistFor(
       timerStepMinutes: t.timerStepMinutes,
       sort: t.sort,
       core: t.core === true,
+      link: presetTaskLink(t.presetTaskKey),
     });
   }
   // Core tasks first: missing one costs pulls, missing a side chore costs

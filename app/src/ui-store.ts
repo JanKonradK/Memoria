@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import {
+  DEFAULT_PALETTE,
+  FAMILIES,
+  findPalette,
+  isPaletteId,
+  PALETTE_PROPERTIES,
+  paletteVars,
+  surfacesOf,
+} from './palettes';
+
 export const UI_STORAGE_KEY = 'memoria-ui';
 /**
  * Every previous name this store has shipped under, newest first. The app has
@@ -31,7 +41,22 @@ migrateLegacyUiStorage();
 
 export type Tab = 'today' | 'home' | 'timeline' | 'history' | 'settings';
 export type Theme = 'dark' | 'light';
+/** What the player chose. System follows the device, which is the default. */
+export type ThemePreference = Theme | 'system';
+
+/** The device's own light or dark setting. */
+export function systemTheme(): Theme {
+  try {
+    return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  } catch {
+    return 'dark';
+  }
+}
+export const resolveTheme = (preference: ThemePreference): Theme =>
+  preference === 'system' ? systemTheme() : preference;
 export type TimelineView = 'list' | 'lanes';
+export const HINT_KEYS = ['energy', 'tasks', 'events'] as const;
+export type HintKey = (typeof HINT_KEYS)[number];
 
 /**
  * The theme is a token re-point on the root element — see index.css. Nothing
@@ -48,18 +73,41 @@ export type TimelineView = 'list' | 'lanes';
  */
 export const THEME_GROUND: Record<Theme, string> = { dark: '#0c0d0f', light: '#f6f7f9' };
 
-export function applyTheme(theme: Theme): void {
+/** What the pre-paint script in index.html reads: the properties for each theme, so a reload paints the chosen palette first. */
+export const PAINT_STORAGE_KEY = 'memoria-paint';
+
+/** The accent chosen for a palette family, or null for that family's default. */
+export function accentFor(accents: Partial<Record<string, string>>, palette: string): string | null {
+  return accents[findPalette(palette).family.id] ?? null;
+}
+
+export function applyTheme(theme: Theme, palette: string = DEFAULT_PALETTE, accent: string | null = null): void {
   if (typeof document === 'undefined') return;
-  document.documentElement.dataset.theme = theme;
+  const root = document.documentElement;
+  root.dataset.theme = theme;
+  for (const property of PALETTE_PROPERTIES) root.style.removeProperty(property);
+  for (const [property, value] of Object.entries(paletteVars(palette, theme, accent))) {
+    root.style.setProperty(property, value);
+  }
   // The pre-paint script in index.html sets this too, but only on load. Without
-  // it here, toggling to light leaves the mobile browser chrome and installed
-  // PWA system UI black against a cream page until the next reload.
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_GROUND[theme]);
+  // it here, switching theme leaves the mobile browser chrome and installed PWA
+  // system UI the old colour until the next reload.
+  const ground = surfacesOf(palette, theme).ground;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', ground);
+  try {
+    const paint = (forTheme: Theme) => ({
+      ground: surfacesOf(palette, forTheme).ground,
+      vars: paletteVars(palette, forTheme, accent),
+    });
+    localStorage.setItem(PAINT_STORAGE_KEY, JSON.stringify({ dark: paint('dark'), light: paint('light') }));
+  } catch {
+    // Without storage the palette still applies; a reload just paints Memoria first.
+  }
 }
 
 export type GameEditorSection = 'game' | 'resets' | 'resources' | 'spend' | 'tasks' | 'reminders' | 'events';
 
-export type SettingsSection = 'games' | 'general' | 'sync' | 'device' | 'updates' | 'data' | 'activity';
+export type SettingsSection = 'games' | 'general' | 'reminders' | 'sync' | 'device' | 'updates' | 'data' | 'activity';
 
 export type SheetRoute =
   | { kind: 'game'; gameId: string; section?: GameEditorSection }
@@ -68,7 +116,8 @@ export type SheetRoute =
   /** The quick view of an existing event; its editor is the `event` route. */
   | { kind: 'eventPeek'; eventId: string }
   | { kind: 'reminder' }
-  | { kind: 'guide' }
+  /** A game closed on this PC after a real session: record what is left. */
+  | { kind: 'session'; gameId: string }
   /** What a game added since the player last caught up. */
   | { kind: 'catchUp'; gameId: string }
   | null;
@@ -88,10 +137,16 @@ interface UIStore {
   /** Session-only route controls survive navigation, without entering backups. */
   timelineView: TimelineView | null;
   timelineShowFinished: boolean;
+  /** The Timeline's own game filter. Opening a game never sets it. Null = all games. */
+  timelineGameId: string | null;
+  setTimelineGameId(gameId: string | null): void;
   setTimelineView(view: TimelineView): void;
   setTimelineShowFinished(show: boolean): void;
-  tourSeenVersion: number;
-  finishTour(): void;
+  /** Set when first-run setup finishes: only a new install sees the hints. */
+  hintsArmed: boolean;
+  hintsSeen: Partial<Record<HintKey, true>>;
+  armHints(): void;
+  dismissHint(key: HintKey): void;
   setFocusedGameId(gameId: string | null): void;
   setTab(tab: Tab): void;
   /** The Settings pane shown beside its menu on wide windows. Session only. */
@@ -101,7 +156,16 @@ interface UIStore {
   closeSheet(): void;
   setReserveOpen(id: string, open: boolean | undefined): void;
   setTheme(theme: Theme): void;
+  /** A once-a-year choice, made in Settings. */
+  themePreference: ThemePreference;
+  setThemePreference(preference: ThemePreference): void;
   toggleTheme(): void;
+  /** A palette flavour id from palettes.ts. */
+  palette: string;
+  /** The accent chosen per palette family; a missing family uses its default. */
+  accents: Partial<Record<string, string>>;
+  setPalette(palette: string): void;
+  setAccent(accent: string): void;
 }
 
 export const useUI = create<UIStore>()(
@@ -118,14 +182,18 @@ export const useUI = create<UIStore>()(
           else logoFlipped[key] = true;
           return { logoFlipped };
         }),
-      theme: 'dark',
+      theme: resolveTheme('system'),
       focusedGameId: null,
       timelineView: null,
       timelineShowFinished: false,
+      timelineGameId: null,
+      setTimelineGameId: (timelineGameId) => set({ timelineGameId }),
       setTimelineView: (timelineView) => set({ timelineView }),
       setTimelineShowFinished: (timelineShowFinished) => set({ timelineShowFinished }),
-      tourSeenVersion: 0,
-      finishTour: () => set({ tourSeenVersion: 1, sheet: null }),
+      hintsArmed: false,
+      hintsSeen: {},
+      armHints: () => set({ hintsArmed: true, hintsSeen: {} }),
+      dismissHint: (key) => set((s) => ({ hintsSeen: { ...s.hintsSeen, [key]: true } })),
       setFocusedGameId: (focusedGameId) => set({ focusedGameId }),
       todayGameId: null,
       setTodayGameId: (todayGameId) => set({ todayGameId }),
@@ -142,8 +210,26 @@ export const useUI = create<UIStore>()(
           return { reserveOpen };
         }),
       setTheme: (theme) => {
-        applyTheme(theme);
-        set({ theme });
+        applyTheme(theme, get().palette, accentFor(get().accents, get().palette));
+        set({ theme, themePreference: theme });
+      },
+      themePreference: 'system',
+      setThemePreference: (themePreference) => {
+        const theme = resolveTheme(themePreference);
+        applyTheme(theme, get().palette, accentFor(get().accents, get().palette));
+        set({ theme, themePreference });
+      },
+      palette: DEFAULT_PALETTE,
+      accents: {},
+      setPalette: (palette) => {
+        applyTheme(get().theme, palette, accentFor(get().accents, palette));
+        set({ palette });
+      },
+      setAccent: (accent) => {
+        const { palette, theme } = get();
+        const accents = { ...get().accents, [findPalette(palette).family.id]: accent };
+        applyTheme(theme, palette, accent);
+        set({ accents });
       },
       toggleTheme: () => get().setTheme(get().theme === 'dark' ? 'light' : 'dark'),
     }),
@@ -155,9 +241,13 @@ export const useUI = create<UIStore>()(
       // re-hides a counter the user just said they wanted to watch.
       partialize: (state) => ({
         theme: state.theme,
+        themePreference: state.themePreference,
+        palette: state.palette,
+        accents: state.accents,
         reserveOpen: state.reserveOpen,
         logoFlipped: state.logoFlipped,
-        tourSeenVersion: state.tourSeenVersion,
+        hintsArmed: state.hintsArmed,
+        hintsSeen: state.hintsSeen,
       }),
       merge: (persisted, current) => {
         // Rebuilt from a whitelist rather than spread over the defaults. This
@@ -171,9 +261,26 @@ export const useUI = create<UIStore>()(
           stored.reserveOpen && typeof stored.reserveOpen === 'object'
             ? Object.fromEntries(Object.entries(stored.reserveOpen).filter(([, open]) => typeof open === 'boolean'))
             : current.reserveOpen;
+        // A theme saved before the preference existed was a choice; keep it.
+        const themePreference: ThemePreference =
+          stored.themePreference === 'system' || stored.themePreference === 'dark' || stored.themePreference === 'light'
+            ? stored.themePreference
+            : stored.theme === 'dark' || stored.theme === 'light'
+              ? stored.theme
+              : 'system';
         return {
           ...current,
-          theme: stored.theme === 'dark' || stored.theme === 'light' ? stored.theme : current.theme,
+          themePreference,
+          theme: resolveTheme(themePreference),
+          palette: isPaletteId(stored.palette) ? stored.palette : DEFAULT_PALETTE,
+          accents:
+            stored.accents && typeof stored.accents === 'object'
+              ? Object.fromEntries(
+                  Object.entries(stored.accents).filter(
+                    ([family, accent]) => typeof accent === 'string' && FAMILIES.some((known) => known.id === family),
+                  ),
+                )
+              : {},
           reserveOpen,
           logoFlipped:
             stored.logoFlipped && typeof stored.logoFlipped === 'object'
@@ -183,7 +290,13 @@ export const useUI = create<UIStore>()(
                     .map((key) => [key, true as const]),
                 )
               : current.logoFlipped,
-          tourSeenVersion: typeof stored.tourSeenVersion === 'number' ? stored.tourSeenVersion : 0,
+          hintsArmed: stored.hintsArmed === true,
+          hintsSeen:
+            stored.hintsSeen && typeof stored.hintsSeen === 'object'
+              ? Object.fromEntries(
+                  HINT_KEYS.filter((key) => stored.hintsSeen![key] === true).map((key) => [key, true as const]),
+                )
+              : {},
         };
       },
     },

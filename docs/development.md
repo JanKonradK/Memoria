@@ -80,7 +80,7 @@ The app tries the supplied addresses until it reaches the PC. It does not scan t
 Manual entry remains available. A failed replacement scan keeps the previous connection.
 The camera permission request occurs only after the user selects Scan PC code. The scanner does not save images.
 
-Wi-Fi sync uses HTTP on a trusted private network. It does not encrypt network traffic.
+Wi-Fi sync uses HTTP, but every request and reply is encrypted and authenticated by the app itself; see `docs/publisher-trust.md`.
 Both sides also accept 100.64.0.0/10, the range Tailscale uses, so sync works away from home over an encrypted tailnet.
 Every `/sync` reply lists the PC's current addresses. The phone keeps up to eight and tries the others when the last working one cannot be reached.
 Keep the PC on and Memoria open. The phone syncs while its app is open and after it returns to the foreground.
@@ -98,7 +98,7 @@ npm run build:android
 
 The output is `dist/release/Memoria-android.apk`, a release build. Its version comes from `package.json`.
 The APK contains the app assets and supports offline startup. The minimum version is Android 7 (API 24).
-It is signed with `~/.android/debug.keystore`, the key already on installed devices. Set `MEMORIA_KEYSTORE` and its password variables to use another.
+It is signed with `~/.android/debug.keystore`, the key already on installed devices, until the move to a dedicated release key described in `docs/android-signing.md`. Set `MEMORIA_KEYSTORE` and its password variables to use another.
 Android refuses an update signed with a different key, so every published APK must use this one.
 The release workflow restores it from the `ANDROID_KEYSTORE_BASE64` repository secret.
 
@@ -153,28 +153,30 @@ It also replaces an earlier Electron install in place. User data stays in `%APPD
 ```sh
 npm run build
 npm run package
-npm run build:single
 npm run check:release
 npm run check:native
 ```
 
 Outputs:
 
+- `dist/release/Memoria-setup-x64.exe`
 - `dist/release/Memoria-win-x64.zip`
 - `dist/release/SHA256SUMS.txt`
-- `app/dist-single/Memoria.html`
+
+The installer is built from `desktop/installer.nsi` with [NSIS](https://nsis.sourceforge.io) 3. Packaging looks for `makensis` in `MAKENSIS`, on `PATH` and in `C:\Program Files (x86)\NSIS`; without it, a local run skips the installer and CI fails.
+The installer carries the same tree as the zip and installs it with `desktop/Install-Shortcut.ps1`, the script the zip and the in-app updater use, so all three share one folder and one check that Memoria is closed.
+It adds an uninstaller in `%LOCALAPPDATA%\Memoria` (outside the program folder, which an update replaces) and an entry under `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\Memoria`, whose version `Install-Shortcut.ps1` keeps current.
+Uninstalling removes the program, its shortcuts, the start-with-Windows entry and the notification identity, and keeps `%APPDATA%\memoria`.
 
 `check:native` drives the packaged `Memoria.exe` through WebView2's debugging port, using a copied install, a scratch data folder and a separate instance name.
 It covers existing data, close-and-save, relaunch, a second start, the unsaved-draft guard, phone pairing and sync, disk sync, the tray and the content policy, and deletes its scratch folder afterwards.
-`check:release` checks the zip's contents and the one-file HTML offline.
+`check:release` checks the zip's contents and that the installer is built and listed in the checksums.
 
 The ZIP contains `Memoria.exe` (about 7 MB), the built app, the install scripts and the icon.
 Packaging sets the program's version from `package.json`.
 `release.json` identifies a packaged install, with `runtime: "tauri"`. The updater does not replace a source checkout.
 
-The standalone HTML includes its scripts, styles, fonts, and icon.
-It has no service worker or launcher sync. It checks for new releases and links to the download page, but cannot replace itself.
-Use a backup to transfer data between browsers or file locations.
+Neither the installer nor `Memoria.exe` is code-signed, so Windows SmartScreen warns on first run. `docs/winget.md` covers signing and a winget listing.
 
 ## Publish a release
 
@@ -187,10 +189,12 @@ git push --follow-tags
 ```
 
 Use `minor` or `major` instead of `patch` when appropriate.
-Write the release notes in `docs/releases/v<version>.md` before tagging. The app shows them in **Settings → Updates**.
-A `v*` tag starts [the release workflow](../.github/workflows/release.yml).
-The tag must match the version in `package.json`.
-The workflow builds and publishes the Windows, Android and one-file downloads, checksums, and release notes.
+Write the release notes in `docs/releases/<version>.md` before tagging. The app shows them in **Settings → Updates**.
+Tags are the bare version (`0.2.0`); `.npmrc` makes `npm version` tag that way, and that tag starts [the release workflow](../.github/workflows/release.yml).
+The tag must match the version in `package.json`. The app shows it as "Beta 0.2.0".
+
+Versions restarted at 0.1.0 in November 2026. The earlier line was tagged `v2.0.0` to `v4.0.3` (and an unrelated `v0.1.0`); installed copies ignore every `v…` release, because those higher numbers would otherwise look like updates. Android adds 1000000 to its version code so the restarted line installs over 4.0.3. Copies on 4.0.3 or earlier do not see the new line and are updated once by hand.
+The workflow builds and publishes the Windows installer and zip, the Android app, checksums, and release notes.
 CI also assembles the Windows package on each push to `main` and each pull request.
 
 ## Updates

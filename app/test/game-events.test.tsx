@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { emptyState, type Game, type GameEvent } from '@memoria/shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GameEvents } from '../src/components/GameEvents';
@@ -70,7 +70,7 @@ afterEach(() => {
 });
 
 /** The game's Edit menu holds both the layout editor and the events panel. */
-function chooseFromEdit(item: 'Edit layout' | 'Manage events' | 'Close events') {
+function chooseFromEdit(item: 'Game settings' | 'Manage events' | 'Close events') {
   const trigger = screen.getAllByRole('button', { name: 'Edit My game', exact: true }).at(-1)!;
   fireEvent.keyDown(trigger, { key: 'Enter' });
   fireEvent.click(screen.getByRole('menuitem', { name: item }));
@@ -219,10 +219,11 @@ describe('taking a break', () => {
     const events = [event('Personal window')];
     load(events);
     render(<Controls />);
-    // Pausing is rare, so it sits with the card's other settings under Edit.
+    // Pausing is rare, so it sits in Game settings, under Edit.
     expect(screen.queryByRole('button', { name: 'Pause tracking', exact: true })).toBeNull();
-    chooseFromEdit('Edit layout');
-    fireEvent.click(screen.getByRole('button', { name: 'Pause tracking', exact: true }));
+    chooseFromEdit('Game settings');
+    expect(useUI.getState().sheet).toEqual({ kind: 'game', gameId: useApp.getState().state.games[0]!.id });
+    act(() => useApp.getState().updateGame(useApp.getState().state.games[0]!.id, { paused: true }));
     expect(useApp.getState().state.games[0]?.paused).toBe(true);
     expect(useApp.getState().state.games[0]?.deleted).toBeFalsy();
     expect(useApp.getState().state.events).toEqual(events);

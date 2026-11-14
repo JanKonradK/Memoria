@@ -1,6 +1,5 @@
 node_modules/
 dist/
-dist-single/
 # Per-machine launcher setting: which browser to open the app window in.
 desktop/config.json
 *.local

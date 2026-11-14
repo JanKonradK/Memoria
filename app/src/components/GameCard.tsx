@@ -1,59 +1,46 @@
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
+import { Hint } from './Hint';
 import { EventTags } from './EventTags';
-import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
-import type {
-  AppState,
-  ChecklistItem,
-  EventProgress,
-  Game,
-  GameEvent,
-  GameUrgency,
-  GameLayoutItem,
-  Snapshot,
-} from '@memoria/shared';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
+import type { AppState, ChecklistItem, EventProgress, Game, GameEvent, GameUrgency, Snapshot } from '@memoria/shared';
 import {
   effectiveResourceKind,
   EVENT_PROGRESS_LABEL,
   EVENT_STEPS,
   eventPartsDone,
   eventProgress,
+  measuredSnapshot,
   nextEventProgress,
   projectEnergy,
   resolveGameLayout,
   setEventProgress,
 } from '@memoria/shared';
-import { m } from 'motion/react';
 import { useDerived } from '../selectors';
 import { useApp, type AppStore } from '../store';
 import { useUI } from '../ui-store';
-import { useMediaQuery, useReducedMotion } from '../hooks';
-import { cardEnter } from '../motion';
+import { haptic, useMediaQuery, useReducedMotion } from '../hooks';
 import { titleStyle } from '../fonts';
 import { GameLogo } from './GameLogo';
 import { PinMark } from './EventPeek';
-import { gameInk, gameRim, gameSupport, gameTitleInk, mix } from '../game-color';
-import { gameShellVars, useGround, useTheme } from '../theme';
-
-import { endTone, fmtDur, localResetLabel, tint } from '../util';
+import { gameInk, gameSupport, gameTitleInk } from '../game-color';
+import { useGround } from '../theme';
+import { endTone, fmtDur, localResetLabel } from '../util';
 import { EnergyRow } from './EnergyRow';
 import { AttentionIndicator } from './AttentionIndicator';
 import { Pill, ProgressBar, Tick } from './primitives';
-import { GameLayoutCanvas, type GameWidget } from './GameLayoutCanvas';
 import { GameEvents } from './GameEvents';
-import { TaskFields, taskSettingsSummary } from './settings/TaskFields';
-import { Btn, Field, TextInput, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
-import { useGameDraft } from './game-detail/useGameDraft';
+import { Btn, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
 import { useIdentityColors } from './roster';
 import { gameServerLabel } from '../server-choice';
 import { groupGameEvents } from '../event-category';
 import { calendarSchedule } from '../event-schedule';
 import { readingSource } from '../reading-source';
-import { LaunchButton, LaunchSettings } from './GameLaunch';
+import { LaunchButton } from './GameLaunch';
 import { useCatchUpUnread } from '../catch-up-status';
 
-const TITLE_FIELDS = ['name'] as const;
-
 const CADENCE_ORDER = ['daily', 'custom', 'weekly', 'monthly'] as const;
+const MENU_ITEM =
+  'flex min-h-11 cursor-pointer items-center rounded-ui-sm px-3 text-body text-fg-soft outline-none transition-colors data-[highlighted]:bg-fill-2 data-[highlighted]:text-fg sm:min-h-9';
 const CADENCE_LABEL = { daily: 'Daily', custom: 'Cycle', weekly: 'Weekly', monthly: 'Monthly' } as const;
 
 /** Undone tasks escalate as their reset approaches: amber < 2h, pulsing red < 20 min. */
@@ -387,7 +374,10 @@ function TaskRow({
   return (
     <button
       type="button"
-      onClick={onToggle}
+      onClick={() => {
+        haptic();
+        onToggle();
+      }}
       // A check task is a toggle, unlike its restart/advance siblings, so state
       // rides on aria-pressed. Deliberately no aria-label: it would override the
       // content and take the urgency countdown out of the accessible name.
@@ -577,7 +567,7 @@ function EnergyControlRow({
   note?: string;
 }) {
   const ground = useGround();
-  const projection = useMemo(() => projectEnergy(res, snap, now, game), [game, now, res, snap]);
+  const projection = useMemo(() => projectEnergy(res, measuredSnapshot(res, snap), now, game), [game, now, res, snap]);
   const commit = useCallback(
     (value: number, reserve?: number) => setEnergy(res.id, value, reserve),
     [res.id, setEnergy],
@@ -600,6 +590,7 @@ function EnergyControlRow({
 function ResourceControls({
   game,
   state,
+  hidden,
   snaps,
   now,
   actions,
@@ -607,18 +598,23 @@ function ResourceControls({
 }: {
   game: Game;
   state: AppState;
+  /** Layout ids of rows the player hid: `resource:<id>` and `quick-spend`. */
+  hidden: ReadonlySet<string>;
   snaps: Map<string, Snapshot>;
   now: number;
   actions: GameControlActions;
   reading?: { resourceId: string; label: string };
 }) {
   const resources = state.resources.filter((r) => r.gameId === game.id && !r.deleted).sort((a, b) => a.sort - b.sort);
-  const cardResources = resources.filter((res) => ['regen', 'weekly'].includes(effectiveResourceKind(res)));
+  const cardResources = resources.filter(
+    (res) => ['regen', 'weekly'].includes(effectiveResourceKind(res)) && !hidden.has(`resource:${res.id}`),
+  );
 
   return (
     <>
       {cardResources.length > 0 && (
-        <div data-tour="resources" className="mt-3.5 space-y-3">
+        <div data-section="resources" className="mt-3.5 space-y-3">
+          <Hint id="energy" />
           {cardResources.map((res) => (
             <EnergyControlRow
               key={res.id}
@@ -633,7 +629,7 @@ function ResourceControls({
           ))}
         </div>
       )}
-      <QuickSpendControls game={game} state={state} actions={actions} />
+      {!hidden.has('quick-spend') && <QuickSpendControls game={game} state={state} actions={actions} />}
     </>
   );
 }
@@ -730,6 +726,8 @@ function TaskControl({
         )
       }
     />
+  ) : item.link ? (
+    <LinkedTaskRow item={item} color={tickColor} now={now} showDeadline={showDeadline} actions={actions} />
   ) : (
     <TaskRow
       item={item}
@@ -738,6 +736,64 @@ function TaskControl({
       showDeadline={showDeadline}
       onToggle={() => actions.setTaskDone(item.taskId, item.periodKey, !item.done)}
     />
+  );
+}
+
+/**
+ * A task done on another site, like a HoYoLAB check-in: Open goes there, and
+ * coming back offers Mark done, so the common answer is one tap.
+ */
+function LinkedTaskRow({
+  item,
+  color,
+  now,
+  showDeadline,
+  actions,
+}: {
+  item: ChecklistItem;
+  color: string;
+  now: number;
+  showDeadline: boolean;
+  actions: GameControlActions;
+}) {
+  const [opened, setOpened] = useState(false);
+  const done = () => {
+    actions.setTaskDone(item.taskId, item.periodKey, true);
+    setOpened(false);
+  };
+  return (
+    <div className="flex items-center gap-1">
+      <div className="min-w-0 flex-1">
+        <TaskRow
+          item={item}
+          color={color}
+          now={now}
+          showDeadline={showDeadline}
+          onToggle={() => actions.setTaskDone(item.taskId, item.periodKey, !item.done)}
+        />
+      </div>
+      {!item.done &&
+        (opened ? (
+          <button
+            type="button"
+            className="min-h-11 shrink-0 rounded-ui-sm px-2 text-caption font-semibold text-fg hover:bg-fill-2 sm:min-h-8"
+            onClick={done}
+          >
+            Mark done
+          </button>
+        ) : (
+          <a
+            href={item.link}
+            target="_blank"
+            rel="noreferrer"
+            className="min-h-11 shrink-0 content-center rounded-ui-sm px-2 text-caption font-semibold text-accent-fg hover:bg-fill-2 sm:min-h-8"
+            aria-label={`Open ${item.name}`}
+            onClick={() => setOpened(true)}
+          >
+            Open
+          </a>
+        ))}
+    </div>
   );
 }
 
@@ -765,7 +821,8 @@ function ChecklistControls({
   if (game.paused || checklist.length === 0) return null;
   const groups = groupChecklist(checklist);
   return (
-    <div data-tour="tasks" className="mt-3.5">
+    <div data-section="tasks" className="mt-3.5">
+      <Hint id="tasks" className="mb-2" />
       {groups.map((group) => (
         <section key={group.cadence} aria-label={`${CADENCE_LABEL[group.cadence]} tasks for ${game.name}`}>
           <ChecklistGroupRule
@@ -853,6 +910,11 @@ function GameControlsHeader({
   actionsEnd?: ReactNode;
 }) {
   const TitleContainer = layout === 'focus' ? 'div' : 'button';
+  const focusEvents = useRef(false);
+  function toggleEvents() {
+    focusEvents.current = !managingEvents;
+    onToggleEvents();
+  }
   const ground = useGround();
   // A game's own page has room for the logo to carry the whole name.
   const wide = useMediaQuery('(min-width: 900px)');
@@ -878,7 +940,7 @@ function GameControlsHeader({
           </svg>
         </button>
       )}
-      {layout === 'focus' && <GameLogo game={game} size={fullLogo ? 136 : 72} flippable spin />}
+      {layout === 'focus' && <GameLogo game={game} size={fullLogo ? 136 : 72} flippable />}
       <TitleContainer
         type={layout === 'focus' ? undefined : 'button'}
         onClick={layout === 'focus' ? undefined : onEdit}
@@ -921,7 +983,7 @@ function GameControlsHeader({
             </Pill>
           )}
         </div>
-        <div className="game-card-status aside mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-label text-muted">
+        <div className="game-card-status mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-label text-muted">
           <ServerChip label={regionLabel} className="max-w-20 truncate" />
           {layout === 'focus' && accountLabel && <span className="[overflow-wrap:anywhere]">{accountLabel}</span>}
           <span>reset {resetLabel}</span>
@@ -932,9 +994,9 @@ function GameControlsHeader({
       <div className="game-card-actions flex shrink-0 items-center gap-2" aria-label={`${game.name} tracking controls`}>
         {actions}
         <CatchUpButton game={game} />
-        {/* One Edit control for the layout and the events. Compact cards keep their title shortcut. */}
+        {/* One Edit control for the game's settings and its events. Compact cards keep their title shortcut. */}
         <DropdownMenuPrimitive.Root>
-          <Tooltip content={`Edit ${game.name} layout or events`}>
+          <Tooltip content={`Edit ${game.name} settings or events`}>
             <DropdownMenuPrimitive.Trigger asChild>
               <Btn
                 ref={editRef}
@@ -959,24 +1021,20 @@ function GameControlsHeader({
               align="end"
               sideOffset={6}
               className="popover-motion z-50 min-w-44 rounded-ui-lg bg-popover p-1 shadow-float ring-1 ring-line-strong"
+              onCloseAutoFocus={(event) => {
+                // Opening the events panel moves focus into it, not back to Edit.
+                if (!focusEvents.current) return;
+                focusEvents.current = false;
+                event.preventDefault();
+                document.getElementById(eventsPanelId)?.querySelector<HTMLElement>('h3')?.focus();
+              }}
             >
-              {[
-                { label: 'Edit layout', onSelect: onEdit },
-                {
-                  label: managingEvents ? 'Close events' : 'Manage events',
-                  onSelect: onToggleEvents,
-                  controls: eventsPanelId,
-                },
-              ].map((item) => (
-                <DropdownMenuPrimitive.Item
-                  key={item.label}
-                  onSelect={item.onSelect}
-                  aria-controls={item.controls}
-                  className="flex min-h-11 cursor-pointer items-center rounded-ui-sm px-3 text-body text-fg-soft outline-none transition-colors data-[highlighted]:bg-fill-2 data-[highlighted]:text-fg sm:min-h-9"
-                >
-                  {item.label}
-                </DropdownMenuPrimitive.Item>
-              ))}
+              <DropdownMenuPrimitive.Item onSelect={onEdit} className={MENU_ITEM}>
+                Game settings
+              </DropdownMenuPrimitive.Item>
+              <DropdownMenuPrimitive.Item onSelect={toggleEvents} aria-controls={eventsPanelId} className={MENU_ITEM}>
+                {managingEvents ? 'Close events' : 'Manage events'}
+              </DropdownMenuPrimitive.Item>
             </DropdownMenuPrimitive.Content>
           </DropdownMenuPrimitive.Portal>
         </DropdownMenuPrimitive.Root>
@@ -1038,24 +1096,12 @@ export function GameControlsView({
   aside?: ReactNode;
 }) {
   const { game } = entry;
-  const [editing, setEditing] = useState(false);
   const [managingEvents, setManagingEvents] = useState(false);
   const eventsPanelId = useId();
-  const originalLayout = useRef<GameLayoutItem[] | undefined>(undefined);
   const editRef = useRef<HTMLButtonElement>(null);
   const updateGame = useApp((store) => store.updateGame);
   const openSheet = useUI((store) => store.openSheet);
-  const { draft: titleDraft, changeDraft: changeTitle } = useGameDraft(game, TITLE_FIELDS, editing, 0);
-  const beginEdit = () => {
-    if (editing) return;
-    originalLayout.current = game.cardLayout?.map((item) => ({ ...item }));
-    setManagingEvents(false);
-    setEditing(true);
-  };
-  const finishEdit = () => {
-    setEditing(false);
-    requestAnimationFrame(() => editRef.current?.focus());
-  };
+  const openSettings = () => openSheet({ kind: 'game', gameId: game.id });
   useEffect(() => {
     if (!onBack) return;
     const returnToToday = (event: KeyboardEvent) => {
@@ -1078,19 +1124,23 @@ export function GameControlsView({
     document.addEventListener('keydown', returnToToday);
     return () => document.removeEventListener('keydown', returnToToday);
   }, [onBack]);
-  const saveLayout = (cardLayout: GameLayoutItem[] | undefined) => {
-    if (useApp.getState().state.games.some((item) => item.id === game.id && !item.deleted))
-      updateGame(game.id, { cardLayout });
-  };
-  const ground = useGround();
   const derived = useDerived(now);
   const identityColors = useIdentityColors(state.games);
   const visualGame = { ...game, ...(identityColors[game.id] ?? {}) };
   // Cadence order and core-first ordering now both belong to groupChecklist —
   // this flat sort used to run AFTER checklistFor's core-first one and silently
   // undo it, so the card ignored the rule that pull-currency tasks lead.
-  const checklist = derived.checklistByGame.get(game.id) ?? [];
-  const dailies = checklist.filter((item) => item.cadence === 'daily');
+  // Rows a player hid in the retired layout editor, or from Game settings, stay hidden.
+  const hidden = new Set(
+    game.cardLayout
+      ? resolveGameLayout(game, state.resources, state.tasks)
+          .filter((item) => item.hidden)
+          .map((item) => item.id)
+      : [],
+  );
+  const allChecklist = derived.checklistByGame.get(game.id) ?? [];
+  const checklist = allChecklist.filter((item) => !hidden.has(`task:${item.taskId}`));
+  const dailies = allChecklist.filter((item) => item.cadence === 'daily');
   const { resource: mainResource } = derived.primaryEnergy(game.id);
   const source = mainResource ? readingSource(derived.snaps.get(mainResource.id), now) : null;
   const reading =
@@ -1105,6 +1155,7 @@ export function GameControlsView({
     <ResourceControls
       game={visualGame}
       state={state}
+      hidden={hidden}
       snaps={derived.snaps}
       now={now}
       actions={actions}
@@ -1115,7 +1166,7 @@ export function GameControlsView({
   const focus = layout === 'focus';
   const setProgress = (event: GameEvent, progress: EventProgress) =>
     useApp.getState().upsertEvent({ id: event.id, gameId: event.gameId, ...setEventProgress(progress) });
-  const events = !game.paused && (
+  const events = !game.paused && !hidden.has('events') && (
     <EventStrip
       game={visualGame}
       events={state.events}
@@ -1125,130 +1176,6 @@ export function GameControlsView({
       emptyLabel={focus ? 'No events.' : undefined}
     />
   );
-  const custom = editing || game.cardLayout !== undefined;
-  const widgets = new Map<string, GameWidget>();
-  if (custom) {
-    for (const resource of state.resources.filter((item) => item.gameId === game.id && !item.deleted)) {
-      const rename = (name: string) => useApp.getState().upsertResource({ id: resource.id, gameId: game.id, name });
-      widgets.set(`resource:${resource.id}`, {
-        name: resource.name,
-        summary: `${resource.cap} capacity · ${effectiveResourceKind(resource) === 'regen' ? `${resource.regenMinutes} min / point` : effectiveResourceKind(resource) === 'weekly' ? 'Weekly refill' : 'Manual counter'}`,
-        available: true,
-        rename,
-        editor: (
-          <div className="space-y-3">
-            <Field label="Item title">
-              <TextInput maxLength={500} value={resource.name} onChange={(event) => rename(event.target.value)} />
-            </Field>
-            <Btn
-              className={TOUCH_BUTTON}
-              onClick={() => openSheet({ kind: 'game', gameId: game.id, section: 'resources' })}
-            >
-              Capacity and regeneration settings
-            </Btn>
-          </div>
-        ),
-        remove: () => {
-          useApp.getState().deleteResource(resource.id);
-          return () => useApp.getState().upsertResource({ id: resource.id, gameId: game.id, deleted: false });
-        },
-        content: (
-          <EnergyControlRow
-            game={visualGame}
-            res={resource}
-            snap={derived.snaps.get(resource.id)}
-            now={now}
-            localTz={state.settings.localTz}
-            setEnergy={actions.setEnergy}
-            note={reading?.resourceId === resource.id ? reading.label : undefined}
-          />
-        ),
-      });
-    }
-    const byTask = new Map(checklist.map((item) => [item.taskId, item]));
-    for (const task of state.tasks.filter((item) => item.gameId === game.id && !item.deleted)) {
-      const item = byTask.get(task.id);
-      widgets.set(`task:${task.id}`, {
-        name: task.name,
-        summary: taskSettingsSummary(task),
-        rename: (name) => useApp.getState().updateTask(task.id, { name }),
-        editor: <TaskFields task={task} nameLabel="Item title" showSaveHint={false} />,
-        remove: () => {
-          useApp.getState().deleteTask(task.id);
-          return () => useApp.getState().updateTask(task.id, { deleted: false });
-        },
-        available: !game.paused && Boolean(item),
-        content: (
-          <>
-            <p className="mb-1 text-label text-muted">{CADENCE_LABEL[task.cadence]}</p>
-            {item ? (
-              <TaskControl item={item} now={now} actions={actions} color={gameInk(visualGame, ground)} />
-            ) : (
-              <p className="text-meta text-muted">{task.name} · inactive</p>
-            )}
-          </>
-        ),
-      });
-    }
-    widgets.set('quick-spend', {
-      name: 'Quick spend',
-      summary: 'Resource shortcuts',
-      editor: (
-        <Btn className={TOUCH_BUTTON} onClick={() => openSheet({ kind: 'game', gameId: game.id, section: 'spend' })}>
-          Edit quick spends
-        </Btn>
-      ),
-      available:
-        !game.paused &&
-        state.chips.some((item) => item.gameId === game.id && !item.deleted) &&
-        state.resources.some(
-          (item) => item.gameId === game.id && !item.deleted && effectiveResourceKind(item) === 'regen',
-        ),
-      content: <QuickSpendControls game={visualGame} state={state} actions={actions} />,
-    });
-    widgets.set('events', {
-      name: 'Events',
-      summary: 'Current event preview',
-      editor: (
-        <Btn
-          className={TOUCH_BUTTON}
-          onClick={() => {
-            finishEdit();
-            setManagingEvents(true);
-            requestAnimationFrame(() =>
-              document.getElementById(eventsPanelId)?.querySelector<HTMLElement>('h3')?.focus(),
-            );
-          }}
-        >
-          Edit event details
-        </Btn>
-      ),
-      available:
-        !game.paused &&
-        state.events.some(
-          (item) => item.gameId === game.id && !item.deleted && !item.done && (item.end > now || item.start > now),
-        ),
-      content: events,
-    });
-  }
-
-  const customCanvas = custom && (
-    <GameLayoutCanvas
-      key={`${game.id}:${editing}`}
-      gameId={game.id}
-      items={resolveGameLayout(game, state.resources, state.tasks)}
-      widgets={widgets}
-      editing={editing}
-      onChange={saveLayout}
-      onAdded={(id) => {
-        const latest = useApp.getState().state;
-        const currentGame = latest.games.find((item) => item.id === game.id && !item.deleted);
-        if (!currentGame) return;
-        const resolved = resolveGameLayout(currentGame, latest.resources, latest.tasks);
-        saveLayout([{ id, hidden: false }, ...resolved.filter((item) => item.id !== id)]);
-      }}
-    />
-  );
   return (
     <>
       <GameControlsHeader
@@ -1256,7 +1183,7 @@ export function GameControlsView({
         dailies={dailies}
         now={now}
         localTz={state.settings.localTz}
-        onEdit={beginEdit}
+        onEdit={openSettings}
         onBack={onBack}
         editRef={editRef}
         urgent={!game.paused && entry.next != null && entry.next.at - now < 2 * 60 * 60_000}
@@ -1278,68 +1205,18 @@ export function GameControlsView({
       <div id={eventsPanelId} hidden={!managingEvents}>
         {managingEvents && <GameEvents key={game.id} game={game} now={now} />}
       </div>
-      {editing && (
-        <section className="relative z-20 border-b border-line py-3" aria-label={`Layout editor for ${game.name}`}>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-auto text-body font-semibold">Customize card</span>
-            <Btn kind="primary" onClick={finishEdit}>
-              Done
-            </Btn>
-            <Btn onClick={() => openSheet({ kind: 'game', gameId: game.id })}>Game settings</Btn>
-            {!game.paused && <Btn onClick={() => updateGame(game.id, { paused: true })}>Pause tracking</Btn>}
-            <Btn aria-label="Reset layout" onClick={() => saveLayout(undefined)}>
-              Reset layout
-            </Btn>
-            <Btn
-              aria-label="Undo layout changes"
-              onClick={() => {
-                saveLayout(originalLayout.current);
-                finishEdit();
-              }}
-            >
-              Undo layout
-            </Btn>
-          </div>
-          <LaunchSettings game={game} />
-          <div className="mt-3">
-            <Field label="Game title">
-              <TextInput
-                maxLength={500}
-                value={titleDraft.name}
-                onChange={(event) => changeTitle('name', event.target.value)}
-              />
-            </Field>
-          </div>
-        </section>
-      )}
-      <div
-        className={`relative z-10 flex flex-1 flex-col ${game.paused && !editing ? 'opacity-50' : ''}`}
-        onKeyDown={(event) => {
-          if (editing && event.key === 'Escape') {
-            event.stopPropagation();
-            finishEdit();
-          }
-        }}
-      >
-        {custom ? (
-          aside ? (
-            // A custom layout keeps its own order; the context column stands beside it.
-            <div className="focus-bay-grid focus-bay-custom grid gap-x-8 gap-y-6" data-cols={columns}>
-              <div className="focus-track min-w-0">{customCanvas}</div>
-              <div className="focus-context min-w-0">{aside}</div>
-            </div>
-          ) : (
-            customCanvas
-          )
-        ) : layout === 'focus' ? (
+      <div className={`relative z-10 flex flex-1 flex-col ${game.paused ? 'opacity-50' : ''}`}>
+        {layout === 'focus' ? (
           // Context on the left, what you track in the middle, what is running on the right.
           <div className="focus-bay-grid grid gap-x-8 gap-y-6" data-cols={columns} data-aside={aside ? '' : undefined}>
             <div className="focus-track min-w-0">
               {resources}
               {tasks}
             </div>
-            {aside && <div className="focus-context min-w-0">{aside}</div>}
+            {/* One column (a phone) reads in this order: events come before
+                livestreams, Catch up and notes. Wider grids place them by area. */}
             <div className="focus-events min-w-0">{events}</div>
+            {aside && <div className="focus-context min-w-0">{aside}</div>}
           </div>
         ) : (
           <>
@@ -1395,61 +1272,3 @@ export function GameControls({
     />
   );
 }
-
-export const GameCard = memo(function GameCard({
-  entry,
-  now,
-  index = 0,
-}: {
-  entry: GameUrgency;
-  now: number;
-  /** Position in the grid, so the rail lays itself out rather than blinking in. */
-  index?: number;
-}) {
-  const { game } = entry;
-  const games = useApp((store) => store.state.games);
-  const ground = useGround();
-  const theme = useTheme();
-  // Identity and glass treatment share the same shell as the roster and focus view.
-  const identityColors = useIdentityColors(games);
-  const visualColors = identityColors[game.id] ?? game;
-  const rim = gameRim(visualColors, ground);
-
-  return (
-    <m.div
-      data-game-card={game.id}
-      // No h-full: in the narrow grid the cell already stretches the card, and in
-      // the Cards columns it made a lone card grow to the height of the tallest
-      // column — the empty-card problem in a new place.
-      className="card-shell game-card-surface group relative flex flex-col overflow-hidden rounded-ui-card px-4 pb-6 pt-4"
-      variants={cardEnter}
-      custom={index}
-      initial="hidden"
-      animate="visible"
-      style={{
-        ...gameShellVars(game, theme, visualColors),
-      }}
-    >
-      {game.image && (
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-2/3 overflow-hidden rounded-r-ui-card">
-          <img
-            src={game.image}
-            alt=""
-            className="absolute right-0 top-1/2 h-[135%] max-w-none -translate-y-1/2 object-cover opacity-40 saturate-125 transition duration-(--dur-slow) group-hover:opacity-55"
-            style={{
-              WebkitMaskImage: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.55) 55%, #000 100%)',
-              maskImage: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.55) 55%, #000 100%)',
-            }}
-          />
-          <div
-            className="absolute inset-0 rounded-r-ui-card"
-            style={{
-              background: `linear-gradient(90deg, ${mix(ground, rim, 0.05)} 6%, transparent 60%), linear-gradient(0deg, ${tint(rim, 0.14)}, transparent 70%)`,
-            }}
-          />
-        </div>
-      )}
-      <GameControls entry={entry} now={now} />
-    </m.div>
-  );
-});

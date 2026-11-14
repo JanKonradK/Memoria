@@ -49,7 +49,7 @@ export function signRelease(directory = resolve(import.meta.dirname, '../dist/re
   const { version } = JSON.parse(readFileSync(resolve(import.meta.dirname, '../package.json')));
   const windows = treeDigests(join(directory, 'Memoria'));
   const files = {};
-  for (const name of ['Memoria-win-x64.zip', 'Memoria-android.apk', 'Memoria.html'])
+  for (const name of ['Memoria-win-x64.zip', 'Memoria-setup-x64.exe', 'Memoria-android.apk'])
     if (existsSync(join(directory, name)))
       files[name] = createHash('sha256')
         .update(readFileSync(join(directory, name)))
@@ -63,7 +63,7 @@ export function signRelease(directory = resolve(import.meta.dirname, '../dist/re
     JSON.stringify(
       signPublished(
         'memoria-release-v1',
-        { version, tag: `v${version}`, files, windows },
+        { version, tag: version, files, windows },
         Math.max(Date.now(), previous + 1),
       ),
     ) + '\n',
