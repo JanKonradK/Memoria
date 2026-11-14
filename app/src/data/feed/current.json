@@ -1,6 +1,8 @@
 {
-  "updated": "2026-11-04",
-  "withdrawn": ["seed:endfield:1.5-deep-cold-issue"],
+  "updated": "2026-11-14",
+  "withdrawn": [
+    "seed:endfield:1.5-deep-cold-issue"
+  ],
   "events": [
     {
       "game": "genshin",
@@ -84,15 +86,6 @@
       "notify": false,
       "notes": "Gnostic Hymn and Chorus purchases close at 02:59, one hour earlier. Estimated dates.",
       "sourceKey": "genshin:21818"
-    },
-    {
-      "game": "genshin",
-      "name": "Great Expeditionist Challenge — free Diona",
-      "type": "event",
-      "start": "2026-08-28 10:00",
-      "end": "2026-09-14 03:59",
-      "notes": "Rank in four minigames to invite Diona; phases II and III unlock August 30 and September 1 at 04:00.",
-      "sourceKey": "seed:genshin:7.0-expeditionist"
     },
     {
       "game": "genshin",
@@ -213,15 +206,6 @@
     },
     {
       "game": "genshin",
-      "name": "Genius Invokation TCG: Tactical Formation",
-      "type": "event",
-      "start": "2026-08-29 10:00",
-      "end": "2026-09-14 03:59",
-      "notes": "Heated Battle Mode with different deck-building rules.",
-      "sourceKey": "genshin:20748"
-    },
-    {
-      "game": "genshin",
       "name": "Archon Quest \"Everwinter Without Mercy\" — timed reward",
       "type": "event",
       "start": "2026-08-12 04:00",
@@ -309,15 +293,6 @@
     },
     {
       "game": "hsr",
-      "name": "Pure Fiction",
-      "type": "cycle",
-      "start": "2026-08-03 04:00",
-      "end": "2026-09-14 03:59",
-      "notes": "Fabricated Business.",
-      "sourceKey": "seed:hsr:pf-4.4"
-    },
-    {
-      "game": "hsr",
       "name": "Memory of Chaos",
       "type": "cycle",
       "start": "2026-08-17 04:00",
@@ -393,26 +368,6 @@
     },
     {
       "game": "hsr",
-      "name": "Robin • Summeretto · Hyacine rerun (phase 1)",
-      "type": "banner",
-      "bannerKind": "character",
-      "start": "2026-08-26 04:00",
-      "end": "2026-09-12 11:59",
-      "notes": "Summer Chorus and A Rainbow onto Twilight.",
-      "sourceKey": "seed:hsr:4.5-p1-robin"
-    },
-    {
-      "game": "hsr",
-      "name": "Rise and Sing · Long May Rainbows Adorn the Sky — phase 1 Light Cone Warps",
-      "type": "banner",
-      "bannerKind": "weapon",
-      "start": "2026-08-26 04:00",
-      "end": "2026-09-12 11:59",
-      "notes": "Brilliant Fixation: Rise and Sing; Bygone Reminiscence: Long May Rainbows Adorn the Sky.",
-      "sourceKey": "seed:hsr:4.5-p1-lc"
-    },
-    {
-      "game": "hsr",
       "name": "Aventurine • Waveflair · Ashveil rerun (phase 2)",
       "type": "banner",
       "bannerKind": "character",
@@ -432,210 +387,6 @@
       "notify": false,
       "notes": "Finish pulls before maintenance. Estimated dates.",
       "sourceKey": "seed:hsr:4.5-p2-lc"
-    },
-    {
-      "game": "zzz",
-      "name": "Deadly Assault",
-      "type": "cycle",
-      "start": "2026-08-28 04:00",
-      "end": "2026-09-11 03:59",
-      "notify": false,
-      "notes": "Estimated dates.",
-      "sourceKey": "seed:zzz:da-2026-08-28"
-    },
-    {
-      "game": "zzz",
-      "name": "Summer Waves Roll In — Fantasy Resort summer event",
-      "type": "event",
-      "start": "2026-07-29 04:00",
-      "end": "2026-09-07 03:59",
-      "notes": "Lucy outfit, namecard and Hamster Cage.",
-      "sourceKey": "seed:zzz:3.1-summer-waves"
-    },
-    {
-      "game": "zzz",
-      "name": "Gift From the Clouds — 10 free tapes",
-      "type": "event",
-      "start": "2026-07-29 04:00",
-      "end": "2026-09-08 03:59",
-      "dailyTouch": true,
-      "notes": "Log in on 7 days.",
-      "sourceKey": "seed:zzz:3.1-gift-clouds"
-    },
-    {
-      "game": "zzz",
-      "name": "Marcel Anniversary Gift — free S-Rank Agent + W-Engine",
-      "type": "event",
-      "start": "2026-07-29 04:00",
-      "end": "2026-09-08 23:00",
-      "notes": "Choose 1 of 5 limited S-Rank Agents and 1 of 5 limited S-Rank W-Engines; 1,600 Polychrome.",
-      "sourceKey": "seed:zzz:3.1-marcel"
-    },
-    {
-      "game": "zzz",
-      "name": "Phaethon's Grand Reveal of the Year",
-      "type": "event",
-      "start": "2026-07-29 04:00",
-      "end": "2026-09-08 23:00",
-      "notes": "",
-      "sourceKey": "seed:zzz:3.1-grand-reveal"
-    },
-    {
-      "game": "zzz",
-      "name": "Potential Hypothesis: Hunting Game",
-      "type": "event",
-      "start": "2026-07-29 04:00",
-      "end": "2026-09-08 23:00",
-      "notes": "One-time trial stages.",
-      "sourceKey": "seed:zzz:3.1-hunting-game"
-    },
-    {
-      "game": "zzz",
-      "name": "New Eridu City Fund 3.1",
-      "type": "event",
-      "start": "2026-07-29 04:00",
-      "end": "2026-09-07 03:59",
-      "notes": "Plan purchases close September 7 at 02:59; Expansion Tasks and reward claims close one hour later.",
-      "sourceKey": "seed:zzz:3.1-city-fund"
-    },
-    {
-      "game": "zzz",
-      "name": "Filmgoer Thank-You Gift",
-      "type": "event",
-      "start": "2026-07-29 04:00",
-      "end": "2026-09-08 22:59",
-      "notes": "Purchase rewards.",
-      "sourceKey": "seed:zzz:3.1-filmgoer"
-    },
-    {
-      "game": "zzz",
-      "name": "Return to Ridu: Feathers of Reunion",
-      "type": "event",
-      "start": "2026-07-17 13:30",
-      "end": "2026-09-08 22:59",
-      "notes": "Rewards for returning players.",
-      "sourceKey": "seed:zzz:3.1-return-to-ridu"
-    },
-    {
-      "game": "zzz",
-      "name": "The Final Callback — audition stages",
-      "type": "event",
-      "start": "2026-07-29 04:00",
-      "end": "2026-09-08 14:59",
-      "notes": "First-clear rewards: Remielle until September 8 at 14:59, Aria until August 19 at 11:59; phase 2 trials open August 19 at 12:00.",
-      "sourceKey": "seed:zzz:3.1-final-callback"
-    },
-    {
-      "game": "zzz",
-      "name": "Great En-Nah Giveaway — 10 tapes + 10 Boopons",
-      "type": "event",
-      "start": "2026-08-19 10:00",
-      "end": "2026-09-08 03:59",
-      "dailyTouch": true,
-      "notes": "Log in on 7 days.",
-      "sourceKey": "seed:zzz:3.1-ennah-giveaway"
-    },
-    {
-      "game": "zzz",
-      "name": "Crispy Meal Deployment Plan",
-      "type": "event",
-      "start": "2026-08-19 10:00",
-      "end": "2026-09-07 03:59",
-      "dailyTouch": true,
-      "notes": "Event commissions unlock daily.",
-      "sourceKey": "seed:zzz:3.1-crispy-meal"
-    },
-    {
-      "game": "zzz",
-      "name": "Dangerous Fugitive's Leisurely Vacation",
-      "type": "event",
-      "start": "2026-08-24 10:00",
-      "end": "2026-09-07 03:59",
-      "sourceKey": "seed:zzz:3.1-fugitive"
-    },
-    {
-      "game": "zzz",
-      "name": "Ding-Dong! Delivery Training in Progress",
-      "type": "event",
-      "start": "2026-08-28 10:00",
-      "end": "2026-09-14 03:59",
-      "sourceKey": "seed:zzz:3.1-delivery-training"
-    },
-    {
-      "game": "zzz",
-      "name": "Combat Training: Triple Bounty",
-      "type": "event",
-      "start": "2026-09-02 04:00",
-      "end": "2026-09-07 03:59",
-      "dailyTouch": true,
-      "notes": "Triple Combat Simulation rewards.",
-      "sourceKey": "seed:zzz:3.1-combat-bounty"
-    },
-    {
-      "game": "zzz",
-      "name": "Remielle — Paradise Regained (flagship)",
-      "type": "banner",
-      "bannerKind": "character",
-      "start": "2026-07-29 04:00",
-      "end": "2026-09-08 14:59",
-      "notes": "Runs through both phases of 3.1.",
-      "sourceKey": "seed:zzz:3.1-remielle"
-    },
-    {
-      "game": "zzz",
-      "name": "Ode of Resurrected Wings — W-Engine (flagship)",
-      "type": "banner",
-      "bannerKind": "weapon",
-      "start": "2026-07-29 04:00",
-      "end": "2026-09-08 14:59",
-      "sourceKey": "seed:zzz:3.1-remielle-engine"
-    },
-    {
-      "game": "zzz",
-      "name": "Sigrid — Till the Ends of the Sky (phase 2)",
-      "type": "banner",
-      "bannerKind": "character",
-      "start": "2026-08-19 12:00",
-      "end": "2026-09-08 14:59",
-      "sourceKey": "seed:zzz:3.1-sigrid"
-    },
-    {
-      "game": "zzz",
-      "name": "Knight's Extolment — Sigrid W-Engine (phase 2)",
-      "type": "banner",
-      "bannerKind": "weapon",
-      "start": "2026-08-19 12:00",
-      "end": "2026-09-08 14:59",
-      "sourceKey": "seed:zzz:3.1-sigrid-engine"
-    },
-    {
-      "game": "zzz",
-      "name": "Exclusive Rescreening: Dialyn · Yuzuha · Harumasa (phase 2)",
-      "type": "banner",
-      "bannerKind": "character",
-      "start": "2026-08-19 12:00",
-      "end": "2026-09-08 14:59",
-      "notes": "Choose a rerun banner.",
-      "sourceKey": "seed:zzz:3.1-rescreening"
-    },
-    {
-      "game": "zzz",
-      "name": "W-Engine Reverberation — selectable rerun (phase 2)",
-      "type": "banner",
-      "bannerKind": "weapon",
-      "start": "2026-08-19 12:00",
-      "end": "2026-09-08 14:59",
-      "sourceKey": "seed:zzz:3.1-engine-reverb"
-    },
-    {
-      "game": "zzz",
-      "name": "v3.2 update maintenance",
-      "type": "maintenance",
-      "start": "2026-09-08 22:00",
-      "end": "2026-09-09 03:00",
-      "timezone": "UTC",
-      "notes": "Estimated dates.",
-      "sourceKey": "seed:zzz:3.2-maint"
     },
     {
       "game": "zzz",
@@ -735,26 +486,6 @@
     },
     {
       "game": "wuwa",
-      "name": "Qingxiao + Denia rerun (phase 1)",
-      "type": "banner",
-      "bannerKind": "character",
-      "start": "2026-08-20 04:00",
-      "end": "2026-09-10 09:59",
-      "notes": "",
-      "sourceKey": "seed:wuwa:3.6-p1"
-    },
-    {
-      "game": "wuwa",
-      "name": "Glint of Clouds + Forged Dwarf Star (phase 1 weapons)",
-      "type": "banner",
-      "bannerKind": "weapon",
-      "start": "2026-08-20 04:00",
-      "end": "2026-09-10 09:59",
-      "notes": "",
-      "sourceKey": "seed:wuwa:3.6-p1-weapons"
-    },
-    {
-      "game": "wuwa",
       "name": "Gifts of Drifting Mist (login)",
       "type": "event",
       "start": "2026-08-20 04:00",
@@ -770,14 +501,6 @@
       "start": "2026-08-22 10:00",
       "end": "2026-09-29 11:59",
       "sourceKey": "seed:wuwa:3.6-sim-realm"
-    },
-    {
-      "game": "wuwa",
-      "name": "Second Coming of Solaris: Coded Deception",
-      "type": "event",
-      "start": "2026-08-27 04:00",
-      "end": "2026-09-14 03:59",
-      "sourceKey": "seed:wuwa:3.6-solaris"
     },
     {
       "game": "wuwa",
@@ -854,55 +577,6 @@
       "notify": false,
       "notes": "Estimated dates.",
       "sourceKey": "seed:wuwa:3.7-maint"
-    },
-    {
-      "game": "nte",
-      "name": "Beyond the Rails",
-      "type": "cycle",
-      "start": "2026-08-26 22:00",
-      "end": "2026-09-09 21:59",
-      "notes": "",
-      "sourceKey": "seed:nte:1.3-rails-4"
-    },
-    {
-      "game": "nte",
-      "name": "Alluring Shadows — Zankou (phase 1)",
-      "type": "banner",
-      "bannerKind": "character",
-      "start": "2026-08-19 04:00",
-      "end": "2026-09-08 22:59",
-      "notes": "",
-      "sourceKey": "seed:nte:1.3-zankou"
-    },
-    {
-      "game": "nte",
-      "name": "The Ichi-Daime — Nanally rerun (phase 1)",
-      "type": "banner",
-      "bannerKind": "character",
-      "start": "2026-08-19 04:00",
-      "end": "2026-09-08 22:59",
-      "notes": "",
-      "sourceKey": "seed:nte:1.3-nanally"
-    },
-    {
-      "game": "nte",
-      "name": "Spellbound Special — Ravenous Blade",
-      "type": "banner",
-      "bannerKind": "weapon",
-      "start": "2026-08-19 04:00",
-      "end": "2026-09-08 22:59",
-      "notes": "Phase 1 weapon banner.",
-      "sourceKey": "seed:nte:1.3-ravenous-blade"
-    },
-    {
-      "game": "nte",
-      "name": "Tiger Special — Ready-Ready",
-      "type": "banner",
-      "bannerKind": "weapon",
-      "start": "2026-08-19 04:00",
-      "end": "2026-09-08 22:59",
-      "notes": "",
-      "sourceKey": "seed:nte:1.3-ready-ready"
     },
     {
       "game": "nte",
@@ -993,16 +667,6 @@
     },
     {
       "game": "nte",
-      "name": "Gold Clash — 2× Fons in Pink Paws Heist",
-      "type": "event",
-      "start": "2026-08-31 05:00",
-      "end": "2026-09-14 04:59",
-      "dailyTouch": true,
-      "notes": "",
-      "sourceKey": "seed:nte:1.3-goldclash"
-    },
-    {
-      "game": "nte",
       "name": "Pixel Surge",
       "type": "event",
       "start": "2026-09-14 05:00",
@@ -1044,74 +708,11 @@
       "game": "lads",
       "name": "Senior Hunter Contest",
       "type": "cycle",
-      "start": "2026-08-24 05:00",
-      "end": "2026-09-07 04:59",
-      "notify": false,
-      "notes": "2026 Season 17. Estimated dates.",
-      "sourceKey": "seed:lads:hunter-contest-2026-s17"
-    },
-    {
-      "game": "lads",
-      "name": "Senior Hunter Contest",
-      "type": "cycle",
       "start": "2026-09-07 05:00",
       "end": "2026-09-21 04:59",
       "notify": false,
       "notes": "2026 Season 18. Estimated dates.",
       "sourceKey": "seed:lads:hunter-contest-2026-s18"
-    },
-    {
-      "game": "lads",
-      "name": "Zayne's Birthday Event",
-      "type": "event",
-      "start": "2026-08-31 05:00",
-      "end": "2026-09-07 04:59",
-      "notify": false,
-      "notes": "Birthday-limited 5★ Memory and 10 limited wishes as a login gift. Estimated dates.",
-      "sourceKey": "seed:lads:zayne-birthday-2026"
-    },
-    {
-      "game": "uma",
-      "name": "Spotlight Scout — Yamanin Zephyr",
-      "type": "banner",
-      "bannerKind": "character",
-      "start": "2026-09-01 22:00",
-      "end": "2026-09-10 21:59",
-      "notify": false,
-      "sourceKey": "seed:uma:scout-2026-09-01"
-    },
-    {
-      "game": "uma",
-      "name": "Spotlight Support Card Scout — Symboli Kris S, Tsurumaru Tsuyoshi",
-      "type": "banner",
-      "bannerKind": "support",
-      "start": "2026-09-01 22:00",
-      "end": "2026-09-10 21:59",
-      "notify": false,
-      "sourceKey": "seed:uma:scout-2026-09-01:supports"
-    },
-    {
-      "game": "uma",
-      "name": "Let's Go! Uma Outing!",
-      "type": "event",
-      "start": "2026-09-01 22:00",
-      "end": "2026-09-10 14:59",
-      "timezone": "UTC",
-      "dailyTouch": true,
-      "notify": false,
-      "notes": "Estimated dates.",
-      "sourceKey": "seed:uma:outing-2026-09"
-    },
-    {
-      "game": "uma",
-      "name": "Legend Races — Shuka Sho",
-      "type": "event",
-      "start": "2026-09-03 22:00",
-      "end": "2026-09-09 14:59",
-      "dailyTouch": true,
-      "notify": false,
-      "notes": "Kawakami Princess and Fine Motion. Estimated dates.",
-      "sourceKey": "seed:uma:legend-races-2026-09"
     },
     {
       "game": "uma",
@@ -1243,94 +844,12 @@
     },
     {
       "game": "nikke",
-      "name": "PERSONA ON FRONTLINE",
-      "type": "event",
-      "start": "2026-08-13 07:00",
-      "end": "2026-09-10 04:59",
-      "notes": "Story event with MIDNIGHT PHANTOM RUNNER, Archive unlocks from Memory Films and free SR Aigis.",
-      "sourceKey": "seed:nikke:persona-on-frontline"
-    },
-    {
-      "game": "nikke",
-      "name": "PERSONA ON FRONTLINE — Story Part 2",
-      "type": "event",
-      "start": "2026-08-20 05:00",
-      "end": "2026-09-10 04:59",
-      "sourceKey": "seed:nikke:persona-story-2"
-    },
-    {
-      "game": "nikke",
-      "name": "Queen (Makoto Niijima) Pick Up",
-      "type": "banner",
-      "bannerKind": "character",
-      "start": "2026-08-13 07:00",
-      "end": "2026-09-10 04:59",
-      "notes": "SSR Fire; collab exclusive.",
-      "sourceKey": "seed:nikke:queen-pickup"
-    },
-    {
-      "game": "nikke",
-      "name": "Yukiko Amagi Pick Up",
-      "type": "banner",
-      "bannerKind": "character",
-      "start": "2026-08-20 05:00",
-      "end": "2026-09-10 04:59",
-      "sourceKey": "seed:nikke:yukiko-pickup"
-    },
-    {
-      "game": "nikke",
-      "name": "Phantom – Saint Thief costume gacha",
-      "type": "banner",
-      "start": "2026-08-13 07:00",
-      "end": "2026-09-10 04:59",
-      "sourceKey": "seed:nikke:phantom-saint-thief-costume"
-    },
-    {
-      "game": "nikke",
-      "name": "Phantom Thieves' Calling Card — 14-day login",
-      "type": "event",
-      "start": "2026-08-13 07:00",
-      "end": "2026-09-10 04:59",
-      "dailyTouch": true,
-      "notes": "Claim on 14 days for SR Aigis, Advanced Recruit Vouchers and materials.",
-      "sourceKey": "seed:nikke:phantom-thieves-login"
-    },
-    {
-      "game": "nikke",
-      "name": "THIEF QUEEN PASS",
-      "type": "event",
-      "start": "2026-08-13 07:00",
-      "end": "2026-09-10 04:59",
-      "notes": "Queen’s Pajamas costume.",
-      "sourceKey": "seed:nikke:thief-queen-pass"
-    },
-    {
-      "game": "nikke",
-      "name": "SNOW FLAKES PASS",
-      "type": "event",
-      "start": "2026-08-20 05:00",
-      "end": "2026-09-10 04:59",
-      "notes": "Winter Roomwear costume.",
-      "sourceKey": "seed:nikke:snow-flakes-pass"
-    },
-    {
-      "game": "nikke",
       "name": "Trail Marker",
       "type": "event",
       "start": "2026-08-13 07:00",
       "end": "2026-10-08 04:59",
       "notes": "Clear Main Scenarios for rewards; Story Difficulty gives a bonus.",
       "sourceKey": "seed:nikke:trail-marker-2026-08"
-    },
-    {
-      "game": "nikke",
-      "name": "Simulation Room: Overclock — reward cycle",
-      "type": "cycle",
-      "start": "2026-08-25 05:00",
-      "end": "2026-09-08 04:59",
-      "notify": false,
-      "notes": "Season 9; resets every 14 days. Estimated dates.",
-      "sourceKey": "seed:nikke:overclock-2026-08-25"
     },
     {
       "game": "nikke",
@@ -1373,15 +892,6 @@
       "dailyTouch": true,
       "notes": "",
       "sourceKey": "seed:nikke:daily-evil-deed"
-    },
-    {
-      "game": "nikke",
-      "name": "Union Raid",
-      "type": "cycle",
-      "start": "2026-09-04 05:00",
-      "end": "2026-09-10 04:59",
-      "notes": "",
-      "sourceKey": "seed:nikke:union-raid-2026-09"
     },
     {
       "game": "nikke",
@@ -1608,27 +1118,6 @@
       "dailyTouch": true,
       "notes": "",
       "sourceKey": "seed:uma:daily-race-tickets-2026-09"
-    },
-    {
-      "game": "uma",
-      "name": "Bonus Star Pieces — Kikuka Sho",
-      "type": "event",
-      "start": "2026-09-06 15:00",
-      "end": "2026-09-08 14:59",
-      "timezone": "UTC",
-      "notes": "",
-      "sourceKey": "seed:uma:kikuka-star-pieces-2026-09"
-    },
-    {
-      "game": "nikke",
-      "name": "Coordinated Operation: Storm Bringer",
-      "type": "event",
-      "start": "2026-09-11 12:00",
-      "end": "2026-09-13 23:59",
-      "timezone": "UTC+9",
-      "dailyTouch": true,
-      "notes": "",
-      "sourceKey": "seed:nikke:coop-storm-bringer-2026-09"
     },
     {
       "game": "nte",
@@ -3897,7 +3386,7 @@
       "end": "2026-11-11 11:00",
       "timezone": "UTC+8",
       "notify": false,
-      "notes": "Estimated dates.",
+      "notes": "Official 1.5 patch notes.",
       "sourceKey": "seed:nte:1.5-maint"
     },
     {
@@ -4003,6 +3492,264 @@
       "notify": false,
       "notes": "Estimated dates.",
       "sourceKey": "seed:lads:2026-10-misty-invasion"
+    },
+    {
+      "game": "wuwa",
+      "name": "v3.8 update maintenance",
+      "type": "maintenance",
+      "start": "2026-11-12 04:00",
+      "end": "2026-11-12 11:00",
+      "timezone": "UTC+8",
+      "notify": false,
+      "notes": "300 Astrite and 2 Crystal Solvent compensation.",
+      "sourceKey": "seed:wuwa:3.8-maint"
+    },
+    {
+      "game": "wuwa",
+      "name": "Bloom of Yesterday’s Dreamsoil — Lily (phase 1)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-11-12 11:00",
+      "end": "2026-12-03 09:59",
+      "startTimezone": "UTC+8",
+      "notes": "New 5★ Lily, with Sigrika and Qiuyuan reruns.",
+      "sourceKey": "seed:wuwa:3.8-p1-lily"
+    },
+    {
+      "game": "wuwa",
+      "name": "Lullaby (phase 1)",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-11-12 11:00",
+      "end": "2026-12-03 09:59",
+      "startTimezone": "UTC+8",
+      "notes": "Lily’s 5★ weapon.",
+      "sourceKey": "seed:wuwa:3.8-p1-lullaby"
+    },
+    {
+      "game": "wuwa",
+      "name": "Second Coming of Solaris: Unwritten Dreams",
+      "type": "event",
+      "start": "2026-11-12 11:00",
+      "end": "2026-12-21 03:59",
+      "startTimezone": "UTC+8",
+      "notify": false,
+      "notes": "Runs for the whole version.",
+      "sourceKey": "seed:wuwa:3.8-second-solaris"
+    },
+    {
+      "game": "wuwa",
+      "name": "Rahaï Roi Puzzle: Reversal",
+      "type": "event",
+      "start": "2026-11-19 04:00",
+      "end": "2026-12-03 03:59",
+      "notes": "Official 3.8 notice.",
+      "sourceKey": "seed:wuwa:3.8-raha-puzzle"
+    },
+    {
+      "game": "wuwa",
+      "name": "Lollo Campaign: Groundwork",
+      "type": "event",
+      "start": "2026-12-03 10:00",
+      "end": "2026-12-17 03:59",
+      "dailyTouch": true,
+      "notes": "Daily missions for Lollo Coins.",
+      "sourceKey": "seed:wuwa:3.8-lollo-groundwork"
+    },
+    {
+      "game": "wuwa",
+      "name": "Dreamfield Odyssey",
+      "type": "event",
+      "start": "2026-12-03 10:00",
+      "end": "2026-12-21 03:59",
+      "notes": "Combat event.",
+      "sourceKey": "seed:wuwa:3.8-dreamfield-odyssey"
+    },
+    {
+      "game": "wuwa",
+      "name": "Whither the Wind",
+      "type": "event",
+      "start": "2026-12-07 04:00",
+      "end": "2026-12-21 03:59",
+      "dailyTouch": true,
+      "notes": "Login event.",
+      "sourceKey": "seed:wuwa:3.8-whither-wind"
+    },
+    {
+      "game": "nte",
+      "name": "Android Dreams — Elyms",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-11-11 11:00",
+      "end": "2026-12-02 05:59",
+      "timezone": "UTC+8",
+      "notes": "New limited S-Class.",
+      "sourceKey": "seed:nte:1.5-elyms"
+    },
+    {
+      "game": "nte",
+      "name": "Before the Dawn — Shinku rerun",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-11-11 11:00",
+      "end": "2026-12-02 05:59",
+      "timezone": "UTC+8",
+      "notes": "Official 1.5 patch notes.",
+      "sourceKey": "seed:nte:1.5-shinku"
+    },
+    {
+      "game": "nte",
+      "name": "Echoes on Hold — Echo Special",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-11-11 11:00",
+      "end": "2026-12-02 05:59",
+      "timezone": "UTC+8",
+      "notes": "New limited S-Class Arc.",
+      "sourceKey": "seed:nte:1.5-echoes-on-hold"
+    },
+    {
+      "game": "nte",
+      "name": "Blushing Mirage — Resolve Special rerun",
+      "type": "banner",
+      "bannerKind": "weapon",
+      "start": "2026-11-11 11:00",
+      "end": "2026-12-02 05:59",
+      "timezone": "UTC+8",
+      "notes": "Official 1.5 patch notes.",
+      "sourceKey": "seed:nte:1.5-blushing-mirage"
+    },
+    {
+      "game": "nte",
+      "name": "Open Roads Ahead — mystery boxes",
+      "type": "banner",
+      "bannerKind": "other",
+      "start": "2026-11-11 11:00",
+      "end": "2026-12-23 05:59",
+      "timezone": "UTC+8",
+      "notes": "Official 1.5 patch notes.",
+      "sourceKey": "seed:nte:1.5-open-roads-ahead"
+    },
+    {
+      "game": "nte",
+      "name": "Circle Gifts — login rewards",
+      "type": "event",
+      "start": "2026-11-11 11:00",
+      "end": "2026-12-23 05:59",
+      "timezone": "UTC+8",
+      "dailyTouch": true,
+      "notes": "Official 1.5 patch notes.",
+      "sourceKey": "seed:nte:1.5-circle-gifts"
+    },
+    {
+      "game": "nte",
+      "name": "City Logistics",
+      "type": "event",
+      "start": "2026-11-11 11:00",
+      "end": "2026-12-23 05:59",
+      "timezone": "UTC+8",
+      "notes": "Official 1.5 patch notes.",
+      "sourceKey": "seed:nte:1.5-city-logistics"
+    },
+    {
+      "game": "nte",
+      "name": "Hunter’s Crucible: Breakthrough",
+      "type": "event",
+      "start": "2026-11-11 11:00",
+      "end": "2026-12-23 05:59",
+      "timezone": "UTC+8",
+      "notes": "Official 1.5 patch notes.",
+      "sourceKey": "seed:nte:1.5-hunters-crucible"
+    },
+    {
+      "game": "nte",
+      "name": "Fortune’s Bounty",
+      "type": "event",
+      "start": "2026-11-11 11:00",
+      "end": "2026-12-23 05:59",
+      "startTimezone": "UTC+8",
+      "notes": "Official 1.5 patch notes.",
+      "sourceKey": "seed:nte:1.5-fortunes-bounty"
+    },
+    {
+      "game": "nte",
+      "name": "Circle Bounty Guide",
+      "type": "event",
+      "start": "2026-11-11 11:00",
+      "end": "2026-12-22 23:59",
+      "timezone": "UTC+8",
+      "notes": "Official 1.5 patch notes.",
+      "sourceKey": "seed:nte:1.5-circle-bounty"
+    },
+    {
+      "game": "nte",
+      "name": "Pixel Surge",
+      "type": "event",
+      "start": "2026-11-16 05:00",
+      "end": "2026-11-23 04:59",
+      "notes": "Double rewards on up to 120 Character Pixels spent a day; unused allowance carries over, up to 840 for the event.",
+      "sourceKey": "seed:nte:1.5-pixel-surge"
+    },
+    {
+      "game": "nte",
+      "name": "Full Tank Ahead",
+      "type": "event",
+      "start": "2026-11-19 10:00",
+      "end": "2026-12-23 05:59",
+      "timezone": "UTC+8",
+      "notes": "Official 1.5 patch notes.",
+      "sourceKey": "seed:nte:1.5-full-tank-ahead"
+    },
+    {
+      "game": "nte",
+      "name": "Gold Clash",
+      "type": "event",
+      "start": "2026-11-23 05:00",
+      "end": "2026-12-07 04:59",
+      "notes": "Double Fons in Pink Paws Heist.",
+      "sourceKey": "seed:nte:1.5-gold-clash"
+    },
+    {
+      "game": "nte",
+      "name": "Fishing Frenzy",
+      "type": "event",
+      "start": "2026-11-23 05:00",
+      "end": "2026-12-23 05:59",
+      "notes": "Official 1.5 patch notes.",
+      "sourceKey": "seed:nte:1.5-fishing-frenzy"
+    },
+    {
+      "game": "hsr",
+      "name": "Aeon ★ Aha — A Comedy of Stars",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-11-11 11:00",
+      "end": "2026-12-22 15:00",
+      "startTimezone": "UTC+8",
+      "notes": "Runs for the whole version.",
+      "sourceKey": "seed:hsr:4.7-aha"
+    },
+    {
+      "game": "hsr",
+      "name": "Silver Wolf LV.999, Sparxie and Yao Guang — reruns (phase 1)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-11-11 11:00",
+      "end": "2026-12-02 11:59",
+      "startTimezone": "UTC+8",
+      "notes": "Official 4.7 phase 1 warp notice.",
+      "sourceKey": "seed:hsr:4.7-p1-reruns"
+    },
+    {
+      "game": "hsr",
+      "name": "The Fluffy Movie: Overheated",
+      "type": "event",
+      "start": "2026-11-11 11:00",
+      "end": "2026-12-23 03:59",
+      "startTimezone": "UTC+8",
+      "endTimezone": "UTC+8",
+      "notes": "Trailblaze Level 21 and above.",
+      "sourceKey": "seed:hsr:4.7-fluffy-movie"
     }
   ]
 }

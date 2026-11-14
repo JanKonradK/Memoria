@@ -28,7 +28,7 @@ describe('banner classification', () => {
     expect(kind('seed:endfield:1.5-tag-artist')).toBe('weapon');
     expect(
       SEED_EVENTS.filter((event) => event.type === 'banner' && !event.bannerKind).map((event) => event.sourceKey),
-    ).toEqual(['seed:nikke:phantom-saint-thief-costume', 'seed:nikke:2026-09-17-sugar']);
+    ).toEqual(['seed:nikke:2026-09-17-sugar']);
   });
 
   it('updates pristine legacy seeds but preserves manual classifications and positions', () => {
