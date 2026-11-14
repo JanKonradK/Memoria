@@ -209,4 +209,4 @@ The app and shared packages use the TypeScript 7.0.2 compiler.
 ESLint uses TypeScript 6.0.3 because its current TypeScript parser does not support version 7.
 The `xcode` dependency uses `uuid` 11.1.1 to remove a known security defect.
 
-For source code setup, tests, release commands, and technical details, see the [developer guide](docs/development.md).
+For source code setup, tests, release commands, and technical details, see the [developer guide](docs/development.md). What is still open is in the [roadmap](docs/roadmap.md).
