@@ -27,20 +27,21 @@ The header status refers to device sync. Memoria never reads your game account.
 ### Windows app
 
 1. Open the download page above.
-2. Under **Assets**, select **Memoria-win-x64.zip**.
-3. Open your Downloads folder.
-4. Right-click the ZIP file and select **Extract All**.
-5. Open the extracted **Memoria** folder.
-6. Double-click **Memoria.exe**.
+2. Under **Assets**, select **Memoria-setup-x64.exe**.
+3. Open the downloaded file. Windows may say it protected your PC, because the installer is not code-signed yet: select **More info**, then **Run anyway**.
+4. When setup finishes, leave **Open Memoria** ticked and select **Finish**.
+
+Setup installs Memoria for your Windows user, with no administrator prompt, in `%LOCALAPPDATA%\Programs\Memoria`.
+It adds Desktop and Start menu shortcuts, and an entry in **Settings → Apps** to uninstall it.
+Your saved progress and phone connection stay in `%APPDATA%\memoria`; uninstalling keeps them.
 
 Memoria opens in its own desktop window. The download includes its own runtime.
 You do not need a browser or developer tools.
 Press **Alt** to show the desktop menu.
 Closing the window keeps Memoria in the tray, so phone sync and reminders keep working. Quit from the tray icon.
 
-To install Memoria, close the app and double-click **Add Memoria to Start Menu.cmd**.
-The installer copies the app to `%LOCALAPPDATA%\Programs\Memoria` and creates Desktop and Start Menu shortcuts.
-Your saved progress and phone connection stay in `%APPDATA%\memoria`.
+**Without installing:** download **Memoria-win-x64.zip** instead, extract it, and double-click **Memoria.exe**.
+Its **Add Memoria to Start Menu.cmd** installs that copy in the same place as setup does.
 
 ### Android app
 
@@ -54,6 +55,9 @@ Download **Memoria-android.apk** from the [latest release](https://github.com/Ja
 
 The app works offline and stores your data on the phone. Use **Settings → Data → Export backup** to save a separate copy.
 Memoria updates itself from **Settings → Updates**. Uninstalling the app removes its local data.
+
+**Updates through Obtainium:** if you keep your apps current with [Obtainium](https://obtainium.imranr.dev), add `https://github.com/JanKonradK/Memoria` as a GitHub source and set the APK filter to `Memoria-android\.apk`.
+Obtainium then installs each release as it is published. Install it over the existing app; the signature is the same, so your data stays.
 
 ## Add your games
 
@@ -185,8 +189,6 @@ When one is available, a full-screen page lists every change since your version.
 
 - **Windows app:** **Update** downloads the new version, then **Restart and update** installs it and reopens Memoria. **Check for updates** in the tray icon's menu checks now.
 - **Android app:** **Update** downloads the APK and opens Android's installer. The first time, Android asks you to allow Memoria to install apps.
-- **One-file version:** **Download** opens the release page. Export a backup first, then open the new **Memoria.html** in the same browser.
-  If your progress is missing, import your backup.
 
 Every download is checked against the release's checksums before it is installed. Your saved data is never touched by an update.
 For the first update from an older launcher, restart Windows if Memoria cannot reconnect to local sync.

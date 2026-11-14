@@ -137,6 +137,14 @@ if (-not $NoShortcuts) {
   }
 }
 
+# Installed with Memoria-setup: keep the version in Settings > Apps current
+# when the in-app updater replaces the folder.
+$uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Memoria'
+if (Test-Path -LiteralPath $uninstallKey) {
+  $installed = Get-Content -LiteralPath (Join-Path $destination 'release.json') -Raw | ConvertFrom-Json
+  Set-ItemProperty -LiteralPath $uninstallKey -Name DisplayVersion -Value ([string]$installed.version)
+}
+
 Write-Host "Memoria is installed at $destination" -ForegroundColor Green
 if (-not $NoShortcuts) {
   Write-Host 'Open Memoria from the Desktop or Start Menu.'

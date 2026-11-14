@@ -153,28 +153,30 @@ It also replaces an earlier Electron install in place. User data stays in `%APPD
 ```sh
 npm run build
 npm run package
-npm run build:single
 npm run check:release
 npm run check:native
 ```
 
 Outputs:
 
+- `dist/release/Memoria-setup-x64.exe`
 - `dist/release/Memoria-win-x64.zip`
 - `dist/release/SHA256SUMS.txt`
-- `app/dist-single/Memoria.html`
+
+The installer is built from `desktop/installer.nsi` with [NSIS](https://nsis.sourceforge.io) 3. Packaging looks for `makensis` in `MAKENSIS`, on `PATH` and in `C:\Program Files (x86)\NSIS`; without it, a local run skips the installer and CI fails.
+The installer carries the same tree as the zip and installs it with `desktop/Install-Shortcut.ps1`, the script the zip and the in-app updater use, so all three share one folder and one check that Memoria is closed.
+It adds an uninstaller in `%LOCALAPPDATA%\Memoria` (outside the program folder, which an update replaces) and an entry under `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\Memoria`, whose version `Install-Shortcut.ps1` keeps current.
+Uninstalling removes the program, its shortcuts, the start-with-Windows entry and the notification identity, and keeps `%APPDATA%\memoria`.
 
 `check:native` drives the packaged `Memoria.exe` through WebView2's debugging port, using a copied install, a scratch data folder and a separate instance name.
 It covers existing data, close-and-save, relaunch, a second start, the unsaved-draft guard, phone pairing and sync, disk sync, the tray and the content policy, and deletes its scratch folder afterwards.
-`check:release` checks the zip's contents and the one-file HTML offline.
+`check:release` checks the zip's contents and that the installer is built and listed in the checksums.
 
 The ZIP contains `Memoria.exe` (about 7 MB), the built app, the install scripts and the icon.
 Packaging sets the program's version from `package.json`.
 `release.json` identifies a packaged install, with `runtime: "tauri"`. The updater does not replace a source checkout.
 
-The standalone HTML includes its scripts, styles, fonts, and icon.
-It has no service worker or launcher sync. It checks for new releases and links to the download page, but cannot replace itself.
-Use a backup to transfer data between browsers or file locations.
+Neither the installer nor `Memoria.exe` is code-signed, so Windows SmartScreen warns on first run. `docs/winget.md` covers signing and a winget listing.
 
 ## Publish a release
 
@@ -190,7 +192,7 @@ Use `minor` or `major` instead of `patch` when appropriate.
 Write the release notes in `docs/releases/v<version>.md` before tagging. The app shows them in **Settings → Updates**.
 A `v*` tag starts [the release workflow](../.github/workflows/release.yml).
 The tag must match the version in `package.json`.
-The workflow builds and publishes the Windows, Android and one-file downloads, checksums, and release notes.
+The workflow builds and publishes the Windows installer and zip, the Android app, checksums, and release notes.
 CI also assembles the Windows package on each push to `main` and each pull request.
 
 ## Updates

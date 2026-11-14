@@ -71,7 +71,16 @@ jobs:
             exit 1
           fi
 
-      # The downloadable Windows zip.
+      # The installer is built with NSIS. Runner images have usually carried it;
+      # install it when this one does not.
+      - name: Make sure NSIS is installed
+        shell: pwsh
+        run: |
+          $default = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
+          if (-not (Get-Command makensis -ErrorAction SilentlyContinue) -and -not (Test-Path $default)) {
+            choco install nsis --yes --no-progress
+          }
+      # The Windows installer and the portable zip.
       # Add MEMORIA_SIGNING_KEY (the PEM contents) as an Actions secret before releasing.
       - run: npm run package
         env:
@@ -157,7 +166,8 @@ jobs:
             echo
             echo "| | |"
             echo "|---|---|"
-            echo "| **[Memoria-win-x64.zip]($download/Memoria-win-x64.zip)** | Standalone Windows app. Extract the ZIP and run \`Add Memoria to Start Menu.cmd\`. Uses the WebView2 runtime built into Windows. |"
+            echo "| **[Memoria-setup-x64.exe]($download/Memoria-setup-x64.exe)** | Windows installer. Installs for your Windows user, with no administrator prompt, and adds Memoria to the Start menu and to Settings → Apps for uninstalling. |"
+            echo "| **[Memoria-win-x64.zip]($download/Memoria-win-x64.zip)** | Portable Windows app. Extract the ZIP and run \`Memoria.exe\`, or \`Add Memoria to Start Menu.cmd\` to install it. Both use the WebView2 runtime built into Windows. |"
             echo "| **[Memoria-android.apk]($download/Memoria-android.apk)** | Android app. Open the APK on your phone or tablet and install it over the existing app. |"
             echo
             echo "Installed apps update themselves: open **Settings → Updates**, or follow the notice when Memoria finds a new version."
@@ -178,6 +188,7 @@ jobs:
           draft: false
           prerelease: false
           files: |
+            dist/release/Memoria-setup-x64.exe
             dist/release/Memoria-win-x64.zip
             dist/release/Memoria-android.apk
             dist/release/SHA256SUMS.txt

@@ -6,7 +6,8 @@
 //   npm run package
 //
 // Output lands in dist/release/:
-//   Memoria-win-x64.zip   the download
+//   Memoria-setup-x64.exe the installer (desktop/installer.nsi, built with NSIS)
+//   Memoria-win-x64.zip   the portable download, and what the in-app updater fetches
 //   SHA256SUMS.txt        digests, which the in-app updater verifies before it
 //                         unpacks anything it fetched
 //
@@ -14,7 +15,7 @@
 // Downloads produces a folder rather than a mess.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { signRelease } from './publisher-signing.mjs';
 
@@ -23,6 +24,7 @@ const releaseDir = join(root, 'dist', 'release');
 const stageDir = join(releaseDir, 'Memoria');
 
 const ZIP_NAME = 'Memoria-win-x64.zip';
+const SETUP_NAME = 'Memoria-setup-x64.exe';
 const SUMS_NAME = 'SHA256SUMS.txt';
 
 function fail(message) {
@@ -84,6 +86,8 @@ if (!existsSync(program)) fail('cargo did not produce Memoria.exe');
 
 // --- assemble ---------------------------------------------------------------
 
+// An installer from an earlier run must not be listed beside this zip.
+rmSync(join(releaseDir, SETUP_NAME), { force: true });
 if (existsSync(stageDir)) {
   const idle = spawnSync(
     'powershell',
@@ -192,14 +196,54 @@ if (process.platform === 'win32') {
   if (zipped.status !== 0) fail('tar could not write the zip');
 }
 
+// --- installer --------------------------------------------------------------
+
+/** makensis from MAKENSIS, PATH or the default NSIS folder. */
+function findMakensis() {
+  const candidates = [
+    process.env.MAKENSIS,
+    'makensis',
+    join(process.env['ProgramFiles(x86)'] ?? 'C:\Program Files (x86)', 'NSIS', 'makensis.exe'),
+  ].filter(Boolean);
+  return candidates.find((candidate) => spawnSync(candidate, ['-VERSION'], { stdio: 'ignore' }).status === 0);
+}
+
+const setupPath = join(releaseDir, SETUP_NAME);
+const makensis = findMakensis();
+if (makensis) {
+  console.log('Building the installer...');
+  const setup = spawnSync(
+    makensis,
+    [
+      '-V2',
+      // Windows file versions are four numbers; a prerelease suffix is not one.
+      `-DVERSION=${version.split('-')[0]}`,
+      `-DSOURCE=${stageDir}`,
+      `-DOUTFILE=${setupPath}`,
+      join(root, 'desktop', 'installer.nsi'),
+    ],
+    { stdio: 'inherit' },
+  );
+  if (setup.status !== 0) fail('makensis could not build the installer');
+} else if (process.env.CI) {
+  fail('NSIS is required to build the installer (set MAKENSIS or install NSIS)');
+} else {
+  console.warn(`\nNSIS not found, so ${SETUP_NAME} was not built. Install NSIS or set MAKENSIS to build it.`);
+}
+
+const released = [ZIP_NAME, SETUP_NAME].filter((name) => existsSync(join(releaseDir, name)));
 const digest = sha256(zipPath);
 const sumsPath = join(releaseDir, SUMS_NAME);
 const otherSums = existsSync(sumsPath)
   ? readFileSync(sumsPath, 'utf8')
       .split(/\r?\n/)
-      .filter((line) => line && !line.endsWith(`  ${ZIP_NAME}`))
+      .filter((line) => line && ![ZIP_NAME, SETUP_NAME].some((name) => line.endsWith(`  ${name}`)))
   : [];
-writeFileSync(sumsPath, [...otherSums, `${digest}  ${ZIP_NAME}`, ''].join('\n'), 'utf8');
+writeFileSync(
+  sumsPath,
+  [...otherSums, ...released.map((name) => `${sha256(join(releaseDir, name))}  ${name}`), ''].join('\n'),
+  'utf8',
+);
 
 const megabytes = (statSync(zipPath).size / 1024 / 1024).toFixed(1);
 // CI's packaging check proves the zip builds; only the release workflow holds
@@ -207,5 +251,6 @@ const megabytes = (statSync(zipPath).size / 1024 / 1024).toFixed(1);
 if (process.env.MEMORIA_SKIP_SIGNING === '1') console.log('\nNot signed: packaging check only.');
 else signRelease(releaseDir);
 console.log(`\n${basename(zipPath)}  ${megabytes} MB`);
+if (existsSync(setupPath)) console.log(`${SETUP_NAME}  ${(statSync(setupPath).size / 1024 / 1024).toFixed(1)} MB`);
 console.log(`sha256  ${digest}`);
 console.log(`\nStaged tree: ${stageDir}`);
