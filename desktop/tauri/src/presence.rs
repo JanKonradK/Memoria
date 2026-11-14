@@ -8,7 +8,7 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -22,7 +22,8 @@ pub struct Preferences {
     pub close_to_tray: bool,
     /// Show a notification when a tracked game starts.
     pub game_start_notices: bool,
-    /// Device reminders are opt-in, independent of the phone's choice.
+    /// Device reminders, independent of the phone's choice. On for a new
+    /// install; an install from before 4.1 keeps the off it was given.
     pub reminders_on_pc: bool,
 }
 
@@ -32,7 +33,7 @@ impl Default for Preferences {
             open_at_login: true,
             close_to_tray: true,
             game_start_notices: true,
-            reminders_on_pc: false,
+            reminders_on_pc: true,
         }
     }
 }
@@ -52,7 +53,8 @@ impl PreferenceFile {
                 open_at_login: flag("openAtLogin", current.open_at_login),
                 close_to_tray: flag("closeToTray", current.close_to_tray),
                 game_start_notices: flag("gameStartNotices", current.game_start_notices),
-                reminders_on_pc: flag("remindersOnPc", current.reminders_on_pc),
+                // Never switch reminders on silently for someone who already had the app.
+                reminders_on_pc: flag("remindersOnPc", false),
             };
         }
         Self {
@@ -134,22 +136,30 @@ struct WatchState {
     running: Option<HashSet<String>>,
     /// Games added since the last look. Their first look only records whether they run.
     fresh: HashSet<String>,
+    /// When each running game was first seen running.
+    since: HashMap<String, Instant>,
     active: bool,
 }
 
-/// Calls `on_start(game_id)` when a watched game goes from not running to running.
-/// A game already running when watching begins does not count as starting.
+/// Calls `on_start(game_id)` when a watched game goes from not running to running,
+/// and `on_stop(game_id, ran)` when it stops. A game already running when watching
+/// begins does not count as starting; its run is measured from the first look.
 #[derive(Clone)]
 pub struct GameWatcher {
     state: Arc<Mutex<WatchState>>,
     on_start: Arc<dyn Fn(String) + Send + Sync>,
+    on_stop: Arc<dyn Fn(String, Duration) + Send + Sync>,
 }
 
 impl GameWatcher {
-    pub fn new(on_start: impl Fn(String) + Send + Sync + 'static) -> Self {
+    pub fn new(
+        on_start: impl Fn(String) + Send + Sync + 'static,
+        on_stop: impl Fn(String, Duration) + Send + Sync + 'static,
+    ) -> Self {
         Self {
             state: Arc::default(),
             on_start: Arc::new(on_start),
+            on_stop: Arc::new(on_stop),
         }
     }
 
@@ -167,7 +177,7 @@ impl GameWatcher {
 
     /// One look at the running programs.
     pub fn tick(&self, programs: &HashSet<String>) {
-        let started: Vec<String> = {
+        let (started, stopped): (Vec<String>, Vec<(String, Duration)>) = {
             let mut state = self.state.lock().unwrap();
             let now: HashSet<String> = state
                 .watch
@@ -183,12 +193,28 @@ impl GameWatcher {
                     .collect(),
                 None => Vec::new(),
             };
+            let seen = Instant::now();
+            for id in &now {
+                state.since.entry(id.clone()).or_insert(seen);
+            }
+            let ended: Vec<String> = state.since.keys().filter(|id| !now.contains(*id)).cloned().collect();
+            let mut stopped = Vec::new();
+            for id in ended {
+                let Some(at) = state.since.remove(&id) else { continue };
+                // A game removed from the watch list did not stop.
+                if state.watch.contains_key(&id) {
+                    stopped.push((id, at.elapsed()));
+                }
+            }
             state.fresh.clear();
             state.running = Some(now);
-            started
+            (started, stopped)
         };
         for game_id in started {
             (self.on_start)(game_id);
+        }
+        for (game_id, ran) in stopped {
+            (self.on_stop)(game_id, ran);
         }
     }
 
@@ -224,6 +250,7 @@ impl GameWatcher {
         let mut state = self.state.lock().unwrap();
         state.active = false;
         state.running = None;
+        state.since.clear();
     }
 }
 
@@ -290,7 +317,7 @@ mod tests {
     fn notices_only_games_that_start_while_watched() {
         let started = Arc::new(Mutex::new(Vec::new()));
         let heard = started.clone();
-        let watcher = GameWatcher::new(move |id| heard.lock().unwrap().push(id));
+        let watcher = GameWatcher::new(move |id| heard.lock().unwrap().push(id), |_, _| {});
         watcher.set_watch(&json!({ "genshin": ["GenshinImpact"], "zzz": ["ZenlessZoneZero.exe"] }));
         // Already running at the first look: not a start.
         watcher.tick(&set(&["genshinimpact"]));
@@ -302,6 +329,22 @@ mod tests {
         watcher.tick(&set(&[]));
         watcher.tick(&set(&["starrail"]));
         assert_eq!(*started.lock().unwrap(), vec!["zzz".to_string(), "hsr".to_string()]);
+    }
+
+    #[test]
+    fn notices_games_that_stop_with_how_long_they_ran() {
+        let stopped = Arc::new(Mutex::new(Vec::new()));
+        let heard = stopped.clone();
+        let watcher = GameWatcher::new(|_| {}, move |id, _| heard.lock().unwrap().push(id));
+        watcher.set_watch(&json!({ "genshin": ["GenshinImpact"], "zzz": ["ZenlessZoneZero"] }));
+        watcher.tick(&set(&["genshinimpact"]));
+        watcher.tick(&set(&["genshinimpact", "zenlesszonezero"]));
+        watcher.tick(&set(&["zenlesszonezero"]));
+        assert_eq!(*stopped.lock().unwrap(), vec!["genshin".to_string()]);
+        // Unwatching a running game is not a stop.
+        watcher.set_watch(&json!({ "genshin": ["GenshinImpact"] }));
+        watcher.tick(&set(&[]));
+        assert_eq!(*stopped.lock().unwrap(), vec!["genshin".to_string()]);
     }
 
     #[test]
@@ -317,9 +360,11 @@ mod tests {
     }
 
     #[test]
-    fn reminders_default_off_for_existing_installs_and_stay_local() {
+    fn reminders_default_on_for_new_installs_off_for_existing_ones_and_stay_local() {
         let dir = std::env::temp_dir().join(format!("memoria-reminder-prefs-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
+        assert!(PreferenceFile::new(&dir).get().reminders_on_pc);
         crate::store::write_json(&dir.join("desktop-preferences.json"), &json!({ "closeToTray": true })).unwrap();
         let prefs = PreferenceFile::new(&dir);
         assert!(!prefs.get().reminders_on_pc);

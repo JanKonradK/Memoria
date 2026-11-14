@@ -35,14 +35,10 @@ fn quote(text: &str) -> String {
     format!("'{}'", text.replace('\'', "''"))
 }
 
-/// The elevated script: the fixed text above, told which Memoria.exe to allow
-/// and whether to mark the current public networks as private.
-pub fn allow_command(program: &std::path::Path, make_private: bool) -> String {
-    let flag = if make_private { "$true" } else { "$false" };
-    format!(
-        "$program = {}\n$makePrivate = {flag}\n{ALLOW_SCRIPT}",
-        quote(&program.display().to_string())
-    )
+/// The elevated script: the fixed text above, told which Memoria.exe to allow.
+/// It never changes a network's category; that is the player's choice in Windows.
+pub fn allow_command(program: &std::path::Path) -> String {
+    format!("$program = {}\n{ALLOW_SCRIPT}", quote(&program.display().to_string()))
 }
 
 fn check_command(program: &std::path::Path) -> String {
@@ -124,8 +120,8 @@ pub fn check() -> Value {
 }
 
 /// Shows the administrator prompt and applies the rules. Blocking.
-pub fn allow(make_private: bool) -> &'static str {
-    match std::env::current_exe().map(|exe| run_elevated_powershell(&allow_command(&exe, make_private))) {
+pub fn allow() -> &'static str {
+    match std::env::current_exe().map(|exe| run_elevated_powershell(&allow_command(&exe))) {
         Ok(Some(0)) => "ok",
         Ok(None) => "declined",
         _ => "failed",
@@ -139,13 +135,14 @@ mod tests {
     #[test]
     fn scripts_are_built_in_and_quote_the_path() {
         let path = std::path::Path::new(r"C:\Users\O'Neil\Memoria.exe");
-        let command = allow_command(path, false);
-        assert!(command.starts_with("$program = 'C:\\Users\\O''Neil\\Memoria.exe'\n$makePrivate = $false\n"));
+        let command = allow_command(path);
+        assert!(command.starts_with("$program = 'C:\\Users\\O''Neil\\Memoria.exe'\n"));
         assert!(command.contains("Profile = 'Private'"));
         // Phones are never let in on a network Windows treats as public.
         assert!(!command.contains("Profile = 'Public'"));
         assert!(!command.contains("RunAs"));
-        assert!(allow_command(path, true).contains("$makePrivate = $true\n"));
+        // A game tracker does not change how Windows treats every program on a network.
+        assert!(!command.contains("Set-NetConnectionProfile"));
         assert!(check_command(path).starts_with("$program = 'C:\\Users\\O''Neil\\Memoria.exe'\n"));
     }
 }

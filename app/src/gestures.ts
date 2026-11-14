@@ -31,13 +31,43 @@ const INTERACTIVE = 'button, [role="button"], a, input, textarea, select, label,
 
 type Axis = 'undecided' | 'horizontal' | 'vertical';
 
+/** The page follows a third of the drag, up to this far: enough to feel, not to read as a slide. */
+const FOLLOW_MAX_PX = 48;
+
+/** The page being dragged: the route wrapper, never `main`, which holds the fixed dock. */
+const pageOf = (host: Element) => host.querySelector<HTMLElement>(':scope > .page-enter, .page-enter');
+
+function follow(page: HTMLElement | null, dx: number) {
+  if (!page) return;
+  page.removeAttribute('data-swipe-release');
+  page.dataset.swiping = '';
+  page.style.setProperty('--swipe-x', `${Math.max(-FOLLOW_MAX_PX, Math.min(FOLLOW_MAX_PX, dx / 3))}px`);
+}
+
+function release(page: HTMLElement | null) {
+  if (!page || !('swiping' in page.dataset)) return;
+  page.dataset.swipeRelease = '';
+  page.style.setProperty('--swipe-x', '0px');
+  const done = () => {
+    page.removeAttribute('data-swiping');
+    page.removeAttribute('data-swipe-release');
+    page.style.removeProperty('--swipe-x');
+  };
+  page.addEventListener('transitionend', done, { once: true });
+  // Reduced motion has no transition to end.
+  window.setTimeout(done, 400);
+}
+
 export function useTabSwipe(onSwipe: (direction: 1 | -1) => void) {
   const start = useRef<{ x: number; y: number; at: number; id: number } | null>(null);
   const axis = useRef<Axis>('undecided');
+  const page = useRef<HTMLElement | null>(null);
 
   const cancel = () => {
     start.current = null;
     axis.current = 'undecided';
+    release(page.current);
+    page.current = null;
   };
 
   return {
@@ -53,6 +83,7 @@ export function useTabSwipe(onSwipe: (direction: 1 | -1) => void) {
       }
       start.current = { x: event.clientX, y: event.clientY, at: event.timeStamp, id: event.pointerId };
       axis.current = 'undecided';
+      page.current = pageOf(event.currentTarget);
     },
 
     onPointerMove: (event: ReactPointerEvent) => {
@@ -71,6 +102,7 @@ export function useTabSwipe(onSwipe: (direction: 1 | -1) => void) {
           return;
         }
       }
+      follow(page.current, dx);
     },
 
     onPointerUp: (event: ReactPointerEvent) => {

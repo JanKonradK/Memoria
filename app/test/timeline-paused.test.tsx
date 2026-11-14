@@ -43,7 +43,7 @@ const fixture: AppState = { ...emptyState(), games: [active, paused, deleted], e
 function show(view: 'lanes' | 'list', options: { focus?: string; finished?: boolean } = {}) {
   useApp.setState({ state: structuredClone(fixture) });
   useUI.setState({
-    focusedGameId: options.focus ?? null,
+    timelineGameId: options.focus ?? null,
     timelineView: view,
     timelineShowFinished: options.finished ?? false,
   });
@@ -56,7 +56,7 @@ function show(view: 'lanes' | 'list', options: { focus?: string; finished?: bool
 
 afterEach(() => {
   useApp.setState({ state: emptyState() });
-  useUI.setState({ focusedGameId: null, timelineView: null, timelineShowFinished: false });
+  useUI.setState({ timelineGameId: null, timelineView: null, timelineShowFinished: false });
 });
 
 describe.each(['lanes', 'list'] as const)('paused games in %s', (view) => {

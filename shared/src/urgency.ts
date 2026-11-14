@@ -1,5 +1,5 @@
 import type { AppState, Game, GameEvent, Resource, Snapshot } from './types';
-import { latestSnapshots, projectEnergy } from './energy';
+import { latestSnapshots, measuredSnapshot, projectEnergy } from './energy';
 import { buildChecklistIndex, checklistFor, type ChecklistItem } from './checklist';
 import { groupBy } from './internal';
 import { effectiveResourceKind } from './tracking';
@@ -48,7 +48,7 @@ export function gameActions(state: AppState, game: Game, now: number, ctx?: Urge
 
   for (const res of context.resourcesByGame.get(game.id) ?? []) {
     if (res.deleted || effectiveResourceKind(res) !== 'regen') continue;
-    const proj = projectEnergy(res, context.snaps.get(res.id), now, game);
+    const proj = projectEnergy(res, measuredSnapshot(res, context.snaps.get(res.id)), now, game);
     if (!proj.hasSnapshot) continue;
     if (proj.isFull) {
       actions.push({ kind: 'energy_full', gameId: game.id, at: now, label: `${res.name} is FULL` });

@@ -16,7 +16,7 @@ import { nextBroadcast } from '../catch-up-status';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { titleStyle } from '../fonts';
-import { gameShellVars, useTheme } from '../theme';
+import { gameShellVars, useSurfaces } from '../theme';
 import { fmtDur } from '../util';
 import { GameLogo } from './GameLogo';
 import { LivestreamCodes } from './LivestreamCodes';
@@ -181,7 +181,7 @@ function VersionHeading({ digest, unread }: { digest: VersionDigest; unread: boo
         {digest.title && <span className="text-body text-fg-soft">{digest.title}</span>}
         {unread && <span className="catch-up-new">New to you</span>}
       </span>
-      <span className="aside mt-1 block text-meta text-muted">
+      <span className="mt-1 block text-meta text-muted">
         {digest.status === 'announced'
           ? `Arrives ${day(digest.release, 'd LLL yyyy')}`
           : `${day(digest.release, 'd LLL')}${digest.ends ? ` – ${day(digest.ends, 'd LLL yyyy')}` : ' onward'}`}
@@ -266,7 +266,7 @@ export function CatchUpSheet({ open, gameId }: { open: boolean; gameId: string }
   const state = useApp((store) => store.state);
   const markRead = useApp((store) => store.markCatchUpRead);
   const closeSheet = useUI((ui) => ui.closeSheet);
-  const theme = useTheme();
+  const surfaces = useSurfaces();
   const identityColors = useIdentityColors(state.games);
   const game = state.games.find((item) => item.id === gameId && !item.deleted);
   const preset = game ? presetForGame(game)?.key : undefined;
@@ -317,7 +317,7 @@ export function CatchUpSheet({ open, gameId }: { open: boolean; gameId: string }
         ) : undefined
       }
     >
-      <div className="catch-up" style={gameShellVars(game, theme, identityColors[game.id])}>
+      <div className="catch-up" style={gameShellVars(game, surfaces, identityColors[game.id])}>
         <header className="catch-up-header">
           <GameLogo game={{ ...game, ...identityColors[game.id] }} size={52} />
           <div className="min-w-0 flex-1">

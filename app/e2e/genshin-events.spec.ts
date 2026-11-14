@@ -70,7 +70,7 @@ test('Genshin keeps complete Teyvat, Wonderland and banner groups through editin
   await expect(mw.getByRole('button', { name: /Personal Wonderland/ })).toBeVisible();
   await expect(banners.getByRole('button', { name: /Personal cosmetic draw/ })).toBeVisible();
   for (const theme of ['dark', 'light']) {
-    if (theme === 'light') await page.getByRole('button', { name: 'Switch to light theme', exact: true }).click();
+    if (theme === 'light') await page.emulateMedia({ colorScheme: 'light' });
     await page.evaluate(async () => {
       await document.fonts.ready;
       const finite = document

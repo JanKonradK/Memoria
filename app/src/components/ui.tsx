@@ -288,7 +288,7 @@ export function Toggle({
         aria-label={ariaLabel ?? label}
         aria-describedby={ariaDescribedBy}
       >
-        <SwitchPrimitive.Thumb className="block h-5 w-5 translate-x-0.5 rounded-ui-full bg-fg shadow transition duration-(--dur-fast) data-[state=checked]:translate-x-[22px] data-[state=checked]:bg-fg-invert" />
+        <SwitchPrimitive.Thumb className="block h-5 w-5 translate-x-0.5 rounded-ui-full bg-fg shadow transition duration-(--dur-fast) data-[state=checked]:translate-x-[22px] data-[state=checked]:bg-on-accent" />
       </SwitchPrimitive.Root>
       {label && <span>{label}</span>}
     </label>
@@ -388,7 +388,7 @@ export function Btn({
   const base =
     'btn-compact min-h-8 rounded-ui-md px-3 py-1 text-caption font-semibold transition active:scale-[0.97] disabled:opacity-40';
   const kinds = {
-    primary: 'bg-accent text-fg-invert hover:brightness-110 ring-1 ring-line-edge',
+    primary: 'bg-accent text-on-accent hover:brightness-110 ring-1 ring-line-edge',
     ghost: 'bg-fill-2 text-fg-soft ring-1 ring-line-hairline hover:bg-fill-3',
     danger: 'bg-danger/15 text-danger-fg ring-1 ring-danger/30 hover:bg-danger/25',
   };

@@ -2,11 +2,13 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    # Bare numbers (0.1.0). Versions restarted at 0.1.0; the old line's tags
+    # start with v, and installed copies ignore them.
+    tags: ['[0-9]+.[0-9]+.[0-9]+*']
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to build and publish (e.g. v0.2.0)'
+        description: 'Tag to build and publish (e.g. 0.2.0)'
         required: true
 
 permissions:
@@ -34,6 +36,9 @@ jobs:
   release:
     needs: [source, browser]
     runs-on: windows-latest
+    # The signing keys are environment secrets. Give the "release" environment
+    # required reviewers (Settings → Environments) so no run reaches them unapproved.
+    environment: release
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -60,7 +65,7 @@ jobs:
           RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
           tag="$RELEASE_TAG"
-          declared="v$(node -p "require('./package.json').version")"
+          declared="$(node -p "require('./package.json').version")"
           if [ "$tag" != "$declared" ]; then
             echo "Tag $tag does not match package.json ($declared)."
             echo "The updater compares the tag to release.json, which is written from package.json;"
@@ -68,15 +73,24 @@ jobs:
             exit 1
           fi
 
-      # The downloadable zip, plus the single-file HTML for anyone who just
-      # wants to try it without unpacking anything.
+      # The installer is built with NSIS. Runner images have usually carried it;
+      # install it when this one does not.
+      - name: Make sure NSIS is installed
+        shell: pwsh
+        run: |
+          $default = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
+          if (-not (Get-Command makensis -ErrorAction SilentlyContinue) -and -not (Test-Path $default)) {
+            choco install nsis --yes --no-progress
+          }
+      # The Windows installer and the portable zip.
       # Add MEMORIA_SIGNING_KEY (the PEM contents) as an Actions secret before releasing.
       - run: npm run package
         env:
           MEMORIA_SIGNING_KEY: ${{ secrets.MEMORIA_SIGNING_KEY }}
-      - run: npm run build:single
       - run: npm exec -- playwright install chromium
       - run: npm run check:release
+      # A release must not ship a main game's calendar days behind its update.
+      - run: npm run check:calendar
       # Windows 10 and 11 ship the WebView2 runtime the app draws with; the
       # Windows Server runner image may not, so install it before the native check.
       - name: Install the WebView2 runtime if it is missing
@@ -101,28 +115,32 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      # A dedicated release key (docs/android-signing.md) is used once its alias
+      # secret exists; until then, the legacy key installed devices already trust.
       - name: Restore the Android signing key
         shell: bash
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          MEMORIA_KEY_ALIAS: ${{ secrets.MEMORIA_KEY_ALIAS }}
         run: |
           if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
             echo "The ANDROID_KEYSTORE_BASE64 secret is missing."
             exit 1
           fi
           mkdir -p "$HOME/.android"
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$HOME/.android/debug.keystore"
+          if [ -n "$MEMORIA_KEY_ALIAS" ]; then
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$HOME/.android/memoria-release.jks"
+            echo "MEMORIA_KEYSTORE=$HOME/.android/memoria-release.jks" >> "$GITHUB_ENV"
+          else
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$HOME/.android/debug.keystore"
+          fi
 
       # Appends Memoria-android.apk to SHA256SUMS.txt, which the app checks.
       - run: npm run build:android
-
-      - name: Add the single-file build to the checksums
-        shell: bash
-        run: |
-          cp app/dist-single/Memoria.html dist/release/Memoria.html
-          cd dist/release
-          sha256sum Memoria.html >> SHA256SUMS.txt
-          cat SHA256SUMS.txt
+        env:
+          MEMORIA_KEY_ALIAS: ${{ secrets.MEMORIA_KEY_ALIAS }}
+          MEMORIA_KEYSTORE_PASSWORD: ${{ secrets.MEMORIA_KEYSTORE_PASSWORD }}
+          MEMORIA_KEY_PASSWORD: ${{ secrets.MEMORIA_KEY_PASSWORD }}
 
       - name: Sign all release assets
         run: node scripts/sign-release.mjs
@@ -138,10 +156,8 @@ jobs:
           RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
           tag="$RELEASE_TAG"
-          # People see versions as betas with a 0. in front (v3.3.0 reads "Beta 0.3.3").
-          # The tag keeps the real number, which is what installed copies compare.
-          version="${tag#v}"
-          echo "title=Memoria Beta 0.${version%.0}" >> "$GITHUB_OUTPUT"
+          # The title is the real number, as a beta: 0.1.0 reads "Memoria Beta 0.1.0".
+          echo "title=Memoria Beta $tag" >> "$GITHUB_OUTPUT"
           notes="docs/releases/$tag.md"
           download="https://github.com/JanKonradK/Memoria/releases/download/$tag"
           {
@@ -150,9 +166,9 @@ jobs:
             echo
             echo "| | |"
             echo "|---|---|"
-            echo "| **[Memoria-win-x64.zip]($download/Memoria-win-x64.zip)** | Standalone Windows app. Extract the ZIP and run \`Add Memoria to Start Menu.cmd\`. Uses the WebView2 runtime built into Windows. |"
+            echo "| **[Memoria-setup-x64.exe]($download/Memoria-setup-x64.exe)** | Windows installer. Installs for your Windows user, with no administrator prompt, and adds Memoria to the Start menu and to Settings → Apps for uninstalling. |"
+            echo "| **[Memoria-win-x64.zip]($download/Memoria-win-x64.zip)** | Portable Windows app. Extract the ZIP and run \`Memoria.exe\`, or \`Add Memoria to Start Menu.cmd\` to install it. Both use the WebView2 runtime built into Windows. |"
             echo "| **[Memoria-android.apk]($download/Memoria-android.apk)** | Android app. Open the APK on your phone or tablet and install it over the existing app. |"
-            echo "| [Memoria.html]($download/Memoria.html) | The whole app in one file. Double-click to open in any browser. |"
             echo
             echo "Installed apps update themselves: open **Settings → Updates**, or follow the notice when Memoria finds a new version."
             echo "Your data stays on each device and is never touched by an update."
@@ -171,10 +187,13 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
+          # GitHub's default picks "latest" partly by version number, which would
+          # leave the old line's v4.0.3 above the restarted 0.x releases.
+          make_latest: 'true'
           files: |
+            dist/release/Memoria-setup-x64.exe
             dist/release/Memoria-win-x64.zip
             dist/release/Memoria-android.apk
-            dist/release/Memoria.html
             dist/release/SHA256SUMS.txt
             dist/release/release-manifest.json
           body_path: dist/release-notes.md

@@ -111,6 +111,7 @@ function FirewallCheck({ enabled }: { enabled: boolean }) {
   const [status, setStatus] = useState<Firewall | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
+  const [checks, setChecks] = useState(0);
   useEffect(() => {
     if (!enabled) return;
     let current = true;
@@ -123,7 +124,7 @@ function FirewallCheck({ enabled }: { enabled: boolean }) {
     return () => {
       current = false;
     };
-  }, [enabled]);
+  }, [enabled, checks]);
   const blocked = status?.supported && Array.isArray(status.networks) ? status.networks.filter((n) => !n.allowed) : [];
   if (!enabled || blocked.length === 0) return null;
   const isPublic = blocked.some((network) => network.category === 'Public');
@@ -135,7 +136,7 @@ function FirewallCheck({ enabled }: { enabled: boolean }) {
       const response = await launcherFetch('/api/firewall', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ makePrivate: isPublic }),
+        body: '{}',
       });
       if (!response.ok) throw new Error();
       const body = (await response.json()) as Firewall;
@@ -158,14 +159,34 @@ function FirewallCheck({ enabled }: { enabled: boolean }) {
           ? `Windows treats ${names} as a public network, so phones and tablets cannot reach Memoria.`
           : 'Windows Firewall does not let phones and tablets reach this copy of Memoria.'}
       </p>
-      <Btn kind="primary" className={TOUCH_BUTTON} disabled={busy} onClick={() => void allow()}>
-        {busy ? 'Waiting for Windows…' : isPublic ? 'Allow phones on this Wi-Fi' : 'Allow through Windows Firewall'}
-      </Btn>
-      <p className="text-meta text-fg-soft">
-        {isPublic
-          ? 'Windows asks for permission, then marks this Wi-Fi as your private home network. Only do this on your own Wi-Fi.'
-          : 'Windows asks for permission first.'}
-      </p>
+      {isPublic ? (
+        // Memoria does not change how Windows treats a network: that applies to
+        // every program on it. The player makes that choice in Windows.
+        <>
+          <p className="text-body text-fg-soft">
+            If this is your own Wi-Fi, open Windows Settings → Network &amp; internet → Wi-Fi, choose the network’s
+            properties, and set it to Private network. Leave it Public anywhere else.{' '}
+            <a
+              href="https://support.microsoft.com/windows/make-a-wi-fi-network-public-or-private-in-windows-0460117d-8d3e-a7ac-f003-7a0da607448d"
+              target="_blank"
+              rel="noreferrer"
+              className="text-accent-fg underline underline-offset-4"
+            >
+              How to change it
+            </a>
+          </p>
+          <Btn className={TOUCH_BUTTON} onClick={() => setChecks((count) => count + 1)}>
+            Check again
+          </Btn>
+        </>
+      ) : (
+        <>
+          <Btn kind="primary" className={TOUCH_BUTTON} disabled={busy} onClick={() => void allow()}>
+            {busy ? 'Waiting for Windows…' : 'Allow through Windows Firewall'}
+          </Btn>
+          <p className="text-meta text-fg-soft">Windows asks for permission first.</p>
+        </>
+      )}
       {note && (
         <p role="alert" className="text-body text-danger-fg">
           {note}
@@ -624,7 +645,7 @@ export function DeviceSync() {
   return (
     <div id="device-sync" className="settings-sync min-w-0 space-y-3">
       <p className="text-body text-muted">
-        Devices paired before Beta 0.4 must be paired again to enable encrypted sync.
+        Devices paired before November 2026 must be paired again to enable encrypted sync.
       </p>
       {desktop ? <DesktopConnection /> : <PhoneConnection />}
       <details className={DETAILS}>

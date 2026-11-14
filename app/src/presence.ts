@@ -3,6 +3,7 @@ import { gameGlance, glanceLine, presetForGame, type AppState } from '@memoria/s
 import type { DesktopPreferences, DesktopPresence } from './desktop-host';
 import { useGameLaunch } from './game-launch';
 import { useApp } from './store';
+import { useUI } from './ui-store';
 import { openGame } from './workspace-navigation';
 
 /**
@@ -76,6 +77,16 @@ export function initPresence(): (() => void) | undefined {
         .notify({ gameId, title: `${glance.name} started`, body: glanceLine(glance, now) })
         .catch(() => undefined);
     }),
+    host.onGameStopped?.((gameId) => {
+      const state = useApp.getState().state;
+      const game = state.games.find((item) => item.id === gameId && !item.deleted && !item.paused);
+      if (!game) return;
+      // Never over an editor the player has open.
+      if (!useUI.getState().sheet) useUI.getState().openSheet({ kind: 'session', gameId });
+      void host
+        .notify({ gameId, title: `${game.name} closed`, body: 'Record what is left: energy and dailies.' })
+        .catch(() => undefined);
+    }) ?? (() => undefined),
     host.onOpenGame((gameId) => {
       if (useApp.getState().state.games.some((game) => game.id === gameId && !game.deleted)) openGame(gameId);
     }),

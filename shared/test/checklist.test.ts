@@ -214,3 +214,19 @@ describe('checklistFor', () => {
     expect(collected).toMatchObject({ timerReady: true, done: true });
   });
 });
+
+describe('task links', () => {
+  it('gives a preset check-in task its page, and other tasks none', () => {
+    const game = makeGame();
+    const state = makeState({
+      games: [game],
+      tasks: [
+        makeTask({ id: 'checkin', presetTaskKey: 'hsr-hoyolab' }),
+        makeTask({ id: 'plain', presetTaskKey: 'hsr-daily-training' }),
+      ],
+    });
+    const items = checklistFor(state, game, Date.parse('2026-11-13T12:00:00Z'));
+    expect(items.find((item) => item.taskId === 'checkin')?.link).toMatch(/^https:\/\/act\.hoyolab\.com\//);
+    expect(items.find((item) => item.taskId === 'plain')?.link).toBeUndefined();
+  });
+});

@@ -12,9 +12,10 @@
  * design-tokens.test.ts asserts the mirror against the stylesheet instead.
  */
 
-import type { CSSProperties } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 
 import { gameTitleInk, gameWash, mix, trioOf, type GameColors } from './game-color';
+import { surfacesOf, type Surfaces } from './palettes';
 import { THEME_GROUND, useUI, type Theme } from './ui-store';
 
 export { THEME_GROUND };
@@ -23,7 +24,7 @@ export type { Theme };
 /** Must match --color-inset for each theme in index.css. */
 export const THEME_INSET: Record<Theme, string> = { dark: '#101114', light: '#edeef2' };
 
-/** The two stops of .card-shell's default gradient: --panel-hi, --panel-lo. */
+/** The neutral panel each game's wash is mixed into: --panel-hi, --panel-lo. */
 export const THEME_PANEL: Record<Theme, [string, string]> = {
   dark: ['#151619', '#151619'],
   light: ['#ffffff', '#ffffff'],
@@ -34,21 +35,33 @@ export function useTheme(): Theme {
   return useUI((store) => store.theme);
 }
 
+/** The current palette's surfaces under the current theme. */
+export function useSurfaces(): Surfaces & { theme: Theme } {
+  const theme = useUI((store) => store.theme);
+  const palette = useUI((store) => store.palette);
+  return useMemo(() => ({ theme, ...surfacesOf(palette, theme) }), [theme, palette]);
+}
+
 /** The page ground under the current theme. The argument every trio helper wants. */
 export function useGround(): string {
-  return THEME_GROUND[useUI((store) => store.theme)];
+  return useSurfaces().ground;
 }
 
 /** The inset well under the current theme — timeline bars mix down into this. */
 export function useInset(): string {
-  return THEME_INSET[useUI((store) => store.theme)];
+  return useSurfaces().inset;
 }
 
-/** One identity palette for the glass, its reflected light, and readable ink. */
-export function gameShellVars(game: GameColors, theme: Theme, resolvedIdentity: GameColors = game): CSSProperties {
-  const [hi, lo] = gameWash(resolvedIdentity, THEME_PANEL[theme], theme);
+/** One identity palette for a game's page: its wash and readable ink. */
+export function gameShellVars(
+  game: GameColors,
+  surfaces: { theme: Theme; panel: string },
+  resolvedIdentity: GameColors = game,
+): CSSProperties {
+  const { theme, panel } = surfaces;
+  const [hi, lo] = gameWash(resolvedIdentity, [panel, panel], theme);
   const { primary, secondary, accent } = trioOf(resolvedIdentity);
-  const inkGround = theme === 'dark' ? mix(THEME_PANEL.light[0], mix(secondary, hi, 0.18), 0.05) : hi;
+  const inkGround = theme === 'dark' ? mix('#ffffff', mix(secondary, hi, 0.18), 0.05) : hi;
   return {
     '--card-shell-hi': hi,
     '--card-shell-lo': lo,

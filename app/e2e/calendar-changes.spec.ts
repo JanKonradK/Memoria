@@ -50,10 +50,12 @@ test('calendar changes need confirmation and keep edited events', async ({ page 
     .getByRole('navigation', { name: 'Primary' })
     .getByRole('button', { name: 'Timeline', exact: true })
     .click();
-  await expect(page.getByText('Feed published 2026-11-09', { exact: true })).toBeVisible();
+  // A current feed says nothing above the Timeline; its provenance is in the sheet.
+  await expect(page.getByText(/Feed published/)).toHaveCount(0);
   const changes = page.getByRole('button', { name: /^Calendar changes \(/ });
   await changes.click();
   const dialog = page.getByRole('dialog', { name: 'Calendar changes' });
+  await expect(dialog.getByText(/^Feed published 9 Nov 2026 · /)).toBeVisible();
   const row = dialog.getByRole('article').filter({ hasText: 'rescheduled' }).filter({ hasText: 'Calendar test event' });
   await expect(row).toContainText('My calendar notes');
   await expect(row).toContainText('Your event was kept.');

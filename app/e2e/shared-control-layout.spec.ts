@@ -17,7 +17,11 @@ test('long game choices fit the viewport and backup import has visible keyboard 
     buffer: Buffer.from(JSON.stringify({ ...emptyState(), games: [makeGame({ name, accountLabel })] })),
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  const scope = page.getByRole('combobox', { name: 'Focus game' });
+  await page
+    .getByRole('navigation', { name: 'Primary' })
+    .getByRole('button', { name: 'Timeline', exact: true })
+    .click();
+  const scope = page.getByRole('combobox', { name: 'Filter by game' });
   await scope.click();
   const choices = page.getByRole('listbox');
   await expect(choices).toBeVisible();

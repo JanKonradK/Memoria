@@ -9,13 +9,13 @@ You enter your progress yourself, in a tap or two per game.
 Memoria does not play games or collect rewards for you.
 You do not need a Memoria account or any coding knowledge.
 
-## Version 3.0
+## What it does
 
 - **Flexible layouts** adapt to phone screens, small PC windows, and large displays.
-- **Today** shows approaching energy caps and unfinished routines within your sleep window, then the Tonight summary across every game. Select a game for its complete controls.
-- **Calendar** shows events, banners, resets, and livestreams.
+- **Today** ranks every game by what is lost first, then lists what ends, caps or resets in the next two days across every game. Select a game for its complete controls.
+- **Timeline** shows events, banners, resets, and livestreams, and says when a game's calendar is behind its latest version.
 - **Catch up**, in each game's heading, sums up what recent versions added: characters, weapons, gear sets, outfits, events, quality-of-life changes and codes.
-- **Launch** starts a game from its card in the Windows app. Select the pencil button on the card to choose what it starts.
+- **Launch** starts a game from its page in the Windows app. Choose what it starts in the game's **Game settings**.
 
 Each energy estimate shows how long ago you entered its value.
 The header status refers to device sync. Memoria never reads your game account.
@@ -27,20 +27,21 @@ The header status refers to device sync. Memoria never reads your game account.
 ### Windows app
 
 1. Open the download page above.
-2. Under **Assets**, select **Memoria-win-x64.zip**.
-3. Open your Downloads folder.
-4. Right-click the ZIP file and select **Extract All**.
-5. Open the extracted **Memoria** folder.
-6. Double-click **Memoria.exe**.
+2. Under **Assets**, select **Memoria-setup-x64.exe**.
+3. Open the downloaded file. Windows may say it protected your PC, because the installer is not code-signed yet: select **More info**, then **Run anyway**.
+4. When setup finishes, leave **Open Memoria** ticked and select **Finish**.
+
+Setup installs Memoria for your Windows user, with no administrator prompt, in `%LOCALAPPDATA%\Programs\Memoria`.
+It adds Desktop and Start menu shortcuts, and an entry in **Settings → Apps** to uninstall it.
+Your saved progress and phone connection stay in `%APPDATA%\memoria`; uninstalling keeps them.
 
 Memoria opens in its own desktop window. The download includes its own runtime.
 You do not need a browser or developer tools.
 Press **Alt** to show the desktop menu.
-Phone sync is available while the window is open. Closing the window quits Memoria.
+Closing the window keeps Memoria in the tray, so phone sync and reminders keep working. Quit from the tray icon.
 
-To install Memoria, close the app and double-click **Add Memoria to Start Menu.cmd**.
-The installer copies the app to `%LOCALAPPDATA%\Programs\Memoria` and creates Desktop and Start Menu shortcuts.
-Your saved progress and phone connection stay in `%APPDATA%\memoria`.
+**Without installing:** download **Memoria-win-x64.zip** instead, extract it, and double-click **Memoria.exe**.
+Its **Add Memoria to Start Menu.cmd** installs that copy in the same place as setup does.
 
 ### Android app
 
@@ -55,12 +56,8 @@ Download **Memoria-android.apk** from the [latest release](https://github.com/Ja
 The app works offline and stores your data on the phone. Use **Settings → Data → Export backup** to save a separate copy.
 Memoria updates itself from **Settings → Updates**. Uninstalling the app removes its local data.
 
-### Try it as one file
-
-Download **Memoria.html** from the same page. Open the file with **Chrome or Edge**.
-
-This version works offline and saves your progress in that browser. It does not update itself.
-Keep the file in the same location, and use the same browser each time.
+**Updates through Obtainium:** if you keep your apps current with [Obtainium](https://obtainium.imranr.dev), add `https://github.com/JanKonradK/Memoria` as a GitHub source and set the APK filter to `Memoria-android\.apk`.
+Obtainium then installs each release as it is published. Install it over the existing app; the signature is the same, so your data stays.
 
 ## Add your games
 
@@ -103,9 +100,8 @@ Memoria estimates energy from your last entry. Enter a new value after you spend
 Task resets use each game's server time. Dates and clocks use your **Home timezone** in **Settings**.
 
 Some games include event dates with the app. These dates can change, so check important deadlines in your game.
-The Android app can schedule optional reminders. Enable **Reminders on this device** in **Settings** and allow Android notifications.
-The schedule covers the next 24 hours, with custom reminders and one approaching deadline per game.
-Quiet hours apply. Android can delay delivery. Open Memoria regularly to update the schedule.
+The Android and Windows apps send reminders for the next 7 days: an hour before each daily reset that still has dailies left, before the weekly reset (one hour ahead per game still owing weeklies, up to 10 hours), three hours before an unfinished event ends, and two hours before a freshly read bar caps. Nothing is sent for work you have ticked off. Setup offers them; you can also turn them on in **Settings → Reminders**.
+Quiet hours are off by default. If you set them, a reminder that falls inside them arrives just before they begin, and Today marks what has to happen before they start. **Settings → Reminders** also has an optional evening digest and your own reminders, once or on repeat. On Android, allow **Alarms & reminders** so reminders arrive on the minute, and the dailies and event notifications have **Dailies done** and **Done** buttons. Opening Memoria refreshes the schedule; if the phone goes a week without it, one notification says so before reminders run out.
 
 ## Keep a backup
 
@@ -158,7 +154,7 @@ These actions keep your saved data.
 If an older PC launcher remains active after an update, restart Windows and open the updated app.
 This starts the new Wi-Fi listener without a change to your saved data.
 
-Wi-Fi sync uses HTTP without encryption. Use a trusted private network.
+Wi-Fi sync is end-to-end encrypted: the phone checks the PC's key from the pairing code, and every request and reply is encrypted and authenticated (X25519, XChaCha20-Poly1305). It runs over plain HTTP, which carries only public handshake fields and ciphertext. Details are in [docs/publisher-trust.md](docs/publisher-trust.md).
 
 #### Sync away from home
 
@@ -193,8 +189,6 @@ When one is available, a full-screen page lists every change since your version.
 
 - **Windows app:** **Update** downloads the new version, then **Restart and update** installs it and reopens Memoria. **Check for updates** in the tray icon's menu checks now.
 - **Android app:** **Update** downloads the APK and opens Android's installer. The first time, Android asks you to allow Memoria to install apps.
-- **One-file version:** **Download** opens the release page. Export a backup first, then open the new **Memoria.html** in the same browser.
-  If your progress is missing, import your backup.
 
 Every download is checked against the release's checksums before it is installed. Your saved data is never touched by an update.
 For the first update from an older launcher, restart Windows if Memoria cannot reconnect to local sync.
@@ -215,4 +209,4 @@ The app and shared packages use the TypeScript 7.0.2 compiler.
 ESLint uses TypeScript 6.0.3 because its current TypeScript parser does not support version 7.
 The `xcode` dependency uses `uuid` 11.1.1 to remove a known security defect.
 
-For source code setup, tests, release commands, and technical details, see the [developer guide](docs/development.md).
+For source code setup, tests, release commands, and technical details, see the [developer guide](docs/development.md). What is still open is in the [roadmap](docs/roadmap.md).

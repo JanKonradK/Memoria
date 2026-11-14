@@ -4,10 +4,12 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   compareVersions,
   displayVersion,
+  isCurrentLine,
   releaseChanges,
   releaseNotes,
   checkForUpdates,
   useAppUpdate,
+  worthAScreen,
 } from '../src/app-update';
 
 vi.mock('@memoria/shared/publisher', async (original) => {
@@ -23,11 +25,16 @@ vi.mock('@memoria/shared/publisher', async (original) => {
 });
 
 describe('app updates', () => {
-  it('shows versions as betas with a 0. in front, while ordering keeps the real numbers', () => {
-    expect(displayVersion('3.3.0')).toBe('Beta 0.3.3');
-    expect(displayVersion('v3.0.1')).toBe('Beta 0.3.0.1');
-    expect(displayVersion('3.4.0-rc.1')).toBe('Beta 0.3.4-rc.1');
-    expect(compareVersions('3.3.0', '3.2.0')).toBeGreaterThan(0);
+  it('shows the real number as a beta', () => {
+    expect(displayVersion('0.1.0')).toBe('Beta 0.1.0');
+    expect(displayVersion('0.2.0-rc.1')).toBe('Beta 0.2.0-rc.1');
+    expect(compareVersions('0.2.0', '0.1.0')).toBeGreaterThan(0);
+  });
+
+  it('counts only releases since the restart at 0.1.0', () => {
+    expect(isCurrentLine('0.1.0')).toBe(true);
+    expect(isCurrentLine('v4.0.3')).toBe(false);
+    expect(isCurrentLine('v0.1.0')).toBe(false);
   });
 
   it('orders versions numerically and treats a prerelease as older', () => {
@@ -82,7 +89,7 @@ it('rejects unsigned, altered and replayed releases before offering the update',
       JSON.stringify({
         context: 'memoria-release-v1',
         sequence,
-        data: { version: '4.1.0', tag: 'v4.1.0', files: {}, windows: {} },
+        data: { version: '0.2.0', tag: '0.2.0', files: {}, windows: {} },
       }),
     );
     return { payload: btoa(String.fromCharCode(...bytes)), signature: bytesToHex(ed25519.sign(bytes, secret)) };
@@ -94,8 +101,10 @@ it('rejects unsigned, altered and replayed releases before offering the update',
         JSON.stringify(
           String(url).includes('api.github.com')
             ? [
+                // The old line's higher numbers are never offered.
+                { tag_name: 'v4.0.3', body: '', assets: [] },
                 {
-                  tag_name: 'v4.1.0',
+                  tag_name: '0.2.0',
                   body: `<!-- memoria-signed-release ${JSON.stringify(file)} -->`,
                   assets: [{ name: 'release-manifest.json', browser_download_url: 'https://example.test/manifest' }],
                 },
@@ -118,4 +127,11 @@ it('rejects unsigned, altered and replayed releases before offering the update',
     request.mockRestore();
     localStorage.clear();
   }
+});
+
+it('gives a new major or minor version the full screen, and leaves patches in Settings', () => {
+  expect(worthAScreen('4.1.0', '4.0.3')).toBe(true);
+  expect(worthAScreen('v5.0.0', '4.9.9')).toBe(true);
+  expect(worthAScreen('4.0.4', '4.0.3')).toBe(false);
+  expect(worthAScreen('v4.0.9-beta.1', '4.0.3')).toBe(false);
 });

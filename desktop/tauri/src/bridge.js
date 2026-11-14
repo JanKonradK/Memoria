@@ -133,6 +133,7 @@
         notify: (notice) => invoke('game_notify', { notice }),
         onChanged: (listener) => subscribe('memoria:presence-changed', listener),
         onGameStarted: (listener) => subscribe('memoria:game-started', listener),
+        onGameStopped: (listener) => subscribe('memoria:game-stopped', listener),
         onOpenGame: (listener) => subscribe('memoria:open-game', listener),
       }),
       onCloseRequested(listener) {

@@ -72,8 +72,9 @@ test('a game page lays out livestreams and notes, tracking, and events side by s
     expect(side.x + side.width).toBeLessThanOrEqual(track.x + 1);
     expect(track.x + track.width).toBeLessThanOrEqual(events.x + 1);
   } else {
-    expect(track.y).toBeLessThan(side.y);
-    expect(side.y).toBeLessThan(events.y);
+    // One column: events come before livestreams, Catch up and notes (F6).
+    expect(track.y).toBeLessThan(events.y);
+    expect(events.y).toBeLessThan(side.y);
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath('game-page.png') });

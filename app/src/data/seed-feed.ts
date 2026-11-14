@@ -1,4 +1,4 @@
-import type { PublicFeedEvent } from '@memoria/shared';
+import type { FeedCode, PublicFeedEvent } from '@memoria/shared';
 import current from './feed/current.json' with { type: 'json' };
 
 /**
@@ -19,6 +19,8 @@ export const SEED_UPDATED: string = current.updated;
 export const SEED_WITHDRAWN_KEYS: string[] = current.withdrawn;
 // The JSON is checked against PublicFeedEventSchema in seed-events.test.ts.
 export const SEED_EVENTS = current.events as SeedEvent[];
+/** Reward codes shipped with this build; the signed feed brings newer ones. */
+export const SEED_CODES: FeedCode[] = ((current as { codes?: FeedCode[] }).codes ?? []) as FeedCode[];
 
 /**
  * How long a finished event is worth keeping. Two months.

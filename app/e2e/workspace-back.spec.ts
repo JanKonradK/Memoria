@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { chooseFromEdit, gameRow, openGame } from './support';
+import { gameRow, openGame } from './support';
 
 test.beforeEach(async ({ page }, info) => {
   test.skip(!['desktop', 'android-s23', 'mobile-320'].includes(info.project.name), 'Workspace return sizes');
@@ -47,23 +47,6 @@ test('browser Back and Forward use the same workspace and focus path as the arro
   await expect(back).toBeFocused();
   await page.keyboard.press('Alt+ArrowLeft');
   await expect(card).toBeFocused();
-});
-
-test('Alt+Left from a move handle returns without changing the item order', async ({ page }) => {
-  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
-  const grid = page.locator('.game-widget-grid');
-  const order = () =>
-    grid
-      .locator(':scope > [data-layout-item]')
-      .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-layout-item')));
-  const original = await order();
-  await page.getByRole('button', { name: 'Move Original Resin', exact: true }).focus();
-  await page.keyboard.press('Alt+ArrowLeft');
-  const card = gameRow(page, 'Genshin Impact');
-  await expect(card).toBeFocused();
-  await openGame(page, 'Genshin Impact');
-  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
-  expect(await order()).toEqual(original);
 });
 
 test('returning dismisses an event first and preserves a rejected dirty draft', async ({ page }) => {

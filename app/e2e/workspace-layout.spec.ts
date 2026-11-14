@@ -25,14 +25,14 @@ async function addGames(page: Page) {
   }
 }
 
-test('shared game focus, event editing, and the guide work at every size', async ({ page }, testInfo) => {
+test('shared game focus and event editing work at every size', async ({ page }, testInfo) => {
   await addGames(page);
-  await expect(page.getByRole('combobox', { name: 'Focus game' })).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Filter by game' })).toHaveCount(0);
   await openGame(page, 'Genshin Impact');
   const workspace = page.getByRole('region', { name: 'Genshin Impact focus workspace' });
   await expect(workspace).toBeVisible();
   await expect(workspace).not.toHaveClass(/\bcard-shell\b/);
-  await expect(page.getByRole('combobox', { name: 'Focus game' })).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Filter by game' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Back to Today', exact: true })).toHaveCount(1);
   await expect(workspace.getByRole('button', { name: 'Edit Genshin Impact', exact: true })).toHaveCount(1);
   expect(
@@ -43,7 +43,8 @@ test('shared game focus, event editing, and the guide work at every size', async
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('game-page.png') });
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
-  await expect(page.getByRole('combobox', { name: 'Focus game' })).toContainText('Genshin Impact');
+  // Opening a game never filters the Timeline (F4).
+  await expect(page.getByRole('combobox', { name: 'Filter by game' })).toContainText('All games');
   await page.getByRole('radiogroup', { name: 'Event view' }).getByRole('radio', { name: 'List', exact: true }).click();
   await page.getByRole('button', { name: 'Add', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Event', exact: true }).click();
@@ -63,27 +64,20 @@ test('shared game focus, event editing, and the guide work at every size', async
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath('timeline-list.png') });
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await expect(page.getByRole('combobox', { name: 'Focus game' })).toContainText('Genshin Impact');
-  await page.getByRole('button', { name: 'User guide', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Pages' })).toBeVisible();
-  await page.getByRole('button', { name: 'Skip tour', exact: true }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Filter by game' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Today', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Genshin Impact focus workspace' })).toHaveCount(0);
-  await expect(page.getByRole('combobox', { name: 'Focus game' })).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Filter by game' })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
-test('first launch opens a spotlight tour and skip persists', async ({ page }, testInfo) => {
-  test.skip(!['desktop', 'mobile-390'].includes(testInfo.project.name), 'First-run guide at desktop and phone sizes');
+test('skipping first-run setup persists and opens no tour', async ({ page }, testInfo) => {
+  test.skip(!['desktop', 'mobile-390'].includes(testInfo.project.name), 'First run at desktop and phone sizes');
   await page.goto('/');
-  // Skipping setup still opens the tour, over the empty app.
   await page.getByRole('button', { name: 'Skip for now', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Pages' })).toBeVisible();
-  await page.getByRole('button', { name: 'Skip tour', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByRole('combobox', { name: 'Focus game' })).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Filter by game' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Add a game' })).toBeVisible();
   await page.reload();
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();

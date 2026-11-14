@@ -16,7 +16,7 @@ export function TimelineTools({
   onEditing?: (value: boolean) => void;
 }) {
   return (
-    <div data-tour="timeline-tools" className="timeline-tools">
+    <div className="timeline-tools">
       <button
         type="button"
         className="shell-control timeline-tool-button"

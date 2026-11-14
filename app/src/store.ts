@@ -283,13 +283,30 @@ export function migrateLegacyIdentity(state: AppState): { state: AppState; repai
   return repaired ? { state: { ...state, games }, repaired } : { state, repaired };
 }
 
+/**
+ * Quick spends arrived in the presets after many games were added. A game with
+ * no quick-spend rows at all, not even deleted ones, gets its preset's. The ids
+ * are fixed, so two devices doing this before they sync still agree.
+ */
+function seedPresetChips(state: AppState): AppState {
+  const added: QuickChip[] = [];
+  for (const game of state.games) {
+    if (game.deleted || state.chips.some((chip) => chip.gameId === game.id)) continue;
+    const chips = presetForGame(game)?.chips ?? [];
+    chips.forEach((chip, sort) =>
+      added.push({ ...chip, id: `preset-chip:${game.id}:${sort}`, gameId: game.id, sort, updatedAt: 1 }),
+    );
+  }
+  return added.length ? { ...state, chips: [...state.chips, ...added] } : state;
+}
+
 function stateForStorage(raw: unknown): { state: AppState; repaired: boolean } {
   const normalized = seedMissingRegenSnapshots(normalizeState(raw), now(), uid);
   const pruned = pruneCompletions(normalized, now() - COMPLETION_RETENTION_MS);
   const swept = pruneRetiredSeedEvents(pruned, now() - SEED_RETENTION_MS);
   const badgeMigrated = migrateGenshinBadge(swept);
   const identity = migrateLegacyIdentity(badgeMigrated.state);
-  const state = collapseSourceTwins(identity.state, now());
+  const state = seedPresetChips(collapseSourceTwins(identity.state, now()));
   const parsed = safeParseAppState(raw);
   // Successful transforms matter too: future clocks and inferred legacy fields
   // are safe in memory only after repair, so leave no poisoned original on disk.
@@ -351,6 +368,7 @@ function applySeedPlan(state: AppState, plan: PlannedSeed[], version = SEED_UPDA
       start: item.start,
       end: item.end,
       dailyTouch: seed.dailyTouch ?? false,
+      reward: seed.reward,
       notify: seed.notify ?? true,
       notes: seed.notes ?? '',
       sourceKey: seed.sourceKey,
@@ -628,9 +646,9 @@ export interface AppStore {
   upsertRule(rule: Partial<AlertRule> & { type: AlertRule['type']; gameId: string | null }): void;
   clearRule(type: AlertRule['type'], gameId: string | null): void;
 
-  addReminder(message: string, at: number, gameId: string | null): void;
+  addReminder(message: string, at: number, gameId: string | null, repeatDays?: number): void;
   deleteReminder(id: string): void;
-  updateReminder(id: string, patch: Pick<Reminder, 'message' | 'at'>): void;
+  updateReminder(id: string, patch: Pick<Reminder, 'message' | 'at'> & { repeatDays?: number | null }): void;
 
   updateSettings(patch: Partial<Settings>): void;
   /** Record catch-up digests as read for a game preset, on every device. */
@@ -1388,10 +1406,11 @@ export const useApp = create<AppStore>((set, get) => ({
     }));
   },
 
-  addReminder(message, at, gameId) {
+  addReminder(message, at, gameId, repeatDays) {
+    const repeat = repeatDays && repeatDays >= 1 ? { repeatDays: Math.min(365, Math.round(repeatDays)) } : {};
     get().mutate((s) => ({
       ...s,
-      reminders: [...s.reminders, { id: uid(), gameId, message, at, updatedAt: now() } satisfies Reminder],
+      reminders: [...s.reminders, { id: uid(), gameId, message, at, ...repeat, updatedAt: now() } satisfies Reminder],
     }));
   },
 
@@ -1399,7 +1418,10 @@ export const useApp = create<AppStore>((set, get) => ({
     if (!patch.message.trim() || !Number.isFinite(patch.at)) return;
     get().mutate((s) => {
       if (!s.reminders.some((item) => item.id === id && !item.deleted)) return s;
-      return { ...s, reminders: patchIn(s.reminders, id, { message: patch.message.trim(), at: patch.at }) };
+      const changes: Partial<Reminder> = { message: patch.message.trim(), at: patch.at };
+      if (patch.repeatDays !== undefined)
+        changes.repeatDays = patch.repeatDays ? Math.min(365, Math.round(patch.repeatDays)) : undefined;
+      return { ...s, reminders: patchIn(s.reminders, id, changes) };
     });
   },
 

@@ -210,6 +210,8 @@ export interface GameEvent extends Syncable {
   end: number;
   /** Requires a daily touch (login/claim) — always shown on the game card's event strip while active. */
   dailyTouch: boolean;
+  /** Premium currency the event pays in total (Primogems, Stellar Jade, …), when the notice states it. */
+  reward?: number;
   /** Include the event in time-sensitive in-app next actions. */
   notify: boolean;
   /** User marked it complete — collapsed on the timeline and off the card. */
@@ -262,19 +264,47 @@ export interface Reminder extends Syncable {
   id: string;
   gameId: string | null;
   message: string;
+  /** The first time it fires. */
   at: number;
+  /** Repeats every this many days from `at`. Absent = once. */
+  repeatDays?: number;
 }
 
-export type SettingsField = 'quietStart' | 'quietEnd' | 'localTz' | 'sleepHours';
+export const MAX_REMINDER_REPEAT_DAYS = 365;
+
+export type SettingsField = 'quietStart' | 'quietEnd' | 'quietHoursChosen' | 'localTz' | 'sleepHours' | 'digestAt';
+/** Settings merged one field at a time, so edits on two devices do not overwrite each other. */
+export const SETTINGS_FIELDS: SettingsField[] = [
+  'quietStart',
+  'quietEnd',
+  'quietHoursChosen',
+  'localTz',
+  'sleepHours',
+  'digestAt',
+];
 
 export interface Settings extends Syncable {
-  /** Reserved notification preference in minutes-from-midnight local time; null = disabled. */
+  /**
+   * Quiet hours in minutes-from-midnight home time; null = none (the default).
+   * Notifications that fall inside them move to just before they begin.
+   */
   quietStart: number | null;
   quietEnd: number | null;
-  /** IANA timezone reserved for future notification timing. */
+  /**
+   * The owner picked the quiet hours above. Before 4.1 every document carried a
+   * hidden 01:00–08:00 default nobody could see or change; without this mark
+   * that pair reads as "no quiet hours".
+   */
+  quietHoursChosen?: boolean;
+  /** IANA home timezone, used for quiet hours and notification timing. */
   localTz: string;
-  /** Hours of sleep used by the "safe to sleep" check. */
+  /** Kept for older devices; quiet hours replaced it. */
   sleepHours: number;
+  /**
+   * An optional evening digest, in minutes-from-midnight home time: one
+   * notification listing what is still open across games. Absent or null = off.
+   */
+  digestAt?: number | null;
   /**
    * The `SEED_UPDATED` stamp of the bundled event feed this device has already
    * taken a refresh from, as `YYYY-MM-DD`.
@@ -316,8 +346,8 @@ export interface AppState {
 export const DEFAULT_SETTINGS: Settings = {
   hlc: { wall: 0, counter: 0, device: 'Unknown device' },
   deviceId: 'Unknown device',
-  quietStart: 60, // 01:00
-  quietEnd: 480, // 08:00
+  quietStart: null,
+  quietEnd: null,
   localTz: 'UTC',
   sleepHours: 8,
   fieldUpdatedAt: {},

@@ -9,6 +9,7 @@ use tokio::sync::{broadcast, watch};
 use crate::{core::Core, store};
 
 const MINUTE: i64 = 60_000;
+/// Rebuild at least daily; the plan itself covers a week.
 const HORIZON: i64 = 24 * 60 * MINUTE;
 const STALE: i64 = 5 * MINUTE;
 const KEEP_FIRED: i64 = 7 * HORIZON;
@@ -19,6 +20,9 @@ pub struct Notice {
     pub title: String,
     pub body: String,
     pub at: i64,
+    /// The deadline it warns about. Late delivery after sleep is still useful until then.
+    #[serde(default)]
+    pub until: Option<i64>,
 }
 
 /// Both clocks are supplied by the caller, so sleep and clock changes are testable.
@@ -60,7 +64,10 @@ impl Schedule {
             if notice.at > now {
                 return true;
             }
-            if notice.at >= now - STALE && !self.fired.contains_key(&notice.id) {
+            // A warning is worth showing late while its deadline is still ahead,
+            // for example after the PC wakes at 02:30 before a 03:00 reset.
+            let useful = notice.until.map_or(notice.at >= now - STALE, |until| now < until);
+            if useful && !self.fired.contains_key(&notice.id) {
                 self.fired.insert(notice.id, now);
                 due.push(notice.clone());
             }
@@ -159,7 +166,7 @@ mod tests {
     use super::*;
 
     fn notice(id: u32, at: i64) -> Notice {
-        Notice { id, at, title: "Memoria".into(), body: "Reminder".into() }
+        Notice { id, at, title: "Memoria".into(), body: "Reminder".into(), until: None }
     }
 
     #[test]
@@ -195,6 +202,18 @@ mod tests {
         assert_eq!(due.iter().map(|notice| notice.id).collect::<Vec<_>>(), vec![2, 3]);
         assert!(schedule.plan.is_empty());
         assert!(!schedule.fired.contains_key(&1));
+    }
+
+    #[test]
+    fn delivers_late_work_after_sleep_while_its_deadline_is_still_ahead() {
+        let mut schedule = Schedule::default();
+        let mut daily = notice(1, 1000);
+        daily.until = Some(1000 + 60 * MINUTE);
+        let mut missed = notice(2, 1000);
+        missed.until = Some(2000);
+        schedule.replace(vec![daily, missed], 0);
+        let due = schedule.take_due(1000 + 30 * MINUTE);
+        assert_eq!(due.iter().map(|notice| notice.id).collect::<Vec<_>>(), vec![1]);
     }
 
     #[test]

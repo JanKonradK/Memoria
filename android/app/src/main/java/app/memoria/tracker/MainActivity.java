@@ -11,6 +11,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(PairingScannerPlugin.class);
         registerPlugin(AppUpdaterPlugin.class);
         registerPlugin(HomeWidgetPlugin.class);
+        registerPlugin(DeviceKeyPlugin.class);
         super.onCreate(savedInstanceState);
     }
 

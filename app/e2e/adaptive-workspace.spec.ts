@@ -90,8 +90,7 @@ test('Today and game controls adapt while a PC window is resized', async ({ page
   await page.setViewportSize({ width: 360, height: 600 });
   await expect(energy).toHaveValue('83');
   await energy.press('Enter');
-  await chooseFromEdit(page, 'Genshin Impact', 'Edit layout');
-  await page.getByRole('button', { name: 'Game settings', exact: true }).click();
+  await chooseFromEdit(page, 'Genshin Impact', 'Game settings');
   await page.setViewportSize({ width: 900, height: 400 });
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
@@ -104,9 +103,5 @@ test('Today and game controls adapt while a PC window is resized', async ({ page
     ),
   ).toEqual([]);
   await done.click();
-  await page
-    .getByRole('region', { name: 'Layout editor for Genshin Impact' })
-    .getByRole('button', { name: 'Done', exact: true })
-    .click();
   await expect(energy).toHaveValue('83');
 });

@@ -81,3 +81,15 @@ export function useElementWidth() {
 
   return [setElement, width] as const;
 }
+
+/**
+ * A short physical tick for the actions repeated most on a phone. Touch screens
+ * only: a desktop has no motor, and a pen or mouse press needs no confirmation.
+ */
+export function haptic(ms = 10): void {
+  try {
+    if (window.matchMedia?.('(pointer: coarse)').matches) navigator.vibrate?.(ms);
+  } catch {
+    // Some WebViews throw when vibration is blocked; the tick still happened.
+  }
+}

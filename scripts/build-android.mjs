@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { drawPng } from '../app/scripts/draw-icon.mjs';
+import { withAndroidPolicy } from './android-csp.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const androidDir = join(root, 'android');
@@ -27,6 +28,10 @@ run(
   [join(root, 'node_modules', '@capacitor', 'cli', 'bin', 'capacitor'), 'sync', 'android'],
   join(root, 'app'),
 );
+
+// The WebView has no response headers, so the content policy rides in the page.
+const page = join(androidDir, 'app', 'src', 'main', 'assets', 'public', 'index.html');
+writeFileSync(page, withAndroidPolicy(readFileSync(page, 'utf8')));
 
 // Reuse the existing Memoria mark rather than shipping Capacitor's starter icon.
 for (const [density, size] of Object.entries({ mdpi: 48, hdpi: 72, xhdpi: 96, xxhdpi: 144, xxxhdpi: 192 })) {

@@ -1,4 +1,4 @@
-import type { AppState, Hlc, SettingsField } from './types';
+import { SETTINGS_FIELDS, type AppState, type Hlc } from './types';
 import { RECORD_COLLECTIONS, compareHlc, legacyHlc, recordHlc, stateClocks, tickHlc } from './hlc';
 
 type Collection = (typeof RECORD_COLLECTIONS)[number] | 'settings';
@@ -96,7 +96,7 @@ export function stampChanges(
       const result = { ...row, hlc: clock, deviceId: history.deviceId, updatedAt: at };
       if (collection === 'settings') {
         const fieldHlc = { ...before.settings.fieldHlc };
-        for (const field of ['quietStart', 'quietEnd', 'localTz', 'sleepHours'] as SettingsField[]) {
+        for (const field of SETTINGS_FIELDS) {
           fieldHlc[field] = sameValue(old?.[field], row[field])
             ? (before.settings.fieldHlc?.[field] ?? {
                 ...recordHlc(before.settings),

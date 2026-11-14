@@ -42,6 +42,7 @@ function fingerprint(fields: {
   dailyTouch: boolean;
   notify: boolean;
   notes: string;
+  reward?: number;
 }): string {
   const payload = [
     fields.name,
@@ -55,6 +56,7 @@ function fingerprint(fields: {
     ...(fields.category ? [fields.category] : []),
     // Absent fields preserve hashes written before banner classification.
     ...(fields.bannerKind ? [`banner:${fields.bannerKind}`] : []),
+    ...(fields.reward ? [`reward:${fields.reward}`] : []),
   ].join('\u0000');
   // FNV-1a. Not cryptographic and does not need to be: it guards against
   // accidental collision between two versions of the same row, not an attacker.
@@ -78,6 +80,7 @@ export function seedFingerprint(seed: SeedEvent, start: number, end: number): st
     dailyTouch: seed.dailyTouch ?? false,
     notify: seed.notify ?? true,
     notes: seed.notes ?? '',
+    reward: seed.reward,
   });
 }
 

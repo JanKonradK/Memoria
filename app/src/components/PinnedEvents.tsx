@@ -54,7 +54,7 @@ export function PinnedEvents({ events, games, now, onOpen }: PinnedEventsProps) 
           Pinned
         </h2>
         <span aria-hidden />
-        <span className="numeral aside text-caption text-muted">{pinned.length}</span>
+        <span className="numeral text-caption text-muted">{pinned.length}</span>
       </div>
       <div ref={chipsRef} className="flex flex-wrap gap-2 px-2">
         {pinned.map((event) => {

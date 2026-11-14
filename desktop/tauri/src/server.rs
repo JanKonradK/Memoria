@@ -29,6 +29,7 @@ use crate::core::{Core, MAX_STATE_BYTES};
 use crate::lan::{self, Lan};
 use crate::update;
 
+/// The window's commands are granted to these origins only (capabilities/main.json); keep them in step.
 pub const PORTS: [u16; 3] = [17817, 17818, 17819];
 const CALENDAR_URL: &str = "https://raw.githubusercontent.com/JanKonradK/Memoria/main/app/public/events.json";
 const CONTENT_SECURITY_POLICY: &str = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' http://ipc.localhost ipc:; font-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
@@ -225,12 +226,11 @@ impl Server {
             }
             (Method::POST, "/api/firewall") => {
                 let headers = request.headers().clone();
-                let make_private = match lan::read_json(&headers, request.into_body(), 1024).await {
-                    Ok(body) => body.get("makePrivate").and_then(Value::as_bool).unwrap_or(false),
-                    Err(error) => return self.error(error.status, &error.message),
-                };
+                if let Err(error) = lan::read_json(&headers, request.into_body(), 1024).await {
+                    return self.error(error.status, &error.message);
+                }
                 let result = tokio::task::spawn_blocking(move || {
-                    let outcome = crate::firewall::allow(make_private);
+                    let outcome = crate::firewall::allow();
                     let mut status = crate::firewall::check();
                     status["outcome"] = json!(outcome);
                     status

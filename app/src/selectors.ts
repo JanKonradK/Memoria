@@ -1,13 +1,11 @@
-import type {
-  AppState,
-  EnergyProjection,
-  Resource,
-  ChecklistItem,
-  GameUrgency,
-  SleepCheck,
-  Snapshot,
+import type { AppState, EnergyProjection, Resource, ChecklistItem, GameUrgency, Snapshot } from '@memoria/shared';
+import {
+  buildUrgencyContext,
+  effectiveResourceKind,
+  measuredSnapshot,
+  projectEnergy,
+  urgencyOrder,
 } from '@memoria/shared';
-import { buildUrgencyContext, effectiveResourceKind, projectEnergy, sleepCheck, urgencyOrder } from '@memoria/shared';
 import { useApp } from './store';
 import { selectAgendaData, type AgendaData, type AgendaMode } from './agenda-data';
 
@@ -23,7 +21,6 @@ export interface Derived {
   order: GameUrgency[];
   entryById: Map<string, GameUrgency>;
   checklistByGame: Map<string, ChecklistItem[]>;
-  sleepFor(gameId: string): SleepCheck;
   primaryEnergy(gameId: string): PrimaryEnergy;
   agenda(mode: AgendaMode): AgendaData;
 }
@@ -43,7 +40,6 @@ function createDerived(state: AppState, now: number): Derived {
     const current = primaryByGame.get(resource.gameId);
     if (!current || resource.sort < current.sort) primaryByGame.set(resource.gameId, resource);
   }
-  const sleepByGame = new Map<string, SleepCheck>();
   const agendaByMode = new Map<AgendaMode, AgendaData>();
 
   return {
@@ -60,19 +56,12 @@ function createDerived(state: AppState, now: number): Derived {
       const game = gameById.get(gameId);
       const result = {
         resource,
-        projection: resource && game ? projectEnergy(resource, snaps.get(resource.id), now, game) : null,
+        projection:
+          resource && game
+            ? projectEnergy(resource, measuredSnapshot(resource, snaps.get(resource.id)), now, game)
+            : null,
       };
       energyByGame.set(gameId, result);
-      return result;
-    },
-    sleepFor(gameId) {
-      const cached = sleepByGame.get(gameId);
-      if (cached) return cached;
-      const game = gameById.get(gameId);
-      const result = game
-        ? sleepCheck(state, game, state.settings.sleepHours, now, snaps)
-        : { caps: false, fullAt: null };
-      sleepByGame.set(gameId, result);
       return result;
     },
     agenda(mode) {

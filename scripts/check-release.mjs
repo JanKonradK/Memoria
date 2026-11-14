@@ -1,12 +1,11 @@
-// Checks the downloads before they are published: the Windows zip holds the
-// program and nothing it should not, and the one-file HTML works offline.
+// Checks the download before it is published: the Windows zip holds the
+// program and nothing it should not.
 // The Windows program itself is exercised by check-native.mjs.
-import { chromium, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
 
 const root = resolve(import.meta.dirname, '..');
 const release = join(root, 'dist/release');
@@ -39,41 +38,13 @@ expect(record).toMatchObject({ name: 'Memoria', version, runtime: 'tauri', platf
 const digest = createHash('sha256').update(readFileSync(zip)).digest('hex');
 expect(readFileSync(join(release, 'SHA256SUMS.txt'), 'utf8')).toContain(`${digest}  Memoria-win-x64.zip`);
 
-const browser = await chromium.launch();
-const errors = [];
-try {
-  const standaloneContext = await browser.newContext({
-    viewport: { width: 1280, height: 900 },
-    reducedMotion: 'reduce',
-  });
-  await standaloneContext.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
-  const standalone = await standaloneContext.newPage();
-  const requests = [];
-  standalone.on('pageerror', (error) => errors.push(error.message));
-  standalone.on('request', (request) => {
-    if (/^https?:/.test(request.url())) requests.push(request.url());
-  });
-  await standalone.goto(pathToFileURL(join(root, 'app/dist-single/Memoria.html')).href);
-  await standalone.getByRole('button', { name: 'Add a game' }).click();
-  await standalone.getByRole('button', { name: /Genshin Impact/ }).click();
-  await standalone.getByRole('combobox', { name: 'Server' }).click();
-  await standalone.getByRole('option', { name: /^Europe/ }).click();
-  await standalone.getByRole('button', { name: 'Add Genshin', exact: true }).click();
-  await standalone.getByRole('button', { name: 'Review Genshin Impact', exact: true }).click();
-  await expect(standalone.getByRole('heading', { name: 'Genshin Impact', exact: true })).toBeVisible();
-  // Wait for the debounced local write before reload.
-  await standalone.waitForTimeout(300);
-  await standalone.reload();
-  await standalone.getByRole('button', { name: 'Review Genshin Impact', exact: true }).click();
-  await expect(standalone.getByRole('heading', { name: 'Genshin Impact', exact: true })).toBeVisible();
-  expect(requests).toEqual([]);
-  expect(errors).toEqual([]);
-  console.log(
-    JSON.stringify({
-      windowsZip: `PASS: ${entries.length} files, release ${record.version}, checksum listed`,
-      singleFile: 'PASS: add game, reload, no HTTP requests',
-    }),
-  );
-} finally {
-  await browser.close();
-}
+// The installer: built from the same tree, listed and signed beside the zip.
+const setup = readFileSync(join(release, 'Memoria-setup-x64.exe'));
+const setupDigest = createHash('sha256').update(setup).digest('hex');
+expect(readFileSync(join(release, 'SHA256SUMS.txt'), 'utf8')).toContain(`${setupDigest}  Memoria-setup-x64.exe`);
+expect(setup.subarray(0, 2).toString()).toBe('MZ');
+console.log(JSON.stringify({ windowsSetup: `PASS: ${(setup.length / 1024 / 1024).toFixed(1)} MB, checksum listed` }));
+
+console.log(
+  JSON.stringify({ windowsZip: `PASS: ${entries.length} files, release ${record.version}, checksum listed` }),
+);

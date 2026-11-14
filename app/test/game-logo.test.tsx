@@ -177,13 +177,8 @@ describe('GameLogo', () => {
     expect(moves).toEqual([]);
   });
 
-  it('turns the ring of a heading logo only when asked, and never under reduced motion', () => {
-    const { container, rerender } = render(<GameLogo game={genshin} />);
-    expect(container.querySelector('.game-logo-spin[data-spinning]')).toBeNull();
-    vi.mocked(window.matchMedia).mockImplementation(
-      () => ({ matches: true, addEventListener: () => {}, removeEventListener: () => {} }) as unknown as MediaQueryList,
-    );
-    rerender(<GameLogo game={genshin} spin />);
-    expect(container.querySelector('.game-logo-spin[data-spinning]')).toBeNull();
+  it('never turns the ring on its own', () => {
+    const { container } = render(<GameLogo game={genshin} flippable />);
+    expect(container.querySelector('[data-spinning]')).toBeNull();
   });
 });

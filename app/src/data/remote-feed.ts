@@ -1,6 +1,6 @@
 import { verifyPublished, FEED_CONTEXT, type SignedFile, type TrustStamp } from '@memoria/shared/publisher';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
-import { MAX_EVENT_FEED_BYTES, RemoteEventFeedSchema, type RemoteEventFeed } from '@memoria/shared';
+import { MAX_EVENT_FEED_BYTES, RemoteEventFeedSchema, type FeedCode, type RemoteEventFeed } from '@memoria/shared';
 import { create } from 'zustand';
 import { launcherFetch, servedByLauncher } from '../launcher';
 import { useApp } from '../store';
@@ -18,7 +18,9 @@ export const useRemoteFeed = create<{
   status: 'idle' | 'checking' | 'ok' | 'error';
   error: string;
   lastSuccessAt: number | null;
-}>(() => ({ status: 'idle', error: '', lastSuccessAt: null }));
+  /** Reward codes from the latest verified feed. */
+  codes: FeedCode[];
+}>(() => ({ status: 'idle', error: '', lastSuccessAt: null, codes: [] }));
 
 let inFlight: Promise<void> | null = null;
 let cached: RemoteEventFeed | null = null;
@@ -103,7 +105,7 @@ export function refreshRemoteFeed(): Promise<void> {
         } catch {
           /* Offline cache is best effort. */
         }
-        useRemoteFeed.setState({ status: 'ok', error: '', lastSuccessAt: receivedAt });
+        useRemoteFeed.setState({ status: 'ok', error: '', lastSuccessAt: receivedAt, codes: parsed.data.codes ?? [] });
       } else {
         useRemoteFeed.setState({ status: 'ok', error: '' });
       }
@@ -131,6 +133,7 @@ export function initRemoteFeed(): () => void {
       if (parsed.success) {
         cached = parsed.data;
         useApp.getState().importRemoteEvents(cached);
+        useRemoteFeed.setState({ codes: cached.codes ?? [] });
         if (typeof entry.receivedAt === 'number' && Number.isFinite(entry.receivedAt) && entry.receivedAt <= Date.now())
           useRemoteFeed.setState({ lastSuccessAt: entry.receivedAt });
       }

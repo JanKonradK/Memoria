@@ -98,7 +98,7 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Add a game' })).toBeVisible();
 });
 
-test('first run sets up games, then opens the spotlight tour, and fits the viewport', async ({ page }) => {
+test('first run sets up games, then shows hints in place, and fits the viewport', async ({ page }) => {
   await page.addInitScript(() => localStorage.removeItem('memoria-onboarding'));
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Which games do you play?' })).toBeVisible();
@@ -114,7 +114,13 @@ test('first run sets up games, then opens the spotlight tour, and fits the viewp
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
   await page.getByRole('button', { name: 'Create dashboard' }).click();
-  await expect(page.getByRole('dialog', { name: 'Pages' })).toBeVisible();
+  // No tour over the app: hints wait where each thing is.
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page
+    .getByRole('navigation', { name: 'Primary' })
+    .getByRole('button', { name: 'Timeline', exact: true })
+    .click();
+  await expect(page.locator('[data-hint="events"]')).toBeVisible();
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
 });
@@ -160,7 +166,8 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   await dialog.getByRole('tab', { name: 'Energy', exact: true }).click();
   // By role: the section heading and the "Add quick spend" button share text.
   await dialog.getByRole('heading', { name: 'Quick spend' }).scrollIntoViewIfNeeded();
-  await dialog.getByPlaceholder('Label, e.g. Domain').fill('Domain');
+  // Genshin ships Domain −20; this adds a spend of its own.
+  await dialog.getByPlaceholder('Label, e.g. Domain').fill('Ley line');
   await dialog.getByRole('button', { name: 'Add quick spend' }).click();
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
@@ -171,6 +178,7 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   const openControls = gameRow(page, 'Genshin Impact');
   if (await openControls.isVisible()) await openControls.click();
   await expect(page.getByRole('button', { name: /Domain -20/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ley line -20/ })).toBeVisible();
   const timer = page.getByRole('button', { name: 'Crystalfly Trap (Crystal Cores): mark collected and resent' });
   await timer.scrollIntoViewIfNeeded();
   await expect(timer).toBeVisible();
@@ -220,13 +228,21 @@ test('tabs, timeline controls, and settings fit after adding a game', async ({ p
   await page.keyboard.press('Escape');
 
   await openSettings(page, 'General');
-  await expect(page.getByLabel('Sleep window (hours)')).toHaveValue('8');
-  await page.getByRole('button', { name: 'Switch to light theme' }).click();
+  // The theme follows the device until one is chosen, and then stays chosen.
+  const theme = page.getByRole('radiogroup', { name: 'Theme' });
+  await expect(theme.getByRole('radio', { name: 'Device', exact: true })).toBeChecked();
+  await page.emulateMedia({ colorScheme: 'light' });
   await expect.poll(() => page.locator('html').getAttribute('data-theme')).toBe('light');
+  await theme.getByRole('radio', { name: 'Dark', exact: true }).click();
+  await expect.poll(() => page.locator('html').getAttribute('data-theme')).toBe('dark');
   await expect
-    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('memoria-ui') || '{}')?.state?.theme as string))
-    .toBe('light');
-  await page.getByRole('button', { name: 'Switch to dark theme' }).click();
+    .poll(() =>
+      page.evaluate(() => JSON.parse(localStorage.getItem('memoria-ui') || '{}')?.state?.themePreference as string),
+    )
+    .toBe('dark');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.emulateMedia({ colorScheme: 'dark' });
   await expectNoPageOverflow(page);
 
   await openSettings(page, 'Games');
@@ -255,7 +271,7 @@ test('wide Today opens integrated game pages while timeline bars stay in scale',
   const workspace = page.getByRole('region', { name: 'Honkai: Star Rail focus workspace' });
   await expect(workspace).toBeVisible();
   await expect(workspace).not.toHaveClass(/card-shell/);
-  await expect(page.getByRole('combobox', { name: 'Focus game' })).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Filter by game' })).toHaveCount(0);
   await expectNoPageOverflow(page);
   await page.getByRole('button', { name: 'Back to Today', exact: true }).click();
   await expect(starRailTrigger).toBeFocused();
@@ -331,7 +347,7 @@ test('animated Add menu transfers focus to a sheet and releases pointer input', 
     .evaluate((node) => parseFloat(getComputedStyle(node).animationDuration));
   expect(duration).toBeLessThan(0.001);
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Switch to light theme' }).click();
+  await page.emulateMedia({ colorScheme: 'light' });
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await expectNoPageOverflow(page);
 });

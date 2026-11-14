@@ -89,6 +89,7 @@ it('refreshes connected devices after local loading', async () => {
         finishSync = resolve;
       }),
   );
+  useApp.setState({ syncStatus: 'error' });
   render(<AppBar />);
   const refresh = screen.getByRole('button', { name: 'Refresh data' });
   fireEvent.click(refresh);
@@ -108,6 +109,7 @@ it.each(['loadError', 'saveError'] as const)('avoids sync after %s', async (fiel
     load: vi.fn(async () => {
       useApp.setState({ [field]: 'Storage is unavailable.' });
     }),
+    syncStatus: 'error',
   });
   render(<AppBar />);
   const refresh = screen.getByRole('button', { name: 'Refresh data' });
@@ -116,6 +118,14 @@ it.each(['loadError', 'saveError'] as const)('avoids sync after %s', async (fiel
   expect(syncNow).not.toHaveBeenCalled();
   expect(cloudSyncNow).not.toHaveBeenCalled();
   expect(syncLanNow).not.toHaveBeenCalled();
+});
+
+it('keeps healthy sync and refresh out of sight', () => {
+  useApp.setState({ syncStatus: 'ok' });
+  render(<AppBar />);
+  expect(screen.queryByRole('button', { name: 'Refresh data' })).toBeNull();
+  expect(screen.queryByText('Sync needs attention')).toBeNull();
+  expect(screen.queryByRole('button', { name: /theme/i })).toBeNull();
 });
 
 it('keeps Today selected on a game page and returns to Today from it', () => {

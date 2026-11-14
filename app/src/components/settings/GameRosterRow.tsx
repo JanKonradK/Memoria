@@ -41,7 +41,7 @@ export function GameRosterRow({ game, colors, localTz }: { game: Game; colors: G
           <span className="min-w-0 text-body font-semibold text-fg [overflow-wrap:anywhere]">{game.name}</span>
           {game.paused && <Pill variant="paused">paused</Pill>}
         </div>
-        <span className="aside block text-label text-muted">
+        <span className="block text-label text-muted">
           resets <span className="numeral">{localResetLabel(game, localTz, Date.now())}</span>
         </span>
       </div>

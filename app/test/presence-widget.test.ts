@@ -51,3 +51,24 @@ describe('home widget snapshot', () => {
     expect(snapshot.rows[1]!.dailyResetAt).toBeGreaterThan(now);
   });
 });
+
+describe('widget ticks', () => {
+  it('apply dailies ticked on the widget today, once per game, and ignore ticks from before the reset', async () => {
+    const { useApp } = await import('../src/store');
+    const { applyWidgetTicks } = await import('../src/home-widget');
+    const game = makeGame({ id: 'g1' });
+    useApp.setState({
+      state: { ...emptyState(), games: [game], tasks: [makeTask({ gameId: 'g1', cadence: 'daily' })] },
+      loaded: true,
+    });
+    const day = 24 * 3_600_000;
+    const queue = JSON.stringify([
+      { gameId: 'g1', at: now - day * 2 },
+      { gameId: 'g1', at: now - 60_000 },
+      { gameId: 'g1', at: now - 30_000 },
+      { gameId: 'gone', at: now - 60_000 },
+    ]);
+    expect(applyWidgetTicks(queue, now)).toEqual(['g1']);
+    expect(applyWidgetTicks('not json', now)).toEqual([]);
+  });
+});

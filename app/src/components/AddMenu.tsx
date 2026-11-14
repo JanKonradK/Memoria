@@ -41,7 +41,7 @@ export function AddMenu() {
 
   return (
     <DropdownMenuPrimitive.Root>
-      <DropdownMenuPrimitive.Trigger className="shell-control group" aria-label="Add" data-tour="add">
+      <DropdownMenuPrimitive.Trigger className="shell-control group" aria-label="Add">
         <svg
           viewBox="0 0 20 20"
           aria-hidden

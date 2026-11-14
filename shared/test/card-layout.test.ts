@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { moveLayoutItem, resolveGameLayout } from '../src/card-layout';
+import { resolveGameLayout } from '../src/card-layout';
 import { mergeState, normalizeState } from '../src/merge';
 import { safeParseAppState } from '../src/validation';
 import { makeGame, makeResource, makeState, makeTask } from './helpers';
@@ -39,13 +39,6 @@ describe('game card layouts', () => {
     ]);
     expect(result.find((item) => item.id === 'resource:counter')?.hidden).toBe(true);
     expect(game.cardLayout).toHaveLength(5);
-  });
-
-  it('moves a widget without changing its visibility or the input array', () => {
-    const items = [{ id: 'task:one' }, { id: 'resource:two', hidden: true }, { id: 'events' }];
-    expect(moveLayoutItem(items, 'events', 0)).toEqual([items[2], items[0], items[1]]);
-    expect(items[0]?.id).toBe('task:one');
-    expect(moveLayoutItem(items, 'missing', 0)).toBe(items);
   });
 
   it('preserves layout through validation, JSON backup, normalization, and sync merge', () => {

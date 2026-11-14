@@ -16,19 +16,6 @@
   cursor: pointer;
 }
 
-.game-logo-spin {
-  position: absolute;
-  inset: 0;
-}
-.game-logo-spin[data-spinning] {
-  animation: game-logo-turn 24s linear infinite;
-  will-change: transform;
-}
-@keyframes game-logo-turn {
-  to {
-    transform: rotate(360deg);
-  }
-}
 .game-logo-ring {
   position: absolute;
   inset: 0;
@@ -77,8 +64,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .game-logo-ring,
-  .game-logo-spin[data-spinning] {
+  .game-logo-ring {
     animation: none;
   }
 }
