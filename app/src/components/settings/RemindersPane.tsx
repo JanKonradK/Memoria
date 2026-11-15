@@ -7,6 +7,8 @@ import { fmtDateTimeLocalInput } from '../../util';
 import { Btn, ConfirmDelete, Toggle } from '../ui';
 import { DeviceNotifications } from './DeviceNotifications';
 import { DigestField } from './DigestField';
+import { ReminderStyles, STYLE_LABELS } from './ReminderStyles';
+import { useNotifications } from '../../notifications';
 import { QuietHoursField } from './QuietHoursField';
 import { repeatLabel } from './reminder-repeat';
 import { SettingRow } from './SettingRow';
@@ -14,18 +16,38 @@ import { SettingRow } from './SettingRow';
 /** Reminders on the Windows app. */
 function PcReminders() {
   const { presence } = usePresence();
+  const windows = useNotifications((s) => s.windows);
   if (!presence) return null;
+  const blocked = presence.remindersOnPc && windows != null && windows !== 'enabled' && windows !== 'unknown';
   return (
-    <SettingRow
-      label="Reminders on this PC"
-      hint="An hour before each daily reset with dailies left, before weeklies and unfinished events run out, and before a bar caps. If phone reminders are also on, both devices alert."
-    >
-      <Toggle
-        ariaLabel="Reminders on this PC"
-        checked={presence.remindersOnPc}
-        onChange={(remindersOnPc) => void setPresence({ remindersOnPc })}
-      />
-    </SettingRow>
+    <div className="min-w-0">
+      <SettingRow
+        label="Reminders on this PC"
+        hint="An hour before each daily reset with dailies left, before weeklies and unfinished events run out, and before a bar caps. If phone reminders are also on, both devices alert."
+      >
+        <Toggle
+          ariaLabel="Reminders on this PC"
+          checked={presence.remindersOnPc}
+          onChange={(remindersOnPc) => void setPresence({ remindersOnPc })}
+        />
+      </SettingRow>
+      {blocked && (
+        <SettingRow
+          label="Windows is hiding them"
+          hint={
+            windows === 'user'
+              ? 'Notifications are off for every app in Windows. Switch them on so reminders can appear.'
+              : windows === 'policy'
+                ? 'An administrator has turned notifications off on this PC.'
+                : 'Notifications are off for Memoria in Windows. Switch Memoria on so reminders can appear.'
+          }
+        >
+          <Btn onClick={() => void window.memoriaDesktop?.presence?.openNotificationSettings?.()}>
+            Open Windows settings
+          </Btn>
+        </SettingRow>
+      )}
+    </div>
   );
 }
 
@@ -57,6 +79,7 @@ function CustomReminders() {
                   {[
                     item.gameId ? (names.get(item.gameId) ?? 'Removed game') : null,
                     repeatLabel(item.repeatDays),
+                    item.style ? STYLE_LABELS[item.style] : null,
                     next == null ? 'Done' : `Next ${fmtDateTimeLocalInput(next, zone).replace('T', ' · ')}`,
                   ]
                     .filter(Boolean)
@@ -84,6 +107,7 @@ export function RemindersPane() {
           Reminders arrive through the Android app or the Windows app. The settings below are shared with them.
         </p>
       )}
+      <ReminderStyles />
       <QuietHoursField />
       <DigestField />
       <CustomReminders />

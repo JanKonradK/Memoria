@@ -31,6 +31,10 @@ export interface DesktopHost {
     /** Program names per game id, e.g. `{ genshin: ['GenshinImpact'] }`. */
     watch(games: Record<string, string[]>): Promise<boolean>;
     notify(notice: { gameId: string; title: string; body: string }): Promise<boolean>;
+    /** Whether Windows lets Memoria's toasts through. Older hosts lack these three. */
+    notificationStatus?(): Promise<{ windows: WindowsToastSetting }>;
+    testNotification?(style: string, tone: string): Promise<{ windows: WindowsToastSetting }>;
+    openNotificationSettings?(): Promise<void>;
     onChanged(listener: (presence: DesktopPresence) => void): () => void;
     onGameStarted(listener: (gameId: string) => void): () => void;
     /** A watched game closed after a real session. Older hosts lack it. */
@@ -40,6 +44,9 @@ export interface DesktopHost {
   onCloseRequested(listener: (requestId: string) => void): () => void;
   completeClose(requestId: string, result: DesktopCloseResult): void;
 }
+
+/** enabled; app: off for Memoria; user: all notifications off; policy: set by an administrator. */
+export type WindowsToastSetting = 'enabled' | 'app' | 'user' | 'policy' | 'unknown';
 
 export interface DesktopPreferences {
   openAtLogin: boolean;

@@ -23,6 +23,17 @@ export const VersionCurrencySchema = z.object({
   basis: z.enum(['official', 'community-estimate']),
 });
 
+/** One banner phase (half) of a version: when it ran and whose limited banners it featured. */
+export const VersionPhaseSchema = z.object({
+  phase: z.number().int().min(1).max(4),
+  start: day.nullable().optional(),
+  end: day.nullable().optional(),
+  /** Limited 5-star characters on the phase's banners, reruns included. */
+  featured: z.array(z.string().min(1).max(100)).max(12).default([]),
+  /** Free currency of this half, when a source splits it. */
+  currency: count.optional(),
+});
+
 export const VersionRecordSchema = z.object({
   game: z.string().min(1).max(20),
   version: z.string().min(1).max(20),
@@ -32,6 +43,9 @@ export const VersionRecordSchema = z.object({
   end: day.nullable().optional(),
   currency: VersionCurrencySchema,
   newCharacters: z.array(z.string().min(1).max(100)).max(40).default([]),
+  phases: z.array(VersionPhaseSchema).max(4).default([]),
+  /** How the total was put together, and what is uncertain. */
+  notes: z.string().max(1000).optional(),
   sources: z.array(link).max(20).default([]),
 });
 
@@ -57,6 +71,7 @@ export const VersionHistorySchema = z.object({
 
 export type VersionCurrency = z.infer<typeof VersionCurrencySchema>;
 export type VersionRecord = z.infer<typeof VersionRecordSchema>;
+export type VersionPhase = z.infer<typeof VersionPhaseSchema>;
 export type VersionHistory = z.infer<typeof VersionHistorySchema>;
 
 /** Event dates are server-time strings; their first ten characters are the date. */

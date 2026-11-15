@@ -22,6 +22,9 @@
     "allow-renderer-ready",
     "allow-close-result",
     "allow-open-external",
+    "allow-notifications-status",
+    "allow-notifications-test",
+    "allow-notifications-settings",
     "allow-set-zoom"
   ]
 }

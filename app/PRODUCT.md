@@ -65,6 +65,7 @@ Three things a neighbouring tracker could not truthfully claim:
 
 Today is the default page. It ranks what is lost first, and with quiet hours set it marks what must happen before they begin.
 Games contains the complete controls and the Tonight summary. Calendar contains events, including livestream rows. Each game's Catch up gathers what its recent versions added and its next livestream.
+Pulls holds each game's savings and pity, and Version history: the free currency of every version since launch, with the limited banners of each phase. Quests is a companion to each game's story: main-story acts, world-quest series and character stories from a researched catalog, each part ticked done or partly done, with the characters involved, plus the events running now and quest lines the player adds. Quest progress is per account and syncs.
 Settings remains available from the header.
 
 Manual entry is the only input, for every game. Memoria does not read accounts, screenshots or game windows.
@@ -74,7 +75,7 @@ Device sync status and game data freshness are separate facts.
 
 The public calendar can update separately from app releases. Feed validation protects local changes and deleted events.
 The one-file version keeps the bundled calendar and does not request network access.
-Reminders protect the first goal: not missing dailies. The phone and the PC schedule seven days ahead: an hour before each daily reset with dailies left, before the weekly reset with one hour of lead per game owing weeklies (up to 10 hours), three hours before an unfinished event ends, and two hours before a measured bar caps. Done work is never announced. Quiet hours are off by default and, when set, move a reminder earlier instead of dropping it; Today then treats a deadline inside them as due when they begin. An evening digest and the player's own reminders, once or repeating, are optional. Everything that reaches the player outside the app lives in Settings → Reminders. Opening the app refreshes the schedule.
+Reminders protect the first goal: not missing dailies. The phone and the PC schedule seven days ahead: an hour before each daily reset with dailies left, before the weekly reset with one hour of lead per game owing weeklies (up to 10 hours), three hours before an unfinished event ends, and two hours before a measured bar caps. Done work is never announced. Quiet hours are off by default and, when set, move a reminder earlier instead of dropping it; Today then treats a deadline inside them as due when they begin. An evening digest and the player's own reminders, once or repeating, are optional. Everything that reaches the player outside the app lives in Settings → Reminders. Each kind of reminder has a style (Silent, Gentle, Standard or Alarm, which rings until snoozed or dismissed) and alarms have a choice of ring; a single reminder can override its style. Today asks once when something stops reminders reaching a device: reminders off, the permission refused, Windows muting Memoria, exact timing withheld on Android, or battery saving. Opening the app refreshes the schedule.
 
 - **The daily loop**: play → open Memoria → type what's actually left on each card
   (direct entry, or keyboard stepping **A −10 · S −1 · D +1 · F +10**, Enter

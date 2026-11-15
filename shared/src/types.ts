@@ -5,8 +5,11 @@ import { detectLocalTz } from './timezone';
 export type Cadence = 'daily' | 'weekly' | 'monthly' | 'custom';
 export type ResourceKind = 'regen' | 'weekly' | 'counter';
 export type TaskMode = 'check' | 'timer' | 'count';
-/** Schema 10 requires HLC-aware peers at every write boundary. */
-export const CURRENT_SCHEMA_VERSION = 11;
+/**
+ * Schema 10 requires HLC-aware peers at every write boundary. Schema 12 adds
+ * quest progress, which an older peer would drop on its next write.
+ */
+export const CURRENT_SCHEMA_VERSION = 12;
 export interface Hlc {
   wall: number;
   counter: number;
@@ -268,11 +271,85 @@ export interface Reminder extends Syncable {
   at: number;
   /** Repeats every this many days from `at`. Absent = once. */
   repeatDays?: number;
+  /** How it reaches the player. Absent = the style chosen for reminders in Settings. */
+  style?: NotificationStyle;
 }
 
 export const MAX_REMINDER_REPEAT_DAYS = 365;
 
-export type SettingsField = 'quietStart' | 'quietEnd' | 'quietHoursChosen' | 'localTz' | 'sleepHours' | 'digestAt';
+/** What a notification is about. Each kind has its own style in Settings. */
+export type NotificationKind = 'daily' | 'weekly' | 'monthly' | 'event' | 'energy' | 'reminder' | 'digest';
+export const NOTIFICATION_KINDS: NotificationKind[] = [
+  'daily',
+  'weekly',
+  'monthly',
+  'event',
+  'energy',
+  'reminder',
+  'digest',
+];
+/**
+ * How loudly a notification arrives. Silent: in the notification list only.
+ * Gentle: a soft sound, no pop-up. Standard: pops up with a sound. Alarm: rings
+ * until it is dismissed or snoozed.
+ */
+export type NotificationStyle = 'silent' | 'gentle' | 'standard' | 'alarm';
+export const NOTIFICATION_STYLES: NotificationStyle[] = ['silent', 'gentle', 'standard', 'alarm'];
+/** The ring of alarm-style notifications. */
+export type AlarmTone = 'classic' | 'pulse' | 'chime' | 'ring';
+export const ALARM_TONES: AlarmTone[] = ['classic', 'pulse', 'chime', 'ring'];
+export const DEFAULT_NOTIFICATION_STYLES: Record<NotificationKind, NotificationStyle> = {
+  daily: 'standard',
+  weekly: 'standard',
+  monthly: 'standard',
+  event: 'standard',
+  energy: 'gentle',
+  reminder: 'standard',
+  digest: 'gentle',
+};
+
+/** Where a player stands on a quest or one part of it. */
+export type QuestState = 'done' | 'partial' | 'skipped';
+export const QUEST_STATES: QuestState[] = ['done', 'partial', 'skipped'];
+
+/**
+ * Progress on one quest, or one part of it, from the bundled catalog or a quest
+ * the player added. One row per mark, so ticks made on two devices merge
+ * cleanly; clearing a mark tombstones its row.
+ */
+export interface QuestMark extends Syncable {
+  /** `${gameId}|${questId}` for the quest itself, `${gameId}|${questId}|${partId}` for a part. */
+  id: string;
+  gameId: string;
+  questId: string;
+  partId?: string;
+  state: QuestState;
+}
+
+export type QuestKind = 'main' | 'story' | 'world' | 'side' | 'event';
+export const QUEST_KINDS: QuestKind[] = ['main', 'story', 'world', 'side', 'event'];
+
+/** A quest line the player added: for a game without a catalog, or one the catalog lacks. */
+export interface CustomQuest extends Syncable {
+  id: string;
+  gameId: string;
+  title: string;
+  kind: QuestKind;
+  series?: string;
+  characters?: string[];
+  parts?: { id: string; title: string }[];
+  notes?: string;
+}
+
+export type SettingsField =
+  | 'quietStart'
+  | 'quietEnd'
+  | 'quietHoursChosen'
+  | 'localTz'
+  | 'sleepHours'
+  | 'digestAt'
+  | 'notificationStyles'
+  | 'alarmTone';
 /** Settings merged one field at a time, so edits on two devices do not overwrite each other. */
 export const SETTINGS_FIELDS: SettingsField[] = [
   'quietStart',
@@ -281,6 +358,8 @@ export const SETTINGS_FIELDS: SettingsField[] = [
   'localTz',
   'sleepHours',
   'digestAt',
+  'notificationStyles',
+  'alarmTone',
 ];
 
 export interface Settings extends Syncable {
@@ -305,6 +384,10 @@ export interface Settings extends Syncable {
    * notification listing what is still open across games. Absent or null = off.
    */
   digestAt?: number | null;
+  /** Style per kind of notification; a kind left out uses DEFAULT_NOTIFICATION_STYLES. */
+  notificationStyles?: Partial<Record<NotificationKind, NotificationStyle>>;
+  /** The ring of alarm-style notifications. Absent = classic. */
+  alarmTone?: AlarmTone;
   /**
    * The `SEED_UPDATED` stamp of the bundled event feed this device has already
    * taken a refresh from, as `YYYY-MM-DD`.
@@ -340,6 +423,8 @@ export interface AppState {
   chips: QuickChip[];
   alertRules: AlertRule[];
   reminders: Reminder[];
+  questMarks: QuestMark[];
+  customQuests: CustomQuest[];
   settings: Settings;
 }
 
@@ -366,6 +451,8 @@ export function emptyState(): AppState {
     chips: [],
     alertRules: [],
     reminders: [],
+    questMarks: [],
+    customQuests: [],
     settings: {
       ...DEFAULT_SETTINGS,
       localTz: detectLocalTz(),

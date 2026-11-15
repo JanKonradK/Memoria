@@ -39,7 +39,7 @@ export function migrateLegacyUiStorage(): void {
 
 migrateLegacyUiStorage();
 
-export type Tab = 'today' | 'home' | 'timeline' | 'history' | 'settings';
+export type Tab = 'today' | 'home' | 'timeline' | 'history' | 'quests' | 'settings';
 export type Theme = 'dark' | 'light';
 /** What the player chose. System follows the device, which is the default. */
 export type ThemePreference = Theme | 'system';

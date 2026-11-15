@@ -1,0 +1,713 @@
+{
+  "game": "zzz",
+  "reviewed": "2026-11-15",
+  "quests": [
+    {
+      "id": "ch0-business-strangeness-justness",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "Business X Strangeness X Justness",
+      "region": "New Eridu",
+      "version": "1.0",
+      "summary": "A Proxy takes on odd jobs in New Eridu as strange incidents start piling up around Sixth Street.",
+      "start": "The opening chapter, playable from the start of the game.",
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "A Surprise", "characters": [], "note": null },
+        { "id": "2", "title": "Hollow Survival Guide", "characters": [], "note": null },
+        { "id": "3", "title": "Mutated Corruption", "characters": [], "note": null },
+        { "id": "4", "title": "Proxy Business", "characters": [], "note": null },
+        { "id": "5", "title": "Sudden Event", "characters": [], "note": null },
+        { "id": "6", "title": "Hacking Attack", "characters": [], "note": null },
+        { "id": "7", "title": "Reconnected", "characters": [], "note": null },
+        { "id": "8", "title": "Fairy", "characters": [], "note": null }
+      ],
+      "url": "https://www.pushsquare.com/guides/zenless-zone-zero-all-quests-and-chapters"
+    },
+    {
+      "id": "prologue-intermission",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "Prologue: Intermission",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "A short follow-up to the prologue, built around a narrow escape.",
+      "start": "Follows the prologue.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Escape From Certain Doom", "characters": [], "note": null }],
+      "url": "https://wotpack.ru/en/sjuzhet-zenless-zone-zero-kolichestvo-i-prohozhdenie-vseh-glav/"
+    },
+    {
+      "id": "ch1-cats-lost-and-found",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "Cat's Lost and Found",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "A job for a client on Sixth Street grows into a rescue run across the district.",
+      "start": "Follows the prologue (Chapter 1).",
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "An Uninvited Guest", "characters": [], "note": "Part 1 (A)" },
+        { "id": "2", "title": "Client with Two Tails", "characters": [], "note": "Part 1 (A)" },
+        { "id": "3", "title": "Abandoned Rally Point", "characters": [], "note": "Part 1 (A)" },
+        { "id": "4", "title": "Lost Item", "characters": [], "note": "Part 1 (A)" },
+        { "id": "5", "title": "Explosive Last Train", "characters": [], "note": "Part 1 (A)" },
+        { "id": "6", "title": "Doubts Arise", "characters": [], "note": "Part 1 (A)" },
+        { "id": "7", "title": "Hidden Stories", "characters": [], "note": "Part 2 (B)" },
+        { "id": "8", "title": "Step by Step", "characters": [], "note": "Part 2 (B)" },
+        { "id": "9", "title": "Unexpected Captives", "characters": [], "note": "Part 2 (B)" },
+        { "id": "10", "title": "Second Rescue", "characters": [], "note": "Part 2 (B)" },
+        { "id": "11", "title": "Endless", "characters": [], "note": "Part 2 (B)" },
+        { "id": "12", "title": "Vagrant's Final Resting Place", "characters": [], "note": "Part 2 (B)" }
+      ],
+      "url": "https://www.pushsquare.com/guides/zenless-zone-zero-all-quests-and-chapters"
+    },
+    {
+      "id": "ch1-intermission",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "Chapter 1 Intermission",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "A short interlude that picks up the threads left after Chapter 1.",
+      "start": "Follows Chapter 1.",
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Scarlet Invitation", "characters": [], "note": null },
+        { "id": "2", "title": "Reputation Promotion: Proxy's Path 1", "characters": [], "note": null },
+        { "id": "3", "title": "Emergency Rescue", "characters": [], "note": null },
+        { "id": "4", "title": "Everything Is a Bit Completely Out of Control", "characters": [], "note": null }
+      ],
+      "url": "https://wotpack.ru/en/sjuzhet-zenless-zone-zero-kolichestvo-i-prohozhdenie-vseh-glav/"
+    },
+    {
+      "id": "the-zero-zone",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "The Zero Zone",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "A set of missions that send Proxies into a restricted area outside the usual routes.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Restricted Area Investigation", "characters": [], "note": null },
+        { "id": "2", "title": "Mysterious Encounter", "characters": [], "note": null },
+        { "id": "3", "title": "Frontline Pursuit", "characters": [], "note": null }
+      ],
+      "url": "https://www.pushsquare.com/guides/zenless-zone-zero-all-quests-and-chapters"
+    },
+    {
+      "id": "video-store-art-imitates-life",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "Just Another Day at the Video Store",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "A short standalone visit to a video store in New Eridu.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Art Imitates Life", "characters": [], "note": null }],
+      "url": "https://www.pushsquare.com/guides/zenless-zone-zero-all-quests-and-chapters"
+    },
+    {
+      "id": "ch2-a-call-from-the-hollows-heart",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "A Call From the Hollow's Heart",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "A new job pulls the Proxies into a chase that leads back to the Hollow.",
+      "start": "Follows Chapter 1 and the interlude that comes after it.",
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Assigned Commission", "characters": [], "note": "Part 1 (A)" },
+        { "id": "2", "title": "Problem Child", "characters": [], "note": "Part 1 (A)" },
+        { "id": "3", "title": "The Essence of Being a Bro", "characters": [], "note": "Part 1 (A)" },
+        { "id": "4", "title": "The Only Embrace", "characters": [], "note": "Part 1 (A)" },
+        { "id": "5", "title": "Savior's Mission", "characters": [], "note": "Part 1 (A)" },
+        { "id": "6", "title": "That Name", "characters": [], "note": "Part 1 (A)" },
+        { "id": "7", "title": "Searching for the Prototype", "characters": [], "note": "Part 2 (B)" },
+        { "id": "8", "title": "Sisters", "characters": [], "note": "Part 2 (B)" },
+        { "id": "9", "title": "Steel Devourer", "characters": [], "note": "Part 2 (B)" },
+        { "id": "10", "title": "Call That Name", "characters": [], "note": "Part 2 (B)" }
+      ],
+      "url": "https://www.pushsquare.com/guides/zenless-zone-zero-all-quests-and-chapters"
+    },
+    {
+      "id": "chapter-2-intermission",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "Chapter 2 Intermission",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "A short interlude between Chapter 2 and the interlude that follows it.",
+      "start": "Follows Chapter 2.",
+      "characters": ["Anby Demara"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Anby's Problem",
+          "characters": ["Anby Demara"],
+          "note": "Clearing this unlocks Trust Commissions (per Game8). Placement in the list is not confirmed by a second source."
+        },
+        {
+          "id": "2",
+          "title": "Strange Messages",
+          "characters": [],
+          "note": "Placement in the list is not confirmed by a second source."
+        }
+      ],
+      "url": "https://wotpack.ru/en/sjuzhet-zenless-zone-zero-kolichestvo-i-prohozhdenie-vseh-glav/"
+    },
+    {
+      "id": "ch2-interlude-mission-unthinkable",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "Chapter 2 Interlude: Mission Unthinkable",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "A two-part interlude of street-level missions that builds into a larger crisis.",
+      "start": "Requires Inter-Knot Level 30.",
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Crisis on the Street Corner", "characters": [], "note": "Part I" },
+        { "id": "2", "title": "Unexpected Reunion", "characters": [], "note": "Part I" },
+        { "id": "3", "title": "Unproductive Visit", "characters": [], "note": "Part I" },
+        { "id": "4", "title": "Sixth Street Theft Case", "characters": [], "note": "Part I" },
+        { "id": "5", "title": "Invisible Assistant", "characters": [], "note": "Part I" },
+        { "id": "6", "title": "Emerging Crisis", "characters": [], "note": "Part II" },
+        { "id": "7", "title": "Emergency Operation", "characters": [], "note": "Part II" },
+        { "id": "8", "title": "Shared Beliefs", "characters": [], "note": "Part II" },
+        { "id": "9", "title": "Moment to Counterattack", "characters": [], "note": "Part II" },
+        { "id": "10", "title": "We'll Meet Again", "characters": [], "note": "Part II" }
+      ],
+      "url": "https://www.pushsquare.com/guides/zenless-zone-zero-all-quests-and-chapters"
+    },
+    {
+      "id": "ch3-the-midnight-pursuit",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "The Midnight Pursuit",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "Proxies follow a mysterious letter and a dangerous building lead through the night.",
+      "start": "Part A requires Inter-Knot Level 34; Part B requires Inter-Knot Level 36.",
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "A Mysterious Letter", "characters": [], "note": "Part A" },
+        { "id": "2", "title": "First Exploration of a Perilous Building", "characters": [], "note": "Part A" },
+        { "id": "3", "title": "Friends Old and New", "characters": [], "note": "Part A" },
+        { "id": "4", "title": "Ascending Dance", "characters": [], "note": "Part A" },
+        { "id": "5", "title": "Close, Yet Worlds Apart", "characters": [], "note": "Part A" },
+        { "id": "6", "title": "Power Restored", "characters": [], "note": "Part B" },
+        { "id": "7", "title": "An Uninvited Guest", "characters": [], "note": "Part B" },
+        { "id": "8", "title": "Darkest Hour", "characters": [], "note": "Part B" },
+        { "id": "9", "title": "Shocking Conspiracy", "characters": [], "note": "Part B" },
+        { "id": "10", "title": "Rescue Mission", "characters": [], "note": "Part B" },
+        { "id": "11", "title": "A Close Call", "characters": [], "note": "Part B" },
+        { "id": "12", "title": "Into the Darkness", "characters": [], "note": "Part B" }
+      ],
+      "url": "https://www.pushsquare.com/guides/zenless-zone-zero-all-quests-and-chapters"
+    },
+    {
+      "id": "ch4-tour-de-inferno",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "Tour de Inferno",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "A racing-themed chapter where the Proxies take on a high-stakes challenge.",
+      "start": "Follows Chapter 3.",
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "A Drowning Man's Salvation Is to Drown", "characters": [], "note": null },
+        { "id": "2", "title": "Unexpected Challenge", "characters": [], "note": null },
+        { "id": "3", "title": "The First Customer", "characters": [], "note": null },
+        { "id": "4", "title": "The End of Betrayal", "characters": [], "note": null },
+        { "id": "5", "title": "A Hero Is Born Amid the Roar of Engines", "characters": [], "note": null }
+      ],
+      "url": "https://wotpack.ru/en/sjuzhet-zenless-zone-zero-kolichestvo-i-prohozhdenie-vseh-glav/"
+    },
+    {
+      "id": "light-interlude-unexpected-new-customer",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "An Unexpected New Customer",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "A light interlude built around a new client who walks in unannounced.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "An Unexpected New Customer", "characters": [], "note": null }],
+      "url": "https://wotpack.ru/en/sjuzhet-zenless-zone-zero-kolichestvo-i-prohozhdenie-vseh-glav/"
+    },
+    {
+      "id": "special-episode-virtual-revenge",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "Virtual Revenge",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "A special episode set apart from the main chapters.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Virtual Revenge", "characters": [], "note": null }],
+      "url": "https://wotpack.ru/en/sjuzhet-zenless-zone-zero-kolichestvo-i-prohozhdenie-vseh-glav/"
+    },
+    {
+      "id": "ch5-a-storm-of-falling-stars",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "A Storm of Falling Stars",
+      "region": "New Eridu",
+      "version": "1.4",
+      "summary": "A later Season 1 chapter that continues the Proxies' work in New Eridu.",
+      "start": "Follows Chapter 4.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "A Storm of Falling Stars", "characters": [], "note": null }],
+      "url": "https://gameleap.com/articles/zenless-zone-zero-version-1-4-main-story-chapter-5-guide"
+    },
+    {
+      "id": "special-episode-astra-nomical-moment",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "Astra-nomical Moment",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "A special episode set apart from the main chapters.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Astra-nomical Moment", "characters": [], "note": null }],
+      "url": "https://wotpack.ru/en/sjuzhet-zenless-zone-zero-kolichestvo-i-prohozhdenie-vseh-glav/"
+    },
+    {
+      "id": "light-interlude-bird-escaping-cage",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "Like a Bird Escaping From Its Cage",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "A light interlude between the larger Season 1 chapters.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Like a Bird Escaping From Its Cage", "characters": [], "note": null }],
+      "url": "https://wotpack.ru/en/sjuzhet-zenless-zone-zero-kolichestvo-i-prohozhdenie-vseh-glav/"
+    },
+    {
+      "id": "special-episode-undercover-rnb",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "Undercover R&B",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "A special episode set apart from the main chapters.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Undercover R&B", "characters": [], "note": null }],
+      "url": "https://wotpack.ru/en/sjuzhet-zenless-zone-zero-kolichestvo-i-prohozhdenie-vseh-glav/"
+    },
+    {
+      "id": "s1-epilogue-bury-your-tears-part-1",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "Bury Your Tears With the Past, Part 1",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "The first closing part of Season 1, looking back at the past.",
+      "start": "Follows the Season 1 chapters.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Bury Your Tears With the Past, Part 1", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Zenless-Zone-Zero/archives/459441"
+    },
+    {
+      "id": "s1-epilogue-bury-your-tears-part-2",
+      "kind": "main",
+      "series": "Season 1",
+      "title": "Bury Your Tears With the Past, Part 2",
+      "region": "New Eridu",
+      "version": null,
+      "summary": "The second closing part of Season 1, looking back at the past.",
+      "start": "Follows Season 1 Epilogue Part 1.",
+      "characters": [],
+      "requires": ["s1-epilogue-bury-your-tears-part-1"],
+      "parts": [{ "id": "1", "title": "Bury Your Tears With the Past, Part 2", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Zenless-Zone-Zero/archives/459441"
+    },
+    {
+      "id": "s2-ch1-where-clouds-embrace-the-dawn",
+      "kind": "main",
+      "series": "Season 2",
+      "title": "Where Clouds Embrace the Dawn",
+      "region": "Waifei Peninsula",
+      "version": "2.0",
+      "summary": "Proxies travel to Waifei Peninsula with a new ally and begin a fresh investigation.",
+      "start": "Opens in the main story from Version 2.0, after the Season 1 storyline.",
+      "characters": ["Yixuan"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Attack from the Shadows", "characters": ["Yixuan"], "note": null },
+        {
+          "id": "2",
+          "title": "Turbulence Brewing",
+          "characters": [],
+          "note": "List incomplete: further subquests in this chapter were not captured."
+        }
+      ],
+      "url": "https://game8.co/games/Zenless-Zone-Zero/archives/459441"
+    },
+    {
+      "id": "s2-ch2-the-impending-crash-of-waves",
+      "kind": "main",
+      "series": "Season 2",
+      "title": "The Impending Crash of Waves",
+      "region": "Waifei Peninsula",
+      "version": null,
+      "summary": "The next Waifei Peninsula chapter continues the new investigation.",
+      "start": "Appears on the Schedule screen after Season 2 Chapter 1.",
+      "characters": [],
+      "requires": ["s2-ch1-where-clouds-embrace-the-dawn"],
+      "parts": [{ "id": "1", "title": "The Impending Crash of Waves", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Zenless-Zone-Zero/archives/459441"
+    },
+    {
+      "id": "s2-ch3-do-not-go-gentle-into-that-good-night",
+      "kind": "main",
+      "series": "Season 2",
+      "title": "Do Not Go Gentle Into That Good Night",
+      "region": "Waifei Peninsula",
+      "version": null,
+      "summary": "A Waifei Peninsula chapter that carries the season's main investigation forward.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Do Not Go Gentle Into That Good Night", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Zenless-Zone-Zero/archives/459441"
+    },
+    {
+      "id": "s2-ch4-memories-of-dreams-bygone",
+      "kind": "main",
+      "series": "Season 2",
+      "title": "Memories of Dreams Bygone",
+      "region": "Waifei Peninsula",
+      "version": "2.3",
+      "summary": "A Waifei Peninsula chapter that revisits old memories as the season's threads tighten.",
+      "start": "Follows the earlier Season 2 chapters.",
+      "characters": ["Yixuan", "Ju Fufu", "Komano Manato"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Haven in the Miasma",
+          "characters": ["Yixuan", "Ju Fufu", "Komano Manato"],
+          "note": "List incomplete: first subquest only; later subquests were not captured."
+        }
+      ],
+      "url": "https://game8.co/games/Zenless-Zone-Zero/archives/459441"
+    },
+    {
+      "id": "s2-ch5-on-the-precipice-of-the-abyss",
+      "kind": "main",
+      "series": "Season 2",
+      "title": "On the Precipice of the Abyss",
+      "region": "Waifei Peninsula",
+      "version": "2.4",
+      "summary": "Proxies work alongside two new agents from the Krampus Compliance Authority.",
+      "start": "Unlocks after Memories of Dreams Bygone.",
+      "characters": ["Dialyn", "Banyue"],
+      "requires": ["s2-ch4-memories-of-dreams-bygone"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Light Dances, Water Ripples",
+          "characters": ["Dialyn", "Banyue"],
+          "note": "List incomplete: first subquest only; later subquests were not captured."
+        }
+      ],
+      "url": "https://genshin-builds.com/en/zenless/blog/zenless-zone-zeros-season-2-chapter-5-the-chasms-edge-a-strategic-overview"
+    },
+    {
+      "id": "s2-ch6-to-be-fuel-for-the-night",
+      "kind": "main",
+      "series": "Season 2",
+      "title": "To Be Fuel for the Night",
+      "region": "Waifei Peninsula",
+      "version": "2.5",
+      "summary": "A climactic chapter that closes out the season's main conflict.",
+      "start": "Opens after On the Precipice of the Abyss.",
+      "characters": [],
+      "requires": ["s2-ch5-on-the-precipice-of-the-abyss"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Another Her",
+          "characters": [],
+          "note": "List incomplete: first subquest only; later subquests were not captured."
+        }
+      ],
+      "url": "https://game8.co/games/Zenless-Zone-Zero/archives/459441"
+    },
+    {
+      "id": "s2-interlude-encore-for-an-old-dream",
+      "kind": "main",
+      "series": "Season 2",
+      "title": "Encore For An Old Dream",
+      "region": "Waifei Peninsula",
+      "version": null,
+      "summary": "A Season 2 interlude between the main chapters and the epilogues.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Encore For An Old Dream", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Zenless-Zone-Zero/archives/459441"
+    },
+    {
+      "id": "s2-epilogue-new-eridan-sunset-a",
+      "kind": "main",
+      "series": "Season 2",
+      "title": "New: Eridan Sunset (A)",
+      "region": "Waifei Peninsula",
+      "version": null,
+      "summary": "The first epilogue of Season 2.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "New: Eridan Sunset (A)", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Zenless-Zone-Zero/archives/459441"
+    },
+    {
+      "id": "s2-epilogue-new-eridan-sunset-b",
+      "kind": "main",
+      "series": "Season 2",
+      "title": "New: Eridan Sunset (B)",
+      "region": "Waifei Peninsula",
+      "version": null,
+      "summary": "The second epilogue of Season 2; it unlocks the Season 3 storyline.",
+      "start": "Follows Season 2 Epilogue (A).",
+      "characters": [],
+      "requires": ["s2-epilogue-new-eridan-sunset-a"],
+      "parts": [{ "id": "1", "title": "New: Eridan Sunset (B)", "characters": [], "note": null }],
+      "url": "https://www.animonlifeofficial.com/zenless-zone-zero-info/t0k334pimeapxa72vl0pu2hp7wanhq"
+    },
+    {
+      "id": "s3-ch1-a-sleepwalkers-confession",
+      "kind": "main",
+      "series": "Season 3",
+      "title": "A Sleepwalker's Confession",
+      "region": "Roscaelifer",
+      "version": "3.0",
+      "summary": "The Season 3 opener follows a strange confession and the search for its source.",
+      "start": "Unlocks after Season 2 Epilogue (B); permanent from Version 3.0. Advance Screening can open it early.",
+      "characters": [],
+      "requires": ["s2-epilogue-new-eridan-sunset-b"],
+      "parts": [{ "id": "1", "title": "A Sleepwalker's Confession", "characters": [], "note": null }],
+      "url": "https://www.animonlifeofficial.com/zenless-zone-zero-info/t0k334pimeapxa72vl0pu2hp7wanhq"
+    },
+    {
+      "id": "s3-ch2-the-long-goodbye",
+      "kind": "main",
+      "series": "Season 3",
+      "title": "The Long Goodbye",
+      "region": "Roscaelifer",
+      "version": "3.1",
+      "summary": "The second Season 3 chapter, following a difficult parting on Roscaelifer.",
+      "start": "Complete Season 3 Chapter 1.",
+      "characters": [],
+      "requires": ["s3-ch1-a-sleepwalkers-confession"],
+      "parts": [{ "id": "1", "title": "The Long Goodbye", "characters": [], "note": null }],
+      "url": "https://genshin-builds.com/_astro/zenless/blog/zenless-zone-zero-the-long-goodbye-chapter-overview-and-release-details"
+    },
+    {
+      "id": "s3-ch3-their-secret-histories",
+      "kind": "main",
+      "series": "Season 3",
+      "title": "Their Secret Histories",
+      "region": "Roscaelifer",
+      "version": "3.2",
+      "summary": "The Proxies take up a case tied to Porcelloy and work with Claret at the Flint Workshop.",
+      "start": "Complete Season 3 Chapter 2, The Long Goodbye.",
+      "characters": ["Lindverne", "Remielle", "Claret", "Dracaene", "Serpico", "Billy", "Eldreda"],
+      "requires": ["s3-ch2-the-long-goodbye"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "New Invitation",
+          "characters": ["Lindverne"],
+          "note": "Version listed as 3.2 by Game8; one other source says 3.1."
+        },
+        {
+          "id": "2",
+          "title": "The Homeland of Porcelloy",
+          "characters": ["Remielle", "Claret", "Dracaene", "Serpico"],
+          "note": null
+        },
+        { "id": "3", "title": "Shrouded Trail", "characters": ["Billy"], "note": null },
+        { "id": "4", "title": "Alone Upon an Island", "characters": ["Eldreda"], "note": null },
+        { "id": "5", "title": "The Truth Buried Beneath the Ground", "characters": ["Lindverne"], "note": null },
+        { "id": "6", "title": "Sunbringer's Secret", "characters": ["Lindverne"], "note": null }
+      ],
+      "url": "https://game8.co/games/Zenless-Zone-Zero/archives/618026"
+    },
+    {
+      "id": "s3-ch4-journey-to-the-sky",
+      "kind": "main",
+      "series": "Season 3",
+      "title": "Journey to the Sky",
+      "region": "Roscaelifer",
+      "version": "3.3",
+      "summary": "Released in Version 3.3; the story pushes into Roscaelifer's internal conflicts and the Sunbringer's truth.",
+      "start": "Complete Season 3 Chapter 3, Their Secret Histories.",
+      "characters": ["Phoenix", "Severian"],
+      "requires": ["s3-ch3-their-secret-histories"],
+      "parts": [{ "id": "1", "title": "Journey to the Sky", "characters": [], "note": null }],
+      "url": "https://patchbot.io/games/zenless-zone-zero/articles/1862-version-33-journey-to-the-sky-update-announcement"
+    },
+    {
+      "id": "agent-soldier-11-mole-in-the-hole",
+      "kind": "story",
+      "series": "Agent Stories",
+      "title": "Mole in the Hole",
+      "region": null,
+      "version": null,
+      "summary": "A three-part side story that digs into the agent's personality and past.",
+      "start": "Open the Remodeling Shop and sleep at the bed at midnight to unlock Part I (per GameWith).",
+      "characters": ["Soldier 11"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Passing Off as Fake", "characters": ["Soldier 11"], "note": "Part I." },
+        {
+          "id": "2",
+          "title": "Deep Treason",
+          "characters": ["Soldier 11"],
+          "note": "Part II. Needs Part I and Inter-Knot Level 21."
+        },
+        {
+          "id": "3",
+          "title": "Mole in the Hole",
+          "characters": ["Soldier 11"],
+          "note": "Part III. Needs Part II and Inter-Knot Level 24."
+        }
+      ],
+      "url": "https://gamewith.net/zenless-zone-zero/47587"
+    },
+    {
+      "id": "agent-nekomata-cat-and-mouse-game",
+      "kind": "story",
+      "series": "Agent Stories",
+      "title": "Cat and Mouse Game",
+      "region": null,
+      "version": null,
+      "summary": "A three-part side story that digs into the agent's personality and past.",
+      "start": "Reach Inter-Knot Level 38 (per GameWith's listing).",
+      "characters": ["Nekomiya Mana"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Part I", "characters": ["Nekomiya Mana"], "note": "Part titles not captured." },
+        { "id": "2", "title": "Part II", "characters": ["Nekomiya Mana"], "note": "Part titles not captured." },
+        { "id": "3", "title": "Part III", "characters": ["Nekomiya Mana"], "note": "Part titles not captured." }
+      ],
+      "url": "https://zenless-zone-zero.fandom.com/wiki/Agent_Stories"
+    },
+    {
+      "id": "agent-grace-the-iron-witch",
+      "kind": "story",
+      "series": "Agent Stories",
+      "title": "The Iron Witch",
+      "region": null,
+      "version": null,
+      "summary": "A three-part side story that digs into the agent's personality and past.",
+      "start": null,
+      "characters": ["Grace Howard"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Part I", "characters": ["Grace Howard"], "note": "Part titles not captured." },
+        { "id": "2", "title": "Part II", "characters": ["Grace Howard"], "note": "Part titles not captured." },
+        { "id": "3", "title": "Part III", "characters": ["Grace Howard"], "note": "Part titles not captured." }
+      ],
+      "url": "https://www.pushsquare.com/guides/zenless-zone-zero-all-quests-and-chapters"
+    },
+    {
+      "id": "agent-koleda-schoolyard-powerhouse",
+      "kind": "story",
+      "series": "Agent Stories",
+      "title": "Schoolyard Powerhouse",
+      "region": null,
+      "version": null,
+      "summary": "A three-part side story that digs into the agent's personality and past.",
+      "start": null,
+      "characters": ["Koleda Belobog"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Part I", "characters": ["Koleda Belobog"], "note": "Part titles not captured." },
+        { "id": "2", "title": "Part II", "characters": ["Koleda Belobog"], "note": "Part titles not captured." },
+        { "id": "3", "title": "Part III", "characters": ["Koleda Belobog"], "note": "Part titles not captured." }
+      ],
+      "url": "https://www.pushsquare.com/guides/zenless-zone-zero-all-quests-and-chapters"
+    },
+    {
+      "id": "agent-lycaon-behind-the-scenes",
+      "kind": "story",
+      "series": "Agent Stories",
+      "title": "And the True Heroes Are Always Behind the Scenes",
+      "region": null,
+      "version": null,
+      "summary": "A three-part side story that digs into the agent's personality and past.",
+      "start": null,
+      "characters": ["Von Lycaon"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Part I", "characters": ["Von Lycaon"], "note": "Part titles not captured." },
+        { "id": "2", "title": "Part II", "characters": ["Von Lycaon"], "note": "Part titles not captured." },
+        { "id": "3", "title": "Part III", "characters": ["Von Lycaon"], "note": "Part titles not captured." }
+      ],
+      "url": "https://www.pushsquare.com/guides/zenless-zone-zero-all-quests-and-chapters"
+    },
+    {
+      "id": "agent-alexandrina-until-your-memory-fades",
+      "kind": "story",
+      "series": "Agent Stories",
+      "title": "Until Your Memory Fades",
+      "region": null,
+      "version": null,
+      "summary": "A three-part side story that digs into the agent's personality and past.",
+      "start": null,
+      "characters": ["Alexandrina Sebastiane"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Part I", "characters": ["Alexandrina Sebastiane"], "note": "Part titles not captured." },
+        {
+          "id": "2",
+          "title": "Part II",
+          "characters": ["Alexandrina Sebastiane"],
+          "note": "Part titles not captured."
+        },
+        {
+          "id": "3",
+          "title": "Part III",
+          "characters": ["Alexandrina Sebastiane"],
+          "note": "Part titles not captured."
+        }
+      ],
+      "url": "https://www.pushsquare.com/guides/zenless-zone-zero-all-quests-and-chapters"
+    }
+  ]
+}

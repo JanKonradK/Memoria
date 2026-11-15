@@ -226,7 +226,34 @@ const reminder = z.object({
   message: longText,
   at: timestamp,
   repeatDays: z.number().int().min(1).max(365).optional(),
+  style: z.enum(['silent', 'gentle', 'standard', 'alarm']).optional(),
 });
+
+const questMark = z.object({
+  ...syncable,
+  id: z.string().min(1).max(400),
+  gameId: id,
+  questId: id,
+  partId: id.optional(),
+  state: z.enum(['done', 'partial', 'skipped']),
+});
+
+const customQuest = z.object({
+  ...syncable,
+  id,
+  gameId: id,
+  title: z.string().min(1).max(300),
+  kind: z.enum(['main', 'story', 'world', 'side', 'event']),
+  series: z.string().max(200).optional(),
+  characters: z.array(z.string().min(1).max(100)).max(40).optional(),
+  parts: z
+    .array(z.object({ id, title: z.string().min(1).max(300) }))
+    .max(200)
+    .optional(),
+  notes: longText.optional(),
+});
+
+const notificationStyle = z.enum(['silent', 'gentle', 'standard', 'alarm']);
 
 const settings = z.object({
   ...syncable,
@@ -240,6 +267,10 @@ const settings = z.object({
     .refine((zone) => IANAZone.isValidZone(zone), 'Unknown timezone.'),
   sleepHours: finite.min(1).max(24),
   digestAt: z.number().int().min(0).max(1439).nullable().optional(),
+  notificationStyles: z
+    .partialRecord(z.enum(['daily', 'weekly', 'monthly', 'event', 'energy', 'reminder', 'digest']), notificationStyle)
+    .optional(),
+  alarmTone: z.enum(['classic', 'pulse', 'chime', 'ring']).optional(),
   /** A SEED_UPDATED stamp: YYYY-MM-DD, or absent. */
   seedImportedVersion: z
     .string()
@@ -262,6 +293,8 @@ export const APP_STATE_COLLECTION_LIMITS = {
   chips: 1_000,
   alertRules: 2_000,
   reminders: 5_000,
+  questMarks: 40_000,
+  customQuests: 2_000,
 } as const;
 
 export const AppStateSchema = z.object({
@@ -275,6 +308,8 @@ export const AppStateSchema = z.object({
   chips: z.array(chip).max(APP_STATE_COLLECTION_LIMITS.chips),
   alertRules: z.array(alertRule).max(APP_STATE_COLLECTION_LIMITS.alertRules),
   reminders: z.array(reminder).max(APP_STATE_COLLECTION_LIMITS.reminders),
+  questMarks: z.array(questMark).max(APP_STATE_COLLECTION_LIMITS.questMarks).default([]),
+  customQuests: z.array(customQuest).max(APP_STATE_COLLECTION_LIMITS.customQuests).default([]),
   settings,
 });
 

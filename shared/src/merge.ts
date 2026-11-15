@@ -2,8 +2,25 @@ import { compareHlc, legacyHlc, recordHlc } from './hlc';
 import { HlcSchema } from './validation';
 import type { ZodType } from 'zod';
 import { IANAZone } from 'luxon';
-import type { AppState, Resource, Settings, SettingsField, Snapshot, Syncable, Task } from './types';
-import { emptyState, isSafeGameImage, SETTINGS_FIELDS } from './types';
+import type {
+  AlarmTone,
+  AppState,
+  NotificationStyle,
+  Resource,
+  Settings,
+  SettingsField,
+  Snapshot,
+  Syncable,
+  Task,
+} from './types';
+import {
+  ALARM_TONES,
+  emptyState,
+  isSafeGameImage,
+  NOTIFICATION_KINDS,
+  NOTIFICATION_STYLES,
+  SETTINGS_FIELDS,
+} from './types';
 import { GamePitySchema } from './pity';
 import { GameSavingsSchema } from './savings';
 import { groupBy, objectRecord } from './internal';
@@ -166,6 +183,8 @@ const ROWS = {
   chips: AppStateSchema.shape.chips.element,
   alertRules: AppStateSchema.shape.alertRules.element,
   reminders: AppStateSchema.shape.reminders.element,
+  questMarks: AppStateSchema.shape.questMarks.unwrap().element,
+  customQuests: AppStateSchema.shape.customQuests.unwrap().element,
 } as const;
 
 function parseRow<T>(schema: ZodType, candidate: unknown): T | null {
@@ -316,6 +335,16 @@ function normalizeReminder(raw: unknown): AppState['reminders'][number] | null {
   return parseRow(ROWS.reminders, { ...record, at: scheduledTimestamp(record.at) });
 }
 
+function normalizeQuestMark(raw: unknown): AppState['questMarks'][number] | null {
+  const record = syncableRecord(raw);
+  return record ? parseRow(ROWS.questMarks, record) : null;
+}
+
+function normalizeCustomQuest(raw: unknown): AppState['customQuests'][number] | null {
+  const record = syncableRecord(raw);
+  return record ? parseRow(ROWS.customQuests, record) : null;
+}
+
 function salvageRows<T>(raw: unknown, limit: number, normalize: (row: unknown) => T | null): T[] {
   if (!Array.isArray(raw)) return [];
   const rows: T[] = [];
@@ -360,6 +389,8 @@ export function mergeState(a: AppState, b: AppState): AppState {
     chips: mergeById(left.chips, right.chips),
     alertRules: mergeById(left.alertRules, right.alertRules),
     reminders: mergeById(left.reminders, right.reminders),
+    questMarks: mergeById(left.questMarks, right.questMarks),
+    customQuests: mergeById(left.customQuests, right.customQuests),
     settings: mergeSettings(left.settings, right.settings),
   };
   // Normalization salvages oversized imports by truncating collections. A sync
@@ -423,6 +454,24 @@ function normalizeQuietHours(
   return { quietStart, quietEnd, ...(chosen ? { quietHoursChosen: true } : {}) };
 }
 
+/** An unknown style or tone is dropped alone, so it cannot reset every other setting. */
+function normalizeNotificationStyles(
+  record: Record<string, unknown>,
+): Pick<Settings, 'notificationStyles' | 'alarmTone'> {
+  const out: Pick<Settings, 'notificationStyles' | 'alarmTone'> = {};
+  const styles = objectRecord(record.notificationStyles);
+  if (styles) {
+    const kept = Object.fromEntries(
+      NOTIFICATION_KINDS.flatMap((kind) =>
+        NOTIFICATION_STYLES.includes(styles[kind] as NotificationStyle) ? [[kind, styles[kind]]] : [],
+      ),
+    );
+    if (Object.keys(kept).length) out.notificationStyles = kept;
+  }
+  if (ALARM_TONES.includes(record.alarmTone as AlarmTone)) out.alarmTone = record.alarmTone as AlarmTone;
+  return out;
+}
+
 function normalizeSettings(raw: unknown): Settings {
   const base = emptyState().settings;
   const record = objectRecord(raw) ?? {};
@@ -458,6 +507,7 @@ function normalizeSettings(raw: unknown): Settings {
       ? RemoteFeedVersionSchema.parse(record.remoteFeedVersion)
       : undefined,
     catchUpSeen: normalizeCatchUpSeen(record.catchUpSeen),
+    ...normalizeNotificationStyles(record),
     updatedAt: updatedAt ?? base.updatedAt,
     fieldUpdatedAt: safeFieldClocks,
   };
@@ -530,6 +580,8 @@ export function normalizeState(raw: unknown): AppState {
     chips: salvageRows(r.chips, APP_STATE_COLLECTION_LIMITS.chips, normalizeChip),
     alertRules: salvageRows(r.alertRules, APP_STATE_COLLECTION_LIMITS.alertRules, normalizeAlertRule),
     reminders: salvageRows(r.reminders, APP_STATE_COLLECTION_LIMITS.reminders, normalizeReminder),
+    questMarks: salvageRows(r.questMarks, APP_STATE_COLLECTION_LIMITS.questMarks, normalizeQuestMark),
+    customQuests: salvageRows(r.customQuests, APP_STATE_COLLECTION_LIMITS.customQuests, normalizeCustomQuest),
     settings: normalizeSettings(r.settings),
   };
 }
@@ -565,6 +617,8 @@ export function compactState(
     chips: live(state.chips),
     alertRules: live(state.alertRules),
     reminders: live(state.reminders),
+    questMarks: live(state.questMarks),
+    customQuests: live(state.customQuests),
   };
   return pruneCompletions(compacted, completionsBefore);
 }

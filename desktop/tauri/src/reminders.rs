@@ -23,6 +23,12 @@ pub struct Notice {
     /// The deadline it warns about. Late delivery after sleep is still useful until then.
     #[serde(default)]
     pub until: Option<i64>,
+    /// silent, gentle, standard or alarm. Absent on plans from older builds.
+    #[serde(default)]
+    pub style: Option<String>,
+    /// The ring of an alarm-style notice.
+    #[serde(default)]
+    pub tone: Option<String>,
 }
 
 /// Both clocks are supplied by the caller, so sleep and clock changes are testable.
@@ -166,7 +172,7 @@ mod tests {
     use super::*;
 
     fn notice(id: u32, at: i64) -> Notice {
-        Notice { id, at, title: "Memoria".into(), body: "Reminder".into(), until: None }
+        Notice { id, at, title: "Memoria".into(), body: "Reminder".into(), until: None, style: None, tone: None }
     }
 
     #[test]

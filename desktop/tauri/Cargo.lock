@@ -2315,7 +2315,7 @@ dependencies = [
 
 [[package]]
 name = "memoria"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "axum",
  "base64 0.22.1",
@@ -2341,6 +2341,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "webview2-com",
+ "windows 0.61.3",
  "windows-core 0.62.2",
  "windows-sys 0.59.0",
  "winreg 0.52.0",

@@ -11,6 +11,8 @@ export const RECORD_COLLECTIONS = [
   'chips',
   'alertRules',
   'reminders',
+  'questMarks',
+  'customQuests',
 ] as const;
 export const UNKNOWN_DEVICE = 'Unknown device';
 export function legacyHlc(at = 0): Hlc {

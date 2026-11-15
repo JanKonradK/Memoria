@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react';
+import { NOTIFICATION_STYLES, notificationStyle, type NotificationStyle } from '@memoria/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { fmtDateTimeLocalInput, parseDateTimeLocalInput } from '../util';
@@ -6,6 +7,7 @@ import { rosterGames } from './roster';
 import { Sheet } from './Sheet';
 import { Btn, Field, Select, TextInput } from './ui';
 import { REPEAT_OPTIONS } from './settings/reminder-repeat';
+import { STYLE_HINTS, STYLE_LABELS } from './settings/ReminderStyles';
 
 export function ReminderSheet({ open }: { open: boolean }) {
   const state = useApp((s) => s.state);
@@ -19,6 +21,8 @@ export function ReminderSheet({ open }: { open: boolean }) {
   const at = parseDateTimeLocalInput(when, draftZone);
   const [gameId, setGameId] = useState('');
   const [repeatDays, setRepeatDays] = useState(0);
+  const [style, setStyle] = useState<NotificationStyle | ''>('');
+  const usual = notificationStyle(state.settings, 'reminder');
   const formId = useId();
   const dateErrorId = useId();
   const unavailableGame = Boolean(gameId && !games.some((game) => game.id === gameId));
@@ -32,6 +36,7 @@ export function ReminderSheet({ open }: { open: boolean }) {
       setWhen(nextWhen);
       setGameId('');
       setRepeatDays(0);
+      setStyle('');
       setSavedDraft(JSON.stringify({ message: '', when: nextWhen, gameId: '' }));
     }
     // The editor owns its draft until it closes, including during background sync.
@@ -42,7 +47,7 @@ export function ReminderSheet({ open }: { open: boolean }) {
     <Sheet
       open={open}
       onClose={closeSheet}
-      dirty={JSON.stringify({ message, when, gameId }) !== savedDraft || repeatDays !== 0}
+      dirty={JSON.stringify({ message, when, gameId }) !== savedDraft || repeatDays !== 0 || style !== ''}
       title="New reminder"
       footer={
         <Btn
@@ -62,7 +67,7 @@ export function ReminderSheet({ open }: { open: boolean }) {
         onSubmit={(event) => {
           event.preventDefault();
           if (!message.trim() || at == null || unavailableGame) return;
-          addReminder(message.trim(), at, gameId || null, repeatDays || undefined);
+          addReminder(message.trim(), at, gameId || null, repeatDays || undefined, style || undefined);
           closeSheet();
         }}
       >
@@ -109,6 +114,16 @@ export function ReminderSheet({ open }: { open: boolean }) {
             {REPEAT_OPTIONS.map((option) => (
               <option key={option.days} value={option.days}>
                 {option.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Arrives as">
+          <Select value={style} onChange={(e) => setStyle(e.target.value as NotificationStyle | '')}>
+            <option value="">Usual: {STYLE_LABELS[usual]}</option>
+            {NOTIFICATION_STYLES.map((option) => (
+              <option key={option} value={option}>
+                {STYLE_LABELS[option]}: {STYLE_HINTS[option]}
               </option>
             ))}
           </Select>

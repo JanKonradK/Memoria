@@ -1,0 +1,1858 @@
+{
+  "game": "wuwa",
+  "reviewed": "2026-11-15",
+  "quests": [
+    {
+      "id": "prologue-utterance-1",
+      "kind": "main",
+      "series": "Prologue",
+      "title": "Utterance of Marvels: I",
+      "region": "Huanglong",
+      "version": "1.0",
+      "summary": "The Rover arrives in Huanglong and starts to learn what is happening in this unfamiliar land.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Utterance of Marvels: I", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "prologue-utterance-2",
+      "kind": "main",
+      "series": "Prologue",
+      "title": "Utterance of Marvels: II",
+      "region": "Huanglong",
+      "version": "1.0",
+      "summary": "The opening story continues as the Rover pieces together more of the situation in Huanglong.",
+      "start": null,
+      "characters": [],
+      "requires": ["prologue-utterance-1"],
+      "parts": [
+        { "id": "1", "title": "Utterance of Marvels: II", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch1-act1-first-resonance",
+      "kind": "main",
+      "series": "Chapter I: Huanglong",
+      "title": "First Resonance",
+      "region": "Huanglong",
+      "version": "1.0",
+      "summary": "The Rover reaches Jinzhou and is drawn into the fight against the threats gathering around the city.",
+      "start": "Continues directly from the Prologue.",
+      "characters": [],
+      "requires": ["prologue-utterance-2"],
+      "parts": [{ "id": "1", "title": "First Resonance", "characters": [], "note": "Quest steps not yet catalogued." }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch1-act2-echoing-marche",
+      "kind": "main",
+      "series": "Chapter I: Huanglong",
+      "title": "Echoing Marche",
+      "region": "Huanglong",
+      "version": "1.0",
+      "summary": "The Rover heads to the Huanglong war front and joins the effort to hold back the enemy.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch1-act1-first-resonance"],
+      "parts": [{ "id": "1", "title": "Echoing Marche", "characters": [], "note": "Quest steps not yet catalogued." }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch1-act3-ominous-star",
+      "kind": "main",
+      "series": "Chapter I: Huanglong",
+      "title": "Ominous Star",
+      "region": "Huanglong",
+      "version": "1.0",
+      "summary": "A trip to Qichi Village draws the Rover into a troubling mystery in Huanglong.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch1-act2-echoing-marche"],
+      "parts": [{ "id": "1", "title": "Ominous Star", "characters": [], "note": "Quest steps not yet catalogued." }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch1-act4-clashing-blades",
+      "kind": "main",
+      "series": "Chapter I: Huanglong",
+      "title": "Clashing Blades",
+      "region": "Huanglong",
+      "version": "1.0",
+      "summary": "The Rover continues in Jinzhou, where the Grand Library becomes a key setting for the story.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch1-act3-ominous-star"],
+      "parts": [{ "id": "1", "title": "Clashing Blades", "characters": [], "note": "Quest steps not yet catalogued." }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch1-act5-rewinding-raindrops",
+      "kind": "main",
+      "series": "Chapter I: Huanglong",
+      "title": "Rewinding Raindrops",
+      "region": "Black Shores",
+      "version": "1.0",
+      "summary": "The Rover sets out for the Black Shores, a mysterious archipelago, to look for answers.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch1-act4-clashing-blades"],
+      "parts": [
+        { "id": "1", "title": "Rewinding Raindrops", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch1-act6-grand-warstorm",
+      "kind": "main",
+      "series": "Chapter I: Huanglong",
+      "title": "Grand Warstorm",
+      "region": null,
+      "version": "1.0",
+      "summary": "The fighting escalates as the Rover pushes deeper into the conflict.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch1-act5-rewinding-raindrops"],
+      "parts": [{ "id": "1", "title": "Grand Warstorm", "characters": [], "note": "Quest steps not yet catalogued." }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch1-act7-thaw-of-eons",
+      "kind": "main",
+      "series": "Chapter I: Huanglong",
+      "title": "Thaw of Eons",
+      "region": "Mt. Firmament",
+      "version": "1.1",
+      "summary": "The Rover climbs toward Mt. Firmament, meeting new people and facing trials along the way.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch1-act6-grand-warstorm"],
+      "parts": [
+        { "id": "1", "title": "A New Companion", "characters": [], "note": null },
+        { "id": "2", "title": "Dreamy Scents", "characters": [], "note": null },
+        { "id": "3", "title": "To Mt. Firmament", "characters": [], "note": null },
+        { "id": "4", "title": "Truthseeker's Pass", "characters": [], "note": null },
+        { "id": "5", "title": "Road of Pilgrimage", "characters": [], "note": null },
+        { "id": "6", "title": "Mianloong Chamber", "characters": [], "note": null },
+        { "id": "7", "title": "The Commander of Time", "characters": [], "note": null },
+        { "id": "8", "title": "Dawn of Snowstorm", "characters": [], "note": null }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch1-act8-to-the-shores-end",
+      "kind": "main",
+      "series": "Chapter I: Huanglong",
+      "title": "To the Shore's End",
+      "region": "Black Shores",
+      "version": "1.3",
+      "summary": "The Rover travels to the Black Shores and the Tethys System to uncover what lies beyond the sea.",
+      "start": "Chapter I's final act; finishing it unlocks the Chapter II prologue.",
+      "characters": [],
+      "requires": ["ch1-act7-thaw-of-eons"],
+      "parts": [
+        { "id": "1", "title": "From the Echoes of Destruction (Part 1)", "characters": [], "note": null },
+        { "id": "2", "title": "Hidden Between the Waves", "characters": [], "note": null },
+        { "id": "3", "title": "Legacy of the Lasting Night", "characters": [], "note": null },
+        { "id": "4", "title": "From the Echoes of Destruction (Part 2)", "characters": [], "note": null },
+        { "id": "5", "title": "Reclaim Tomorrow From the Past", "characters": [], "note": null },
+        { "id": "6", "title": "From the Echoes of Destruction (Part 3)", "characters": [], "note": null },
+        { "id": "7", "title": "Beyond the Shore's End", "characters": [], "note": null }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch2-prologue-through-the-sea-thou-break",
+      "kind": "main",
+      "series": "Chapter II: Rinascita",
+      "title": "Through the Sea Thou Break",
+      "region": "Rinascita",
+      "version": "2.0",
+      "summary": "The Rover crosses into Rinascita, a new region, and begins the next chapter of the story.",
+      "start": "Unlocks automatically after Chapter I Act 8.",
+      "characters": [],
+      "requires": ["ch1-act8-to-the-shores-end"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Through the Sea Thou Break",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch2-act1-sacred-breeze",
+      "kind": "main",
+      "series": "Chapter II: Rinascita",
+      "title": "The Sacred Breeze So Often Breathes",
+      "region": "Rinascita",
+      "version": "2.0",
+      "summary": "The next act of Chapter II continues the Rover's story in Rinascita.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch2-prologue-through-the-sea-thou-break"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "The Sacred Breeze So Often Breathes",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch2-act2-veils-off",
+      "kind": "main",
+      "series": "Chapter II: Rinascita",
+      "title": "Veils Off in Sun or Shadow",
+      "region": "Rinascita",
+      "version": "2.0",
+      "summary": "Chapter II continues in Rinascita with the Rover's next steps in the new region.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch2-act1-sacred-breeze"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Veils Off in Sun or Shadow",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch2-act3-what-yesterday-wept",
+      "kind": "main",
+      "series": "Chapter II: Rinascita",
+      "title": "What Yesterday Wept, Today Doth Sing",
+      "region": "Rinascita",
+      "version": "2.0",
+      "summary": "Chapter II's story carries on in Rinascita.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch2-act2-veils-off"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "What Yesterday Wept, Today Doth Sing",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch2-act4-maiden-defier-death-crier",
+      "kind": "main",
+      "series": "Chapter II: Rinascita",
+      "title": "The Maiden, The Defier, The Death Crier",
+      "region": "Rinascita",
+      "version": "2.0",
+      "summary": "Chapter II's story continues in Rinascita.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch2-act3-what-yesterday-wept"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "The Maiden, The Defier, The Death Crier",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch2-act5-shadow-of-glory",
+      "kind": "main",
+      "series": "Chapter II: Rinascita",
+      "title": "Shadow of Glory",
+      "region": "Rinascita",
+      "version": "2.0",
+      "summary": "Chapter II's story continues in Rinascita.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch2-act4-maiden-defier-death-crier"],
+      "parts": [{ "id": "1", "title": "Shadow of Glory", "characters": [], "note": "Quest steps not yet catalogued." }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch2-act6-flames-of-heart",
+      "kind": "main",
+      "series": "Chapter II: Rinascita",
+      "title": "Flames of Heart",
+      "region": "Rinascita",
+      "version": "2.0",
+      "summary": "Chapter II's story continues in Rinascita.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch2-act5-shadow-of-glory"],
+      "parts": [{ "id": "1", "title": "Flames of Heart", "characters": [], "note": "Quest steps not yet catalogued." }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch2-act7-dreamcatchers",
+      "kind": "main",
+      "series": "Chapter II: Rinascita",
+      "title": "Dreamcatchers in the Secret Gardens",
+      "region": "Rinascita",
+      "version": "2.0",
+      "summary": "Chapter II's story continues in Rinascita.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch2-act6-flames-of-heart"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Dreamcatchers in the Secret Gardens",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch2-overture-rust-sword-sun",
+      "kind": "main",
+      "series": "Chapter II: Rinascita",
+      "title": "Overture: Rust, Sword, and the Sun",
+      "region": "Rinascita",
+      "version": null,
+      "summary": "An overture between Chapter II's main acts, continuing the Rinascita storyline.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch2-act7-dreamcatchers"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Overture: Rust, Sword, and the Sun",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch2-act8-by-suns-burning-hand",
+      "kind": "main",
+      "series": "Chapter II: Rinascita",
+      "title": "By Sun's Burning Hand",
+      "region": "Rinascita",
+      "version": null,
+      "summary": "Chapter II's story continues in Rinascita.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch2-overture-rust-sword-sun"],
+      "parts": [
+        { "id": "1", "title": "By Sun's Burning Hand", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch2-act9-by-moons-fated-light",
+      "kind": "main",
+      "series": "Chapter II: Rinascita",
+      "title": "By Moon's Fated Light",
+      "region": "Rinascita",
+      "version": null,
+      "summary": "Chapter II's story continues in Rinascita.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch2-act8-by-suns-burning-hand"],
+      "parts": [
+        { "id": "1", "title": "By Moon's Fated Light", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch2-act10-bygone-shall-always-return",
+      "kind": "main",
+      "series": "Chapter II: Rinascita",
+      "title": "The Bygone Shall Always Return",
+      "region": "Rinascita",
+      "version": "2.7",
+      "summary": "Chapter II's story continues in Rinascita.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch2-act9-by-moons-fated-light"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "The Bygone Shall Always Return",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch2-act11-dawn-breaks-dark-tides",
+      "kind": "main",
+      "series": "Chapter II: Rinascita",
+      "title": "Dawn Breaks on Dark Tides",
+      "region": "Rinascita",
+      "version": "2.7",
+      "summary": "Chapter II's story continues in Rinascita.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch2-act10-bygone-shall-always-return"],
+      "parts": [
+        { "id": "1", "title": "Dawn Breaks on Dark Tides", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch2-afterstory-stranger-strange-land",
+      "kind": "main",
+      "series": "Chapter II: Rinascita",
+      "title": "Stranger in a Strange Land",
+      "region": "Rinascita",
+      "version": null,
+      "summary": "A short afterstory to Chapter II's main acts.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch2-act11-dawn-breaks-dark-tides"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Stranger in a Strange Land",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch2-act12-stagnant-dawn-wastelands",
+      "kind": "main",
+      "series": "Chapter II: Rinascita",
+      "title": "Stagnant Dawn on Wastelands",
+      "region": "Rinascita",
+      "version": null,
+      "summary": "The final act of Chapter II's main story, set in Rinascita.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch2-afterstory-stranger-strange-land"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Stagnant Dawn on Wastelands",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch2-segue-flowing-starlight-iris",
+      "kind": "main",
+      "series": "Chapter II: Rinascita",
+      "title": "Flowing Starlight in the Iris",
+      "region": null,
+      "version": null,
+      "summary": "The closing segue of Chapter II, leading toward what follows.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch2-act12-stagnant-dawn-wastelands"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Flowing Starlight in the Iris",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch3-prologue-when-the-unknown-thrums",
+      "kind": "main",
+      "series": "Chapter III: Lahai-Roi",
+      "title": "When the Unknown Thrums",
+      "region": "Lahai-Roi",
+      "version": null,
+      "summary": "Chapter III opens with the Rover in a new region, Lahai-Roi, where unfamiliar things start to stir.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch2-segue-flowing-starlight-iris"],
+      "parts": [
+        { "id": "1", "title": "When the Unknown Thrums", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch3-act1-burns-beneath-frostlands",
+      "kind": "main",
+      "series": "Chapter III: Lahai-Roi",
+      "title": "What Burns Beneath Frostlands",
+      "region": "Lahai-Roi",
+      "version": null,
+      "summary": "Chapter III's story continues in the frozen lands of Lahai-Roi.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch3-prologue-when-the-unknown-thrums"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "What Burns Beneath Frostlands",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch3-act2-ode-second-sunrise",
+      "kind": "main",
+      "series": "Chapter III: Lahai-Roi",
+      "title": "Ode to the Second Sunrise",
+      "region": "Lahai-Roi",
+      "version": null,
+      "summary": "Chapter III's story continues in Lahai-Roi.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch3-act1-burns-beneath-frostlands"],
+      "parts": [
+        { "id": "1", "title": "Ode to the Second Sunrise", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch3-act3-star-voyages-far",
+      "kind": "main",
+      "series": "Chapter III: Lahai-Roi",
+      "title": "The Star That Voyages Far",
+      "region": "Lahai-Roi",
+      "version": null,
+      "summary": "Chapter III's story continues in Lahai-Roi.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch3-act2-ode-second-sunrise"],
+      "parts": [
+        { "id": "1", "title": "The Star That Voyages Far", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch3-segue1-all-that-sunlight-touches",
+      "kind": "main",
+      "series": "Chapter III: Lahai-Roi",
+      "title": "All That Sunlight Touches",
+      "region": "Lahai-Roi",
+      "version": null,
+      "summary": "A segue in Chapter III connecting the first acts to the rest of the chapter.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch3-act3-star-voyages-far"],
+      "parts": [
+        { "id": "1", "title": "All That Sunlight Touches", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch3-act4-gold-suspended-shadows",
+      "kind": "main",
+      "series": "Chapter III: Lahai-Roi",
+      "title": "Gold Suspended in the Shadows",
+      "region": "Lahai-Roi",
+      "version": "3.2",
+      "summary": "Chapter III's story continues in Lahai-Roi.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch3-segue1-all-that-sunlight-touches"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Gold Suspended in the Shadows",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch3-segue2-rabbit-reflected-shades",
+      "kind": "main",
+      "series": "Chapter III: Lahai-Roi",
+      "title": "Rabbit Reflected in Shades",
+      "region": "Lahai-Roi",
+      "version": "3.2",
+      "summary": "A Chapter III segue set in Lahai-Roi.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch3-act4-gold-suspended-shadows"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Rabbit Reflected in Shades",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch3-segue3-wishes-in-bell",
+      "kind": "main",
+      "series": "Chapter III: Lahai-Roi",
+      "title": "Wishes in the Bell",
+      "region": "Lahai-Roi",
+      "version": "3.3",
+      "summary": "A Chapter III segue set in Lahai-Roi.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch3-segue2-rabbit-reflected-shades"],
+      "parts": [
+        { "id": "1", "title": "Wishes in the Bell", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch3-act5-starlights-from-yesterdays",
+      "kind": "main",
+      "series": "Chapter III: Lahai-Roi",
+      "title": "Starlights from Yesterdays",
+      "region": "Lahai-Roi",
+      "version": "3.3",
+      "summary": "Chapter III's story continues in Lahai-Roi.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch3-segue3-wishes-in-bell"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Starlights from Yesterdays",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch3-segue4-beneath-melting-night-sky",
+      "kind": "main",
+      "series": "Chapter III: Lahai-Roi",
+      "title": "Beneath a Melting Night Sky",
+      "region": "Lahai-Roi",
+      "version": "3.3",
+      "summary": "A Chapter III segue set in Lahai-Roi.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch3-act5-starlights-from-yesterdays"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Beneath a Melting Night Sky",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch3-segue5-we-choose-sky",
+      "kind": "main",
+      "series": "Chapter III: Lahai-Roi",
+      "title": "We Choose the Sky",
+      "region": "Lahai-Roi",
+      "version": null,
+      "summary": "The closing segue of Chapter III.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch3-segue4-beneath-melting-night-sky"],
+      "parts": [
+        { "id": "1", "title": "We Choose the Sky", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch4-act1-wind-before-storm",
+      "kind": "main",
+      "series": "Chapter IV",
+      "title": "The Wind Before the Storm",
+      "region": "Mengzhou",
+      "version": "3.5",
+      "summary": "Chapter IV opens the newest arc of the main story, with Chapter IV introduced in version 3.5.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch3-segue5-we-choose-sky"],
+      "parts": [
+        { "id": "1", "title": "The Wind Before the Storm", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch4-act2-xuanling-sings",
+      "kind": "main",
+      "series": "Chapter IV",
+      "title": "Xuanling Sings, Storm Quelled",
+      "region": "Mengzhou",
+      "version": "3.5",
+      "summary": "Chapter IV's story continues.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch4-act1-wind-before-storm"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Xuanling Sings, Storm Quelled",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch4-segue1-chant-unseen-tides",
+      "kind": "main",
+      "series": "Chapter IV",
+      "title": "The Chant of Unseen Tides",
+      "region": "Mengzhou",
+      "version": "3.5",
+      "summary": "A Chapter IV segue.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch4-act2-xuanling-sings"],
+      "parts": [
+        { "id": "1", "title": "The Chant of Unseen Tides", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch4-act3-song-of-heart-sword",
+      "kind": "main",
+      "series": "Chapter IV",
+      "title": "Song of the Heart Sword",
+      "region": "Mengzhou",
+      "version": "3.5",
+      "summary": "Chapter IV's story continues.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch4-segue1-chant-unseen-tides"],
+      "parts": [
+        { "id": "1", "title": "Song of the Heart Sword", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch4-segue2-nethermancers-requiem",
+      "kind": "main",
+      "series": "Chapter IV",
+      "title": "The Nethermancer's Requiem",
+      "region": "Mengzhou",
+      "version": "3.5",
+      "summary": "A Chapter IV segue.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch4-act3-song-of-heart-sword"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "The Nethermancer's Requiem",
+          "characters": [],
+          "note": "Quest steps not yet catalogued."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch4-act4-simulacrum-of-heart",
+      "kind": "main",
+      "series": "Chapter IV",
+      "title": "Simulacrum of the Heart",
+      "region": "Mengzhou",
+      "version": "3.5",
+      "summary": "Chapter IV's story continues.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch4-segue2-nethermancers-requiem"],
+      "parts": [
+        { "id": "1", "title": "Simulacrum of the Heart", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "ch4-act5-bouquet-for-tomorrow",
+      "kind": "main",
+      "series": "Chapter IV",
+      "title": "A Bouquet for Tomorrow",
+      "region": "Mengzhou",
+      "version": "3.8",
+      "summary": "The most recent act of the main story, released in version 3.8.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch4-act4-simulacrum-of-heart"],
+      "parts": [
+        { "id": "1", "title": "A Bouquet for Tomorrow", "characters": [], "note": "Quest steps not yet catalogued." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "world-cerulean-echoes-adrift",
+      "kind": "world",
+      "series": "Black Shores",
+      "title": "Cerulean Echoes Adrift in the Winds",
+      "region": "Black Shores",
+      "version": null,
+      "summary": "An area quest in the Black Shores archipelago, told in a part and an epilogue.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Cerulean Echoes Adrift in the Winds (Part I)", "characters": [], "note": null },
+        { "id": "2", "title": "Cerulean Echoes Adrift in the Winds (Epilogue)", "characters": [], "note": null }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/474417"
+    },
+    {
+      "id": "world-yhorans-tactical-trial",
+      "kind": "world",
+      "series": "Black Shores",
+      "title": "Yhoran's Tactical Trial",
+      "region": "Black Shores",
+      "version": null,
+      "summary": "A trial-style area quest in the Black Shores.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Yhoran's Tactical Trial", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/474417"
+    },
+    {
+      "id": "world-shadow-of-the-towers",
+      "kind": "world",
+      "series": "Version 2.0 exploration",
+      "title": "Shadow of the Towers",
+      "region": null,
+      "version": "2.0",
+      "summary": "A three-part exploration series that starts from NPCs and ends with Command Rise.",
+      "start": "Resounding Rise starts by talking to Itzel; Twilight Rise starts by talking to Insula. Command Rise unlocks after both.",
+      "characters": ["Itzel", "Insula"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Shadow of the Towers: Resounding Rise",
+          "characters": [],
+          "note": "Start by talking to Itzel."
+        },
+        {
+          "id": "2",
+          "title": "Shadow of the Towers: Twilight Rise",
+          "characters": [],
+          "note": "Start by talking to Insula. Can be done before or after Resounding Rise."
+        },
+        {
+          "id": "3",
+          "title": "Shadow of the Towers: Command Rise",
+          "characters": [],
+          "note": "Unlocks automatically after Resounding Rise and Twilight Rise."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-hymn-of-the-sea-clouds",
+      "kind": "world",
+      "series": "Version 2.0 exploration",
+      "title": "Hymn of the Sea Clouds",
+      "region": null,
+      "version": "2.0",
+      "summary": "A two-part exploration series, with Storm unlocked after Rainbow.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Hymn of the Sea Clouds: Rainbow", "characters": [], "note": null },
+        {
+          "id": "2",
+          "title": "Hymn of the Sea Clouds: Storm",
+          "characters": [],
+          "note": "Unlocks right after Rainbow."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-where-sky-is-clear",
+      "kind": "world",
+      "series": "Version 2.4 exploration",
+      "title": "Where Sky is Clear and Glory Shines",
+      "region": null,
+      "version": "2.4",
+      "summary": "A two-part exploration series added in version 2.4.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Where Sky is Clear and Glory Shines: Guardian Tower",
+          "characters": [],
+          "note": "Order between the two parts not confirmed."
+        },
+        { "id": "2", "title": "Where Sky is Clear and Glory Shines: Trial Grounds", "characters": [], "note": null }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-loongs-pearl",
+      "kind": "world",
+      "series": "Loong's Pearl",
+      "title": "Loong's Pearl",
+      "region": null,
+      "version": "1.1",
+      "summary": "A Loong's Pearl exploration series added in version 1.1, ending with The Last Rite.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Mirrored Loong's Pearl",
+          "characters": [],
+          "note": "Order between the first two parts not confirmed by sources."
+        },
+        {
+          "id": "2",
+          "title": "Glorious Loong's Pearl",
+          "characters": [],
+          "note": "One source calls this the first step of Mirrored Loong's Pearl."
+        },
+        {
+          "id": "3",
+          "title": "Glorious Loong's Pearl: The Last Rite",
+          "characters": [],
+          "note": "Appears only after the other sub-quests are finished."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-tigers-maw",
+      "kind": "world",
+      "series": "Huanglong",
+      "title": "Tiger's Maw",
+      "region": "Huanglong",
+      "version": "1.0",
+      "summary": "A two-part exploration series around Tiger's Maw in Huanglong.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Hidden Dangers in Peaceful Life", "characters": [], "note": null },
+        { "id": "2", "title": "Shadows of the Past", "characters": [], "note": null }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-whining-aixs-mine",
+      "kind": "world",
+      "series": "Huanglong",
+      "title": "Whining Aix's Mine",
+      "region": "Huanglong",
+      "version": "1.0",
+      "summary": "An exploration quest at Whining Aix's Mine in Huanglong.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Stygian Lacrimosa", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-port-city-of-guixu",
+      "kind": "world",
+      "series": "Huanglong",
+      "title": "Port City of Guixu",
+      "region": "Huanglong",
+      "version": "1.0",
+      "summary": "An exploration quest set in the Port City of Guixu.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "We Promise, We Deliver", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-dim-forest",
+      "kind": "world",
+      "series": "Dim Forest",
+      "title": "Dim Forest",
+      "region": null,
+      "version": "1.0",
+      "summary": "An exploration quest in the Dim Forest.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "When the Forest is No Longer Dim", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-among-shoals-and-islands",
+      "kind": "world",
+      "series": "Mt. Firmament",
+      "title": "Among Shoals and Islands",
+      "region": "Mt. Firmament",
+      "version": "1.1",
+      "summary": "A single exploration quest in the Xuanji Ridges area of Mt. Firmament.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Among Shoals and Islands", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-boundary-of-yellow-and-white",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Boundary of Yellow and White",
+      "region": null,
+      "version": "1.1",
+      "summary": "A single exploration quest added in version 1.1.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Boundary of Yellow and White", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-peak-of-the-arch-shaped-rock",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Peak of the Arch-Shaped Rock",
+      "region": null,
+      "version": "1.1",
+      "summary": "A single exploration quest added in version 1.1.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Peak of the Arch-Shaped Rock", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-where-the-waterfalls-meet",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Where the Waterfalls Meet",
+      "region": null,
+      "version": "1.1",
+      "summary": "A single exploration quest added in version 1.1.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Where the Waterfalls Meet", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-vigil-of-endless-night",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Vigil of Endless Night",
+      "region": null,
+      "version": "1.2",
+      "summary": "A single exploration quest added in version 1.2.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Vigil of Endless Night", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-silver-moon-crimson-moon",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Silver Moon? Crimson Moon?",
+      "region": null,
+      "version": "2.0",
+      "summary": "A single exploration quest added in version 2.0.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Silver Moon? Crimson Moon?", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-where-wind-returns-celestial-realms",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Where Wind Returns to Celestial Realms",
+      "region": null,
+      "version": "2.0",
+      "summary": "A single exploration quest added in version 2.0.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Where Wind Returns to Celestial Realms", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-silent-as-a-falling-leaf",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Silent as a Falling Leaf",
+      "region": null,
+      "version": "2.1",
+      "summary": "A single exploration quest added in version 2.1.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Silent as a Falling Leaf", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-should-the-shooting-stars-blaze",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Should the Shooting Stars Blaze",
+      "region": null,
+      "version": "2.2",
+      "summary": "A single exploration quest added in version 2.2.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Should the Shooting Stars Blaze", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-flames-in-the-deep",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Flames in the Deep",
+      "region": null,
+      "version": "2.4",
+      "summary": "A single exploration quest added in version 2.4.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Flames in the Deep", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-when-the-sky-watches-us-meet",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "When the Sky Watches Us Meet",
+      "region": null,
+      "version": "2.4",
+      "summary": "A single exploration quest added in version 2.4.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "When the Sky Watches Us Meet", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-no-1-biker",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "No. 1 Biker",
+      "region": null,
+      "version": "3.0",
+      "summary": "A single exploration quest added in version 3.0.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "No. 1 Biker", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-the-lost-melody",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "The Lost Melody",
+      "region": null,
+      "version": "3.0",
+      "summary": "A single exploration quest added in version 3.0.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "The Lost Melody", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-where-light-takes-shape",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Where Light Takes Shape",
+      "region": null,
+      "version": "3.0",
+      "summary": "A single exploration quest added in version 3.0.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Where Light Takes Shape", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-the-song-of-ice-and-steel",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "The Song of Ice and Steel",
+      "region": null,
+      "version": "3.1",
+      "summary": "A single exploration quest added in version 3.1.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "The Song of Ice and Steel", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-unfrozen-hope",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Unfrozen Hope",
+      "region": null,
+      "version": "3.1",
+      "summary": "A single exploration quest added in version 3.1.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Unfrozen Hope", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-a-perfect-day-for-flying",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "A Perfect Day for Flying",
+      "region": null,
+      "version": "3.3",
+      "summary": "A single exploration quest added in version 3.3.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "A Perfect Day for Flying", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-broken-dimmr-heart",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Broken Dimmr Heart",
+      "region": null,
+      "version": "3.3",
+      "summary": "A single exploration quest added in version 3.3.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Broken Dimmr Heart", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-autopuppets-fog-veiled-chambers",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Autopuppets in Fog Veiled Chambers",
+      "region": null,
+      "version": "3.5",
+      "summary": "A single exploration quest added in version 3.5.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Autopuppets in Fog Veiled Chambers", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-code-red-corehazard",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Code Red: Corehazard",
+      "region": null,
+      "version": "3.5",
+      "summary": "A single exploration quest added in version 3.5.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Code Red: Corehazard", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-faithful-heart-tested-at-skyfall",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Faithful Heart Tested at Skyfall",
+      "region": null,
+      "version": "3.5",
+      "summary": "A single exploration quest added in version 3.5.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Faithful Heart Tested at Skyfall",
+          "characters": [],
+          "note": "Listed as the Danjin quest on one source."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-days-without-number",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Days Without Number",
+      "region": null,
+      "version": "3.7",
+      "summary": "A single exploration quest added in version 3.7.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Days Without Number", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "world-tales-from-the-capsule-ashen-fox",
+      "kind": "world",
+      "series": "Other exploration quests",
+      "title": "Tales from the Capsule: Ashen Fox",
+      "region": null,
+      "version": "3.7",
+      "summary": "A single exploration quest added in version 3.7.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Tales from the Capsule: Ashen Fox", "characters": [], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453486"
+    },
+    {
+      "id": "companion-brant-sail-day-captain",
+      "kind": "story",
+      "series": "Companion Quests",
+      "title": "Sail Day, Captain!",
+      "region": "Rinascita",
+      "version": "2.1",
+      "summary": "Brant's companion story, a self-contained personal chapter.",
+      "start": "Found at Fool's Elysium in the Rinascita region.",
+      "characters": ["Brant"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Sail Day, Captain!", "characters": ["Brant"], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453487"
+    },
+    {
+      "id": "companion-camellya-forking-paths",
+      "kind": "story",
+      "series": "Companion Quests",
+      "title": "Forking Paths Among the Stars",
+      "region": null,
+      "version": null,
+      "summary": "Camellya's companion story, a self-contained personal chapter.",
+      "start": null,
+      "characters": ["Camellya"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Forking Paths Among the Stars", "characters": ["Camellya"], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453487"
+    },
+    {
+      "id": "companion-cantarella-fleeting-nights-dream",
+      "kind": "story",
+      "series": "Companion Quests",
+      "title": "A Fleeting Night's Dream",
+      "region": null,
+      "version": null,
+      "summary": "Cantarella's companion story, a self-contained personal chapter.",
+      "start": null,
+      "characters": ["Cantarella"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "A Fleeting Night's Dream", "characters": ["Cantarella"], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453487"
+    },
+    {
+      "id": "companion-carlotta-rainy-night-family",
+      "kind": "story",
+      "series": "Companion Quests",
+      "title": "If On a Rainy Night a Family",
+      "region": null,
+      "version": null,
+      "summary": "Carlotta's companion story, a self-contained personal chapter.",
+      "start": null,
+      "characters": ["Carlotta"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "If On a Rainy Night a Family", "characters": ["Carlotta"], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453487"
+    },
+    {
+      "id": "companion-changli-immortal-blaze",
+      "kind": "story",
+      "series": "Companion Quests",
+      "title": "Immortal Blaze",
+      "region": null,
+      "version": "1.1",
+      "summary": "Changli's companion story, announced for version 1.1.",
+      "start": null,
+      "characters": ["Changli"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Immortal Blaze", "characters": ["Changli"], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453487"
+    },
+    {
+      "id": "companion-encore-small-wooly",
+      "kind": "story",
+      "series": "Companion Quests",
+      "title": "Small Wooly, Big Adventures",
+      "region": null,
+      "version": null,
+      "summary": "Encore's companion story, a self-contained personal chapter.",
+      "start": null,
+      "characters": ["Encore"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Small Wooly, Big Adventures", "characters": ["Encore"], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453487"
+    },
+    {
+      "id": "companion-jiyan-pastures-like-old-times",
+      "kind": "story",
+      "series": "Companion Quests",
+      "title": "Pastures like Old Times",
+      "region": "Jinzhou",
+      "version": "1.0",
+      "summary": "Jiyan's companion story, a run of three quests set in and around Jinzhou.",
+      "start": null,
+      "characters": ["Jiyan"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Pastures like Old Times", "characters": ["Jiyan"], "note": "Jinzhou." },
+        { "id": "2", "title": "Boat Race in River", "characters": ["Jiyan"], "note": "Jinzhou." },
+        { "id": "3", "title": "Replica of Past Days", "characters": ["Jiyan"], "note": "West of Rearguard Base." }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453487"
+    },
+    {
+      "id": "companion-lingyang-wild-hearts-return",
+      "kind": "story",
+      "series": "Companion Quests",
+      "title": "Wild Heart's Return",
+      "region": "Jinzhou",
+      "version": "1.0",
+      "summary": "Lingyang's companion story, set around Jinzhou.",
+      "start": null,
+      "characters": ["Lingyang"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Wild Heart's Return", "characters": ["Lingyang"], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453487"
+    },
+    {
+      "id": "companion-roccia-starry-is-the-night",
+      "kind": "story",
+      "series": "Companion Quests",
+      "title": "Starry is the Night",
+      "region": null,
+      "version": null,
+      "summary": "Roccia's companion story, a self-contained personal chapter.",
+      "start": null,
+      "characters": ["Roccia"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Starry is the Night", "characters": ["Roccia"], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453487"
+    },
+    {
+      "id": "companion-yinlin-solitary-path",
+      "kind": "story",
+      "series": "Companion Quests",
+      "title": "Solitary Path",
+      "region": null,
+      "version": "1.0",
+      "summary": "Yinlin's companion story, a self-contained personal chapter.",
+      "start": null,
+      "characters": ["Yinlin"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Solitary Path",
+          "characters": ["Yinlin"],
+          "note": "Named 'Solitary Crusade' in one source; the Game8 name is used here."
+        }
+      ],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453487"
+    },
+    {
+      "id": "companion-zani-blaze-in-the-dark",
+      "kind": "story",
+      "series": "Companion Quests",
+      "title": "A Blaze in the Dark",
+      "region": null,
+      "version": null,
+      "summary": "Zani's companion story, a self-contained personal chapter.",
+      "start": null,
+      "characters": ["Zani"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "A Blaze in the Dark", "characters": ["Zani"], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453487"
+    },
+    {
+      "id": "companion-zhezhi-true-colors",
+      "kind": "story",
+      "series": "Companion Quests",
+      "title": "True Colors",
+      "region": null,
+      "version": "1.2",
+      "summary": "Zhezhi's companion story, released in version 1.2.",
+      "start": null,
+      "characters": ["Zhezhi"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "True Colors", "characters": ["Zhezhi"], "note": null }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453487"
+    },
+    {
+      "id": "ch3-side-story-at-dreams-edge",
+      "kind": "side",
+      "series": "Chapter III: Lahai-Roi",
+      "title": "At Dream's Edge",
+      "region": "Lahai-Roi",
+      "version": null,
+      "summary": "A side story inside Chapter III, placed between its main segues.",
+      "start": null,
+      "characters": [],
+      "requires": ["ch3-segue4-beneath-melting-night-sky"],
+      "parts": [{ "id": "1", "title": "At Dream's Edge", "characters": [], "note": "Quest steps not yet catalogued." }],
+      "url": "https://game8.co/games/Wuthering-Waves/archives/453523"
+    },
+    {
+      "id": "side-jinzhou-past-is-the-future",
+      "kind": "side",
+      "series": "Jinzhou",
+      "title": "The Past is the Future",
+      "region": "Huanglong",
+      "version": null,
+      "summary": "A short side-quest run around Jinzhou in three parts.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "The Past is the Future: Introduction", "characters": [], "note": null },
+        { "id": "2", "title": "The Past is the Future: Continued", "characters": [], "note": "West Hill." },
+        { "id": "3", "title": "The Past is the Future: Epilogue", "characters": [], "note": null }
+      ],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-jinzhou-silver-haired-echo-trainer",
+      "kind": "side",
+      "series": "Jinzhou",
+      "title": "Silver-Haired Echo Trainer",
+      "region": "Huanglong",
+      "version": null,
+      "summary": "A three-part side quest around Jinzhou.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Silver-Haired Echo Trainer – I", "characters": [], "note": null },
+        { "id": "2", "title": "Silver-Haired Echo Trainer – II", "characters": [], "note": null },
+        { "id": "3", "title": "Silver-Haired Echo Trainer – III", "characters": [], "note": null }
+      ],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-jinzhou-listen-to-animals-words",
+      "kind": "side",
+      "series": "Jinzhou",
+      "title": "Listen to Animals' Words",
+      "region": "Huanglong",
+      "version": null,
+      "summary": "A three-part side quest about translating animal languages around Jinzhou.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Listen to Animals' Words: Translation of Cat's Language",
+          "characters": [],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "Listen to Animals' Words: Translation of Dog's Language",
+          "characters": [],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "Listen to Animals' Words: Translation of Rabbit's Language",
+          "characters": [],
+          "note": "North of Jinzhou."
+        }
+      ],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-jinzhou-journal-of-jinzhou",
+      "kind": "side",
+      "series": "Jinzhou",
+      "title": "Journal of Jinzhou",
+      "region": "Huanglong",
+      "version": null,
+      "summary": "A two-volume side quest set in Jinzhou.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Journal of Jinzhou: Vol.1", "characters": [], "note": null },
+        { "id": "2", "title": "Journal of Jinzhou: Vol.2", "characters": [], "note": null }
+      ],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-jinzhou-misc",
+      "kind": "side",
+      "series": "Jinzhou",
+      "title": "Jinzhou one-off side quests",
+      "region": "Huanglong",
+      "version": null,
+      "summary": "Four single side quests found around Jinzhou.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Hero of the Leap", "characters": [], "note": null },
+        { "id": "2", "title": "Tacet Discord Hunter", "characters": [], "note": null },
+        { "id": "3", "title": "Photos of Jinzhou", "characters": [], "note": null },
+        { "id": "4", "title": "Lost Ranger", "characters": [], "note": null }
+      ],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-distribution-center-free-meal",
+      "kind": "side",
+      "series": "Distribution Center",
+      "title": "A Free Meal?",
+      "region": null,
+      "version": null,
+      "summary": "A two-part side quest near the Distribution Center.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "A Free Meal? I", "characters": [], "note": "Distribution Center." },
+        { "id": "2", "title": "A Free Meal? II", "characters": [], "note": "Southeast of Distribution Center." }
+      ],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-wenye-beach",
+      "kind": "side",
+      "series": "Wenye Beach",
+      "title": "Wenye Beach quests",
+      "region": null,
+      "version": null,
+      "summary": "A set of four side quests at Wenye Beach.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "A Quest of Wits – I", "characters": [], "note": null },
+        { "id": "2", "title": "A Quest of Wits – II", "characters": [], "note": null },
+        { "id": "3", "title": "De-Hoochief", "characters": [], "note": null },
+        { "id": "4", "title": "Messenger", "characters": [], "note": null }
+      ],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-central-plains",
+      "kind": "side",
+      "series": "Central Plains",
+      "title": "Central Plains quests",
+      "region": null,
+      "version": null,
+      "summary": "A few side quests in the Central Plains.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "A Taste of Everything", "characters": [], "note": null },
+        { "id": "2", "title": "Save the World? Save the Cat!", "characters": [], "note": null },
+        {
+          "id": "3",
+          "title": "A True Arena Champion",
+          "characters": [],
+          "note": "One source places this on an unmarked island north of Remnant Residence."
+        }
+      ],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-clouded-cliffs-camp-raid",
+      "kind": "side",
+      "series": "Clouded Cliffs",
+      "title": "Camp Raid",
+      "region": null,
+      "version": null,
+      "summary": "A single side quest at Clouded Cliffs.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Camp Raid", "characters": [], "note": null }],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-violet-banyan",
+      "kind": "side",
+      "series": "Violet Banyan",
+      "title": "Violet Banyan quests",
+      "region": null,
+      "version": null,
+      "summary": "Side quests around the Violet Banyan.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "When Moonlight Shines in the Forest", "characters": [], "note": null },
+        { "id": "2", "title": "Under the Moonlit Banyan", "characters": [], "note": null },
+        { "id": "3", "title": "No Response Tonight", "characters": [], "note": "South of Violet Banyan." }
+      ],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-tower-of-adversity-wait-for-godo",
+      "kind": "side",
+      "series": "Tower of Adversity",
+      "title": "Wait for Godo",
+      "region": null,
+      "version": null,
+      "summary": "A single side quest at the Tower of Adversity.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Wait for Godo", "characters": [], "note": null }],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-tigers-maw-mine-magnetic-cube",
+      "kind": "side",
+      "series": "Tiger's Maw Mine",
+      "title": "The Fabled Magnetic Cube Mechanics",
+      "region": "Huanglong",
+      "version": null,
+      "summary": "A three-part side quest series around the magnetic cube mechanics at Tiger's Maw Mine.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "The Fabled Magnetic Cube Mechanics – I", "characters": [], "note": null },
+        { "id": "2", "title": "The Fabled Magnetic Cube Mechanics – II", "characters": [], "note": null },
+        {
+          "id": "3",
+          "title": "The Fabled Magnetic Cube Mechanics – III",
+          "characters": [],
+          "note": "Listed under Central Plains by another source; only I and II are listed under Tiger's Maw Mine."
+        }
+      ],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-donglu-research-station",
+      "kind": "side",
+      "series": "Donglu Research Station",
+      "title": "Donglu Research Station quests",
+      "region": null,
+      "version": null,
+      "summary": "Two side quests near Donglu Research Station.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Explosive Spear Tip Testing", "characters": [], "note": "Donglu Research Station." },
+        { "id": "2", "title": "The Eternal Concert", "characters": [], "note": "North of Donglu Research Station." }
+      ],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-military-base-north-of-jinzhou",
+      "kind": "side",
+      "series": "Military Base North of Jinzhou",
+      "title": "Investigate the Theft of Camp Supplies",
+      "region": "Huanglong",
+      "version": null,
+      "summary": "A single side quest at the military base north of Jinzhou.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Investigate the Theft of Camp Supplies", "characters": [], "note": null }],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-settle-range-shooting-party",
+      "kind": "side",
+      "series": "Settle Range",
+      "title": "Shooting Party",
+      "region": null,
+      "version": null,
+      "summary": "A single side quest at Settle Range.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Shooting Party", "characters": [], "note": null }],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-south-of-lake-deerslumber",
+      "kind": "side",
+      "series": "South of Lake Deerslumber",
+      "title": "Secret Investigation",
+      "region": null,
+      "version": null,
+      "summary": "A single side quest south of Lake Deerslumber.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Secret Investigation", "characters": [], "note": null }],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-wuming-bay",
+      "kind": "side",
+      "series": "Wuming Bay",
+      "title": "Wuming Bay history quests",
+      "region": null,
+      "version": null,
+      "summary": "Two history-themed side quests at Wuming Bay.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Silent History", "characters": [], "note": null },
+        { "id": "2", "title": "Lost History", "characters": [], "note": null }
+      ],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-rearguard-base-restart-the-radar",
+      "kind": "side",
+      "series": "Rearguard Base",
+      "title": "Restart the Radar",
+      "region": null,
+      "version": null,
+      "summary": "A single side quest at Rearguard Base.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Restart the Radar", "characters": [], "note": null }],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    },
+    {
+      "id": "side-nameless-bay-lighthouse",
+      "kind": "side",
+      "series": "Nameless Bay",
+      "title": "Repair the Lighthouse at the Nameless Bay",
+      "region": null,
+      "version": null,
+      "summary": "A single side quest at Nameless Bay.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Repair the Lighthouse at the Nameless Bay", "characters": [], "note": null }],
+      "url": "https://selphie1999gaming.com/game-guides/wuthering-waves/all-side-quests-in-wuthering-waves/"
+    }
+  ]
+}

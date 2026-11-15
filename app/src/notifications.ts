@@ -1,13 +1,17 @@
 import { create } from 'zustand';
-import { LocalNotifications } from '@capacitor/local-notifications';
+import { registerPlugin } from '@capacitor/core';
+import { LocalNotifications, type LocalNotificationSchema } from '@capacitor/local-notifications';
 import {
   buildNotificationPlan,
   notificationId,
   NOTIFICATION_HORIZON_DAYS,
+  type AlarmTone,
+  type NotificationStyle,
   type PlannedNotification,
 } from '@memoria/shared';
 import { allCodes, liveCodes } from './codes';
 import { useRemoteFeed } from './data/remote-feed';
+import type { WindowsToastSetting } from './desktop-host';
 import { isNativeApp } from './native';
 import { useApp } from './store';
 import { useUI } from './ui-store';
@@ -17,6 +21,63 @@ const KEY = 'memoria-device-notifications';
 const DELIVERY_KEY = 'memoria-notification-delivery';
 const DAILY_ACTIONS = 'memoria-daily';
 const EVENT_ACTIONS = 'memoria-event';
+/** The same actions plus Snooze, for alarm-style notifications. */
+const DAILY_ALARM_ACTIONS = 'memoria-daily-alarm';
+const EVENT_ALARM_ACTIONS = 'memoria-event-alarm';
+const ALARM_ACTIONS = 'memoria-alarm';
+export const SNOOZE_MINUTES = 10;
+
+/** Android's notification channels for each style, made natively in ReminderChannelsPlugin. */
+const ReminderChannels = registerPlugin<{
+  status(): Promise<{ blockedChannels: Record<string, boolean>; batteryUnrestricted: boolean }>;
+  openNotificationSettings(): Promise<void>;
+  openBatterySettings(): Promise<void>;
+}>('ReminderChannels');
+
+export function channelFor(style: NotificationStyle = 'standard', tone: AlarmTone = 'classic'): string {
+  return style === 'alarm' ? `memoria-alarm-${tone}` : `memoria-${style}`;
+}
+
+/** What Android shows for one planned notification, in its style. */
+export function nativeNotification(
+  item: Pick<PlannedNotification, 'id' | 'title' | 'body' | 'at' | 'kind' | 'gameId' | 'eventIds' | 'style' | 'tone'>,
+  exact: boolean,
+  extra: Record<string, unknown> = {},
+): LocalNotificationSchema {
+  const alarm = item.style === 'alarm';
+  const actions =
+    item.kind === 'daily' && item.gameId
+      ? alarm
+        ? DAILY_ALARM_ACTIONS
+        : DAILY_ACTIONS
+      : item.kind === 'event' && item.eventIds?.length
+        ? alarm
+          ? EVENT_ALARM_ACTIONS
+          : EVENT_ACTIONS
+        : alarm
+          ? ALARM_ACTIONS
+          : undefined;
+  return {
+    id: item.id,
+    title: item.title,
+    body: item.body,
+    isExactNotification: exact,
+    schedule: { at: new Date(item.at), allowWhileIdle: true },
+    channelId: channelFor(item.style, item.tone),
+    // Android 7 has no channels and takes the sound per notification.
+    ...(alarm ? { sound: `memoria_alarm_${item.tone ?? 'classic'}.wav` } : {}),
+    ...(actions ? { actionTypeId: actions } : {}),
+    extra: {
+      memoria: true,
+      gameId: item.gameId,
+      kind: item.kind,
+      eventIds: item.eventIds ?? [],
+      style: item.style ?? 'standard',
+      tone: item.tone ?? 'classic',
+      ...extra,
+    },
+  };
+}
 /** Fires only if the app is not opened for most of a week, before the plan runs out. */
 const RUNWAY_ID = 1_999_999_999;
 const RUNWAY_LEAD_MS = 12 * 3_600_000;
@@ -34,13 +95,100 @@ export const useNotifications = create<{
   /** Android lets Memoria use exact alarms; null until checked. */
   exact: boolean | null;
   plannedAt: number | null;
+  /** Android's notification permission for Memoria; null until checked. */
+  permission: 'granted' | 'denied' | 'prompt' | null;
+  /** Battery saving can hold reminders back; null until checked. */
+  batteryUnrestricted: boolean | null;
+  /** Reminder channels the player switched off in Android settings. */
+  blockedChannels: string[];
+  /** Whether Windows lets Memoria's toasts through; null outside the Windows app. */
+  windows: WindowsToastSetting | null;
 }>(() => ({
   enabled: enabledOnDevice(),
   error: '',
   scheduled: 0,
   exact: null,
   plannedAt: null,
+  permission: null,
+  batteryUnrestricted: null,
+  blockedChannels: [],
+  windows: null,
 }));
+
+/** Reads what Android currently allows, for the prompts in Today and Settings. */
+export async function refreshNotificationStatus(): Promise<void> {
+  const presence = window.memoriaDesktop?.presence;
+  if (presence?.notificationStatus) {
+    const { windows } = await presence.notificationStatus();
+    useNotifications.setState({ windows });
+    return;
+  }
+  if (!isNativeApp) return;
+  const [permission, exact, channels] = await Promise.all([
+    LocalNotifications.checkPermissions().then((result) => result.display),
+    LocalNotifications.checkExactNotificationSetting()
+      .then((result) => result.exact_alarm === 'granted')
+      .catch(() => null),
+    ReminderChannels.status().catch(() => null),
+  ]);
+  useNotifications.setState({
+    permission: permission === 'granted' ? 'granted' : permission === 'denied' ? 'denied' : 'prompt',
+    exact,
+    ...(channels
+      ? {
+          batteryUnrestricted: channels.batteryUnrestricted,
+          blockedChannels: Object.entries(channels.blockedChannels)
+            .filter(([, blocked]) => blocked)
+            .map(([id]) => id),
+        }
+      : {}),
+  });
+}
+
+export function openAndroidNotificationSettings(): Promise<void> {
+  return isNativeApp ? ReminderChannels.openNotificationSettings() : Promise.resolve();
+}
+
+export function openAndroidBatterySettings(): Promise<void> {
+  return isNativeApp ? ReminderChannels.openBatterySettings() : Promise.resolve();
+}
+
+/**
+ * Shows a sample right away in a style, so the player hears what they picked.
+ * On the PC it goes through Windows; on Android through the style's channel.
+ */
+export async function sendTestNotification(style: NotificationStyle, tone: AlarmTone): Promise<void> {
+  const presence = window.memoriaDesktop?.presence;
+  if (presence?.testNotification) {
+    const { windows } = await presence.testNotification(style, tone);
+    useNotifications.setState({ windows });
+    if (windows !== 'enabled' && windows !== 'unknown')
+      throw new Error('Windows is holding Memoria’s notifications back. Turn them on in Windows settings.');
+    return;
+  }
+  if (!isNativeApp) throw new Error('Test reminders need the Android app or the Windows app.');
+  if ((await LocalNotifications.requestPermissions()).display !== 'granted')
+    throw new Error('Notifications are off for Memoria in Android settings.');
+  await registerActions();
+  await LocalNotifications.schedule({
+    notifications: [
+      nativeNotification(
+        {
+          id: notificationId(`test:${Date.now()}`),
+          title: 'Memoria test reminder',
+          body: 'This is how reminders in this style arrive on this phone.',
+          at: Date.now() + 1500,
+          kind: 'reminder',
+          gameId: null,
+          style,
+          tone,
+        },
+        false,
+        { test: true },
+      ),
+    ],
+  });
+}
 
 interface Delivery {
   /** id -> time of the notifications last scheduled. */
@@ -160,6 +308,21 @@ async function registerActions() {
     types: [
       { id: DAILY_ACTIONS, actions: [{ id: 'dailies-done', title: 'Dailies done' }] },
       { id: EVENT_ACTIONS, actions: [{ id: 'events-done', title: 'Done' }] },
+      {
+        id: DAILY_ALARM_ACTIONS,
+        actions: [
+          { id: 'dailies-done', title: 'Dailies done' },
+          { id: 'snooze', title: `Snooze ${SNOOZE_MINUTES} min` },
+        ],
+      },
+      {
+        id: EVENT_ALARM_ACTIONS,
+        actions: [
+          { id: 'events-done', title: 'Done' },
+          { id: 'snooze', title: `Snooze ${SNOOZE_MINUTES} min` },
+        ],
+      },
+      { id: ALARM_ACTIONS, actions: [{ id: 'snooze', title: `Snooze ${SNOOZE_MINUTES} min` }] },
     ],
   });
   actionsRegistered = true;
@@ -173,7 +336,10 @@ export function rescheduleNotifications(): Promise<void> {
     if (enabled && (await LocalNotifications.checkPermissions()).display !== 'granted')
       throw new Error('Notifications are blocked in Android settings.');
     const pending = await LocalNotifications.getPending();
-    const owned = pending.notifications.filter((item) => item.extra?.memoria === true);
+    // A snoozed or test notification is the player's own; a rebuilt plan leaves it alone.
+    const owned = pending.notifications.filter(
+      (item) => item.extra?.memoria === true && !item.extra?.snoozed && !item.extra?.test,
+    );
     const now = Date.now();
     const delivery = readDelivery();
     const plan = useNotifications.getState().enabled
@@ -195,18 +361,7 @@ export function rescheduleNotifications(): Promise<void> {
     const exact = (await LocalNotifications.checkExactNotificationSetting()).exact_alarm === 'granted';
     if (plan.length) {
       await registerActions();
-      await LocalNotifications.schedule({
-        notifications: plan.map((item) => ({
-          id: item.id,
-          title: item.title,
-          body: item.body,
-          isExactNotification: exact,
-          schedule: { at: new Date(item.at), allowWhileIdle: true },
-          ...(item.kind === 'daily' && item.gameId ? { actionTypeId: DAILY_ACTIONS } : {}),
-          ...(item.kind === 'event' && item.eventIds?.length ? { actionTypeId: EVENT_ACTIONS } : {}),
-          extra: { memoria: true, gameId: item.gameId, kind: item.kind, eventIds: item.eventIds ?? [] },
-        })),
-      });
+      await LocalNotifications.schedule({ notifications: plan.map((item) => nativeNotification(item, exact)) });
     }
     writeDelivery(delivery);
     const reminders = plan.filter((item) => item.id !== RUNWAY_ID).length;
@@ -222,8 +377,11 @@ export function rescheduleNotifications(): Promise<void> {
 }
 export async function setNotificationsEnabled(enabled: boolean): Promise<void> {
   if (!isNativeApp) throw new Error('Device reminders are available in the Android app.');
-  if (enabled && (await LocalNotifications.requestPermissions()).display !== 'granted')
-    throw new Error('Notifications are off for Memoria in Android settings.');
+  if (enabled) {
+    const permission = (await LocalNotifications.requestPermissions()).display;
+    useNotifications.setState({ permission: permission === 'granted' ? 'granted' : 'denied' });
+    if (permission !== 'granted') throw new Error('Notifications are off for Memoria in Android settings.');
+  }
   const previous = useNotifications.getState().enabled;
   if (enabled) localStorage.setItem(KEY, 'enabled');
   useNotifications.setState({ enabled });
@@ -232,6 +390,7 @@ export async function setNotificationsEnabled(enabled: boolean): Promise<void> {
     // Persist opt-out only after Android confirms cancellation. A failed cancellation
     // must remain retryable after restarting the app.
     if (!enabled) localStorage.setItem(KEY, 'disabled');
+    else void refreshNotificationStatus().catch(() => undefined);
   } catch (cause) {
     if (!enabled) useNotifications.setState({ enabled: previous });
     useNotifications.setState({ error: cause instanceof Error ? cause.message : 'Reminders could not be changed.' });
@@ -248,6 +407,32 @@ function whenLoaded(run: () => void) {
   });
 }
 
+/** The same notification again in ten minutes, kept apart from the planned week. */
+async function snooze(notification: LocalNotificationSchema) {
+  const extra = (notification.extra ?? {}) as Record<string, unknown>;
+  const at = Date.now() + SNOOZE_MINUTES * 60_000;
+  await registerActions();
+  await LocalNotifications.schedule({
+    notifications: [
+      nativeNotification(
+        {
+          id: notificationId(`snooze:${notification.id}:${at}`),
+          title: notification.title,
+          body: notification.body,
+          at,
+          kind: (extra.kind as PlannedNotification['kind']) ?? 'reminder',
+          gameId: (extra.gameId as string | null) ?? null,
+          eventIds: (extra.eventIds as string[]) ?? [],
+          style: (extra.style as NotificationStyle) ?? 'alarm',
+          tone: (extra.tone as AlarmTone) ?? 'classic',
+        },
+        useNotifications.getState().exact === true,
+        { snoozed: true },
+      ),
+    ],
+  });
+}
+
 /** Opens Android's "Alarms & reminders" page so reminders arrive on the minute. */
 export async function requestExactReminders(): Promise<void> {
   if (!isNativeApp) return;
@@ -256,14 +441,36 @@ export async function requestExactReminders(): Promise<void> {
   await rescheduleNotifications().catch(() => undefined);
 }
 
+/** On the Windows app: re-read whether Windows allows toasts whenever the window comes back. */
+export function initDesktopNotificationStatus(): () => void {
+  if (!window.memoriaDesktop?.presence?.notificationStatus) return () => undefined;
+  const status = () => {
+    if (document.visibilityState === 'visible') void refreshNotificationStatus().catch(() => undefined);
+  };
+  status();
+  document.addEventListener('visibilitychange', status);
+  return () => document.removeEventListener('visibilitychange', status);
+}
+
 export function initNotifications(): () => void {
-  if (!isNativeApp) return () => undefined;
+  if (!isNativeApp) return initDesktopNotificationStatus();
   let active = true;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const update = () => {
     clearTimeout(timer);
     if (!useNotifications.getState().enabled) return;
-    timer = setTimeout(() => void rescheduleNotifications().catch(() => undefined), 1200);
+    // What Android allows is read after the plan, so a refused permission surfaces as the plan's error first.
+    timer = setTimeout(
+      () =>
+        void rescheduleNotifications()
+          .catch(() => undefined)
+          .finally(status),
+      1200,
+    );
+  };
+  /** Only an opted-in device has permissions, exact timing or battery saving worth checking. */
+  const status = () => {
+    if (useNotifications.getState().enabled) void refreshNotificationStatus().catch(() => undefined);
   };
   const unsubscribe = useApp.subscribe((next, prior) => {
     if (next.state !== prior.state) update();
@@ -273,8 +480,13 @@ export function initNotifications(): () => void {
   });
   const listener = LocalNotifications.addListener('localNotificationActionPerformed', (event) => {
     const extra = event.notification.extra as
-      { memoria?: boolean; gameId?: string | null; eventIds?: string[] } | undefined;
+      | { memoria?: boolean; gameId?: string | null; eventIds?: string[]; kind?: PlannedNotification['kind'] }
+      | undefined;
     if (!active || extra?.memoria !== true) return;
+    if (event.actionId === 'snooze') {
+      void snooze(event.notification);
+      return;
+    }
     useUI.getState().setTab('today');
     if (event.actionId === 'dailies-done' && extra.gameId)
       whenLoaded(() => useApp.getState().completeDailies(extra.gameId!));

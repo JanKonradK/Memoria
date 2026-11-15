@@ -1,4 +1,15 @@
-import type { AlertType, AppState, Game, GameEvent, Reminder } from './types';
+import type {
+  AlarmTone,
+  AlertType,
+  AppState,
+  Game,
+  GameEvent,
+  NotificationKind,
+  NotificationStyle,
+  Reminder,
+  Settings,
+} from './types';
+import { DEFAULT_NOTIFICATION_STYLES } from './types';
 import { buildUrgencyContext } from './urgency';
 import { projectEnergy } from './energy';
 import { effectiveResourceKind } from './tracking';
@@ -16,7 +27,11 @@ export interface PlannedNotification {
   at: number;
   gameId: string | null;
   /** What the notification is about, so a device can offer the matching action. */
-  kind: 'daily' | 'weekly' | 'monthly' | 'event' | 'energy' | 'reminder' | 'digest';
+  kind: NotificationKind;
+  /** How loudly it arrives. Absent on plans from older builds: standard. */
+  style?: NotificationStyle;
+  /** The ring, for alarm style only. */
+  tone?: AlarmTone;
   /** The events an event notification is about, so "Done" can tick them. */
   eventIds?: string[];
   /**
@@ -110,6 +125,14 @@ export function nextReminderAt(reminder: Reminder, now: number, zone: string): n
   return reminderTimes(reminder, now, now + (reminder.repeatDays + 1) * 86_400_000, zone)[0] ?? null;
 }
 
+/** The style a kind of notification arrives in, as set in Settings → Reminders. */
+export function notificationStyle(
+  settings: Pick<Settings, 'notificationStyles'>,
+  kind: NotificationKind,
+): NotificationStyle {
+  return settings.notificationStyles?.[kind] ?? DEFAULT_NOTIFICATION_STYLES[kind];
+}
+
 function gameTitle(game: Game): string {
   return game.accountLabel ? `${game.name} (${game.accountLabel})` : game.name;
 }
@@ -144,15 +167,19 @@ export function buildNotificationPlan(state: AppState, now: number): PlannedNoti
     gameId: string | null,
     until?: number,
     eventIds?: string[],
+    styleOverride?: NotificationStyle,
   ) => {
     if (!Number.isFinite(at) || at > horizon) return;
     const when = deliverAt(at);
     if (when <= now + 1000) return;
     let id = notificationId(key);
     while (plan.some((item) => item.id === id)) id = (id % 2000000000) + 1;
+    const style = styleOverride ?? notificationStyle(state.settings, kind);
     plan.push({
       id,
       kind,
+      style,
+      ...(style === 'alarm' ? { tone: state.settings.alarmTone ?? 'classic' } : {}),
       title: title.slice(0, 100),
       body: body.slice(0, 200),
       at: when,
@@ -173,6 +200,9 @@ export function buildNotificationPlan(state: AppState, now: number): PlannedNoti
         reminder.message,
         at,
         reminder.gameId,
+        undefined,
+        undefined,
+        reminder.style,
       );
   }
 

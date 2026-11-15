@@ -1,11 +1,17 @@
 import { useState } from 'react';
 import { isNativeApp } from '../../native';
-import { requestExactReminders, setNotificationsEnabled, useNotifications } from '../../notifications';
+import {
+  openAndroidBatterySettings,
+  openAndroidNotificationSettings,
+  requestExactReminders,
+  setNotificationsEnabled,
+  useNotifications,
+} from '../../notifications';
 import { Btn } from '../ui';
 import { SettingRow } from './SettingRow';
 
 export function DeviceNotifications() {
-  const { enabled, scheduled, error, exact } = useNotifications();
+  const { enabled, scheduled, error, exact, permission, batteryUnrestricted, blockedChannels } = useNotifications();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   if (!isNativeApp) return null;
@@ -50,6 +56,30 @@ export function DeviceNotifications() {
           >
             Allow exact timing
           </Btn>
+        </SettingRow>
+      )}
+      {permission === 'denied' && (
+        <SettingRow
+          label="Blocked by Android"
+          hint="Android is not letting Memoria show notifications. Allow them on Memoria's page in Android settings."
+        >
+          <Btn onClick={() => void openAndroidNotificationSettings()}>Open Android settings</Btn>
+        </SettingRow>
+      )}
+      {enabled && permission !== 'denied' && blockedChannels.length > 0 && (
+        <SettingRow
+          label="Some styles are muted"
+          hint={`${blockedChannels.length} reminder ${blockedChannels.length === 1 ? 'style is' : 'styles are'} switched off in Android settings, so those reminders will not appear.`}
+        >
+          <Btn onClick={() => void openAndroidNotificationSettings()}>Open Android settings</Btn>
+        </SettingRow>
+      )}
+      {enabled && batteryUnrestricted === false && (
+        <SettingRow
+          label="Battery saving"
+          hint="Some phones hold back reminders from apps under battery optimisation. Setting Memoria to Unrestricted keeps them on time."
+        >
+          <Btn onClick={() => void openAndroidBatterySettings()}>Open battery settings</Btn>
         </SettingRow>
       )}
       {(message || error) && (

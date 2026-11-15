@@ -114,7 +114,8 @@ describe('native notification lifecycle', () => {
           isExactNotification: false,
           schedule: { at: expect.any(Date), allowWhileIdle: true },
           actionTypeId: 'memoria-daily',
-          extra: { memoria: true, gameId: 'game', kind: 'daily', eventIds: [] },
+          channelId: 'memoria-standard',
+          extra: { memoria: true, gameId: 'game', kind: 'daily', eventIds: [], style: 'standard', tone: 'classic' },
         }),
         // Half a day before the week runs out, unless the app is opened first.
         expect.objectContaining({ id: 1_999_999_999, title: 'Open Memoria to keep reminders coming' }),
@@ -259,5 +260,81 @@ describe('native notification lifecycle', () => {
     expect(mocks.getPending).not.toHaveBeenCalled();
     expect(mocks.remove).toHaveBeenCalledOnce();
     expect(mocks.unsubscribe).toHaveBeenCalledOnce();
+  });
+});
+
+describe('reminder styles on Android', () => {
+  it('sends an alarm to its ring channel with Snooze, and a standard one to the standard channel', async () => {
+    mocks.plan.mockReturnValue([
+      {
+        id: 42,
+        title: 'Game',
+        body: 'Wake',
+        at: Date.now() + 60_000,
+        gameId: 'game',
+        kind: 'daily',
+        style: 'alarm',
+        tone: 'chime',
+      },
+      {
+        id: 43,
+        title: 'Reminder',
+        body: 'Plain',
+        at: Date.now() + 60_000,
+        gameId: null,
+        kind: 'reminder',
+        style: 'alarm',
+        tone: 'ring',
+      },
+      {
+        id: 44,
+        title: 'Energy',
+        body: 'Soft',
+        at: Date.now() + 60_000,
+        gameId: 'game',
+        kind: 'energy',
+        style: 'gentle',
+      },
+    ]);
+    useNotifications.setState({ enabled: true });
+    await rescheduleNotifications();
+    const [alarm, plain, soft] = mocks.schedule.mock.calls[0]?.[0].notifications as Record<string, unknown>[];
+    expect(alarm).toMatchObject({
+      channelId: 'memoria-alarm-chime',
+      actionTypeId: 'memoria-daily-alarm',
+      sound: 'memoria_alarm_chime.wav',
+    });
+    expect(plain).toMatchObject({ channelId: 'memoria-alarm-ring', actionTypeId: 'memoria-alarm' });
+    expect(soft).toMatchObject({ channelId: 'memoria-gentle' });
+    expect(soft).not.toHaveProperty('actionTypeId');
+  });
+
+  it('snoozes ten minutes in the same style, and a rebuilt plan leaves the snoozed one alone', async () => {
+    useNotifications.setState({ enabled: true });
+    const cleanup = initNotifications();
+    mocks.action?.({
+      actionId: 'snooze',
+      notification: {
+        id: 42,
+        title: 'Game',
+        body: 'Wake',
+        extra: { memoria: true, gameId: 'game', kind: 'daily', style: 'alarm', tone: 'pulse' },
+      } as never,
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mocks.setTab).not.toHaveBeenCalled();
+    const snoozed = mocks.schedule.mock.calls[0]?.[0].notifications[0];
+    expect(snoozed).toMatchObject({ title: 'Game', channelId: 'memoria-alarm-pulse', extra: { snoozed: true } });
+    expect(snoozed.schedule.at.getTime() - Date.now()).toBe(10 * 60_000);
+
+    mocks.getPending.mockResolvedValue({
+      notifications: [
+        { id: 7, extra: { memoria: true } },
+        { id: 8, extra: { memoria: true, snoozed: true } },
+      ],
+    });
+    await rescheduleNotifications();
+    expect(mocks.cancel).toHaveBeenCalledWith({ notifications: [{ id: 7 }] });
+    cleanup();
   });
 });

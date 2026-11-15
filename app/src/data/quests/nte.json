@@ -1,0 +1,1140 @@
+{
+  "game": "nte",
+  "reviewed": "2026-11-15",
+  "quests": [
+    {
+      "id": "prologue-unforeseen-yet-foretold",
+      "kind": "main",
+      "series": "Prologue",
+      "title": "Unforeseen Yet Foretold",
+      "region": "Hethereau",
+      "version": "1.0",
+      "summary": "A newcomer to Hethereau is brought into anomaly work, meets Nelly and the Bureau, and goes searching for Mint and the Nexus.",
+      "start": "Available from the start of the game.",
+      "characters": ["Nelly", "Mint", "Lacrimosa", "Skia", "Fadia"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Unforeseen Yet Foretold",
+          "characters": ["Nelly", "Mint"],
+          "note": "Prologue I. Walkthrough stages include character trials, Nelly's introduction and the search for Mint and the Nexus."
+        }
+      ],
+      "url": "https://www.powerpyx.com/nte-prologue-1-unforeseen-yet-foretold-walkthrough/"
+    },
+    {
+      "id": "prologue-good-business-better-treasure",
+      "kind": "main",
+      "series": "Prologue",
+      "title": "Good Business, Better Treasure",
+      "region": "Hethereau",
+      "version": "1.0",
+      "summary": "A shopping and photo-studio errand around Eibon pulls the new Hunter into a small investigation alongside Taygedo.",
+      "start": "Follows Unforeseen Yet Foretold; no Hunter Level needed.",
+      "characters": ["Adler", "Taygedo", "Kodak"],
+      "requires": ["prologue-unforeseen-yet-foretold"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Good Business, Better Treasure",
+          "characters": ["Adler", "Taygedo", "Kodak"],
+          "note": "Prologue II."
+        }
+      ],
+      "url": "https://www.powerpyx.com/nte-prologue-2-good-business-better-treasure-walkthrough/"
+    },
+    {
+      "id": "tutorial-good-morning-hethereau",
+      "kind": "main",
+      "series": "Tutorial",
+      "title": "Good Morning, Hethereau",
+      "region": "Hethereau",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Good Morning, Hethereau", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/main-story/3"
+    },
+    {
+      "id": "tutorial-new-commission",
+      "kind": "main",
+      "series": "Tutorial",
+      "title": "New Commission",
+      "region": "Hethereau",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "New Commission", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/main-story/4"
+    },
+    {
+      "id": "tutorial-legendary-driver",
+      "kind": "main",
+      "series": "Tutorial",
+      "title": "Legendary Driver",
+      "region": "Hethereau",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Legendary Driver", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/main-story/5"
+    },
+    {
+      "id": "love-that-begins-with-lies",
+      "kind": "main",
+      "series": "Main Story",
+      "title": "Love that Begins with Lies",
+      "region": "Hethereau",
+      "version": "1.0",
+      "summary": "Gift shopping, a date and an arcade visit around Hethereau lead to a clash with Nanally.",
+      "start": "Hunter Level 10, after Good Business, Better Treasure.",
+      "characters": ["Taygedo", "Tako", "Edgar", "Adler", "Nanally"],
+      "requires": ["prologue-good-business-better-treasure"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Love that Begins with Lies",
+          "characters": ["Taygedo", "Tako", "Edgar", "Adler", "Nanally"],
+          "note": "Listed as Chapter 2 in GameWith."
+        }
+      ],
+      "url": "https://www.powerpyx.com/nte-love-that-begins-with-lies-walkthrough/"
+    },
+    {
+      "id": "deal-deal",
+      "kind": "main",
+      "series": "Main Story",
+      "title": "Deal? Deal!",
+      "region": "Hethereau",
+      "version": "1.0",
+      "summary": "A run of Eibon customer jobs, an autograph session and an auction showdown turn into a bigger deal.",
+      "start": "Hunter Level 14.",
+      "characters": ["Adler", "Jenson", "Jiuyuan", "Settyn", "Illica", "Haniel", "Hathor", "Nantani", "Hotori"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Deal? Deal!",
+          "characters": ["Adler", "Jenson", "Jiuyuan", "Settyn", "Illica", "Haniel", "Hathor", "Nantani"],
+          "note": "Listed as Chapter 3 in GameWith. Hotori also appears at quest level."
+        }
+      ],
+      "url": "https://www.powerpyx.com/nte-deal-deal-walkthrough/"
+    },
+    {
+      "id": "debt-collector",
+      "kind": "main",
+      "series": "Main Story",
+      "title": "Debt Collector",
+      "region": "Hethereau",
+      "version": "1.0",
+      "summary": "A debt-collection case leads from Eibon to a witch's house, a banquet and a flower house full of unsettling memories.",
+      "start": "Hunter Level 24, after Deal? Deal!.",
+      "characters": [
+        "Hotori",
+        "Nelly",
+        "Nanally",
+        "Zero",
+        "Daffodill",
+        "Bella",
+        "Dolores",
+        "Renee",
+        "Blackbird",
+        "Zankou"
+      ],
+      "requires": ["deal-deal"],
+      "parts": [
+        { "id": "1", "title": "Go to Eibon", "characters": [], "note": null },
+        { "id": "2", "title": "Go to the Bureau of Anomaly Control", "characters": [], "note": null },
+        { "id": "3", "title": "Follow Hotori", "characters": ["Hotori"], "note": "The Fabled…" },
+        { "id": "4", "title": "Go to Temporary Containment", "characters": [], "note": "The Fabled…" },
+        { "id": "5", "title": "Follow Nelly", "characters": ["Nelly"], "note": "Temporary Containment" },
+        { "id": "6", "title": "Enter the room", "characters": [], "note": "Interdimensional Containment Array" },
+        {
+          "id": "7",
+          "title": "Investigate the Puppets in the room (3)",
+          "characters": [],
+          "note": "Elementary Induction"
+        },
+        { "id": "8", "title": "Return to Eibon", "characters": [], "note": "Day's End" },
+        { "id": "9", "title": "Go to Food First", "characters": [], "note": "A Cloaked Weirdo?" },
+        { "id": "10", "title": "Go to the Parking Lot", "characters": [], "note": "The Debt Collector Arrives" },
+        { "id": "11", "title": "Defeat the Debt Collector", "characters": [], "note": "Protect the Client" },
+        { "id": "12", "title": "Go to the Witch's House", "characters": [], "note": "Questioning Fate" },
+        { "id": "13", "title": "Return to Eibon", "characters": [], "note": "Undercurrents" },
+        { "id": "14", "title": "Go to the Address on the Card", "characters": [], "note": "Step Into My Trap" },
+        { "id": "15", "title": "Defeat the unexpected Anomalies (4)", "characters": [], "note": "Chrono Replay" },
+        { "id": "16", "title": "Investigate the Main Gate", "characters": [], "note": "Traces in the Abandoned Manor" },
+        { "id": "17", "title": "Talk to the Guests at the banquet (4)", "characters": [], "note": "The Actors?" },
+        { "id": "18", "title": "Talk to Bella", "characters": ["Bella"], "note": "The Heroine?" },
+        { "id": "19", "title": "Talk to Dolores", "characters": ["Dolores"], "note": "The Heroine?" },
+        { "id": "20", "title": "Switch to another view", "characters": [], "note": "Party's Over? II" },
+        { "id": "21", "title": "Investigate the Clock", "characters": [], "note": "Bide Your Time I" },
+        { "id": "22", "title": "Defeat the unexpected Anomaly (4)", "characters": [], "note": "Bide Your Time I" },
+        { "id": "23", "title": "Switch to another view", "characters": [], "note": "Bide Your Time II" },
+        { "id": "24", "title": "Talk to Dolores", "characters": ["Dolores"], "note": "Happiness and Eternity" },
+        { "id": "25", "title": "Go to the Flower House", "characters": [], "note": "Cherry Blossom-Tinted Memories I" },
+        { "id": "26", "title": "Talk to Renee", "characters": ["Renee"], "note": "Cherry Blossom-Tinted Memories I" },
+        {
+          "id": "27",
+          "title": "Switch to another view",
+          "characters": [],
+          "note": "Cherry Blossom-Tinted Memories II"
+        },
+        { "id": "28", "title": "Defeat the unexpected Anomaly (4)", "characters": [], "note": "Faded Echoes I" },
+        { "id": "29", "title": "Approach the cherry blossom tree", "characters": [], "note": "Faded Echoes II" },
+        { "id": "30", "title": "Go to The Study", "characters": [], "note": "Unsealing the Past I" },
+        { "id": "31", "title": "Investigate the Study Door", "characters": [], "note": "Unsealing the Past I" },
+        { "id": "32", "title": "Look for Clues", "characters": [], "note": "Scattered Memories" },
+        { "id": "33", "title": "Read the Ledger on the table", "characters": [], "note": "Debt of Time I" },
+        { "id": "34", "title": "Switch to another time", "characters": [], "note": "Debt of Time II" },
+        {
+          "id": "35",
+          "title": "Find Renee's Older Brothers and Sisters (6)",
+          "characters": ["Renee"],
+          "note": "Find \"Them\""
+        },
+        { "id": "36", "title": "Investigate the Private Hideout", "characters": [], "note": "And \"Her\"" },
+        { "id": "37", "title": "Catch up to Renee", "characters": ["Renee"], "note": "The Betrayer" },
+        { "id": "38", "title": "Go to Dolores's Room", "characters": ["Dolores"], "note": "Love, Death & Puppets" },
+        { "id": "39", "title": "Defeat the Fake Bella", "characters": ["Bella"], "note": "Race Against Time" },
+        { "id": "40", "title": "Defeat the Debt Collector", "characters": [], "note": "Race Against Time" },
+        { "id": "41", "title": "Talk to Daffodill", "characters": ["Daffodill"], "note": "Unsettled Debts" }
+      ],
+      "url": "https://www.powerpyx.com/nte-debt-collector-walkthrough/"
+    },
+    {
+      "id": "dreamwalk-corridor",
+      "kind": "main",
+      "series": "Main Story",
+      "title": "Dreamwalk Corridor",
+      "region": "Sunward Island",
+      "version": "1.1",
+      "summary": "A ferry trip to Sunward Island turns into a resort tour, a tiger chase and a passage into the Dreamwalk Corridor.",
+      "start": "Hunter Level 24, after Debt Collector.",
+      "characters": ["Iroi", "Nanally", "Noros", "Twisty", "Bonzita", "Flatty", "Thyme", "Hotori"],
+      "requires": ["debt-collector"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Dreamwalk Corridor",
+          "characters": ["Iroi", "Nanally", "Noros", "Twisty", "Bonzita", "Flatty", "Thyme", "Hotori"],
+          "note": "Listed as Chapter 5 in GameWith. Stage list not split into named parts."
+        }
+      ],
+      "url": "https://gmtreks.com/nte/main-story/9"
+    },
+    {
+      "id": "fighting-with-a-dragon",
+      "kind": "main",
+      "series": "Main Story",
+      "title": "Fighting with a Dragon",
+      "region": "Warren Continent",
+      "version": "1.2",
+      "summary": "A fantasy-flavoured episode on the Warren Continent sends the team fighting dragons across several lands.",
+      "start": "Hunter Level 26, after Dreamwalk Corridor.",
+      "characters": ["Nanally", "Mint", "Shinku", "Iroi", "Shizuku"],
+      "requires": ["dreamwalk-corridor"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Fighting with a Dragon (Part 1)",
+          "characters": ["Nanally", "Mint"],
+          "note": "Fuzzy Village, then dragon fights at Chocolate Volcano, Milk Ice Mountain and Amber Syrup Lake (GameWith lists this as Chapter 7)."
+        },
+        {
+          "id": "2",
+          "title": "Fighting with a Dragon (Part 2)",
+          "characters": ["Shinku", "Mint", "Iroi", "Shizuku"],
+          "note": "Amber Syrup Lake and Crimson Castle; ends at the Crimson Dragon."
+        }
+      ],
+      "url": "https://gmtreks.com/nte/main-story/10"
+    },
+    {
+      "id": "fogden-game",
+      "kind": "main",
+      "series": "Chapter 6",
+      "title": "Fogden Game",
+      "region": null,
+      "version": "1.3",
+      "summary": "A fog-bound game with shifting rooms and routes tests the team's search through an abandoned building.",
+      "start": "Unlocks after clearing Fighting with a Dragon.",
+      "characters": ["Nanally", "Hotori", "Daffodil", "Linko", "Nitsa", "Chaos", "Madam T", "Code Zero"],
+      "requires": ["fighting-with-a-dragon"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Fogden Game",
+          "characters": ["Nanally", "Hotori", "Daffodil", "Linko", "Nitsa", "Chaos", "Madam T", "Code Zero"],
+          "note": "Chapter 6. Walkthrough has about 19 internal sections; not split here."
+        }
+      ],
+      "url": "https://www.whisperofthehouse.com/neverness-to-everness/chapter-6-fogden-game-walkthrough"
+    },
+    {
+      "id": "the-witch",
+      "kind": "main",
+      "series": "Main Story",
+      "title": "The Witch",
+      "region": null,
+      "version": "1.4",
+      "summary": "A mysterious letter, a sinister ritual and a town full of secrets draw the team into a new episode.",
+      "start": "Unlocks after clearing Fogden Game.",
+      "characters": ["Blackbird"],
+      "requires": ["fogden-game"],
+      "parts": [{ "id": "1", "title": "The Witch", "characters": ["Blackbird"], "note": "Part list not found." }],
+      "url": "https://thegameswiki.com/nte/wiki/version-1-4-update"
+    },
+    {
+      "id": "once-upon-a-glitched-call",
+      "kind": "main",
+      "series": "Version 1.5",
+      "title": "Once Upon a Glitched Call",
+      "region": "Hethereau",
+      "version": "1.5",
+      "summary": "ETD-6 investigators chase an urban legend about an unlisted phone number into a digitised anomalous realm.",
+      "start": "Begins with the in-game post \"Invalid Number\" on the Hethereau Urban Legend Bot account.",
+      "characters": ["Elyms", "Exe"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Once Upon a Glitched Call",
+          "characters": ["Elyms", "Exe"],
+          "note": "Released in two halves: first half 11 Nov 2026 (Elyms), second half 2 Dec 2026 (Exe). Sources give the story title as 'Digital Sea: Where We Meet Again' or 'Meet Me in the Data Stream'; sub-parts not found."
+        }
+      ],
+      "url": "https://www.gamespress.com/NTE-Version-15-Once-Upon-a-Glitched-Call-Brings-a-New-Mystery-to-Hethe"
+    },
+    {
+      "id": "bridge-crossing-alices-bakery",
+      "kind": "world",
+      "series": "Bridge Crossing",
+      "title": "Alice's Bakery",
+      "region": "Bridge Crossing",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Alice's Bakery", "characters": [], "note": null },
+        { "id": "2", "title": "Sweet Cakes, Bitter Cakes…", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-alices-bakery-sweet-cakes-bitter-cakes-walkthrough/"
+    },
+    {
+      "id": "bridge-crossing-return",
+      "kind": "world",
+      "series": "Bridge Crossing",
+      "title": "Return",
+      "region": "Bridge Crossing",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Return", "characters": [], "note": null },
+        { "id": "2", "title": "We! Are! One!", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-return-we-are-one-walkthrough/"
+    },
+    {
+      "id": "bridge-crossing-taygedos-distress-message",
+      "kind": "world",
+      "series": "Bridge Crossing",
+      "title": "Taygedo's Distress Message",
+      "region": "Bridge Crossing",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": ["Taygedo"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Taygedo's Distress Message", "characters": ["Taygedo"], "note": null },
+        {
+          "id": "2",
+          "title": "Hethereau's Rising Star – Taygedo in Big Trouble",
+          "characters": ["Taygedo"],
+          "note": null
+        }
+      ],
+      "url": "https://www.powerpyx.com/nte-taygedos-distress-message-hethereaus-rising-star-taygedo-in-big-trouble-walkthrough/"
+    },
+    {
+      "id": "bridge-crossing-disappearance-incident",
+      "kind": "world",
+      "series": "Bridge Crossing",
+      "title": "Disappearance Incident",
+      "region": "Bridge Crossing",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Disappearance Incident", "characters": [], "note": null },
+        { "id": "2", "title": "Seeing and Believing", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-disappearance-incident-walkthrough/"
+    },
+    {
+      "id": "bridge-crossing-flipped-phone-booth",
+      "kind": "world",
+      "series": "Bridge Crossing",
+      "title": "Flipped Phone Booth?",
+      "region": "Bridge Crossing",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Flipped Phone Booth?", "characters": [], "note": null },
+        { "id": "2", "title": "Transform! Huhehaha!", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-flipped-phone-booth-transform-huhehaha-walkthrough/"
+    },
+    {
+      "id": "bridge-crossing-rainy-night-tale",
+      "kind": "world",
+      "series": "Bridge Crossing",
+      "title": "Rainy Night Tale",
+      "region": "Bridge Crossing",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Rainy Night Tale", "characters": [], "note": null },
+        { "id": "2", "title": "Weather Watch", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-rainy-night-tale-weather-watch-walkthrough/"
+    },
+    {
+      "id": "bridge-crossing-record-shop-disturbance",
+      "kind": "world",
+      "series": "Bridge Crossing",
+      "title": "Record Shop Disturbance",
+      "region": "Bridge Crossing",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Record Shop Disturbance", "characters": [], "note": null },
+        { "id": "2", "title": "The Records Collector", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-record-shop-disturbance-the-records-collector-walkthrough/"
+    },
+    {
+      "id": "bridge-crossing-fluffy-incident",
+      "kind": "world",
+      "series": "Bridge Crossing",
+      "title": "Fluffy Incident",
+      "region": "Bridge Crossing",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Fluffy Incident", "characters": [], "note": null },
+        { "id": "2", "title": "Fluffed Away?!", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-fluffy-incident-fluffed-away-walkthrough/"
+    },
+    {
+      "id": "bridge-crossing-visit-the-artist",
+      "kind": "world",
+      "series": "Bridge Crossing",
+      "title": "Visit the Artist",
+      "region": "Bridge Crossing",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Visit the Artist", "characters": [], "note": null },
+        { "id": "2", "title": "Another Art on the Wall", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-visit-the-artist-another-art-on-the-wall-walkthrough/"
+    },
+    {
+      "id": "bridge-crossing-return-to-eibon",
+      "kind": "world",
+      "series": "Bridge Crossing",
+      "title": "Return to Eibon",
+      "region": "Bridge Crossing",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Return to Eibon", "characters": [], "note": null },
+        { "id": "2", "title": "Citizen ID", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-return-to-eibon-citizen-id-walkthrough/"
+    },
+    {
+      "id": "bridge-crossing-vintage-shops-mirror",
+      "kind": "world",
+      "series": "Bridge Crossing",
+      "title": "The Vintage Shop's Mirror",
+      "region": "Bridge Crossing",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "The Vintage Shop's Mirror", "characters": [], "note": null },
+        { "id": "2", "title": "In the Reflection", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-the-vintage-shops-mirror-in-the-reflection-walkthrough/"
+    },
+    {
+      "id": "bridge-crossing-sales-pitch",
+      "kind": "world",
+      "series": "Bridge Crossing",
+      "title": "Sale's Pitch…?",
+      "region": "Bridge Crossing",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Sale's Pitch…?", "characters": [], "note": null },
+        { "id": "2", "title": "Goodbye, Yellow Flag Stage!", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-sales-pitch-goodbye-yellow-flag-stage-walkthrough/"
+    },
+    {
+      "id": "bridge-crossing-natures-gift",
+      "kind": "world",
+      "series": "Bridge Crossing",
+      "title": "Nature's Gift",
+      "region": "Bridge Crossing",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Nature's Gift", "characters": [], "note": null },
+        { "id": "2", "title": "Nearby Scenery", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-natures-gift-nearby-scenery-walkthrough/"
+    },
+    {
+      "id": "bridge-crossing-capturing-music",
+      "kind": "world",
+      "series": "Bridge Crossing",
+      "title": "Capturing Music",
+      "region": "Bridge Crossing",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Capturing Music", "characters": [], "note": null },
+        { "id": "2", "title": "Pulse of the City", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-capturing-music-pulse-of-the-city-walkthrough/"
+    },
+    {
+      "id": "miguel-district-ghost-racer",
+      "kind": "world",
+      "series": "Miguel District",
+      "title": "Ghost Racer",
+      "region": "Miguel District",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Ghost Racer", "characters": [], "note": null },
+        { "id": "2", "title": "Drift Away, Legend", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-ghost-racer-drift-away-legend-walkthrough/"
+    },
+    {
+      "id": "miguel-district-gift-for-the-little-book-lover",
+      "kind": "world",
+      "series": "Miguel District",
+      "title": "Gift for the Little Book Lover",
+      "region": "Miguel District",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Gift for the Little Book Lover", "characters": [], "note": null },
+        { "id": "2", "title": "Books Are Like Old Friends", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-gift-for-the-little-book-lover-books-are-like-old-friends-walkthrough/"
+    },
+    {
+      "id": "miguel-district-co-collect-cold-air",
+      "kind": "world",
+      "series": "Miguel District",
+      "title": "Co… Collect Cold Air?",
+      "region": "Miguel District",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Co… Collect Cold Air?", "characters": [], "note": null },
+        { "id": "2", "title": "A Retrograde Poem for You", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-co-collect-cold-air-a-retrograde-poem-for-you-walkthrough/"
+    },
+    {
+      "id": "new-herland-professional-oddity-language-interpreter",
+      "kind": "world",
+      "series": "New Herland District",
+      "title": "Professional Oddity Language Interpreter",
+      "region": "New Herland District",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Professional Oddity Language Interpreter", "characters": [], "note": null },
+        { "id": "2", "title": "Let's Go, Delicious Investigators!", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-professional-oddity-language-interpreter-lets-go-delicious-investigators-walkthrough/"
+    },
+    {
+      "id": "new-herland-lights-on",
+      "kind": "world",
+      "series": "New Herland District",
+      "title": "Lights On",
+      "region": "New Herland District",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Lights On", "characters": [], "note": null },
+        { "id": "2", "title": "Miles Apart", "characters": [], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/nte-lights-on-miles-apart-walkthrough/"
+    },
+    {
+      "id": "new-herland-the-second-lamp",
+      "kind": "world",
+      "series": "New Herland District",
+      "title": "The Second Lamp",
+      "region": "New Herland District",
+      "version": null,
+      "summary": "A follow-up to the lamp-lighting errands in New Herland, with an anomaly exhibit and a chase to an abandoned construction site.",
+      "start": "Unlocks one day after Lights On, from Iris at Gold Apple Collection Hall.",
+      "characters": ["Iris", "Tungsten", "Clarion", "Nox"],
+      "requires": ["new-herland-lights-on"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "The Second Lamp",
+          "characters": ["Iris", "Tungsten", "Clarion", "Nox"],
+          "note": "Prerequisite 'Light up the lamps'. Walkthrough steps not split here."
+        },
+        {
+          "id": "2",
+          "title": "Heroes don't always arrive in moments of glory",
+          "characters": [],
+          "note": "Second named part as listed on PowerPyx."
+        }
+      ],
+      "url": "https://www.powerpyx.com/nte-the-second-lamp-heroes-dont-always-arrive-in-moments-of-glory-walkthrough/"
+    },
+    {
+      "id": "character-trials",
+      "kind": "story",
+      "series": "Character Trials",
+      "title": "Character Trials",
+      "region": "Hethereau",
+      "version": null,
+      "summary": "Trials focused on the characters Lacrimosa, Skia and Fadia, listed in the main-story walkthrough.",
+      "start": null,
+      "characters": ["Lacrimosa", "Skia", "Fadia"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Lacrimosa", "characters": ["Lacrimosa"], "note": "Character Trial." },
+        { "id": "2", "title": "Skia", "characters": ["Skia"], "note": "Character Trial." },
+        { "id": "3", "title": "Fadia", "characters": ["Fadia"], "note": "Character Trial." }
+      ],
+      "url": "https://gamewith.net/nte/74135"
+    },
+    {
+      "id": "bridge-crossing-rookie-photographer",
+      "kind": "side",
+      "series": "Bridge Crossing",
+      "title": "Rookie Photographer",
+      "region": "Bridge Crossing",
+      "version": null,
+      "summary": null,
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Rookie Photographer", "characters": [], "note": null }],
+      "url": "https://www.powerpyx.com/nte-rookie-photographer-walkthrough/"
+    },
+    {
+      "id": "norms-on-the-anomaly-express",
+      "kind": "side",
+      "series": "Miguel District",
+      "title": "Norms on the Anomaly Express",
+      "region": "Miguel District",
+      "version": null,
+      "summary": null,
+      "start": "Appears in the side quest category of the quest log once accepted.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Norms on the Anomaly Express", "characters": [], "note": null }],
+      "url": "https://www.powerpyx.com/nte-norms-on-the-anomaly-express-side-mission-walkthrough/"
+    },
+    {
+      "id": "spinoff-tomato-jelly-rampage",
+      "kind": "side",
+      "series": "Spinoff",
+      "title": "Tomato Jelly Rampage: Live Report!",
+      "region": null,
+      "version": null,
+      "summary": null,
+      "start": "Hunter Level 8.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Tomato Jelly Rampage: Live Report!", "characters": [], "note": null }],
+      "url": "https://www.powerpyx.com/nte-tomato-jelly-rampage-live-report-walkthrough/"
+    },
+    {
+      "id": "spinoff-pawn-moonlight",
+      "kind": "side",
+      "series": "Spinoff",
+      "title": "Pawn Moonlight",
+      "region": null,
+      "version": null,
+      "summary": null,
+      "start": "Hunter Level 9.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Pawn Moonlight", "characters": [], "note": null }],
+      "url": "https://www.powerpyx.com/nte-pawn-moonlight-walkthrough/"
+    },
+    {
+      "id": "spinoff-where-words-sprout-fall-unfolds",
+      "kind": "side",
+      "series": "Spinoff",
+      "title": "Where Words Sprout, Fall Unfolds",
+      "region": null,
+      "version": null,
+      "summary": null,
+      "start": "Hunter Level 15.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Where Words Sprout, Fall Unfolds", "characters": [], "note": null }],
+      "url": "https://www.powerpyx.com/nte-where-words-sprout-fall-unfolds-walkthrough/"
+    },
+    {
+      "id": "spinoff-a-legendary-bands-first-page",
+      "kind": "side",
+      "series": "Spinoff",
+      "title": "A Legendary(?) Band's First Page",
+      "region": null,
+      "version": null,
+      "summary": null,
+      "start": "Hunter Level 22.",
+      "characters": ["Nanally"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "A Legendary(?) Band's First Page",
+          "characters": ["Nanally"],
+          "note": "Marked as 'Let's Start a Band!' with a bronze icon on PowerPyx."
+        }
+      ],
+      "url": "https://www.powerpyx.com/nte-a-legendary-bands-first-page-walkthrough/"
+    },
+    {
+      "id": "spinoff-to-us-back-then",
+      "kind": "side",
+      "series": "Spinoff",
+      "title": "To Us, Back Then",
+      "region": null,
+      "version": "1.4",
+      "summary": "A band-themed side story added in version 1.4.",
+      "start": null,
+      "characters": [],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "To Us, Back Then",
+          "characters": [],
+          "note": "Title from invenglobal / TheGamesWiki version 1.4 notes."
+        }
+      ],
+      "url": "https://thegameswiki.com/nte/wiki/version-1-4-update"
+    },
+    {
+      "id": "lost-vehicle-destroyer",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Vehicle Destroyer",
+      "region": null,
+      "version": null,
+      "summary": "Help a stranger relocate a vehicle destroyer around the city and read a message in a park.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Vehicle Destroyer", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-photo-op-with-anomalies",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Photo Op with Anomalies",
+      "region": null,
+      "version": null,
+      "summary": "A strange photographer asks for anomaly shots and a few photos of town spots.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Photo Op with Anomalies", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-danzaburou-will-never-be-enslaved",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Danzaburou Will Never Be Enslaved!",
+      "region": null,
+      "version": null,
+      "summary": "Chase the elusive Danzaburou through four challenges around the city.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": ["Danzaburou"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Challenge #1", "characters": ["Danzaburou"], "note": null },
+        { "id": "2", "title": "Challenge #2", "characters": ["Danzaburou"], "note": null },
+        { "id": "3", "title": "Challenge #3", "characters": ["Danzaburou"], "note": null },
+        { "id": "4", "title": "Challenge #4", "characters": ["Danzaburou"], "note": null }
+      ],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-multi-location-check-in-expert",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Multi-Location Check-in Expert",
+      "region": null,
+      "version": null,
+      "summary": "Check in with Hazekura and several spots around town, then recommend Eibon.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": ["Hazekura"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Multi-Location Check-in Expert", "characters": ["Hazekura"], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-pets-secret-cafeteria",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Pet's Secret Cafeteria",
+      "region": null,
+      "version": null,
+      "summary": "Feed a cat and a dog, then let several days pass.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Pet's Secret Cafeteria", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-a-pack-of-spicy-sticks-promise",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "A Pack of Spicy Sticks Promise",
+      "region": null,
+      "version": null,
+      "summary": "Buy a snack from a vending machine and pass it to a boy waiting nearby.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "A Pack of Spicy Sticks Promise", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-fake-car-owner-chronicles",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Fake Car Owner Chronicles",
+      "region": null,
+      "version": null,
+      "summary": "Show different vehicles to a man at the racing area to clear this lost tale.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Fake Car Owner Chronicles", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-next-time-for-sure",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Next Time For Sure!",
+      "region": null,
+      "version": null,
+      "summary": "A man at a door and a woman hiding in a back room of the same house.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Next Time For Sure!", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-omnic-crisis",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Omnic Crisis...?",
+      "region": null,
+      "version": null,
+      "summary": "Escort working robots around the city and check whether one has returned.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Omnic Crisis...?", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-devoured-melody",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Devoured Melody",
+      "region": null,
+      "version": null,
+      "summary": "Collect a guitar at a campground and deliver it back.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": ["Kiroumaru"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Devoured Melody", "characters": ["Kiroumaru"], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-honest-body-lying-lips",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Honest Body, Lying Lips",
+      "region": null,
+      "version": null,
+      "summary": "Activate a radio on a bench and speak to a man at a city intersection.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Honest Body, Lying Lips", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-witness-journal",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Witness Journal",
+      "region": null,
+      "version": null,
+      "summary": "Photograph and talk to a couple in the plaza and a man on the coast; the two parts can be done in either order.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": [],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Witness Journal, Part 1", "characters": [], "note": null },
+        { "id": "2", "title": "Witness Journal, Part 2", "characters": [], "note": null }
+      ],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-broken-machines-generosity",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Broken Machine's Generosity",
+      "region": null,
+      "version": null,
+      "summary": "Tap a vending machine three times and skip a day.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Broken Machine's Generosity", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-the-darts-fantastic-journey",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "The Dart's Fantastic Journey",
+      "region": null,
+      "version": null,
+      "summary": "Get a dart down from a trash can and talk to a girl by the dartboard.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "The Dart's Fantastic Journey", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-non-intrusive-documentation",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Non-Intrusive Documentation",
+      "region": null,
+      "version": null,
+      "summary": "Use an Oracle Stone to find a girl at three locations and talk to her.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Non-Intrusive Documentation", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-hmm-observation-log",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Hmm! Hmm! Observation Log",
+      "region": null,
+      "version": null,
+      "summary": "Talk to Edgar or Sakiri at a pool.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": ["Edgar", "Sakiri"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Hmm! Hmm! Observation Log", "characters": ["Edgar", "Sakiri"], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-sprightly-grandfather",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Sprightly Grandfather",
+      "region": null,
+      "version": null,
+      "summary": "Accept a race challenge from an old gentleman and race him.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Sprightly Grandfather", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-devils-shadow",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Devil's Shadow",
+      "region": null,
+      "version": null,
+      "summary": "Sneak into an academy and investigate a light near a shadow on the rooftop.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": [],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Devil's Shadow",
+          "characters": [],
+          "note": "Sidebar on the source page reads 'Demon's Shadow'."
+        }
+      ],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-talkative-old-man",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Talkative Old Man",
+      "region": null,
+      "version": null,
+      "summary": "Talk to an old man who asks you to clean up flyers on a wall.",
+      "start": "Found via the Witch's House daily divination.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Talkative Old Man", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-world-changer",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "World Changer",
+      "region": null,
+      "version": null,
+      "summary": "A curious kid asks for an eclipse, made with the Day Off arc.",
+      "start": "Found via the Witch's House daily divination. Requires the Day Off arc.",
+      "characters": [],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "World Changer", "characters": [], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-anomaly-tracker-self-proclaimed",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Anomaly Tracker (Self-Proclaimed)",
+      "region": null,
+      "version": null,
+      "summary": "Follow a lookout's tip and ride a train to the Unheard Shores station to track an anomaly.",
+      "start": "Found via the Witch's House daily divination. Requires Skia.",
+      "characters": ["Skia"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Anomaly Tracker (Self-Proclaimed)", "characters": ["Skia"], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-gangster-dreams",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "Gangster Dreams",
+      "region": null,
+      "version": null,
+      "summary": null,
+      "start": "Found via the Witch's House daily divination. Requires Nanally.",
+      "characters": ["Nanally"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Gangster Dreams", "characters": ["Nanally"], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    },
+    {
+      "id": "lost-the-other-side-of-the-legend",
+      "kind": "side",
+      "series": "Lost Tales",
+      "title": "The Other Side of the Legend",
+      "region": null,
+      "version": null,
+      "summary": null,
+      "start": "Found via the Witch's House daily divination. Requires Nanally.",
+      "characters": ["Nanally"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "The Other Side of the Legend", "characters": ["Nanally"], "note": null }],
+      "url": "https://gmtreks.com/nte/lost-tales"
+    }
+  ]
+}

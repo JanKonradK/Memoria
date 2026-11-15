@@ -106,8 +106,8 @@ test('version history compares free pulls across games and lists every version w
   await expect(page.getByRole('img', { name: 'Primogems per Genshin Impact version' })).toBeVisible();
   // Hover, not focus: on a small screen focus scrolls the page under the resting pointer,
   // which then hovers a different bar.
-  await page.getByRole('button', { name: /^5\.0: 19,940 Primogems$/ }).hover();
-  await expect(page.getByRole('status').filter({ hasText: '19,940 Primogems' })).toBeVisible();
+  await page.getByRole('button', { name: /^5\.0: 17,660 Primogems$/ }).hover();
+  await expect(page.getByRole('status').filter({ hasText: '17,660 Primogems' })).toBeVisible();
 
   await page
     .getByRole('region', { name: /Genshin Impact · Primogems per version/ })
@@ -115,6 +115,8 @@ test('version history compares free pulls across games and lists every version w
     .click();
   const table = page.getByRole('table').first();
   await expect(table.getByRole('rowheader', { name: /^4\.4/ })).toBeVisible();
+  // Every version from launch, with the limited banners of each phase.
+  await expect(table.getByRole('row', { name: /^1\.0/ })).toContainText('Venti');
   await expect(table.getByRole('link').first()).toHaveAttribute('href', /^https:\/\//);
 
   await page.screenshot({ path: info.outputPath('history.png'), fullPage: true });

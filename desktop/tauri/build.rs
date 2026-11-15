@@ -17,6 +17,9 @@ const COMMANDS: &[&str] = &[
     "renderer_ready",
     "close_result",
     "open_external",
+    "notifications_status",
+    "notifications_test",
+    "notifications_settings",
 ];
 
 fn main() {

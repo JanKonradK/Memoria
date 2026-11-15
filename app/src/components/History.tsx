@@ -154,7 +154,8 @@ export function PullsPage() {
           <div className="mb-4">
             <h1 className="text-title font-semibold text-fg">Version history</h1>
             <p className="mt-1 text-meta text-muted">
-              Free premium currency each version gave a player who spends nothing, version by version.
+              Free premium currency each version gave a player who spends nothing, from the first version on: no monthly
+              pass, no paid battle pass, no top-ups. Free limited pull tickets count at the cost of one pull.
             </p>
           </div>
           {games.length === 0 && (
@@ -546,6 +547,13 @@ function Columns({ game }: { game: GameMeta }) {
             </span>
           )}
           {hovered.record.newCharacters.length > 0 && <span>New: {hovered.record.newCharacters.join(', ')}</span>}
+          {hovered.record.phases.map((phase) =>
+            phase.featured.length ? (
+              <span key={phase.phase}>
+                Phase {phase.phase}: {phase.featured.join(', ')}
+              </span>
+            ) : null,
+          )}
         </ChartTip>
       )}
     </div>
@@ -591,6 +599,7 @@ function VersionTable({ game }: { game: GameMeta }) {
               Banners
             </th>
             <th scope="col">New characters</th>
+            <th scope="col">Limited banners</th>
             <th scope="col">Source</th>
           </tr>
         </thead>
@@ -612,6 +621,20 @@ function VersionTable({ game }: { game: GameMeta }) {
               <td className="num">{fmt(row.events)}</td>
               <td className="num">{fmt(row.banners)}</td>
               <td>{row.record.newCharacters.join(', ') || '—'}</td>
+              <td>
+                {row.record.phases.some((phase) => phase.featured.length)
+                  ? row.record.phases.map((phase) => (
+                      <span key={phase.phase} className="block">
+                        <span className="text-dim">
+                          {row.record.phases.length > 1 ? `Phase ${phase.phase}` : 'Banners'}
+                          {phase.start ? ` · ${shortDate(phase.start)}` : ''}:{' '}
+                        </span>
+                        {phase.featured.join(', ') || '—'}
+                        {phase.currency != null && <span className="text-dim"> · {fmt(phase.currency)}</span>}
+                      </span>
+                    ))
+                  : '—'}
+              </td>
               <td>
                 {row.record.sources.map((source, index) => (
                   <a

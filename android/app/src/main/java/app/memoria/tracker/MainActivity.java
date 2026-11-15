@@ -12,6 +12,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(AppUpdaterPlugin.class);
         registerPlugin(HomeWidgetPlugin.class);
         registerPlugin(DeviceKeyPlugin.class);
+        registerPlugin(ReminderChannelsPlugin.class);
         super.onCreate(savedInstanceState);
     }
 

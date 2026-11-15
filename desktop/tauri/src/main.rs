@@ -336,20 +336,48 @@ fn focus_window(app: &AppHandle) {
     }
 }
 
-fn show_notice(app: &AppHandle, title: &str, body: &str, on_click: Option<Box<dyn Fn() + Send>>) {
+/// What a toast click reports: None for the toast itself, or a button's action.
+type ToastClick = Box<dyn Fn(Option<String>) + Send>;
+
+/// How long Snooze on an alarm-style reminder waits.
+const SNOOZE: Duration = Duration::from_secs(10 * 60);
+
+/// The identity Windows files Memoria's toasts under.
+#[cfg(windows)]
+fn toast_app_id(app: &AppHandle) -> &'static str {
+    if app.state::<App>().packaged {
+        APP_ID
+    } else {
+        // A development build has no registered identity; PowerShell's always exists.
+        tauri_winrt_notification::Toast::POWERSHELL_APP_ID
+    }
+}
+
+/// Shows a toast in a reminder style: silent, gentle, standard (the default) or
+/// alarm, which rings on a loop with Snooze and Dismiss until it is answered.
+fn show_notice(app: &AppHandle, title: &str, body: &str, style: &str, tone: &str, on_click: Option<ToastClick>) {
     #[cfg(windows)]
     {
-        use tauri_winrt_notification::Toast;
-        let state = app.state::<App>();
-        let id = if state.packaged {
-            APP_ID
-        } else {
-            Toast::POWERSHELL_APP_ID
+        use tauri_winrt_notification::{LoopableSound, Scenario, Sound, Toast};
+        let mut toast = Toast::new(toast_app_id(app)).title(title).text1(body);
+        toast = match style {
+            "silent" => toast.sound(None),
+            "gentle" => toast.sound(Some(Sound::Reminder)),
+            "alarm" => toast
+                .scenario(Scenario::Alarm)
+                .sound(Some(Sound::Loop(match tone {
+                    "pulse" => LoopableSound::Alarm2,
+                    "chime" => LoopableSound::Alarm3,
+                    "ring" => LoopableSound::Call,
+                    _ => LoopableSound::Alarm,
+                })))
+                .add_button("Snooze 10 min", "snooze")
+                .add_button("Dismiss", "dismiss"),
+            _ => toast,
         };
-        let mut toast = Toast::new(id).title(title).text1(body);
         if let Some(click) = on_click {
-            toast = toast.on_activated(move |_| {
-                click();
+            toast = toast.on_activated(move |action| {
+                click(action);
                 Ok(())
             });
         }
@@ -357,8 +385,59 @@ fn show_notice(app: &AppHandle, title: &str, body: &str, on_click: Option<Box<dy
     }
     #[cfg(not(windows))]
     {
-        let _ = (app, title, body, on_click);
+        let _ = (app, title, body, style, tone, on_click);
     }
+}
+
+/// A planned reminder. Clicking it opens Memoria; Snooze shows it again in ten minutes.
+fn deliver_reminder(app: &AppHandle, notice: reminders::Notice) {
+    if !app.state::<App>().prefs.get().reminders_on_pc {
+        return;
+    }
+    let handle = app.clone();
+    let again = notice.clone();
+    show_notice(
+        app,
+        &notice.title,
+        &notice.body,
+        notice.style.as_deref().unwrap_or("standard"),
+        notice.tone.as_deref().unwrap_or("classic"),
+        Some(Box::new(move |action| match action.as_deref() {
+            Some("snooze") => {
+                let (app, notice) = (handle.clone(), again.clone());
+                tauri::async_runtime::spawn(async move {
+                    tokio::time::sleep(SNOOZE).await;
+                    deliver_reminder(&app, notice);
+                });
+            }
+            Some(_) => {}
+            None => {
+                let window = handle.clone();
+                let _ = handle.run_on_main_thread(move || focus_window(&window));
+            }
+        })),
+    );
+}
+
+/// Whether Windows lets Memoria's toasts through: enabled, app (switched off for
+/// Memoria), user (all notifications off), policy, or unknown.
+#[cfg(windows)]
+fn toast_setting(app: &AppHandle) -> &'static str {
+    use windows::core::HSTRING;
+    use windows::UI::Notifications::{NotificationSetting, ToastNotificationManager};
+    let notifier = ToastNotificationManager::CreateToastNotifierWithId(&HSTRING::from(toast_app_id(app)));
+    match notifier.and_then(|notifier| notifier.Setting()) {
+        Ok(NotificationSetting::Enabled) => "enabled",
+        Ok(NotificationSetting::DisabledForApplication) => "app",
+        Ok(NotificationSetting::DisabledForUser) => "user",
+        Ok(NotificationSetting::DisabledByGroupPolicy) | Ok(NotificationSetting::DisabledByManifest) => "policy",
+        _ => "unknown",
+    }
+}
+
+#[cfg(not(windows))]
+fn toast_setting(_app: &AppHandle) -> &'static str {
+    "unknown"
 }
 
 /// A native message box over the window. Shown off the event loop so it never stalls it.
@@ -467,6 +546,8 @@ fn hide_to_tray(app: &AppHandle) {
             app,
             "Memoria is still running",
             "It stays in the tray. Right-click its icon to quit.",
+            "gentle",
+            "classic",
             None,
         );
     }
@@ -936,12 +1017,51 @@ fn game_notify(app: AppHandle, webview: tauri::Webview, notice: Value) -> Comman
         &app,
         &title,
         &text("body", 250),
-        Some(Box::new(move || {
+        "standard",
+        "classic",
+        Some(Box::new(move |_| {
             focus_window(&handle);
             emit(&handle, "memoria:open-game", json!(game_id));
         })),
     );
     Ok(true)
+}
+
+#[tauri::command]
+fn notifications_status(app: AppHandle, webview: tauri::Webview) -> CommandResult<Value> {
+    trusted(&webview, &app.state::<App>())?;
+    Ok(json!({ "windows": toast_setting(&app) }))
+}
+
+/// A sample in the chosen style, so the player hears what they picked.
+#[tauri::command]
+fn notifications_test(app: AppHandle, webview: tauri::Webview, style: String, tone: String) -> CommandResult<Value> {
+    trusted(&webview, &app.state::<App>())?;
+    let handle = app.clone();
+    show_notice(
+        &app,
+        "Memoria test reminder",
+        "This is how reminders in this style arrive on this PC.",
+        &style,
+        &tone,
+        Some(Box::new(move |action| {
+            if action.is_none() {
+                let window = handle.clone();
+                let _ = handle.run_on_main_thread(move || focus_window(&window));
+            }
+        })),
+    );
+    Ok(json!({ "windows": toast_setting(&app) }))
+}
+
+#[tauri::command]
+fn notifications_settings(webview: tauri::Webview, state: tauri::State<'_, App>) -> CommandResult<()> {
+    trusted(&webview, &state)?;
+    if shell_open("ms-settings:notifications") {
+        Ok(())
+    } else {
+        Err("Windows could not open its notification settings.".into())
+    }
 }
 
 #[tauri::command]
@@ -1152,6 +1272,9 @@ fn main() {
             renderer_ready,
             close_result,
             open_external,
+            notifications_status,
+            notifications_test,
+            notifications_settings,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();
@@ -1197,19 +1320,7 @@ fn main() {
             apply_preferences(&handle);
             let notices = handle.clone();
             reminders::start(core, reminder_changes, reminder_preferences, data.clone(), move |notice| {
-                if !notices.state::<App>().prefs.get().reminders_on_pc {
-                    return;
-                }
-                let clicked = notices.clone();
-                show_notice(
-                    &notices,
-                    &notice.title,
-                    &notice.body,
-                    Some(Box::new(move || {
-                        let handle = clicked.clone();
-                        let _ = clicked.run_on_main_thread(move || focus_window(&handle));
-                    })),
-                );
+                deliver_reminder(&notices, notice)
             });
             Ok(())
         })

@@ -17,6 +17,7 @@ export * from './quiet';
 export * from './calendar-status';
 export * from './event-reward';
 export * from './notification-plan';
+export * from './quests';
 export * from './event-parts';
 export * from './glance';
 export * from './event-twins';

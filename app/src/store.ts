@@ -21,6 +21,9 @@ import type {
   GameEvent,
   GamePreset,
   RemoteEventImportResult,
+  CustomQuest,
+  NotificationStyle,
+  QuestState,
   Reminder,
   Resource,
   Settings,
@@ -29,7 +32,7 @@ import type {
   QuickChip,
   Task,
 } from '@memoria/shared';
-import { collapseSourceTwins, sourceEventId } from '@memoria/shared';
+import { collapseSourceTwins, CUSTOM_QUEST_PREFIX, questMarkId, sourceEventId } from '@memoria/shared';
 import {
   completionId,
   assertStateCapacity,
@@ -647,11 +650,18 @@ export interface AppStore {
   upsertRule(rule: Partial<AlertRule> & { type: AlertRule['type']; gameId: string | null }): void;
   clearRule(type: AlertRule['type'], gameId: string | null): void;
 
-  addReminder(message: string, at: number, gameId: string | null, repeatDays?: number): void;
+  addReminder(message: string, at: number, gameId: string | null, repeatDays?: number, style?: NotificationStyle): void;
   deleteReminder(id: string): void;
-  updateReminder(id: string, patch: Pick<Reminder, 'message' | 'at'> & { repeatDays?: number | null }): void;
+  updateReminder(
+    id: string,
+    patch: Pick<Reminder, 'message' | 'at'> & { repeatDays?: number | null; style?: NotificationStyle | null },
+  ): void;
 
   updateSettings(patch: Partial<Settings>): void;
+  /** Sets or clears (null) marks on quests and quest parts; one mark and many take the same path. */
+  setQuestMarks(gameId: string, marks: { questId: string; partId?: string; state: QuestState | null }[]): void;
+  saveCustomQuest(quest: Omit<CustomQuest, 'updatedAt' | 'id'> & { id?: string }): string;
+  deleteCustomQuest(id: string): void;
   /** Record catch-up digests as read for a game preset, on every device. */
   markCatchUpRead(presetKey: string, keys: string[]): void;
   importJson(text: string): boolean;
@@ -1030,6 +1040,8 @@ export const useApp = create<AppStore>((set, get) => ({
       events: tombstone(s.events, (e) => e.gameId === id),
       alertRules: tombstone(s.alertRules, (rule) => rule.gameId === id),
       reminders: tombstone(s.reminders, (reminder) => reminder.gameId === id),
+      questMarks: tombstone(s.questMarks, (mark) => mark.gameId === id),
+      customQuests: tombstone(s.customQuests, (quest) => quest.gameId === id),
     }));
   },
 
@@ -1416,11 +1428,14 @@ export const useApp = create<AppStore>((set, get) => ({
     }));
   },
 
-  addReminder(message, at, gameId, repeatDays) {
+  addReminder(message, at, gameId, repeatDays, style) {
     const repeat = repeatDays && repeatDays >= 1 ? { repeatDays: Math.min(365, Math.round(repeatDays)) } : {};
     get().mutate((s) => ({
       ...s,
-      reminders: [...s.reminders, { id: uid(), gameId, message, at, ...repeat, updatedAt: now() } satisfies Reminder],
+      reminders: [
+        ...s.reminders,
+        { id: uid(), gameId, message, at, ...repeat, ...(style ? { style } : {}), updatedAt: now() } satisfies Reminder,
+      ],
     }));
   },
 
@@ -1431,12 +1446,69 @@ export const useApp = create<AppStore>((set, get) => ({
       const changes: Partial<Reminder> = { message: patch.message.trim(), at: patch.at };
       if (patch.repeatDays !== undefined)
         changes.repeatDays = patch.repeatDays ? Math.min(365, Math.round(patch.repeatDays)) : undefined;
+      if (patch.style !== undefined) changes.style = patch.style ?? undefined;
       return { ...s, reminders: patchIn(s.reminders, id, changes) };
     });
   },
 
   deleteReminder(id) {
     get().mutate((s) => ({ ...s, reminders: tombstone(s.reminders, (r) => r.id === id) }));
+  },
+
+  setQuestMarks(gameId, marks) {
+    if (!marks.length) return;
+    get().mutate((s) => {
+      const byId = new Map(s.questMarks.map((mark) => [mark.id, mark]));
+      let changed = false;
+      const at = now();
+      for (const { questId, partId, state } of marks) {
+        const id = questMarkId(gameId, questId, partId);
+        const existing = byId.get(id);
+        const live = existing && !existing.deleted ? existing.state : null;
+        if (live === state) continue;
+        changed = true;
+        if (state == null) byId.set(id, { ...existing!, deleted: true, updatedAt: at });
+        else
+          byId.set(id, {
+            id,
+            gameId,
+            questId,
+            ...(partId != null ? { partId } : {}),
+            state,
+            updatedAt: at,
+          });
+      }
+      return changed ? { ...s, questMarks: [...byId.values()] } : s;
+    });
+  },
+
+  saveCustomQuest(quest) {
+    const id = quest.id ?? uid();
+    get().mutate((s) => {
+      const row: CustomQuest = { ...quest, id, updatedAt: now() };
+      const exists = s.customQuests.some((item) => item.id === id);
+      return {
+        ...s,
+        customQuests: exists ? s.customQuests.map((item) => (item.id === id ? row : item)) : [...s.customQuests, row],
+      };
+    });
+    return id;
+  },
+
+  deleteCustomQuest(id) {
+    get().mutate((s) => {
+      const quest = s.customQuests.find((item) => item.id === id);
+      if (!quest) return s;
+      const lineId = `${CUSTOM_QUEST_PREFIX}${id}`;
+      return {
+        ...s,
+        customQuests: tombstone(s.customQuests, (item) => item.id === id),
+        questMarks: tombstone(
+          s.questMarks,
+          (mark) => mark.gameId === quest.gameId && mark.questId === lineId && !mark.deleted,
+        ),
+      };
+    });
   },
 
   updateSettings(patch) {

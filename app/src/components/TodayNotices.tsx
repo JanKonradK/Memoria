@@ -3,11 +3,107 @@ import { detectLocalTz, missingPresetTasks } from '@memoria/shared';
 import '../surfaces.css';
 import { useApp } from '../store';
 import { utcOffsetLabel } from '../timezone';
+import { isNativeApp } from '../native';
+import {
+  openAndroidBatterySettings,
+  openAndroidNotificationSettings,
+  requestExactReminders,
+  setNotificationsEnabled,
+  useNotifications,
+} from '../notifications';
+import { setPresence, usePresence } from '../presence';
 
 const PRESET_GAP_KEY = 'memoria-preset-gap-dismissed';
 /** The key this counter shipped under before the rename. */
 const LEGACY_PRESET_GAP_KEY = 'void-preset-gap-dismissed';
 const LEGACY_HOME_TZ_KEY = 'memoria-legacy-home-timezone-dismissed';
+/** Which reminder prompt was last waved away on this device. Each problem asks once. */
+const REMINDER_PROMPT_KEY = 'memoria-reminder-prompt-dismissed';
+
+function readReminderDismissed(): string[] {
+  try {
+    const value = JSON.parse(localStorage.getItem(REMINDER_PROMPT_KEY) ?? '[]') as unknown;
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+interface ReminderProblem {
+  id: string;
+  title: string;
+  detail: string;
+  action: string;
+  run: () => Promise<void>;
+}
+
+/**
+ * The first thing that stops reminders reaching this device, if any: reminders
+ * switched off here, the permission refused, Windows muting Memoria, exact
+ * timing withheld, or battery saving holding them back.
+ */
+function useReminderProblem(): ReminderProblem | null {
+  const { enabled, permission, exact, batteryUnrestricted, windows } = useNotifications();
+  const presence = usePresence((s) => s.presence);
+  if (presence) {
+    if (!presence.remindersOnPc)
+      return {
+        id: 'pc-off',
+        title: 'Reminders are off on this PC',
+        detail: 'Turn them on to hear about dailies, weeklies and events before they reset.',
+        action: 'Turn on',
+        run: () => setPresence({ remindersOnPc: true }),
+      };
+    if (windows && windows !== 'enabled' && windows !== 'unknown')
+      return {
+        id: `pc-windows-${windows}`,
+        title: 'Windows is hiding Memoria’s reminders',
+        detail:
+          windows === 'user'
+            ? 'Notifications are off for every app. Switch them on in Windows settings.'
+            : windows === 'policy'
+              ? 'An administrator has turned notifications off on this PC.'
+              : 'Notifications are off for Memoria. Switch Memoria on in Windows settings.',
+        action: 'Open Windows settings',
+        run: () => window.memoriaDesktop?.presence?.openNotificationSettings?.() ?? Promise.resolve(),
+      };
+    return null;
+  }
+  if (!isNativeApp) return null;
+  if (!enabled)
+    return {
+      id: 'phone-off',
+      title: 'Turn on reminders on this phone',
+      detail: 'An hour before each daily reset with dailies left, and before events and weeklies run out.',
+      action: 'Allow reminders',
+      run: () => setNotificationsEnabled(true),
+    };
+  if (permission === 'denied')
+    return {
+      id: 'phone-denied',
+      title: 'Android is blocking Memoria’s reminders',
+      detail: 'Allow notifications for Memoria in Android settings.',
+      action: 'Open settings',
+      run: openAndroidNotificationSettings,
+    };
+  if (exact === false)
+    return {
+      id: 'phone-exact',
+      title: 'Let reminders arrive on time',
+      detail: 'Without “Alarms & reminders”, Android can hold a reminder back by many minutes.',
+      action: 'Allow exact timing',
+      run: requestExactReminders,
+    };
+  if (batteryUnrestricted === false)
+    return {
+      id: 'phone-battery',
+      title: 'Battery saving can delay reminders',
+      detail: 'Some phones hold back reminders from apps under battery optimisation. Set Memoria to Unrestricted.',
+      action: 'Open battery settings',
+      run: openAndroidBatterySettings,
+    };
+  return null;
+}
 
 function readDismissedGap(): number {
   return Number(localStorage.getItem(PRESET_GAP_KEY) ?? localStorage.getItem(LEGACY_PRESET_GAP_KEY) ?? '0');
@@ -96,11 +192,43 @@ export function TodayNotices({ now }: { now: number }) {
   const showLegacyHomeTz =
     !legacyHomeTzDismissed && state.settings.localTz === 'Europe/Warsaw' && detectedTz !== 'Europe/Warsaw';
   const showPresetGap = presetGap > 0 && !presetGapDismissed;
+  const reminderProblem = useReminderProblem();
+  const [reminderDismissed, setReminderDismissed] = useState(readReminderDismissed);
+  const [reminderError, setReminderError] = useState('');
+  const showReminder = reminderProblem != null && !reminderDismissed.includes(reminderProblem.id);
 
-  if (!showLegacyHomeTz && !showPresetGap) return null;
+  if (!showLegacyHomeTz && !showPresetGap && !showReminder) return null;
 
   return (
     <div className="today-notices">
+      {showReminder && (
+        <Notice
+          label="Reminders"
+          title={reminderProblem.title}
+          detail={reminderError || reminderProblem.detail}
+          action={reminderProblem.action}
+          onAction={() => {
+            setReminderError('');
+            void reminderProblem
+              .run()
+              .catch((cause: unknown) =>
+                setReminderError(
+                  cause instanceof Error ? cause.message : 'That did not work. Try Settings → Reminders.',
+                ),
+              );
+          }}
+          dismissLabel="Not now: reminders"
+          onDismiss={() => {
+            const next = [...reminderDismissed, reminderProblem.id];
+            try {
+              localStorage.setItem(REMINDER_PROMPT_KEY, JSON.stringify(next));
+            } catch {
+              // Without storage the prompt returns next launch.
+            }
+            setReminderDismissed(next);
+          }}
+        />
+      )}
       {showLegacyHomeTz && (
         <Notice
           label="Home timezone correction"

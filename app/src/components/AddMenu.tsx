@@ -23,6 +23,7 @@ const ITEMS = {
   home: ['addGame', 'event', 'reminder'],
   timeline: ['event', 'reminder'],
   history: ['addGame'],
+  quests: ['addGame'],
   settings: ['addGame'],
 } as const satisfies Record<string, readonly ('addGame' | 'event' | 'reminder')[]>;
 
