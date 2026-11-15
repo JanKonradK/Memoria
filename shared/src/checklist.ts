@@ -202,3 +202,14 @@ export function checklistFor(
 export function completionId(taskId: string, periodKey: string): string {
   return `${taskId}|${periodKey}`;
 }
+
+/**
+ * A daily the "Tick all" shortcut can finish: plain checks, and dispatches that
+ * are back or idle (collected and resent, exactly as pressing the row does). A
+ * dispatch still out is left alone — there is nothing to collect yet — and so
+ * are counters, whose tally is the player's to keep.
+ */
+export function isTickableDaily(item: ChecklistItem): boolean {
+  if (item.cadence !== 'daily' || item.done) return false;
+  return item.mode === 'check' || (item.mode === 'timer' && !item.timerRunning);
+}

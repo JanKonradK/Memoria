@@ -26,7 +26,7 @@ afterEach(async () => {
   vi.useRealTimers();
 });
 
-it('completes only daily checkboxes as one action and undo keeps later edits', () => {
+it('completes daily checkboxes and collects dispatches as one action, and undo keeps later edits', () => {
   const gameId = useApp.getState().addGameFromPreset(
     PRESETS.find((preset) => preset.key === 'genshin')!,
     {},
@@ -37,7 +37,11 @@ it('completes only daily checkboxes as one action and undo keeps later edits', (
   const id = useApp.getState().completeDailies(gameId)!;
   const action = useApp.getState().history.journal.find((entry) => entry.id === id)!;
   expect(action.changes.length).toBeGreaterThan(0);
-  expect(action.changes.every((change) => change.collection === 'completions')).toBe(true);
+  // Expeditions are collected and resent: the timer restarts with the tick.
+  expect(action.changes.every((change) => ['completions', 'tasks'].includes(change.collection))).toBe(true);
+  const expeditions = useApp.getState().state.tasks.find((task) => task.name.startsWith('Expeditions'))!;
+  expect(expeditions.timerEndsAt).toBeGreaterThan(Date.now());
+  expect(useApp.getState().state.completions.some((item) => item.taskId === expeditions.id && item.done)).toBe(true);
   expect(useApp.getState().state.completions.some((item) => item.taskId === counter.id)).toBe(false);
   const completion = useApp.getState().state.completions[0]!;
   useApp.getState().setTaskDone(completion.taskId, completion.periodKey, false);

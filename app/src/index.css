@@ -475,6 +475,9 @@ body {
    the page is the scroller at every width, so the browser must not re-anchor. */
 html {
   overflow-anchor: none;
+  /* A thin, quiet bar in the theme's own colour, not the system's arrowed one. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
 }
 /* The page is the only scroller. A board with its own scrollbar sat beside the
    page's, and the ruler stays in view by sticking under the app bar instead. */

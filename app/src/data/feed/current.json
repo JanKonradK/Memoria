@@ -3750,6 +3750,142 @@
       "endTimezone": "UTC+8",
       "notes": "Trailblaze Level 21 and above.",
       "sourceKey": "seed:hsr:4.7-fluffy-movie"
+    },
+    {
+      "game": "genshin",
+      "name": "Character trials — Mitya, Furina",
+      "type": "event",
+      "start": "2026-11-04 11:00",
+      "end": "2026-11-24 17:59",
+      "reward": 40,
+      "notes": "Try each featured character once from the banner page for 20 Primogems each. Claimable until the banner closes.",
+      "sourceKey": "seed:genshin:7.2-p1-trials"
+    },
+    {
+      "game": "genshin",
+      "name": "Zibai (phase 2)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-11-24 18:00",
+      "end": "2026-12-15 17:59",
+      "notes": "Phase 2 of 7.2 from the wiki banner schedule; confirm against the official notice.",
+      "sourceKey": "seed:genshin:7.2-p2-zibai"
+    },
+    {
+      "game": "genshin",
+      "name": "Linnea (phase 2)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-11-24 18:00",
+      "end": "2026-12-15 17:59",
+      "notes": "Phase 2 of 7.2 from the wiki banner schedule; confirm against the official notice.",
+      "sourceKey": "seed:genshin:7.2-p2-linnea"
+    },
+    {
+      "game": "genshin",
+      "name": "Character trials — Zibai, Linnea",
+      "type": "event",
+      "start": "2026-11-24 18:00",
+      "end": "2026-12-15 17:59",
+      "reward": 40,
+      "notes": "Try each featured character once from the banner page for 20 Primogems each. Claimable until the banner closes. Phase 2 dates from the wiki.",
+      "sourceKey": "seed:genshin:7.2-p2-trials"
+    },
+    {
+      "game": "genshin",
+      "name": "Stygian Onslaught",
+      "type": "cycle",
+      "start": "2026-11-11 10:00",
+      "end": "2026-12-15 03:59",
+      "notes": "v7.2 rotation. Dates from Game8; times follow the 7.1 rotation. Estimated.",
+      "sourceKey": "seed:genshin:7.2-stygian"
+    },
+    {
+      "game": "genshin",
+      "name": "Stress Block Smashing Project",
+      "type": "event",
+      "start": "2026-11-20 04:00",
+      "end": "2026-11-30 03:59",
+      "notes": "7.2 event. Dates from Game8; times estimated.",
+      "sourceKey": "seed:genshin:7.2-stress-block"
+    },
+    {
+      "game": "genshin",
+      "name": "Frames of Fierce Splendor",
+      "type": "event",
+      "start": "2026-11-27 04:00",
+      "end": "2026-12-07 03:59",
+      "notes": "7.2 event. Dates from Game8; times estimated.",
+      "sourceKey": "seed:genshin:7.2-frames"
+    },
+    {
+      "game": "genshin",
+      "name": "Ley Line Overflow — double Ley Line rewards",
+      "type": "event",
+      "start": "2026-12-07 04:00",
+      "end": "2026-12-14 03:59",
+      "dailyTouch": true,
+      "notes": "7.2 rerun: double Ley Line Outcrop rewards a few times a day. Dates from Game8; times estimated.",
+      "sourceKey": "seed:genshin:7.2-ley-line-overflow"
+    },
+    {
+      "game": "hsr",
+      "name": "Character trials — Aha",
+      "type": "event",
+      "start": "2026-11-11 11:00",
+      "end": "2026-12-22 15:00",
+      "reward": 20,
+      "notes": "Try each featured character once from the banner page for 20 Stellar Jade each. Claimable until the banner closes.",
+      "sourceKey": "seed:hsr:4.7-aha-trial"
+    },
+    {
+      "game": "hsr",
+      "name": "Character trials — Silver Wolf LV.999, Sparxie, Yao Guang",
+      "type": "event",
+      "start": "2026-11-11 11:00",
+      "end": "2026-12-02 11:59",
+      "reward": 60,
+      "notes": "Try each featured character once from the banner page for 20 Stellar Jade each. Claimable until the banner closes.",
+      "sourceKey": "seed:hsr:4.7-p1-trials"
+    },
+    {
+      "game": "hsr",
+      "name": "Acheron, Dan Heng • Imbibitor Lunae and Jing Yuan — reruns (phase 2)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-12-02 12:00",
+      "end": "2026-12-22 15:00",
+      "notes": "Phase 2 of 4.7 from the banner tracker; the light cones share the window. Confirm the time against the official notice.",
+      "sourceKey": "seed:hsr:4.7-p2-reruns"
+    },
+    {
+      "game": "hsr",
+      "name": "Character trials — Acheron, Dan Heng • Imbibitor Lunae, Jing Yuan",
+      "type": "event",
+      "start": "2026-12-02 12:00",
+      "end": "2026-12-22 15:00",
+      "reward": 60,
+      "notes": "Try each featured character once from the banner page for 20 Stellar Jade each. Claimable until the banner closes.",
+      "sourceKey": "seed:hsr:4.7-p2-trials"
+    },
+    {
+      "game": "zzz",
+      "name": "Character trials — Severian",
+      "type": "event",
+      "start": "2026-11-11 12:00",
+      "end": "2026-12-01 14:59",
+      "reward": 20,
+      "notes": "Try each featured character once from the banner page for 20 Polychrome each. Claimable until the banner closes.",
+      "sourceKey": "seed:zzz:3.3-p2-trials"
+    },
+    {
+      "game": "wuwa",
+      "name": "Character trials — Lily",
+      "type": "event",
+      "start": "2026-11-12 11:00",
+      "end": "2026-12-03 09:59",
+      "notes": "Try each featured character once from the banner page. Claimable until the banner closes. Pays Astrite; the amount is not confirmed.",
+      "sourceKey": "seed:wuwa:3.8-p1-trials"
     }
   ]
 }

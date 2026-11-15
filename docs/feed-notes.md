@@ -23,6 +23,15 @@ installed apps with the next signed feed instead of the next release:
 working, unredeemed codes on Today and, on Android, announces a new code and warns six hours
 before it expires.
 
+## Character trials
+
+Every character banner phase in Genshin, HSR, ZZZ and WuWa has a one-time trial
+reward for each featured character (20 Primogems / Stellar Jade / Polychrome
+each; WuWa pays an unconfirmed amount of Astrite). Each refresh adds one
+`Character trials — <names>` event per phase, with exactly the banner rows'
+start and end, and `reward` set to the per-character amount times the number of
+featured characters. Leave `reward` out where the amount is not confirmed.
+
 ## How to read publisher notices
 
 Bundled event feed — banners/events per game, reviewed against publisher

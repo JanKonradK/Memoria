@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { DateTime } from 'luxon';
-import { actBy, eventReward, nextQuietWindow, type Game, type GameUrgency } from '@memoria/shared';
+import { actBy, eventReward, isTickableDaily, nextQuietWindow, type Game, type GameUrgency } from '@memoria/shared';
 import { useDerived, type Derived } from '../selectors';
 import { selectAllClear, type AllClear } from '../all-clear';
 import { useApp } from '../store';
@@ -35,12 +35,15 @@ function PriorityRow({
   selected,
   desktop,
   onSelect,
+  onTicked,
 }: {
   entry: GameUrgency;
   derived: Derived;
   selected: boolean;
   desktop: boolean;
   onSelect: () => void;
+  /** Ticking can make the day all clear, which folds the list away with its Undo. */
+  onTicked: () => void;
 }) {
   const { game, next } = entry;
   const { now } = derived;
@@ -56,7 +59,7 @@ function PriorityRow({
   const undoActivity = useApp((store) => store.undoActivity);
   const journal = useApp((store) => store.history.journal);
   const [ticked, setTicked] = useState<string>();
-  const canTick = !game.paused && dailies.some((item) => item.mode === 'check' && !item.done);
+  const canTick = !game.paused && dailies.some(isTickableDaily);
   const canUndo = Boolean(ticked && journal.some((entry) => entry.id === ticked && !entry.undone));
   const left = next ? next.at - now : null;
   // With quiet hours set, a reset at 03:00 is due when they begin, not at 03:00.
@@ -172,7 +175,10 @@ function PriorityRow({
             if (canUndo) {
               undoActivity(ticked!);
               setTicked(undefined);
-            } else setTicked(completeDailies(game.id));
+            } else {
+              onTicked();
+              setTicked(completeDailies(game.id));
+            }
           }}
         >
           {canUndo && <span className="today-ring-undo text-caption font-semibold">Undo</span>}
@@ -421,6 +427,7 @@ export function TodayPage({ now }: { now: number }) {
                   desktop={desktop}
                   selected={selected?.game.id === entry.game.id}
                   onSelect={() => (desktop ? setSelectedId(entry.game.id) : openGame(entry.game.id))}
+                  onTicked={() => setShowGames(true)}
                 />
               ))}
             </ul>

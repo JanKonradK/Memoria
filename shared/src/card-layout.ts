@@ -1,5 +1,4 @@
 import type { Game, GameLayoutItem, Resource, Task } from './types';
-import { effectiveResourceKind } from './tracking';
 
 const cadenceOrder = { daily: 0, custom: 1, weekly: 2, monthly: 3 } as const;
 
@@ -13,10 +12,9 @@ export function resolveGameLayout(game: Game, resources: Resource[], tasks: Task
     ...resources
       .filter((item) => item.gameId === game.id && !item.deleted)
       .sort((a, b) => a.sort - b.sort)
-      .map((item): GameLayoutItem => ({
-        id: `resource:${item.id}`,
-        hidden: effectiveResourceKind(item) === 'counter',
-      })),
+      // Banked stock (Condensed Resin) shows too: whether it is maxed decides
+      // whether today's craft is worth anything.
+      .map((item): GameLayoutItem => ({ id: `resource:${item.id}` })),
     { id: 'quick-spend' },
     ...tasks
       .filter((item) => item.gameId === game.id && !item.deleted)

@@ -1,5 +1,13 @@
 import { create } from 'zustand';
-import { gameGlance, glanceLine, presetForGame, type AppState } from '@memoria/shared';
+import {
+  checklistFor,
+  effectiveResourceKind,
+  gameGlance,
+  glanceLine,
+  presetForGame,
+  type AppState,
+  type Game,
+} from '@memoria/shared';
 import type { DesktopPreferences, DesktopPresence } from './desktop-host';
 import { useGameLaunch } from './game-launch';
 import { useApp } from './store';
@@ -76,17 +84,9 @@ export function initPresence(): (() => void) | undefined {
       void host
         .notify({ gameId, title: `${glance.name} started`, body: glanceLine(glance, now) })
         .catch(() => undefined);
+      scheduleCheckIn(gameId);
     }),
-    host.onGameStopped?.((gameId) => {
-      const state = useApp.getState().state;
-      const game = state.games.find((item) => item.id === gameId && !item.deleted && !item.paused);
-      if (!game) return;
-      // Never over an editor the player has open.
-      if (!useUI.getState().sheet) useUI.getState().openSheet({ kind: 'session', gameId });
-      void host
-        .notify({ gameId, title: `${game.name} closed`, body: 'Record what is left: energy and dailies.' })
-        .catch(() => undefined);
-    }) ?? (() => undefined),
+    host.onGameStopped?.((gameId) => cancelCheckIn(gameId)) ?? (() => undefined),
     host.onOpenGame((gameId) => {
       if (useApp.getState().state.games.some((game) => game.id === gameId && !game.deleted)) openGame(gameId);
     }),
@@ -94,5 +94,65 @@ export function initPresence(): (() => void) | undefined {
   sendWatch();
   return () => {
     for (const stop of stops) stop();
+    for (const timer of checkIns.values()) clearTimeout(timer);
+    checkIns.clear();
   };
+
+  /**
+   * Early in a session, not after it: two minutes in the player is logged in
+   * and has not started their routine yet, so the prompt can still remind them
+   * what is left — and if they already did it on another device, they record
+   * the energy they see while it is on screen. Asking when the game closed came
+   * too late to change anything.
+   */
+  function scheduleCheckIn(gameId: string) {
+    cancelCheckIn(gameId);
+    checkIns.set(
+      gameId,
+      setTimeout(() => {
+        checkIns.delete(gameId);
+        const state = useApp.getState().state;
+        const game = state.games.find((item) => item.id === gameId && !item.deleted && !item.paused);
+        if (!game) return;
+        const now = Date.now();
+        const line = checkInLine(state, game, now);
+        if (!line) return;
+        // Never over an editor the player has open.
+        if (!useUI.getState().sheet) useUI.getState().openSheet({ kind: 'session', gameId });
+        void host!.notify({ gameId, title: `${game.name} check-in`, body: line }).catch(() => undefined);
+      }, checkInTiming.delayMs),
+    );
+  }
+}
+
+/** How long after a game starts its check-in appears: inside the first three minutes. */
+export const checkInTiming = { delayMs: 2 * 60_000 };
+const checkIns = new Map<string, ReturnType<typeof setTimeout>>();
+
+function cancelCheckIn(gameId: string) {
+  const timer = checkIns.get(gameId);
+  if (timer) clearTimeout(timer);
+  checkIns.delete(gameId);
+}
+
+/** What the check-in notice says, or nothing when there is nothing to ask. */
+export function checkInLine(state: AppState, game: Game, now: number): string {
+  const glance = gameGlance(state, game, now);
+  const dailies = checklistFor(state, game, now).filter((item) => item.cadence === 'daily');
+  const left = dailies.filter((item) => !item.done);
+  const regen = state.resources.some(
+    (item) => item.gameId === game.id && !item.deleted && effectiveResourceKind(item) === 'regen',
+  );
+  if (!left.length && !regen) return '';
+  const parts: string[] = [];
+  if (left.length) {
+    const names = left.slice(0, 3).map((item) => item.name);
+    parts.push(
+      `${left.length} ${left.length === 1 ? 'daily' : 'dailies'} left: ${names.join(', ')}${left.length > 3 ? '…' : ''}`,
+    );
+  } else if (dailies.length) parts.push('Dailies done');
+  const energy = glance.energy[0];
+  if (energy) parts.push(`${energy.name} about ${energy.value}/${energy.cap} — record the real number`);
+  else if (regen) parts.push('Record your energy while it is on screen');
+  return parts.join('. ');
 }

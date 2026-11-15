@@ -303,6 +303,8 @@ export const EnergyRow = memo(function EnergyRow({
       subtitle = `refills ${fmtClock(proj.weeklyResetAt, localTz)}`;
       if (!proj.hasSnapshot) subtitle += ' · enter the current value';
     } else if (!proj.hasSnapshot) subtitle = 'enter the current value';
+    else if (compact && res.cap > 0)
+      subtitle = proj.value >= res.cap ? 'MAX — use one before crafting more' : `${res.cap - proj.value} more fit`;
   } else if (!proj.hasSnapshot) subtitle = 'enter the current value';
   else if (proj.isFull && res.reserveCap > 0) subtitle = 'FULL';
   else if (proj.isFull) subtitle = `FULL${proj.overflow > 0 ? ` — ${proj.overflow} wasted` : ''}`;
@@ -480,7 +482,21 @@ export const EnergyRow = memo(function EnergyRow({
         </>
       )}
 
-      {compact && subtitle && <div className="mt-1 text-meta tabular-nums text-fg-soft">{subtitle}</div>}
+      {compact && (
+        <>
+          {/* A stock you bank, like Condensed Resin: the bar answers "is it maxed?". */}
+          {res.cap > 0 && proj.hasSnapshot && <ProgressBar value={pct / 100} color={color} />}
+          {subtitle && (
+            <div
+              className={`mt-1 text-meta tabular-nums ${
+                proj.hasSnapshot && proj.value >= res.cap ? 'font-bold text-warn-fg' : 'text-fg-soft'
+              }`}
+            >
+              {subtitle}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 });

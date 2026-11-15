@@ -34,8 +34,10 @@ test('with every daily done and nothing capping before the reset, Today says all
   await page.getByRole('button', { name: 'Tick all Genshin Impact dailies' }).click();
   const mobile = info.project.name !== 'desktop';
   if (mobile) await page.getByRole('button', { name: 'Open Genshin Impact', exact: true }).click();
-  // Tick all leaves timed dailies alone: collecting is a separate act.
-  await page.getByRole('button', { name: 'Expeditions (collect + resend): mark collected and resent' }).click();
+  // Tick all also collects and resends the expeditions.
+  await expect(
+    page.getByRole('button', { name: 'Expeditions (collect + resend): collected — resend again now' }),
+  ).toBeVisible();
   // A starting estimate may cap overnight; an empty bar takes over a day to fill.
   const resin = page.getByLabel('Original Resin current value');
   await resin.fill('0');

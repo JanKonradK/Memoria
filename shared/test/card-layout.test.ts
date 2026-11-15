@@ -37,7 +37,7 @@ describe('game card layouts', () => {
       'task:t1',
       'events',
     ]);
-    expect(result.find((item) => item.id === 'resource:counter')?.hidden).toBe(true);
+    expect(result.find((item) => item.id === 'resource:counter')?.hidden).toBeUndefined();
     expect(game.cardLayout).toHaveLength(5);
   });
 

@@ -32,14 +32,26 @@
     margin-inline: 28px;
   }
 }
-/* A week line marks the weekly reset, so it reads a little firmer than a hairline. */
+/* A week line marks the weekly reset. It is a guide behind the rows, not a
+   mark of its own: sparse, faint dots that never compete with a name or a bar
+   (at 32% on a 6px step they read as a dashed rule through every label). */
 .timeline-week-line {
   background-image: radial-gradient(
     circle,
-    color-mix(in srgb, var(--color-fg) 32%, transparent) 0.85px,
-    transparent 1.1px
+    color-mix(in srgb, var(--color-fg) 16%, transparent) 0.7px,
+    transparent 1px
   );
-  background-size: 1px 6px;
+  background-size: 1px 10px;
+}
+@media (max-width: 767px) {
+  .timeline-week-line {
+    background-image: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-fg) 11%, transparent) 0.6px,
+      transparent 0.9px
+    );
+    background-size: 1px 12px;
+  }
 }
 /* The lanes sit on the page ground like the Today groups: no panel, no inset. The
    ruler stays opaque so bars scrolling beneath it do not show through. */
@@ -73,7 +85,7 @@
   bottom: 0;
   z-index: 10;
   width: 1px;
-  background: color-mix(in srgb, var(--color-fg) 60%, transparent);
+  background: color-mix(in srgb, var(--color-fg) 38%, transparent);
   pointer-events: none;
 }
 .timeline-game-lane + .timeline-game-lane {

@@ -92,9 +92,10 @@ test('24 events remain reachable in the rounded timeline board with controls in 
   expect(ids.indexOf('density-3')).toBe(ids.indexOf('density-1') + 1);
   const future = page.locator('[data-event-id="density-3"]');
   await expect(future.locator('[data-event-bar]')).toHaveText('Imaginarium Theater');
-  const bar = await future.locator('[data-event-bar]').boundingBox();
-  const countdown = await future.locator('[data-event-countdown]').boundingBox();
-  expect(countdown!.x + countdown!.width).toBeLessThan(bar!.x);
+  // The next instance of a seamless cycle has no countdown of its own (the
+  // curve from the row above says it comes next), so nothing is drawn over its bar.
+  await expect(future.locator('[data-event-countdown]')).toHaveText('next');
+  await expect(future.locator('[data-event-countdown] .sr-only')).toHaveCount(1);
   for (const id of ['density-22', 'density-23']) {
     await expect(page.locator(`[data-event-id="${id}"] [data-event-bar]`)).toHaveText('');
   }

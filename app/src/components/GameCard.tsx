@@ -9,6 +9,7 @@ import {
   EVENT_STEPS,
   eventPartsDone,
   eventProgress,
+  isTickableDaily,
   measuredSnapshot,
   nextEventProgress,
   projectEnergy,
@@ -607,7 +608,7 @@ function ResourceControls({
 }) {
   const resources = state.resources.filter((r) => r.gameId === game.id && !r.deleted).sort((a, b) => a.sort - b.sort);
   const cardResources = resources.filter(
-    (res) => ['regen', 'weekly'].includes(effectiveResourceKind(res)) && !hidden.has(`resource:${res.id}`),
+    (res) => ['regen', 'weekly', 'counter'].includes(effectiveResourceKind(res)) && !hidden.has(`resource:${res.id}`),
   );
 
   return (
@@ -816,7 +817,7 @@ function ChecklistControls({
   const undoActivity = useApp((store) => store.undoActivity);
   const history = useApp((store) => store.history);
   const [completedAction, setCompletedAction] = useState<string>();
-  const canComplete = checklist.some((item) => item.cadence === 'daily' && item.mode === 'check' && !item.done);
+  const canComplete = checklist.some(isTickableDaily);
   const canUndo = completedAction && history.journal.some((entry) => entry.id === completedAction && !entry.undone);
   if (game.paused || checklist.length === 0) return null;
   const groups = groupChecklist(checklist);

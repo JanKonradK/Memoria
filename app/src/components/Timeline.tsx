@@ -272,6 +272,26 @@ export function timelineCountdown(
  * The overlay measures the rendered row stack. This keeps each endpoint on the
  * true row centre as the responsive row height changes.
  */
+/**
+ * Seamless hand-offs: each instance of a cycle that the next instance of the
+ * same cycle follows with no downtime, mapped to that successor. Rows must be
+ * adjacent (manual ordering never bridges across other events) and the next
+ * window must open within the hour the previous one closes — separate playable
+ * windows must not look like one continuous event.
+ */
+export function seamlessHandoffs(events: GameEvent[]): Map<string, GameEvent> {
+  const handoffs = new Map<string, GameEvent>();
+  for (let i = 0; i < events.length - 1; i += 1) {
+    const from = events[i]!;
+    const to = events[i + 1]!;
+    const key = cycleKey(from);
+    if (key === null || key !== cycleKey(to)) continue;
+    if (to.start > from.end || to.start < from.end - HOUR) continue;
+    handoffs.set(from.id, to);
+  }
+  return handoffs;
+}
+
 export function buildCycleConnectorPaths(
   events: GameEvent[],
   ws: number,
@@ -280,58 +300,41 @@ export function buildCycleConnectorPaths(
   laneWidth = 1000,
   barHeights: ReadonlyMap<string, number> = new Map(),
 ): string[] {
-  const byCycle = new Map<string, GameEvent[]>();
-  events.forEach((ev) => {
-    const key = cycleKey(ev);
-    if (key === null) return;
-    const list = byCycle.get(key) ?? [];
-    list.push(ev);
-    byCycle.set(key, list);
-  });
-
   const paths: string[] = [];
-  for (const instances of byCycle.values()) {
-    if (instances.length < 2) continue;
-    const ordered = [...instances].sort((a, b) => a.start - b.start);
-    for (let i = 0; i < ordered.length - 1; i += 1) {
-      const from = ordered[i]!;
-      const to = ordered[i + 1]!;
-      // Manual ordering must not draw bridges across other events or backwards.
-      if (events.indexOf(to) !== events.indexOf(from) + 1) continue;
-      // Separate playable windows must not look like one continuous event.
-      if (to.start > from.end || to.start < from.end - HOUR) continue;
-      const r1 = (barHeights.get(from.id) ?? 22) / 2;
-      const r2 = (barHeights.get(to.id) ?? 22) / 2;
-      const x1 = (barGeometry(from, ws, we).displayRight / 100) * laneWidth - r1;
-      const x2 = (barGeometry(to, ws, we).displayLeft / 100) * laneWidth + r2;
-      const y1 = rowCenters.get(from.id);
-      const y2 = rowCenters.get(to.id);
-      if (y1 === undefined || y2 === undefined) continue;
-      const distance = Math.hypot(x2 - x1, y2 - y1);
-      if (!Number.isFinite(distance) || distance < 1 || !(laneWidth > 0)) continue;
-      const dx = (x2 - x1) / distance;
-      const dy = (y2 - y1) / distance;
-      // Attach inside each curved cap. Two curved sides narrow to a small
-      // waist, making a filled bridge rather than an outlined connection.
-      const start = { x: x1 + dx * r1 * 0.5, y: y1 + dy * r1 * 0.5 };
-      const end = { x: x2 - dx * r2 * 0.5, y: y2 - dy * r2 * 0.5 };
-      const middle = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
-      const waist = Math.min(2.2, r1 * 0.2, r2 * 0.2);
-      const pull = Math.hypot(end.x - start.x, end.y - start.y) * 0.22;
-      const point = (center: { x: number; y: number }, width: number, along = 0) =>
-        `${(center.x - dy * width + dx * along).toFixed(2)} ${(center.y + dx * width + dy * along).toFixed(2)}`;
-      paths.push(
-        [
-          `M ${point(start, r1 * 0.65)}`,
-          `C ${point(start, r1 * 0.65, pull)}, ${point(middle, waist, -pull)}, ${point(middle, waist)}`,
-          `C ${point(middle, waist, pull)}, ${point(end, r2 * 0.65, -pull)}, ${point(end, r2 * 0.65)}`,
-          `L ${point(end, -r2 * 0.65)}`,
-          `C ${point(end, -r2 * 0.65, -pull)}, ${point(middle, -waist, pull)}, ${point(middle, -waist)}`,
-          `C ${point(middle, -waist, -pull)}, ${point(start, -r1 * 0.65, pull)}, ${point(start, -r1 * 0.65)}`,
-          'Z',
-        ].join(' '),
-      );
-    }
+  const byId = new Map(events.map((event) => [event.id, event]));
+  for (const [fromId, to] of seamlessHandoffs(events)) {
+    const from = byId.get(fromId)!;
+    const r1 = (barHeights.get(from.id) ?? 22) / 2;
+    const r2 = (barHeights.get(to.id) ?? 22) / 2;
+    const x1 = (barGeometry(from, ws, we).displayRight / 100) * laneWidth - r1;
+    const x2 = (barGeometry(to, ws, we).displayLeft / 100) * laneWidth + r2;
+    const y1 = rowCenters.get(from.id);
+    const y2 = rowCenters.get(to.id);
+    if (y1 === undefined || y2 === undefined) continue;
+    const distance = Math.hypot(x2 - x1, y2 - y1);
+    if (!Number.isFinite(distance) || distance < 1 || !(laneWidth > 0)) continue;
+    const dx = (x2 - x1) / distance;
+    const dy = (y2 - y1) / distance;
+    // Attach inside each curved cap. Two curved sides narrow to a small
+    // waist, making a filled bridge rather than an outlined connection.
+    const start = { x: x1 + dx * r1 * 0.5, y: y1 + dy * r1 * 0.5 };
+    const end = { x: x2 - dx * r2 * 0.5, y: y2 - dy * r2 * 0.5 };
+    const middle = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+    const waist = Math.min(2.2, r1 * 0.2, r2 * 0.2);
+    const pull = Math.hypot(end.x - start.x, end.y - start.y) * 0.22;
+    const point = (center: { x: number; y: number }, width: number, along = 0) =>
+      `${(center.x - dy * width + dx * along).toFixed(2)} ${(center.y + dx * width + dy * along).toFixed(2)}`;
+    paths.push(
+      [
+        `M ${point(start, r1 * 0.65)}`,
+        `C ${point(start, r1 * 0.65, pull)}, ${point(middle, waist, -pull)}, ${point(middle, waist)}`,
+        `C ${point(middle, waist, pull)}, ${point(end, r2 * 0.65, -pull)}, ${point(end, r2 * 0.65)}`,
+        `L ${point(end, -r2 * 0.65)}`,
+        `C ${point(end, -r2 * 0.65, -pull)}, ${point(middle, -waist, pull)}, ${point(middle, -waist)}`,
+        `C ${point(middle, -waist, -pull)}, ${point(start, -r1 * 0.65, pull)}, ${point(start, -r1 * 0.65)}`,
+        'Z',
+      ].join(' '),
+    );
   }
   return paths;
 }
@@ -437,6 +440,8 @@ const EventRow = memo(function EventRow({
   editing,
   held = false,
   reorderHandle,
+  follows = false,
+  instances,
 }: {
   ev: GameEvent;
   game: Game;
@@ -459,6 +464,10 @@ const EventRow = memo(function EventRow({
   /** Picked up by a hold and following the finger. */
   held?: boolean;
   reorderHandle?: ReactNode;
+  /** The previous instance of this cycle hands straight over to this one. */
+  follows?: boolean;
+  /** Phone width: every instance of a seamless cycle, drawn on this one track. */
+  instances?: GameEvent[];
 }) {
   const { displayLeft: proportionalLeft, displayWidth } = barGeometry(ev, ws, we);
   // Keep the minimum painted cap inside the lane for events at the window edge.
@@ -466,14 +475,18 @@ const EventRow = memo(function EventRow({
     laneWidth > 0 ? Math.min(proportionalLeft, Math.max(0, 100 - (MIN_BAR_PX / laneWidth) * 100)) : proportionalLeft;
   const countdown = timelineCountdown(ev, now);
   const calendar = calendarSchedule(ev);
-  const countdownLabel = calendar && !ev.done && ev.end > now ? calendar.label : countdown.label;
+  // The next instance of a cycle that never pauses is not news: the row above
+  // already counts down to the hand-off, so this one says "next", quietly,
+  // instead of repeating the same countdown in an urgent colour.
+  const handedOver = follows && countdown.upcoming && !ev.done;
+  const countdownLabel = handedOver ? 'next' : calendar && !ev.done && ev.end > now ? calendar.label : countdown.label;
   const [countdownRef, countdownWidth] = useElementWidth();
   const { ended, remainingMs } = countdown;
   const maint = ev.type === 'maintenance';
   const banner = ev.type === 'banner';
   const cycle = ev.type === 'cycle';
   const stream = ev.type === 'livestream';
-  const endColor = calendar ? 'var(--color-later)' : endTone(remainingMs);
+  const endColor = calendar || handedOver ? 'var(--color-later)' : endTone(remainingMs);
   const tone = endColor === 'var(--color-later)' ? 'var(--color-muted)' : endColor;
   const localStart = DateTime.fromMillis(ev.start, { zone: localTz });
   const localEnd = DateTime.fromMillis(ev.end, { zone: localTz });
@@ -503,7 +516,8 @@ const EventRow = memo(function EventRow({
       displayWidth,
       laneWidth,
       maint || stream ? 'outside' : 'auto',
-      Math.max(COUNTDOWN_PX, countdownWidth + 8),
+      // A hand-off row has no countdown of its own; its name gets the room.
+      handedOver && !editing ? 0 : Math.max(COUNTDOWN_PX, countdownWidth + 8),
     );
 
   const tick = (
@@ -611,17 +625,27 @@ const EventRow = memo(function EventRow({
             )}
           </div>
           <div className="timeline-compact-track timeline-event-track pointer-events-none relative">
-            <span
-              data-event-bar
-              data-pinned={ev.pinned || undefined}
-              className="timeline-compact-bar absolute inset-y-0"
-              style={{
-                left: `${displayLeft}%`,
-                width: `max(${displayWidth}%, 6px)`,
-                backgroundColor: ink,
-                opacity: ended ? 0.35 : 1,
-              }}
-            />
+            {(instances ?? [ev]).map((instance, index) => {
+              const own = instance === ev;
+              const geometry = own ? { displayLeft, displayWidth } : barGeometry(instance, ws, we);
+              return (
+                <span
+                  key={instance.id}
+                  data-event-bar={own || undefined}
+                  data-cycle-instance={instances ? instance.id : undefined}
+                  data-pinned={(own && ev.pinned) || undefined}
+                  className="timeline-compact-bar absolute inset-y-0"
+                  style={{
+                    left: `${geometry.displayLeft}%`,
+                    width: `max(${geometry.displayWidth}%, 6px)`,
+                    backgroundColor: ink,
+                    opacity: instance.end <= now ? 0.35 : own ? 1 : 0.55,
+                    // A hairline notch where one instance hands over to the next.
+                    boxShadow: index > 0 ? 'inset 2px 0 0 var(--color-surface-0)' : undefined,
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
       </m.div>
@@ -731,15 +755,20 @@ const EventRow = memo(function EventRow({
           style={clusterBefore ? { right: `calc(${100 - displayLeft}% + 8px)` } : undefined}
         >
           {editing && !tickFloats && tick}
-          <Tooltip content={calendar?.description ?? 'Time left'}>
-            <span
-              ref={countdownRef}
-              className="whitespace-nowrap rounded-ui-sm bg-scrim-veil px-1.5 py-px text-caption font-bold tabular-nums"
-              style={{ color: ev.done ? 'var(--color-ok)' : tone }}
-            >
-              {countdownLabel}
-            </span>
-          </Tooltip>
+          {/* The curve from the row above already says "this comes next". */}
+          {handedOver ? (
+            <span className="sr-only">{countdownLabel}</span>
+          ) : (
+            <Tooltip content={calendar?.description ?? 'Time left'}>
+              <span
+                ref={countdownRef}
+                className="whitespace-nowrap rounded-ui-sm bg-scrim-veil px-1.5 py-px text-caption font-bold tabular-nums"
+                style={{ color: ev.done ? 'var(--color-ok)' : tone }}
+              >
+                {countdownLabel}
+              </span>
+            </Tooltip>
+          )}
         </span>
       </div>
     </m.div>
@@ -788,6 +817,23 @@ export function ReorderableEventRows({
   const [announcement, setAnnouncement] = useState('');
   const ids = events.map((event) => event.id);
   const visible = preview ? preview.flatMap((id) => events.filter((event) => event.id === id)) : events;
+  const handoffs = seamlessHandoffs(visible);
+  const followers = new Set([...handoffs.values()].map((event) => event.id));
+  // A phone has no room for a curve between rows, so a cycle that never pauses
+  // is one row: its instances share a track, and the row speaks for the one
+  // running now. Editing splits them again, so each can be ticked and moved.
+  const rows: { event: GameEvent; instances?: GameEvent[] }[] = [];
+  for (const event of visible) {
+    if (!rowProps.compact || editing || !handoffs.has(event.id)) {
+      if (!(rowProps.compact && !editing && followers.has(event.id))) rows.push({ event });
+      continue;
+    }
+    if (followers.has(event.id)) continue;
+    const instances = [event];
+    for (let next = handoffs.get(event.id); next; next = handoffs.get(next.id)) instances.push(next);
+    const live = instances.find((instance) => !instance.done && instance.end > rowProps.now) ?? instances.at(-1)!;
+    rows.push({ event: live, instances });
+  }
   const commit = (order: string[], id: string) => {
     reorder(game.id, order);
     setAnnouncement(
@@ -919,13 +965,15 @@ export function ReorderableEventRows({
       {/* On a phone each bar has a name line above it, so a hand-off between
           bars would cross that line and read as a stray stroke. */}
       {!rowProps.compact && <CycleConnectors events={visible} ws={rowProps.ws} we={rowProps.we} ink={rowProps.ink} />}
-      {visible.map((event) => (
+      {rows.map(({ event, instances }) => (
         <EventRow
           key={event.id}
           ev={event}
           game={game}
           editing={editing}
           held={heldId === event.id}
+          follows={followers.has(event.id)}
+          instances={instances}
           {...rowProps}
           reorderHandle={
             <button

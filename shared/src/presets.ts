@@ -266,6 +266,8 @@ export const PRESETS: GamePreset[] = [
       },
       { key: 'genshin-weekly-bosses', name: 'Weekly Bosses ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
       { key: 'genshin-reputation', name: 'Reputation bounties + requests', cadence: 'weekly' },
+      // Restocks on the 1st; Fates left unbought are gone when the month turns.
+      { key: 'genshin-paimons-bargains', name: "Paimon's Bargains: Fates for Starglitter", cadence: 'monthly' },
       // 6d22h cooldown from use, not a game-wide window — it starts when you
       // press the button, so it must not chase a Timeline event.
       {
@@ -349,6 +351,8 @@ export const PRESETS: GamePreset[] = [
       // The largest repeatable Jade block outside the endgame modes.
       { key: 'hsr-universe', name: 'Simulated/Divergent Universe', cadence: 'weekly', core: true },
       { key: 'hsr-echo-of-war', name: 'Echo of War ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
+      // Restocks on the 1st; Passes left unbought are gone when the month turns.
+      { key: 'hsr-embers-exchange', name: 'Embers Exchange: Passes for Undying Embers', cadence: 'monthly' },
     ],
     notes: 'Reserve TB Power stores overflow (up to 2400). Europe server (UTC+1).',
     processNames: ['StarRail'],
@@ -411,6 +415,8 @@ export const PRESETS: GamePreset[] = [
       // because you can never be sure which row you already did.
       { key: 'zzz-hollow-zero', name: 'Hollow Zero: bounties + Lost Void run', cadence: 'weekly' },
       { key: 'zzz-matrix-op', name: 'Matrix Operation weeklies', cadence: 'weekly' },
+      // Restocks on the 1st; Tapes left unbought are gone when the month turns.
+      { key: 'zzz-residual-signal', name: 'Signal Store: Tapes for Residual Signal', cadence: 'monthly' },
     ],
     notes: 'Europe server (UTC+1). Matrix Operation weeklies pay ~4.6k Polychrome/month — don’t skip.',
     processNames: ['ZenlessZoneZero'],
@@ -467,6 +473,8 @@ export const PRESETS: GamePreset[] = [
       // Timeline events, so dropping them would lose the rotation entirely.
       { key: 'wuwa-toa', name: 'ToA Hazard Zone cycle', cadence: 'custom', intervalDays: 28 },
       { key: 'wuwa-whimpering-wastes', name: 'Whimpering Wastes cycle', cadence: 'custom', intervalDays: 28 },
+      // Restocks on the 1st; Tides left unbought are gone when the month turns.
+      { key: 'wuwa-souvenir-store', name: 'Souvenir Store: Tides for Afterglow Coral', cadence: 'monthly' },
     ],
     notes: 'Europe server (UTC+1). Hazard Zone and WhiWa each rotate every 28 days (offset).',
     // Kuro ships a generic UE executable name; both spellings seen across installs.

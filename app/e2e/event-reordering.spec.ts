@@ -170,12 +170,18 @@ test('seeded Genshin events reorder within Teyvat and keep world sections after 
   const order = () => rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-event-id')));
   await expect.poll(async () => (await order()).length).toBeGreaterThan(10);
   await page.screenshot({ path: info.outputPath('seeded-tags.png'), fullPage: true });
-  const original = await order();
   await page.getByRole('button', { name: 'Edit events', exact: true }).click();
   const sections = page.locator('[data-timeline-event-group]');
   await expect
     .poll(() => sections.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-timeline-event-group'))))
     .toEqual(['teyvat', 'miliastra', 'banners']);
+  // Editing lists every instance; a phone otherwise draws a seamless cycle as one row.
+  const original = await order();
+  const expected: string[] = [];
+  const shownInOrder = async () => {
+    const shown = await order();
+    return shown.length > 10 && expected.filter((id) => shown.includes(id)).join() === shown.join();
+  };
   const teyvat = page.locator('[data-timeline-event-group="teyvat"] [data-timeline-event-row]');
   const teyvatIds = await teyvat.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-event-id')));
   const draggedId = teyvatIds.at(-1)!;
@@ -195,7 +201,7 @@ test('seeded Genshin events reorder within Teyvat and keep world sections after 
   const first = (await rows.first().boundingBox())!;
   await page.mouse.move(start.x + start.width / 2, first.y + first.height / 2, { steps: 20 });
   await page.mouse.up();
-  const expected = [draggedId, ...original.filter((id) => id !== draggedId)];
+  expected.push(draggedId, ...original.filter((id) => id !== draggedId));
   await expect.poll(order).toEqual(expected);
   await expect(page.getByRole('status').filter({ hasText: /moved to position 1 of/ })).toBeVisible();
   // Switch views before reloading so this checks committed state, not the drag preview.
@@ -205,7 +211,7 @@ test('seeded Genshin events reorder within Teyvat and keep world sections after 
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })
     .click();
-  await expect.poll(order).toEqual(expected);
+  await expect.poll(shownInOrder).toBe(true);
   await page.reload();
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Timeline', exact: true }).click();
@@ -213,5 +219,5 @@ test('seeded Genshin events reorder within Teyvat and keep world sections after 
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })
     .click();
-  await expect.poll(order).toEqual(expected);
+  await expect.poll(shownInOrder).toBe(true);
 });

@@ -8,6 +8,7 @@ import {
   stampChanges,
   undoAction,
   checklistFor,
+  isTickableDaily,
   type LocalHistory,
 } from '@memoria/shared';
 import { create } from 'zustand';
@@ -863,21 +864,30 @@ export const useApp = create<AppStore>((set, get) => ({
     const state = get().state;
     const game = state.games.find((item) => item.id === gameId && !item.deleted);
     if (!game || game.paused) return;
-    const tasks = checklistFor(state, game, now()).filter(
-      (item) => item.cadence === 'daily' && item.mode === 'check' && !item.done,
-    );
+    const tasks = checklistFor(state, game, now()).filter(isTickableDaily);
     if (!tasks.length) return;
     get().batch((s) => {
+      const t = now();
       let completions = s.completions;
-      for (const item of tasks)
+      let stateTasks = s.tasks;
+      for (const item of tasks) {
         completions = upsert(completions, {
           id: completionId(item.taskId, item.periodKey),
           taskId: item.taskId,
           periodKey: item.periodKey,
           done: true,
-          updatedAt: now(),
+          updatedAt: t,
         });
-      return { ...s, completions };
+        // Collect-and-resend, exactly as pressing the row would.
+        if (item.mode === 'timer') {
+          const task = stateTasks.find((entry) => entry.id === item.taskId);
+          if (task)
+            stateTasks = patchIn(stateTasks, task.id, {
+              timerEndsAt: t + effectiveTimerDurationMinutes(task) * 60_000,
+            });
+        }
+      }
+      return { ...s, tasks: stateTasks, completions };
     }, `Complete dailies: ${game.name}`);
     return get().history.journal.at(-1)?.id;
   },

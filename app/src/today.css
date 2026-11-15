@@ -272,7 +272,40 @@
 }
 .today-card .game-card-heading h2 {
   font-size: clamp(1.5rem, 2.4vw, 1.875rem);
-  overflow-wrap: anywhere;
+  line-height: 1.15;
+  /* Break between words only; "anywhere" let a squeezed pane stack the name
+     one letter per line. */
+  overflow-wrap: normal;
+  text-wrap: balance;
+}
+/* The same rules as the game page: the name keeps a readable width and the
+   dailies ring drops below a long name instead of sitting on it. */
+.today-card > .game-card-heading {
+  flex-wrap: wrap;
+}
+.today-card .game-card-title {
+  min-width: min(100%, 12rem);
+}
+.today-card .game-card-title-row {
+  flex-wrap: wrap;
+}
+.today-card .game-card-actions {
+  margin-left: auto;
+  align-self: flex-start;
+}
+/* A half-screen window: the actions take their own row along the top of the
+   pane, right-aligned, and the logo and name get the full width below. */
+@container today-card (max-width: 40rem) {
+  .today-card > .game-card-heading {
+    row-gap: 0.75rem;
+  }
+  .today-card .game-card-actions {
+    order: -1;
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
 }
 
 /* The next day across every game, flat like the list above it. */
@@ -446,7 +479,15 @@
     /* Less the heading above the layout, so the foot of the pane is on screen before any scroll. */
     max-height: calc(100dvh - var(--app-bar-h) - 6.5rem);
     overflow-y: auto;
+    /* Two bars side by side read as a fault: the pane's own stays invisible
+       until the pointer is over it. */
     scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    scrollbar-gutter: stable;
+  }
+  .today-detail:hover,
+  .today-detail:focus-within {
+    scrollbar-color: var(--color-line-strong) transparent;
   }
 }
 
