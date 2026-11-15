@@ -12,13 +12,14 @@ playwright-report/
 # Local audit logs and phone captures, not application source.
 artifacts/
 
-# Vendored AI-harness tooling, installed by `npx impeccable install` and by the
+# Local AI-harness tooling and its per-machine settings, installed by `npx impeccable install` and by the
 # codex plugin. Three near-identical copies of the same skill (~8.7 MB, 373
 # files) that are reproducible from the installer, so they are deliberately not
 # history. The project's OWN records — app/DESIGN.md, app/PRODUCT.md and the
 # design.json sidecar — are tracked.
-.claude/skills/
-.claude/agents/
+.claude/
+.codex/
+/.impeccable/
 .agents/
 .github/skills/
 .github/agents/

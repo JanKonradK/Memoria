@@ -1,10 +1,13 @@
 # Developer guide
 
-For download and daily-use instructions, see the [README](../README.md).
+For download and daily-use instructions, see the [README](../README.md) and the [guide](guide.md).
 
 ## Run from source
 
-CI and the Windows download use Node **24.21.0**. Use that version for release checks.
+CI and the Windows download use Node **24.21.0**. Use that version for release checks; any Node 24.15+ or 26+ runs the app.
+The app and shared packages compile with TypeScript 7.0.2. ESLint stays on TypeScript 6.0.3, which its parser still needs. The `xcode` dependency pins `uuid` 11.1.1 to avoid a known defect.
+
+README screenshots live in `docs/screenshots`; retake them when a screen changes noticeably.
 
 ```sh
 npm install

@@ -68,8 +68,9 @@ export function ReminderStyles() {
       <SettingRow
         label="How reminders arrive"
         hint="Silent waits in the list, Gentle chimes softly, Standard pops up, Alarm rings at alarm volume with Snooze. Each kind can differ."
+        control="below"
       >
-        <ul className="w-full divide-y divide-line-hairline">
+        <ul className="w-full max-w-xl divide-y divide-line-hairline">
           {NOTIFICATION_KINDS.map((kind) => {
             const style = notificationStyle(settings, kind);
             return (

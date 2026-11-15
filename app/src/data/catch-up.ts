@@ -5,7 +5,7 @@ import hsrArtwork from '../assets/livestreams/hsr-4.7.webp';
 
 /**
  * What each game version added, curated by hand from official notices and
- * cross-checked press. See docs/catch-up-2026-11-05.md for sources.
+ * cross-checked press. See docs/research/catch-up-2026-11-05.md for sources.
  *
  * A section says how far it was checked:
  * - complete: everything is listed. Empty means none were added.

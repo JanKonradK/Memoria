@@ -1,212 +1,40 @@
 # Memoria
 
-**Keep track of your game energy, daily tasks, and events in one place.**
+**One dashboard for every gacha you play: what are you about to waste, and when?**
 
-Memoria helps you see what needs attention before you play. It shows when your energy will fill,
-when tasks reset, and when events end.
+Memoria tracks energy, dailies, weeklies, events and banners across Genshin Impact, Honkai: Star Rail, Zenless Zone Zero, Wuthering Waves, Neverness to Everness, Arknights: Endfield and more, each on its own server clock. It runs on Windows and Android, works offline, needs no account, and never touches your game account: you type what the game shows.
 
-You enter your progress yourself, in a tap or two per game.
-Memoria does not play games or collect rewards for you.
-You do not need a Memoria account or any coding knowledge.
+**[Download the latest release](https://github.com/JanKonradK/Memoria/releases/latest)** · [Guide](docs/guide.md) · [Report a problem](https://github.com/JanKonradK/Memoria/issues)
+
+![Today: every game ranked by what caps or resets first](docs/screenshots/today.png)
 
 ## What it does
 
-- **Flexible layouts** adapt to phone screens, small PC windows, and large displays.
-- **Today** ranks every game by what is lost first, then lists what ends, caps or resets in the next two days across every game. Select a game for its complete controls.
-- **Timeline** shows events, banners, resets, and livestreams, and says when a game's calendar is behind its latest version.
-- **Catch up**, in each game's heading, sums up what recent versions added: characters, weapons, gear sets, outfits, events, quality-of-life changes and codes.
-- **Launch** starts a game from its page in the Windows app. Choose what it starts in the game's **Game settings**.
+- **Today** ranks your games by what is lost first and lists everything that caps, ends or resets in the next two days.
+- **Timeline** holds every event, banner, reset and livestream, from a calendar that updates between releases.
+- **Quests** follows each game's story: main-story acts, world-quest series and character stories, ticked off part by part, with the characters in each.
+- **Pulls** tracks savings and pity, and shows what every version since launch gave a free-to-play player.
+- **Reminders** arrive before resets, caps and event ends, as anything from a silent note to a ringing alarm with snooze.
+- **Sync** keeps a PC and a phone in step over Wi-Fi, end-to-end encrypted, with no server in between.
 
-Each energy estimate shows how long ago you entered its value.
-The header status refers to device sync. Memoria never reads your game account.
+|                                                                  |                                                                          |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| ![Timeline of events and banners](docs/screenshots/timeline.png) | ![Quests: parts ticked done or partly done](docs/screenshots/quests.png) |
+| ![Version history of free pulls](docs/screenshots/pulls.png)     | ![Reminder styles and alarms](docs/screenshots/reminders.png)            |
 
-## Download and open Memoria
+<p align="center">
+  <img src="docs/screenshots/tabs-phone.png" width="260" alt="Memoria on a phone: Today, Timeline, Pulls and Quests" />
+  <img src="docs/screenshots/quests-phone.png" width="260" alt="Ticking off quest parts on a phone" />
+  <img src="docs/screenshots/phone-today.png" width="260" alt="Today on a phone" />
+</p>
 
-**[Download the latest version](https://github.com/JanKonradK/Memoria/releases/latest)**
+## Install
 
-### Windows app
+- **Windows:** download `Memoria-setup-x64.exe` and run it. No administrator prompt; it updates itself. If Windows SmartScreen warns, choose **More info → Run anyway** (the installer is not code-signed yet).
+- **Android:** download `Memoria-android.apk` on the phone and open it (Android 7+). Updates install over the existing app, or through [Obtainium](https://obtainium.imranr.dev).
 
-1. Open the download page above.
-2. Under **Assets**, select **Memoria-setup-x64.exe**.
-3. Open the downloaded file. Windows may say it protected your PC, because the installer is not code-signed yet: select **More info**, then **Run anyway**.
-4. When setup finishes, leave **Open Memoria** ticked and select **Finish**.
+Then add your games, type in your energy, and tick dailies as you finish them. The [guide](docs/guide.md) covers syncing a phone, reminders, backups and the rest.
 
-Setup installs Memoria for your Windows user, with no administrator prompt, in `%LOCALAPPDATA%\Programs\Memoria`.
-It adds Desktop and Start menu shortcuts, and an entry in **Settings → Apps** to uninstall it.
-Your saved progress and phone connection stay in `%APPDATA%\memoria`; uninstalling keeps them.
+## Development
 
-Memoria opens in its own desktop window. The download includes its own runtime.
-You do not need a browser or developer tools.
-Press **Alt** to show the desktop menu.
-Closing the window keeps Memoria in the tray, so phone sync and reminders keep working. Quit from the tray icon.
-
-**Without installing:** download **Memoria-win-x64.zip** instead, extract it, and double-click **Memoria.exe**.
-Its **Add Memoria to Start Menu.cmd** installs that copy in the same place as setup does.
-
-### Android app
-
-Download **Memoria-android.apk** from the [latest release](https://github.com/JanKonradK/Memoria/releases/latest). It runs on Android 7 or later.
-
-1. Copy the APK to your phone.
-2. Open the APK on your phone.
-3. If Android requests permission, permit installation from that file source.
-4. Install Memoria.
-5. Open Memoria.
-
-The app works offline and stores your data on the phone. Use **Settings → Data → Export backup** to save a separate copy.
-Memoria updates itself from **Settings → Updates**. Uninstalling the app removes its local data.
-
-**Updates through Obtainium:** if you keep your apps current with [Obtainium](https://obtainium.imranr.dev), add `https://github.com/JanKonradK/Memoria` as a GitHub source and set the APK filter to `Memoria-android\.apk`.
-Obtainium then installs each release as it is published. Install it over the existing app; the signature is the same, so your data stays.
-
-## Add your games
-
-1. Open Memoria.
-2. Select **Add your first game**, or select **+ → Add game**.
-3. Select a game from the list.
-4. Select your server region and check the game settings.
-5. Select the **Add** button to finish.
-
-Ready-made settings are available for:
-
-- Genshin Impact
-- Honkai: Star Rail
-- Zenless Zone Zero
-- Wuthering Waves
-- Neverness to Everness
-- Love and Deepspace
-- Umamusume
-- Goddess of Victory: NIKKE
-- Arknights: Endfield
-
-You can also add a custom game or separate accounts for the same game.
-Check the starting values against your game. Server regions and game updates can change the correct values.
-
-## Use Memoria each day
-
-- **Update your energy.** Select the number on a game card, enter the amount from your game, and press Enter.
-- **Mark completed tasks.** Select the circle beside a task after you complete it.
-- **Return to the game list.** Press **Alt+Left**, use browser **Back**, or select the back arrow. If an editor is open, Back closes it first. Memoria asks before discarding an unsaved draft.
-- **Change daily-task rules.** Open the game, select its pencil button, then select a task. Change its cadence, mode, or count target here. Use **Add item** to add another task.
-- **Check deadlines.** Open **Calendar** to see events and their dates. Select **List** for a simpler view.
-- **Add an event or reminder.** Select **+**, then **Event** or **Reminder**.
-- **Change events for one game.** Open its card, then select **Manage events**. Select an event to change its name, type, dates, or check-in rules. You can also add or delete events here.
-- **Read Genshin events.** The card, Timeline lanes, and Manage events show Teyvat events first, Miliastra Wonderland events next, and banners last. Reorder events within each timeline section. Official calendar entries show confirmed date ranges. Events with exact times keep their countdowns.
-- **Take a break from a game.** Open its card, select the pencil button, then **Pause tracking**. Select **Resume tracking** on the card when you return. Your saved progress and events stay in Memoria.
-- **Change game settings.** Select the pencil button, then **Game settings**. You can also change the card layout here.
-- **Change the appearance.** Select the sun or moon button for the light or dark theme.
-
-Memoria estimates energy from your last entry. Enter a new value after you spend energy or receive extra energy.
-Task resets use each game's server time. Dates and clocks use your **Home timezone** in **Settings**.
-
-Some games include event dates with the app. These dates can change, so check important deadlines in your game.
-The Android and Windows apps send reminders for the next 7 days: an hour before each daily reset that still has dailies left, before the weekly reset (one hour ahead per game still owing weeklies, up to 10 hours), three hours before an unfinished event ends, and two hours before a freshly read bar caps. Nothing is sent for work you have ticked off. Setup offers them; you can also turn them on in **Settings → Reminders**.
-Quiet hours are off by default. If you set them, a reminder that falls inside them arrives just before they begin, and Today marks what has to happen before they start. **Settings → Reminders** also has an optional evening digest and your own reminders, once or on repeat. On Android, allow **Alarms & reminders** so reminders arrive on the minute, and the dailies and event notifications have **Dailies done** and **Done** buttons. Opening Memoria refreshes the schedule; if the phone goes a week without it, one notification says so before reminders run out.
-
-## Keep a backup
-
-A backup is a separate copy of your progress. Keep one before you change computers, browsers, or app versions.
-
-1. Open **Settings**.
-2. In **Data**, select **Export backup**.
-3. Save the file somewhere you can find it again.
-
-To use a backup, select **Import backup** in the same section.
-Select your saved file, check the preview, then select **Merge backup**.
-Memoria combines the backup with your current data. For the same item, the newer change wins.
-
-The Windows app also keeps a data file outside the app folder.
-The one-file version keeps its data in your browser. Clearing browser data can remove that copy.
-
-## Use your phone and computer
-
-### Sync a PC and an Android phone or tablet over Wi-Fi
-
-Connect the PC and phone to the same Wi-Fi. Open Memoria on both devices.
-
-1. On the PC, open **Settings** and select **Connect my phone or tablet**.
-2. On the phone, open **Settings** and tap **Scan PC code**.
-3. Point the phone camera at the code on the PC.
-
-Memoria connects the devices. You do not need to type an address or code.
-If the phone or tablet and the PC both already have games, it asks before it syncs.
-Select **Use my PC's data** for a new phone or tablet. Select **Combine both** to keep every game from both devices.
-Select **Cancel and disconnect** to change nothing.
-If Android requests camera access, allow it to scan the code. Memoria does not save a photo.
-
-If you cannot use the camera, select **Enter a code instead** on both devices.
-Then copy the PC address and pairing code into the phone app.
-If the code expires, select **Show a new code** on the PC.
-If Windows Firewall requests access, allow Memoria on your private network.
-If Windows blocks the connection, right-click the Memoria icon in the tray and select **Allow phone sync through Windows**.
-Approve the Windows permission request to allow phone connections from your local network.
-
-Keep Memoria open on the PC. The phone syncs while its app is open.
-Changes from both devices merge automatically. Offline changes stay on each device until the next connection.
-For conflicting changes to the same item, the later change wins.
-
-Connection options are below the connection status. You can check the connection or scan a new PC code there.
-If you move the PC to another network, scan a new code. Your saved progress stays on both devices.
-Use **Pause sync** on the PC to stop sync temporarily. **Resume sync** connects your saved devices again.
-Use **Disconnect** on the phone or **Disconnect device** on the PC to remove a connection.
-These actions keep your saved data.
-
-If an older PC launcher remains active after an update, restart Windows and open the updated app.
-This starts the new Wi-Fi listener without a change to your saved data.
-
-Wi-Fi sync is end-to-end encrypted: the phone checks the PC's key from the pairing code, and every request and reply is encrypted and authenticated (X25519, XChaCha20-Poly1305). It runs over plain HTTP, which carries only public handshake fields and ciphertext. Details are in [docs/publisher-trust.md](docs/publisher-trust.md).
-
-#### Sync away from home
-
-Install [Tailscale](https://tailscale.com) on the PC and the phone or tablet, and sign in to the same account on both.
-After the next sync at home, the phone also knows the PC's Tailscale address and syncs from any network.
-You do not need to scan a new code. Tailscale encrypts the connection.
-If you allowed phone sync through Windows before this update, select **Allow phone sync through Windows** again.
-
-### Sync computers through a shared folder
-
-This is optional. Use the **Windows app**, **Chrome**, or **Edge**, and a folder that syncs between your computers,
-such as a OneDrive, Google Drive, or Dropbox folder.
-
-1. On your first computer, open **Settings → Data → Shared-folder sync**.
-2. Select **Create sync file…**.
-3. Save the file in your synced folder.
-4. Wait for your folder service to copy the file to your other computer.
-5. On the other computer, open the same section in Memoria.
-6. Select **Use existing file…** and choose that file.
-
-Your folder service transfers the file. Memoria combines the changes when both computers have access to it.
-If Memoria asks for permission again, select **Reconnect**.
-When you move from a browser to the Windows app, select **Use existing file…** to connect that file again.
-
-If you do not want to use a synced folder, transfer a backup instead.
-
-## Get updates
-
-Memoria checks GitHub for a new release when it opens, and twice a day while it stays open.
-When one is available, a full-screen page lists every change since your version. Select **Update** or **Later**.
-**Settings → Updates** has **Check for updates** and the automatic-check switch.
-
-- **Windows app:** **Update** downloads the new version, then **Restart and update** installs it and reopens Memoria. **Check for updates** in the tray icon's menu checks now.
-- **Android app:** **Update** downloads the APK and opens Android's installer. The first time, Android asks you to allow Memoria to install apps.
-
-Every download is checked against the release's checksums before it is installed. Your saved data is never touched by an update.
-For the first update from an older launcher, restart Windows if Memoria cannot reconnect to local sync.
-
-## Need help?
-
-**[Report a problem or request a feature](https://github.com/JanKonradK/Memoria/issues)**
-
-Include what you tried, what happened, and whether you use the Windows app or the one-file version.
-A screenshot can help. Remove any personal information before you share it.
-GitHub requires an account to post an issue.
-
-## For developers
-
-Use Node.js 24.15 or later in version 24, or Node.js 26 or later.
-CI uses Node.js 24.21.0.
-The app and shared packages use the TypeScript 7.0.2 compiler.
-ESLint uses TypeScript 6.0.3 because its current TypeScript parser does not support version 7.
-The `xcode` dependency uses `uuid` 11.1.1 to remove a known security defect.
-
-For source code setup, tests, release commands, and technical details, see the [developer guide](docs/development.md). What is still open is in the [roadmap](docs/roadmap.md).
+React, TypeScript and Vite, with a Rust (Tauri) Windows host and a Capacitor Android app; domain logic lives in `shared/`. See the [developer guide](docs/development.md) and the [roadmap](docs/roadmap.md).
