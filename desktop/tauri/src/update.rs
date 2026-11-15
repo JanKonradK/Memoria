@@ -422,7 +422,10 @@ pub fn run_staged_installer(root: &Path, paths: &Paths) -> std::io::Result<()> {
     let _locks = validate_pending(root, paths).map_err(std::io::Error::other)?;
     // Native helper: no editable command file runs after the app exits.
     let mut command = Command::new(paths.pending_dir.join("Memoria.exe"));
+    // Not the install folder, which Memoria usually runs from: a process whose
+    // working directory is inside it stops the installer from moving it.
     command
+        .current_dir(&paths.update_dir)
         .arg("--apply-signed-update")
         .arg(root)
         .arg(&paths.update_dir)
@@ -578,6 +581,9 @@ pub fn apply_helper(args: &[String]) -> Result<(), String> {
     refuse_elevated()?;
     let root = PathBuf::from(&args[2]);
     let paths = Paths::new(Path::new(&args[3]).parent().ok_or("Invalid update directory.")?);
+    // Builds up to 0.2.0 start this helper inside the install folder, which
+    // would stop the installer from moving it. Step out before anything else.
+    std::env::set_current_dir(&paths.update_dir).map_err(|e| e.to_string())?;
     #[cfg(windows)]
     unsafe {
         use windows_sys::Win32::{
@@ -598,6 +604,7 @@ pub fn apply_helper(args: &[String]) -> Result<(), String> {
     let (locks, manifest) = validate_pending(&root, &paths)?;
     let mut installer = Command::new("powershell.exe");
     installer
+        .current_dir(&paths.update_dir)
         .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File"])
         .arg(paths.pending_dir.join("desktop/Install-Shortcut.ps1"))
         .arg("-InstallRoot")
@@ -624,11 +631,27 @@ pub fn apply_helper(args: &[String]) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     names_lock.flush().map_err(|e| e.to_string())?;
     installer.arg("-VerifiedFilesFile").arg(&names_file);
-    let result = installer.status().map_err(|e| e.to_string())?;
+    let output = installer.output().map_err(|e| e.to_string())?;
     drop(locks);
     drop(names_lock);
-    if !result.success() {
-        return Err("The signed update installer failed. Your data was kept.".into());
+    // The installer runs after Memoria has closed, so its output is the only
+    // record of what happened. Keep it beside the staged update.
+    let log = paths.update_dir.join("install.log");
+    let at = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs();
+    let _ = fs::write(
+        &log,
+        format!(
+            "at {at} (Unix seconds)\nexit {:?}\n{}\n{}",
+            output.status.code(),
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        ),
+    );
+    if !output.status.success() {
+        return Err(format!(
+            "The signed update installer failed. Your data was kept. Details are in {}.",
+            log.display()
+        ));
     }
     clear_pending(&paths);
     Command::new(root.join("Memoria.exe"))

@@ -92,7 +92,18 @@ if (-not $source.Equals($destination, [StringComparison]::OrdinalIgnoreCase)) {
     }
     Assert-NativeBundle $stage
     if (Test-Path -LiteralPath $destination) {
-      Move-Item -LiteralPath $destination -Destination $previous
+      # Memoria's WebView2 helpers can outlive it by a few seconds with this
+      # folder as their working directory, and Windows refuses to move a folder
+      # in use. A rename either happens whole or not at all, so retry it.
+      for ($attempt = 1; ; $attempt++) {
+        try {
+          Move-Item -LiteralPath $destination -Destination $previous
+          break
+        } catch {
+          if ($attempt -ge 30) { throw }
+          Start-Sleep -Seconds 1
+        }
+      }
     }
     try {
       Move-Item -LiteralPath $stage -Destination $destination
