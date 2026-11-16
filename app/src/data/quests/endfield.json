@@ -9,13 +9,13 @@
       "title": "Force Start",
       "region": null,
       "version": "1.0",
-      "summary": "Perlica guides the Endministrator toward a bridge to close out the opening.",
+      "summary": "The Endministrator is woken from long dormancy on Talos-II and, guided by Perlica, has to relearn who they are.",
       "start": "Start of the game.",
-      "characters": ["Perlica"],
+      "characters": ["Perlica", "Fiona"],
       "requires": [],
       "parts": [
-        { "id": "1", "title": "Cold Start", "characters": [], "note": null },
-        { "id": "2", "title": "Awakening", "characters": [], "note": null }
+        { "id": "1", "title": "Process: Cold Start", "characters": [], "note": null },
+        { "id": "2", "title": "Process: Awakening", "characters": ["Perlica", "Fiona"], "note": null }
       ],
       "url": "https://gamewith.net/akendfield/72472"
     },
@@ -26,18 +26,66 @@
       "title": "Process I",
       "region": "Valley IV",
       "version": "1.0",
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "summary": "Contact with the Hub Base is lost; Perlica and the Endministrator restore power to Valley IV and push the Landbreakers out of the Valley Fort.",
+      "start": "Follows the Prologue.",
+      "characters": [
+        "Perlica",
+        "Andre",
+        "Chen Qianyu",
+        "Wulfgard",
+        "Qin Jiangchi",
+        "Soth",
+        "Karja",
+        "Miguel",
+        "Semyon",
+        "Ginny",
+        "Shawna",
+        "Fiona"
+      ],
       "requires": ["prologue-force-start"],
       "parts": [
-        { "id": "1", "title": "Break the Siege", "characters": [], "note": null },
-        { "id": "2", "title": "Valley Reboot", "characters": [], "note": null },
-        { "id": "3", "title": "Rally and Unite", "characters": [], "note": null },
-        { "id": "4", "title": "Westward Into the Vale", "characters": [], "note": null },
-        { "id": "5", "title": "Secure Sanctuary", "characters": [], "note": null },
-        { "id": "6", "title": "Building an Outpost", "characters": [], "note": null },
-        { "id": "7", "title": "Through the Haze", "characters": [], "note": null },
+        {
+          "id": "1",
+          "title": "Break the Siege",
+          "characters": ["Perlica", "Andre", "Qin Jiangchi", "Chen Qianyu", "Miguel"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "Valley Reboot",
+          "characters": ["Andre", "Perlica", "Chen Qianyu", "Qin Jiangchi"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "Rally and Unite",
+          "characters": ["Andre", "Perlica", "Qin Jiangchi", "Chen Qianyu", "Semyon", "Maymay", "Dahlia", "Vannikov"],
+          "note": null
+        },
+        {
+          "id": "4",
+          "title": "Westward Into the Vale",
+          "characters": ["Perlica", "Wulfgard", "Chen Qianyu"],
+          "note": null
+        },
+        {
+          "id": "5",
+          "title": "Secure Sanctuary",
+          "characters": ["Perlica", "Wulfgard", "Soth", "Chen Qianyu", "Karja", "Ginny"],
+          "note": null
+        },
+        {
+          "id": "6",
+          "title": "Building an Outpost",
+          "characters": ["Perlica", "Soth", "Wulfgard", "Chen Qianyu", "Karja"],
+          "note": null
+        },
+        {
+          "id": "7",
+          "title": "Through the Haze",
+          "characters": ["Wulfgard", "Perlica", "Chen Qianyu", "Karja", "Shawna", "Ginny"],
+          "note": null
+        },
         { "id": "8", "title": "Fort Showdown", "characters": [], "note": null }
       ],
       "url": "https://gamewith.net/akendfield/72472"
@@ -49,14 +97,19 @@
       "title": "Process II",
       "region": "Valley IV",
       "version": "1.0",
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "summary": "With the bridge to the Power Plateau gone, the team looks for another route while repairs on Dijiang continue.",
+      "start": "Follows Process I.",
+      "characters": ["Perlica", "Xaihi", "Andre", "Qin Jiangchi", "Vannikov", "Pocus"],
       "requires": ["ch1-process1"],
       "parts": [
-        { "id": "1", "title": "Paving the Way", "characters": [], "note": null },
+        {
+          "id": "1",
+          "title": "Paving the Way",
+          "characters": ["Andre", "Perlica", "Qin Jiangchi", "Vannikov", "Pocus"],
+          "note": null
+        },
         { "id": "2", "title": "Work Preparation", "characters": [], "note": null },
-        { "id": "3", "title": "Maintenance Progress", "characters": [], "note": null }
+        { "id": "3", "title": "Maintenance Progress", "characters": ["Perlica", "Xaihi"], "note": null }
       ],
       "url": "https://gamewith.net/akendfield/72472"
     },
@@ -67,21 +120,69 @@
       "title": "Process III",
       "region": "Valley IV",
       "version": "1.0",
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "summary": "The route to the Power Plateau leads through the Blight-choked Originium Science Park and the Origin Lodespring.",
+      "start": "Follows Process II.",
+      "characters": [
+        "Perlica",
+        "Chen Qianyu",
+        "Yvonne",
+        "Tata",
+        "Fabian Collins",
+        "Rossi",
+        "Aleeza Collins",
+        "Jenner",
+        "Alia",
+        "Royle",
+        "Qin Jiangchi",
+        "Andre"
+      ],
       "requires": ["ch1-process2"],
       "parts": [
-        { "id": "1", "title": "The Mission Continues", "characters": [], "note": null },
-        { "id": "2", "title": "Cross the Science Park", "characters": [], "note": null },
-        { "id": "3", "title": "Park Way Party", "characters": [], "note": null },
-        { "id": "4", "title": "Walk in the Park", "characters": [], "note": null },
-        { "id": "5", "title": "Mystery in the Building", "characters": [], "note": null },
-        { "id": "6", "title": "Down the Hill", "characters": [], "note": null },
-        { "id": "7", "title": "Shattered Veins", "characters": [], "note": null },
-        { "id": "8", "title": "Lodespring Crossing", "characters": [], "note": null },
-        { "id": "9", "title": "Cradle of Ages", "characters": [], "note": null },
-        { "id": "10", "title": "Eve of Battle", "characters": [], "note": null }
+        {
+          "id": "1",
+          "title": "The Mission Continues",
+          "characters": ["Qin Jiangchi", "Andre", "Perlica", "Shawna", "Chen Qianyu", "Vannikov"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "Cross the Science Park",
+          "characters": ["Fabian Collins", "Perlica", "Chen Qianyu", "Aleeza Collins", "Tata"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "Park Way Party",
+          "characters": ["Fabian Collins", "Perlica", "Aleeza Collins", "Chen Qianyu"],
+          "note": null
+        },
+        {
+          "id": "4",
+          "title": "Walk in the Park",
+          "characters": ["Perlica", "Chen Qianyu", "Tata", "Yvonne"],
+          "note": null
+        },
+        {
+          "id": "5",
+          "title": "Mystery in the Building",
+          "characters": ["Yvonne", "Chen Qianyu", "Tata", "Perlica"],
+          "note": null
+        },
+        { "id": "6", "title": "Down the Hill", "characters": ["Chen Qianyu", "Perlica", "Tata"], "note": null },
+        {
+          "id": "7",
+          "title": "Shattered Veins",
+          "characters": ["Perlica", "Chen Qianyu", "Rossi", "Jenner", "Alia", "Royle", "Alfass", "Tata"],
+          "note": null
+        },
+        { "id": "8", "title": "Lodespring Crossing", "characters": ["Perlica", "Chen Qianyu"], "note": null },
+        {
+          "id": "9",
+          "title": "Cradle of the Ages",
+          "characters": ["Perlica", "Chen Qianyu"],
+          "note": "Listed as \"Cradle of Ages\" by PowerPyx; datamine name used."
+        },
+        { "id": "10", "title": "Eve of Battle", "characters": ["Perlica", "Chen Qianyu"], "note": null }
       ],
       "url": "https://gamewith.net/akendfield/72472"
     },
@@ -92,20 +193,67 @@
       "title": "Process IV",
       "region": "Valley IV",
       "version": "1.0",
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "summary": "On the Power Plateau the team heads for the Æther Test Site under the rift, then the factions of Valley IV meet to plan what comes next.",
+      "start": "Follows Process III.",
+      "characters": [
+        "Perlica",
+        "Crowe",
+        "Chen Qianyu",
+        "Yvonne",
+        "Dean",
+        "Qin Jiangchi",
+        "Angro",
+        "Clavell",
+        "Andre",
+        "Tata",
+        "Royle",
+        "Fiona"
+      ],
       "requires": ["ch1-process3"],
       "parts": [
-        { "id": "1", "title": "Entering the Endgame", "characters": [], "note": null },
-        { "id": "2", "title": "Counterstrike Brewing", "characters": [], "note": null },
-        { "id": "3", "title": "Scaldings of Utjug", "characters": [], "note": null },
-        { "id": "4", "title": "Frontline Rush", "characters": [], "note": null },
+        { "id": "1", "title": "Entering the Endgame", "characters": ["Perlica", "Chen Qianyu"], "note": null },
+        {
+          "id": "2",
+          "title": "Counterstrike Brewing",
+          "characters": ["Crowe", "Angro", "Chen Qianyu", "Perlica"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "Scaldings of Utjug",
+          "characters": ["Crowe", "Dean", "Perlica", "Chen Qianyu", "Clavell"],
+          "note": null
+        },
+        { "id": "4", "title": "Frontline Rush", "characters": ["Perlica", "Tata"], "note": null },
         { "id": "5", "title": "Undying Cinders", "characters": [], "note": null },
-        { "id": "6", "title": "Temporary Peace", "characters": [], "note": null },
-        { "id": "7", "title": "Mysterious Signal", "characters": [], "note": null },
-        { "id": "8", "title": "Conference of the Four", "characters": [], "note": null },
-        { "id": "9", "title": "Work Preparation II", "characters": [], "note": null }
+        {
+          "id": "6",
+          "title": "Temporary Peace",
+          "characters": [
+            "Perlica",
+            "Qin Jiangchi",
+            "Chen Qianyu",
+            "Andre",
+            "Crowe",
+            "Fabian Collins",
+            "Rossi",
+            "Aleeza Collins"
+          ],
+          "note": null
+        },
+        {
+          "id": "7",
+          "title": "Mysterious Signal",
+          "characters": ["Yvonne", "Perlica", "Chen Qianyu", "Royle", "Crowe", "Fiona"],
+          "note": null
+        },
+        { "id": "8", "title": "Conference of the Four", "characters": ["Perlica"], "note": null },
+        {
+          "id": "9",
+          "title": "Work Preparation II",
+          "characters": ["Perlica"],
+          "note": "Datamine name is \"Work Preparation\" (e5m0d5); a short prep step before Chapter 2."
+        }
       ],
       "url": "https://gamewith.net/akendfield/72472"
     },
@@ -116,14 +264,41 @@
       "title": "Process I",
       "region": "Wuling",
       "version": "1.0",
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "summary": "The expedition sets out for Wuling, gets separated in a limestone cave and meets Tangtang of Qingbo Stockade.",
+      "start": "Follows Chapter 1 Process IV; Fiona calls you back to Dijiang.",
+      "characters": [
+        "Chen Qianyu",
+        "Tangtang",
+        "Perlica",
+        "Ardashir",
+        "Ruan Yi",
+        "Mi Fu",
+        "Stonefang",
+        "He Lao",
+        "Fiona",
+        "Qingwu",
+        "Li Zhui"
+      ],
       "requires": ["ch1-process4"],
       "parts": [
-        { "id": "1", "title": "Arrival at Wuling", "characters": [], "note": null },
-        { "id": "2", "title": "Stumbling Into Qingbo Stockade", "characters": [], "note": null },
-        { "id": "3", "title": "Destination Wuling", "characters": [], "note": null }
+        {
+          "id": "1",
+          "title": "Arrival at Wuling",
+          "characters": ["Chen Qianyu", "Perlica", "Ardashir", "Tangtang", "Fiona"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "Stumbling Into Qingbo Stockade",
+          "characters": ["Tangtang", "Chen Qianyu", "Perlica", "Ruan Yi", "Stonefang", "He Lao", "Qingwu"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "Destination Wuling",
+          "characters": ["Chen Qianyu", "Mi Fu", "Perlica", "Tangtang", "Li Zhui"],
+          "note": null
+        }
       ],
       "url": "https://gamewith.net/akendfield/72472"
     },
@@ -134,16 +309,72 @@
       "title": "Process II",
       "region": "Wuling",
       "version": "1.0",
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "summary": "In Wuling City the team meets Viceroy Zhuang Fangyi and begins Xiranite research and production with the Tianshi.",
+      "start": "Follows Process I.",
+      "characters": [
+        "Zhuang Fangyi",
+        "Tangtang",
+        "Chen Qianyu",
+        "Mi Fu",
+        "Perlica",
+        "Yan Ning",
+        "Lifeng",
+        "Bai Shuang",
+        "Ge Yipu",
+        "Xiao Xiang",
+        "Ji Bing",
+        "Da Pan"
+      ],
       "requires": ["ch2-process1"],
       "parts": [
-        { "id": "1", "title": "A Glance of Astonishment", "characters": [], "note": null },
-        { "id": "2", "title": "A Breeze Away", "characters": [], "note": null },
-        { "id": "3", "title": "Of Grace and Gentle Might", "characters": [], "note": null },
-        { "id": "4", "title": "The Surging Tide", "characters": [], "note": null },
-        { "id": "5", "title": "Where Danger Sleeps", "characters": [], "note": null }
+        {
+          "id": "1",
+          "title": "A Glance of Astonishment",
+          "characters": ["Zhuang Fangyi", "Chen Qianyu", "Perlica", "Mi Fu", "Ge Yipu", "Lian Xiaowu"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "Ready the Easterlies",
+          "characters": [
+            "Yan Ning",
+            "Lifeng",
+            "Zhuang Fangyi",
+            "Chen Qianyu",
+            "Perlica",
+            "Bai Shuang",
+            "Mi Fu",
+            "Ji Bing"
+          ],
+          "note": "Listed as \"A Breeze Away\" by PowerPyx at launch; current in-game name per datamine."
+        },
+        {
+          "id": "3",
+          "title": "Of Grace and Gentle Might",
+          "characters": [
+            "Zhuang Fangyi",
+            "Ge Yipu",
+            "Perlica",
+            "Chen Qianyu",
+            "Da Pan",
+            "Xiao Xiang",
+            "Chang Yun",
+            "Ah Zai"
+          ],
+          "note": null
+        },
+        {
+          "id": "4",
+          "title": "The Surging Tide",
+          "characters": ["Tangtang", "Mi Fu", "Yan Ning", "Perlica", "Chen Qianyu", "Zhuang Fangyi", "Bai Shuang"],
+          "note": null
+        },
+        {
+          "id": "5",
+          "title": "Where Danger Sleeps",
+          "characters": ["Tangtang", "Chen Qianyu", "Perlica"],
+          "note": null
+        }
       ],
       "url": "https://gamewith.net/akendfield/72472"
     },
@@ -154,22 +385,333 @@
       "title": "Process III",
       "region": "Wuling",
       "version": "1.1",
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "summary": "Unrest at Qingbo Stockade puts Tangtang in danger; the team and Mi Fu head into the marsh to find her.",
+      "start": "Follows Process II.",
+      "characters": [
+        "Tangtang",
+        "Mi Fu",
+        "Perlica",
+        "Chen Qianyu",
+        "Ardashir",
+        "Ruan Yi",
+        "Uncle Shang",
+        "Zhuang Fangyi",
+        "Waterbell",
+        "Rusty Hook",
+        "He Lao",
+        "Meng Ai"
+      ],
       "requires": ["ch2-process2"],
       "parts": [
-        { "id": "1", "title": "Unexpected Attack", "characters": [], "note": null },
-        { "id": "2", "title": "Deep in the Mire", "characters": [], "note": null },
-        { "id": "3", "title": "The Flow Splits Course", "characters": [], "note": null },
-        { "id": "4", "title": "Surging From a Withered Spring", "characters": [], "note": null },
-        { "id": "5", "title": "A River Restless in Still Winds", "characters": [], "note": null },
-        { "id": "6", "title": "Another Wave Comes Crashing In", "characters": [], "note": null },
-        { "id": "7", "title": "Ripples Spread Throughout the Flow", "characters": [], "note": null },
-        { "id": "8", "title": "Purity Reveals the Stubborn Stone", "characters": [], "note": null },
-        { "id": "9", "title": "Twas One River That Gave Us Drink", "characters": [], "note": null }
+        {
+          "id": "1",
+          "title": "Unexpected Attack",
+          "characters": ["Perlica", "Mi Fu", "Chen Qianyu", "Bai Liang", "Zhuang Fangyi", "Li Zhui", "Hill Smasher"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "Deep in the Mire",
+          "characters": ["Mi Fu", "Perlica", "Chen Qianyu", "Stonefang", "Waterbell", "Lang Tou"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "The Flow Splits Course",
+          "characters": ["Mi Fu", "Tangtang", "Perlica", "Chen Qianyu", "Rusty Hook", "Meng Ai", "Liu Han", "Li Ming"],
+          "note": null
+        },
+        {
+          "id": "4",
+          "title": "Surging From a Withered Spring",
+          "characters": ["Tangtang", "Perlica", "Ardashir", "Chen Qianyu", "Ruan Yi"],
+          "note": null
+        },
+        {
+          "id": "5",
+          "title": "A River Restless in Still Winds",
+          "characters": ["Tangtang", "He Lao"],
+          "note": "Tangtang chapter \"Poured Forth and Flowing Free\" (c27), filed as main-story missions."
+        },
+        {
+          "id": "6",
+          "title": "Another Wave Comes Crashing In",
+          "characters": ["Tangtang", "Qingwu", "Mi Fu", "Ah Zai", "Da Pan"],
+          "note": null
+        },
+        { "id": "7", "title": "Ripples Spread Throughout the Flow", "characters": ["Tangtang"], "note": null },
+        {
+          "id": "8",
+          "title": "Purity Reveals the Stubborn Stone",
+          "characters": ["Tangtang", "Uncle Shang"],
+          "note": null
+        },
+        {
+          "id": "9",
+          "title": "'Twas One River That Gave Us Drink",
+          "characters": ["Tangtang", "Zhuang Fangyi", "Da Pan"],
+          "note": null
+        }
       ],
       "url": "https://gamewith.net/akendfield/72472"
+    },
+    {
+      "id": "ch2-process4",
+      "kind": "main",
+      "series": "Chapter 2: Lost in the Marsh",
+      "title": "Process IV",
+      "region": "Wuling",
+      "version": "1.2",
+      "summary": "Trouble at the Marker Stone sends the Endministrator and Mi Fu into its interiors after Ardashir.",
+      "start": "Follows Process III; head to the Marker Stone Flats.",
+      "characters": [
+        "Arcane",
+        "Chen Qianyu",
+        "Perlica",
+        "Xi Mo",
+        "Ardashir",
+        "Zhuang Fangyi",
+        "Rusty Hook",
+        "Mi Fu",
+        "Ge Yipu",
+        "Ling Luo",
+        "Iron Boatswain"
+      ],
+      "requires": ["ch2-process3"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Like Fire and Ice",
+          "characters": ["Perlica", "Arcane", "Chen Qianyu", "Zhuang Fangyi", "Xi Mo", "Mi Fu"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "A Lethal Invitation",
+          "characters": ["Arcane", "Chen Qianyu", "Perlica", "Rusty Hook", "Ling Luo", "Iron Boatswain"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "Phantom Wisps",
+          "characters": ["Arcane", "Chen Qianyu", "Perlica", "Ardashir"],
+          "note": null
+        },
+        { "id": "4", "title": "Awaiting Thine Coming", "characters": ["Ardashir"], "note": null },
+        {
+          "id": "5",
+          "title": "Free Will",
+          "characters": ["Chen Qianyu", "Xi Mo", "Perlica", "Zhuang Fangyi", "Ge Yipu"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/e8m1.json"
+    },
+    {
+      "id": "ch2-process5",
+      "kind": "main",
+      "series": "Chapter 2: Lost in the Marsh",
+      "title": "Process V",
+      "region": "Wuling",
+      "version": "1.2",
+      "summary": "Wuling City braces for an attack, and the team works with Zhuang Fangyi to reinforce the Tianshi Pillar Array.",
+      "start": "Follows Process IV; go to the Main Pillar Office.",
+      "characters": [
+        "Zhuang Fangyi",
+        "Chen Qianyu",
+        "Perlica",
+        "Mi Fu",
+        "Summit",
+        "Da Pan",
+        "Lifeng",
+        "Ge Yipu",
+        "Chang Yun",
+        "Tangtang",
+        "Li Zhui"
+      ],
+      "requires": ["ch2-process4"],
+      "parts": [
+        { "id": "1", "title": "Thus Rise the Wave and Wind", "characters": [], "note": null },
+        {
+          "id": "2",
+          "title": "Tremors of the Crashing Tide",
+          "characters": [
+            "Zhuang Fangyi",
+            "Perlica",
+            "Mi Fu",
+            "Chen Qianyu",
+            "Ge Yipu",
+            "Chang Yun",
+            "Da Pan",
+            "Tangtang"
+          ],
+          "note": null
+        },
+        { "id": "3", "title": "The Breach", "characters": [], "note": null },
+        {
+          "id": "4",
+          "title": "Where Friendship Was Made",
+          "characters": ["Zhuang Fangyi", "Chen Qianyu", "Summit", "Perlica", "Da Pan", "Mi Fu", "Lifeng", "Li Zhui"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/e9m1.json"
+    },
+    {
+      "id": "ch2-process6",
+      "kind": "main",
+      "series": "Chapter 2: Lost in the Marsh",
+      "title": "Process VI",
+      "region": "Wuling",
+      "version": "1.2",
+      "summary": "With the crisis past, Zhuang Fangyi asks for help with a project that leads the team toward the rift.",
+      "start": "Follows Process V; talk to Zhuang Fangyi.",
+      "characters": ["Zhuang Fangyi", "Lifeng", "Mi Fu", "Ge Yipu", "Chang Yun"],
+      "requires": ["ch2-process5"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "A Breach Starts with a Crack",
+          "characters": ["Zhuang Fangyi", "Chang Yun", "Mi Fu", "Ge Yipu"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "Patience Makes Greatness",
+          "characters": ["Zhuang Fangyi", "Lifeng", "Mi Fu"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "Forged at the Very Beginning",
+          "characters": ["Zhuang Fangyi", "Ge Yipu"],
+          "note": null
+        },
+        {
+          "id": "4",
+          "title": "Kindred Souls Who Share a Vision",
+          "characters": ["Zhuang Fangyi"],
+          "note": "GameWith gives the Process VI title as \"Soulmates Sharing a Vision\"."
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/e10m1.json"
+    },
+    {
+      "id": "ch2-process7",
+      "kind": "main",
+      "series": "Chapter 2: Lost in the Marsh",
+      "title": "Process VII",
+      "region": "Wuling",
+      "version": "1.4",
+      "summary": "Using the Xiranite Nexus, the team crosses Yinglung Pass into the North Wuling Exclusion Zone to contain its rifts.",
+      "start": "Follows Process VI; read Zhuang Fangyi's message. Added in the \"Homecoming\" update.",
+      "characters": [
+        "Arcane",
+        "Zhuang Fangyi",
+        "Chen Qianyu",
+        "Perlica",
+        "Si",
+        "Ardashir",
+        "Da Pan",
+        "Lifeng",
+        "Summit",
+        "Tangtang",
+        "Mi Fu",
+        "Nefarith"
+      ],
+      "requires": ["ch2-process6"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Bravely Breach the Hostile Winds",
+          "characters": ["Si", "Arcane", "Ardashir", "Zhuang Fangyi", "Perlica", "Chen Qianyu", "Summit"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "Thus Begins the Homeward March",
+          "characters": ["Arcane", "Zhuang Fangyi", "Chen Qianyu", "Perlica", "Da Pan", "Tangtang", "Mi Fu", "Lifeng"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "A Past Shared by the Swordmancers",
+          "characters": ["Arcane", "Chen Qianyu", "Perlica", "Summit", "Zhuang Fangyi"],
+          "note": null
+        },
+        {
+          "id": "4",
+          "title": "Same Old Faces in a Place Transformed",
+          "characters": ["Zhuang Fangyi", "Arcane", "Perlica", "Chen Qianyu", "Da Pan", "Lifeng"],
+          "note": null
+        },
+        {
+          "id": "5",
+          "title": "Warily Returns the Wandering Vigile",
+          "characters": ["Arcane", "Chen Qianyu", "Zhu", "Perlica"],
+          "note": null
+        },
+        {
+          "id": "6",
+          "title": "Finally Breaks the Hanging Clouds",
+          "characters": ["Arcane", "Zhuang Fangyi", "Perlica", "Chen Qianyu"],
+          "note": null
+        },
+        { "id": "7", "title": "\"Homecoming\"", "characters": ["Arcane"], "note": null },
+        {
+          "id": "8",
+          "title": "Stubbornly Lingers the Setting Sun",
+          "characters": ["Arcane", "Zhuang Fangyi", "Perlica", "Si", "Chen Qianyu", "Da Pan", "Nefarith", "Lifeng"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/e11m1.json"
+    },
+    {
+      "id": "ch2-process8",
+      "kind": "main",
+      "series": "Chapter 2: Lost in the Marsh",
+      "title": "Process VIII",
+      "region": "Wuling",
+      "version": "1.6",
+      "summary": "The Endministrator is drawn into a painted world made by Si and climbs its mountain to repair the damage.",
+      "start": "Follows Process VII. Added in the \"Sanctuary of Ink\" update.",
+      "characters": [
+        "Si",
+        "Ye Minghe",
+        "Perlica",
+        "Li",
+        "Zhuang Fangyi",
+        "Chen Qianyu",
+        "Ardashir",
+        "Nefarith",
+        "Nuli",
+        "Xaihi"
+      ],
+      "requires": ["ch2-process7"],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Enter the Painted World",
+          "characters": ["Si", "Perlica", "Zhuang Fangyi", "Ye Minghe", "Nuli"],
+          "note": null
+        },
+        { "id": "2", "title": "Learn of Rise and Fall", "characters": ["Si", "Li"], "note": null },
+        { "id": "3", "title": "Witness the Game Unfold", "characters": ["Si", "Ye Minghe"], "note": null },
+        {
+          "id": "4",
+          "title": "See Through the Self",
+          "characters": ["Si", "Ye Minghe", "Ardashir", "Nefarith"],
+          "note": null
+        },
+        {
+          "id": "5",
+          "title": "Paint with Fresh Ink",
+          "characters": ["Si", "Perlica", "Ye Minghe", "Chen Qianyu", "Zhuang Fangyi", "Xaihi"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/e12m1.json"
     },
     {
       "id": "aberrant-exploration",
@@ -177,15 +719,18 @@
       "series": "OMV Dijiang",
       "title": "Aberrant Exploration",
       "region": "OMV Dijiang",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Repeated dives into the Valley's Aberrants, each going a layer deeper.",
       "start": null,
       "characters": [],
       "requires": [],
       "parts": [
         { "id": "1", "title": "Aberrant Exploration I", "characters": [], "note": null },
         { "id": "2", "title": "Aberrant Exploration II", "characters": [], "note": null },
-        { "id": "3", "title": "Aberrant Exploration III", "characters": [], "note": null }
+        { "id": "3", "title": "Aberrant Exploration III", "characters": [], "note": null },
+        { "id": "4", "title": "Aberrant Exploration IV", "characters": [], "note": null },
+        { "id": "5", "title": "Aberrant Exploration V", "characters": [], "note": null },
+        { "id": "6", "title": "Aberrant Exploration VI", "characters": [], "note": null }
       ],
       "url": "https://www.powerpyx.com/arknights-endfield-aberrant-exploration-walkthrough/"
     },
@@ -195,9 +740,9 @@
       "series": "Valley IV: The Hub",
       "title": "Restart Area Stock Redistribution",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
-      "start": null,
+      "version": "1.0",
+      "summary": "Qin Jiangchi introduces stock redistribution for the Restart Area, later upgraded with stock bills.",
+      "start": "Read Qin Jiangchi's messages.",
       "characters": [],
       "requires": [],
       "parts": [
@@ -212,15 +757,25 @@
       "series": "Valley IV",
       "title": "Invisible Glyphs",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "version": "1.0",
+      "summary": "Security officer Jouster finds hidden Bonekrusher markings and follows them to a loot cave.",
+      "start": "Talk to the security officer at The Hub.",
+      "characters": ["Fiona", "Jouster", "Satyr"],
       "requires": [],
       "parts": [
-        { "id": "1", "title": "Invisible Glyphs: Discovery", "characters": [], "note": "The Hub." },
-        { "id": "2", "title": "Invisible Glyphs: Investigation", "characters": [], "note": "The Hub." },
-        { "id": "3", "title": "Invisible Glyphs: Revelation", "characters": [], "note": "Valley Pass." }
+        {
+          "id": "1",
+          "title": "Invisible Glyphs: Discovery",
+          "characters": ["Satyr", "Jouster", "Fiona"],
+          "note": "The Hub."
+        },
+        {
+          "id": "2",
+          "title": "Invisible Glyphs: Investigation",
+          "characters": ["Fiona", "Jouster"],
+          "note": "The Hub."
+        },
+        { "id": "3", "title": "Invisible Glyphs: Revelation", "characters": ["Fiona"], "note": "Valley Pass." }
       ],
       "url": "https://www.powerpyx.com/arknights-endfield-invisible-glyphs-discovery-walkthrough/"
     },
@@ -230,14 +785,14 @@
       "series": "Valley IV: The Hub",
       "title": "Base Revisited",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "version": "1.0",
+      "summary": "Director Qin updates you on the Valley IV Rebuilding Project as the Hub Base recovers.",
+      "start": "Talk to Director Qin at the Hub Base.",
+      "characters": ["Qin Jiangchi", "Perlica", "Fiona"],
       "requires": [],
       "parts": [
-        { "id": "1", "title": "Base Revisited", "characters": [], "note": null },
-        { "id": "2", "title": "Base Revisited [Finale]", "characters": [], "note": null }
+        { "id": "1", "title": "Base Revisited", "characters": ["Qin Jiangchi", "Fiona"], "note": null },
+        { "id": "2", "title": "Base Revisited [Finale]", "characters": ["Perlica", "Qin Jiangchi"], "note": null }
       ],
       "url": "https://www.powerpyx.com/arknights-endfield-base-revisited-walkthrough/"
     },
@@ -247,46 +802,28 @@
       "series": "Valley IV: The Hub",
       "title": "The Road is Rough",
       "region": "Valley IV",
-      "version": null,
+      "version": "1.0",
       "summary": "Help the overworked Hub Base director build a zipline route and power links, then handle a few errands around base.",
       "start": "Complete Main Mission 11 (Paving the Way). Salman stands in front of two vehicles at The Hub, north of the TP.",
-      "characters": ["Salman", "Hartmann", "Wulfgard"],
+      "characters": ["Hartmann", "Aleksandr", "Salman", "Wulfgard", "Perlica", "Chen Qianyu", "Hans", "Leon", "Fiona"],
       "requires": ["ch1-process2"],
       "parts": [
         {
           "id": "1",
           "title": "The Road is Rough",
-          "characters": [],
-          "note": "Quest giver Salman; characters listed at quest level."
+          "characters": ["Hartmann", "Salman", "Wulfgard"],
+          "note": "Quest giver Salman."
         },
-        { "id": "2", "title": "Business is Tough", "characters": [], "note": null },
-        { "id": "3", "title": "Kindness is Rare", "characters": [], "note": null },
-        { "id": "4", "title": "Elevator Repairs", "characters": [], "note": null }
+        { "id": "2", "title": "Business is Tough", "characters": ["Aleksandr", "Hartmann", "Hans"], "note": null },
+        {
+          "id": "3",
+          "title": "Kindness is Rare",
+          "characters": ["Chen Qianyu", "Perlica", "Hartmann", "Aleksandr", "Salman", "Wulfgard", "Hans", "Fiona"],
+          "note": null
+        },
+        { "id": "4", "title": "Elevator Repairs", "characters": ["Leon"], "note": null }
       ],
       "url": "https://www.powerpyx.com/arknights-endfield-the-road-is-rough-walkthrough/"
-    },
-    {
-      "id": "melody-of-the-valley",
-      "kind": "world",
-      "series": "Valley IV: The Hub",
-      "title": "Melody of the Valley",
-      "region": "Valley IV",
-      "version": null,
-      "summary": null,
-      "start": null,
-      "characters": [],
-      "requires": [],
-      "parts": [
-        {
-          "id": "1",
-          "title": "Melody of the Valley",
-          "characters": [],
-          "note": "Listed as the 'Letter From a Messenger' questline."
-        },
-        { "id": "2", "title": "Three Small Things", "characters": [], "note": null },
-        { "id": "3", "title": "Where the Mist Parts", "characters": [], "note": null }
-      ],
-      "url": "https://www.powerpyx.com/arknights-endfield-melody-of-the-valley-walkthrough/"
     },
     {
       "id": "a-brewing-storm",
@@ -294,22 +831,22 @@
       "series": "Valley IV",
       "title": "A Brewing Storm",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "version": "1.0",
+      "summary": "An Endfield investigation into a string of attacks on the Bonekrusher Clan across Valley IV.",
+      "start": "Talk to the Endfield operator investigating at The Hub.",
+      "characters": ["Thurston", "Wulfgard"],
       "requires": [],
       "parts": [
         {
           "id": "1",
           "title": "A Brewing Storm: The Hub",
-          "characters": [],
-          "note": "Cross-region series; parts in PowerPyx list order, sequencing not verified."
+          "characters": ["Wulfgard", "Thurston"],
+          "note": "Cross-region series; finale summarises the attacks."
         },
-        { "id": "2", "title": "A Brewing Storm: Aburrey Quarry", "characters": [], "note": null },
-        { "id": "3", "title": "A Brewing Storm: Power Plateau", "characters": [], "note": null },
-        { "id": "4", "title": "A Brewing Storm: Origin Lodespring", "characters": [], "note": null },
-        { "id": "5", "title": "A Brewing Storm Finale", "characters": [], "note": null }
+        { "id": "2", "title": "A Brewing Storm: Aburrey Quarry", "characters": ["Thurston"], "note": null },
+        { "id": "3", "title": "A Brewing Storm: Power Plateau", "characters": ["Thurston"], "note": null },
+        { "id": "4", "title": "A Brewing Storm: Origin Lodespring", "characters": ["Thurston"], "note": null },
+        { "id": "5", "title": "A Brewing Storm Finale", "characters": ["Thurston"], "note": null }
       ],
       "url": "https://www.powerpyx.com/arknights-endfield-a-brewing-storm-the-hub-walkthrough/"
     },
@@ -319,14 +856,24 @@
       "series": "Valley IV: Valley Pass",
       "title": "Cost of Hope",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "version": "1.0",
+      "summary": "Arclight of the Hannabit Circuit asks Endfield for help finding a missing person in a Landbreaker lab.",
+      "start": "Meet Perlica at the Valley Pass entrance after Arclight's request.",
+      "characters": ["Arclight", "Perlica", "Chen Qianyu", "Zach", "Karja", "Mia"],
       "requires": [],
       "parts": [
-        { "id": "1", "title": "Cost of Hope I", "characters": [], "note": null },
-        { "id": "2", "title": "Cost of Hope II", "characters": [], "note": null }
+        {
+          "id": "1",
+          "title": "Cost of Hope I",
+          "characters": ["Perlica", "Arclight", "Karja", "Chen Qianyu"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "Cost of Hope II",
+          "characters": ["Arclight", "Zach", "Chen Qianyu", "Mia", "Perlica"],
+          "note": null
+        }
       ],
       "url": "https://www.powerpyx.com/arknights-endfield-cost-of-hope-walkthrough/"
     },
@@ -336,33 +883,55 @@
       "series": "Valley IV: Power Plateau",
       "title": "Outpost: Reconstruction HQ",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Set up the Reconstruction HQ outpost and supply it through its development stages.",
       "start": null,
-      "characters": [],
+      "characters": ["Clavell", "Dean", "Crowe", "Perlica", "Chen Qianyu", "Ardelia"],
       "requires": [],
       "parts": [
-        { "id": "1", "title": "Outpost: Reconstruction HQ I", "characters": [], "note": null },
-        { "id": "2", "title": "Outpost: Reconstruction HQ II", "characters": [], "note": null }
+        {
+          "id": "1",
+          "title": "Outpost: Reconstruction HQ",
+          "characters": ["Crowe", "Dean", "Clavell", "Perlica", "Ardelia", "Chen Qianyu"],
+          "note": "Previously listed as \"Outpost: Reconstruction HQ I\"."
+        },
+        {
+          "id": "2",
+          "title": "OD Project: Reconstruction HQ I",
+          "characters": ["Clavell", "Dean", "Perlica", "Chen Qianyu", "Ardelia"],
+          "note": "Previously listed as \"Outpost: Reconstruction HQ II\"."
+        },
+        {
+          "id": "3",
+          "title": "OD Project: Reconstruction HQ II",
+          "characters": ["Dean", "Clavell", "Chen Qianyu", "Perlica", "Crowe", "Ardelia"],
+          "note": null
+        },
+        {
+          "id": "4",
+          "title": "OD Project: Reconstruction HQ III",
+          "characters": ["Crowe", "Clavell", "Dean", "Chen Qianyu", "Perlica", "Ardelia"],
+          "note": null
+        }
       ],
       "url": "https://www.powerpyx.com/arknights-endfield-outpost-reconstruction-hq-walkthrough/"
     },
     {
       "id": "beyond-the-worlds-expanse",
       "kind": "world",
-      "series": "Valley IV: Origin Lodespring",
-      "title": "Beyond the World's Expanse",
-      "region": "Valley IV",
-      "version": null,
-      "summary": null,
-      "start": null,
+      "series": "Exploration",
+      "title": "Beyond the Worlds' Expanse",
+      "region": null,
+      "version": "1.0",
+      "summary": "Exploration-level trials across Valley IV and Wuling.",
+      "start": "Go to the marked trial location.",
       "characters": [],
       "requires": [],
       "parts": [
-        { "id": "1", "title": "Beyond the World's Expanse I", "characters": [], "note": null },
-        { "id": "2", "title": "Beyond the World's Expanse II", "characters": [], "note": null },
-        { "id": "3", "title": "Beyond the World's Expanse III", "characters": [], "note": null },
-        { "id": "4", "title": "Beyond the World's Expanse IV", "characters": [], "note": null }
+        { "id": "1", "title": "Beyond the Worlds' Expanse I", "characters": [], "note": "The Hub." },
+        { "id": "2", "title": "Beyond the Worlds' Expanse II", "characters": [], "note": "The Hub." },
+        { "id": "3", "title": "Beyond the Worlds' Expanse III", "characters": [], "note": "Jingyu Valley." },
+        { "id": "4", "title": "Beyond the Worlds' Expanse IV", "characters": [], "note": "Wuling City." }
       ],
       "url": "https://www.powerpyx.com/arknights-endfield-beyond-the-worlds-expanse-walkthrough/"
     },
@@ -372,14 +941,20 @@
       "series": "Valley IV: Origin Lodespring",
       "title": "Emergency Rescue",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "version": "1.0",
+      "summary": "Missing medical supplies bound for the Mining Camp lead to a rescue, and later to Jenner's troubles.",
+      "start": "Investigate at the Mining Camp.",
+      "characters": ["Alia", "Jenner", "Perlica", "Molly", "Matvei", "Lilica", "Fiona"],
       "requires": [],
       "parts": [
-        { "id": "1", "title": "Emergency Rescue", "characters": [], "note": null },
-        { "id": "2", "title": "Ode To The Oak", "characters": [], "note": null }
+        {
+          "id": "1",
+          "title": "Emergency Rescue",
+          "characters": ["Perlica", "Molly", "Lilica", "Fiona"],
+          "note": "Two stages share the name."
+        },
+        { "id": "2", "title": "Ode to the Oak I", "characters": ["Jenner", "Alia", "Matvei"], "note": null },
+        { "id": "3", "title": "Ode to the Oak II", "characters": ["Alia", "Jenner"], "note": null }
       ],
       "url": "https://www.powerpyx.com/arknights-endfield-emergency-rescue-walkthrough/"
     },
@@ -389,101 +964,689 @@
       "series": "Valley IV: Originium Science Park",
       "title": "Visitor from the Band",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "version": "1.0",
+      "summary": "Fabian Collins reports an \"unexpected sitch\" involving a runaway guest.",
+      "start": "Read Fabian Collins's messages.",
+      "characters": ["Avywenna", "Raquel", "Fabian Collins", "Aleeza Collins"],
       "requires": [],
       "parts": [
-        { "id": "1", "title": "Visitor from the Band I", "characters": [], "note": null },
-        { "id": "2", "title": "Visitor from the Band II", "characters": [], "note": null }
+        {
+          "id": "1",
+          "title": "Visitor from the Band I",
+          "characters": ["Avywenna", "Fabian Collins", "Raquel", "Aleeza Collins"],
+          "note": null
+        },
+        { "id": "2", "title": "Visitor from the Band II", "characters": ["Avywenna", "Raquel"], "note": null }
       ],
       "url": "https://www.powerpyx.com/arknights-endfield-visitor-from-the-band-walkthrough/"
+    },
+    {
+      "id": "silent-grove",
+      "kind": "world",
+      "series": "Wuling: Jingyu Valley",
+      "title": "Silent Grove",
+      "region": "Wuling",
+      "version": "1.0",
+      "summary": "A watchguard north of Qingbo Bailey leads the search for missing people into the Stragglers Grove.",
+      "start": "Mi Fu's request (north of Qingbo Bailey).",
+      "characters": ["Chen Qianyu", "Li Zhui", "Yuxuan", "Yan Lin", "Hong Ni", "Qingwu", "Dudu"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Silent Grove: The Beginning",
+          "characters": ["Li Zhui", "Chen Qianyu", "Yan Lin", "Qingwu", "Dudu"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "Silent Grove: Zhailing Islet",
+          "characters": ["Hong Ni", "Yan Lin", "Chen Qianyu"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "Silent Grove: South Hill",
+          "characters": ["Yuxuan", "Li Zhui", "Chen Qianyu"],
+          "note": null
+        },
+        {
+          "id": "4",
+          "title": "Silent Grove: The Epilogue",
+          "characters": ["Yuxuan", "Chen Qianyu", "Li Zhui", "Hong Ni"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l1m1.json"
+    },
+    {
+      "id": "always-running",
+      "kind": "world",
+      "series": "Wuling: Jingyu Valley",
+      "title": "Always Running",
+      "region": "Wuling",
+      "version": "1.0",
+      "summary": "Someone on the south side of the Treadway needs help.",
+      "start": null,
+      "characters": ["Ah Tu", "Chen Qianyu", "Da Jiang", "Lu Yaofeng", "Yongning"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Always Running",
+          "characters": ["Ah Tu", "Chen Qianyu", "Da Jiang", "Lu Yaofeng", "Yongning"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l1m5.json"
+    },
+    {
+      "id": "burdenbeast-tales",
+      "kind": "world",
+      "series": "Wuling: Wuling City",
+      "title": "Burdenbeast Tales",
+      "region": "Wuling",
+      "version": "1.0",
+      "summary": "Lifeng sends you to join the Burdenbeast Care Workshop.",
+      "start": "Lifeng's request.",
+      "characters": ["Lifeng"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Burdenbeast Tales", "characters": ["Lifeng"], "note": null }],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l2m1.json"
+    },
+    {
+      "id": "store-by-the-corner",
+      "kind": "world",
+      "series": "Wuling: Wuling City",
+      "title": "Store by the Corner",
+      "region": "Wuling",
+      "version": "1.2",
+      "summary": "Chen Qianyu shows you everyday life on Fangxing Avenue, which turns into a neighbourhood rivalry.",
+      "start": "Accept Chen Qianyu's invitation.",
+      "characters": ["Ah Zai", "Aunt Tian", "Chen Qianyu", "Mi Fu", "Perlica", "Lifeng", "Yue", "Xiao Xiang"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Store by the Corner I",
+          "characters": ["Aunt Tian", "Ah Zai", "Chen Qianyu", "Lifeng", "Mi Fu", "Perlica"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "Store by the Corner II",
+          "characters": ["Chen Qianyu", "Ah Zai", "Aunt Tian", "Mi Fu", "Perlica"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "Store by the Corner III",
+          "characters": ["Ah Zai", "Aunt Tian", "Chen Qianyu", "Mi Fu", "Yue", "Xiao Xiang"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l2m2.json"
+    },
+    {
+      "id": "the-old-man-and-the-tide",
+      "kind": "world",
+      "series": "Wuling: Wuling City",
+      "title": "The Old Man and the Tide",
+      "region": "Wuling",
+      "version": "1.2",
+      "summary": "Yin Dong searches for his mentor, who rushed out of Wuling during the Blight Tide.",
+      "start": "Yin Dong's request.",
+      "characters": ["Yin Dong", "Chen Qianyu", "Perlica", "Fu Qiu", "Zhuang Fangyi", "Xia Yi", "Da Pan", "Ling Yue"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "The Old Man and the Tide I",
+          "characters": ["Yin Dong", "Chen Qianyu", "Perlica", "Fu Qiu", "Xia Yi", "Ling Yue"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "The Old Man and the Tide II",
+          "characters": ["Yin Dong", "Zhuang Fangyi", "Da Pan", "Chen Qianyu", "Perlica"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l2m3.json"
+    },
+    {
+      "id": "patron-of-the-spring",
+      "kind": "world",
+      "series": "Wuling: Qingbo Stockade",
+      "title": "Patron of the Spring",
+      "region": "Wuling",
+      "version": "1.1",
+      "summary": "Cries for help near the Ancestral Spring lead to a search for Du Ming with Tangtang.",
+      "start": "Near the Ancestral Spring.",
+      "characters": ["Du Ming", "Tangtang", "Chen Qianyu", "Perlica"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Patron of the Spring I",
+          "characters": ["Du Ming", "Chen Qianyu", "Perlica"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "Patron of the Spring II",
+          "characters": ["Du Ming", "Tangtang", "Perlica", "Chen Qianyu"],
+          "note": null
+        },
+        { "id": "3", "title": "Patron of the Spring III", "characters": ["Tangtang", "Du Ming"], "note": null }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l3m1.json"
+    },
+    {
+      "id": "seekers-of-the-lost-treasure",
+      "kind": "world",
+      "series": "Wuling: Qingbo Stockade",
+      "title": "Seekers of the Lost Treasure",
+      "region": "Wuling",
+      "version": "1.1",
+      "summary": "Piot, a self-styled young Tianshi, gets into trouble chasing treasure near the stockade.",
+      "start": "Near the Qingbo Stockade fort.",
+      "characters": ["Martina", "Perlica", "Piot", "Punty Pole"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Seekers of the Lost Treasure I",
+          "characters": ["Martina", "Perlica", "Piot"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "Seekers of the Lost Treasure II",
+          "characters": ["Martina", "Punty Pole", "Perlica"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "Seekers of the Lost Treasure III",
+          "characters": ["Martina", "Perlica", "Piot"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l3m4.json"
+    },
+    {
+      "id": "comrades",
+      "kind": "world",
+      "series": "Wuling: Marker Stone",
+      "title": "Comrades",
+      "region": "Wuling",
+      "version": "1.2",
+      "summary": "Mi Fu investigates beneath the Urban Development Hall, leading to a memorial for fallen comrades.",
+      "start": "Mi Fu's request.",
+      "characters": ["Mi Fu", "Chen Qianyu", "Iron Boatswain", "Perlica", "Jia Ban", "Rusty Hook", "Ling Yue"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Comrades: The Nameless",
+          "characters": ["Mi Fu", "Chen Qianyu", "Iron Boatswain", "Perlica"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "Comrades: Commemoration",
+          "characters": ["Iron Boatswain", "Mi Fu", "Jia Ban", "Rusty Hook", "Chen Qianyu", "Ling Yue", "Perlica"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "Comrades: Remembrance",
+          "characters": ["Iron Boatswain", "Perlica", "Mi Fu", "Chen Qianyu"],
+          "note": null
+        },
+        { "id": "4", "title": "Comrades: For Tomorrow", "characters": ["Chen Qianyu"], "note": null }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l4m1.json"
+    },
+    {
+      "id": "old-acquaintance",
+      "kind": "world",
+      "series": "Wuling: Marker Stone",
+      "title": "Old Acquaintance",
+      "region": "Wuling",
+      "version": "1.2",
+      "summary": "Zhuang Fangyi sends you to help Xi Mo repair the Marker Stone.",
+      "start": "Zhuang Fangyi's request.",
+      "characters": ["Xi Mo", "Summit", "Zhuang Fangyi"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Old Acquaintance I", "characters": ["Summit", "Xi Mo"], "note": null },
+        { "id": "2", "title": "Old Acquaintance II", "characters": ["Xi Mo", "Summit", "Zhuang Fangyi"], "note": null }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l4m5.json"
+    },
+    {
+      "id": "springs-return",
+      "kind": "world",
+      "series": "Wuling: Test Area",
+      "title": "Spring's Return",
+      "region": "Wuling",
+      "version": "1.2",
+      "summary": "A dispute outside the Test Area leads to a malfunctioning Tianshi Pillar and Lu Lingxiang.",
+      "start": "Outside the Test Area.",
+      "characters": ["Lu Lingxiang", "Chen Qianyu", "Perlica"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Spring's Return I",
+          "characters": ["Lu Lingxiang", "Chen Qianyu", "Perlica"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "Spring's Return II",
+          "characters": ["Lu Lingxiang", "Chen Qianyu", "Perlica"],
+          "note": null
+        },
+        { "id": "3", "title": "Spring's Return III", "characters": ["Lu Lingxiang"], "note": null }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l5m1.json"
+    },
+    {
+      "id": "deep-vaulted-steel",
+      "kind": "world",
+      "series": "Wuling: Sword Vault Dale",
+      "title": "Deep Vaulted Steel",
+      "region": "Wuling",
+      "version": "1.3",
+      "summary": "Lian Xiaowu asks to meet at the Bureau of Swordmancers.",
+      "start": "Lian Xiaowu's request (Wuling City).",
+      "characters": ["Chen Qianyu", "Walton", "Lian Xiaowu", "Perlica", "Lin Hu"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Deep Vaulted Steel",
+          "characters": ["Chen Qianyu", "Walton", "Lian Xiaowu", "Perlica", "Lin Hu"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l6m1.json"
+    },
+    {
+      "id": "sorrow-sings-in-silence",
+      "kind": "world",
+      "series": "Wuling: North Wuling Exclusion Zone",
+      "title": "Sorrow Sings in Silence",
+      "region": "Wuling",
+      "version": "1.4",
+      "summary": "A troubled Yinglung needs help in the Exclusion Zone.",
+      "start": null,
+      "characters": ["Lan Shan", "Shen Hai", "Li Liangliang", "Precipice", "Perlica", "Arcane", "Summit", "Qingzhu"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Sorrow Sings in Silence",
+          "characters": [
+            "Lan Shan",
+            "Shen Hai",
+            "Li Liangliang",
+            "Precipice",
+            "Perlica",
+            "Arcane",
+            "Summit",
+            "Qingzhu"
+          ],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l7m1.json"
+    },
+    {
+      "id": "long-night-breaking-into-day",
+      "kind": "world",
+      "series": "Wuling: North Wuling Exclusion Zone",
+      "title": "Long Night Breaking into Day",
+      "region": "Wuling",
+      "version": "1.4",
+      "summary": "Arcane asks you to help Lifeng once things settle in the Exclusion Zone.",
+      "start": "Arcane's message.",
+      "characters": ["Lifeng", "Ah Sheng", "Bai Shuang", "Lian Xiaowu"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Long Night Breaking into Day",
+          "characters": ["Lifeng", "Ah Sheng", "Bai Shuang", "Lian Xiaowu"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l8m1.json"
+    },
+    {
+      "id": "endeavor-of-a-lifetime",
+      "kind": "world",
+      "series": "Wuling: Snowy Forest",
+      "title": "Endeavor of a Lifetime",
+      "region": "Wuling",
+      "version": "1.5",
+      "summary": "Typhoeus messages you about something that has happened in the Snowy Forest.",
+      "start": "Read Typhoeus's messages.",
+      "characters": ["Typhoeus"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Endeavor of a Lifetime",
+          "characters": ["Typhoeus"],
+          "note": "One mission in three stages."
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l9m1.json"
+    },
+    {
+      "id": "unrequited-love",
+      "kind": "world",
+      "series": "Wuling: Wuling City",
+      "title": "Unrequited Love",
+      "region": "Wuling",
+      "version": "1.6",
+      "summary": "A free afternoon at Yuanyuan Manor turns into a small mystery.",
+      "start": "Visit Yuanyuan Manor.",
+      "characters": ["Zhuang Fangyi", "Perlica", "Mi Fu", "Ming Quan", "Si", "Mei Yun", "Zhai Jiali"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Unrequited Love",
+          "characters": ["Zhuang Fangyi", "Perlica", "Mi Fu", "Ming Quan", "Si", "Mei Yun", "Zhai Jiali"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l10m1.json"
+    },
+    {
+      "id": "the-story-continues",
+      "kind": "world",
+      "series": "Wuling: Si's Painting",
+      "title": "The Story Continues",
+      "region": "Wuling",
+      "version": "1.6",
+      "summary": "Chen Qianyu and Tangtang are chatting at the inn in the painted world.",
+      "start": "Join them at the inn.",
+      "characters": ["Tangtang", "Chen Qianyu", "Xie Buchu", "Hao Tongku", "Si", "Qing Yu", "Jiang Ziliu"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "The Story Continues",
+          "characters": ["Tangtang", "Chen Qianyu", "Xie Buchu", "Hao Tongku", "Si", "Qing Yu", "Jiang Ziliu"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l10m2.json"
+    },
+    {
+      "id": "a-day-to-remember",
+      "kind": "world",
+      "series": "Wuling: Si's Painting",
+      "title": "A Day to Remember",
+      "region": "Wuling",
+      "version": "1.6",
+      "summary": "The inn assistants are worried about something.",
+      "start": "Talk to the inn assistants.",
+      "characters": ["Si"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "A Day to Remember", "characters": ["Si"], "note": null }],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/sm2l10m3.json"
+    },
+    {
+      "id": "lone-wolf",
+      "kind": "story",
+      "series": "Wulfgard",
+      "title": "Lone Wolf",
+      "region": "Valley IV",
+      "version": "1.0",
+      "summary": "Wulfgard is hunting a traitor from his old Pack, and the Endministrator agrees to help track him down.",
+      "start": "Read Rossi's message (Power Plateau).",
+      "characters": ["Wulfgard", "Giovanni", "Rossi", "Yuley"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Lone Wolf",
+          "characters": ["Wulfgard", "Giovanni", "Rossi", "Yuley"],
+          "note": "One mission in three stages (c6m1–c6m3)."
+        }
+      ],
+      "url": "https://www.powerpyx.com/arknights-endfield-lone-wolf-walkthrough/"
+    },
+    {
+      "id": "melody-of-the-valley",
+      "kind": "story",
+      "series": "Gilberta",
+      "title": "Letter From a Messenger",
+      "region": "Valley IV",
+      "version": "1.0",
+      "summary": "A recovering Gilberta asks for a small favour that turns into a search for a missing girl named Carly.",
+      "start": "Read Gilberta's message (The Hub).",
+      "characters": ["Gilberta", "Ropp", "Andre", "Carly", "Miguel"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Melody of the Valley",
+          "characters": ["Gilberta", "Andre", "Miguel"],
+          "note": "In-game series name: \"Letter From a Messenger\"."
+        },
+        { "id": "2", "title": "Three Small Things", "characters": ["Gilberta", "Carly", "Miguel"], "note": null },
+        {
+          "id": "3",
+          "title": "Where the Mist Parts",
+          "characters": ["Gilberta", "Ropp", "Andre", "Miguel"],
+          "note": null
+        }
+      ],
+      "url": "https://www.powerpyx.com/arknights-endfield-melody-of-the-valley-walkthrough/"
+    },
+    {
+      "id": "let-fire-consume-the-ashen-past",
+      "kind": "story",
+      "series": "Laevatain",
+      "title": "Let Fire Consume the Ashen Past",
+      "region": "OMV Dijiang",
+      "version": "1.0",
+      "summary": "A red-haired Sarkaz girl glimpsed in the Protocol Space sends the Endministrator and Perlica after recovered memories.",
+      "start": "Starts after Main Mission \"Cradle of the Ages\"; Perlica invites you to Dijiang's Stasis Core.",
+      "characters": ["Laevatain", "Perlica", "Surtr", "Ginny", "Maymay", "Fiona", "Salman", "Roman", "Rhodagn"],
+      "requires": ["ch1-process3"],
+      "parts": [
+        { "id": "1", "title": "Echoes of Then", "characters": ["Laevatain", "Perlica", "Fiona"], "note": null },
+        { "id": "2", "title": "A Stray Silhouette", "characters": ["Laevatain"], "note": null },
+        {
+          "id": "3",
+          "title": "The Haunting of Yesteryear",
+          "characters": ["Laevatain", "Maymay", "Salman", "Roman", "Rhodagn"],
+          "note": null
+        },
+        { "id": "4", "title": "The Ashen Past", "characters": ["Laevatain", "Surtr", "Perlica", "Ginny"], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/arknights-endfield-echoes-of-then-walkthrough/"
     },
     {
       "id": "love-scream-and-the-prototype",
       "kind": "story",
       "series": "Yvonne",
-      "title": "Love, Scream, & The Prototype",
+      "title": "Love, Scream & The Prototype",
       "region": "Valley IV",
-      "version": null,
-      "summary": "Andre asks the Endministrator to fetch a package for Yvonne at Originium Science Park.",
-      "start": "Starts automatically after Main Mission 29 (Conference of the Four), at Originium Science Park.",
-      "characters": ["Yvonne", "Andre", "Endman"],
+      "version": "1.0",
+      "summary": "Andre asks the Endministrator to fetch a package for Yvonne, who needs help finishing a project.",
+      "start": "Starts automatically after Main Mission \"Conference of the Four\", at Originium Science Park.",
+      "characters": ["Yvonne", "Andre", "Crowe", "Alia", "Fabian Collins", "Endman"],
       "requires": ["ch1-process4"],
       "parts": [
-        { "id": "1", "title": "Finally, in Full Color", "characters": ["Andre", "Yvonne"], "note": null },
-        { "id": "2", "title": "Together, as We Are", "characters": [], "note": null },
-        { "id": "3", "title": "Algorithm of Joy", "characters": [], "note": null }
+        { "id": "1", "title": "Finally, in Full Color", "characters": ["Yvonne", "Andre"], "note": null },
+        { "id": "2", "title": "Together, as We Are", "characters": ["Yvonne", "Andre", "Crowe", "Alia"], "note": null },
+        { "id": "3", "title": "Algorithm of Joy", "characters": ["Yvonne", "Fabian Collins"], "note": null }
       ],
       "url": "https://www.powerpyx.com/arknights-endfield-finally-in-full-color-walkthrough/"
     },
     {
-      "id": "let-fire-consume-the-ashen-past",
+      "id": "the-red-knight",
       "kind": "story",
-      "series": "Perlica",
-      "title": "Let Fire Consume the Ashen Past",
-      "region": "OMV Dijiang",
-      "version": "1.0",
-      "summary": "Perlica asks the Endministrator to revisit the Statis Core and check on recovered memories.",
-      "start": "Starts automatically after Main Mission 21 (Cradle of Ages), in OMV Dijiang.",
-      "characters": ["Perlica"],
-      "requires": ["ch1-process3"],
+      "series": "Rossi",
+      "title": "The Red Knight",
+      "region": "Valley IV",
+      "version": "1.1",
+      "summary": "Rossi and the Endministrator bargain with a band of children who call themselves royalty to recover a sample.",
+      "start": "Read Fiona's messages (Origin Lodespring).",
+      "characters": ["Rossi", "Fiona"],
+      "requires": [],
       "parts": [
-        { "id": "1", "title": "Echoes of Then", "characters": ["Perlica"], "note": null },
-        { "id": "2", "title": "A Stray Silhouette", "characters": [], "note": null },
-        { "id": "3", "title": "The Haunting of Yesteryear", "characters": [], "note": null },
-        { "id": "4", "title": "The Ashen Past", "characters": [], "note": null }
+        { "id": "1", "title": "Follow the Red Shadow", "characters": ["Rossi", "Fiona"], "note": null },
+        { "id": "2", "title": "Ducal Treasures", "characters": ["Rossi"], "note": null },
+        { "id": "3", "title": "The King and the Knight", "characters": ["Rossi"], "note": null }
       ],
-      "url": "https://www.powerpyx.com/arknights-endfield-echoes-of-then-walkthrough/"
+      "url": "https://gamewith.net/akendfield/72472"
     },
     {
-      "id": "back-to-the-rustics",
+      "id": "a-fistful-of-reflections",
       "kind": "story",
-      "series": "Operator side missions",
-      "title": "Back to the Rustics",
-      "region": null,
-      "version": "1.6",
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "series": "Mi Fu",
+      "title": "A Fistful of Reflections",
+      "region": "Wuling",
+      "version": "1.3",
+      "summary": "Mi Fu must beat her three old masters in the arena, with the Endministrator at her side.",
+      "start": "Read Mi Fu's message; meet her at the Main Pillar Office (Wuling City).",
+      "characters": ["Mi Fu", "Tangtang", "Zhuang Fangyi", "Da Pan"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "The Captain's Mystery", "characters": ["Mi Fu"], "note": null },
+        { "id": "2", "title": "The Pugilist's Challenge", "characters": ["Mi Fu", "Da Pan"], "note": null },
+        {
+          "id": "3",
+          "title": "The Warrior's Ambition",
+          "characters": ["Mi Fu", "Tangtang", "Zhuang Fangyi"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/c31m1.json"
+    },
+    {
+      "id": "danse-macabre",
+      "kind": "story",
+      "series": "Camille",
+      "title": "Danse Macabre",
+      "region": "Valley IV",
+      "version": "1.4",
+      "summary": "A request for help routed through Fiona leads the Endministrator and Camille to an abandoned facility.",
+      "start": "Read Fiona's message (The Hub).",
+      "characters": ["Camille", "Char", "Druan", "Jeffrey", "Philip"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Sanguine Inquiry", "characters": ["Camille", "Druan", "Jeffrey"], "note": null },
+        {
+          "id": "2",
+          "title": "Promise of Repayment",
+          "characters": ["Camille", "Char", "Philip", "Druan"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/c33m1.json"
+    },
+    {
+      "id": "a-winter-dream-fogged-deep-in-the-woods",
+      "kind": "story",
+      "series": "Typhoeus",
+      "title": "A Winter Dream Fogged Deep in the Woods",
+      "region": "Wuling",
+      "version": "1.5",
+      "summary": "In the mist of the Snowy Forest, the Endministrator follows the young huntress Typhoeus into a dreamlike ordeal.",
+      "start": "Snowy Forest, Wuling.",
+      "characters": ["Typhoeus", "Andre"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "A Forest Shrouded in Mist", "characters": ["Typhoeus", "Andre"], "note": null },
+        {
+          "id": "2",
+          "title": "A Snowy Realm Touched by Nightmares",
+          "characters": ["Typhoeus", "Andre"],
+          "note": null
+        },
+        { "id": "3", "title": "A Dreamscape Shattered by Her Arrow", "characters": ["Typhoeus", "Andre"], "note": null }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/c34m1.json"
+    },
+    {
+      "id": "like-a-star-streaking-through-the-boundaries",
+      "kind": "story",
+      "series": "Liino",
+      "title": "Like a Star Streaking Through the Boundaries",
+      "region": "Valley IV",
+      "version": "1.5",
+      "summary": "Invited to a TGCC charity concert, the Endministrator ends up helping the idol Liino stage her own solo show.",
+      "start": "Accept the concert invitation (The Hub).",
+      "characters": ["Liino", "Alia", "Andre", "Caden", "Isaac", "Grace", "Eren", "Fiona"],
       "requires": [],
       "parts": [
         {
           "id": "1",
-          "title": "Back to the Rustics",
-          "characters": [],
+          "title": "Spotlight of the Morning Star",
+          "characters": ["Liino", "Alia", "Caden", "Grace", "Eren", "Fiona"],
+          "note": null
+        },
+        { "id": "2", "title": "Prelude to the Plan", "characters": ["Liino", "Andre"], "note": null },
+        { "id": "3", "title": "A Bold Invitation", "characters": ["Liino", "Isaac"], "note": null },
+        { "id": "4", "title": "Brightest Star Above", "characters": ["Liino", "Alia"], "note": null }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/c35m1.json"
+    },
+    {
+      "id": "back-to-the-rustics",
+      "kind": "story",
+      "series": "Argent Flow",
+      "title": "Back to the Rustics",
+      "region": "Wuling",
+      "version": "1.6",
+      "summary": "Argent Flow (Ye Minghe) revisits the farmland and people of her past in Wuling.",
+      "start": "Wuling City; added in the second half of version 1.6.",
+      "characters": ["Ye Minghe", "Mu Xing", "Nuli", "Lulu", "Ah Zheng"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Parting Grass",
+          "characters": ["Ye Minghe"],
           "note": "Operator side mission listed under 1.6 on Game8; operator not named on the page."
+        },
+        { "id": "2", "title": "Kindling the Fire", "characters": ["Ye Minghe"], "note": null },
+        {
+          "id": "3",
+          "title": "Seeking the Branch",
+          "characters": ["Ye Minghe", "Mu Xing", "Nuli", "Lulu", "Ah Zheng"],
+          "note": null
         }
       ],
       "url": "https://game8.co/games/Arknights-Endfield/archives/526124"
     },
     {
-      "id": "the-red-knight",
-      "kind": "story",
-      "series": "Narrative events",
-      "title": "The Red Knight",
-      "region": null,
-      "version": "1.1",
-      "summary": null,
-      "start": null,
-      "characters": ["Rossi"],
-      "requires": [],
-      "parts": [{ "id": "1", "title": "The Red Knight", "characters": ["Rossi"], "note": null }],
-      "url": "https://gamewith.net/akendfield/72472"
-    },
-    {
       "id": "dijiang-upgrade-and-maintenance",
       "kind": "side",
       "series": "OMV Dijiang",
-      "title": "Dijiang Upgrade and Maintenance I",
+      "title": "Dijiang Upgrade and Maintenance",
       "region": "OMV Dijiang",
-      "version": null,
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "version": "1.0",
+      "summary": "Xaihi reports on the ship's repairs and what Dijiang needs next.",
+      "start": "Read Xaihi's messages.",
+      "characters": ["Xaihi"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Dijiang Upgrade and Maintenance I", "characters": [], "note": null }],
+      "parts": [
+        { "id": "1", "title": "Dijiang Upgrade and Maintenance I", "characters": ["Xaihi"], "note": null },
+        { "id": "2", "title": "Dijiang Upgrade and Maintenance II", "characters": ["Xaihi"], "note": null }
+      ],
       "url": "https://www.powerpyx.com/arknight-endfield-dijiang-upgrade-and-maintenance-walkthrough/"
     },
     {
@@ -492,13 +1655,29 @@
       "series": "OMV Dijiang",
       "title": "Etchspace Salvage",
       "region": "OMV Dijiang",
-      "version": null,
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "version": "1.0",
+      "summary": "Fiona flags a salvage job that opens up Etchspace runs.",
+      "start": "Read Fiona's messages.",
+      "characters": ["Aquito", "Perlica", "Xaihi"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Etchspace Salvage", "characters": [], "note": null }],
+      "parts": [
+        { "id": "1", "title": "Etchspace Salvage", "characters": ["Aquito", "Perlica", "Xaihi"], "note": null }
+      ],
       "url": "https://www.powerpyx.com/arknights-endfield-etchspace-salvage-walkthrough/"
+    },
+    {
+      "id": "echoes-of-war",
+      "kind": "side",
+      "series": "Valley IV: The Hub",
+      "title": "Echoes of War",
+      "region": "Valley IV",
+      "version": "1.4",
+      "summary": "Semyon reaches out with a request tied to old battles.",
+      "start": "Read Semyon's message.",
+      "characters": ["Higgins"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Echoes of War", "characters": ["Higgins"], "note": null }],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/db01m10.json"
     },
     {
       "id": "had-to-be-done",
@@ -506,16 +1685,16 @@
       "series": "Valley IV: The Hub",
       "title": "Had to Be Done",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "An SOS from the Originium Byproduct Processing Center needs answering.",
       "start": null,
-      "characters": [],
+      "characters": ["Vallia", "Rammu", "Fiona"],
       "requires": [],
       "parts": [
         {
           "id": "1",
           "title": "Had to Be Done",
-          "characters": [],
+          "characters": ["Vallia", "Rammu", "Fiona"],
           "note": "Objectives and solution not documented on the source page."
         }
       ],
@@ -527,12 +1706,19 @@
       "series": "Valley IV: The Hub",
       "title": "Rumors about Tech",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "The AIC Research Center manager Cynthia has gone missing.",
       "start": null,
-      "characters": [],
+      "characters": ["Qin Jiangchi", "Cynthia", "Malwen", "Wahlen", "Fiona"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Rumors about Tech", "characters": [], "note": null }],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Rumors about Tech",
+          "characters": ["Qin Jiangchi", "Cynthia", "Malwen", "Wahlen", "Fiona"],
+          "note": null
+        }
+      ],
       "url": "https://www.powerpyx.com/arknights-endfield-rumors-about-tech-walkthrough/"
     },
     {
@@ -541,12 +1727,12 @@
       "series": "Valley IV: The Hub",
       "title": "Cog in the Wheel",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Help Qin Jiangchi with post-disaster relief at the Old Factory.",
       "start": null,
-      "characters": [],
+      "characters": ["Lykor", "Laeya"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Cog in the Wheel", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "Cog in the Wheel", "characters": ["Lykor", "Laeya"], "note": null }],
       "url": "https://www.powerpyx.com/arknights-endfield-cog-in-the-wheel-walkthrough/"
     },
     {
@@ -555,12 +1741,19 @@
       "series": "Valley IV: The Hub",
       "title": "Morale Booster",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Someone at the Worker Dorms needs a hand.",
       "start": null,
-      "characters": [],
+      "characters": ["Eric", "Ada", "Wilbur", "Lou", "Stanley"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Morale Booster", "characters": [], "note": null }],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Morale Booster",
+          "characters": ["Eric", "Ada", "Wilbur", "Lou", "Stanley"],
+          "note": null
+        }
+      ],
       "url": "https://www.powerpyx.com/arknights-endfield-morale-booster-walkthrough/"
     },
     {
@@ -569,12 +1762,12 @@
       "series": "Valley IV: The Hub",
       "title": "Alluvial Cleaning",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Fiona reports an Energy Alluvium running out of control.",
       "start": null,
-      "characters": [],
+      "characters": ["Fiona"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Alluvial Cleaning", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "Alluvial Cleaning", "characters": ["Fiona"], "note": null }],
       "url": "https://www.powerpyx.com/arknights-endfield-alluvial-cleaning-walkthrough/"
     },
     {
@@ -583,9 +1776,9 @@
       "series": "Valley IV: The Hub",
       "title": "AIC Steward",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
-      "start": null,
+      "version": "1.0",
+      "summary": "Fiona introduces the AIC Steward for upgrading the Core AIC Area.",
+      "start": "Read Fiona's message.",
       "characters": [],
       "requires": [],
       "parts": [{ "id": "1", "title": "AIC Steward", "characters": [], "note": null }],
@@ -597,12 +1790,12 @@
       "series": "Valley IV: The Hub",
       "title": "Savior of Bots",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Trace the source of an SOS signal with Fiona's help.",
       "start": null,
-      "characters": [],
+      "characters": ["Copper"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Savior of Bots", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "Savior of Bots", "characters": ["Copper"], "note": null }],
       "url": "https://www.powerpyx.com/arknights-endfield-savior-of-bots-walkthrough/"
     },
     {
@@ -611,12 +1804,12 @@
       "series": "Valley IV: The Hub",
       "title": "Antique Drone",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Rorke needs a crashed drone recovered.",
       "start": null,
-      "characters": [],
+      "characters": ["Rorke"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Antique Drone", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "Antique Drone", "characters": ["Rorke"], "note": null }],
       "url": "https://www.powerpyx.com/arknights-endfield-antique-drone-walkthrough/"
     },
     {
@@ -625,12 +1818,12 @@
       "series": "Valley IV: The Hub",
       "title": "Tripod Central",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Copper wants help repairing lost Delta robots.",
       "start": null,
-      "characters": [],
+      "characters": ["Copper", "Bronzer"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Tripod Central", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "Tripod Central", "characters": ["Copper", "Bronzer"], "note": null }],
       "url": "https://www.powerpyx.com/arknights-endfield-tripod-central-walkthrough/"
     },
     {
@@ -639,26 +1832,45 @@
       "series": "Valley IV: Valley Pass",
       "title": "Where Art Thou My Love",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "A worried woman at the Valley Pass needs help.",
       "start": null,
-      "characters": [],
+      "characters": ["Rosa", "Romano"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Where Art Thou My Love", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "Where Art Thou My Love", "characters": ["Rosa", "Romano"], "note": null }],
       "url": "https://www.powerpyx.com/arknights-endfield-where-art-thou-my-love-walkthrough/"
     },
     {
       "id": "od-project-refugee-camp",
       "kind": "side",
       "series": "Valley IV: Valley Pass",
-      "title": "OD Project: Refugee Camp I",
+      "title": "OD Project: Refugee Camp",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Supply the Refugee Camp through its development stages.",
       "start": null,
-      "characters": [],
+      "characters": ["Chen Qianyu", "Dewey", "Soth", "Karja", "Perlica", "Roman", "Staub", "Daniel", "Andre", "Ginny"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "OD Project: Refugee Camp I", "characters": [], "note": null }],
+      "parts": [
+        {
+          "id": "1",
+          "title": "OD Project: Refugee Camp I",
+          "characters": ["Perlica", "Soth", "Chen Qianyu", "Roman", "Dewey", "Daniel", "Ginny"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "OD Project: Refugee Camp II",
+          "characters": ["Dewey", "Chen Qianyu", "Staub", "Soth", "Perlica", "Andre"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "OD Project: Refugee Camp III",
+          "characters": ["Karja", "Chen Qianyu", "Roman", "Soth", "Staub", "Dewey"],
+          "note": null
+        }
+      ],
       "url": "https://www.powerpyx.com/arknights-endfield-od-project-refugee-camp-walkthrough/"
     },
     {
@@ -667,12 +1879,12 @@
       "series": "Valley IV: Valley Pass",
       "title": "Produce Industrial Explosives",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Gather materials and set up the AIC factory to make Industrial Explosives.",
       "start": null,
-      "characters": [],
+      "characters": ["Andre"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Produce Industrial Explosives", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "Produce Industrial Explosives", "characters": ["Andre"], "note": null }],
       "url": "https://www.powerpyx.com/arknights-endfield-produce-industrial-explosives-walkthrough/"
     },
     {
@@ -681,12 +1893,19 @@
       "series": "Valley IV: Valley Pass",
       "title": "In For A Penny, In For A Pound",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Someone at the Valley Fort needs help.",
       "start": null,
-      "characters": [],
+      "characters": ["Waitz", "Chen Qianyu", "Perlica"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "In For A Penny, In For A Pound", "characters": [], "note": null }],
+      "parts": [
+        {
+          "id": "1",
+          "title": "In For A Penny, In For A Pound",
+          "characters": ["Waitz", "Chen Qianyu", "Perlica"],
+          "note": null
+        }
+      ],
       "url": "https://www.powerpyx.com/arknights-endfield-in-for-a-penny-in-for-a-pound-walkthrough/"
     },
     {
@@ -695,12 +1914,19 @@
       "series": "Valley IV: Valley Pass",
       "title": "Defense Construction",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "version": "1.0",
+      "summary": "Daniel is troubled about the area's defences.",
+      "start": "Talk to Daniel.",
+      "characters": ["Daniel", "Perlica", "Chen Qianyu", "Soth"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Defense Construction", "characters": [], "note": null }],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Defense Construction",
+          "characters": ["Daniel", "Perlica", "Chen Qianyu", "Soth"],
+          "note": null
+        }
+      ],
       "url": "https://www.powerpyx.com/arknight-endfield-defense-construction-walkthrough/"
     },
     {
@@ -709,12 +1935,12 @@
       "series": "Valley IV: Aburrey Quarry",
       "title": "Quarry Rescue",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Answer a distress call from the Aburrey Quarry.",
       "start": null,
-      "characters": [],
+      "characters": ["Ramon", "Chen Qianyu"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Quarry Rescue", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "Quarry Rescue", "characters": ["Ramon", "Chen Qianyu"], "note": null }],
       "url": "https://www.powerpyx.com/arknight-endfield-quarry-rescue-walkthrough/"
     },
     {
@@ -723,12 +1949,19 @@
       "series": "Valley IV: Aburrey Quarry",
       "title": "Fix the Super Crane",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Repair the super crane to reach the rest of the quarry.",
       "start": null,
-      "characters": [],
+      "characters": ["Ramon", "Chen Qianyu", "Penny", "Mila"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Fix the Super Crane", "characters": [], "note": null }],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Fix the Super Crane",
+          "characters": ["Ramon", "Chen Qianyu", "Penny", "Mila"],
+          "note": null
+        }
+      ],
       "url": "https://www.powerpyx.com/arknight-endfield-fix-the-super-crane-walkthrough/"
     },
     {
@@ -737,34 +1970,20 @@
       "series": "Valley IV: Aburrey Quarry",
       "title": "Deep Management Post Rescue",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Search the Deep Management Post for missing UWST crew.",
       "start": null,
-      "characters": [],
-      "requires": [],
-      "parts": [{ "id": "1", "title": "Deep Management Post Rescue", "characters": [], "note": null }],
-      "url": "https://www.powerpyx.com/arknights-endfield-deep-management-post-rescue-walkthrough/"
-    },
-    {
-      "id": "lone-wolf",
-      "kind": "side",
-      "series": "Valley IV: Power Plateau",
-      "title": "Lone Wolf",
-      "region": "Valley IV",
-      "version": null,
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "characters": ["Phyllis", "Penny", "Mila", "Chen Qianyu", "Ramon"],
       "requires": [],
       "parts": [
         {
           "id": "1",
-          "title": "Lone Wolf",
-          "characters": [],
-          "note": "Tagged as an operator side mission on Game8 and as a narrative event on GameWith."
+          "title": "Deep Management Post Rescue",
+          "characters": ["Phyllis", "Penny", "Mila", "Chen Qianyu", "Ramon"],
+          "note": null
         }
       ],
-      "url": "https://www.powerpyx.com/arknights-endfield-lone-wolf-walkthrough/"
+      "url": "https://www.powerpyx.com/arknights-endfield-deep-management-post-rescue-walkthrough/"
     },
     {
       "id": "a-robots-dream",
@@ -772,12 +1991,12 @@
       "series": "Valley IV: Power Plateau",
       "title": "A Robot's Dream",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "The UWST logistics robot fleet on the Power Plateau has broken down en masse.",
       "start": null,
-      "characters": [],
+      "characters": ["Perlica"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "A Robot's Dream", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "A Robot's Dream", "characters": ["Perlica"], "note": null }],
       "url": "https://www.powerpyx.com/arknights-endfield-a-robots-dream-walkthrough/"
     },
     {
@@ -786,12 +2005,19 @@
       "series": "Valley IV: Power Plateau",
       "title": "Insider Threat",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Crowe's apprentice Angro asks for help.",
       "start": null,
-      "characters": [],
+      "characters": ["Shawna", "Angro", "Dmitry", "Perlica", "Georgi", "Chen Qianyu", "Artyom", "Yulia"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Insider Threat", "characters": [], "note": null }],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Insider Threat",
+          "characters": ["Shawna", "Angro", "Dmitry", "Perlica", "Georgi", "Chen Qianyu", "Artyom", "Yulia"],
+          "note": null
+        }
+      ],
       "url": "https://www.powerpyx.com/arknights-endfield-insider-threat-walkthrough/"
     },
     {
@@ -800,12 +2026,12 @@
       "series": "Valley IV: Origin Lodespring",
       "title": "Elevated Rescue",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "UWST crew nearby report someone in trouble.",
       "start": null,
-      "characters": [],
+      "characters": ["Scott", "Hermann"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Elevated Rescue", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "Elevated Rescue", "characters": ["Scott", "Hermann"], "note": null }],
       "url": "https://www.powerpyx.com/arknight-endfield-elevated-rescue-walkthrough/"
     },
     {
@@ -814,12 +2040,12 @@
       "series": "Valley IV: Origin Lodespring",
       "title": "Sluggish Escapade",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "A UWST crew mate has a slug-related problem.",
       "start": null,
-      "characters": [],
+      "characters": ["Oleg"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Sluggish Escapade", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "Sluggish Escapade", "characters": ["Oleg"], "note": null }],
       "url": "https://www.powerpyx.com/arknight-endfield-sluggish-escapade-walkthrough/"
     },
     {
@@ -828,26 +2054,29 @@
       "series": "Valley IV: Origin Lodespring",
       "title": "Repair Story",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Find a way through a shut gate.",
       "start": null,
-      "characters": [],
+      "characters": ["Bronzer"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Repair Story", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "Repair Story", "characters": ["Bronzer"], "note": null }],
       "url": "https://www.powerpyx.com/arknight-endfield-repair-story-walkthrough/"
     },
     {
       "id": "depot-node",
       "kind": "side",
       "series": "Valley IV: Originium Science Park",
-      "title": "Depot Node I",
+      "title": "Depot Node",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Rescue an operator from Landbreakers and unlock the Depot Node.",
       "start": null,
-      "characters": [],
+      "characters": ["Bonnie"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Depot Node I", "characters": [], "note": null }],
+      "parts": [
+        { "id": "1", "title": "Depot Node I", "characters": ["Bonnie"], "note": null },
+        { "id": "2", "title": "Depot Node II", "characters": ["Bonnie"], "note": null }
+      ],
       "url": "https://www.powerpyx.com/arknights-endfield-depot-node-walkthrough/"
     },
     {
@@ -856,12 +2085,12 @@
       "series": "Valley IV: Originium Science Park",
       "title": "Dusty Old Files",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "A UWST crew mate at the Science Park needs help with old records.",
       "start": null,
-      "characters": [],
+      "characters": ["Harper", "Kitt", "Fiona"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Dusty Old Files", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "Dusty Old Files", "characters": ["Harper", "Kitt", "Fiona"], "note": null }],
       "url": "https://www.powerpyx.com/arknight-endfield-dusty-old-files-walkthrough/"
     },
     {
@@ -870,12 +2099,37 @@
       "series": "Valley IV: Originium Science Park",
       "title": "Outpost: Infra-Station",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "version": "1.0",
+      "summary": "The Collinses' Infra-Station, now an emergency shelter, needs help and supplies.",
+      "start": "Message from the Collinses.",
+      "characters": ["Noffman", "Da Pan", "Chen Qianyu", "Perlica", "Pavel", "Rameld"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Outpost: Infra-Station", "characters": [], "note": null }],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Outpost: Infra-Station",
+          "characters": ["Noffman", "Da Pan", "Chen Qianyu", "Perlica"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "OD Project: Infra-Station I",
+          "characters": ["Noffman", "Da Pan", "Chen Qianyu", "Perlica"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "OD Project: Infra-Station II",
+          "characters": ["Da Pan", "Noffman", "Chen Qianyu", "Perlica"],
+          "note": null
+        },
+        {
+          "id": "4",
+          "title": "OD Project: Infra-Station III",
+          "characters": ["Noffman", "Pavel", "Da Pan", "Rameld", "Chen Qianyu"],
+          "note": null
+        }
+      ],
       "url": "https://www.powerpyx.com/arknights-endfield-outpost-infra-station-walkthrough/"
     },
     {
@@ -884,12 +2138,12 @@
       "series": "Valley IV: Originium Science Park",
       "title": "Farming Toils",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
-      "start": null,
-      "characters": [],
+      "version": "1.0",
+      "summary": "Noffman's friend Vera has a problem at the Eco-Farm.",
+      "start": "Read Noffman's message.",
+      "characters": ["Vera", "Wellmorin"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Farming Toils", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "Farming Toils", "characters": ["Vera", "Wellmorin"], "note": null }],
       "url": "https://www.powerpyx.com/arknights-endfield-farming-toils-walkthrough/"
     },
     {
@@ -898,12 +2152,12 @@
       "series": "Valley IV: Originium Science Park",
       "title": "Illusion",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Two UWST scientists are hunting a missing medicinal sample.",
       "start": null,
-      "characters": [],
+      "characters": ["Linnaeus", "Joan"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Illusion", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "Illusion", "characters": ["Linnaeus", "Joan"], "note": null }],
       "url": "https://www.powerpyx.com/arknights-endfield-illusion-walkthrough/"
     },
     {
@@ -912,83 +2166,486 @@
       "series": "Valley IV: Originium Science Park",
       "title": "Explosive Rescue",
       "region": "Valley IV",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "A worker is desperate to get inside the Kohl Plant.",
       "start": null,
-      "characters": [],
+      "characters": ["Ingol"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Explosive Rescue", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "Explosive Rescue", "characters": ["Ingol"], "note": null }],
       "url": "https://www.powerpyx.com/arknights-endfield-explosive-rescue-walkthrough/"
     },
     {
-      "id": "tainted-waters",
+      "id": "pillars-of-destiny",
       "kind": "side",
       "series": "Wuling: Jingyu Valley",
-      "title": "Tainted Waters",
+      "title": "Pillars of Destiny",
       "region": "Wuling",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "A Tianshi disciple near the Ecological Research Station looks troubled.",
       "start": null,
-      "characters": [],
+      "characters": ["Lin Ke"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Tainted Waters", "characters": [], "note": null }],
-      "url": "https://www.powerpyx.com/arknights-endfield-tainted-waters-walkthrough/"
-    },
-    {
-      "id": "the-bell-tolls",
-      "kind": "side",
-      "series": "Wuling: Jingyu Valley",
-      "title": "The Bell Tolls",
-      "region": "Wuling",
-      "version": null,
-      "summary": null,
-      "start": null,
-      "characters": [],
-      "requires": [],
-      "parts": [{ "id": "1", "title": "The Bell Tolls", "characters": [], "note": null }],
-      "url": "https://www.powerpyx.com/arknights-endfield-the-bell-tolls-walkthrough/"
+      "parts": [{ "id": "1", "title": "Pillars of Destiny", "characters": ["Lin Ke"], "note": null }],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/gm02m4.json"
     },
     {
       "id": "no-margin-for-error",
       "kind": "side",
-      "series": "Wuling: Jingyu Valley",
+      "series": "Wuling: Wuling City",
       "title": "No Margin for Error",
       "region": "Wuling",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Help Tianshi Fang Ze stabilise anomalous rods in the Residential Area.",
       "start": null,
-      "characters": [],
+      "characters": ["Fang Ze", "Fu Qiu"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "No Margin for Error", "characters": [], "note": null }],
+      "parts": [{ "id": "1", "title": "No Margin for Error", "characters": ["Fang Ze", "Fu Qiu"], "note": null }],
       "url": "https://www.powerpyx.com/arknights-endfield-no-margin-for-error-walkthrough/"
+    },
+    {
+      "id": "tainted-waters",
+      "kind": "side",
+      "series": "Wuling: Wuling City",
+      "title": "Tainted Waters",
+      "region": "Wuling",
+      "version": "1.0",
+      "summary": "Jing Hong reports disturbances in the waterways.",
+      "start": null,
+      "characters": ["Li Heng", "Jing Hong", "Chen Qianyu"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Tainted Waters", "characters": ["Li Heng", "Jing Hong", "Chen Qianyu"], "note": null }
+      ],
+      "url": "https://www.powerpyx.com/arknights-endfield-tainted-waters-walkthrough/"
     },
     {
       "id": "three-swords-of-mastery",
       "kind": "side",
-      "series": "Wuling: Jingyu Valley",
+      "series": "Wuling: Wuling City",
       "title": "Three Swords of Mastery",
       "region": "Wuling",
-      "version": null,
-      "summary": null,
+      "version": "1.0",
+      "summary": "Help Tin Ingot raise sword pells for an old rite of passage.",
       "start": null,
-      "characters": [],
+      "characters": ["Tin Ingot", "Lian Xiaowu"],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Three Swords of Mastery", "characters": [], "note": null }],
+      "parts": [
+        { "id": "1", "title": "Three Swords of Mastery", "characters": ["Tin Ingot", "Lian Xiaowu"], "note": null }
+      ],
       "url": "https://www.powerpyx.com/arknights-endfield-three-swords-of-mastery-walkthrough/"
+    },
+    {
+      "id": "the-bell-tolls",
+      "kind": "side",
+      "series": "Wuling: Wuling City",
+      "title": "The Bell Tolls",
+      "region": "Wuling",
+      "version": "1.0",
+      "summary": "Feed Xiranite to the three runes on the bell.",
+      "start": null,
+      "characters": ["Mo Yu", "Shang Jin"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "The Bell Tolls", "characters": ["Mo Yu", "Shang Jin"], "note": null }],
+      "url": "https://www.powerpyx.com/arknights-endfield-the-bell-tolls-walkthrough/"
     },
     {
       "id": "treasure-beneath-the-pond",
       "kind": "side",
-      "series": "Side missions",
+      "series": "Wuling: Wuling City",
       "title": "Treasure Beneath the Pond",
-      "region": null,
-      "version": null,
-      "summary": null,
+      "region": "Wuling",
+      "version": "1.0",
+      "summary": "A suspicious man by the pond is up to something.",
+      "start": null,
+      "characters": ["Bao"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Treasure Beneath the Pond", "characters": ["Bao"], "note": null }],
+      "url": "https://gamewith.net/akendfield/72472"
+    },
+    {
+      "id": "fan-meet",
+      "kind": "side",
+      "series": "Wuling: Wuling City",
+      "title": "Fan Meet",
+      "region": "Wuling",
+      "version": "1.2",
+      "summary": "Help the Bureau of Applied Technologies repair a Xiranite facility.",
+      "start": null,
+      "characters": ["Lu Xin"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Fan Meet", "characters": ["Lu Xin"], "note": null }],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/gm02m11.json"
+    },
+    {
+      "id": "to-posterity",
+      "kind": "side",
+      "series": "Wuling: Marker Stone",
+      "title": "To Posterity",
+      "region": "Wuling",
+      "version": "1.2",
+      "summary": "Liu Xie hunts for a legendary toolkit in the Watchtower Reservoir Station.",
+      "start": null,
+      "characters": ["Liu Xie", "Perlica", "Chen Qianyu"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "To Posterity", "characters": ["Liu Xie", "Perlica", "Chen Qianyu"], "note": null }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/gm02m12.json"
+    },
+    {
+      "id": "call-from-the-blight",
+      "kind": "side",
+      "series": "Wuling: Qingbo Stockade",
+      "title": "Call from the Blight",
+      "region": "Wuling",
+      "version": "1.1",
+      "summary": "Calls for help come from inside a mass of Blight.",
       "start": null,
       "characters": [],
       "requires": [],
-      "parts": [{ "id": "1", "title": "Treasure Beneath the Pond", "characters": [], "note": null }],
-      "url": "https://gamewith.net/akendfield/72472"
+      "parts": [{ "id": "1", "title": "Call from the Blight", "characters": [], "note": null }],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/gm02m13.json"
+    },
+    {
+      "id": "divvy-up-the-trouble",
+      "kind": "side",
+      "series": "Wuling: Test Area",
+      "title": "Divvy Up the Trouble",
+      "region": "Wuling",
+      "version": "1.2",
+      "summary": "An Yu needs pipe valves repaired urgently.",
+      "start": null,
+      "characters": ["An Yu", "Lu Lingxiang"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Divvy Up the Trouble", "characters": ["An Yu", "Lu Lingxiang"], "note": null }],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/gm02m14.json"
+    },
+    {
+      "id": "cliffside-riddles-of-steel",
+      "kind": "side",
+      "series": "Wuling: Sword Vault Dale",
+      "title": "Cliffside Riddles of Steel",
+      "region": "Wuling",
+      "version": "1.3",
+      "summary": "Walton turns up needing help.",
+      "start": null,
+      "characters": ["Walton", "Chen Qianyu"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Cliffside Riddles of Steel", "characters": ["Walton", "Chen Qianyu"], "note": null }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/gm02m15.json"
+    },
+    {
+      "id": "trial-of-swordmancy",
+      "kind": "side",
+      "series": "Wuling: Sword Vault Dale",
+      "title": "Trial of Swordmancy",
+      "region": "Wuling",
+      "version": "1.3",
+      "summary": "Lin Hu invites you to test his Trial Arena.",
+      "start": null,
+      "characters": ["Lin Hu"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Trial of Swordmancy", "characters": ["Lin Hu"], "note": null }],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/gm02m16.json"
+    },
+    {
+      "id": "nameless-blades",
+      "kind": "side",
+      "series": "Wuling: North Wuling Exclusion Zone",
+      "title": "Nameless Blades",
+      "region": "Wuling",
+      "version": "1.4",
+      "summary": "A three-part side story in the North Wuling Exclusion Zone.",
+      "start": null,
+      "characters": ["Phrase", "Yan Ning"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Nameless Blades I", "characters": ["Phrase"], "note": null },
+        { "id": "2", "title": "Nameless Blades II", "characters": ["Yan Ning"], "note": null },
+        { "id": "3", "title": "Nameless Blades III", "characters": ["Phrase"], "note": null }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/gm02m17.json"
+    },
+    {
+      "id": "blightshade-watch",
+      "kind": "side",
+      "series": "Wuling: North Wuling Exclusion Zone",
+      "title": "Blightshade Watch",
+      "region": "Wuling",
+      "version": "1.4",
+      "summary": "A Tianshi studying Blightshades has hit a problem.",
+      "start": null,
+      "characters": ["He Chi"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Blightshade Watch", "characters": ["He Chi"], "note": null }],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/gm02m20.json"
+    },
+    {
+      "id": "home-beyond-reach",
+      "kind": "side",
+      "series": "Wuling: Yinglung Pass",
+      "title": "Home Beyond Reach",
+      "region": "Wuling",
+      "version": "1.4",
+      "summary": "A troubled Yinglung explains what is wrong.",
+      "start": null,
+      "characters": ["Brightfire", "Frigid"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Home Beyond Reach", "characters": ["Brightfire", "Frigid"], "note": null }],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/gm02m21.json"
+    },
+    {
+      "id": "treasures-of-the-past",
+      "kind": "side",
+      "series": "Wuling: North Wuling Exclusion Zone",
+      "title": "Treasures of the Past",
+      "region": "Wuling",
+      "version": "1.4",
+      "summary": "A perplexed Tianshi needs help.",
+      "start": null,
+      "characters": ["Luo An"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Treasures of the Past", "characters": ["Luo An"], "note": null }],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/gm02m23.json"
+    },
+    {
+      "id": "illumination-of-fate",
+      "kind": "side",
+      "series": "Wuling: Snowy Forest",
+      "title": "Illumination of Fate",
+      "region": "Wuling",
+      "version": "1.5",
+      "summary": "A side story in the Snowy Forest.",
+      "start": null,
+      "characters": ["Typhoeus"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Illumination of Fate", "characters": ["Typhoeus"], "note": null }],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/gm02m22.json"
+    },
+    {
+      "id": "cliffbottom-archery-range",
+      "kind": "side",
+      "series": "Wuling: Snowy Forest",
+      "title": "Cliffbottom Archery Range",
+      "region": "Wuling",
+      "version": "1.5",
+      "summary": "Typhoeus needs help figuring out a gift Andre left her.",
+      "start": null,
+      "characters": ["Typhoeus", "Andre"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Cliffbottom Archery Range", "characters": ["Typhoeus", "Andre"], "note": null }],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/gm02m29.json"
+    },
+    {
+      "id": "miscellanies-on-rampage",
+      "kind": "side",
+      "series": "Wuling: Si's Painting",
+      "title": "Miscellanies on Rampage",
+      "region": "Wuling",
+      "version": "1.6",
+      "summary": "Si's escaped miscellanies need rounding up.",
+      "start": null,
+      "characters": ["Si"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Miscellanies on Rampage", "characters": ["Si"], "note": null }],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/gm02m24.json"
+    },
+    {
+      "id": "post-destination",
+      "kind": "side",
+      "series": "Wuling: Si's Painting",
+      "title": "Post Destination",
+      "region": "Wuling",
+      "version": "1.6",
+      "summary": "A desperate Tianshi disciple needs help.",
+      "start": null,
+      "characters": ["Ji Yun"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Post Destination", "characters": ["Ji Yun"], "note": null }],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/gm02m26.json"
+    },
+    {
+      "id": "bell-of-recollection",
+      "kind": "side",
+      "series": "Wuling: Wuling City",
+      "title": "Bell of Recollection",
+      "region": "Wuling",
+      "version": "1.6",
+      "summary": "Shang Jin seeks parts for the Bell of Three Presences and hears of a city called Suiming.",
+      "start": null,
+      "characters": ["Yu Shigui", "Shang Jin", "An Chao", "Ning Lu"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Bell of Recollection", "characters": ["Yu Shigui", "Shang Jin"], "note": null },
+        { "id": "2", "title": "Bell of Recollection: Xun of Gale", "characters": [], "note": "Suiming." },
+        { "id": "3", "title": "Bell of Recollection: Kan of Water", "characters": [], "note": "Suiming." },
+        { "id": "4", "title": "Bell of Recollection: Zhen of Thunder", "characters": [], "note": "Suiming." },
+        { "id": "5", "title": "Bell of Recollection: Qian of Heavens", "characters": [], "note": "Suiming." },
+        { "id": "6", "title": "Bell of Recollection: Afternotes", "characters": [], "note": "Suiming." },
+        { "id": "7", "title": "Like the Morning Dew", "characters": ["An Chao", "Ning Lu"], "note": "Suiming." }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/gm02m27.json"
+    },
+    {
+      "id": "innovate-to-cultivate",
+      "kind": "side",
+      "series": "Wuling: Wuling City",
+      "title": "Innovate to Cultivate",
+      "region": "Wuling",
+      "version": "1.0",
+      "summary": "The Nongye Tianshi at the Agricultural Test Site have a problem.",
+      "start": null,
+      "characters": ["Tian Min", "Wellmorin"],
+      "requires": [],
+      "parts": [{ "id": "1", "title": "Innovate to Cultivate", "characters": ["Tian Min", "Wellmorin"], "note": null }],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/f1m10d1.json"
+    },
+    {
+      "id": "od-project-sky-king-flats",
+      "kind": "side",
+      "series": "Wuling: Jingyu Valley",
+      "title": "OD Project: Sky King Flats",
+      "region": "Wuling",
+      "version": "1.0",
+      "summary": "Supply the Sky King Flats Construction Site through its development stages.",
+      "start": null,
+      "characters": ["Lang Tou", "Hong Bo", "Chen Qianyu", "He Lao", "Qingwu", "Perlica", "Mi Fu", "Bobo"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "OD Project: Sky King Flats I",
+          "characters": ["Lang Tou", "Hong Bo", "He Lao", "Qingwu", "Chen Qianyu", "Perlica", "Bobo"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "OD Project: Sky King Flats II",
+          "characters": ["Hong Bo", "Lang Tou", "Chen Qianyu", "Perlica", "He Lao"],
+          "note": "Added in 1.1."
+        },
+        {
+          "id": "3",
+          "title": "OD Project: Sky King Flats III",
+          "characters": ["Lang Tou", "Hong Bo", "Chen Qianyu", "Mi Fu", "Qingwu", "He Lao", "Perlica"],
+          "note": "Added in 1.3."
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/f1m18d1.json"
+    },
+    {
+      "id": "od-project-remediation-station",
+      "kind": "side",
+      "series": "Wuling: Marker Stone",
+      "title": "OD Project: Remediation Station",
+      "region": "Wuling",
+      "version": "1.2",
+      "summary": "Supply the Cardiac Remediation Station through its development stages.",
+      "start": null,
+      "characters": ["Ge Yipu", "Bu Yuan", "Han Fang", "Chen Qianyu", "Perlica"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "OD Project: Remediation Station I",
+          "characters": ["Han Fang", "Ge Yipu", "Chen Qianyu", "Perlica", "Bu Yuan"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "OD Project: Remediation Station II",
+          "characters": ["Bu Yuan", "Perlica", "Chen Qianyu"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "OD Project: Remediation Station III",
+          "characters": ["Ge Yipu", "Perlica", "Chen Qianyu"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/f1m19d1.json"
+    },
+    {
+      "id": "outpost-cloudseeder-stn",
+      "kind": "side",
+      "series": "Wuling: Yinglung Pass",
+      "title": "Outpost: Cloudseeder STN",
+      "region": "Wuling",
+      "version": "1.4",
+      "summary": "Set up the Cloudseeder Station outpost and supply it through its development stages.",
+      "start": null,
+      "characters": ["Wei Xidong", "Chen Qianyu", "Perlica", "Overflow"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Outpost: Cloudseeder STN",
+          "characters": ["Wei Xidong", "Overflow", "Chen Qianyu"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "OD Project: Cloudseeder STN I",
+          "characters": ["Wei Xidong", "Chen Qianyu", "Perlica", "Overflow"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "OD Project: Cloudseeder STN II",
+          "characters": ["Wei Xidong", "Chen Qianyu", "Perlica"],
+          "note": null
+        },
+        {
+          "id": "4",
+          "title": "OD Project: Cloudseeder STN III",
+          "characters": ["Wei Xidong", "Chen Qianyu"],
+          "note": "Added in 1.5."
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/f1m29d1.json"
+    },
+    {
+      "id": "fissure-filling-and-land-grouting",
+      "kind": "side",
+      "series": "Wuling: North Wuling Exclusion Zone",
+      "title": "Fissure Filling and Land Grouting",
+      "region": "Wuling",
+      "version": "1.4",
+      "summary": "Fiona's messages point to fissures in the Exclusion Zone that need filling.",
+      "start": null,
+      "characters": ["He Zhiqi", "Arcane", "Mi Fu", "Da Pan", "Fiona"],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Fissure Filling and Land Grouting",
+          "characters": ["He Zhiqi", "Arcane", "Mi Fu", "Da Pan", "Fiona"],
+          "note": null
+        }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/f1m32.json"
+    },
+    {
+      "id": "a-painting-open-for-business",
+      "kind": "side",
+      "series": "Wuling: Si's Painting",
+      "title": "A Painting Open for Business",
+      "region": "Wuling",
+      "version": "1.6",
+      "summary": "The inn in the painted world needs someone who knows the Proxy's residence, then an innkeeper.",
+      "start": null,
+      "characters": ["Si"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "A Painting Open for Business", "characters": ["Si"], "note": null },
+        { "id": "2", "title": "Yuanyuan Innkeeper I", "characters": [], "note": null },
+        { "id": "3", "title": "Yuanyuan Innkeeper II", "characters": [], "note": null },
+        { "id": "4", "title": "Yuanyuan Innkeeper III", "characters": [], "note": null }
+      ],
+      "url": "https://github.com/rmxlinux/EndfieldData/blob/main/Json/MissionRuntimeAsset/f1m36.json"
     }
   ]
 }
