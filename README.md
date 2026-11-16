@@ -6,7 +6,7 @@ Memoria tracks energy, dailies, weeklies, events and banners across Genshin Impa
 
 **[Download the latest release](https://github.com/JanKonradK/Memoria/releases/latest)** · [Guide](docs/guide.md) · [Report a problem](https://github.com/JanKonradK/Memoria/issues)
 
-![Today: every game ranked by what caps or resets first](docs/screenshots/today.png)
+![Today: every game ranked by what caps first, a coin flip and a daily ticked off](docs/screenshots/clip-today.png)
 
 ## What it does
 
@@ -17,16 +17,22 @@ Memoria tracks energy, dailies, weeklies, events and banners across Genshin Impa
 - **Reminders** arrive before resets, caps and event ends, as anything from a silent note to a ringing alarm with snooze.
 - **Sync** keeps a PC and a phone in step over Wi-Fi, end-to-end encrypted, with no server in between.
 
-|                                                                  |                                                                          |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| ![Timeline of events and banners](docs/screenshots/timeline.png) | ![Quests: parts ticked done or partly done](docs/screenshots/quests.png) |
-| ![Version history of free pulls](docs/screenshots/pulls.png)     | ![Reminder styles and alarms](docs/screenshots/reminders.png)            |
+### Timeline and Pulls
+
+![The Timeline of events and banners, then free pulls per version across games](docs/screenshots/clip-timeline-pulls.png)
+
+### Quests
+
+![Following a main-story act part by part, done or partly done](docs/screenshots/clip-quests.png)
+
+### On a phone, and reminders
 
 <p align="center">
-  <img src="docs/screenshots/tabs-phone.png" width="260" alt="Memoria on a phone: Today, Timeline, Pulls and Quests" />
-  <img src="docs/screenshots/quests-phone.png" width="260" alt="Ticking off quest parts on a phone" />
-  <img src="docs/screenshots/phone-today.png" width="260" alt="Today on a phone" />
+  <img src="docs/screenshots/clip-phone.png" width="300" alt="Memoria on a phone: Today, Timeline, Pulls and Quests" />
+  <img src="docs/screenshots/phone-today.png" width="300" alt="Today on a phone" />
 </p>
+
+![Reminder styles, from silent to a ringing alarm](docs/screenshots/reminders.png)
 
 ## Install
 
