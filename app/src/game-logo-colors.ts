@@ -11,6 +11,7 @@ const PRESET_RINGS = new Map<string, [string, string]>([
   ['uma', ['#f05a8a', '#23b6a7']],
   ['nikke', ['#e31b2d', '#f2f2f4']],
   ['endfield', ['#f0b900', '#f2f2f0']],
+  ['crumble', ['#ff8700', '#ffd203']],
 ]);
 
 /** The two ring colours for a game: its preset's pair, else its own accents. */

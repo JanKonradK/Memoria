@@ -34,6 +34,7 @@ export const FONT_OPTIONS: Array<{ label: string; css: string; style: CSSPropert
     style: { fontWeight: 400, textTransform: 'uppercase', letterSpacing: '0.12em' },
   },
   { label: 'Mochiy Pop One — bubbly pop', css: "'Mochiy Pop One', sans-serif", style: { fontWeight: 400 } },
+  { label: 'Luckiest Guy — bouncing cartoon capitals', css: "'Luckiest Guy', cursive", style: { fontWeight: 400 } },
   {
     label: 'Black Ops One — stencil capitals',
     css: "'Black Ops One', sans-serif",

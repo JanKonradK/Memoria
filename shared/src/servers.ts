@@ -45,6 +45,8 @@ export const GAME_SERVERS: Readonly<Record<string, readonly GameServer[]>> = {
   nte: [{ ...EUROPE, tz: 'Europe/Warsaw' }, AMERICA, ASIA],
   lads: [{ ...EUROPE, tz: 'Etc/GMT-2' }, { ...AMERICA, tz: 'Etc/GMT+7' }, ASIA],
   uma: [{ id: 'global', label: 'Global', short: 'GLOBAL', tz: 'Etc/GMT' }],
+  // One worldwide service on Korean time.
+  crumble: [{ id: 'global', label: 'Global', short: 'GLOBAL', tz: 'Etc/GMT-9' }],
   // Every NIKKE region runs on one UTC+9 clock; the region still tells accounts apart.
   nikke: [
     { id: 'na', label: 'North America', short: 'NA', tz: NIKKE_TZ },

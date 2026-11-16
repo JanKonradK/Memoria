@@ -11,10 +11,12 @@ export const PULL_CURRENCY: Record<string, string> = {
   uma: 'Carats',
   nikke: 'Gems',
   endfield: 'Oroberyl',
+  nte: 'Annulith',
+  crumble: 'Crystals',
 };
 
 const AMOUNT =
-  /(\d{1,3}(?:,\d{3})+|\d+)\s+(Primogems|Stellar Jade|Polychromes|Astrite|Diamonds|Carats|Gems|Oroberyl)\b/i;
+  /(\d{1,3}(?:,\d{3})+|\d+)\s+(Primogems|Stellar Jade|Polychromes|Astrite|Diamonds|Carats|Gems|Oroberyl|Annulith|Crystals)\b/i;
 
 export interface EventReward {
   amount: number;

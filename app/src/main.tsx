@@ -34,6 +34,7 @@ import '@fontsource/italiana/400.css';
 import '@fontsource/mochiy-pop-one/latin-400.css';
 import '@fontsource/black-ops-one/400.css';
 import '@fontsource/share-tech-mono/400.css';
+import '@fontsource/luckiest-guy/latin-400.css';
 
 /** Loaded after first paint — see motion-features.ts. */
 const loadMotionFeatures = () => import('./motion-features').then((module) => module.default);

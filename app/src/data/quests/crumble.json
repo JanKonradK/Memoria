@@ -1,0 +1,478 @@
+{
+  "game": "crumble",
+  "reviewed": "2026-11-15",
+  "quests": [
+    {
+      "id": "main-episodes",
+      "kind": "main",
+      "series": "Main Story",
+      "title": "Main Story — Episodes (animated comics)",
+      "region": null,
+      "version": "1.0",
+      "summary": "Animated cutscenes unlocked by clearing Main Stages, following the Crumble Mercenaries from their first commission onward.",
+      "start": "Clear Main Stages; replay under Replay → Episodes.",
+      "characters": [
+        "Berry Yogurt Cookie",
+        "Dark Cherry Cookie",
+        "Grapevine Cookie",
+        "King Choco Drop",
+        "Oven Wanderer Cookie",
+        "Cool Mint Cookie"
+      ],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Intro", "characters": [], "note": null },
+        { "id": "2", "title": "Our First Mission???", "characters": [], "note": null },
+        { "id": "3", "title": "The Start... of an Adventure", "characters": [], "note": null },
+        { "id": "4", "title": "A Parallel World, Closer Than Expected", "characters": [], "note": null },
+        { "id": "5", "title": "A New Ally Appears!", "characters": [], "note": null },
+        { "id": "6", "title": "Dark Cherry Cookie's Plan?!", "characters": [], "note": null },
+        { "id": "7", "title": "The Implant Order's Secret Revealed, and...", "characters": [], "note": null }
+      ],
+      "url": "https://cookierun.wiki/w/Episodes_(Crumble)"
+    },
+    {
+      "id": "main-adventure-notes",
+      "kind": "main",
+      "series": "Main Story",
+      "title": "Main Story — Adventure Notes",
+      "region": null,
+      "version": "1.0",
+      "summary": "Written chapters earned on the Main Stages: the mercenary trio, Portal Stones, the Implant Order, the D'vine Abbey. Each pays 100 Crystals.",
+      "start": "Clear Main Stages; open under Replay → Adventure Notes.",
+      "characters": [
+        "Berry Yogurt Cookie",
+        "Dark Cherry Cookie",
+        "Grapevine Cookie",
+        "Cool Mint Cookie",
+        "King Choco Drop",
+        "GingerCraven",
+        "Devil's Tooth Cookie",
+        "Muscle Cookie",
+        "Pinot Noir Cookie",
+        "GingerBrave"
+      ],
+      "requires": [],
+      "parts": [
+        {
+          "id": "1",
+          "title": "Humbled, Crumbled Beginnings",
+          "characters": ["Berry Yogurt Cookie", "Dark Cherry Cookie", "Grapevine Cookie"],
+          "note": null
+        },
+        {
+          "id": "2",
+          "title": "The First Drill on the Plains",
+          "characters": ["Cool Mint Cookie", "Dark Cherry Cookie", "Grapevine Cookie"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "[News Report] \"Portal Stones\" Found Across Kingdom: Do Not Touch!",
+          "characters": ["King Choco Drop", "GingerCraven"],
+          "note": null
+        },
+        {
+          "id": "4",
+          "title": "Invoice for Castle Restoration",
+          "characters": ["King Choco Drop", "Berry Yogurt Cookie", "Dark Cherry Cookie", "Grapevine Cookie"],
+          "note": null
+        },
+        { "id": "5", "title": "[Breaking News] Must Daily Dungeons Be Daily?", "characters": [], "note": null },
+        {
+          "id": "6",
+          "title": "Together Again at the Beach!",
+          "characters": [
+            "Cool Mint Cookie",
+            "Berry Yogurt Cookie",
+            "GingerCraven",
+            "Dark Cherry Cookie",
+            "Grapevine Cookie"
+          ],
+          "note": null
+        },
+        {
+          "id": "7",
+          "title": "Rumors About the New Boss",
+          "characters": ["GingerCraven", "Devil's Tooth Cookie", "Cool Mint Cookie"],
+          "note": null
+        },
+        {
+          "id": "8",
+          "title": "The One Who Reigns Over the Ruins",
+          "characters": ["GingerCraven", "Dark Cherry Cookie", "Grapevine Cookie", "Berry Yogurt Cookie"],
+          "note": null
+        },
+        {
+          "id": "9",
+          "title": "[Special Report] Warning Issued Over Excessive Star Candy Consumption!",
+          "characters": ["Muscle Cookie"],
+          "note": null
+        },
+        {
+          "id": "10",
+          "title": "Excerpt from Berry Yogurt Cookie's Ledger",
+          "characters": ["Dark Cherry Cookie"],
+          "note": null
+        },
+        {
+          "id": "11",
+          "title": "The Implant Order's Most Proactive Member",
+          "characters": [
+            "Cool Mint Cookie",
+            "GingerCraven",
+            "Dark Cherry Cookie",
+            "Berry Yogurt Cookie",
+            "Grapevine Cookie"
+          ],
+          "note": null
+        },
+        { "id": "12", "title": "A Revolution! Revo...lution?", "characters": ["King Choco Drop"], "note": null },
+        { "id": "13", "title": "[Lost and Found] Cookies Who Lost Their Names", "characters": [], "note": null },
+        {
+          "id": "14",
+          "title": "What Lies Beneath the Snow",
+          "characters": ["GingerCraven", "Dark Cherry Cookie", "Berry Yogurt Cookie", "Grapevine Cookie"],
+          "note": null
+        },
+        { "id": "15", "title": "Holy Golden Drop Observation Log", "characters": ["King Choco Drop"], "note": null },
+        {
+          "id": "16",
+          "title": "Tales of Crumbs (1): The Dust-Covered Sword",
+          "characters": ["Dark Cherry Cookie", "Berry Yogurt Cookie", "Grapevine Cookie"],
+          "note": null
+        },
+        {
+          "id": "17",
+          "title": "Appraisal of a Suspicious Crystal",
+          "characters": ["Berry Yogurt Cookie", "Dark Cherry Cookie", "Grapevine Cookie"],
+          "note": null
+        },
+        { "id": "18", "title": "King Choco Drop's Diary", "characters": ["King Choco Drop"], "note": null },
+        { "id": "19", "title": "D'vine Abbey Code of Conduct", "characters": [], "note": null },
+        { "id": "20", "title": "Portal Stone User Reviews", "characters": [], "note": null },
+        {
+          "id": "21",
+          "title": "Tales of Crumbs (2): A Fleeting Taste of Bitterness",
+          "characters": ["Dark Cherry Cookie", "Berry Yogurt Cookie", "Grapevine Cookie"],
+          "note": null
+        },
+        {
+          "id": "22",
+          "title": "Dignity Lost",
+          "characters": ["King Choco Drop", "Berry Yogurt Cookie", "Dark Cherry Cookie", "Grapevine Cookie"],
+          "note": null
+        },
+        {
+          "id": "23",
+          "title": "[News Report] Petty Villains' Alliance Express Strong Protest",
+          "characters": ["Berry Yogurt Cookie", "Dark Cherry Cookie", "Grapevine Cookie"],
+          "note": null
+        },
+        {
+          "id": "24",
+          "title": "The Abbey's Pursuit",
+          "characters": ["Grapevine Cookie", "Pinot Noir Cookie"],
+          "note": null
+        },
+        {
+          "id": "25",
+          "title": "Tales of Crumbs (3): Money, Coins, Gold... What Comes Next?",
+          "characters": ["Berry Yogurt Cookie", "Grapevine Cookie", "Dark Cherry Cookie"],
+          "note": null
+        },
+        {
+          "id": "26",
+          "title": "[Special Report] Are Cookies Happier After Escaping the Oven?",
+          "characters": ["GingerBrave"],
+          "note": null
+        },
+        { "id": "27", "title": "A Certain Scientist's Crash Landing", "characters": [], "note": null },
+        {
+          "id": "28",
+          "title": "[Economy Pages] Jelly Prices Soar as Commission Fees Remain Frozen",
+          "characters": ["Berry Yogurt Cookie"],
+          "note": null
+        },
+        {
+          "id": "29",
+          "title": "Tales of Crumbs (4): The Price of Shelter on a Rainy Day",
+          "characters": ["Dark Cherry Cookie", "Grapevine Cookie", "Berry Yogurt Cookie"],
+          "note": null
+        },
+        {
+          "id": "30",
+          "title": "Tales of Crumbs (5): The Sword, the Ledger, and the Empty Bottle",
+          "characters": ["Dark Cherry Cookie", "Berry Yogurt Cookie", "Grapevine Cookie"],
+          "note": null
+        },
+        {
+          "id": "31",
+          "title": "Kingdom Administration] Temporary Name Tag Distribution",
+          "characters": ["GingerBrave"],
+          "note": null
+        },
+        {
+          "id": "32",
+          "title": "[Daily Report] Another Crumbling Day on the Continent!",
+          "characters": ["King Choco Drop", "Berry Yogurt Cookie"],
+          "note": null
+        }
+      ],
+      "url": "https://cookierun.wiki/w/Adventure_Notes"
+    },
+    {
+      "id": "story-oven-wanderer-cookie",
+      "kind": "story",
+      "series": "Cookie Adventure Notes",
+      "title": "Oven Wanderer Cookie — Adventure Notes",
+      "region": null,
+      "version": "1.0",
+      "summary": "Backstory notes for Oven Wanderer Cookie, unlocked by obtaining and promoting the Cookie.",
+      "start": "Obtain Oven Wanderer Cookie; more notes unlock with promotions.",
+      "characters": ["Oven Wanderer Cookie", "GingerCraven", "Brightseeker Cookie"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "A Certain Cookie's Escape from the Oven", "characters": [], "note": null },
+        { "id": "2", "title": "Memories of the Oven Labyrinth", "characters": ["GingerCraven"], "note": null },
+        { "id": "3", "title": "A Wanderer's Tattered Map", "characters": [], "note": null },
+        {
+          "id": "4",
+          "title": "The Light at the End of a Dark Path",
+          "characters": ["Brightseeker Cookie"],
+          "note": null
+        },
+        { "id": "5", "title": "Thoughts About That Cookie", "characters": ["GingerCraven"], "note": null },
+        { "id": "6", "title": "The Reply Never Sent", "characters": ["GingerCraven"], "note": null },
+        { "id": "7", "title": "A Meeting Somewhere, Sometime", "characters": ["GingerCraven"], "note": null }
+      ],
+      "url": "https://cookierun.wiki/w/Adventure_Notes"
+    },
+    {
+      "id": "story-gingercraven",
+      "kind": "story",
+      "series": "Cookie Adventure Notes",
+      "title": "GingerCraven — Adventure Notes",
+      "region": null,
+      "version": null,
+      "summary": "Records and private notes about GingerCraven and Rancidia, unlocked through the boss and related content.",
+      "start": "Unlock condition not documented (GingerCraven is a boss, not yet playable).",
+      "characters": [
+        "GingerCraven",
+        "GingerBrave",
+        "Devil's Tooth Cookie",
+        "Cool Mint Cookie",
+        "Dark Cherry Cookie",
+        "Berry Yogurt Cookie",
+        "Grapevine Cookie"
+      ],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Failed Experiment Storage Log No. ???", "characters": ["GingerBrave"], "note": null },
+        { "id": "2", "title": "Dimensional Rift Observation Log", "characters": [], "note": null },
+        { "id": "3", "title": "Rancidian Code of Conduct: Revised Edition", "characters": [], "note": null },
+        { "id": "4", "title": "Excerpts from Rancidia's Administrative Records", "characters": [], "note": null },
+        {
+          "id": "5",
+          "title": "Excerpts from the Plaque Tower Blueprints",
+          "characters": ["Devil's Tooth Cookie"],
+          "note": null
+        },
+        {
+          "id": "6",
+          "title": "Transcript of the New Boss's Speech",
+          "characters": ["Cool Mint Cookie", "Devil's Tooth Cookie"],
+          "note": null
+        },
+        { "id": "7", "title": "Portal Stone Resonance Experiment: Trial 7", "characters": [], "note": null },
+        { "id": "8", "title": "Notes on the Name \"Brave\"", "characters": ["GingerBrave"], "note": null },
+        { "id": "9", "title": "Graffiti on the Walls of the Oven Labyrinth", "characters": [], "note": null },
+        {
+          "id": "10",
+          "title": "The Crumble Mercenaries and GingerCraven",
+          "characters": ["Dark Cherry Cookie", "Berry Yogurt Cookie", "Grapevine Cookie"],
+          "note": null
+        },
+        { "id": "11", "title": "GingerCraven's Private Thoughts", "characters": [], "note": null },
+        { "id": "12", "title": "The Letter That Never Left", "characters": [], "note": null },
+        { "id": "13", "title": "Say You Need Me", "characters": [], "note": null }
+      ],
+      "url": "https://cookierun.wiki/w/Adventure_Notes"
+    },
+    {
+      "id": "story-brightseeker-cookie",
+      "kind": "story",
+      "series": "Cookie Adventure Notes",
+      "title": "Brightseeker Cookie — Adventure Notes",
+      "region": null,
+      "version": "1.2",
+      "summary": "Backstory notes for Brightseeker Cookie, unlocked by obtaining and promoting the Cookie.",
+      "start": "Obtain Brightseeker Cookie; more notes unlock with promotions.",
+      "characters": ["Brightseeker Cookie", "Oven Wanderer Cookie"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "The Lollipop Workshop", "characters": [], "note": null },
+        { "id": "2", "title": "The Day the Map was Illuminated", "characters": ["Oven Wanderer Cookie"], "note": null },
+        { "id": "3", "title": "The Time Spent Together", "characters": [], "note": null },
+        { "id": "4", "title": "And So She Decided to Remain Bright", "characters": [], "note": null },
+        { "id": "5", "title": "Another Me", "characters": [], "note": null }
+      ],
+      "url": "https://cookierun.wiki/w/Adventure_Notes"
+    },
+    {
+      "id": "story-pinot-noir-cookie",
+      "kind": "story",
+      "series": "Cookie Adventure Notes",
+      "title": "Pinot Noir Cookie — Adventure Notes",
+      "region": null,
+      "version": "1.2",
+      "summary": "Backstory notes for Pinot Noir Cookie, unlocked by obtaining and promoting the Cookie.",
+      "start": "Obtain Pinot Noir Cookie; more notes unlock with promotions.",
+      "characters": ["Pinot Noir Cookie", "Grapevine Cookie", "Alchemist Cookie", "Vampire Cookie"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "Morning in the D'vine Abbey", "characters": ["Grapevine Cookie"], "note": null },
+        { "id": "2", "title": "Obtaining the Shadow Serpents", "characters": [], "note": null },
+        { "id": "3", "title": "To Our Cookie Sisters", "characters": ["Grapevine Cookie"], "note": null },
+        { "id": "4", "title": "Closing the Register", "characters": ["Grapevine Cookie"], "note": null },
+        { "id": "5", "title": "When We Face What We Must", "characters": ["Grapevine Cookie"], "note": null },
+        {
+          "id": "6",
+          "title": "Looking After the Children",
+          "characters": ["Alchemist Cookie", "Vampire Cookie", "Grapevine Cookie"],
+          "note": null
+        }
+      ],
+      "url": "https://cookierun.wiki/w/Adventure_Notes"
+    },
+    {
+      "id": "story-chardonnay-cookie",
+      "kind": "story",
+      "series": "Cookie Adventure Notes",
+      "title": "Chardonnay Cookie — Adventure Notes",
+      "region": null,
+      "version": "1.5",
+      "summary": "Backstory notes for Chardonnay Cookie, unlocked by obtaining and promoting the Cookie.",
+      "start": "Obtain Chardonnay Cookie; more notes unlock with promotions.",
+      "characters": ["Chardonnay Cookie"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "An Overly Acidic Morning", "characters": [], "note": null },
+        { "id": "2", "title": "The Empty Space Alongside Prayers", "characters": [], "note": null },
+        { "id": "3", "title": "The Thin Line Between Sacred Water and Poison", "characters": [], "note": null },
+        { "id": "4", "title": "Someone's Diary", "characters": [], "note": null },
+        { "id": "5", "title": "We'll Meet Again, Sister", "characters": [], "note": null }
+      ],
+      "url": "https://cookierun.wiki/w/Adventure_Notes"
+    },
+    {
+      "id": "story-readyberry-cookie",
+      "kind": "story",
+      "series": "Cookie Adventure Notes",
+      "title": "Readyberry Cookie — Adventure Notes",
+      "region": null,
+      "version": "1.6",
+      "summary": "Backstory notes for Readyberry Cookie, unlocked by obtaining and promoting the Cookie.",
+      "start": "Obtain Readyberry Cookie; more notes unlock with promotions.",
+      "characters": ["Readyberry Cookie", "Brightseeker Cookie", "GingerCraven", "Oven Wanderer Cookie"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "The Unknown Gamer", "characters": [], "note": null },
+        { "id": "2", "title": "Pocket Strawberry's Upgrade", "characters": ["Brightseeker Cookie"], "note": null },
+        {
+          "id": "3",
+          "title": "Records Left Unformatted",
+          "characters": ["Brightseeker Cookie", "GingerCraven"],
+          "note": null
+        },
+        { "id": "4", "title": "EXP Worth a Pack of Strawberry Jellies", "characters": [], "note": null },
+        {
+          "id": "5",
+          "title": "Readyberry Cookie, Ready to Go!",
+          "characters": ["Oven Wanderer Cookie", "Brightseeker Cookie", "GingerCraven"],
+          "note": null
+        }
+      ],
+      "url": "https://cookierun.wiki/w/Adventure_Notes"
+    },
+    {
+      "id": "side-dungeon-notes",
+      "kind": "side",
+      "series": "Dungeons",
+      "title": "Dungeon Adventure Notes",
+      "region": null,
+      "version": null,
+      "summary": "Adventure Notes tied to the Daily Dungeons and the Crumble Dungeon. Each pays 100 Crystals when opened.",
+      "start": "Progress the Daily Dungeons and the Crumble Dungeon.",
+      "characters": ["King Choco Drop", "Cool Mint Cookie", "Devil's Tooth Cookie"],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "[Kingdom Library] Books Are Meant to Be Read", "characters": [], "note": null },
+        { "id": "2", "title": "King Choco Drop's Emergency Address", "characters": ["King Choco Drop"], "note": null },
+        {
+          "id": "3",
+          "title": "Joyous Crystal(?) Veins",
+          "characters": ["Cool Mint Cookie", "Devil's Tooth Cookie"],
+          "note": null
+        }
+      ],
+      "url": "https://cookierun.wiki/w/Adventure_Notes"
+    },
+    {
+      "id": "side-tadc-collab-notes",
+      "kind": "side",
+      "series": "The Amazing Digital Circus collab",
+      "title": "The Amazing Digital Circus — collab Adventure Notes",
+      "region": null,
+      "version": "1.6",
+      "summary": "Collab-only notes about the circus cast landing in the Crumble world. Limited: available only during the collab (until the 2026-11-19 maintenance).",
+      "start": "During the TADC collab (2026-10-22 → 11-19).",
+      "characters": [
+        "Berry Yogurt Cookie",
+        "Pomni Cookie",
+        "Gangle Cookie",
+        "Kinger Cookie",
+        "Zooble Cookie",
+        "Oven Wanderer Cookie",
+        "Dark Cherry Cookie",
+        "Jax Cookie",
+        "Grapevine Cookie"
+      ],
+      "requires": [],
+      "parts": [
+        { "id": "1", "title": "The Cheapest Commision", "characters": ["Berry Yogurt Cookie"], "note": null },
+        {
+          "id": "2",
+          "title": "Kingdom Medical Officer's Treatment Report - Unusual Cases",
+          "characters": ["Pomni Cookie", "Gangle Cookie", "Kinger Cookie", "Zooble Cookie"],
+          "note": null
+        },
+        {
+          "id": "3",
+          "title": "Digital Backup Code - Incoming Records",
+          "characters": ["Oven Wanderer Cookie"],
+          "note": null
+        },
+        {
+          "id": "4",
+          "title": "Excerpt from Berry Yogurt Cookie's Ledger – Special Edition",
+          "characters": ["Berry Yogurt Cookie"],
+          "note": null
+        },
+        {
+          "id": "5",
+          "title": "Tales of Crumbs (Side Story) – Those Who Do Not Crumble",
+          "characters": ["Dark Cherry Cookie", "Kinger Cookie", "Zooble Cookie", "Jax Cookie"],
+          "note": null
+        },
+        {
+          "id": "6",
+          "title": "Overheard at the Juice Bar",
+          "characters": ["Grapevine Cookie", "Pomni Cookie"],
+          "note": null
+        }
+      ],
+      "url": "https://cookierun.wiki/w/Adventure_Notes"
+    }
+  ]
+}

@@ -136,8 +136,10 @@ export const SERVER_TZ_OPTIONS: Array<{ label: string; tz: string }> = [
   // fixed offsets, like the HoYo/Kuro ones — none of them observe DST.
   { label: 'Infold Europe (UTC+2)', tz: 'Etc/GMT-2' },
   { label: 'Infold America (UTC-7)', tz: 'Etc/GMT+7' },
+  { label: 'Infold Asia (UTC+8)', tz: 'Etc/GMT-8' },
   { label: 'NIKKE, all regions (UTC+9)', tz: 'Etc/GMT-9' },
   { label: 'Umamusume Global (UTC+0)', tz: 'Etc/GMT' },
+  { label: 'CookieRun: Crumble (UTC+9)', tz: 'Etc/GMT-9' },
   { label: 'UTC', tz: 'Etc/UTC' },
   { label: 'US Pacific (DST)', tz: 'America/Los_Angeles' },
   { label: 'US Eastern (DST)', tz: 'America/New_York' },
@@ -224,7 +226,8 @@ export const PRESETS: GamePreset[] = [
     chips: [
       { label: 'Domain', delta: -20 },
       { label: 'Boss', delta: -40 },
-      { label: 'Weekly boss', delta: -60 },
+      // The first three weekly-boss claims each week cost 30; later ones 60.
+      { label: 'Weekly boss', delta: -30 },
     ],
     tasks: [
       {
@@ -234,8 +237,9 @@ export const PRESETS: GamePreset[] = [
         mode: 'check',
         core: true,
       },
-      // Condensed banks 40 Resin at a time and is the only way to carry Resin
-      // past the cap without wasting regen — craft before logging off.
+      // One Condensed Resin costs 60 Original Resin and a Crystal Core (5 held
+      // at most) and pays a domain's rewards three times over. It is the only
+      // way to carry Resin past the cap without wasting regen.
       { key: 'genshin-condensed', name: 'Craft Condensed Resin', cadence: 'daily' },
       {
         key: 'genshin-expeditions',
@@ -250,10 +254,9 @@ export const PRESETS: GamePreset[] = [
       // leave on the table. "Friend to Animals" — feeding the puppy — is the
       // quickest to trigger; it wants Fowl ×1 in your bag.
       { key: 'genshin-random-events', name: 'Random Events ×10', cadence: 'daily', mode: 'check' },
-      // Overworld artifact investigation points respawn on the daily reset and
-      // stop paying out after 30 pickups. Free strongbox fodder and artifact
-      // EXP for a route you can run on autopilot.
-      { key: 'genshin-artifact-route', name: 'Artifact route (30 pickups)', cadence: 'daily' },
+      // Overworld artifact investigation points respawn on the daily reset.
+      // Free strongbox fodder and artifact EXP for a route you can run on autopilot.
+      { key: 'genshin-artifact-route', name: 'Artifact route', cadence: 'daily' },
       // The one free reward a client-only routine can never surface: the
       // check-in lives on the HoYoLAB site/app, not in the game, and pays about
       // 60 Primogems plus mats a month on a 28-day streak. It also resets on the
@@ -293,7 +296,7 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     notes:
-      'Europe server (UTC+1). Craft Condensed daily; it counts 60 Dire Prestige in Stygian. Realm Currency rate/cap depend on Trust Rank + Adeptal Energy.',
+      'Europe server (UTC+1, no summer time). Craft Condensed Resin daily: 60 Resin and a Crystal Core each, 5 held at most. Resin can also be spent in Stygian Onslaught during its first 10 days. Realm Currency rate and cap depend on Trust Rank and Adeptal Energy.',
     processNames: ['GenshinImpact', 'YuanShen'],
   },
   {
@@ -323,22 +326,25 @@ export const PRESETS: GamePreset[] = [
         // instead of 30.
         reserveRegenMinutes: 18,
         kind: 'regen',
-        reserveLabel: 'Reserve TB Power',
+        reserveLabel: 'Reserved Trailblaze Power',
       },
     ],
     chips: [
       { label: 'Calyx', delta: -10 },
       { label: 'Shadow', delta: -30 },
       { label: 'Cavern', delta: -40 },
+      { label: 'Echo of War', delta: -30 },
     ],
     tasks: [
       { key: 'hsr-daily-training', name: 'Daily Training (500)', cadence: 'daily', core: true },
       {
+        // Since 4.0 assignments keep farming for up to 30 hours with nothing to
+        // resend; collecting is the only step.
         key: 'hsr-assignments',
-        name: 'Assignments (collect + resend)',
+        name: 'Assignments (collect)',
         cadence: 'daily',
         mode: 'timer',
-        timerDurationMinutes: 20 * 60,
+        timerDurationMinutes: 30 * 60,
       },
       // Off-client and therefore invisible to every in-game reminder: the
       // HoYoLAB check-in pays Stellar Jade and mats daily and resets on the 1st.
@@ -349,12 +355,14 @@ export const PRESETS: GamePreset[] = [
         link: 'https://act.hoyolab.com/bbs/event/signin/hkrpg/index.html?act_id=e202303301540311',
       },
       // The largest repeatable Jade block outside the endgame modes.
-      { key: 'hsr-universe', name: 'Simulated/Divergent Universe', cadence: 'weekly', core: true },
+      // Divergent Universe and Currency Wars both pay weekly point rewards, reset Monday 04:00.
+      { key: 'hsr-universe', name: 'Weekly points: Divergent Universe / Currency Wars', cadence: 'weekly', core: true },
       { key: 'hsr-echo-of-war', name: 'Echo of War ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
       // Restocks on the 1st; Passes left unbought are gone when the month turns.
       { key: 'hsr-embers-exchange', name: 'Embers Exchange: Passes for Undying Embers', cadence: 'monthly' },
     ],
-    notes: 'Reserve TB Power stores overflow (up to 2400). Europe server (UTC+1).',
+    notes:
+      'Reserved Trailblaze Power fills at 1 per 18 min while Trailblaze Power is capped (up to 2,400; withdraw it in game). Europe server (UTC+1, no summer time).',
     processNames: ['StarRail'],
   },
   {
@@ -383,19 +391,21 @@ export const PRESETS: GamePreset[] = [
         // HSR's reserve, and not the 2 × regenMinutes default.
         reserveRegenMinutes: 18,
         kind: 'regen',
-        reserveLabel: 'Backup Battery',
+        reserveLabel: 'Backup Battery Charge',
       },
     ],
     chips: [
-      { label: 'Routine', delta: -20 },
+      { label: 'Sim', delta: -20 },
       { label: 'Expert', delta: -40 },
+      { label: 'Routine', delta: -60 },
       { label: 'Hunt', delta: -60 },
     ],
     tasks: [
       { key: 'zzz-engagement', name: 'Daily Engagement (400)', cadence: 'daily', core: true },
-      // Coffee Shop: +60 Battery on top of the 240 cap, once a day — free energy
-      // that the cap cannot hold, so it is genuinely lost if you skip it.
-      { key: 'zzz-coffee', name: 'Coffee (+60 Battery)', cadence: 'daily' },
+      // Coffee Shop: +80 Battery (the Tin Master Special, once you are a
+      // Certified Proxy) on top of the 240 cap, once a day — free energy the cap
+      // cannot hold, so it is genuinely lost if you skip it.
+      { key: 'zzz-coffee', name: 'Coffee (+80 Battery)', cadence: 'daily' },
       // Same off-client claim as the other two HoYo games — Polychrome and mats
       // from the HoYoLAB site, on a streak that resets on the 1st.
       {
@@ -406,19 +416,28 @@ export const PRESETS: GamePreset[] = [
       },
       // The track runs to 2100 points since v2.5, but all four Polychrome tiers
       // are paid by 800 — past that you are farming Denny, not pulls.
-      { key: 'zzz-ridu', name: 'Ridu Weekly (800 for all Polychrome)', cadence: 'weekly', core: true },
+      { key: 'zzz-ridu', name: 'Ridu Weekly (800 points)', cadence: 'weekly', core: true },
       { key: 'zzz-notorious-hunt', name: 'Notorious Hunt ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
-      // These two are ONE row each because they are one mode each. They used to
-      // read "Hollow Zero: bounties + research" and "Matrix Op / Lost Void",
-      // which put Lost Void — the Hollow Zero run itself — on both of them. A
-      // list that names the same activity twice is a list you stop trusting,
-      // because you can never be sure which row you already did.
-      { key: 'zzz-hollow-zero', name: 'Hollow Zero: bounties + Lost Void run', cadence: 'weekly' },
-      { key: 'zzz-matrix-op', name: 'Matrix Operation weeklies', cadence: 'weekly' },
-      // Restocks on the 1st; Tapes left unbought are gone when the month turns.
-      { key: 'zzz-residual-signal', name: 'Signal Store: Tapes for Residual Signal', cadence: 'monthly' },
+      // The largest weekly Polychrome source: 8,000 Shadow Crystal Data in the
+      // Hollow Zero bounty pays 160 Polychrome, refreshing Monday 04:00. Any
+      // Lost Void mode counts, Operation Matrix included, so it is one row.
+      {
+        key: 'zzz-hollow-zero',
+        name: 'Hollow Zero bounties (8,000 Shadow Crystal Data)',
+        cadence: 'weekly',
+        core: true,
+      },
+      // The capped monthly stock: 5 Encrypted Master Tapes (and 5 Master Tapes)
+      // for Fading Signal, restocking on the 1st. Residual Signal tapes are
+      // unlimited, so they are not the thing to remember.
+      {
+        key: 'zzz-residual-signal',
+        name: 'Signal Shop: 5 Encrypted Master Tapes for Fading Signal',
+        cadence: 'monthly',
+      },
     ],
-    notes: 'Europe server (UTC+1). Matrix Operation weeklies pay ~4.6k Polychrome/month — don’t skip.',
+    notes:
+      'Europe server (UTC+1). Hollow Zero bounties pay 160 Polychrome a week — the biggest weekly. Backup Battery Charge fills at 1 per 18 min while Battery is at 240 or more (up to 2,400).',
     processNames: ['ZenlessZoneZero'],
   },
   {
@@ -453,13 +472,9 @@ export const PRESETS: GamePreset[] = [
     ],
     tasks: [
       { key: 'wuwa-daily-activity', name: 'Daily Activity (100)', cadence: 'daily', core: true },
-      { key: 'wuwa-tacet-fields', name: 'Tacet Fields ×5', cadence: 'daily', mode: 'count', countTarget: 5 },
-      // Named for the track, not for "the weekly things": this row sat directly
-      // above Weekly Boss ×3 and the roguelike slot, so a bare "Weekly
-      // Challenges" read as the heading for both of them rather than as a
-      // routine of its own.
-      { key: 'wuwa-weekly-challenges', name: 'Weekly Challenge activity points', cadence: 'weekly' },
-      { key: 'wuwa-weekly-boss', name: 'Weekly Boss ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
+      // "Weekly Challenge" is WuWa's name for the weekly bosses: three
+      // discounted claims a week that do not bank.
+      { key: 'wuwa-weekly-boss', name: 'Weekly Challenge ×3', cadence: 'weekly', mode: 'count', countTarget: 3 },
       // One permanent weekly roguelike slot, alternating between the two modes.
       // Whichever is open pays 160 Astrite — a full Convene — across its point
       // tiers, and the points reset on Monday whether you ran it or not.
@@ -473,10 +488,19 @@ export const PRESETS: GamePreset[] = [
       // Timeline events, so dropping them would lose the rotation entirely.
       { key: 'wuwa-toa', name: 'ToA Hazard Zone cycle', cadence: 'custom', intervalDays: 28 },
       { key: 'wuwa-whimpering-wastes', name: 'Whimpering Wastes cycle', cadence: 'custom', intervalDays: 28 },
-      // Restocks on the 1st; Tides left unbought are gone when the month turns.
-      { key: 'wuwa-souvenir-store', name: 'Souvenir Store: Tides for Afterglow Coral', cadence: 'monthly' },
+      // The capped Tides (7 of each) bought with Oscillated Coral reset with
+      // each version, about every six weeks, not on the 1st. Not linked to the
+      // Timeline: the token match would chase unrelated events.
+      {
+        key: 'wuwa-souvenir-store',
+        name: 'Item Exchange: Tides for Oscillated Coral (×7 each)',
+        cadence: 'custom',
+        intervalDays: 42,
+        timelineLinked: false,
+      },
     ],
-    notes: 'Europe server (UTC+1). Hazard Zone and WhiWa each rotate every 28 days (offset).',
+    notes:
+      'Europe server (UTC+1). Hazard Zone and Whimpering Wastes each rotate every 28 days, offset from each other; Endstate Matrix rotates with versions. Waveplate Crystals fill at 1 per 12 min while Waveplates are capped (up to 480).',
     // Kuro ships a generic UE executable name; both spellings seen across installs.
     processNames: ['Wuthering Waves', 'Client-Win64-Shipping'],
   },
@@ -500,10 +524,13 @@ export const PRESETS: GamePreset[] = [
     weeklyResetDay: 1,
     monthlyResetDay: 1,
     resources: [
-      // Version 1.5 (2026-11-11) added overflow storage for both, like HSR's
-      // reserve: https://nte.perfectworld.com/en/article/news/gamenews/20261109/264948.html
-      // The patch notes give the caps but not the fill rate; the reserve uses
+      // Version 1.5 (2026-11-11) added overflow storage for both: "excess"
+      // Character Pixels go to Photo Paper Supply (up to 2,400) and excess City
+      // Stamina to City Stamina Reserve (up to 1,000).
+      // https://nte.perfectworld.com/en/article/news/gamenews/20261109/264948.html
+      // The notes give the caps but not the fill rates; the pixel reserve uses
       // the app's default (half the bar's speed) until a source gives one.
+      // 240 is the base cap; Dream Weaver's Knot raises it to 360, so ask.
       {
         name: 'Character Pixels',
         cap: 240,
@@ -511,12 +538,15 @@ export const PRESETS: GamePreset[] = [
         reserveCap: 2400,
         reserveLabel: 'Photo Paper Supply',
         kind: 'regen',
+        promptCap: true,
       },
-      // What is left when Monday refills the bar goes into the reserve instead
-      // of being lost.
+      // No regeneration: the bar refills to its cap every Monday 05:00. The cap
+      // grows with City Tycoon level (100, 200 at 5, 350 at 10, 500 at 16, 700
+      // at 23), so it is asked for. What counts as "excess" for the reserve is
+      // not published, so the reserve is entered by hand and never projected.
       {
         name: 'City Stamina',
-        cap: 100,
+        cap: 700,
         regenMinutes: 0,
         reserveCap: 1000,
         reserveLabel: 'City Stamina Reserve',
@@ -539,9 +569,12 @@ export const PRESETS: GamePreset[] = [
       },
       { key: 'nte-ebisu', name: "Ebisu's Auction", cadence: 'weekly' },
       { key: 'nte-realm-of-greed', name: 'Realm of Greed', cadence: 'weekly' },
-      { key: 'nte-special-commissions', name: 'Special Commissions', cadence: 'weekly' },
-      // "Empty City Stamina before Monday" is gone: since 1.5 Monday's refill
-      // keeps the leftover in City Stamina Reserve, so nothing is lost.
+      { key: 'nte-special-commissions', name: 'Special Delivery Commission (Old Mailbox)', cadence: 'weekly' },
+      // Back since the 1.5 reserve turned out not to be documented as catching
+      // Monday's leftover. A new key: the 1.5 migration deleted the old routine
+      // ('nte-city-stamina') everywhere, and deleted routines stay deleted — by
+      // key and by name, so the name differs from the old one too.
+      { key: 'nte-city-stamina-spend', name: 'Use City Stamina before the Monday refill', cadence: 'weekly' },
       // Tycoon Incentive Fund — 1,000,000 Fons per 14-day period. v1.3 turned
       // what was Pink Paws Heist's own payout into one shared pool: Pink Paws
       // Heist, Volley Star's Weekly Match and the Going, Going, Gone! display
@@ -549,8 +582,9 @@ export const PRESETS: GamePreset[] = [
       // total it. Permanent, so it is not seeded in the Timeline, and its
       // period runs on a game-wide clock this app cannot read — the interval
       // counts from the day the task is added, so anchor it once against the
-      // in-game timer. timelineLinked is off for the same reason: with it on,
-      // the token match would chase any event with "Fons" in the name.
+      // in-game timer (periods run Monday to Monday; one began 2026-11-09).
+      // timelineLinked is off for the same reason: with it on, the token match
+      // would chase any event with "Fons" in the name.
       {
         key: 'nte-tycoon-fund',
         name: 'Tycoon Incentive Fund (1M Fons)',
@@ -561,7 +595,7 @@ export const PRESETS: GamePreset[] = [
       { key: 'nte-warp-exchange', name: 'Lost / Warp Exchange + Arc Selection', cadence: 'monthly' },
     ],
     notes:
-      'Verify City Stamina cap for your account — it refills fully each Monday. The Tycoon Incentive Fund runs its own 14-day period; anchor that task to the in-game timer once.',
+      "City Stamina has no regeneration: it refills to your cap every Monday 05:00, and the cap rises with City Tycoon level (100 up to 700) — set yours. Since 1.5, excess City Stamina goes to a 1,000-point reserve and excess Character Pixels (cap 240, 360 with Dream Weaver's Knot) to Photo Paper Supply (2,400). The Tycoon Incentive Fund runs Monday-to-Monday 14-day periods (one began 2026-11-09); anchor that task once.",
     // Best guess — verify in Task Manager while NTE runs and edit if needed.
     processNames: ['NTE'],
   },
@@ -630,7 +664,7 @@ export const PRESETS: GamePreset[] = [
       },
     ],
     notes:
-      'Europe server (UTC+2); America runs UTC-7. Both Stamina caps rise with Aurum Pass — set your own. Deepspace Trials Directional Orbits open on fixed weekdays.',
+      "Events use each server's own clock: Europe UTC+2, America UTC-7, Asia UTC+8; reset 05:00. Supplies: 30 Stamina 10:00–14:00, 60 Stamina 16:00–20:00. The Stamina cap rises with Hunter Level (to about 120) and by 50 with the Aurum Pass — set your own. Senior Hunter Contest and UNICORNS run 14-day cycles.",
   },
   {
     key: 'uma',
@@ -667,14 +701,14 @@ export const PRESETS: GamePreset[] = [
         intervalDays: 1,
         timelineLinked: false,
       },
-      { key: 'uma-daily-missions', name: 'Daily Missions (full set)', cadence: 'daily', core: true },
+      { key: 'uma-daily-missions', name: 'Daily Missions (30 Carats)', cadence: 'daily', core: true },
       { key: 'uma-daily-race', name: 'Daily Race tickets ×3', cadence: 'daily', mode: 'count', countTarget: 3 },
       // Five borrows a day, and they do not carry over — the quietest loss in
       // the daily loop.
       { key: 'uma-guest-legacies', name: 'Guest Legacies ×5', cadence: 'daily', mode: 'count', countTarget: 5 },
-      // One ticket a day, capped at one: an unused ticket is simply gone.
       { key: 'uma-legend-race', name: 'Daily Legend Race', cadence: 'daily' },
-      { key: 'uma-club-request', name: 'Club: request an item', cadence: 'daily' },
+      // Donating is the part that pays Club Points, and its limit resets daily.
+      { key: 'uma-club-request', name: 'Club: request shoes + donate 10', cadence: 'daily' },
       // Team Trials tallies once a week and pays the class reward off your best
       // score, so a week with no score entered is a week with no Carats. It is
       // also the ONLY weekly this game has — the Club ranking and every shop
@@ -683,7 +717,7 @@ export const PRESETS: GamePreset[] = [
       { key: 'uma-club-ranking', name: 'Club Ranking Rewards', cadence: 'monthly' },
     ],
     notes:
-      'Global service, UTC+0. Daily missions refresh 15:00; new banners and events open 22:00. Independent Training takes 50 minutes. Use its quick-spend button to record 30 TP, then start the timer. Edit the TP cost during discount campaigns. Champions Meeting runs in the Timeline.',
+      'Global service, UTC+0. Daily reset 15:00; banners and events open 22:00 and close 21:59. Team Trials resets Monday 15:00. Independent Training takes 50 minutes: record 30 TP with its quick-spend button, start the timer, and open its Log to bank the rewards. Edit the TP cost during discount campaigns. Champions Meeting runs in the Timeline.',
     processNames: ['UmamusumePrettyDerby'],
   },
   {
@@ -710,9 +744,11 @@ export const PRESETS: GamePreset[] = [
       // stores that stop paying once they fill, which is the same failure the
       // resource row exists to warn about.
       { name: 'Interception attempts', cap: 3, regenMinutes: 0, reserveCap: 0, kind: 'counter' },
+      // 24 hours of storage since November 2023; past the cap it keeps filling
+      // at 15% speed, which is the loss worth the warning.
       {
         name: 'Outpost Defense (hours stored)',
-        cap: 12,
+        cap: 24,
         regenMinutes: 60,
         reserveCap: 0,
         kind: 'regen',
@@ -721,17 +757,26 @@ export const PRESETS: GamePreset[] = [
     tasks: [
       { key: 'nikke-daily-missions', name: 'Daily Missions (100 points)', cadence: 'daily', core: true },
       { key: 'nikke-outpost-defense', name: 'Outpost Defense claim', cadence: 'daily' },
-      // Which manufacturer towers are open changes by weekday, and three floors
-      // per open tower expire at reset.
-      { key: 'nikke-tribe-tower', name: 'Tribe Tower floors ×3', cadence: 'daily', mode: 'count', countTarget: 3 },
+      // Daily free allowances that are simply lost when unused.
+      { key: 'nikke-free-wipe-out', name: 'Free Wipe Out', cadence: 'daily' },
+      { key: 'nikke-rookie-arena', name: 'Rookie Arena free attacks', cadence: 'daily', mode: 'count', countTarget: 3 },
+      { key: 'nikke-advising', name: 'Advise Nikkes', cadence: 'daily' },
+      // Which manufacturer towers are open changes by weekday, and the three
+      // tries per open tower expire at reset.
+      {
+        key: 'nikke-tribe-tower',
+        name: 'Manufacturer Towers ×3 each',
+        cadence: 'daily',
+        mode: 'count',
+        countTarget: 3,
+      },
       { key: 'nikke-interception', name: 'Interception ×3', cadence: 'daily', mode: 'count', countTarget: 3 },
       { key: 'nikke-social-points', name: 'Social Points (send + claim)', cadence: 'daily' },
       { key: 'nikke-bulletin-board', name: 'Bulletin Board dispatch', cadence: 'daily' },
       { key: 'nikke-weekly-missions', name: 'Weekly Missions (100 points)', cadence: 'weekly', core: true },
-      { key: 'nikke-recycling-shop', name: 'Recycling Shop: Gems for Broken Cores', cadence: 'weekly' },
     ],
     notes:
-      'All regions run on UTC+9. Tribe Tower rotates by weekday: Mon all, Tue Elysion, Wed Missilis + Pilgrim, Thu Tetra, Fri Elysion, Sat Missilis, Sun Tetra.',
+      'All regions run on UTC+9; reset 05:00. Outpost Defense stores 24 hours, then fills at 15% speed. Manufacturer Towers: Elysion Mon/Tue/Fri, Missilis Mon/Wed/Sat, Tetra Mon/Thu/Sun. Simulation Room Overclock rewards reset every other Tuesday 05:00.',
     processNames: ['nikke', 'nikke_launcher'],
   },
   {
@@ -785,8 +830,64 @@ export const PRESETS: GamePreset[] = [
       { key: 'endfield-stock-redistribution', name: 'Stock Redistribution weekly goods', cadence: 'weekly' },
     ],
     notes:
-      'Americas and Europe share one UTC-5 server. Sanity cap depends on Authority Level (125 at 1, 360 at 60) — set your own. Echoes of War seasons run in the Timeline.',
+      'Americas and Europe share one UTC-5 server (Asia is UTC+8). Sanity cap depends on Authority Level (125 at 1, 360 at 60) — set your own. Since 1.6, expiring limited Sanity Meds turn into Sanity, and any excess into Sanity Essence. Echoes of War cycles change Thursdays 04:00 and run in the Timeline; versions end at a 17:00 (UTC-5) maintenance.',
     processNames: ['Endfield'],
+  },
+  {
+    // CookieRun: Crumble (Devsisters, idle RPG), worldwide since 2026-07-30.
+    // Sources: official Naver Cafe notices, cookierun.wiki, eog.gg — see
+    // docs/feed-notes.md and docs/research/crumble-2026-11-16.md.
+    key: 'crumble',
+    name: 'CookieRun: Crumble',
+    short: 'Crumble',
+    // App-icon palette (sampled): the flame-orange icon ground, the logo's
+    // gold lettering and its chocolate plaque.
+    color: '#ff8700',
+    color2: '#ffd203',
+    color3: '#3a1709',
+    // Fat, bouncing cartoon capitals, like the logo.
+    titleFont: "'Luckiest Guy', cursive",
+    icon: '',
+    platform: 'both',
+    // One worldwide service on Korean time, which has no summer time.
+    tz: 'Etc/GMT-9',
+    dailyResetHour: 0,
+    // No source states when Weekly Missions reset; Monday is the Devsisters
+    // norm. Check it in game and correct it here if it differs.
+    weeklyResetDay: 1,
+    monthlyResetDay: 1,
+    resources: [
+      // Idle rewards bank for 8 hours at first; Sweet Blessing, the Gnome
+      // Laboratory and packs raise the cap, and anything past it is lost.
+      { name: 'Auto Hunt (hours banked)', cap: 8, regenMinutes: 60, reserveCap: 0, kind: 'regen', promptCap: true },
+    ],
+    tasks: [
+      // 200 Crystals a day directly, and Mission Level milestones in Crystals.
+      { key: 'crumble-daily-missions', name: 'Daily Missions', cadence: 'daily', core: true },
+      // Three keys per dungeon refresh daily and do not stack: a skipped day loses 15 runs.
+      {
+        key: 'crumble-daily-dungeons',
+        name: 'Daily Dungeons: keys in all 5',
+        cadence: 'daily',
+        mode: 'count',
+        countTarget: 5,
+      },
+      {
+        key: 'crumble-crumble-dungeon',
+        name: 'Crumble Dungeon runs ×3',
+        cadence: 'daily',
+        mode: 'count',
+        countTarget: 3,
+      },
+      { key: 'crumble-sweet-blessing', name: 'Sweet Blessing daily claim', cadence: 'daily' },
+      // 1,600 Crystals a week.
+      { key: 'crumble-weekly-missions', name: 'Weekly Missions', cadence: 'weekly', core: true },
+      // The weekly guild boss window closes Monday 12:00 KST.
+      { key: 'crumble-guild-conquest', name: 'Guild Conquest hits before Monday 12:00', cadence: 'weekly' },
+    ],
+    notes:
+      'One worldwide service on Korean time (UTC+9); daily reset at midnight. Updates and banners change every other Thursday after the 12:00–13:00 maintenance. The Auto Hunt cap starts at 8 hours and grows with upgrades — set your own. Arena (two-week) and Guild Conquest (weekly) seasons run in the Timeline.',
+    processNames: [],
   },
 ];
 

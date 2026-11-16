@@ -20,7 +20,7 @@ describe('banner classification', () => {
     const kind = (sourceKey: string) => eventBannerKind(makeEvent({ type: 'banner', sourceKey }));
     expect(kind('seed:uma:scout-2026-09-15')).toBe('character');
     expect(kind('seed:uma:scout-2026-09-15:supports')).toBe('support');
-    expect(kind('seed:lads:where-silverwings-rest-2026-09')).toBe('memory');
+    expect(kind('seed:lads:2026-11-radiant-brilliance')).toBe('memory');
     expect(kind('seed:nte:1.3-voyager')).toBe('weapon');
     expect(kind('seed:hsr:4.5-p2-lc')).toBe('weapon');
     expect(kind('seed:zzz:3.2-p1-engines')).toBe('weapon');
