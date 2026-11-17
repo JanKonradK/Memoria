@@ -14,10 +14,10 @@
       "archiveSince": "2023-04-26"
     },
     "zzz": {
-      "currency": "Polychromes",
+      "currency": "Polychrome",
       "pullCost": 160,
-      "methodology": "As of 2026-11-05, totals retain the selected community estimate, converting cited pull totals or explicitly included Master/Encrypted tapes at 160 each as detailed in gaps, with null for unverified exact totals or breakdowns and global dates expressed by the UTC+8 update calendar. Re-checked 2026-11-15 from launch: totals now come from itemised community estimates, each version noting its sources; most are pre-release projections. Earlier figures that could not be traced are replaced or flagged in the notes.",
-      "archiveSince": "2026-07-11"
+      "methodology": "Total = F2P line of a community beta-data Polychrome count for the version: Palito where available, else 小橙子阿/HoYo青枫/黑夜幽灵 (China) or WotPack (1.0, 1.2). Total = Polychromes + free Encrypted Master Tapes x160; it spans events, story, exploration, dailies, endgame, Hollow Zero, shops, mail, codes and the free BP track. Standard Master Tapes, Boopons and paid items excluded. Breakdowns only for Palito itemisations: events = limited events incl. login tapes; daily; endgame = Shiyu + Deadly Assault; other = rest.",
+      "archiveSince": "2024-07-04"
     },
     "wuwa": {
       "currency": "Astrites",
@@ -2109,1321 +2109,6 @@
         {
           "label": "Invenglobal: Kuro Games details Wuthering Waves Version 3.8 for November 12th",
           "url": "https://www.invenglobal.com/articles/28284/kuro-games-details-wuthering-waves-version-38-for-november-12th"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "1.0",
-      "title": null,
-      "start": "2024-07-04",
-      "end": "2024-08-14",
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Alexandrina Sebastiane",
-        "Ellen Joe",
-        "Grace Howard",
-        "Koleda Belobog",
-        "Nekomiya Mana",
-        "Soldier 11",
-        "Von Lycaon",
-        "Zhu Yuan",
-        "Anby Demara",
-        "Anton Ivanov",
-        "Ben Bigger",
-        "Billy Kid",
-        "Corin Wickes",
-        "Luciana de Montefio",
-        "Nicole Demara",
-        "Piper Wheel",
-        "Soukaku"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-07-04",
-          "end": "2024-07-24",
-          "featured": [
-            "Ellen Joe"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-07-24",
-          "end": "2024-08-14",
-          "featured": [
-            "Zhu Yuan"
-          ]
-        }
-      ],
-      "notes": "No F2P total found. Sources give only fragments: pre-release rewards up to 1600 Polychromes (Gematsu), a 300 Polychrome code, and a guide itemising about 2520 Polychromes from dailies over the 42-day patch plus 600 from the weekly Bounty Commission and 960 from max License Level, with no grand total. Total left null. Phase 1 end is 2024-07-24 per most sources; one source says 07-25. Phase 1 featured Ellen Joe (A-ranks Soukaku and Anton); Phase 2 featured Zhu Yuan (A-ranks Ben and Nicole). Anby is not a 1.0 banner character per one source. newCharacters lists only the limited S-rank debuts that were verified; the full launch roster was not checked.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/ZenlessZoneZero/comments/1e6avm6/"
-        },
-        {
-          "label": "Sportskeeda: 1.0 launch rewards (100 free pulls)",
-          "url": "https://sportskeeda.com/esports/news-zenless-zone-zero-reward-100-free-pulls-version-1-0"
-        },
-        {
-          "label": "GamesFuze: how to get up to 350 free pulls in 1.0",
-          "url": "https://gamesfuze.com/guides/how-to-get-up-to-350-free-pulls-in-zenless-zone-zero-version-1-0/"
-        },
-        {
-          "label": "SI Games: 1.0 banners (Ellen Joe, Zhu Yuan)",
-          "url": "https://videogames.si.com/guides/zenless-zone-zero-1-0-banners"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "1.1",
-      "title": "Undercover R&B",
-      "start": "2024-08-14",
-      "end": "2024-09-25",
-      "currency": {
-        "total": 9910,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Qingyi",
-        "Jane Doe",
-        "Seth Lowell"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-08-14",
-          "end": "2024-09-04",
-          "featured": [
-            "Qingyi"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-09-04",
-          "end": "2024-09-24",
-          "featured": [
-            "Jane Doe"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 14710 that could not be traced to a source on 2026-11-15. Total 9910 is a pre-release leak (Palito-based, Sportskeeda and VideoGamer agree) and explicitly excludes 7 events, so it is a floor, not a full total. Existing brief value 14710 was not found in any source. A Reddit compilation cites 13160 for 1.1, and the same Sportskeeda article says about 106 pulls, which does not match 9910 on its own. Phase 2 end is 2024-09-24 (Game8 later page); Charlie Intel says 09-25. Phase 1 featured Qingyi with her signature W-Engine (A-ranks Corin and Billy). Phase 2 featured Jane Doe (A-rank Seth Lowell).",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Dexerto: early 1.1 F2P currency estimate",
-          "url": "https://www.dexerto.com/gaming/zenless-zone-zero-1-1-update-leak-reveals-all-free-polychromes-encrypted-master-tapes-2838841/"
-        },
-        {
-          "label": "Sportskeeda: 1.1 Polychrome count leak (9910 F2P)",
-          "url": "https://sportskeeda.com/esports/zenless-zone-zero-1-1-polychrome-count-how-get-100-pulls-free-as-per-leaks"
-        },
-        {
-          "label": "VideoGamer: 1.1 leak shows Polychrome count",
-          "url": "https://www.videogamer.com/news/zenless-zone-zero-1-1-leak-shows-how-much-polychrome-we-can-get-next-patch"
-        },
-        {
-          "label": "Charlie Intel: 1.1 banners and release",
-          "url": "https://charlieintel.com/games/zenless-zone-zero-version-1-1-update-333319"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "1.2",
-      "title": "Tour de Inferno",
-      "start": "2024-09-25",
-      "end": "2024-11-06",
-      "currency": {
-        "total": 18496,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Caesar King",
-        "Burnice White"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-09-25",
-          "end": "2024-10-16",
-          "featured": [
-            "Caesar King"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-10-16",
-          "end": "2024-11-05",
-          "featured": [
-            "Burnice White"
-          ]
-        }
-      ],
-      "notes": "The total of 18496 is from an earlier pass and could not be traced to a source on 2026-11-15. Total left null. wotpack's F2P table total is 21420, but the same article's per-player F2P summary is 14200, and it says the figures come from closed beta. Existing brief value 18496 was not found in any source. Phase 2 start is 10-16 in most sources (one says 10-17) and end is 11-04 or 11-05, which is shown here as 11-05; 1.3 starts 11-06. Phase 1 featured Caesar King (A-ranks Piper and Anton); Phase 2 featured Burnice White (A-ranks Lucy and Nicole). Phase dates are from fan and news sites, not HoYoverse.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1j0qwvw/"
-        },
-        {
-          "label": "wotpack.ru: patch 1.2 Polychrome table",
-          "url": "https://wotpack.ru/skolko-polihromov-mozhno-poluchit-za-patch-1-2-v-zenless-zone-zero"
-        },
-        {
-          "label": "GameLeap: 1.2 banner dates and characters",
-          "url": "https://gameleap.com/articles/zenless-zone-zero-1-2-banner-dates-and-characters"
-        },
-        {
-          "label": "Sportskeeda: 1.2 Polychrome count leak",
-          "url": "https://sportskeeda.com/esports/zenless-zone-zero-1-2-polychrome-count-how-get-100-free-pulls-per-leaks"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "1.3",
-      "title": "Virtual Revenge",
-      "start": "2024-11-06",
-      "end": "2024-12-18",
-      "currency": {
-        "total": 14835,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Tsukishiro Yanagi",
-        "Lighter",
-        "Yanagi"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-11-06",
-          "end": "2024-11-27",
-          "featured": [
-            "Yanagi"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-11-27",
-          "end": "2024-12-13",
-          "featured": [
-            "Lighter"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 16848 that could not be traced to a source on 2026-11-15. Total 14835 (plus 15 Encrypted Master Tapes) is a Palito beta-based estimate, cited in more than one search result. Its implied pulls (about 108) fit the 100+ pulls in the leak coverage. Existing brief value 16848 was not found. Phase 2 end 12-13 comes from OneEsports only; other sources list only the 11-27 start, and 1.4 starts 12-18. Phase 1 featured Yanagi (A-ranks Anby and Billy). Phase 2 featured Lighter (A-ranks Ben and Corin).",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1j0qwvw/"
-        },
-        {
-          "label": "Sportskeeda: 1.3 Polychrome count leak",
-          "url": "https://sportskeeda.com/esports/zenless-zone-zero-zzz-1-3-polychrome-count-how-get-100-free-pulls"
-        },
-        {
-          "label": "The Filibuster Blog: 1.3 free pulls per leaks",
-          "url": "https://thefilibusterblog.com/zenless-zone-zero-13-polychrome-earn-100-free-pulls-according-to-leaks/"
-        },
-        {
-          "label": "OneEsports: 1.3 banners",
-          "url": "https://www.oneesports.gg/zenless-zone-zero/zenless-zone-zero-13-banners/"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "1.4",
-      "title": "A Storm of Falling Stars",
-      "start": "2024-12-18",
-      "end": "2025-01-22",
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Hoshimi Miyabi",
-        "Asaba Harumasa"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-12-18",
-          "end": "2025-01-21",
-          "featured": [
-            "Hoshimi Miyabi",
-            "Asaba Harumasa"
-          ]
-        }
-      ],
-      "notes": "Total left null. wotpack's F2P table total is 23105, but its per-player F2P summary is 17825, and the figures come from closed beta data. A Reddit compilation cites 19700 for 1.4. Existing brief value (missing from the brief) was not confirmed. Miyabi and Harumasa banners ran concurrently for the whole patch rather than in two phases, so there is one phase entry. End date is 2025-01-21 (Game8, Nextrift) or 01-22 (wotpack); 1.5 starts 01-22. Harumasa's banner is the second S-rank, and both have signature W-Engines.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1hb4bv3/"
-        },
-        {
-          "label": "wotpack.ru: patch 1.4 Polychrome table",
-          "url": "https://wotpack.ru/skolko-polihromov-mozhno-poluchit-za-patch-1-4-v-zenless-zone-zero"
-        },
-        {
-          "label": "Game8: 1.4 Miyabi and Harumasa banners",
-          "url": "https://game8.co/games/Zenless-Zone-Zero/archives/487631"
-        },
-        {
-          "label": "Nextrift: 1.4 arrives 18 December",
-          "url": "https://nextrift.com/202439148/"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "1.5",
-      "title": "Astra-nomical Moment",
-      "start": "2025-01-22",
-      "end": "2025-03-12",
-      "currency": {
-        "total": 16045,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Astra Yao",
-        "Evelyn Chevalier"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-01-22",
-          "end": "2025-02-12",
-          "featured": [
-            "Astra Yao",
-            "Ellen Joe"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-02-12",
-          "end": "2025-03-11",
-          "featured": [
-            "Evelyn Chevalier",
-            "Zhu Yuan"
-          ]
-        }
-      ],
-      "notes": "Total 16045 (plus 30 Encrypted and 26 Master Tapes) is cited by Tacter (zenless.post calc) and Buffget, so it is the best-supported figure. wotpack gives a 16805 per-player summary, and its F2P table total is 25765, which conflicts. Existing brief value 16944 is not the 1.5 value; 16944 belongs to a different number (see 1.6). Phase 1 featured Astra Yao (new) and Ellen Joe (rerun). Phase 2 featured Evelyn Chevalier (new); the rerun is Zhu Yuan per Joytify and Lapak, or Qingyi per OneEsports. Phase 2 end is 03-11 per Gameleap, 03-04 per other sources; 03-11 used because wotpack says the patch lasts 7 weeks and 1.6 starts 03-12. Phase 1 end is 02-12 (one source says 02-11).",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Tacter: ZZZ 1.5 total Polychrome count (zenless.post calc)",
-          "url": "https://www.tacter.com/zenless/guides/zzz-15-total-polychrome-count-20d49252"
-        },
-        {
-          "label": "wotpack.ru: patch 1.5 Polychrome table",
-          "url": "https://wotpack.ru/skolko-polihromov-mozhno-poluchit-za-patch-1-5-v-zenless-zone-zero/"
-        },
-        {
-          "label": "OneEsports: 1.5 banners",
-          "url": "https://www.oneesports.gg/zenless-zone-zero/zenless-zone-zero-15-banners/"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "1.6",
-      "title": "Among the Forgotten Ruins",
-      "start": "2025-03-12",
-      "end": "2025-04-23",
-      "currency": {
-        "total": 13340,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Soldier 0 - Anby",
-        "Trigger",
-        "Pulchra Fellini"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-03-12",
-          "end": "2025-04-02",
-          "featured": [
-            "Soldier 0 - Anby",
-            "Burnice White"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-04-02",
-          "end": "2025-04-22",
-          "featured": [
-            "Trigger",
-            "Zhu Yuan"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 16944 that could not be traced to a source on 2026-11-15. Total 13340 (plus 16 Encrypted Master Tapes) is in Destructoid's pre-release estimate and a BitTopup guide, so two sources agree. Its pulls, 83 plus 16 tapes, match Destructoid's 'at least 99 pulls'. Existing brief value 16944 was not found in any source. Phase 2 end is 04-22 (Game8) or 04-23 (OneEsports); 1.7 starts 04-23. Phase 1 featured Soldier 0 Anby (A-ranks Pulchra and Ben; Gamespace says Burnice's first rerun is in the same phase). Phase 2 featured Trigger (new) and Zhu Yuan rerun.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1j0qwvw/"
-        },
-        {
-          "label": "Destructoid: 1.6 Polychrome and pull count estimate (13340)",
-          "url": "https://destructoid.com/zenless-zone-zero-1-6-polychrome-and-total-pull-count-estimation"
-        },
-        {
-          "label": "Prydwen: 1.6 livestream summary (title)",
-          "url": "https://blog.prydwen.gg/?p=11471"
-        },
-        {
-          "label": "OneEsports: 1.6 banners",
-          "url": "https://www.oneesports.gg/zenless-zone-zero/zenless-zone-zero-16-banners/"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "1.7",
-      "title": "Bury Your Tears With the Past",
-      "start": "2025-04-23",
-      "end": "2025-06-06",
-      "currency": {
-        "total": 11020,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Vivian Banshee",
-        "Hugo Vlad",
-        "Vivian",
-        "Hugo"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-04-23",
-          "end": "2025-05-13",
-          "featured": [
-            "Vivian",
-            "Jane Doe"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-05-14",
-          "end": "2025-06-04",
-          "featured": [
-            "Hugo",
-            "Lighter"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 15760 that could not be traced to a source on 2026-11-15. Total 11020 (plus 21 Encrypted Master Tapes) is Palito's estimate as reported by Sportskeeda, a single source for the number; the 90+ pulls claim is consistent with it. Destructoid has a source breakdown (Shiyu 2160, Hollow Zero 960) but no total in the snippet. Existing brief value 15760 was not found. Phase 2 end is 06-04 or 06-05; 2.0 starts 06-06. Phase 1 featured Vivian (new, A-ranks Piper and Seth) with Jane Doe rerun; Phase 2 featured Hugo (new) with Lighter rerun.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1tyq6cn/"
-        },
-        {
-          "label": "Sportskeeda: 1.7 Polychrome count leaked estimate (90+ pulls)",
-          "url": "https://sportskeeda.com/esports/zenless-zone-zero-zzz-1-7-polychrome-count-how-get-90-free-pulls"
-        },
-        {
-          "label": "Destructoid: 1.7 Polychromes and pull count estimation",
-          "url": "https://destructoid.com/zenless-zone-zero-1-7-polychromes-and-pull-count-estimation"
-        },
-        {
-          "label": "OneEsports: 1.7 banners",
-          "url": "https://www.oneesports.gg/zenless-zone-zero/zenless-zone-zero-17-banners/"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "2.0",
-      "title": "Where Clouds Embrace the Dawn",
-      "start": "2025-06-06",
-      "end": "2025-07-16",
-      "currency": {
-        "total": 27840,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Yixuan",
-        "Ju Fufu",
-        "Pan Yinhu"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-06-06",
-          "end": "2025-06-25",
-          "featured": [
-            "Yixuan",
-            "Astra Yao"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-06-25",
-          "end": "2025-07-15",
-          "featured": [
-            "Ju Fufu",
-            "Caesar King"
-          ]
-        }
-      ],
-      "notes": "The total of 27840 is from an earlier pass and could not be traced to a source on 2026-11-15. Total left null. Two internally consistent candidates conflict: a fan guide gives 21530 Polychromes plus 26 tapes (161 pulls), and a BitTopup guide gives 22680 Polychromes (142 pulls). Existing brief value 27840 was not found. Phase 1 end is 06-25 (Game8) or 06-26 (OneEsports); Phase 2 is 06-25 to 07-15 (Game8) or 06-27 to 07-17 (OneEsports). Phase dates are from Game8 and OneEsports. Phase 1 featured Yixuan (limited, new) with Astra Yao rerun per Game8. Phase 2 featured Ju Fufu (new) with Caesar King rerun.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1oyc7ai/"
-        },
-        {
-          "label": "OneEsports: 2.0 banners",
-          "url": "https://www.oneesports.gg/zenless-zone-zero/zenless-zone-zero-2-0-banners/"
-        },
-        {
-          "label": "Sportskeeda: 2.0 Polychrome count leaked estimate (160 pulls)",
-          "url": "https://www.sportskeeda.com/esports/zenless-zone-zero-zzz-2-0-polychrome-count-leaked-estimate-how-get-160-free-pulls"
-        },
-        {
-          "label": "DBLTap: 2.0 banners (Yixuan, Ju Fufu, Pan Yinhu)",
-          "url": "https://www.dbltap.com/news/zenless-zone-zero-2-0-banners"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "2.1",
-      "title": "The Impending Crash of Waves",
-      "start": "2025-07-16",
-      "end": "2025-09-04",
-      "currency": {
-        "total": 14520,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Ukinami Yuzuha",
-        "Alice Thymefield",
-        "Alice"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-07-16",
-          "end": "2025-08-06",
-          "featured": [
-            "Ukinami Yuzuha",
-            "Hoshimi Miyabi"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-08-06",
-          "end": "2025-09-03",
-          "featured": [
-            "Alice",
-            "Yanagi"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 19200 that could not be traced to a source on 2026-11-15. Total 14520 (plus 21 Encrypted Master Tapes, about 112 pulls) is Palito's infographic as reported by Sportskeeda; single source. Technosports says 110-120 pulls, which is consistent. Existing brief value 19200 was not found. Phase 1 end is 08-05 or 08-06 (HoYoLab says 08-05); Phase 2 end is 09-03 per most sources (HoYoLab says 08-26, treated as an outlier). Phase 1 featured Yuzuha and Miyabi, with A-ranks Piper and Billy. Phase 2 featured Alice (new) and Yanagi rerun, with A-ranks Soukaku and Seth Lowell.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1n0ho0d/"
-        },
-        {
-          "label": "Sportskeeda: 2.1 Polychrome count leaked estimate (14520, 21 tapes)",
-          "url": "https://www.sportskeeda.com/esports/zenless-zone-zero-zzz-2-1-polychrome-count-leaked-estimate-how-get-160-free-pulls"
-        },
-        {
-          "label": "Prydwen: 2.1 special program summary",
-          "url": "https://blog.prydwen.gg/?p=12100"
-        },
-        {
-          "label": "Codashop: 2.1 phase 2 (Alice, Yanagi)",
-          "url": "https://news.codashop.com/us/zenless-zone-zero-2-1-phase-2-new-agent-alice-w-engine-and-events-keep-anomaly-teams-dominant/"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "2.2",
-      "title": "Do Not Go Gentle Into That Good Night",
-      "start": "2025-09-04",
-      "end": "2025-10-15",
-      "currency": {
-        "total": 15264,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Seed",
-        "Orphie Magnusson & \"Magus\"",
-        "Orphie & Magus"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-09-04",
-          "end": "2025-09-24",
-          "featured": [
-            "Seed",
-            "Trigger"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-09-24",
-          "end": "2025-10-14",
-          "featured": [
-            "Orphie & Magus",
-            "Evelyn Chevalier"
-          ]
-        }
-      ],
-      "notes": "The total of 15264 is from an earlier pass and could not be traced to a source on 2026-11-15. Total left null. The Palito-based leak says 90+ pulls, but the snippet gives only per-event amounts with no grand total, and the author flagged the estimate as rough. Existing brief value 15264 was not found. Phase dates are 09-04 to 09-24 and 09-24 to 10-14 per Game8 and Sportskeeda, and 2.3 starts 10-15. Phase 1 featured Seed (new) and Trigger (rerun), with A-rank rate-ups Anby and Nicole. Phase 2 featured Orphie and Magus and Evelyn Chevalier (rerun). One source names Anton rather than Lucy as an A-rank rate-up, which was not confirmed. Orphie and Magus as new debuts is not separately verified.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1tyq6cn/"
-        },
-        {
-          "label": "Sportskeeda: 2.2 Polychrome count leaked estimate (90+ pulls)",
-          "url": "https://www.sportskeeda.com/esports/zenless-zone-zero-zzz-2-2-polychrome-count-leaked-estimate-how-get-90-free-pulls"
-        },
-        {
-          "label": "Prydwen: 2.2 special program summary",
-          "url": "https://blog.prydwen.gg/?p=12305"
-        },
-        {
-          "label": "Sportskeeda: 2.2 banners order and schedule",
-          "url": "https://www.sportskeeda.com/esports/zenless-zone-zero-zzz-2-2-banners-order-schedule"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "2.3",
-      "title": "Memories of Dreams Bygone",
-      "start": "2025-10-15",
-      "end": "2025-11-26",
-      "currency": {
-        "total": 15210,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Lucia",
-        "Yidhari",
-        "Komano Manato"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-10-15",
-          "end": "2025-11-05",
-          "featured": [
-            "Lucia",
-            "Vivian"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-11-05",
-          "end": "2025-11-25",
-          "featured": [
-            "Yidhari",
-            "Ju Fufu"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 17504 that could not be traced to a source on 2026-11-15. Total 15210 (plus 16 Encrypted Master Tapes, about 111 pulls) is Palito's infographic as reported by Sportskeeda; single source. Existing brief value 17504 was not found. Phase dates are Game8's (10-15 to 11-05, 11-05 to 11-25); a BahoMu post gives 11-06 to 11-26 and Genshin-Builds says the dates are unconfirmed. Phase 1 featured Lucia (new) with Vivian rerun; Phase 2 featured Yidhari (new) with Ju Fufu rerun. Lucia and Yidhari as debuts are per the sources.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1tyq6cn/"
-        },
-        {
-          "label": "Sportskeeda: 2.3 Polychrome count leaked estimate (110+ pulls)",
-          "url": "https://www.sportskeeda.com/esports/zenless-zone-zero-zzz-2-3-polychrome-count-leaked-estimate-how-get-110-free-pulls"
-        },
-        {
-          "label": "Prydwen: 2.3 special program summary",
-          "url": "https://blog.prydwen.gg/?p=12534"
-        },
-        {
-          "label": "Sportskeeda: 2.3 banners order and schedule",
-          "url": "https://widgets.sportskeeda.com/esports/zenless-zone-zero-zzz-2-3-banners-order-schedule"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "2.4",
-      "title": "On the Precipice of the Abyss",
-      "start": "2025-11-26",
-      "end": "2025-12-30",
-      "currency": {
-        "total": 12800,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Dialyn",
-        "Banyue"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-11-26",
-          "end": "2025-12-17",
-          "featured": [
-            "Dialyn",
-            "Hugo"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-12-17",
-          "end": "2025-12-29",
-          "featured": [
-            "Banyue",
-            "Ellen Joe"
-          ]
-        }
-      ],
-      "notes": "The total of 12800 is from an earlier pass and could not be traced to a source on 2026-11-15. Total left null. The only figure found is a third-party projection of about 25800 Polychromes plus 16 Master Tapes (80-92 pulls) over a 34-day window, written to plan for 2.5. Its scope is unclear, so it was not used. Existing brief value 12800 was not found. Phase 1 starts 11-25 (UTC-5) or 11-26 (Game8, Fragster), and phase 1 ends 12-17. Phase 2 is 12-17 to 12-29; 2.5 starts 12-30. Phase 1 featured Dialyn (new) and Hugo (rerun), with A-ranks Corin and Billy. Phase 2 featured Banyue (new) and Ellen Joe (rerun).",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1oyc7ai/"
-        },
-        {
-          "label": "Genshin-Builds: 2.4 banners, maintenance and character releases",
-          "url": "https://genshin-builds.com/en/zenless/blog/zenless-zone-zero-version-2-4-comprehensive-guide-to-banners-maintenance-and-character-releases"
-        },
-        {
-          "label": "Fragster: 2.4 full banner schedule",
-          "url": "https://www.fragster.com/zenless-zone-zero-version-2-4-full-banner-schedule-agent-line-up-revealed/"
-        },
-        {
-          "label": "Sportskeeda: 2.4 livestream summary",
-          "url": "https://widgets.sportskeeda.com/esports/zenless-zone-zero-zzz-2-4-livestream-summary-release-date-banners-events-everything-new"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "2.5",
-      "title": "To Be Fuel for the Night",
-      "start": "2025-12-30",
-      "end": "2026-02-06",
-      "currency": {
-        "total": 14250,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Ye Shunguang",
-        "Zhao"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-12-30",
-          "end": "2026-01-21",
-          "featured": [
-            "Ye Shunguang",
-            "Zhao"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-01-21",
-          "end": "2026-02-05",
-          "featured": [
-            "Alice",
-            "Soldier 0 - Anby",
-            "Astra Yao"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 18400 that could not be traced to a source on 2026-11-15. Total 14250 (plus 21 Encrypted Master Tapes, about 110 pulls) is a top-up retailer's pre-release estimate; single source, and it is consistent with its own pull count. A rewards guide gives 55-65 pulls for one limited banner, which is a narrower scope. Existing brief value 18400 was not found. Phase 2 end is 02-05 per most sources (02-06, 02-11 and 02-17 also appear, and 2.6 starts 02-06). Phase 1 featured Ye Shunguang and Zhao, both limited debuts. Phase 2 is the rerun channel, with Alice, Soldier 0 Anby and Astra Yao as featured S-ranks. The featured list follows Codashop.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1prlsc5/"
-        },
-        {
-          "label": "TopUpLive: 2.5 up to 110 free pulls",
-          "url": "https://www.topuplive.com/article/how-many-pulls-in-zzz-2-5-up-to-110-pulls-for-free.html"
-        },
-        {
-          "label": "Codashop: 2.5 phase 2 (rerun channel, no 50/50)",
-          "url": "https://news.codashop.com/ph/guaranteed-s-rank-alert-zenless-zone-zero-v2-5-phase-2-says-bye-to-the-50-50/"
-        },
-        {
-          "label": "BitTopup: 2.5 Polychrome guide (Zhao and Ye Shunguang)",
-          "url": "https://bittopup.com/article/zzz-25-polychrome-guide-skip-24-orz-good-yes-mixing-light"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "2.6",
-      "title": "Encore for an Old Dream",
-      "start": "2026-02-06",
-      "end": "2026-03-24",
-      "currency": {
-        "total": 26390,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Sunna",
-        "Aria"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-02-06",
-          "end": "2026-03-04",
-          "featured": [
-            "Sunna",
-            "Yixuan"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-03-04",
-          "end": "2026-03-23",
-          "featured": [
-            "Aria",
-            "Yuzuha"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 24112 that could not be traced to a source on 2026-11-15. Total 26390 (plus 16 Encrypted Master Tapes) is a single BitTopup estimate for the full 2.6 patch, so it is not cross-checked. The source does not state whether it includes all sources. Existing brief value 24112 was not found. Phase 2 end is 03-23 or 03-24; 2.7 starts 03-24. Phase 1 featured Sunna (new) with Yixuan rerun. Phase 2 featured Aria (new) with Yuzuha rerun. Update deployed 02-05 22:00 ET, which is 02-06 in UTC+8.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1tyq6cn/"
-        },
-        {
-          "label": "BitTopup: 2.6 Phase 1 pull costs and pity (26390 full-patch estimate)",
-          "url": "https://bittopup.com/article/ZZZ-Polychrome-Guide-26-Phase-1-Pull-Costs-Pity"
-        },
-        {
-          "label": "Nerdschalk: 2.6 every character and banner",
-          "url": "https://nerdschalk.com/zzz-2-6-every-character-and-banners-we-know-so-far-zenless-zone-zero/"
-        },
-        {
-          "label": "SportsDunia: 2.6 banners schedule",
-          "url": "https://www.sportsdunia.com/gaming/zenless-zone-zero-2-6-banners-schedule"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "2.7",
-      "title": "Champions Never Fall to the Past",
-      "start": "2026-03-24",
-      "end": "2026-05-06",
-      "currency": {
-        "total": 15040,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Nangong Yu",
-        "Cissia"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-03-24",
-          "end": "2026-04-15",
-          "featured": [
-            "Nangong Yu",
-            "Yidhari"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-04-15",
-          "end": "2026-05-05",
-          "featured": [
-            "Cissia",
-            "Seed"
-          ]
-        }
-      ],
-      "notes": "The total of 15040 is from an earlier pass and could not be traced to a source on 2026-11-15. Total left null. Sources mention 600 free Polychromes from the launch and extra Master Tapes from seven days of login, but no grand total was found in the snippets. The SportsDunia page, which is titled as a calculation, was not readable. Existing brief value 15040 was not found. Phase 1 ends 04-15 (Game8 and Genshin-Builds). Phase 2 ends 05-05 (Game8) or 05-06, and 2.8 starts 05-06. Launch is 03-23 23:00 ET, which is 03-24 in UTC+8. Phase 1 featured Nangong Yu (new) with Yidhari rerun. Phase 2 featured Cissia (new) with Seed rerun. Genshin-Builds says Phase 2 dates are unconfirmed.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1tyq6cn/"
-        },
-        {
-          "label": "Game8: 2.7 banners (Nangong Yu, Cissia)",
-          "url": "https://game8.co/games/Zenless-Zone-Zero/archives/580332"
-        },
-        {
-          "label": "SportsDunia: 2.7 polychromes calculation",
-          "url": "https://www.sportsdunia.com/gaming/zenless-zone-zero-2-7-polychromes-calculation"
-        },
-        {
-          "label": "games.gg: 2.7 pulls and polychrome guide",
-          "url": "https://games.gg/nl/zenless-zone-zero/guides/zenless-zone-zero-27-gids-voor-pulls-polychromes-en-uitrusting/"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "2.8",
-      "title": "New: Eridan Sunset",
-      "start": "2026-05-06",
-      "end": "2026-06-17",
-      "currency": {
-        "total": 11640,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Promeia",
-        "Starlight - Billy",
-        "Starlight Billy"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-05-06",
-          "end": "2026-05-27",
-          "featured": [
-            "Promeia",
-            "Lucia"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-05-27",
-          "end": "2026-06-16",
-          "featured": [
-            "Starlight Billy",
-            "Orphie & Magus"
-          ]
-        }
-      ],
-      "notes": "Total 11640 (plus 18 Master Copies and 16 Cipher Copies, read here as the limited tape equivalent) is iXBT's F2P figure; it gives 89 pulls, which matches Studio ASV's unofficial 88.3-pull estimate. A chjiya guide gives 13740 Polychromes per six-week patch, which conflicts. Existing brief value (missing from the brief) was not found. Phase 2 end is 06-16 or 06-17; 3.0 starts 06-17. Phase 1 featured Promeia (new) with Lucia rerun. Phase 2 featured Starlight Billy (new) with Orphie and Magus rerun, per the post-livestream guide. Pre-livestream pieces predicted a Harumasa rerun, which was not confirmed.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "iXBT: 2.8 Polychrome count without donations (11640, 89 pulls)",
-          "url": "https://ixbt.games/en/news/2026/05/02/polikhromy-obnovleniia-28-dlia-zenless-zone-zero-fanaty-poschitali-skolko-krutok-mozhno-zarabotat-bez-donata-i-s-vlozheniiami.html"
-        },
-        {
-          "label": "Studio ASV: 2.8 patch breakdown (about 88.3 F2P pulls, unofficial)",
-          "url": "https://studio-asv.pages.dev/blog/zenless-zone-zero/zzz-28-patch-breakdown"
-        },
-        {
-          "label": "Lootbar: 2.8 banners (Promeia, Starlight Billy)",
-          "url": "https://lootbar.gg/blog/en/zenless-zone-zero-2-8-banners.html"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "3.0",
-      "title": "A Sleepwalker's Confession",
-      "start": "2026-06-17",
-      "end": "2026-07-29",
-      "currency": {
-        "total": 23200,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Velina Airgid",
-        "Norma Hollowell",
-        "Pyrois",
-        "Velina",
-        "Norma"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-06-17",
-          "end": "2026-07-08",
-          "featured": [
-            "Velina",
-            "Ye Shunguang"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-07-08",
-          "end": "2026-07-28",
-          "featured": [
-            "Norma",
-            "Sunna"
-          ]
-        }
-      ],
-      "notes": "The total of 23200 is from an earlier pass and could not be traced to a source on 2026-11-15. Total left null. Estimates conflict: 15080 (about 145 pulls, Phase 1 content only) and 20760 (about 145 pulls) from different guides, while a 174-pull estimate also appears. The sources do not reconcile, and the TopUpList breakdown looks auto-generated. Existing brief value 23200 was not found. Phase dates are from Studio ASV and TopUpList, with a 07-08 phase change in both. Phase 2 end is 07-28; 3.1 starts 07-29. Phase 1 featured Velina (new) with Ye Shunguang rerun, and Phase 2 featured Norma (new) with Sunna rerun, per GosuGamers. Pyrois is a free S-rank agent given at launch, not a banner character. Sleepwalker's Confession is the main event title.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1tyq6cn/"
-        },
-        {
-          "label": "Studio ASV: 3.0 patch breakdown and pull plan",
-          "url": "https://studio-asv.pages.dev/blog/zenless-zone-zero/zzz-3-0-patch-breakdown-sleepwalkers-confession-pull-guide"
-        },
-        {
-          "label": "TopUpList: 3.0 free pulls guide",
-          "url": "https://topuplist.com/blogs/detail/zzz-3-0-free-pulls-guide-how-to-claim-every-reward"
-        },
-        {
-          "label": "GosuGamers: everything announced for 3.0 (free S-rank Pyrois)",
-          "url": "https://gosugamers.net/news/78590-everything-announced-for-zenless-zone-zero-3-0-s-new-banners-new-region-and-free-s-rank-agent"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "3.1",
-      "title": "The Long Goodbye",
-      "start": "2026-07-29",
-      "end": "2026-09-09",
-      "currency": {
-        "total": 20800,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Remielle Dan",
-        "Sigrid de L'Azur",
-        "Sigrid"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-07-29",
-          "end": "2026-08-18",
-          "featured": [
-            "Remielle Dan",
-            "Aria"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-08-19",
-          "end": "2026-09-08",
-          "featured": [
-            "Sigrid",
-            "Dialyn",
-            "Yuzuha",
-            "Harumasa"
-          ]
-        }
-      ],
-      "notes": "The total of 20800 is from an earlier pass and could not be traced to a source on 2026-11-15. Total left null. Gamevika gives a range of 9000-13000 Polychromes for one 6-week patch, not a fixed total, so no point value was used. Existing brief value 20800 was not found. Phase 1 starts 07-28 or 07-29 and ends 08-18 or 08-19; Phase 2 ends 09-08 or 09-09. 3.2 starts 09-09. Sources disagree on the lineups. Remielle is in Phase 1 per one source, or on the main banner for both phases per PlayNews. Sigrid is in Phase 2 per Twinfinite and GenshinBuilds, or Phase 1 per TopUpList. The phase featured lists here follow the majority, and the Phase 2 reruns come from GenshinBuilds.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1v5aodl/"
-        },
-        {
-          "label": "TopUpList: 3.1 The Long Goodbye banner guide",
-          "url": "https://topuplist.com/blogs/detail/zenless-zone-zero-3-1-the-long-goodbye-remielle-sigrid"
-        },
-        {
-          "label": "GameSpace: 3.1 and 2nd anniversary (free S-rank selector)",
-          "url": "https://gamespace.com/all-articles/news/zenless-zone-zero-version-3-1-2nd-anniversary-arrive-on-july-29/"
-        },
-        {
-          "label": "Gamevika: ZZZ polychrome farming (3.1 estimate)",
-          "url": "https://gamevika.com/en/zzz/wiki/polychrome-farming"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "3.2",
-      "title": "Their Secret Histories",
-      "start": "2026-09-09",
-      "end": "2026-10-21",
-      "currency": {
-        "total": 11930,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Claret Flint",
-        "Roxy Ifrita Pryce",
-        "Claret",
-        "Roxy"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-09-09",
-          "end": "2026-09-30",
-          "featured": [
-            "Claret",
-            "Nangong Yu"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-09-30",
-          "end": "2026-10-20",
-          "featured": [
-            "Roxy",
-            "Promeia"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 14560 that could not be traced to a source on 2026-11-15. Total 11930 is an explicit F2P estimate from U7Buy, a single source. U7Buy also notes that there is no official line-by-line breakdown, and the itemised sources sum to 5760. It also includes 16 Encrypted Master Tapes, which are not counted in the total. Existing brief value 14560 was not found. Phase 1 ends 09-30 and Phase 2 ends 10-20 (Notebookcheck), with an alternative 10-21 (AccountShark estimate); 3.3 starts 10-21. The phase lineups are from U7Buy and Notebookcheck. Phase 1 has Claret (new S-rank) and a Nangong Yu rerun. Phase 2 has Roxy (new) and a Promeia rerun, with the Promeia one listed as a first rerun. Notebookcheck describes both phases as already ended as of 11-15.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1w5a09t/"
-        },
-        {
-          "label": "U7Buy: 3.2 polychrome count (11930 F2P estimate)",
-          "url": "https://www.u7buy.com/blog/zzz-3-2-polychrome-count/"
-        },
-        {
-          "label": "Notebookcheck: 3.2 phase 2 live as 3.3 approaches",
-          "url": "https://www.notebookcheck.net/Zenless-Zone-Zero-version-3-2-phase-2-live-as-3-3-approaches.1416354.0.html"
-        },
-        {
-          "label": "PatchBot: version 3.2 Their Secret Histories announcement",
-          "url": "https://patchbot.io/games/zenless-zone-zero/articles/1362-version-32-their-secret-histories-update-announcement"
-        }
-      ]
-    },
-    {
-      "game": "zzz",
-      "version": "3.3",
-      "title": "Journey to the Sky",
-      "start": "2026-10-21",
-      "end": "2026-12-02",
-      "currency": {
-        "total": 13150,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Phoenix Reffaella",
-        "Severian Lowell"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-10-21",
-          "end": "2026-11-10",
-          "featured": [
-            "Phoenix Reffaella",
-            "Velina"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-11-11",
-          "end": "2026-12-01",
-          "featured": [
-            "Severian Lowell",
-            "Norma"
-          ]
-        }
-      ],
-      "notes": "Total 13150 (plus 21 Encrypted Master Tapes, about 103 pulls) matches GamsGo's figure and TopUpLive's 103-pull count, and it matches the value in the brief. Other sources conflict: enjoygm itemises 11815 (about 74 pulls), and U7Buy gives 16480 as a Polychrome equivalent that includes tapes. The version is still running at 2026-11-15, so the end is null. Phase 1 is 10-21 to 11-10 (DotEsports) or 11-11 (U7Buy, Buffhub). The phase change dates are unconfirmed; Phase 2 end is 12-01 or 12-02. Phase 1 featured Phoenix Reffaella (new S-rank Fire Anomaly) and Velina rerun. Phase 2 featured Severian Lowell (new S-rank Wind Attack) and Norma rerun. Version 3.4 (Honkai: Star Rail crossover, expected 2026-12-02) had not released by 2026-11-15, so it is excluded.",
-      "sources": [
-        {
-          "label": "Version dates, titles and newly added agents (HoYoverse-notice index)",
-          "url": "https://senseos.gg/wiki/zenless-zone-zero/banners/?view=versions"
-        },
-        {
-          "label": "Community estimate or retrospective bookkeeping discussion",
-          "url": "https://www.reddit.com/r/ZenlessZoneZero/comments/1xbvm5y/"
-        },
-        {
-          "label": "HoYoverse 3.3 update announcement (announced end boundary)",
-          "url": "https://zenless.hoyoverse.com/en-us/news/166963"
-        },
-        {
-          "label": "GamsGo: 3.3 Polychrome count (13150 F2P, 21 Encrypted Master Tapes)",
-          "url": "https://www.gamsgo.com/blog/zzz-3-3-polychrome-count"
-        },
-        {
-          "label": "TopUpLive: 3.3 pull count (103 F2P pulls)",
-          "url": "https://www.topuplive.com/news/zenless-zone-zero-version-3-3-pull-count.html"
-        },
-        {
-          "label": "DotEsports: 3.3 banners (Phoenix, Severian)",
-          "url": "https://dotesports.com/zzz/guides/3-3-banners-phoenix-severian"
         }
       ]
     },
@@ -9366,6 +8051,1086 @@
         {
           "label": "The Click: HSR 4.7 banners, Aeon Aha and all character reruns",
           "url": "https://www.theclick.gg/?p=98131"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "1.0",
+      "title": "Welcome To New Eridu",
+      "start": "2024-07-04",
+      "end": "2024-08-14",
+      "currency": {
+        "total": 34760,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Alexandrina Sebastiane",
+        "Ellen Joe",
+        "Grace Howard",
+        "Koleda Belobog",
+        "Nekomiya Mana",
+        "Soldier 11",
+        "Von Lycaon",
+        "Zhu Yuan",
+        "Anby Demara",
+        "Anton Ivanov",
+        "Ben Bigger",
+        "Billy Kid",
+        "Corin Wickes",
+        "Luciana de Montefio",
+        "Nicole Demara",
+        "Piper Wheel",
+        "Soukaku"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-07-04",
+          "end": "2024-07-24",
+          "featured": [
+            "Ellen Joe"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-07-24",
+          "end": "2024-08-13",
+          "featured": [
+            "Zhu Yuan"
+          ]
+        }
+      ],
+      "notes": "No Palito count (launch). WotPack F2P summary: 29960 Polychromes + 30 Encrypted Master Tapes (~187 pulls). It includes one-time launch rewards (pre-registration milestones, 1600 developer gift, new-player content), so it is far above later versions. Omitted from events (no end date): Eridu Frontier; Road to Proxy Greatness; Rookie on the Road. Events: 20 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 1.0",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/1.0"
+        },
+        {
+          "label": "WotPack: polychromes in patch 1.0 (beta and insider data)",
+          "url": "https://wotpack.ru/skolko-polihromov-mozhno-poluchit-za-patch-1-0-v-zenless-zone-zero/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "1.1",
+      "title": "Undercover R&B",
+      "start": "2024-08-14",
+      "end": "2024-09-25",
+      "currency": {
+        "total": 12310,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Qingyi",
+        "Jane Doe",
+        "Seth Lowell"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-08-14",
+          "end": "2024-09-04",
+          "featured": [
+            "Qingyi"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-09-04",
+          "end": "2024-09-24",
+          "featured": [
+            "Jane Doe"
+          ]
+        }
+      ],
+      "notes": "No Palito count found. Beta leak by u/ZZZ_Art: 9910 Polychromes + 15 Encrypted Master Tapes (76 pulls). Earlier notes say it leaves out several events, so treat it as a floor. Repo value 9910 was the Polychromes alone. Omitted from events (no end date): Shiyu Defense: Disputed Node. Events: 20 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 1.1",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/1.1"
+        },
+        {
+          "label": "Dexerto: 1.1 leak of free Polychromes (u/ZZZ_Art)",
+          "url": "https://www.dexerto.com/gaming/zenless-zone-zero-1-1-update-leak-reveals-all-free-polychromes-encrypted-master-tapes-2838841/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "1.2",
+      "title": "Tour de Inferno",
+      "start": "2024-09-25",
+      "end": "2024-11-06",
+      "currency": {
+        "total": 17400,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Caesar King",
+        "Burnice White"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-09-25",
+          "end": "2024-10-16",
+          "featured": [
+            "Caesar King"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-10-16",
+          "end": "2024-11-05",
+          "featured": [
+            "Burnice White"
+          ]
+        }
+      ],
+      "notes": "No Palito count found. WotPack F2P summary from closed-beta data: 14200 Polychromes + 20 Encrypted Master Tapes (~108 pulls). Its table total 21420 also converts the 25 standard Master Tapes, which this method excludes. Replaces untraced 18496. Omitted from events (no end date): Investigator Training Course; Phantom Hunt. Events: 23 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 1.2",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/1.2"
+        },
+        {
+          "label": "WotPack: polychromes in patch 1.2 (closed beta data)",
+          "url": "https://wotpack.ru/skolko-polihromov-mozhno-poluchit-za-patch-1-2-v-zenless-zone-zero"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "1.3",
+      "title": "Virtual Revenge",
+      "start": "2024-11-06",
+      "end": "2024-12-18",
+      "currency": {
+        "total": 17235,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Tsukishiro Yanagi",
+        "Lighter"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-11-06",
+          "end": "2024-11-27",
+          "featured": [
+            "Tsukishiro Yanagi"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-11-27",
+          "end": "2024-12-17",
+          "featured": [
+            "Lighter"
+          ]
+        }
+      ],
+      "notes": "Palito beta count as reported by Sportskeeda: 14835 Polychromes + 15 Encrypted Master Tapes (~108 pulls). The article was blocked this pass; the figure is carried from the earlier pass and its items (Daily 2520, Shiyu 1890, Hollow Zero 960) match search snippets. Omitted from events (no end date): Endless Tower. Events: 25 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 1.3",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/1.3"
+        },
+        {
+          "label": "Sportskeeda: 1.3 count (Palito)",
+          "url": "https://sportskeeda.com/esports/zenless-zone-zero-zzz-1-3-polychrome-count-how-get-100-free-pulls"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "1.4",
+      "title": "A Storm of Falling Stars",
+      "start": "2024-12-18",
+      "end": "2025-01-22",
+      "currency": {
+        "total": 22935,
+        "events": 3760,
+        "daily": 2100,
+        "endgame": 3580,
+        "other": 13495,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Hoshimi Miyabi",
+        "Asaba Harumasa"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-12-18",
+          "end": "2025-01-21",
+          "featured": [
+            "Hoshimi Miyabi",
+            "Asaba Harumasa"
+          ]
+        }
+      ],
+      "notes": "Palito F2P: 19735 Polychromes + 20 Encrypted Master Tapes (143 pulls). Deadly Assault (1420, new in 1.4) counted as endgame. Events: 28 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 1.4",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/1.4"
+        },
+        {
+          "label": "Palito 1.4 beta count V2 (r/Zenlesszonezeroleaks_)",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1hb4bv3/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "1.5",
+      "title": "Astra-nomical Moment",
+      "start": "2025-01-22",
+      "end": "2025-03-12",
+      "currency": {
+        "total": 21585,
+        "events": 7940,
+        "daily": 2940,
+        "endgame": 3360,
+        "other": 7345,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Astra Yao",
+        "Evelyn Chevalier"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-01-22",
+          "end": "2025-02-12",
+          "featured": [
+            "Astra Yao",
+            "Ellen Joe"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-02-12",
+          "end": "2025-03-11",
+          "featured": [
+            "Evelyn Chevalier",
+            "Qingyi"
+          ]
+        }
+      ],
+      "notes": "Palito F2P: 16785 Polychromes + 30 Encrypted Master Tapes (135 pulls). V2 used; Palito's V1 post gave 15845 + 30, and Tacter's 16045 is a separate calculation. Breakdown: V2 raises daily (2940) and endgame (Deadly Assault 1200). Omitted from events (no end date): GameSir × Zenless Zone Zero. Events: 39 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 1.5",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/1.5"
+        },
+        {
+          "label": "Palito 1.5 beta count V2",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1i07p1m/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "1.6",
+      "title": "Among the Forgotten Ruins",
+      "start": "2025-03-12",
+      "end": "2025-04-23",
+      "currency": {
+        "total": 15900,
+        "events": 3940,
+        "daily": 2520,
+        "endgame": 3060,
+        "other": 6380,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Soldier 0 - Anby",
+        "Trigger",
+        "Pulchra Fellini"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-03-12",
+          "end": "2025-04-02",
+          "featured": [
+            "Soldier 0 - Anby",
+            "Burnice White"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-04-02",
+          "end": "2025-04-22",
+          "featured": [
+            "Trigger",
+            "Zhu Yuan"
+          ]
+        }
+      ],
+      "notes": "Palito F2P: 13340 Polychromes + 16 Encrypted Master Tapes (100 pulls). Events: 29 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 1.6",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/1.6"
+        },
+        {
+          "label": "Palito 1.6 beta count",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1j0qwvw/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "1.7",
+      "title": "Bury Your Tears With the Past",
+      "start": "2025-04-23",
+      "end": "2025-06-06",
+      "currency": {
+        "total": 14380,
+        "events": 3690,
+        "daily": 2520,
+        "endgame": 3060,
+        "other": 5110,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Vivian Banshee",
+        "Hugo Vlad"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-04-23",
+          "end": "2025-05-14",
+          "featured": [
+            "Vivian Banshee",
+            "Jane Doe"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-05-14",
+          "end": "2025-06-05",
+          "featured": [
+            "Hugo Vlad",
+            "Lighter"
+          ]
+        }
+      ],
+      "notes": "Palito F2P: 11020 Polychromes + 21 Encrypted Master Tapes (90 pulls). Events: 29 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 1.7",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/1.7"
+        },
+        {
+          "label": "Palito 1.7 beta count",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1jwwszq/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.0",
+      "title": "Where Clouds Embrace the Dawn",
+      "start": "2025-06-06",
+      "end": "2025-07-16",
+      "currency": {
+        "total": 26585,
+        "events": 8830,
+        "daily": 2520,
+        "endgame": 3060,
+        "other": 12175,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Yixuan",
+        "Ju Fufu",
+        "Pan Yinhu"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-06-06",
+          "end": "2025-06-25",
+          "featured": [
+            "Yixuan",
+            "Astra Yao"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-06-25",
+          "end": "2025-07-15",
+          "featured": [
+            "Ju Fufu",
+            "Caesar King"
+          ]
+        }
+      ],
+      "notes": "Palito F2P: 22425 Polychromes + 26 Encrypted Master Tapes (166 pulls). Cross-check: 黑夜幽灵 (Bilibili) gives 21530 + 26 (161 pulls). Omitted from events (no end date): As Time Passes: A Decade of Suibian Temple. Events: 34 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 2.0",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/2.0"
+        },
+        {
+          "label": "Palito 2.0 beta count (r/ZenlessZoneZero)",
+          "url": "https://i.redd.it/t97byo33ln2f1.png"
+        },
+        {
+          "label": "黑夜幽灵 2.0 count",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1ktrfrc/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.1",
+      "title": "The Impending Crash of Waves",
+      "start": "2025-07-16",
+      "end": "2025-09-04",
+      "currency": {
+        "total": 17880,
+        "events": 4480,
+        "daily": 3060,
+        "endgame": 3780,
+        "other": 6560,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Ukinami Yuzuha",
+        "Alice Thymefield"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-07-16",
+          "end": "2025-08-06",
+          "featured": [
+            "Ukinami Yuzuha",
+            "Hoshimi Miyabi"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-08-06",
+          "end": "2025-09-03",
+          "featured": [
+            "Alice Thymefield",
+            "Tsukishiro Yanagi"
+          ]
+        }
+      ],
+      "notes": "Palito F2P: 14520 Polychromes + 21 Encrypted Master Tapes (112 pulls). Omitted from events (no end date): Razer x Zenless Zone Zero. Events: 30 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 2.1",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/2.1"
+        },
+        {
+          "label": "Palito 2.1 beta count",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1lryhu0/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.2",
+      "title": "Do Not Go Gentle Into That Good Night",
+      "start": "2025-09-04",
+      "end": "2025-10-15",
+      "currency": {
+        "total": 14450,
+        "events": 4790,
+        "daily": 2520,
+        "endgame": 3060,
+        "other": 4080,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Seed",
+        "Orphie Magnusson & Magus"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-09-04",
+          "end": "2025-09-24",
+          "featured": [
+            "Seed",
+            "Trigger"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-09-24",
+          "end": "2025-10-14",
+          "featured": [
+            "Orphie Magnusson and Magus",
+            "Evelyn Chevalier"
+          ]
+        }
+      ],
+      "notes": "Palito F2P: 11890 Polychromes + 16 Encrypted Master Tapes (90 pulls); Palito flags it as quick and missing quest/achievement data, so it is likely low. Omitted from events (no end date): ChaPanda × Zenless Zone Zero. Events: 29 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 2.2",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/2.2"
+        },
+        {
+          "label": "Palito 2.2 beta count",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1mxqq8v/"
+        },
+        {
+          "label": "小橙子阿 2.2 count",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1n0ho0d/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.3",
+      "title": "Memories of Dreams Bygone",
+      "start": "2025-10-15",
+      "end": "2025-11-26",
+      "currency": {
+        "total": 17770,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Lucia Elowen",
+        "Yidhari Murphy",
+        "Komano Manato"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-10-15",
+          "end": "2025-11-05",
+          "featured": [
+            "Lucia Elowen",
+            "Vivian Banshee"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-11-05",
+          "end": "2025-11-25",
+          "featured": [
+            "Yidhari Murphy",
+            "Ju Fufu"
+          ]
+        }
+      ],
+      "notes": "Palito F2P as reported by Sportskeeda: 15210 Polychromes + 16 Encrypted Master Tapes (111 pulls); Palito's own image not retrieved. Cross-check: 小橙子阿 gives 14035 + 16 (104 pulls). Omitted from events (no end date): Threshold Simulation: Easy Mode. Events: 30 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 2.3",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/2.3"
+        },
+        {
+          "label": "Sportskeeda: 2.3 count (Palito)",
+          "url": "https://www.sportskeeda.com/esports/zenless-zone-zero-zzz-2-3-polychrome-count-leaked-estimate-how-get-110-free-pulls"
+        },
+        {
+          "label": "小橙子阿 2.3 count",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1ntyia2/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.4",
+      "title": "On the Precipice of the Abyss",
+      "start": "2025-11-26",
+      "end": "2025-12-30",
+      "currency": {
+        "total": 12750,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Dialyn",
+        "Banyue"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-11-26",
+          "end": "2025-12-17",
+          "featured": [
+            "Dialyn",
+            "Hugo Vlad"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-12-17",
+          "end": "2025-12-29",
+          "featured": [
+            "Banyue",
+            "Ellen Joe"
+          ]
+        }
+      ],
+      "notes": "No Palito count found; 小橙子阿 beta count F2P: 10190 Polychromes + 16 Encrypted Master Tapes (80 pulls) for a 34-day version. Events: 27 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 2.4",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/2.4"
+        },
+        {
+          "label": "小橙子阿 2.4 count",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1oyc7ai/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.5",
+      "title": "To Be Fuel for the Night",
+      "start": "2025-12-30",
+      "end": "2026-02-06",
+      "currency": {
+        "total": 18320,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Ye Shunguang",
+        "Zhao"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-12-30",
+          "end": "2026-02-05",
+          "featured": [
+            "Ye Shunguang",
+            "Zhao"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-01-21",
+          "end": "2026-02-05",
+          "featured": [
+            "Alice Thymefield",
+            "Soldier 0 - Anby",
+            "Astra Yao"
+          ]
+        }
+      ],
+      "notes": "No Palito count found; HoYo青枫 count (posted by 小橙子阿) F2P: 14960 Polychromes + 21 Encrypted Master Tapes (115 pulls). Events: 30 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 2.5",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/2.5"
+        },
+        {
+          "label": "HoYo青枫 2.5 count",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1prlsc5/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.6",
+      "title": "Encore for an Old Dream",
+      "start": "2026-02-06",
+      "end": "2026-03-24",
+      "currency": {
+        "total": 28950,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Sunna",
+        "Aria"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-02-06",
+          "end": "2026-03-04",
+          "featured": [
+            "Sunna",
+            "Yixuan"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-03-04",
+          "end": "2026-03-23",
+          "featured": [
+            "Aria",
+            "Ukinami Yuzuha"
+          ]
+        }
+      ],
+      "notes": "Palito F2P: 26390 Polychromes + 16 Encrypted Master Tapes (181 pulls); ZenlessWorld and Sportskeeda credit Palito and BitTopup repeats it. Unusually high; Palito image not read this pass. Events: 32 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 2.6",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/2.6"
+        },
+        {
+          "label": "Sportskeeda: 2.6 count leaked estimate (180+ pulls)",
+          "url": "https://www.sportskeeda.com/esports/zenless-zone-zero-zzz-2-6-polychrome-count-leaked-estimate-how-get-180-free-pulls"
+        },
+        {
+          "label": "ZenlessWorld on X: 2.6 count, credit Palito",
+          "url": "https://x.com/ZenlessWorld/status/2019214800342110654"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.7",
+      "title": "Champions Never Fall to the Past",
+      "start": "2026-03-24",
+      "end": "2026-05-06",
+      "currency": {
+        "total": 17640,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Nangong Yu",
+        "Cissia"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-03-24",
+          "end": "2026-04-15",
+          "featured": [
+            "Nangong Yu",
+            "Yidhari Murphy"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-04-15",
+          "end": "2026-05-05",
+          "featured": [
+            "Cissia",
+            "Seed"
+          ]
+        }
+      ],
+      "notes": "Palito's automated (experimental) F2P count: ~15080 Polychromes + 16 Encrypted Master Tapes (110 pulls); no itemised breakdown. Omitted from events (no end date): Battle Trial: Tidal Wave. Events: 26 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 2.7",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/2.7"
+        },
+        {
+          "label": "Palito 2.7 experimental count",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1s1d9ra/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "2.8",
+      "title": "New: Eridan Sunset",
+      "start": "2026-05-06",
+      "end": "2026-06-17",
+      "currency": {
+        "total": 14200,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Promeia",
+        "Starlight - Billy Kid"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-05-06",
+          "end": "2026-05-27",
+          "featured": [
+            "Promeia",
+            "Lucia Elowen"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-05-27",
+          "end": "2026-06-16",
+          "featured": [
+            "Starlight - Billy Kid",
+            "Orphie Magnusson and Magus"
+          ]
+        }
+      ],
+      "notes": "No Palito count (he switched to an in-game tracker tool). 小橙子阿 count: F2P 89 pulls; iXBT itemises it as 11640 Polychromes + 16 Encrypted Master Tapes (the 18 Master Tapes are standard and excluded). Events: 28 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 2.8",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/2.8"
+        },
+        {
+          "label": "iXBT: 2.8 F2P Polychromes",
+          "url": "https://ixbt.games/en/news/2026/05/02/polikhromy-obnovleniia-28-dlia-zenless-zone-zero-fanaty-poschitali-skolko-krutok-mozhno-zarabotat-bez-donata-i-s-vlozheniiami.html"
+        },
+        {
+          "label": "ZenlessWorld on X: 2.8 count via 小橙子阿",
+          "url": "https://x.com/ZenlessWorld/status/2049322921865207839"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "3.0",
+      "title": "A Sleepwalker's Confession",
+      "start": "2026-06-17",
+      "end": "2026-07-29",
+      "currency": {
+        "total": 23320,
+        "events": 7050,
+        "daily": 2520,
+        "endgame": 3240,
+        "other": 10510,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Velina Airgid",
+        "Norma Hollowell",
+        "Pyrois"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-06-17",
+          "end": "2026-07-08",
+          "featured": [
+            "Velina Airgid",
+            "Ye Shunguang"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-07-08",
+          "end": "2026-07-28",
+          "featured": [
+            "Norma Hollowell",
+            "Sunna"
+          ]
+        }
+      ],
+      "notes": "Palito F2P (2.8.54 beta data): 20760 Polychromes + 16 Encrypted Master Tapes (145 pulls), incl. the 1600 Commemorative Gift. Omitted from events (no end date): Bangbang! The Genius and the Miracle Chip. Events: 29 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 3.0",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/3.0"
+        },
+        {
+          "label": "Palito 3.0 count",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1tyq6cn/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "3.1",
+      "title": "The Long Goodbye",
+      "start": "2026-07-29",
+      "end": "2026-09-09",
+      "currency": {
+        "total": 21745,
+        "events": 8420,
+        "daily": 2520,
+        "endgame": 3240,
+        "other": 7565,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Remielle Dan",
+        "Sigrid de L'Azur"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-07-29",
+          "end": "2026-09-08",
+          "featured": [
+            "Remielle Dan",
+            "Aria"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-08-19",
+          "end": "2026-09-08",
+          "featured": [
+            "Sigrid de L'Azur",
+            "Dialyn",
+            "Ukinami Yuzuha",
+            "Asaba Harumasa"
+          ]
+        }
+      ],
+      "notes": "Palito F2P: 16785 Polychromes + 31 Encrypted Master Tapes (135 pulls), incl. 1600 anniversary gift. Events: 31 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 3.1",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/3.1"
+        },
+        {
+          "label": "Palito 3.1 count",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1v5aodl/"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "3.2",
+      "title": "Their Secret Histories",
+      "start": "2026-09-09",
+      "end": "2026-10-21",
+      "currency": {
+        "total": 14490,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Claret Flint",
+        "Roxy Ifrita Pryce"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-09-09",
+          "end": "2026-09-30",
+          "featured": [
+            "Claret Flint",
+            "Nangong Yu"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-09-30",
+          "end": "2026-10-20",
+          "featured": [
+            "Roxy Ifrita Pryce",
+            "Promeia"
+          ]
+        }
+      ],
+      "notes": "No Palito count found. HoYo青枫 count: F2P 91 pulls; U7Buy gives the same 91 as 11930 Polychromes + 16 Encrypted Master Tapes. Codes and web events may add a little. Omitted from events (no end date): Vyrium Vacation Album. Events: 29 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 3.2",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/3.2"
+        },
+        {
+          "label": "U7Buy: 3.2 Polychrome count",
+          "url": "https://www.u7buy.com/blog/zzz-3-2-polychrome-count/"
+        },
+        {
+          "label": "ZenlessWorld on X: 3.2 count via HoYo青枫",
+          "url": "https://x.com/ZenlessWorld/status/2095136214240162083"
+        }
+      ]
+    },
+    {
+      "game": "zzz",
+      "version": "3.3",
+      "title": "Journey to the Sky",
+      "start": "2026-10-21",
+      "end": null,
+      "currency": {
+        "total": 16510,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Phoenix Reffaella",
+        "Severian Lowell"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-10-21",
+          "end": "2026-11-11",
+          "featured": [
+            "Phoenix Reffaella",
+            "Velina Airgid"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-11-11",
+          "end": "2026-12-01",
+          "featured": [
+            "Severian Lowell",
+            "Norma Hollowell"
+          ]
+        }
+      ],
+      "notes": "No Palito count found; HoYo青枫 F2P: 13150 Polychromes + 21 Encrypted Master Tapes (103 pulls) for 10-21 to 12-01 (42 days). Version still running; 3.4 expected 2026-12-02. End is the expected 3.4 release (2026-12-02). Wiki event list read 2026-11-17; endgame cycles starting after mid-November may not be listed yet. Omitted from events (no end date): Annihilation Simulacrum; Enigma of the Labyrinth: Spooky Trial. Events: 22 incl. Signal Searches; dates and times from ZZZ Wiki infoboxes (server time).",
+      "sources": [
+        {
+          "label": "ZZZ Wiki: Version 3.3",
+          "url": "https://zenless-zone-zero.fandom.com/wiki/Version/3.3"
+        },
+        {
+          "label": "HoYo青枫 3.3 count",
+          "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1x2bpng/"
         }
       ]
     }
