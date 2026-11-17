@@ -22,7 +22,7 @@ describe('banner classification', () => {
     expect(kind('seed:uma:scout-2026-09-15:supports')).toBe('support');
     expect(kind('seed:lads:2026-11-radiant-brilliance')).toBe('memory');
     expect(kind('seed:nte:1.3-voyager')).toBe('weapon');
-    expect(kind('seed:hsr:4.5-p2-lc')).toBe('weapon');
+    expect(kind('seed:hsr:4.7-aha-lc')).toBe('weapon');
     expect(kind('seed:zzz:3.2-p1-engines')).toBe('weapon');
     expect(kind('seed:wuwa:3.6-p2-weapons')).toBe('weapon');
     expect(kind('seed:endfield:1.5-tag-artist')).toBe('weapon');

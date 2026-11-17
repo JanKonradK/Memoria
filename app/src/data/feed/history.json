@@ -10,8 +10,8 @@
     "hsr": {
       "currency": "Stellar Jade",
       "pullCost": 160,
-      "methodology": "Use full-version community F2P estimates with maximum participation where stated, convert included limited Special Passes or reported limited pulls to Jade equivalents at 160 each while excluding paid rewards and Standard Passes, use global UTC+8 launch dates and the next launch as the exclusive end, and leave unverified values null. Re-checked 2026-11-15 from launch: totals now come from itemised community estimates, each version noting its sources; most are pre-release projections. Earlier figures that could not be traced are replaced or flagged in the notes.",
-      "archiveSince": "2026-07-11"
+      "methodology": "Total = free Stellar Jade + free Star Rail Special Passes x 160 for an F2P player, from the pre-release itemised WotPack tally (its F2P summary line), standard passes excluded. 1.1 and 4.5-4.7 keep other outlets' estimates built the same way; 1.0 is null. Breakdowns only where WotPack rows sum exactly. Events and warps from HSR Fandom wiki infoboxes (UTC+8 server time).",
+      "archiveSince": "2023-04-26"
     },
     "zzz": {
       "currency": "Polychromes",
@@ -380,2141 +380,6 @@
         {
           "label": "Genshin-Builds: Sanctuary of Ink rewards page (1,000 Oroberyl; page live Oct 6 2026)",
           "url": "https://genshin-builds.com/en/arknights-endfield/blog/arknights-endfield-sanctuary-of-ink-guide-rewards"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "1.0",
-      "title": null,
-      "start": "2023-04-26",
-      "end": "2023-06-07",
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Seele",
-        "Jing Yuan"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2023-04-26",
-          "end": "2023-05-17",
-          "featured": [
-            "Seele"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2023-05-17",
-          "end": "2023-06-07",
-          "featured": [
-            "Jing Yuan"
-          ]
-        }
-      ],
-      "notes": "Total left null. Sources give only headline pull counts and disagree: Dexerto and Sportskeeda say up to 80 pulls; QooApp describes 60 passes plus 20 standard-banner pulls. Launch milestones (Trailblaze level 25 and 35: 10 passes and 800 Stellar Jade each) and login passes are itemised, but no reliable Stellar Jade total was found. Release date 2023-04-26 is from the brief. Phase 1 start is the same day; Game8 prints the phase 1 start as 2023-04-26 in UTC-5 terms, so phase dates may differ by one day from Asia-server dates. Title and standard-pool new characters not verified.",
-      "sources": [
-        {
-          "label": "Dexerto: 1.0 update rewards (up to 80 free pulls)",
-          "url": "https://dexerto.com/honkai-star-rail/honkai-star-rail-rewards-star-rail-passes-stellar-jade-credits-2095726"
-        },
-        {
-          "label": "Sportskeeda: how to get 80+ pulls in 1.0 global release",
-          "url": "https://www.sportskeeda.com/esports/how-get-80-pulls-free-honkai-star-rail-version-1-0-global-release"
-        },
-        {
-          "label": "Game8 banner history (1.0 phase dates and featured 5-stars)",
-          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "1.1",
-      "title": null,
-      "start": "2023-06-07",
-      "end": "2023-07-19",
-      "currency": {
-        "total": 12920,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Silver Wolf",
-        "Luocha",
-        "Yukong"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2023-06-07",
-          "end": "2023-06-28",
-          "featured": [
-            "Silver Wolf"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2023-06-28",
-          "end": "2023-07-19",
-          "featured": [
-            "Luocha"
-          ]
-        }
-      ],
-      "notes": "Total 12920 Stellar Jade is a pre-release leak (Dexerto) and is cited in the Sportskeeda headline of 80+ pulls (12920 / 160 = 80.75). Special Star Rail Passes are not stated, so no pass conversion is added; the total may be understated if the update included limited passes. Sportskeeda's itemised dailies, Simulated Universe and two events sum to about 3,305 Jade on its own, which is partial. Release 2023-06-07 is confirmed by Nextrift and FinalWeapon; phase dates from Game8 (UTC-5 printing, phase 1 may be one day earlier than Asia). Phase 2 end set to 1.2 release.",
-      "sources": [
-        {
-          "label": "Dexerto: leak of free Stellar Jade ahead of 1.1 (12,920 total)",
-          "url": "https://dexerto.com/honkai-star-rail/honkai-star-rail-free-stellar-jade-1-1-update-2167703"
-        },
-        {
-          "label": "Sportskeeda: 1.1 Stellar Jades guide (80+ free pulls)",
-          "url": "https://sportskeeda.com/esports/honkai-star-rail-1-1-stellar-jades-guide-get-80-free-pulls-f2p"
-        },
-        {
-          "label": "Nextrift: 1.1 arrives 7 June",
-          "url": "https://nextrift.com/202327699/"
-        },
-        {
-          "label": "Game8 banner history (1.1 phase dates)",
-          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "1.2",
-      "title": null,
-      "start": "2023-07-19",
-      "end": "2023-08-30",
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Blade",
-        "Kafka",
-        "Luka"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2023-07-19",
-          "end": "2023-08-09",
-          "featured": [
-            "Blade"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2023-08-09",
-          "end": "2023-08-30",
-          "featured": [
-            "Kafka"
-          ]
-        }
-      ],
-      "notes": "Total left null. A pre-patch guide reportedly estimates 9,430 Stellar Jade plus 15 Special Star Rail Passes (11,830 with passes at 160 each). I could not confirm that figure against the page it came from, so it is not recorded. Release 2023-07-19 is consistent with the 42-day cycle and pre-release reporting (Sportskeeda). Phase dates from Game8; the second-phase date is tentative in pre-release reporting. Luka is a 4-star debut per pre-release reporting. Title not verified.",
-      "sources": [
-        {
-          "label": "Sportskeeda: 1.2 Stellar Jades guide (80 free pulls F2P)",
-          "url": "https://www.sportskeeda.com/esports/honkai-star-rail-1-2-stellar-jades-guide-get-80-free-pulls-f2p"
-        },
-        {
-          "label": "Game8 banner history (1.2 phase dates)",
-          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "1.3",
-      "title": null,
-      "start": "2023-08-30",
-      "end": "2023-10-11",
-      "currency": {
-        "total": 15200,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Dan Heng • Imbibitor Lunae",
-        "Fu Xuan"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2023-08-30",
-          "end": "2023-09-20",
-          "featured": [
-            "Dan Heng • Imbibitor Lunae"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2023-09-20",
-          "end": "2023-10-11",
-          "featured": [
-            "Fu Xuan"
-          ]
-        }
-      ],
-      "notes": "Total 15200 = about 12,000 Stellar Jade plus 20 Special Star Rail Passes (3,200). Sportskeeda's 95+ pulls headline matches this sum (15200 / 160 = 95). Ginx, citing a Reddit calculation, gives 11,000 to 13,000 Jade and 20 passes, so the total is a community estimate with a range of roughly 14,200 to 16,200. Sources conflict on whether Imbibitor Lunae (Dan Heng) debuted in 1.3 or is a 2.0 rerun; game8 tags it as a rerun in 2.0, which supports 1.3. Release 2023-08-30 from the 42-day cadence and AFKGaming. Title not verified.",
-      "sources": [
-        {
-          "label": "Sportskeeda: 1.3 Stellar Jades calculation (95+ pulls)",
-          "url": "https://sportskeeda.com/esports/honkai-star-rail-1-3-stellar-jades-calculation-get-95-pulls-free"
-        },
-        {
-          "label": "Ginx: Stellar Jade and pulls calculation (credits 1.3 figures)",
-          "url": "https://www.ginx.tv/en/?p=52614"
-        },
-        {
-          "label": "AFKGaming: 1.3 Stellar Jades calculation (30 Aug to 11 Oct)",
-          "url": "https://afkgaming.com/gaming/honkai-star-rail/honkai-star-rail-version-13-stellar-jades-calculation-how-much-can-you-get"
-        },
-        {
-          "label": "Game8 banner history (1.3 phase dates)",
-          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "1.4",
-      "title": "Jolted Awake From a Winter Dream",
-      "start": "2023-10-11",
-      "end": "2023-11-15",
-      "currency": {
-        "total": 10150,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Jingliu",
-        "Topaz",
-        "Guinaifen"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2023-10-11",
-          "end": "2023-10-27",
-          "featured": [
-            "Jingliu"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2023-10-27",
-          "end": "2023-11-15",
-          "featured": [
-            "Topaz",
-            "Seele"
-          ]
-        }
-      ],
-      "notes": "Total 10150 = 8,550 Stellar Jade plus 10 Special Star Rail Passes (1,600), from a pre-patch Prima Games estimate; the 5 standard Star Rail Passes are excluded. Sportskeeda's 80+ pulls headline would be about 12,800 and does not reconcile with the Prima figure, so the range is roughly 10,150 to 12,800. Phase 2 featured Topaz plus a Seele rerun. Release 2023-10-11 confirmed by Gematsu, Prima and AFKGaming.",
-      "sources": [
-        {
-          "label": "Gematsu: 1.4 launches October 11, title confirmed",
-          "url": "https://www.gematsu.com/2023/09/honkai-star-rail-version-1-4-update-jolted-awake-from-a-winter-dream-launches-october-11"
-        },
-        {
-          "label": "Prima Games: how many pulls and Stellar Jade in 1.4",
-          "url": "https://primagames.com/gaming/how-many-pulls-and-stellar-jade-can-you-earn-in-honkai-star-rail-version-1-4"
-        },
-        {
-          "label": "Sportskeeda: 1.4 Stellar Jades calculation (80+ pulls)",
-          "url": "https://sportskeeda.com/esports/honkai-star-rail-1-4-stellar-jades-calculation-get-80-pulls-free"
-        },
-        {
-          "label": "Game8 banner history (1.4 phase dates)",
-          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "1.5",
-      "title": null,
-      "start": "2023-11-15",
-      "end": "2023-12-27",
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Huohuo",
-        "Argenti"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2023-11-15",
-          "end": "2023-12-06",
-          "featured": [
-            "Huohuo"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2023-12-06",
-          "end": "2023-12-27",
-          "featured": [
-            "Argenti",
-            "Silver Wolf"
-          ]
-        }
-      ],
-      "notes": "Total left null. The Sportskeeda guide headline says 80+ free pulls, but the retrieved text shows only about 2,370 Stellar Jade of itemised sources (resets, maintenance compensation, new location, missions) before dailies and events, so no reliable total could be built. Redeem codes were small (about 100 Jade each). Phase 2 date 2023-12-06 from Game8; the 5-star is partly unverified in the excerpt (Game8 lists Argenti and a Silver Wolf rerun). Release 2023-11-15 is inferred from the 42-day cadence to 1.6 and Game8's phase 1 date, not from a release announcement. Title not verified.",
-      "sources": [
-        {
-          "label": "Sportskeeda: 1.5 Stellar Jades calculation (80+ pulls headline, unverified)",
-          "url": "https://www.sportskeeda.com/esports/honkai-star-rail-1-5-stellar-jades-calculation-get-80-pulls-free"
-        },
-        {
-          "label": "Game8 banner history (1.5 phase dates and featured 5-stars)",
-          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
-        },
-        {
-          "label": "Clutchpoints: everything new in Honkai Star Rail 1.5",
-          "url": "https://clutchpoints.com/gaming/everything-new-in-honkai-star-rail-version-1-5"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "1.6",
-      "title": "Crown of the Mundane and Divine",
-      "start": "2023-12-27",
-      "end": "2024-02-06",
-      "currency": {
-        "total": 15170,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Ruan Mei",
-        "Dr. Ratio",
-        "Xueyi"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2023-12-27",
-          "end": "2024-01-17",
-          "featured": [
-            "Ruan Mei",
-            "Blade"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-01-17",
-          "end": "2024-02-06",
-          "featured": [
-            "Dr. Ratio",
-            "Kafka"
-          ]
-        }
-      ],
-      "notes": "Total 15170 Stellar Jade is a pre-patch estimate cited by Beebom and reported as 94 pulls (15170 / 160 = 94.8); the 80+ pulls headline is consistent. Beebom also gives 13,490 Jade plus 20 premium passes for F2P (not clear if these are Special or standard passes), so the range is roughly 13,490 to 16,690. Dr. Ratio was a free 5-star in this version. Release 2023-12-27 confirmed by Gematsu and a press release. Phase dates from Game8; featured lists per Game8 table.",
-      "sources": [
-        {
-          "label": "Gematsu: 1.6 launches December 27, title confirmed",
-          "url": "https://gematsu.com/2023/12/honkai-star-rail-version-1-6-update-crown-of-the-mundane-and-divine-launches-december-27"
-        },
-        {
-          "label": "Beebom: Honkai Star Rail 1.6 total Stellar Jade count (estimated)",
-          "url": "https://beebom.com/honkai-star-rail-1-6-stellar-jade-count"
-        },
-        {
-          "label": "Sportskeeda: 1.6 Stellar Jades calculation (80+ pulls)",
-          "url": "https://sportskeeda.com/esports/honkai-star-rail-1-6-stellar-jades-calculation-get-80-pulls-free"
-        },
-        {
-          "label": "Game8 banner history (1.6 phase dates)",
-          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "2.0",
-      "title": "If One Dreams At Midnight",
-      "start": "2024-02-06",
-      "end": "2024-03-27",
-      "currency": {
-        "total": 20770,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Black Swan",
-        "Sparkle",
-        "Misha"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-02-06",
-          "end": "2024-02-29",
-          "featured": [
-            "Black Swan",
-            "Dan Heng • Imbibitor Lunae"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-02-29",
-          "end": "2024-03-27",
-          "featured": [
-            "Sparkle",
-            "Jing Yuan"
-          ]
-        }
-      ],
-      "notes": "Total 20770 Stellar Jade from an AFKGaming pre-patch estimate (129 pulls). The page heading says 'Version 1.6' but the URL and content are for 2.0. Sportskeeda's 100+ pulls headline suggests a lower figure (about 16,000 Jade), and the two do not reconcile; whether AFK's total already includes the 20 Special Star Rail Passes is not stated. Treat as a wide range. Release 2024-02-06 from the brief. Phase 2 start 2024-02-29 from Game8 and Gamevika; the phase 1 start is also given as 2024-02-05 in UTC-5 terms.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "AFKGaming: estimated Stellar Jade count for 2.0 (20,770, 129 pulls)",
-          "url": "https://afkgaming.com/gaming/honkai-star-rail/estimated-stellar-jade-count-for-honkai-star-rail-20"
-        },
-        {
-          "label": "Sportskeeda: 2.0 Stellar Jades calculation (100+ pulls)",
-          "url": "https://sportskeeda.com/esports/honkai-star-rail-2-0-stellar-jades-calculation-get-100-pulls-free"
-        },
-        {
-          "label": "Game8 banner history (2.0 phase dates)",
-          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "2.1",
-      "title": "Into the Yawning Chasm",
-      "start": "2024-03-27",
-      "end": "2024-05-08",
-      "currency": {
-        "total": 18560,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Acheron",
-        "Aventurine",
-        "Gallagher"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-03-27",
-          "end": "2024-04-17",
-          "featured": [
-            "Acheron",
-            "Luocha"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-04-17",
-          "end": "2024-05-08",
-          "featured": [
-            "Aventurine",
-            "Jingliu"
-          ]
-        }
-      ],
-      "notes": "Total 18560 = 13,760 Stellar Jade plus 30 Special Star Rail Passes (4,800), from AFKGaming's F2P tally (116 pulls); this matches AFK's stated pull count. The jade line items in the article do not add up to 13,760 by themselves. The 20 passes from the anniversary gift, 10 from shop resets and 4 from Nameless Glory are included in the 30 per AFK. Pre-release estimate. Gallagher is a 4-star debut per SI. Gamevika's banner page was unavailable at fetch time (HTTP 522), so featured lists rely on Game8.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "AFKGaming: 2.1 Stellar Jades and pulls full calculations (13,760 Jade + 30 Special Passes = 116 pulls)",
-          "url": "https://afkgaming.com/gaming/honkai-star-rail/how-many-pulls-and-stellar-jade-will-you-get-in-honkai-star-rail-21-full-calculations-inside"
-        },
-        {
-          "label": "Nextrift: 2.1 arrives 27 March with 30 free pulls",
-          "url": "https://nextrift.com/202433596/"
-        },
-        {
-          "label": "Game8 banner history (2.1 phase dates)",
-          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
-        },
-        {
-          "label": "Gamevika banner schedule (2.1 featured)",
-          "url": "https://gamevika.com/en/hsr/banners"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "2.2",
-      "title": "Then Wake to Weep",
-      "start": "2024-05-08",
-      "end": "2024-06-19",
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Robin",
-        "Boothill",
-        "Trailblazer (Harmony)"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-05-08",
-          "end": "2024-05-29",
-          "featured": [
-            "Robin",
-            "Topaz"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-05-29",
-          "end": "2024-06-19",
-          "featured": [
-            "Boothill",
-            "Fu Xuan"
-          ]
-        }
-      ],
-      "notes": "Total left null. Sportskeeda's estimate is headlined '100+ pulls' and itemises about 150 Jade from web events, 10 Special Passes from Gift of Odyssey, 10 free wishes from the June shop reset, 5 Star Rail Passes from Nameless Honor, and 2,520 Jade from Daily Training. The full sum was not retrieved, so no total was recorded. Start date 2024-05-08 (Sportskeeda and Gamevika agree the release is 8 May in Asia time). Phase dates from Game8.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Sportskeeda: 2.2 Stellar Jades count and free pulls calculation",
-          "url": "https://sportskeeda.com/esports/honkai-star-rail-2-2-stellar-jades-count-free-pulls-calculation"
-        },
-        {
-          "label": "Game8 banner history (2.2 phase dates)",
-          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "2.3",
-      "title": "Farewell, Penacony",
-      "start": "2024-06-19",
-      "end": "2024-07-31",
-      "currency": {
-        "total": 14650,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Firefly",
-        "Jade"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-06-19",
-          "end": "2024-07-10",
-          "featured": [
-            "Firefly",
-            "Ruan Mei"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-07-10",
-          "end": "2024-07-31",
-          "featured": [
-            "Jade",
-            "Argenti"
-          ]
-        }
-      ],
-      "notes": "Total 14650 = 12,250 Stellar Jade plus 15 Special Star Rail Passes (2,400), from the MisterMen-mirrored breakdown on Sportskeeda. That breakdown's own 105-pull headline does not reconcile (14650 / 160 = 91.6 pulls), and the 16 standard passes are excluded. The page also mixes in a 2023 headline. Battle pass paid tier and the 300 Jade from 2.4 livestream codes are excluded. Pre-release estimate. Phase dates from Game8.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Sportskeeda: 2.3 Stellar Jades count (90+ free pulls, mirrors MisterMen Plays breakdown)",
-          "url": "https://sportskeeda.com/esports/honkai-star-rail-2-3-stellar-jades-count-how-get-90-free-pulls"
-        },
-        {
-          "label": "GenshinBuilds: 2.3 banner breakdown (Ruan Mei and Firefly)",
-          "url": "https://genshin-builds.com/en/hsr/blog/honkai-star-rail-2-3-is-jade-worth-your-stellar-jades-a-comprehensive-banner-analysis"
-        },
-        {
-          "label": "Game8 banner history (2.3 phase dates)",
-          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "2.4",
-      "title": "Finest Duel Under the Pristine Blue",
-      "start": "2024-07-31",
-      "end": "2024-09-10",
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Yunli",
-        "Jiaoqiu",
-        "March 7th (The Hunt)"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-07-31",
-          "end": "2024-08-21",
-          "featured": [
-            "Yunli",
-            "Huohuo"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-08-21",
-          "end": "2024-09-10",
-          "featured": [
-            "Jiaoqiu",
-            "Sparkle"
-          ]
-        }
-      ],
-      "notes": "Total left null. Sources conflict: Sportskeeda headlines 80+ free pulls, while the GameWitted summary (as retrieved from search) gives about 88 Special Passes and 21 regular pulls, roughly 110 pulls in total. The '88 Special Passes' figure is implausible as written and was not used. The Express Supply Pass (3,690 Jade) and battle pass are excluded. Pages could not be fetched (HTTP 405), so no line items were verified. Phase dates from Game8.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Sportskeeda: 2.4 Stellar Jades count (80+ free pulls)",
-          "url": "https://sportskeeda.com/esports/honkai-star-rail-2-4-stellar-jades-count-how-get-80-free-pulls"
-        },
-        {
-          "label": "GameWitted: 2.4 free Stellar Jade count guide",
-          "url": "https://www.gamewitted.com/gaming/honkai-star-rail-2-4-free-stellar-jade-count-guide"
-        },
-        {
-          "label": "Game8 banner history (2.4 phase dates)",
-          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "2.5",
-      "title": "Flying Aureus Shot to Lupine Rue",
-      "start": "2024-09-10",
-      "end": "2024-10-23",
-      "currency": {
-        "total": 13930,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Feixiao",
-        "Lingsha",
-        "Moze"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-09-10",
-          "end": "2024-10-02",
-          "featured": [
-            "Feixiao",
-            "Kafka"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-10-02",
-          "end": "2024-10-23",
-          "featured": [
-            "Lingsha",
-            "Topaz"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 15680 that could not be traced to a source on 2026-11-15. Total 13930 = 11,530 Stellar Jade plus 15 Special Star Rail Passes (2,400); GuidesRole's 87 pulls matches (13930 / 160 = 87). GuidesRole's own table total of 7,630 Jade permanent does not match its line items (7,830); the line-item sum is used. Sportskeeda's leak gives 10,725 Jade plus 15 passes (13,125 total, 82 pulls), so the range is roughly 13,100 to 13,900. Standard Star Rail Passes (16) are excluded. The stored value 15680 could not be corroborated by any source found. Phase dates from Gamerant (Asia-aligned). Pre-release estimate; Game8 lists Robin and Black Swan in 2.5 phase 1 but they are not confirmed as limited featured 5-stars here.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Reddit community comment: final estimated F2P pulls from HSR Bookkeeping",
-          "url": "https://www.reddit.com/r/HonkaiStarRail_leaks/comments/1i550mp/v1_stellar_jade_count_for_version_31_via_nivskisl/"
-        },
-        {
-          "label": "GuidesRole (gamingonphone): Honkai Star Rail 2.5 rewards calculation",
-          "url": "https://gamingonphone.com/guides/honkai-star-rail-version-2-5-rewards-calculation-stellar-jades-passes-pulls"
-        },
-        {
-          "label": "Sportskeeda: 2.5 Stellar Jade count (leak-based)",
-          "url": "https://sportskeeda.com/esports/honkai-star-rail-2-5-stellar-jade-count-how-get-pulls-per-leaks"
-        },
-        {
-          "label": "Dexerto: 2.5 update leak of free Stellar Jade and Special Passes",
-          "url": "https://dexerto.com/honkai-star-rail/honkai-star-rail-2-5-update-leak-reveals-all-free-stellar-jades-star-rail-special-passes-2848082"
-        },
-        {
-          "label": "Gamerant: HSR banner schedule and history (2.5 phases)",
-          "url": "https://gamerant.com/honkai-star-rail-hsr-current-next-past-banner-history-schedule/"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "2.6",
-      "title": "Annals of Pinecany's Mappou Age",
-      "start": "2024-10-23",
-      "end": "2024-12-04",
-      "currency": {
-        "total": 14975,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Rappa"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-10-23",
-          "end": "2024-11-13",
-          "featured": [
-            "Rappa",
-            "Dan Heng • Imbibitor Lunae"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-11-13",
-          "end": "2024-12-04",
-          "featured": [
-            "Aventurine",
-            "Acheron"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 17280 that could not be traced to a source on 2026-11-15. Total 14975 = 11,775 Stellar Jade plus 20 Special Star Rail Passes (3,200). Line items in the GuidesRole article sum to 11,775, but its stated 'combined' figure (11,075) is an arithmetic error; the sum is used. The 11,775 Jade plus 20 Special Passes figure also appears in a separate leak summary, which corroborates it. Standard passes (21) are excluded; Express Supply Pass and battle pass are excluded. Stored value 17280 could not be corroborated. Pre-release estimate.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Reddit community comment: final estimated F2P pulls from HSR Bookkeeping",
-          "url": "https://www.reddit.com/r/HonkaiStarRail_leaks/comments/1i550mp/v1_stellar_jade_count_for_version_31_via_nivskisl/"
-        },
-        {
-          "label": "GuidesRole (gamingonphone): Honkai Star Rail 2.6 rewards calculation",
-          "url": "https://gamingonphone.com/guides/honkai-star-rail-version-2-6-rewards-calculation-stellar-jades-passes-pulls"
-        },
-        {
-          "label": "Sportskeeda: 2.6 free pulls estimation leak",
-          "url": "https://www.sportskeeda.com/esports/honkai-star-rail-2-6-free-pulls-estimation-leak"
-        },
-        {
-          "label": "Gamerant: HSR banner schedule and history (2.6 phases)",
-          "url": "https://gamerant.com/honkai-star-rail-hsr-current-next-past-banner-history-schedule/"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "2.7",
-      "title": "A New Venture on the Eighth Dawn",
-      "start": "2024-12-04",
-      "end": "2025-01-15",
-      "currency": {
-        "total": 12660,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Sunday",
-        "Fugue"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-12-04",
-          "end": "2024-12-25",
-          "featured": [
-            "Sunday",
-            "Jing Yuan"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-12-25",
-          "end": "2025-01-15",
-          "featured": [
-            "Fugue",
-            "Firefly"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 14528 that could not be traced to a source on 2026-11-15. Total 12660 = 10,260 Stellar Jade plus 15 Special Star Rail Passes (2,400). The GuidesRole line items sum to its stated 10,260 Jade permanent plus time-limited total (5,900 + 4,360). Passes: Gift of Odyssey 10 plus shop reset 5; standard passes excluded. Sportskeeda's leak confirms the Daily Training (2,520), Gift of Odyssey (10 Special) and shop (5 Special) lines. The article's conclusion refers to 2.6, so some figures may be mislabelled. Stored value 14528 could not be corroborated. Pre-release estimate. Phase 2 end is 2025-01-15 (3.0 release) per the brief; Gamerant gives 2025-01-14 for the last day of 2.7 phase 2.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Reddit community comment: final estimated F2P pulls from HSR Bookkeeping",
-          "url": "https://www.reddit.com/r/HonkaiStarRail_leaks/comments/1i550mp/v1_stellar_jade_count_for_version_31_via_nivskisl/"
-        },
-        {
-          "label": "GuidesRole (gamingonphone): Honkai Star Rail 2.7 rewards calculation",
-          "url": "https://gamingonphone.com/guides/honkai-star-rail-version-2-7-rewards-calculation-stellar-jades-passes-pulls"
-        },
-        {
-          "label": "Sportskeeda: 2.7 Stellar Jades count and total pull rewards (leaked)",
-          "url": "https://sportskeeda.com/esports/honkai-star-rail-2-7-stellar-jades-count-total-pull-rewards-leaked"
-        },
-        {
-          "label": "Gamerant: HSR banner schedule and history (2.7 phases)",
-          "url": "https://gamerant.com/honkai-star-rail-hsr-current-next-past-banner-history-schedule/"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "3.0",
-      "title": "Paean of Era Nova",
-      "start": "2025-01-15",
-      "end": "2025-02-26",
-      "currency": {
-        "total": 16600,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "The Herta",
-        "Aglaea",
-        "Trailblazer (Remembrance)"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-01-15",
-          "end": "2025-02-05",
-          "featured": [
-            "The Herta",
-            "Jade",
-            "Feixiao",
-            "Lingsha"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-02-05",
-          "end": "2025-02-26",
-          "featured": [
-            "Aglaea",
-            "Boothill",
-            "Robin",
-            "Silver Wolf"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 19104 that could not be traced to a source on 2026-11-15. Total = 12,600 Stellar Jade + 25 Special Star Rail Passes x 160 = 16,600. Only one pre-release calculation (Sportskeeda, assumes every listed task is completed) was found; it excludes the 16 standard wishes. The existing feed value of 19,104 could not be reproduced or sourced from anything found, so it is not used. Phase dates are Game8's (NA UTC-5; Asia may differ by a day). Phase 2 end is set to the version end (exclusive). Title confirmed by the press release. Trailblazer (Remembrance) is listed as new per the project feed and was not independently checked.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Reddit community comment: final estimated F2P pulls from HSR Bookkeeping",
-          "url": "https://www.reddit.com/r/HonkaiStarRail_leaks/comments/1i550mp/v1_stellar_jade_count_for_version_31_via_nivskisl/"
-        },
-        {
-          "label": "Sportskeeda: 3.0 Stellar Jade count and free pull calculation (pre-release)",
-          "url": "https://www.sportskeeda.com/esports/honkai-star-rail-3-0-stellar-jade-count-free-pull-calculation"
-        },
-        {
-          "label": "Game8: HSR banner schedule (3.0 phases)",
-          "url": "https://game8.co/games/Honkai-Star-Rail/archives/485822"
-        },
-        {
-          "label": "Honkai: Star Rail 3.0 'Paean of Era Nova' press release",
-          "url": "https://www.gamedeveloper.com/press-release/honkai-star-rail-version-3-0-paean-of-era-nova-unveiled"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "3.1",
-      "title": "Light Slips the Gate, Shadow Greets the Throne",
-      "start": "2025-02-26",
-      "end": "2025-04-09",
-      "currency": {
-        "total": 16890,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Tribbie",
-        "Mydei"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-02-26",
-          "end": null,
-          "featured": [
-            "Tribbie",
-            "Yunli"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": null,
-          "end": "2025-04-09",
-          "featured": [
-            "Mydei",
-            "Huohuo"
-          ]
-        }
-      ],
-      "notes": "Total = 13,690 Stellar Jade + 20 Special Passes x 160 = 16,890, from a pre-release Beebom leak. A second Beebom breakdown gives 18,150 Jade + 24 Premium Passes, which appears to include paid sources, so it is not used. Phase 1 start is assumed equal to version start (the pattern in other versions). Phase 2 start is not found in any source, so it is null. Title, dates and debuts from the project feed and HSR Build, not verified by a second source.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Beebom: 3.1 Stellar Jade count leak (13,690 Jade, 20 Special Passes)",
-          "url": "https://beebom.com/honkai-star-rail-3-1-stellar-jade-count-leaked"
-        },
-        {
-          "label": "Sportskeeda: 3.1 Stellar Jade count and total pulls estimation leak",
-          "url": "https://www.sportskeeda.com/esports/honkai-star-rail-3-1-stellar-jade-count-total-pulls-estimation-leak"
-        },
-        {
-          "label": "WotPack: HSR banner schedule (featured per phase)",
-          "url": "https://wotpack.ru/en/honkai-star-rail-raspisanie-bannerov-2023/"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "3.2",
-      "title": "Through the Petals in the Land of Repose",
-      "start": "2025-04-09",
-      "end": "2025-05-21",
-      "currency": {
-        "total": 17480,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Castorice",
-        "Anaxa"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-04-09",
-          "end": null,
-          "featured": [
-            "Castorice",
-            "Acheron",
-            "Jiaoqiu",
-            "Fugue"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": null,
-          "end": "2025-05-21",
-          "featured": [
-            "Anaxa",
-            "Dr. Ratio"
-          ]
-        }
-      ],
-      "notes": "Total = 13,480 Stellar Jade + 25 Special Passes x 160 = 17,480. Destructoid and Buffget both cite 13,480 and 109 limited pulls, from a pre-release leak. Anniversary login rewards (about 1,600 Jade and 20 Special Passes per Sportskeeda) are not clearly included, so this is likely an undercount. Phase 2 start is not found, so it is null.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Destructoid: 3.2 Stellar Jade and total pull count estimation (13,480 Jade, 25 Special Passes)",
-          "url": "https://www.destructoid.com/honkai-star-rail-3-2-stellar-jade-and-total-pull-count-estimation/"
-        },
-        {
-          "label": "Buffget: 3.2 free pulls from 13,480 Jade",
-          "url": "https://buffget.com/news/honkai-star-rail-stellar-jade-calculation-2x30-total-free-pulls-for-next-patch-13rvmr8"
-        },
-        {
-          "label": "WotPack: HSR banner schedule (featured per phase)",
-          "url": "https://wotpack.ru/en/honkai-star-rail-raspisanie-bannerov-2023/"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "3.3",
-      "title": "The Fall at Dawn's Rise",
-      "start": "2025-05-21",
-      "end": "2025-07-02",
-      "currency": {
-        "total": 13630,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Hyacine",
-        "Cipher"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-05-21",
-          "end": null,
-          "featured": [
-            "Hyacine",
-            "The Herta"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": null,
-          "end": "2025-07-02",
-          "featured": [
-            "Cipher",
-            "Aglaea"
-          ]
-        }
-      ],
-      "notes": "Total = 10,430 Stellar Jade + 20 Special Passes x 160 = 13,630, from Sportskeeda's pre-release leak. Khel Now gives 10,930 Jade + 20 Special Passes (14,130), which is not used. Both figures are pre-release. Phase 2 start is not found, so it is null.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Sportskeeda: 3.3 Stellar Jade count and total pulls estimation leak",
-          "url": "https://sportskeeda.com/esports/honkai-star-rail-hsr-3-3-stellar-jade-count-total-pulls-estimation-leak"
-        },
-        {
-          "label": "Khel Now: 3.3 more Stellar Jades and events",
-          "url": "https://khelnow.com/gaming/honkai-star-rail-3-3-more-stellar-jades-events-202504"
-        },
-        {
-          "label": "Honkai: Star Rail 3.3 'The Fall at Dawn's Rise' press release (launch May 21)",
-          "url": "https://www.gamedeveloper.com/press-release/honkai-star-rail-version-3-3-the-fall-at-dawn-s-rise-officially-launches-on-may-21-"
-        },
-        {
-          "label": "WotPack: HSR banner schedule (featured per phase)",
-          "url": "https://wotpack.ru/en/honkai-star-rail-raspisanie-bannerov-2023/"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "3.4",
-      "title": "For the Sun is Set to Die",
-      "start": "2025-07-02",
-      "end": "2025-08-13",
-      "currency": {
-        "total": 15730,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Phainon",
-        "Saber",
-        "Archer"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-07-02",
-          "end": "2025-07-11",
-          "featured": [
-            "Phainon",
-            "Sunday",
-            "Tribbie",
-            "Sparkle"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-07-11",
-          "end": "2025-08-13",
-          "featured": [
-            "Archer",
-            "Firefly",
-            "Jingliu",
-            "Blade"
-          ]
-        }
-      ],
-      "notes": "Total = 13,330 Stellar Jade + 15 Special Passes x 160 = 15,730 (98 pulls), from a pre-release leak that Bittopup also cites as 98 free pulls. A Tcsn page gives 16,140 Jade + 15 passes, which is not used as it is a weaker source. Phase 2 featured is the union of WotPack (Firefly, Jingliu, Blade) and HSR Build (Archer, new), because the two sources disagree. Phase 1 start is the version start.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Bittopup: Honkai Star Rail Jade Calculator, 98 free pulls guide 3.4",
-          "url": "https://bittopup.com/article/Honkai-Star-Rail-Jade-Calculator-98-Free-Pulls-Guide-34"
-        },
-        {
-          "label": "Sportskeeda: 3.4 Stellar Jade count and total pulls estimation leak",
-          "url": "https://www.sportskeeda.com/esports/honkai-star-rail-hsr-3-4-stellar-jade-count-total-pulls-estimation-leak"
-        },
-        {
-          "label": "WotPack: HSR banner schedule (featured per phase)",
-          "url": "https://wotpack.ru/en/honkai-star-rail-raspisanie-bannerov-2023/"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "3.5",
-      "title": "Before Their Deaths",
-      "start": "2025-08-13",
-      "end": "2025-09-24",
-      "currency": {
-        "total": 14190,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Hysilens",
-        "Cerydra"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-08-13",
-          "end": "2025-09-02",
-          "featured": [
-            "Hysilens",
-            "Kafka"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-09-02",
-          "end": "2025-09-24",
-          "featured": [
-            "Cerydra",
-            "Silver Wolf"
-          ]
-        }
-      ],
-      "notes": "Total = 11,790 Stellar Jade + 15 Special Passes x 160 = 14,190 (88 pulls), from a pre-release leak. TopupLive gives 11,250 Jade + 15 passes (13,650, 85 pulls) and GuruGamer says 'over 11,000', so the spread is about 540 Jade. Sportskeeda's figure is used because it is the one that states 88 pulls. Free-to-play sources only.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Sportskeeda: 3.5 Stellar Jade count and total pulls estimation (11,790 Jade, 15 Special Passes, 88 pulls)",
-          "url": "https://www.sportskeeda.com/esports/honkai-star-rail-hsr-3-5-stellar-jade-count-total-pulls-estimation"
-        },
-        {
-          "label": "TopupLive: 3.5 Stellar Jade count and pulls",
-          "url": "https://www.topuplive.com/news/hsr-3-5-stellar-jade-count-and-pulls.html"
-        },
-        {
-          "label": "GuruGamer: 3.5 how many pulls can you get",
-          "url": "https://gurugamer.com/mobile-games/honkai-star-rail-3-5-how-many-pulls-can-you-get-25247"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "3.6",
-      "title": "Back to Earth in Evernight",
-      "start": "2025-09-24",
-      "end": "2025-11-05",
-      "currency": {
-        "total": 16075,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Evernight",
-        "Dan Heng • Permansor Terrae"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-09-24",
-          "end": "2025-10-11",
-          "featured": [
-            "Evernight",
-            "The Herta"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-10-11",
-          "end": "2025-11-05",
-          "featured": [
-            "Dan Heng • Permansor Terrae",
-            "Wasteland Liberator",
-            "Anaxa"
-          ]
-        }
-      ],
-      "notes": "Total = 12,875 Stellar Jade + 20 Special Passes x 160 = 16,075 (about 100 pulls), from a pre-release leak (@nivskis). Bittopup independently lands near 100 pulls. Dates follow the brief (Asia, 2025-09-24); HSR Build shows 09-25 for phase 1. Phase 2 featured is the union of HSR Build (Dan Heng • Permansor Terrae, new) and WotPack (Wasteland Liberator, Anaxa).",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Sportskeeda: 3.6 Stellar Jade count and total pulls estimation leak",
-          "url": "https://sportskeeda.com/esports/honkai-star-rail-hsr-3-6-stellar-jade-count-total-pulls-estimation"
-        },
-        {
-          "label": "Bittopup: HSR 3.6 complete event calendar, 100 free pulls guide",
-          "url": "https://bittopup.com/article/HSR-36-Complete-Event-Calendar-100-Free-Pulls-Guide"
-        },
-        {
-          "label": "WotPack: HSR banner schedule (featured per phase)",
-          "url": "https://wotpack.ru/en/honkai-star-rail-raspisanie-bannerov-2023/"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "3.7",
-      "title": "As Tomorrow Became Yesterday",
-      "start": "2025-11-05",
-      "end": "2025-12-17",
-      "currency": {
-        "total": 16720,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Cyrene",
-        "The Dahlia"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-11-05",
-          "end": "2025-12-07",
-          "featured": [
-            "Cyrene",
-            "Hyacine",
-            "Castorice",
-            "Tribbie"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-12-07",
-          "end": "2025-12-17",
-          "featured": [
-            "The Dahlia",
-            "Phainon",
-            "Cipher",
-            "Mydei"
-          ]
-        }
-      ],
-      "notes": "Total = 14,320 Stellar Jade + 15 Special Passes x 160 = 16,720 (about 104 pulls). The pre-release leak breakdown and the separate 16,720 / 104-pull article agree. The Dahlia is placed in 3.7 phase 2 (per Bittopup's guide and HSR Build), not 3.8, which is why 3.8 has no new characters. HSR Build labels 3.8 as a light-cone-only version, but 3.8 had character banners, so that label is not used. Phase 2 end is set to the 3.8 start date.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Sportskeeda: 3.7 Stellar Jade count and total pulls estimation leak",
-          "url": "https://www.sportskeeda.com/esports/honkai-star-rail-hsr-3-7-stellar-jade-count-total-pulls-estimation"
-        },
-        {
-          "label": "Recapio: 104 free pulls for Cyrene in 3.7",
-          "url": "https://recapio.com/digest/good-news-dont-miss-104-free-pulls-for-cyrene-in-3-7-honkai-star-rail-by-almighty-shotgun"
-        },
-        {
-          "label": "Bittopup: HSR 3.7 F2P guide (skip Cyrene, save Jade for Dahlia)",
-          "url": "https://news.bittopup.com/news/hsr-3.7-f2p-guide-skip-cyrene-save-14k-jades-for-dahlia-e0s1"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "3.8",
-      "title": "Memories are the Prelude to Dreams",
-      "start": "2025-12-17",
-      "end": "2026-02-13",
-      "currency": {
-        "total": 17445,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "The Dahlia"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-12-17",
-          "end": "2026-01-07",
-          "featured": [
-            "The Dahlia",
-            "Firefly"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-01-07",
-          "end": "2026-01-28",
-          "featured": [
-            "Fugue",
-            "Lingsha"
-          ]
-        },
-        {
-          "phase": 3,
-          "start": "2026-01-28",
-          "end": "2026-02-13",
-          "featured": [
-            "Aglaea",
-            "Sunday"
-          ]
-        }
-      ],
-      "notes": "Total = 14,245 Stellar Jade + 20 Special Passes x 160 = 17,445 (109 pulls), from TopupLive's December 11 update. An earlier Telegram leak gave 10,405 Jade + 15 Special Passes (12,805, about 80 pulls), and the two differ by about 4,600. The later update is used because it is closer to release. Phase 3 exists, and the version is extended (ends 2026-02-13, the 4.0 start). The Dahlia and Firefly are reruns in 3.8, not debuts. Title from the project feed and a GuruGamer URL slug, not otherwise verified.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Official new character announcement",
-          "url": "https://www.hoyoverse.com/en-us/news/161511"
-        },
-        {
-          "label": "TopupLive: how many pulls in HSR 3.8 (updated Dec 11, 109 pulls)",
-          "url": "https://www.topuplive.com/news/how-many-pulls-in-hsr-3-8-up-to-109-pulls-for-free.html"
-        },
-        {
-          "label": "Sportskeeda: 3.8 Stellar Jade count and total pulls estimation leak",
-          "url": "https://widgets.sportskeeda.com/esports/honkai-star-rail-hsr-3-8-stellar-jade-count-total-pulls-estimation"
-        },
-        {
-          "label": "Supenews: 3.8 banner rotations ahead of 4.0",
-          "url": "https://supenews.beehiiv.com/p/honkai-star-rail-continues-version-3-8-with-banner-rotations-ahead-of-version-4-0"
-        },
-        {
-          "label": "GuruGamer: 3.8 livestream summary",
-          "url": "https://gurugamer.com/mobile-games/honkai-star-rail-version-3-8-memories-are-the-prelude-to-dreams-livestream-summary-26004"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "4.0",
-      "title": "No Aha At Full Moon",
-      "start": "2026-02-13",
-      "end": "2026-03-25",
-      "currency": {
-        "total": 18645,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Yao Guang",
-        "Sparxie"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-02-13",
-          "end": "2026-03-03",
-          "featured": [
-            "Yao Guang",
-            "Hysilens",
-            "Evernight",
-            "Black Swan"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-03-03",
-          "end": "2026-03-25",
-          "featured": [
-            "Sparxie",
-            "Cerydra",
-            "Rappa",
-            "Sparkle"
-          ]
-        }
-      ],
-      "notes": "Total = 14,645 Stellar Jade + 25 event Special Passes x 160 = 18,645, from VGTimes' full-patch calculation (16 standard passes excluded). Rosenberry Rooms claims 110+ free pulls, which is an outlier and not used. Release date 2026-02-13 is from GosuGamers. HSR Build's 2026-01-28 release column conflicts and is not used. Sparxie's banner is in phase 2 per WotPack and a Game8 listing; HSR Build puts Sparxie in phase 1, so the two sources conflict.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "VGTimes: Honkai Star Rail 4.0 jade guide, how many pulls can you get",
-          "url": "https://vgtimes.com/149345-honkai-star-rail-patch-40-jade-guide-how-many-pulls-can-you-get.html"
-        },
-        {
-          "label": "GosuGamers: 4.0 drops 13 February with Planarcadia",
-          "url": "https://gosugamers.net/news/77950-honkai-star-rail-version-4-0-drops-13-february-with-planarcadia-and-the-new-path-of-elation"
-        },
-        {
-          "label": "Bittopup: 4.0 Yao Guang banner guide",
-          "url": "https://bittopup.com/article/Honkai-Star-Rail-40-Banner-Guide-Yao-Guang-Pull-Costs"
-        },
-        {
-          "label": "WotPack: HSR banner schedule (featured per phase)",
-          "url": "https://wotpack.ru/en/honkai-star-rail-raspisanie-bannerov-2023/"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "4.1",
-      "title": "Unraveled for Daybreak",
-      "start": "2026-03-25",
-      "end": "2026-04-22",
-      "currency": {
-        "total": 15755,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Ashveil"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-03-25",
-          "end": "2026-04-08",
-          "featured": [
-            "Ashveil",
-            "Hyacine"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-04-08",
-          "end": "2026-04-22",
-          "featured": [
-            "Ashveil",
-            "Boothill"
-          ]
-        }
-      ],
-      "notes": "Total = 13,355 Stellar Jade + 15 Special Passes x 160 = 15,755 (98 pulls). GamingOnPhone and Lootbar both cite 13,355. TopupLive's lower figure (11,060 Jade + 15 passes, 85 pulls) is not used. Phase 1 start follows the version start, and the phase 2 start (2026-04-08) is from Game8 via Bittopup.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "GamingOnPhone: 4.1 update, 13,350 Stellar Jade for free",
-          "url": "https://gamingonphone.com/guides/honkai-star-rail-version-4-1-update-how-to-get-13350-stellar-jade-for-free"
-        },
-        {
-          "label": "Lootbar: Honkai Star Rail 4.1 pull count",
-          "url": "https://lootbar.gg/blog/en/honkai-star-rail-4-1-pull-count.html"
-        },
-        {
-          "label": "WotPack: HSR banner schedule (featured per phase)",
-          "url": "https://wotpack.ru/en/honkai-star-rail-raspisanie-bannerov-2023/"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "4.2",
-      "title": "So Laughed the Masses",
-      "start": "2026-04-22",
-      "end": "2026-06-01",
-      "currency": {
-        "total": 18775,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Silver Wolf LV.999",
-        "Evanescia",
-        "Trailblazer (Elation)"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-04-22",
-          "end": "2026-05-13",
-          "featured": [
-            "Silver Wolf LV.999",
-            "The Dahlia",
-            "Castorice",
-            "Firefly"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-05-13",
-          "end": "2026-06-01",
-          "featured": [
-            "Evanescia",
-            "Tribbie",
-            "Sunday",
-            "Feixiao"
-          ]
-        }
-      ],
-      "notes": "Total = 13,975 Stellar Jade + 30 Special Passes x 160 = 18,775 (117 pulls), using the iXBT fan calculation, which matches GamingOnPhone's 13,970 Jade. The 30 passes are described as the third-anniversary login rewards (20 login + the anniversary event). Sources disagree on whether those are inside this figure, so this total may be understated or overstated by the anniversary rewards. Mortenax Blade is not a 4.2 debut (see 4.3). HSR Build lists Trailblazer (Elation) as new in 4.2, not checked further. Phase 2 start is from HSR Build (2026-05-13).",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "iXBT: fan calculation for 4.2 Stellar Jade without spending (13,975 Jade, 30 Special Passes)",
-          "url": "https://ixbt.games/en/news/2026/04/21/zviozdnyi-nefrit-obnovleniia-42-dlia-honkai-star-rail-fanaty-poschitali-skolko-krutok-mozhno-zarabotat-bez-donata-i-s-vlozheniiami.amp.html"
-        },
-        {
-          "label": "GamingOnPhone: 4.2 update, 13,970 Stellar Jade and 120 pulls for free",
-          "url": "https://gamingonphone.com/guides/honkai-star-rail-version-4-2-update-how-to-get-13970-stellar-jade-and-total-120-pulls-for-free/"
-        },
-        {
-          "label": "Nextrift: Version 4.2 arrives 22 April",
-          "url": "https://nextrift.com/202643232/"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "4.3",
-      "title": "The Lethe Below the Living",
-      "start": "2026-06-01",
-      "end": "2026-07-15",
-      "currency": {
-        "total": 14660,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Mortenax Blade"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-06-01",
-          "end": "2026-06-24",
-          "featured": [
-            "Mortenax Blade",
-            "Yao Guang"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-06-24",
-          "end": "2026-07-15",
-          "featured": [
-            "Cyrene",
-            "Phainon"
-          ]
-        }
-      ],
-      "notes": "Total = 11,460 Stellar Jade + 20 event tickets x 160 = 14,660 (about 91 pulls). Lootbar's sources put F2P at 11,420 Jade and 91 pulls, which matches. The sources conflict: WotPack's summary table sums to 18,340 Jade (21,540 with tickets), and TopupList gives 14,200 Jade + 15 passes (16,600). Those are not used. HSR Build's 'light-cone-only' label for 4.3 is wrong, because the Mortenax Blade banner existed. Mortenax Blade is the new character here. Phase dates are the most-cited June 1 / June 24 / July 15 boundaries.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "WotPack: 4.3 Stellar Jade count (text: 11,460 Jade, 20 event tickets)",
-          "url": "https://wotpack.ru/en/podschet-zvezdnyh-nefritov-za-patch-4-3-v-honkai-star-rail/"
-        },
-        {
-          "label": "TopupList: 4.3 banner schedule and F2P pull planning",
-          "url": "https://topuplist.com/blogs/detail/honkai-star-rail-4-3-banner-schedule-f2p-pull-planning"
-        },
-        {
-          "label": "Lootbar: Honkai Star Rail 4.3 pull count",
-          "url": "https://lootbar.gg/blog/en/honkai-star-rail-4-3-pull-count.html"
-        },
-        {
-          "label": "All Things How: HSR 4.3 banner schedule (June 2026)",
-          "url": "https://allthings.how/honkai-star-rail-banner-schedule-for-version-4-3-june-2026/"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "4.4",
-      "title": "In Ravages Does the Whistle Sound",
-      "start": "2026-07-15",
-      "end": "2026-08-26",
-      "currency": {
-        "total": 15065,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Himeko • Nova",
-        "Rin Tohsaka",
-        "Gilgamesh"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-07-15",
-          "end": "2026-07-24",
-          "featured": [
-            "Himeko • Nova",
-            "Sparxie",
-            "Wasteland Liberator",
-            "Evernight"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-07-24",
-          "end": "2026-08-26",
-          "featured": [
-            "Rin Tohsaka",
-            "Gilgamesh",
-            "Himeko • Nova",
-            "Cerydra",
-            "Anaxa",
-            "Aventurine"
-          ]
-        }
-      ],
-      "notes": "Total = 12,665 Stellar Jade + 15 Special Passes x 160 = 15,065 (94 pulls), cited by Lootbar and The Phrase Maker. Not used: U7BUY (12,570 Jade), WotPack's bullet text (13,345 Jade), and WotPack's table (18,305, which does not reconcile). The phase 2 start of 2026-07-24 is the Fate-collab banner open date from HSR Build, not a confirmed phase boundary. The WotPack article names different reruns (Keridry, Anaxes, Aventurine), so featured lists are approximate.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Official update notice on Reddit",
-          "url": "https://www.reddit.com/r/HonkaiStarRail/comments/1uwpg8x/version_44_in_ravages_does_the_whistle_sound/"
-        },
-        {
-          "label": "Lootbar: Honkai Star Rail 4.4 pull count",
-          "url": "https://lootbar.gg/blog/en/honkai-star-rail-4-4-pull-count.html"
-        },
-        {
-          "label": "The Phrase Maker: 4.4 total Stellar Jade count and limited pulls",
-          "url": "https://thephrasemaker.com/2026/07/10/honkai-star-rail-4-4-total-stellar-jade-count-and-limited-pulls/"
-        },
-        {
-          "label": "WotPack: Stellar Jade count for patch 4.4",
-          "url": "https://wotpack.ru/en/podschet-zvezdnyh-nefritov-za-patch-4-4-v-honkai-star-rail/"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "4.5",
-      "title": "To Roll the Stars in Astropolis",
-      "start": "2026-08-26",
-      "end": "2026-09-28",
-      "currency": {
-        "total": 12390,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Robin • Summeretto",
-        "Aventurine • Waveflair"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-08-26",
-          "end": "2026-09-12",
-          "featured": [
-            "Robin • Summeretto",
-            "Hyacine"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-09-12",
-          "end": "2026-09-28",
-          "featured": [
-            "Aventurine • Waveflair",
-            "Ashveil"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 12480 that could not be traced to a source on 2026-11-15. Total = 9,990 Stellar Jade + 15 Special Passes x 160 = 12,390 (77 pulls), the figure cited in the Phrase Maker's headline. Another guide gives 10,215 Jade + 15 passes (12,615), which is not used. HSR Build puts phase 1 at 2026-08-25 (NA), and 2026-08-26 is used to match the version start. WotPack's 4.5 rows duplicate its 4.6 rows (Pearl, Mortenax Blade), so they are not used. The existing feed's 12,480 could not be reproduced from any source found.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Reddit harkanaccount community estimate: approximately 78 F2P pulls",
-          "url": "https://www.reddit.com/r/HonkaiStarRail_leaks/comments/1vrqwd3/45_stellar_jades_count_via_nivskisl/"
-        },
-        {
-          "label": "HoYoverse update overview via Gematsu",
-          "url": "https://www.gematsu.com/2026/08/honkai-star-rail-version-4-5-update-to-roll-the-stars-in-astropolis-launches-august-26"
-        },
-        {
-          "label": "The Phrase Maker: 4.5 pull count, total Stellar Jades and limited pulls",
-          "url": "https://thephrasemaker.com/2026/08/21/honkai-star-rail-4-5-pull-count-total-stellar-jades-limited-pulls/"
-        },
-        {
-          "label": "Buffget: HSR 4.5 shards, LC pity and F2P investment guide",
-          "url": "https://buffget.com/news/hsr-45-shards-lc-pity-and-f2p-investment-guide-2026"
-        },
-        {
-          "label": "TopupLive: HSR 4.5 pull count guide",
-          "url": "https://www.topuplive.com/news/hsr-4-5-pull-count-guide.html"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "4.6",
-      "title": "Dance With the Beast Before Moonrise",
-      "start": "2026-09-28",
-      "end": "2026-11-11",
-      "currency": {
-        "total": 13775,
-        "events": 1540,
-        "daily": 2520,
-        "endgame": 4425,
-        "other": 2090,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Pearl"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-09-28",
-          "end": "2026-10-21",
-          "featured": [
-            "Pearl",
-            "Evanescia"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-10-21",
-          "end": "2026-11-11",
-          "featured": [
-            "Pearl",
-            "Mortenax Blade"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 16065 that could not be traced to a source on 2026-11-15. Total = 10,575 Stellar Jade + 20 Special Passes x 160 = 13,775. Breakdown from EnjoyGM's F2P sources: events 1,540; daily 2,520; endgame 4,425 (PF/MoC/AS 2,700, Currency Wars 600, weekly CW/DU 1,125); other 2,090 (exploration 1,000, main quests 600, achievements 290, offerings 200). TopupLive gives about 10,400 Jade + 15 passes (about 12,800), which is not used. The existing feed total of 16,065 and its breakdown (13,140 from the categories) could not be reproduced and are not used. The EnjoyGM article calls 4.6 'Astropolis', while the project feed gives that title to 4.5. Phase 2 end is the 4.7 start.",
-      "sources": [
-        {
-          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
-          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
-        },
-        {
-          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
-          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
-        },
-        {
-          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
-          "url": "https://www.hsr-build.com/banners"
-        },
-        {
-          "label": "Supplementary community estimate by nivskis, transcribed by AstraVoy",
-          "url": "https://astravoy.net/hsr/pull-income"
-        },
-        {
-          "label": "HoYoverse 4.6 announcement via Games Press",
-          "url": "https://www.gamespress.com/uk-UA/Honkai-Star-Rail-Version-46-Dance-With-the-Beast-Before-Moonrise-is-Co"
-        },
-        {
-          "label": "HoYoverse 4.7 launch announcement: November 11",
-          "url": "https://www.gamespress.com/en-GB/Honkai-Star-Rail-Version-47-Now-Lay-Laughter-to-All-St-wwwhoyoversecom"
-        },
-        {
-          "label": "EnjoyGM: Honkai Star Rail 4.6 pull count guide",
-          "url": "https://www.enjoygm.com/blog/honkai-star-rail/4-6-pull-count-guide"
-        },
-        {
-          "label": "TopupLive: HSR 4.6 pull count guide",
-          "url": "https://www.topuplive.com/de/news/hsr-4-6-pull-count-guide.html"
-        },
-        {
-          "label": "Neonsect: HSR 4.6 banners and pull guide",
-          "url": "https://neonsect.com/es/honkai-star-rail/hsr-4-6-banners-pull-guide/"
-        }
-      ]
-    },
-    {
-      "game": "hsr",
-      "version": "4.7",
-      "title": "Now, Lay Laughter to All Stars",
-      "start": "2026-11-11",
-      "end": null,
-      "currency": {
-        "total": 17535,
-        "events": 1700,
-        "daily": 2520,
-        "endgame": 7825,
-        "other": 1490,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Aeon ★ Aha"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-11-11",
-          "end": "2026-12-02",
-          "featured": [
-            "Aeon ★ Aha",
-            "Silver Wolf LV.999",
-            "Sparxie",
-            "Yao Guang"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-12-02",
-          "end": "2026-12-22",
-          "featured": [
-            "Aeon ★ Aha",
-            "Acheron",
-            "Dan Heng • Imbibitor Lunae",
-            "Jing Yuan"
-          ]
-        }
-      ],
-      "notes": "Ongoing version, so end is null. Release is Nov 11 (Asia), confirmed by several sources. Total = 13,535 Stellar Jade + 25 Special Passes x 160 = 17,535 (EnjoyGM). The 4.7 breakdown is: events 1,700; daily 2,520; endgame 7,825 (Currency Wars 4,000, PF/MoC/AS 2,700, weekly CW/DU 1,125); other 1,490 (map 410, quests 800, achievements 280). Astravoy's HSR Bookkeeping estimate is 15,228 Jade + 25 passes (19,228, about 120 pulls), which is not used, so the two community estimates differ by about 1,700 Jade. Standard passes are excluded. Phase 2 end (Dec 22) is from HSR Build's banner dates; the version runs 42 days, so it may end Dec 23.",
-      "sources": [
-        {
-          "label": "EnjoyGM: Honkai Star Rail 4.7 pull count guide",
-          "url": "https://www.enjoygm.com/blog/honkai-star-rail/4-7-pull-count-guide"
-        },
-        {
-          "label": "Astravoy: HSR pull income (HSR Bookkeeping, 4.7 estimate)",
-          "url": "https://astravoy.net/hsr/pull-income"
-        },
-        {
-          "label": "PlayNews: HSR 4.7 release date and time for your time zone",
-          "url": "https://www.playnews.gg/en/release-times/honkai-star-rail-4-7-release-date-and-time-for-your-time-zone"
-        },
-        {
-          "label": "The Click: HSR 4.7 banners, Aeon Aha and all character reruns",
-          "url": "https://www.theclick.gg/?p=98131"
         }
       ]
     },
@@ -9130,6 +6995,2377 @@
         {
           "label": "TopUpList: Genshin Impact 7.2 Primogem count, phase 1 and phase 2",
           "url": "https://topuplist.com/blogs/detail/genshin-impact-7-2-primogem-count-phase-1-phase-2"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "1.0",
+      "title": "The Rail Unto the Stars",
+      "start": "2023-04-26",
+      "end": "2023-06-07",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Seele",
+        "Jing Yuan"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2023-04-26",
+          "end": "2023-05-17",
+          "featured": [
+            "Seele"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2023-05-17",
+          "end": "2023-06-06",
+          "featured": [
+            "Jing Yuan"
+          ]
+        }
+      ],
+      "notes": "Total left null. No itemised tally for the launch version was found (WotPack's series starts at 1.2), and launch-only rewards (level milestones, pre-registration, the first-time story and exploration) make a per-version figure ill-defined. Headline claims of 60 to 80 free pulls (Dexerto, Sportskeeda, QooApp) are not itemised. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8). The wiki infobox prints the launch warps as opening 2023-04-25 10:00; the page titles and the release date say 2023-04-26, which is used. newCharacters lists only the two limited 5-stars; the whole launch roster was new.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 1.0 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/1.0"
+        },
+        {
+          "label": "Dexerto: 1.0 update rewards (up to 80 free pulls)",
+          "url": "https://dexerto.com/honkai-star-rail/honkai-star-rail-rewards-star-rail-passes-stellar-jade-credits-2095726"
+        },
+        {
+          "label": "Sportskeeda: how to get 80+ pulls in 1.0 global release",
+          "url": "https://www.sportskeeda.com/esports/how-get-80-pulls-free-honkai-star-rail-version-1-0-global-release"
+        },
+        {
+          "label": "Game8 banner history (1.0 phase dates and featured 5-stars)",
+          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "1.1",
+      "title": "Galactic Roaming",
+      "start": "2023-06-07",
+      "end": "2023-07-19",
+      "currency": {
+        "total": 12920,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Luocha",
+        "Silver Wolf",
+        "Yukong"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2023-06-07",
+          "end": "2023-06-28",
+          "featured": [
+            "Silver Wolf"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2023-06-28",
+          "end": "2023-07-18",
+          "featured": [
+            "Luocha"
+          ]
+        }
+      ],
+      "notes": "Kept 12,920 Stellar Jade, a pre-release leak reported by Dexerto (cited as 80+ pulls by Sportskeeda). Not confirmed against an itemised tally: WotPack has no 1.1 article. Special Passes are not stated, so none are added; the figure may be low. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8).",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 1.1 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/1.1"
+        },
+        {
+          "label": "Dexerto: leak of free Stellar Jade ahead of 1.1 (12,920 total)",
+          "url": "https://dexerto.com/honkai-star-rail/honkai-star-rail-free-stellar-jade-1-1-update-2167703"
+        },
+        {
+          "label": "Sportskeeda: 1.1 Stellar Jades guide (80+ free pulls)",
+          "url": "https://sportskeeda.com/esports/honkai-star-rail-1-1-stellar-jades-guide-get-80-free-pulls-f2p"
+        },
+        {
+          "label": "Nextrift: 1.1 arrives 7 June",
+          "url": "https://nextrift.com/202327699/"
+        },
+        {
+          "label": "Game8 banner history (1.1 phase dates)",
+          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "1.2",
+      "title": "Even Immortality Ends",
+      "start": "2023-07-19",
+      "end": "2023-08-30",
+      "currency": {
+        "total": 12885,
+        "events": 4060,
+        "daily": 2520,
+        "endgame": 2970,
+        "other": 3335,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Blade",
+        "Kafka",
+        "Luka"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2023-07-19",
+          "end": "2023-08-09",
+          "featured": [
+            "Blade"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2023-08-09",
+          "end": "2023-08-29",
+          "featured": [
+            "Kafka"
+          ]
+        }
+      ],
+      "notes": "Total = 10,485 Stellar Jade + 15 Star Rail Special Passes x 160 = 12,885, from WotPack's pre-release F2P tally (dated 2023-10-23); its 16 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Previously null; filled from WotPack in round 2. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8).",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 1.2 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/1.2"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 1.2 (F2P column)",
+          "url": "https://wotpack.ru/skolko-zvezdnyh-nefritov-mozhno-poluchit-za-patch-1-2-v-honkai-star-rail/"
+        },
+        {
+          "label": "Sportskeeda: 1.2 Stellar Jades guide (80 free pulls F2P)",
+          "url": "https://www.sportskeeda.com/esports/honkai-star-rail-1-2-stellar-jades-guide-get-80-free-pulls-f2p"
+        },
+        {
+          "label": "Game8 banner history (1.2 phase dates)",
+          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "1.3",
+      "title": "Celestial Eyes Above Mortal Ruins",
+      "start": "2023-08-30",
+      "end": "2023-10-11",
+      "currency": {
+        "total": 12490,
+        "events": 3140,
+        "daily": 2520,
+        "endgame": 4150,
+        "other": 2680,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Dan Heng • Imbibitor Lunae",
+        "Fu Xuan",
+        "Lynx"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2023-08-30",
+          "end": "2023-09-20",
+          "featured": [
+            "Dan Heng • Imbibitor Lunae"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2023-09-20",
+          "end": "2023-10-10",
+          "featured": [
+            "Fu Xuan"
+          ]
+        }
+      ],
+      "notes": "Total = 10,090 Stellar Jade + 15 Star Rail Special Passes x 160 = 12,490, from WotPack's pre-release F2P tally (dated 2023-10-23); its 16 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 15,200, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8). newCharacters corrected from the wiki version page (was: Dan Heng • Imbibitor Lunae, Fu Xuan).",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 1.3 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/1.3"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 1.3 (F2P column)",
+          "url": "https://wotpack.ru/skolko-zvezdnyh-nefritov-mozhno-poluchit-za-patch-1-3-v-honkai-star-rail/"
+        },
+        {
+          "label": "Sportskeeda: 1.3 Stellar Jades calculation (95+ pulls)",
+          "url": "https://sportskeeda.com/esports/honkai-star-rail-1-3-stellar-jades-calculation-get-95-pulls-free"
+        },
+        {
+          "label": "Ginx: Stellar Jade and pulls calculation (credits 1.3 figures)",
+          "url": "https://www.ginx.tv/en/?p=52614"
+        },
+        {
+          "label": "AFKGaming: 1.3 Stellar Jades calculation (30 Aug to 11 Oct)",
+          "url": "https://afkgaming.com/gaming/honkai-star-rail/honkai-star-rail-version-13-stellar-jades-calculation-how-much-can-you-get"
+        },
+        {
+          "label": "Game8 banner history (1.3 phase dates)",
+          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "1.4",
+      "title": "Jolted Awake From a Winter Dream",
+      "start": "2023-10-11",
+      "end": "2023-11-15",
+      "currency": {
+        "total": 11665,
+        "events": 4060,
+        "daily": 2100,
+        "endgame": 2925,
+        "other": 2580,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Jingliu",
+        "Topaz",
+        "Guinaifen"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2023-10-11",
+          "end": "2023-10-27",
+          "featured": [
+            "Jingliu"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2023-10-27",
+          "end": "2023-11-14",
+          "featured": [
+            "Topaz",
+            "Seele"
+          ]
+        }
+      ],
+      "notes": "Total = 9,265 Stellar Jade + 15 Star Rail Special Passes x 160 = 11,665, from WotPack's pre-release F2P tally (dated 2023-10-23); its 15 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 10,150, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 1.4 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/1.4"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 1.4 (F2P column)",
+          "url": "https://wotpack.ru/skolko-zvezdnyh-nefritov-mozhno-poluchit-za-patch-1-4-v-honkai-star-rail/"
+        },
+        {
+          "label": "Gematsu: 1.4 launches October 11, title confirmed",
+          "url": "https://www.gematsu.com/2023/09/honkai-star-rail-version-1-4-update-jolted-awake-from-a-winter-dream-launches-october-11"
+        },
+        {
+          "label": "Prima Games: how many pulls and Stellar Jade in 1.4",
+          "url": "https://primagames.com/gaming/how-many-pulls-and-stellar-jade-can-you-earn-in-honkai-star-rail-version-1-4"
+        },
+        {
+          "label": "Sportskeeda: 1.4 Stellar Jades calculation (80+ pulls)",
+          "url": "https://sportskeeda.com/esports/honkai-star-rail-1-4-stellar-jades-calculation-get-80-pulls-free"
+        },
+        {
+          "label": "Game8 banner history (1.4 phase dates)",
+          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "1.5",
+      "title": "The Crepuscule Zone",
+      "start": "2023-11-15",
+      "end": "2023-12-27",
+      "currency": {
+        "total": 12110,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Argenti",
+        "Hanya",
+        "Huohuo"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2023-11-15",
+          "end": "2023-12-06",
+          "featured": [
+            "Huohuo"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2023-12-06",
+          "end": "2023-12-26",
+          "featured": [
+            "Argenti",
+            "Silver Wolf"
+          ]
+        }
+      ],
+      "notes": "Total = 9,710 Stellar Jade + 15 Star Rail Special Passes x 160 = 12,110, from WotPack's pre-release F2P tally (dated 2023-11-09); its 16 standard Star Rail Passes are excluded. Breakdown left null: WotPack's table rows do not reconcile with its own F2P summary for this patch (table total 14,670 including standard passes, versus 14,670 from the summary). The summary figure is used. Previously null; filled from WotPack in round 2. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp. newCharacters corrected from the wiki version page (was: Huohuo, Argenti).",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 1.5 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/1.5"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 1.5 (F2P column)",
+          "url": "https://wotpack.ru/skolko-zvezdnyh-nefritov-mozhno-poluchit-za-patch-1-5-v-honkai-star-rail/"
+        },
+        {
+          "label": "Sportskeeda: 1.5 Stellar Jades calculation (80+ pulls headline, unverified)",
+          "url": "https://www.sportskeeda.com/esports/honkai-star-rail-1-5-stellar-jades-calculation-get-80-pulls-free"
+        },
+        {
+          "label": "Game8 banner history (1.5 phase dates and featured 5-stars)",
+          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
+        },
+        {
+          "label": "Clutchpoints: everything new in Honkai Star Rail 1.5",
+          "url": "https://clutchpoints.com/gaming/everything-new-in-honkai-star-rail-version-1-5"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "1.6",
+      "title": "Crown of the Mundane and Divine",
+      "start": "2023-12-27",
+      "end": "2024-02-06",
+      "currency": {
+        "total": 16340,
+        "events": 2930,
+        "daily": 2520,
+        "endgame": 7510,
+        "other": 3380,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Dr. Ratio",
+        "Ruan Mei",
+        "Xueyi"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2023-12-27",
+          "end": "2024-01-17",
+          "featured": [
+            "Ruan Mei",
+            "Blade"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-01-17",
+          "end": "2024-02-05",
+          "featured": [
+            "Dr. Ratio",
+            "Kafka"
+          ]
+        }
+      ],
+      "notes": "Total = 13,140 Stellar Jade + 20 Star Rail Special Passes x 160 = 16,340, from WotPack's pre-release F2P tally (dated 2023-12-26); its 21 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 15,170, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 1.6 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/1.6"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 1.6 (F2P column)",
+          "url": "https://wotpack.ru/skolko-zvezdnyh-nefritov-mozhno-poluchit-za-patch-1-6-v-honkai-star-rail/"
+        },
+        {
+          "label": "Gematsu: 1.6 launches December 27, title confirmed",
+          "url": "https://gematsu.com/2023/12/honkai-star-rail-version-1-6-update-crown-of-the-mundane-and-divine-launches-december-27"
+        },
+        {
+          "label": "Beebom: Honkai Star Rail 1.6 total Stellar Jade count (estimated)",
+          "url": "https://beebom.com/honkai-star-rail-1-6-stellar-jade-count"
+        },
+        {
+          "label": "Sportskeeda: 1.6 Stellar Jades calculation (80+ pulls)",
+          "url": "https://sportskeeda.com/esports/honkai-star-rail-1-6-stellar-jades-calculation-get-80-pulls-free"
+        },
+        {
+          "label": "Game8 banner history (1.6 phase dates)",
+          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "2.0",
+      "title": "If One Dreams At Midnight",
+      "start": "2024-02-06",
+      "end": "2024-03-27",
+      "currency": {
+        "total": 20090,
+        "events": 7280,
+        "daily": 2940,
+        "endgame": 3735,
+        "other": 6135,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Black Swan",
+        "Sparkle",
+        "Misha"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-02-06",
+          "end": "2024-02-29",
+          "featured": [
+            "Black Swan",
+            "Dan Heng • Imbibitor Lunae"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-02-29",
+          "end": "2024-03-26",
+          "featured": [
+            "Sparkle",
+            "Jing Yuan"
+          ]
+        }
+      ],
+      "notes": "Total = 16,090 Stellar Jade + 25 Star Rail Special Passes x 160 = 20,090, from WotPack's pre-release F2P tally (dated 2024-01-29); its 17 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 20,770, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 2.0 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/2.0"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 2.0 (F2P column)",
+          "url": "https://wotpack.ru/skolko-zvezdnyh-nefritov-mozhno-poluchit-za-patch-2-0-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "AFKGaming: estimated Stellar Jade count for 2.0 (20,770, 129 pulls)",
+          "url": "https://afkgaming.com/gaming/honkai-star-rail/estimated-stellar-jade-count-for-honkai-star-rail-20"
+        },
+        {
+          "label": "Sportskeeda: 2.0 Stellar Jades calculation (100+ pulls)",
+          "url": "https://sportskeeda.com/esports/honkai-star-rail-2-0-stellar-jades-calculation-get-100-pulls-free"
+        },
+        {
+          "label": "Game8 banner history (2.0 phase dates)",
+          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "2.1",
+      "title": "Into the Yawning Chasm",
+      "start": "2024-03-27",
+      "end": "2024-05-08",
+      "currency": {
+        "total": 17940,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Acheron",
+        "Aventurine",
+        "Gallagher"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-03-27",
+          "end": "2024-04-17",
+          "featured": [
+            "Acheron",
+            "Luocha"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-04-17",
+          "end": "2024-05-07",
+          "featured": [
+            "Aventurine",
+            "Jingliu"
+          ]
+        }
+      ],
+      "notes": "Total = 13,940 Stellar Jade + 25 Star Rail Special Passes x 160 = 17,940, from WotPack's pre-release F2P tally (dated 2024-03-26); its 16 standard Star Rail Passes are excluded. Breakdown left null: WotPack's table rows do not reconcile with its own F2P summary for this patch (table total 20,500 including standard passes, versus 20,500 from the summary). The summary figure is used. Replaces the earlier figure of 18,560, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 2.1 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/2.1"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 2.1 (F2P column)",
+          "url": "https://wotpack.ru/skolko-zvezdnyh-nefritov-mozhno-poluchit-za-patch-2-1-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "AFKGaming: 2.1 Stellar Jades and pulls full calculations (13,760 Jade + 30 Special Passes = 116 pulls)",
+          "url": "https://afkgaming.com/gaming/honkai-star-rail/how-many-pulls-and-stellar-jade-will-you-get-in-honkai-star-rail-21-full-calculations-inside"
+        },
+        {
+          "label": "Nextrift: 2.1 arrives 27 March with 30 free pulls",
+          "url": "https://nextrift.com/202433596/"
+        },
+        {
+          "label": "Game8 banner history (2.1 phase dates)",
+          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
+        },
+        {
+          "label": "Gamevika banner schedule (2.1 featured)",
+          "url": "https://gamevika.com/en/hsr/banners"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "2.2",
+      "title": "Then Wake to Weep",
+      "start": "2024-05-08",
+      "end": "2024-06-19",
+      "currency": {
+        "total": 15145,
+        "events": 4200,
+        "daily": 2520,
+        "endgame": 3510,
+        "other": 4915,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Boothill",
+        "Robin",
+        "Trailblazer (Harmony)"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-05-08",
+          "end": "2024-05-29",
+          "featured": [
+            "Robin",
+            "Topaz"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-05-29",
+          "end": "2024-06-18",
+          "featured": [
+            "Boothill",
+            "Fu Xuan"
+          ]
+        }
+      ],
+      "notes": "Total = 12,745 Stellar Jade + 15 Star Rail Special Passes x 160 = 15,145, from WotPack's pre-release F2P tally (dated 2024-05-01); its 16 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Previously null; filled from WotPack in round 2. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 2.2 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/2.2"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 2.2 (F2P column)",
+          "url": "https://wotpack.ru/skolko-zvezdnyh-nefritov-mozhno-poluchit-za-patch-2-2-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Sportskeeda: 2.2 Stellar Jades count and free pulls calculation",
+          "url": "https://sportskeeda.com/esports/honkai-star-rail-2-2-stellar-jades-count-free-pulls-calculation"
+        },
+        {
+          "label": "Game8 banner history (2.2 phase dates)",
+          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "2.3",
+      "title": "Farewell, Penacony",
+      "start": "2024-06-19",
+      "end": "2024-07-31",
+      "currency": {
+        "total": 16290,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Firefly",
+        "Jade"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-06-19",
+          "end": "2024-07-10",
+          "featured": [
+            "Firefly",
+            "Ruan Mei"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-07-10",
+          "end": "2024-07-30",
+          "featured": [
+            "Jade",
+            "Argenti"
+          ]
+        }
+      ],
+      "notes": "Total = 13,890 Stellar Jade + 15 Star Rail Special Passes x 160 = 16,290, from WotPack's pre-release F2P tally (dated 2024-06-15); its 16 standard Star Rail Passes are excluded. Breakdown left null: WotPack's table rows do not reconcile with its own F2P summary for this patch (table total 18,790 including standard passes, versus 18,850 from the summary). The summary figure is used. Replaces the earlier figure of 14,650, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 2.3 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/2.3"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 2.3 (F2P column)",
+          "url": "https://wotpack.ru/skolko-zvezdnyh-nefritov-mozhno-poluchit-za-patch-2-3-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Sportskeeda: 2.3 Stellar Jades count (90+ free pulls, mirrors MisterMen Plays breakdown)",
+          "url": "https://sportskeeda.com/esports/honkai-star-rail-2-3-stellar-jades-count-how-get-90-free-pulls"
+        },
+        {
+          "label": "GenshinBuilds: 2.3 banner breakdown (Ruan Mei and Firefly)",
+          "url": "https://genshin-builds.com/en/hsr/blog/honkai-star-rail-2-3-is-jade-worth-your-stellar-jades-a-comprehensive-banner-analysis"
+        },
+        {
+          "label": "Game8 banner history (2.3 phase dates)",
+          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "2.4",
+      "title": "Finest Duel Under the Pristine Blue",
+      "start": "2024-07-31",
+      "end": "2024-09-10",
+      "currency": {
+        "total": 14070,
+        "events": 3680,
+        "daily": 2460,
+        "endgame": 3750,
+        "other": 4180,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Yunli",
+        "Jiaoqiu",
+        "March 7th (The Hunt)"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-07-31",
+          "end": "2024-08-21",
+          "featured": [
+            "Yunli",
+            "Huohuo"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-08-21",
+          "end": "2024-09-09",
+          "featured": [
+            "Jiaoqiu",
+            "Sparkle"
+          ]
+        }
+      ],
+      "notes": "Total = 10,870 Stellar Jade + 20 Star Rail Special Passes x 160 = 14,070, from WotPack's pre-release F2P tally (dated 2024-07-27); its 21 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Previously null; filled from WotPack in round 2. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 2.4 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/2.4"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 2.4 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-2-4-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Sportskeeda: 2.4 Stellar Jades count (80+ free pulls)",
+          "url": "https://sportskeeda.com/esports/honkai-star-rail-2-4-stellar-jades-count-how-get-80-free-pulls"
+        },
+        {
+          "label": "GameWitted: 2.4 free Stellar Jade count guide",
+          "url": "https://www.gamewitted.com/gaming/honkai-star-rail-2-4-free-stellar-jade-count-guide"
+        },
+        {
+          "label": "Game8 banner history (2.4 phase dates)",
+          "url": "https://game8.co/games/Honkai-Star-Rail/archives/474951"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "2.5",
+      "title": "Flying Aureus Shot to Lupine Rue",
+      "start": "2024-09-10",
+      "end": "2024-10-23",
+      "currency": {
+        "total": 14900,
+        "events": 5270,
+        "daily": 2580,
+        "endgame": 4250,
+        "other": 2800,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Feixiao",
+        "Lingsha",
+        "Moze"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-09-10",
+          "end": "2024-10-02",
+          "featured": [
+            "Feixiao",
+            "Kafka",
+            "Black Swan",
+            "Robin"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-10-02",
+          "end": "2024-10-22",
+          "featured": [
+            "Lingsha",
+            "Topaz"
+          ]
+        }
+      ],
+      "notes": "Total = 12,500 Stellar Jade + 15 Star Rail Special Passes x 160 = 14,900, from WotPack's pre-release F2P tally (dated 2024-09-09); its 16 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 13,930, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 2.5 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/2.5"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 2.5 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-2-5-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Reddit community comment: final estimated F2P pulls from HSR Bookkeeping",
+          "url": "https://www.reddit.com/r/HonkaiStarRail_leaks/comments/1i550mp/v1_stellar_jade_count_for_version_31_via_nivskisl/"
+        },
+        {
+          "label": "GuidesRole (gamingonphone): Honkai Star Rail 2.5 rewards calculation",
+          "url": "https://gamingonphone.com/guides/honkai-star-rail-version-2-5-rewards-calculation-stellar-jades-passes-pulls"
+        },
+        {
+          "label": "Sportskeeda: 2.5 Stellar Jade count (leak-based)",
+          "url": "https://sportskeeda.com/esports/honkai-star-rail-2-5-stellar-jade-count-how-get-pulls-per-leaks"
+        },
+        {
+          "label": "Dexerto: 2.5 update leak of free Stellar Jade and Special Passes",
+          "url": "https://dexerto.com/honkai-star-rail/honkai-star-rail-2-5-update-leak-reveals-all-free-stellar-jades-star-rail-special-passes-2848082"
+        },
+        {
+          "label": "Gamerant: HSR banner schedule and history (2.5 phases)",
+          "url": "https://gamerant.com/honkai-star-rail-hsr-current-next-past-banner-history-schedule/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "2.6",
+      "title": "Annals of Pinecany's Mappou Age",
+      "start": "2024-10-23",
+      "end": "2024-12-04",
+      "currency": {
+        "total": 17770,
+        "events": 4140,
+        "daily": 2520,
+        "endgame": 7250,
+        "other": 3860,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Rappa"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-10-23",
+          "end": "2024-11-13",
+          "featured": [
+            "Rappa",
+            "Dan Heng • Imbibitor Lunae"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-11-13",
+          "end": "2024-12-03",
+          "featured": [
+            "Aventurine",
+            "Acheron"
+          ]
+        }
+      ],
+      "notes": "Total = 14,570 Stellar Jade + 20 Star Rail Special Passes x 160 = 17,770, from WotPack's pre-release F2P tally (dated 2024-10-19); its 15 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 14,975, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 2.6 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/2.6"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 2.6 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-2-6-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Reddit community comment: final estimated F2P pulls from HSR Bookkeeping",
+          "url": "https://www.reddit.com/r/HonkaiStarRail_leaks/comments/1i550mp/v1_stellar_jade_count_for_version_31_via_nivskisl/"
+        },
+        {
+          "label": "GuidesRole (gamingonphone): Honkai Star Rail 2.6 rewards calculation",
+          "url": "https://gamingonphone.com/guides/honkai-star-rail-version-2-6-rewards-calculation-stellar-jades-passes-pulls"
+        },
+        {
+          "label": "Sportskeeda: 2.6 free pulls estimation leak",
+          "url": "https://www.sportskeeda.com/esports/honkai-star-rail-2-6-free-pulls-estimation-leak"
+        },
+        {
+          "label": "Gamerant: HSR banner schedule and history (2.6 phases)",
+          "url": "https://gamerant.com/honkai-star-rail-hsr-current-next-past-banner-history-schedule/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "2.7",
+      "title": "A New Venture on the Eighth Dawn",
+      "start": "2024-12-04",
+      "end": "2025-01-15",
+      "currency": {
+        "total": 12840,
+        "events": 3770,
+        "daily": 2520,
+        "endgame": 4250,
+        "other": 2300,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Sunday",
+        "Fugue"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-12-04",
+          "end": "2024-12-25",
+          "featured": [
+            "Sunday",
+            "Jing Yuan"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-12-25",
+          "end": "2025-01-14",
+          "featured": [
+            "Fugue",
+            "Firefly"
+          ]
+        }
+      ],
+      "notes": "Total = 10,440 Stellar Jade + 15 Star Rail Special Passes x 160 = 12,840, from WotPack's pre-release F2P tally (dated 2024-12-01); its 16 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 12,660, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 2.7 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/2.7"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 2.7 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-2-7-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Reddit community comment: final estimated F2P pulls from HSR Bookkeeping",
+          "url": "https://www.reddit.com/r/HonkaiStarRail_leaks/comments/1i550mp/v1_stellar_jade_count_for_version_31_via_nivskisl/"
+        },
+        {
+          "label": "GuidesRole (gamingonphone): Honkai Star Rail 2.7 rewards calculation",
+          "url": "https://gamingonphone.com/guides/honkai-star-rail-version-2-7-rewards-calculation-stellar-jades-passes-pulls"
+        },
+        {
+          "label": "Sportskeeda: 2.7 Stellar Jades count and total pull rewards (leaked)",
+          "url": "https://sportskeeda.com/esports/honkai-star-rail-2-7-stellar-jades-count-total-pull-rewards-leaked"
+        },
+        {
+          "label": "Gamerant: HSR banner schedule and history (2.7 phases)",
+          "url": "https://gamerant.com/honkai-star-rail-hsr-current-next-past-banner-history-schedule/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.0",
+      "title": "Paean of Era Nova",
+      "start": "2025-01-15",
+      "end": "2025-02-26",
+      "currency": {
+        "total": 19750,
+        "events": 6520,
+        "daily": 2520,
+        "endgame": 4250,
+        "other": 6460,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Aglaea",
+        "The Herta",
+        "Trailblazer (Remembrance)"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-01-15",
+          "end": "2025-02-05",
+          "featured": [
+            "The Herta",
+            "Lingsha",
+            "Feixiao",
+            "Jade"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-02-05",
+          "end": "2025-02-25",
+          "featured": [
+            "Aglaea",
+            "Boothill",
+            "Robin",
+            "Silver Wolf"
+          ]
+        }
+      ],
+      "notes": "Total = 15,750 Stellar Jade + 25 Star Rail Special Passes x 160 = 19,750, from WotPack's pre-release F2P tally (dated 2026-08-24); its 16 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 16,600, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 3.0 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/3.0"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 3.0 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-3-0-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Reddit community comment: final estimated F2P pulls from HSR Bookkeeping",
+          "url": "https://www.reddit.com/r/HonkaiStarRail_leaks/comments/1i550mp/v1_stellar_jade_count_for_version_31_via_nivskisl/"
+        },
+        {
+          "label": "Sportskeeda: 3.0 Stellar Jade count and free pull calculation (pre-release)",
+          "url": "https://www.sportskeeda.com/esports/honkai-star-rail-3-0-stellar-jade-count-free-pull-calculation"
+        },
+        {
+          "label": "Game8: HSR banner schedule (3.0 phases)",
+          "url": "https://game8.co/games/Honkai-Star-Rail/archives/485822"
+        },
+        {
+          "label": "Honkai: Star Rail 3.0 'Paean of Era Nova' press release",
+          "url": "https://www.gamedeveloper.com/press-release/honkai-star-rail-version-3-0-paean-of-era-nova-unveiled"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.1",
+      "title": "Light Slips the Gate, Shadow Greets the Throne",
+      "start": "2025-02-26",
+      "end": "2025-04-09",
+      "currency": {
+        "total": 15995,
+        "events": 3180,
+        "daily": 2520,
+        "endgame": 6850,
+        "other": 3445,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Tribbie",
+        "Mydei"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-02-26",
+          "end": "2025-03-19",
+          "featured": [
+            "Tribbie",
+            "Yunli"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-03-19",
+          "end": "2025-04-08",
+          "featured": [
+            "Mydei",
+            "Huohuo"
+          ]
+        }
+      ],
+      "notes": "Total = 13,595 Stellar Jade + 15 Star Rail Special Passes x 160 = 15,995, from WotPack's pre-release F2P tally (dated 2025-02-23); its 30 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 16,890, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 3.1 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/3.1"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 3.1 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-3-1-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Beebom: 3.1 Stellar Jade count leak (13,690 Jade, 20 Special Passes)",
+          "url": "https://beebom.com/honkai-star-rail-3-1-stellar-jade-count-leaked"
+        },
+        {
+          "label": "Sportskeeda: 3.1 Stellar Jade count and total pulls estimation leak",
+          "url": "https://www.sportskeeda.com/esports/honkai-star-rail-3-1-stellar-jade-count-total-pulls-estimation-leak"
+        },
+        {
+          "label": "WotPack: HSR banner schedule (featured per phase)",
+          "url": "https://wotpack.ru/en/honkai-star-rail-raspisanie-bannerov-2023/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.2",
+      "title": "Through the Petals in the Land of Repose",
+      "start": "2025-04-09",
+      "end": "2025-05-21",
+      "currency": {
+        "total": 18360,
+        "events": 8020,
+        "daily": 2520,
+        "endgame": 3750,
+        "other": 4070,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Castorice",
+        "Anaxa"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-04-09",
+          "end": "2025-04-30",
+          "featured": [
+            "Castorice",
+            "Fugue",
+            "Jiaoqiu",
+            "Acheron"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-04-30",
+          "end": "2025-05-20",
+          "featured": [
+            "Anaxa",
+            "Dr. Ratio"
+          ]
+        }
+      ],
+      "notes": "Total = 14,360 Stellar Jade + 25 Star Rail Special Passes x 160 = 18,360, from WotPack's pre-release F2P tally (dated 2025-04-04); its 17 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 17,480, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 3.2 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/3.2"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 3.2 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-3-2-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Destructoid: 3.2 Stellar Jade and total pull count estimation (13,480 Jade, 25 Special Passes)",
+          "url": "https://www.destructoid.com/honkai-star-rail-3-2-stellar-jade-and-total-pull-count-estimation/"
+        },
+        {
+          "label": "Buffget: 3.2 free pulls from 13,480 Jade",
+          "url": "https://buffget.com/news/honkai-star-rail-stellar-jade-calculation-2x30-total-free-pulls-for-next-patch-13rvmr8"
+        },
+        {
+          "label": "WotPack: HSR banner schedule (featured per phase)",
+          "url": "https://wotpack.ru/en/honkai-star-rail-raspisanie-bannerov-2023/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.3",
+      "title": "The Fall at Dawn's Rise",
+      "start": "2025-05-21",
+      "end": "2025-07-02",
+      "currency": {
+        "total": 15775,
+        "events": 3600,
+        "daily": 2520,
+        "endgame": 4410,
+        "other": 5245,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Hyacine",
+        "Cipher"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-05-21",
+          "end": "2025-06-11",
+          "featured": [
+            "Hyacine",
+            "The Herta"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-06-11",
+          "end": "2025-07-01",
+          "featured": [
+            "Cipher",
+            "Aglaea"
+          ]
+        }
+      ],
+      "notes": "Total = 12,575 Stellar Jade + 20 Star Rail Special Passes x 160 = 15,775, from WotPack's pre-release F2P tally (dated 2025-05-13); its 22 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 13,630, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 3.3 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/3.3"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 3.3 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-3-3-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Sportskeeda: 3.3 Stellar Jade count and total pulls estimation leak",
+          "url": "https://sportskeeda.com/esports/honkai-star-rail-hsr-3-3-stellar-jade-count-total-pulls-estimation-leak"
+        },
+        {
+          "label": "Khel Now: 3.3 more Stellar Jades and events",
+          "url": "https://khelnow.com/gaming/honkai-star-rail-3-3-more-stellar-jades-events-202504"
+        },
+        {
+          "label": "Honkai: Star Rail 3.3 'The Fall at Dawn's Rise' press release (launch May 21)",
+          "url": "https://www.gamedeveloper.com/press-release/honkai-star-rail-version-3-3-the-fall-at-dawn-s-rise-officially-launches-on-may-21-"
+        },
+        {
+          "label": "WotPack: HSR banner schedule (featured per phase)",
+          "url": "https://wotpack.ru/en/honkai-star-rail-raspisanie-bannerov-2023/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.4",
+      "title": "For the Sun is Set to Die",
+      "start": "2025-07-02",
+      "end": "2025-08-13",
+      "currency": {
+        "total": 14285,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Phainon",
+        "Saber",
+        "Archer"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-07-02",
+          "end": "2025-07-23",
+          "featured": [
+            "Phainon",
+            "Tribbie",
+            "Sunday",
+            "Sparkle"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-07-23",
+          "end": "2025-08-12",
+          "featured": [
+            "Firefly",
+            "Jingliu",
+            "Blade"
+          ]
+        }
+      ],
+      "notes": "Total = 11,885 Stellar Jade + 15 Star Rail Special Passes x 160 = 14,285, from WotPack's pre-release F2P tally (dated 2025-07-01); its 17 standard Star Rail Passes are excluded. Breakdown left null: WotPack's table rows do not reconcile with its own F2P summary for this patch (table total 17,905 including standard passes, versus 17,005 from the summary). The summary figure is used. Replaces the earlier figure of 15,730, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp. A separate Collaboration Warp (featuring Saber and Archer) opened on 2025-07-11 with no end date; it is listed in events, not as a phase.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 3.4 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/3.4"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 3.4 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-3-4-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Bittopup: Honkai Star Rail Jade Calculator, 98 free pulls guide 3.4",
+          "url": "https://bittopup.com/article/Honkai-Star-Rail-Jade-Calculator-98-Free-Pulls-Guide-34"
+        },
+        {
+          "label": "Sportskeeda: 3.4 Stellar Jade count and total pulls estimation leak",
+          "url": "https://www.sportskeeda.com/esports/honkai-star-rail-hsr-3-4-stellar-jade-count-total-pulls-estimation-leak"
+        },
+        {
+          "label": "WotPack: HSR banner schedule (featured per phase)",
+          "url": "https://wotpack.ru/en/honkai-star-rail-raspisanie-bannerov-2023/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.5",
+      "title": "Before Their Deaths",
+      "start": "2025-08-13",
+      "end": "2025-09-24",
+      "currency": {
+        "total": 14590,
+        "events": 4260,
+        "daily": 2520,
+        "endgame": 3750,
+        "other": 4060,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Hysilens",
+        "Cerydra"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-08-13",
+          "end": "2025-09-02",
+          "featured": [
+            "Hysilens",
+            "Kafka"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-09-02",
+          "end": "2025-09-23",
+          "featured": [
+            "Cerydra",
+            "Silver Wolf"
+          ]
+        }
+      ],
+      "notes": "Total = 12,190 Stellar Jade + 15 Star Rail Special Passes x 160 = 14,590, from WotPack's pre-release F2P tally (dated 2025-08-06); its 17 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 14,190, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 3.5 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/3.5"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 3.5 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-3-5-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Sportskeeda: 3.5 Stellar Jade count and total pulls estimation (11,790 Jade, 15 Special Passes, 88 pulls)",
+          "url": "https://www.sportskeeda.com/esports/honkai-star-rail-hsr-3-5-stellar-jade-count-total-pulls-estimation"
+        },
+        {
+          "label": "TopupLive: 3.5 Stellar Jade count and pulls",
+          "url": "https://www.topuplive.com/news/hsr-3-5-stellar-jade-count-and-pulls.html"
+        },
+        {
+          "label": "GuruGamer: 3.5 how many pulls can you get",
+          "url": "https://gurugamer.com/mobile-games/honkai-star-rail-3-5-how-many-pulls-can-you-get-25247"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.6",
+      "title": "Back to Earth in Evernight",
+      "start": "2025-09-24",
+      "end": "2025-11-05",
+      "currency": {
+        "total": 15105,
+        "events": 3830,
+        "daily": 2520,
+        "endgame": 4250,
+        "other": 4505,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Evernight",
+        "Dan Heng • Permansor Terrae"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-09-24",
+          "end": "2025-10-15",
+          "featured": [
+            "Evernight",
+            "The Herta"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-10-15",
+          "end": "2025-11-04",
+          "featured": [
+            "Dan Heng • Permansor Terrae",
+            "Anaxa"
+          ]
+        }
+      ],
+      "notes": "Total = 11,905 Stellar Jade + 20 Star Rail Special Passes x 160 = 15,105, from WotPack's pre-release F2P tally (dated 2025-09-21); its 22 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 16,075, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 3.6 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/3.6"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 3.6 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-3-6-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Sportskeeda: 3.6 Stellar Jade count and total pulls estimation leak",
+          "url": "https://sportskeeda.com/esports/honkai-star-rail-hsr-3-6-stellar-jade-count-total-pulls-estimation"
+        },
+        {
+          "label": "Bittopup: HSR 3.6 complete event calendar, 100 free pulls guide",
+          "url": "https://bittopup.com/article/HSR-36-Complete-Event-Calendar-100-Free-Pulls-Guide"
+        },
+        {
+          "label": "WotPack: HSR banner schedule (featured per phase)",
+          "url": "https://wotpack.ru/en/honkai-star-rail-raspisanie-bannerov-2023/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.7",
+      "title": "As Tomorrow Became Yesterday",
+      "start": "2025-11-05",
+      "end": "2025-12-17",
+      "currency": {
+        "total": 16880,
+        "events": 2740,
+        "daily": 2520,
+        "endgame": 7600,
+        "other": 4020,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Cyrene"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-11-05",
+          "end": "2025-11-26",
+          "featured": [
+            "Cyrene",
+            "Hyacine",
+            "Castorice",
+            "Tribbie"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-11-26",
+          "end": "2025-12-16",
+          "featured": [
+            "Cyrene",
+            "Phainon",
+            "Cipher",
+            "Mydei"
+          ]
+        }
+      ],
+      "notes": "Total = 14,480 Stellar Jade + 15 Star Rail Special Passes x 160 = 16,880, from WotPack's pre-release F2P tally (dated 2025-11-03); its 23 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 16,720, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp. newCharacters corrected from the wiki version page (was: Cyrene, The Dahlia).",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 3.7 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/3.7"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 3.7 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-3-7-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Sportskeeda: 3.7 Stellar Jade count and total pulls estimation leak",
+          "url": "https://www.sportskeeda.com/esports/honkai-star-rail-hsr-3-7-stellar-jade-count-total-pulls-estimation"
+        },
+        {
+          "label": "Recapio: 104 free pulls for Cyrene in 3.7",
+          "url": "https://recapio.com/digest/good-news-dont-miss-104-free-pulls-for-cyrene-in-3-7-honkai-star-rail-by-almighty-shotgun"
+        },
+        {
+          "label": "Bittopup: HSR 3.7 F2P guide (skip Cyrene, save Jade for Dahlia)",
+          "url": "https://news.bittopup.com/news/hsr-3.7-f2p-guide-skip-cyrene-save-14k-jades-for-dahlia-e0s1"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "3.8",
+      "title": "Memories are the Prelude to Dreams",
+      "start": "2025-12-17",
+      "end": "2026-02-13",
+      "currency": {
+        "total": 17545,
+        "events": 3990,
+        "daily": 3480,
+        "endgame": 5420,
+        "other": 4655,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "The Dahlia"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-12-17",
+          "end": "2026-01-07",
+          "featured": [
+            "The Dahlia",
+            "Firefly"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-01-07",
+          "end": "2026-01-28",
+          "featured": [
+            "Lingsha",
+            "Fugue"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": "2026-01-28",
+          "end": "2026-02-12",
+          "featured": [
+            "Sunday",
+            "Aglaea"
+          ]
+        }
+      ],
+      "notes": "Total = 14,345 Stellar Jade + 20 Star Rail Special Passes x 160 = 17,545, from WotPack's pre-release F2P tally (dated 2025-12-12); its 23 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 17,445, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 3.8 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/3.8"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 3.8 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-3-8-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Official new character announcement",
+          "url": "https://www.hoyoverse.com/en-us/news/161511"
+        },
+        {
+          "label": "TopupLive: how many pulls in HSR 3.8 (updated Dec 11, 109 pulls)",
+          "url": "https://www.topuplive.com/news/how-many-pulls-in-hsr-3-8-up-to-109-pulls-for-free.html"
+        },
+        {
+          "label": "Sportskeeda: 3.8 Stellar Jade count and total pulls estimation leak",
+          "url": "https://widgets.sportskeeda.com/esports/honkai-star-rail-hsr-3-8-stellar-jade-count-total-pulls-estimation"
+        },
+        {
+          "label": "Supenews: 3.8 banner rotations ahead of 4.0",
+          "url": "https://supenews.beehiiv.com/p/honkai-star-rail-continues-version-3-8-with-banner-rotations-ahead-of-version-4-0"
+        },
+        {
+          "label": "GuruGamer: 3.8 livestream summary",
+          "url": "https://gurugamer.com/mobile-games/honkai-star-rail-version-3-8-memories-are-the-prelude-to-dreams-livestream-summary-26004"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "4.0",
+      "title": "No Aha At Full Moon",
+      "start": "2026-02-13",
+      "end": "2026-03-25",
+      "currency": {
+        "total": 19645,
+        "events": 6960,
+        "daily": 3480,
+        "endgame": 3750,
+        "other": 5455,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Yao Guang",
+        "Sparxie"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-02-13",
+          "end": "2026-03-03",
+          "featured": [
+            "Yao Guang",
+            "Evernight",
+            "Hysilens",
+            "Black Swan"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-03-03",
+          "end": "2026-03-24",
+          "featured": [
+            "Yao Guang",
+            "Sparxie",
+            "Cerydra",
+            "Rappa",
+            "Sparkle"
+          ]
+        }
+      ],
+      "notes": "Total = 15,645 Stellar Jade + 25 Star Rail Special Passes x 160 = 19,645, from WotPack's pre-release F2P tally (dated 2026-02-12); its 16 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 18,645, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 4.0 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/4.0"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 4.0 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-4-0-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "VGTimes: Honkai Star Rail 4.0 jade guide, how many pulls can you get",
+          "url": "https://vgtimes.com/149345-honkai-star-rail-patch-40-jade-guide-how-many-pulls-can-you-get.html"
+        },
+        {
+          "label": "GosuGamers: 4.0 drops 13 February with Planarcadia",
+          "url": "https://gosugamers.net/news/77950-honkai-star-rail-version-4-0-drops-13-february-with-planarcadia-and-the-new-path-of-elation"
+        },
+        {
+          "label": "Bittopup: 4.0 Yao Guang banner guide",
+          "url": "https://bittopup.com/article/Honkai-Star-Rail-40-Banner-Guide-Yao-Guang-Pull-Costs"
+        },
+        {
+          "label": "WotPack: HSR banner schedule (featured per phase)",
+          "url": "https://wotpack.ru/en/honkai-star-rail-raspisanie-bannerov-2023/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "4.1",
+      "title": "Unraveled for Daybreak",
+      "start": "2026-03-25",
+      "end": "2026-04-22",
+      "currency": {
+        "total": 14600,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Ashveil"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-03-25",
+          "end": "2026-04-08",
+          "featured": [
+            "Ashveil",
+            "Hyacine"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-04-08",
+          "end": "2026-04-21",
+          "featured": [
+            "Ashveil",
+            "Boothill"
+          ]
+        }
+      ],
+      "notes": "Total = 12,200 Stellar Jade + 15 Star Rail Special Passes x 160 = 14,600, from WotPack's pre-release F2P tally (dated 2026-03-23); its 13 standard Star Rail Passes are excluded. Breakdown left null: WotPack's table rows do not reconcile with its own F2P summary for this patch (table total 16,860 including standard passes, versus 16,680 from the summary). The summary figure is used. Replaces the earlier figure of 15,755, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 4.1 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/4.1"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 4.1 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-4-1-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "GamingOnPhone: 4.1 update, 13,350 Stellar Jade for free",
+          "url": "https://gamingonphone.com/guides/honkai-star-rail-version-4-1-update-how-to-get-13350-stellar-jade-for-free"
+        },
+        {
+          "label": "Lootbar: Honkai Star Rail 4.1 pull count",
+          "url": "https://lootbar.gg/blog/en/honkai-star-rail-4-1-pull-count.html"
+        },
+        {
+          "label": "WotPack: HSR banner schedule (featured per phase)",
+          "url": "https://wotpack.ru/en/honkai-star-rail-raspisanie-bannerov-2023/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "4.2",
+      "title": "So Laughed the Masses",
+      "start": "2026-04-22",
+      "end": "2026-06-01",
+      "currency": {
+        "total": 16275,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Silver Wolf LV.999",
+        "Evanescia",
+        "Trailblazer (Elation)"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-04-22",
+          "end": "2026-05-13",
+          "featured": [
+            "Silver Wolf LV.999",
+            "The Dahlia",
+            "Castorice",
+            "Firefly"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-05-13",
+          "end": "2026-06-01",
+          "featured": [
+            "Evanescia",
+            "Tribbie",
+            "Sunday",
+            "Feixiao"
+          ]
+        }
+      ],
+      "notes": "Total = 11,475 Stellar Jade + 30 Star Rail Special Passes x 160 = 16,275, from WotPack's pre-release F2P tally (dated 2026-04-18); its 21 standard Star Rail Passes are excluded. Breakdown left null: WotPack's table rows do not reconcile with its own F2P summary for this patch (table total 22,035 including standard passes, versus 19,635 from the summary). The summary figure is used. Replaces the earlier figure of 18,775, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 4.2 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/4.2"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 4.2 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-4-2-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "iXBT: fan calculation for 4.2 Stellar Jade without spending (13,975 Jade, 30 Special Passes)",
+          "url": "https://ixbt.games/en/news/2026/04/21/zviozdnyi-nefrit-obnovleniia-42-dlia-honkai-star-rail-fanaty-poschitali-skolko-krutok-mozhno-zarabotat-bez-donata-i-s-vlozheniiami.amp.html"
+        },
+        {
+          "label": "GamingOnPhone: 4.2 update, 13,970 Stellar Jade and 120 pulls for free",
+          "url": "https://gamingonphone.com/guides/honkai-star-rail-version-4-2-update-how-to-get-13970-stellar-jade-and-total-120-pulls-for-free/"
+        },
+        {
+          "label": "Nextrift: Version 4.2 arrives 22 April",
+          "url": "https://nextrift.com/202643232/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "4.3",
+      "title": "The Lethe Below the Living",
+      "start": "2026-06-01",
+      "end": "2026-07-15",
+      "currency": {
+        "total": 14660,
+        "events": 3660,
+        "daily": 2640,
+        "endgame": 3975,
+        "other": 4385,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Mortenax Blade"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-06-01",
+          "end": "2026-06-24",
+          "featured": [
+            "Mortenax Blade",
+            "Yao Guang"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-06-24",
+          "end": "2026-07-14",
+          "featured": [
+            "Cyrene",
+            "Phainon"
+          ]
+        }
+      ],
+      "notes": "Total = 11,460 Stellar Jade + 20 Star Rail Special Passes x 160 = 14,660, from WotPack's pre-release F2P tally (dated 2026-05-28); its 23 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 4.3 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/4.3"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 4.3 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-4-3-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "WotPack: 4.3 Stellar Jade count (text: 11,460 Jade, 20 event tickets)",
+          "url": "https://wotpack.ru/en/podschet-zvezdnyh-nefritov-za-patch-4-3-v-honkai-star-rail/"
+        },
+        {
+          "label": "TopupList: 4.3 banner schedule and F2P pull planning",
+          "url": "https://topuplist.com/blogs/detail/honkai-star-rail-4-3-banner-schedule-f2p-pull-planning"
+        },
+        {
+          "label": "Lootbar: Honkai Star Rail 4.3 pull count",
+          "url": "https://lootbar.gg/blog/en/honkai-star-rail-4-3-pull-count.html"
+        },
+        {
+          "label": "All Things How: HSR 4.3 banner schedule (June 2026)",
+          "url": "https://allthings.how/honkai-star-rail-banner-schedule-for-version-4-3-june-2026/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "4.4",
+      "title": "In Ravages Does the Whistle Sound",
+      "start": "2026-07-15",
+      "end": "2026-08-26",
+      "currency": {
+        "total": 15745,
+        "events": 4330,
+        "daily": 2520,
+        "endgame": 4050,
+        "other": 4845,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Himeko • Nova",
+        "Rin Tohsaka",
+        "Gilgamesh"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-07-15",
+          "end": "2026-08-05",
+          "featured": [
+            "Himeko • Nova",
+            "Sparxie",
+            "Dan Heng • Permansor Terrae",
+            "Evernight"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-08-05",
+          "end": "2026-08-25",
+          "featured": [
+            "Himeko • Nova",
+            "Cerydra",
+            "Anaxa",
+            "Aventurine"
+          ]
+        }
+      ],
+      "notes": "Total = 13,345 Stellar Jade + 15 Star Rail Special Passes x 160 = 15,745, from WotPack's pre-release F2P tally (dated 2026-07-14); its 16 standard Star Rail Passes are excluded. Breakdown re-added from WotPack's table rows: events = event rewards, login gifts and trial runs (event Special Passes at 160); daily = Daily Training; endgame = Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Simulated/Divergent Universe and Currency Wars Jade; other = maintenance, codes, web events, HoYoLAB, missions, achievements, exploration and shop Special Passes. The four parts sum to the total. Replaces the earlier figure of 15,065, which came from a different outlet's estimate, so that every version uses the same source and method. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp. A separate Collaboration Warp (featuring Gilgamesh and Rin Tohsaka) opened on 2026",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 4.4 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/4.4"
+        },
+        {
+          "label": "WotPack: Stellar Jade tally for patch 4.4 (F2P column)",
+          "url": "https://wotpack.ru/podschet-zvezdnyh-nefritov-za-patch-4-4-v-honkai-star-rail/"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Official update notice on Reddit",
+          "url": "https://www.reddit.com/r/HonkaiStarRail/comments/1uwpg8x/version_44_in_ravages_does_the_whistle_sound/"
+        },
+        {
+          "label": "Lootbar: Honkai Star Rail 4.4 pull count",
+          "url": "https://lootbar.gg/blog/en/honkai-star-rail-4-4-pull-count.html"
+        },
+        {
+          "label": "The Phrase Maker: 4.4 total Stellar Jade count and limited pulls",
+          "url": "https://thephrasemaker.com/2026/07/10/honkai-star-rail-4-4-total-stellar-jade-count-and-limited-pulls/"
+        },
+        {
+          "label": "WotPack: Stellar Jade count for patch 4.4",
+          "url": "https://wotpack.ru/en/podschet-zvezdnyh-nefritov-za-patch-4-4-v-honkai-star-rail/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "4.5",
+      "title": "To Roll the Stars in Astropolis",
+      "start": "2026-08-26",
+      "end": "2026-09-28",
+      "currency": {
+        "total": 12390,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Robin • Summeretto",
+        "Aventurine • Waveflair"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-08-26",
+          "end": "2026-09-12",
+          "featured": [
+            "Robin • Summeretto",
+            "Hyacine"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-09-12",
+          "end": "2026-09-28",
+          "featured": [
+            "Aventurine • Waveflair",
+            "Ashveil"
+          ]
+        }
+      ],
+      "notes": "Kept the existing figure. WotPack has not published a tally for this patch, so this one comes from another pre-release community estimate (see the source below) using the same rule: Stellar Jade + Special Passes x 160, standard passes excluded. Not re-verified in round 2. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 4.5 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/4.5"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Reddit harkanaccount community estimate: approximately 78 F2P pulls",
+          "url": "https://www.reddit.com/r/HonkaiStarRail_leaks/comments/1vrqwd3/45_stellar_jades_count_via_nivskisl/"
+        },
+        {
+          "label": "HoYoverse update overview via Gematsu",
+          "url": "https://www.gematsu.com/2026/08/honkai-star-rail-version-4-5-update-to-roll-the-stars-in-astropolis-launches-august-26"
+        },
+        {
+          "label": "The Phrase Maker: 4.5 pull count, total Stellar Jades and limited pulls",
+          "url": "https://thephrasemaker.com/2026/08/21/honkai-star-rail-4-5-pull-count-total-stellar-jades-limited-pulls/"
+        },
+        {
+          "label": "Buffget: HSR 4.5 shards, LC pity and F2P investment guide",
+          "url": "https://buffget.com/news/hsr-45-shards-lc-pity-and-f2p-investment-guide-2026"
+        },
+        {
+          "label": "TopupLive: HSR 4.5 pull count guide",
+          "url": "https://www.topuplive.com/news/hsr-4-5-pull-count-guide.html"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "4.6",
+      "title": "Dance With the Beast Before Moonrise",
+      "start": "2026-09-28",
+      "end": "2026-11-11",
+      "currency": {
+        "total": 13775,
+        "events": 1540,
+        "daily": 2520,
+        "endgame": 4425,
+        "other": 2090,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Pearl"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-09-28",
+          "end": "2026-10-21",
+          "featured": [
+            "Pearl",
+            "Evanescia"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-10-21",
+          "end": "2026-11-10",
+          "featured": [
+            "Pearl",
+            "Mortenax Blade"
+          ]
+        }
+      ],
+      "notes": "Kept the existing figure. WotPack has not published a tally for this patch, so this one comes from another pre-release community estimate (see the source below) using the same rule: Stellar Jade + Special Passes x 160, standard passes excluded. Not re-verified in round 2. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 4.6 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/4.6"
+        },
+        {
+          "label": "Prydwen patch timeline (dates; several dates differ by one day from global UTC+8 dates)",
+          "url": "https://www.prydwen.gg/star-rail/patch-timeline"
+        },
+        {
+          "label": "Version history (titles and global dates; fetch restricted, indexed content available)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version"
+        },
+        {
+          "label": "Character debut index (cross-checked; known classification errors described in gaps)",
+          "url": "https://www.hsr-build.com/banners"
+        },
+        {
+          "label": "Supplementary community estimate by nivskis, transcribed by AstraVoy",
+          "url": "https://astravoy.net/hsr/pull-income"
+        },
+        {
+          "label": "HoYoverse 4.6 announcement via Games Press",
+          "url": "https://www.gamespress.com/uk-UA/Honkai-Star-Rail-Version-46-Dance-With-the-Beast-Before-Moonrise-is-Co"
+        },
+        {
+          "label": "HoYoverse 4.7 launch announcement: November 11",
+          "url": "https://www.gamespress.com/en-GB/Honkai-Star-Rail-Version-47-Now-Lay-Laughter-to-All-St-wwwhoyoversecom"
+        },
+        {
+          "label": "EnjoyGM: Honkai Star Rail 4.6 pull count guide",
+          "url": "https://www.enjoygm.com/blog/honkai-star-rail/4-6-pull-count-guide"
+        },
+        {
+          "label": "TopupLive: HSR 4.6 pull count guide",
+          "url": "https://www.topuplive.com/de/news/hsr-4-6-pull-count-guide.html"
+        },
+        {
+          "label": "Neonsect: HSR 4.6 banners and pull guide",
+          "url": "https://neonsect.com/es/honkai-star-rail/hsr-4-6-banners-pull-guide/"
+        }
+      ]
+    },
+    {
+      "game": "hsr",
+      "version": "4.7",
+      "title": "Now, Lay Laughter to All Stars",
+      "start": "2026-11-11",
+      "end": null,
+      "currency": {
+        "total": 17535,
+        "events": 1700,
+        "daily": 2520,
+        "endgame": 7825,
+        "other": 1490,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Aeon ★ Aha"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-11-11",
+          "end": "2026-12-02",
+          "featured": [
+            "Aeon ★ Aha",
+            "Silver Wolf LV.999",
+            "Sparxie",
+            "Yao Guang"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-12-02",
+          "end": "2026-12-22",
+          "featured": [
+            "Aeon ★ Aha",
+            "Acheron",
+            "Dan Heng • Imbibitor Lunae",
+            "Jing Yuan"
+          ]
+        }
+      ],
+      "notes": "Kept the existing figure. WotPack has not published a tally for this patch, so this one comes from another pre-release community estimate (see the source below) using the same rule: Stellar Jade + Special Passes x 160, standard passes excluded. Not re-verified in round 2. Phases are taken from the wiki's character Event Warp pages (opening and closing server dates, UTC+8); featured lists the new or headline 5-star first, then the reruns in the combined warp. Running version; end is null.",
+      "sources": [
+        {
+          "label": "HSR Fandom wiki: Version 4.7 (title, release date, new content, warps, events)",
+          "url": "https://honkai-star-rail.fandom.com/wiki/Version/4.7"
+        },
+        {
+          "label": "EnjoyGM: Honkai Star Rail 4.7 pull count guide",
+          "url": "https://www.enjoygm.com/blog/honkai-star-rail/4-7-pull-count-guide"
+        },
+        {
+          "label": "Astravoy: HSR pull income (HSR Bookkeeping, 4.7 estimate)",
+          "url": "https://astravoy.net/hsr/pull-income"
+        },
+        {
+          "label": "PlayNews: HSR 4.7 release date and time for your time zone",
+          "url": "https://www.playnews.gg/en/release-times/honkai-star-rail-4-7-release-date-and-time-for-your-time-zone"
+        },
+        {
+          "label": "The Click: HSR 4.7 banners, Aeon Aha and all character reruns",
+          "url": "https://www.theclick.gg/?p=98131"
         }
       ]
     }
