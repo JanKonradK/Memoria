@@ -1,6 +1,1029 @@
 [
   {
     "game": "endfield",
+    "name": "Combat Drills: Laevatain",
+    "type": "event",
+    "start": "2026-01-22 11:00",
+    "end": "2026-02-07 12:00",
+    "timezone": "UTC+8",
+    "notes": "Trial stage. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:combat-drills-laevatain"
+  },
+  {
+    "game": "endfield",
+    "name": "Firewalker's Trail Sign-In",
+    "type": "event",
+    "start": "2026-01-22 11:00",
+    "end": "2026-02-07 12:00",
+    "timezone": "UTC+8",
+    "notes": "Banner sign-in (Chartered HH Permits). Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:firewalkers-trail-sign-in"
+  },
+  {
+    "game": "endfield",
+    "name": "Let Fire Consume the Ashen Past (narrative)",
+    "type": "event",
+    "start": "2026-01-22 11:00",
+    "end": "2026-03-12 06:00",
+    "timezone": "UTC+8",
+    "notes": "Laevatain story event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:let-fire-consume"
+  },
+  {
+    "game": "endfield",
+    "name": "Lone Wolf (narrative)",
+    "type": "event",
+    "start": "2026-01-22 11:00",
+    "end": "2026-03-12 06:00",
+    "timezone": "UTC+8",
+    "notes": "Wolfguard story event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:lone-wolf"
+  },
+  {
+    "game": "endfield",
+    "name": "Scars of the Forge — Laevatain",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-01-22 11:00",
+    "end": "2026-02-07 11:59",
+    "timezone": "UTC+8",
+    "notes": "Limited 6-star. Opens at launch. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:scars-of-the-forge"
+  },
+  {
+    "game": "endfield",
+    "name": "Smelting Forge Issue — Laevatain weapon",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-01-22 11:00",
+    "end": "2026-03-12 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:smelting-forge-issue"
+  },
+  {
+    "game": "endfield",
+    "name": "Love, Scream & The Prototype (narrative)",
+    "type": "event",
+    "start": "2026-01-30 12:00",
+    "end": "2026-03-12 06:00",
+    "timezone": "UTC+8",
+    "notes": "Yvonne story event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:love-scream-prototype"
+  },
+  {
+    "game": "endfield",
+    "name": "Letter From a Messenger (narrative)",
+    "type": "event",
+    "start": "2026-02-06 12:00",
+    "end": "2026-03-12 06:00",
+    "timezone": "UTC+8",
+    "notes": "Gilberta story event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:letter-from-a-messenger"
+  },
+  {
+    "game": "endfield",
+    "name": "Carly's Fairytale of the Valley",
+    "type": "event",
+    "start": "2026-02-07 12:00",
+    "end": "2026-02-24 04:00",
+    "timezone": "UTC+8",
+    "notes": "Camera event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:carlys-fairytale-of-the-valley"
+  },
+  {
+    "game": "endfield",
+    "name": "Combat Drills: Gilberta",
+    "type": "event",
+    "start": "2026-02-07 12:00",
+    "end": "2026-02-24 12:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:combat-drills-gilberta"
+  },
+  {
+    "game": "endfield",
+    "name": "Express Delivery Issue — Gilberta weapon",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-02-07 12:00",
+    "end": "2026-03-29 12:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:express-delivery-issue"
+  },
+  {
+    "game": "endfield",
+    "name": "Glittering Life at Wuling",
+    "type": "event",
+    "start": "2026-02-07 12:00",
+    "end": "2026-02-24 04:00",
+    "timezone": "UTC+8",
+    "notes": "Guide/exploration event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:glittering-life-at-wuling"
+  },
+  {
+    "game": "endfield",
+    "name": "Messenger Express Sign-In",
+    "type": "event",
+    "start": "2026-02-07 12:00",
+    "end": "2026-02-24 12:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:messenger-express-sign-in"
+  },
+  {
+    "game": "endfield",
+    "name": "The Floaty Messenger — Gilberta",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-02-07 12:00",
+    "end": "2026-02-24 11:59",
+    "timezone": "UTC+8",
+    "notes": "Limited 6-star. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:the-floaty-messenger"
+  },
+  {
+    "game": "endfield",
+    "name": "Monumental Etching: Old Wounds",
+    "type": "event",
+    "start": "2026-02-12 12:00",
+    "end": "2026-03-12 06:00",
+    "timezone": "UTC+8",
+    "notes": "Challenge event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:monumental-etching-old-wounds"
+  },
+  {
+    "game": "endfield",
+    "name": "A Spring Note, Warmly Crafted (web event)",
+    "type": "event",
+    "start": "2026-02-15 12:00",
+    "end": "2026-03-04 04:00",
+    "timezone": "UTC+8",
+    "notes": "Spring Festival web event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:a-spring-note"
+  },
+  {
+    "game": "endfield",
+    "name": "Combat Drills: Yvonne",
+    "type": "event",
+    "start": "2026-02-24 12:00",
+    "end": "2026-03-12 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:combat-drills-yvonne"
+  },
+  {
+    "game": "endfield",
+    "name": "Graffiti Issue — Yvonne weapon",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-02-24 12:00",
+    "end": "2026-04-17 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:graffiti-issue"
+  },
+  {
+    "game": "endfield",
+    "name": "Hues of Passion — Yvonne",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-02-24 12:00",
+    "end": "2026-03-12 06:00",
+    "timezone": "UTC+8",
+    "notes": "Limited 6-star. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:hues-of-passion"
+  },
+  {
+    "game": "endfield",
+    "name": "Spectral Splendor Sign-In",
+    "type": "event",
+    "start": "2026-02-24 12:00",
+    "end": "2026-03-12 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:spectral-splendor-sign-in"
+  },
+  {
+    "game": "endfield",
+    "name": "Sanity Discount",
+    "type": "event",
+    "start": "2026-03-02 12:00",
+    "end": "2026-03-12 04:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:sanity-discount"
+  },
+  {
+    "game": "endfield",
+    "name": "Qingbo Rising Sign-In",
+    "type": "event",
+    "start": "2026-03-05 12:00",
+    "end": "2026-03-12 06:00",
+    "timezone": "UTC+8",
+    "notes": "Pre-1.1 sign-in. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.0:qingbo-rising-sign-in"
+  },
+  {
+    "game": "endfield",
+    "name": "v1.1 update maintenance",
+    "type": "maintenance",
+    "start": "2026-03-12 06:00",
+    "end": "2026-03-12 12:00",
+    "timezone": "UTC+8",
+    "notes": "Start = 1.0 close in the datamine; 12:00 reopening assumed from the 1.5/1.6 notices.",
+    "sourceKey": "hist:endfield:1.1:maintenance"
+  },
+  {
+    "game": "endfield",
+    "name": "Budding Anew Issue — Tangtang weapon",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-03-12 12:00",
+    "end": "2026-05-22 12:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:budding-anew-issue"
+  },
+  {
+    "game": "endfield",
+    "name": "Combat Drills: Tangtang",
+    "type": "event",
+    "start": "2026-03-12 12:00",
+    "end": "2026-03-29 12:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:combat-drills-tangtang"
+  },
+  {
+    "game": "endfield",
+    "name": "Gently Flows Qingbo Sign-In",
+    "type": "event",
+    "start": "2026-03-12 12:00",
+    "end": "2026-03-29 12:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:gently-flows-qingbo-sign-in"
+  },
+  {
+    "game": "endfield",
+    "name": "Quietly Flows the Spring",
+    "type": "event",
+    "start": "2026-03-12 12:00",
+    "end": "2026-04-02 04:00",
+    "timezone": "UTC+8",
+    "notes": "Guide/exploration event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:quietly-flows-the-spring"
+  },
+  {
+    "game": "endfield",
+    "name": "River's Daughter — Tangtang",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-03-12 12:00",
+    "end": "2026-03-29 11:59",
+    "timezone": "UTC+8",
+    "notes": "Limited 6-star. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:rivers-daughter"
+  },
+  {
+    "game": "endfield",
+    "name": "Supply: Exploration Day",
+    "type": "event",
+    "start": "2026-03-19 12:00",
+    "end": "2026-04-02 04:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:supply-exploration-day"
+  },
+  {
+    "game": "endfield",
+    "name": "Sanity Discount",
+    "type": "event",
+    "start": "2026-03-22 12:00",
+    "end": "2026-03-29 04:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:sanity-discount-1"
+  },
+  {
+    "game": "endfield",
+    "name": "Monumental Etching: Scorch Mark",
+    "type": "event",
+    "start": "2026-03-26 12:00",
+    "end": "2026-04-09 04:00",
+    "timezone": "UTC+8",
+    "notes": "Challenge event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:monumental-etching-scorch-mark"
+  },
+  {
+    "game": "endfield",
+    "name": "Cleanse and Rinse",
+    "type": "event",
+    "start": "2026-03-29 12:00",
+    "end": "2026-04-19 04:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:cleanse-and-rinse"
+  },
+  {
+    "game": "endfield",
+    "name": "Combat Drills: Rossi",
+    "type": "event",
+    "start": "2026-03-29 12:00",
+    "end": "2026-04-17 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:combat-drills-rossi"
+  },
+  {
+    "game": "endfield",
+    "name": "Pearl of the Pack Sign-In",
+    "type": "event",
+    "start": "2026-03-29 12:00",
+    "end": "2026-04-17 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:pearl-of-the-pack-sign-in"
+  },
+  {
+    "game": "endfield",
+    "name": "Scarlet Pearl Issue — Rossi weapon",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-03-29 12:00",
+    "end": "2026-06-26 12:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:scarlet-pearl-issue"
+  },
+  {
+    "game": "endfield",
+    "name": "The Red Knight (narrative)",
+    "type": "event",
+    "start": "2026-03-29 12:00",
+    "end": "2026-04-17 06:00",
+    "timezone": "UTC+8",
+    "notes": "Rossi story event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:the-red-knight"
+  },
+  {
+    "game": "endfield",
+    "name": "Wolf Pearl — Rossi",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-03-29 12:00",
+    "end": "2026-04-17 06:00",
+    "timezone": "UTC+8",
+    "notes": "Limited 6-star. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:wolf-pearl"
+  },
+  {
+    "game": "endfield",
+    "name": "Journey of the Long-Ear (web event)",
+    "type": "event",
+    "start": "2026-04-01 12:00",
+    "end": "2026-04-08 04:00",
+    "timezone": "UTC+8",
+    "notes": "April web event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:journey-of-the-long-ear"
+  },
+  {
+    "game": "endfield",
+    "name": "Survival Training",
+    "type": "event",
+    "start": "2026-04-09 12:00",
+    "end": "2026-04-30 04:00",
+    "timezone": "UTC+8",
+    "notes": "Combat event; runs into 1.2. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:survival-training"
+  },
+  {
+    "game": "endfield",
+    "name": "Sanity Discount",
+    "type": "event",
+    "start": "2026-04-10 12:00",
+    "end": "2026-04-17 04:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:sanity-discount-2"
+  },
+  {
+    "game": "endfield",
+    "name": "Rising Tide of Wuling Sign-In",
+    "type": "event",
+    "start": "2026-04-12 12:00",
+    "end": "2026-04-17 06:00",
+    "timezone": "UTC+8",
+    "notes": "Pre-1.2 sign-in. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.1:rising-tide-of-wuling-sign-in"
+  },
+  {
+    "game": "endfield",
+    "name": "v1.2 update maintenance",
+    "type": "maintenance",
+    "start": "2026-04-17 06:00",
+    "end": "2026-04-17 12:00",
+    "timezone": "UTC+8",
+    "notes": "Start = 1.1 close in the datamine; 12:00 reopening assumed.",
+    "sourceKey": "hist:endfield:1.2:maintenance"
+  },
+  {
+    "game": "endfield",
+    "name": "Blitz of Verdance Sign-In",
+    "type": "event",
+    "start": "2026-04-17 12:00",
+    "end": "2026-05-22 12:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:blitz-of-verdance-sign-in"
+  },
+  {
+    "game": "endfield",
+    "name": "Combat Drills: Zhuang Fangyi",
+    "type": "event",
+    "start": "2026-04-17 12:00",
+    "end": "2026-05-22 12:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:combat-drills-zhuang-fangyi"
+  },
+  {
+    "game": "endfield",
+    "name": "Drifting Raft Issue — Zhuang Fangyi weapon",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-04-17 12:00",
+    "end": "2026-07-16 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:drifting-raft-issue"
+  },
+  {
+    "game": "endfield",
+    "name": "Subduer of the Blighted Sea",
+    "type": "event",
+    "start": "2026-04-17 12:00",
+    "end": "2026-05-14 04:00",
+    "timezone": "UTC+8",
+    "notes": "Guide/exploration event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:subduer-of-the-blighted-sea"
+  },
+  {
+    "game": "endfield",
+    "name": "Thunder of Renewal — Zhuang Fangyi",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-04-17 12:00",
+    "end": "2026-05-22 11:59",
+    "timezone": "UTC+8",
+    "notes": "Limited 6-star. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:thunder-of-renewal"
+  },
+  {
+    "game": "endfield",
+    "name": "Etchings of Our Cosmic Dreams Sign-In",
+    "type": "event",
+    "start": "2026-04-24 12:00",
+    "end": "2026-06-05 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:cosmic-dreams-sign-in"
+  },
+  {
+    "game": "endfield",
+    "name": "Snapshot: Etchings of Our Cosmic Dreams",
+    "type": "event",
+    "start": "2026-04-24 12:00",
+    "end": "2026-06-05 06:00",
+    "timezone": "UTC+8",
+    "notes": "Camera event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:snapshot-cosmic-dreams"
+  },
+  {
+    "game": "endfield",
+    "name": "AIC Support: Palm-Top Savior",
+    "type": "event",
+    "start": "2026-04-28 12:00",
+    "end": "2026-05-19 04:00",
+    "timezone": "UTC+8",
+    "notes": "AIC production event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:aic-support-palm-top-savior"
+  },
+  {
+    "game": "endfield",
+    "name": "Party Together (web event)",
+    "type": "event",
+    "start": "2026-05-01 12:00",
+    "end": "2026-06-05 06:00",
+    "timezone": "UTC+8",
+    "notes": "Arknights anniversary web event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:party-together"
+  },
+  {
+    "game": "endfield",
+    "name": "Sanity Supply",
+    "type": "event",
+    "start": "2026-05-07 04:00",
+    "end": "2026-05-14 04:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:sanity-supply-1"
+  },
+  {
+    "game": "endfield",
+    "name": "Monumental Etching: Corrupting Surge",
+    "type": "event",
+    "start": "2026-05-08 12:00",
+    "end": "2026-05-22 04:00",
+    "timezone": "UTC+8",
+    "notes": "Challenge event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:monumental-etching-corrupting-surge"
+  },
+  {
+    "game": "endfield",
+    "name": "Curious Use of Xiranite",
+    "type": "event",
+    "start": "2026-05-14 12:00",
+    "end": "2026-06-05 06:00",
+    "timezone": "UTC+8",
+    "notes": "Guide/exploration event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:curious-use-of-xiranite"
+  },
+  {
+    "game": "endfield",
+    "name": "Fest of Brilliance — Laevatain & Gilberta",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-05-14 12:00",
+    "end": "2026-06-05 06:00",
+    "timezone": "UTC+8",
+    "notes": "Joint rerun headhunt. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:fest-of-brilliance"
+  },
+  {
+    "game": "endfield",
+    "name": "Shimmering Moment Sign-In",
+    "type": "event",
+    "start": "2026-05-14 12:00",
+    "end": "2026-06-05 06:00",
+    "timezone": "UTC+8",
+    "notes": "Fest of Brilliance sign-in. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:shimmering-moment-sign-in"
+  },
+  {
+    "game": "endfield",
+    "name": "Supply: Wuling Super Chef",
+    "type": "event",
+    "start": "2026-05-14 12:00",
+    "end": "2026-06-05 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:supply-wuling-super-chef"
+  },
+  {
+    "game": "endfield",
+    "name": "Smelting Fire Issue — Laevatain weapon rerun",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-05-22 12:00",
+    "end": "2026-06-05 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:smelting-fire-issue"
+  },
+  {
+    "game": "endfield",
+    "name": "Swift Walker Issue — Gilberta weapon rerun",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-05-22 12:00",
+    "end": "2026-06-05 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:swift-walker-issue"
+  },
+  {
+    "game": "endfield",
+    "name": "Sanity Supply",
+    "type": "event",
+    "start": "2026-05-29 04:00",
+    "end": "2026-06-05 04:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:sanity-supply-2"
+  },
+  {
+    "game": "endfield",
+    "name": "Curios and Myths Sign-In",
+    "type": "event",
+    "start": "2026-05-29 12:00",
+    "end": "2026-06-05 06:00",
+    "timezone": "UTC+8",
+    "notes": "Pre-1.3 sign-in. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.2:curios-and-myths-sign-in"
+  },
+  {
+    "game": "endfield",
+    "name": "v1.3 update maintenance",
+    "type": "maintenance",
+    "start": "2026-06-05 06:00",
+    "end": "2026-06-05 12:00",
+    "timezone": "UTC+8",
+    "notes": "Start = 1.2 close in the datamine; 12:00 reopening assumed.",
+    "sourceKey": "hist:endfield:1.3:maintenance"
+  },
+  {
+    "game": "endfield",
+    "name": "A Fistful of Reflections (narrative)",
+    "type": "event",
+    "start": "2026-06-05 12:00",
+    "end": "2026-07-16 06:00",
+    "timezone": "UTC+8",
+    "notes": "Mi Fu story event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:a-fistful-of-reflections"
+  },
+  {
+    "game": "endfield",
+    "name": "Combat Drills: Mi Fu",
+    "type": "event",
+    "start": "2026-06-05 12:00",
+    "end": "2026-06-26 12:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:combat-drills-mi-fu"
+  },
+  {
+    "game": "endfield",
+    "name": "Fists of No Regrets — Mi Fu",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-06-05 12:00",
+    "end": "2026-06-26 11:59",
+    "timezone": "UTC+8",
+    "notes": "Limited 6-star. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:fists-of-no-regrets"
+  },
+  {
+    "game": "endfield",
+    "name": "One with Her Fists Sign-In",
+    "type": "event",
+    "start": "2026-06-05 12:00",
+    "end": "2026-06-26 12:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:one-with-her-fists-sign-in"
+  },
+  {
+    "game": "endfield",
+    "name": "Scarlet Knot Issue — Mi Fu weapon",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-06-05 12:00",
+    "end": "2026-08-09 12:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:scarlet-knot-issue"
+  },
+  {
+    "game": "endfield",
+    "name": "Search for Sword Vault Dale",
+    "type": "event",
+    "start": "2026-06-05 12:00",
+    "end": "2026-06-26 12:00",
+    "timezone": "UTC+8",
+    "notes": "Guide/exploration event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:search-for-sword-vault-dale"
+  },
+  {
+    "game": "endfield",
+    "name": "Contingency Readiness",
+    "type": "event",
+    "start": "2026-06-12 04:00",
+    "end": "2026-06-19 04:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:contingency-readiness"
+  },
+  {
+    "game": "endfield",
+    "name": "Trial Algorithmics",
+    "type": "event",
+    "start": "2026-06-12 12:00",
+    "end": "2026-07-16 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:trial-algorithmics"
+  },
+  {
+    "game": "endfield",
+    "name": "Contingency Contract: Re-Ignition Experimental Operation",
+    "type": "event",
+    "start": "2026-06-19 12:00",
+    "end": "2026-07-23 04:00",
+    "timezone": "UTC+8",
+    "notes": "Challenge event; shop runs into 1.4. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:contingency-contract-re-ignition"
+  },
+  {
+    "game": "endfield",
+    "name": "Combat Drills: Camille",
+    "type": "event",
+    "start": "2026-06-26 12:00",
+    "end": "2026-07-16 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:combat-drills-camille"
+  },
+  {
+    "game": "endfield",
+    "name": "Crimson Hued Issue — Camille weapon",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-06-26 12:00",
+    "end": "2026-09-02 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:crimson-hued-issue"
+  },
+  {
+    "game": "endfield",
+    "name": "Danse Macabre (narrative)",
+    "type": "event",
+    "start": "2026-06-26 12:00",
+    "end": "2026-07-16 06:00",
+    "timezone": "UTC+8",
+    "notes": "Camille story event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:danse-macabre"
+  },
+  {
+    "game": "endfield",
+    "name": "Expunger of Sin — Camille",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-06-26 12:00",
+    "end": "2026-07-16 06:00",
+    "timezone": "UTC+8",
+    "notes": "Limited 6-star. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:expunger-of-sin"
+  },
+  {
+    "game": "endfield",
+    "name": "Peacekeeper's Nocturne Sign-In",
+    "type": "event",
+    "start": "2026-06-26 12:00",
+    "end": "2026-07-16 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:peacekeepers-nocturne-sign-in"
+  },
+  {
+    "game": "endfield",
+    "name": "Carly's Fairytale of Wuling",
+    "type": "event",
+    "start": "2026-07-02 12:00",
+    "end": "2026-07-16 06:00",
+    "timezone": "UTC+8",
+    "notes": "Camera event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:carlys-fairytale-of-wuling"
+  },
+  {
+    "game": "endfield",
+    "name": "Monumental Etching: Dirge of Grief",
+    "type": "event",
+    "start": "2026-07-02 12:00",
+    "end": "2026-07-16 06:00",
+    "timezone": "UTC+8",
+    "notes": "Challenge event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:monumental-etching-dirge-of-grief"
+  },
+  {
+    "game": "endfield",
+    "name": "Sanity Supply",
+    "type": "event",
+    "start": "2026-07-09 04:00",
+    "end": "2026-07-16 04:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:sanity-supply"
+  },
+  {
+    "game": "endfield",
+    "name": "Northward to Peril Sign-In",
+    "type": "event",
+    "start": "2026-07-09 12:00",
+    "end": "2026-07-16 06:00",
+    "timezone": "UTC+8",
+    "notes": "Pre-1.4 sign-in. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.3:northward-to-peril-sign-in"
+  },
+  {
+    "game": "endfield",
+    "name": "v1.4 update maintenance",
+    "type": "maintenance",
+    "start": "2026-07-16 06:00",
+    "end": "2026-07-16 12:00",
+    "timezone": "UTC+8",
+    "notes": "Start = 1.3 close in the datamine; 12:00 reopening assumed.",
+    "sourceKey": "hist:endfield:1.4:maintenance"
+  },
+  {
+    "game": "endfield",
+    "name": "Combat Drills: Arcane",
+    "type": "event",
+    "start": "2026-07-16 12:00",
+    "end": "2026-08-09 12:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:combat-drills-arcane"
+  },
+  {
+    "game": "endfield",
+    "name": "Fortune Connect-and-Win",
+    "type": "event",
+    "start": "2026-07-16 12:00",
+    "end": "2026-07-31 04:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:fortune-connect-and-win"
+  },
+  {
+    "game": "endfield",
+    "name": "Gaze North to the Rift Sign-In",
+    "type": "event",
+    "start": "2026-07-16 12:00",
+    "end": "2026-08-09 12:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:gaze-north-to-the-rift-sign-in"
+  },
+  {
+    "game": "endfield",
+    "name": "Gaze Towards the Northern Exclusion",
+    "type": "event",
+    "start": "2026-07-16 12:00",
+    "end": "2026-08-09 12:00",
+    "timezone": "UTC+8",
+    "notes": "Guide/exploration event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:gaze-towards-the-northern-exclusion"
+  },
+  {
+    "game": "endfield",
+    "name": "Military Grade Issue — Type 42: Solemn Phalanx",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-07-16 12:00",
+    "end": "2026-09-30 11:59",
+    "timezone": "UTC+8",
+    "notes": "Arcane weapon. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:military-grade-issue"
+  },
+  {
+    "game": "endfield",
+    "name": "North Yearns the Rift Vigile — Arcane",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-07-16 12:00",
+    "end": "2026-08-09 11:59",
+    "timezone": "UTC+8",
+    "notes": "Limited 6-star. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:north-yearns-the-rift-vigile"
+  },
+  {
+    "game": "endfield",
+    "name": "Protocol Invitation: The Return (web event)",
+    "type": "event",
+    "start": "2026-07-16 12:00",
+    "end": "2026-09-02 06:00",
+    "timezone": "UTC+8",
+    "notes": "Returning-player invite web event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:protocol-invitation-the-return"
+  },
+  {
+    "game": "endfield",
+    "name": "Tribute of Companionship (half-anniversary sign-in)",
+    "type": "event",
+    "start": "2026-07-16 12:00",
+    "end": "2026-08-09 12:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:tribute-of-companionship"
+  },
+  {
+    "game": "endfield",
+    "name": "HEAT RAGE! MEGA ARENA!",
+    "type": "event",
+    "start": "2026-07-30 12:00",
+    "end": "2026-08-13 04:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:heat-rage-mega-arena"
+  },
+  {
+    "game": "endfield",
+    "name": "Sanity Supply",
+    "type": "event",
+    "start": "2026-08-02 04:00",
+    "end": "2026-08-09 04:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:sanity-supply-1"
+  },
+  {
+    "game": "endfield",
+    "name": "Monumental Etching: Beastly Howl",
+    "type": "event",
+    "start": "2026-08-06 12:00",
+    "end": "2026-08-20 04:00",
+    "timezone": "UTC+8",
+    "notes": "Challenge event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:monumental-etching-beastly-howl"
+  },
+  {
+    "game": "endfield",
+    "name": "Bedazzled Issue — Liino weapon",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-08-09 12:00",
+    "end": "2026-11-05 11:59",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server). Neptune 1.6 confirms the Nov 5 close.",
+    "sourceKey": "hist:endfield:1.4:bedazzled-issue"
+  },
+  {
+    "game": "endfield",
+    "name": "Bedazzling Dawnstar Sign-In",
+    "type": "event",
+    "start": "2026-08-09 12:00",
+    "end": "2026-09-02 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:bedazzling-dawnstar-sign-in"
+  },
+  {
+    "game": "endfield",
+    "name": "Combat Drills: Liino",
+    "type": "event",
+    "start": "2026-08-09 12:00",
+    "end": "2026-09-02 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:combat-drills-liino"
+  },
+  {
+    "game": "endfield",
+    "name": "Good Morning from Your Dawnstar — Liino",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-08-09 12:00",
+    "end": "2026-09-02 06:00",
+    "timezone": "UTC+8",
+    "notes": "Limited 6-star. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:good-morning-from-your-dawnstar"
+  },
+  {
+    "game": "endfield",
+    "name": "Like a Star Streaking Through the Boundaries (narrative)",
+    "type": "event",
+    "start": "2026-08-09 12:00",
+    "end": "2026-09-02 06:00",
+    "timezone": "UTC+8",
+    "notes": "Liino story event. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:like-a-star-streaking"
+  },
+  {
+    "game": "endfield",
+    "name": "The Rooted Realm",
+    "type": "event",
+    "start": "2026-08-09 12:00",
+    "end": "2026-09-02 06:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:the-rooted-realm"
+  },
+  {
+    "game": "endfield",
+    "name": "Sanity Supply",
+    "type": "event",
+    "start": "2026-08-26 04:00",
+    "end": "2026-09-02 04:00",
+    "timezone": "UTC+8",
+    "notes": "Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:sanity-supply-2"
+  },
+  {
+    "game": "endfield",
+    "name": "A Forest Mantled in Snow (sign-in)",
+    "type": "event",
+    "start": "2026-08-26 12:00",
+    "end": "2026-09-02 06:00",
+    "timezone": "UTC+8",
+    "notes": "Pre-1.5 sign-in. Datamine time range (Asia server).",
+    "sourceKey": "hist:endfield:1.4:a-forest-mantled-in-snow"
+  },
+  {
+    "game": "endfield",
     "name": "Combat Drills: Typhoeus",
     "type": "event",
     "start": "2026-09-02 04:00",
@@ -53,6 +1076,60 @@
   },
   {
     "game": "endfield",
+    "name": "v1.5 update maintenance",
+    "type": "maintenance",
+    "start": "2026-09-02 06:00",
+    "end": "2026-09-02 12:00",
+    "timezone": "UTC+8",
+    "notes": "Version open 12:00 per Neptune (official notice).",
+    "sourceKey": "hist:endfield:1.5:maintenance"
+  },
+  {
+    "game": "endfield",
+    "name": "1.5 update + bug-fix compensation (mail)",
+    "type": "event",
+    "start": "2026-09-02 12:00",
+    "end": "2026-10-15 06:00",
+    "timezone": "UTC+8",
+    "reward": 1800,
+    "notes": "Two mails. Neptune 1.5/1.6 calendar (official notice times).",
+    "sourceKey": "hist:endfield:1.5:compensation"
+  },
+  {
+    "game": "endfield",
+    "name": "Deep Cold Issue — Umbra of Frigid Eventide",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-09-02 12:00",
+    "end": "2026-11-25 06:00",
+    "timezone": "UTC+8",
+    "notes": "Typhoeus weapon; close per datamine (Neptune: expected).",
+    "sourceKey": "hist:endfield:1.5:deep-cold-issue"
+  },
+  {
+    "game": "endfield",
+    "name": "Echoes of War: Season of Virtuality",
+    "type": "event",
+    "start": "2026-09-02 12:00",
+    "end": "2026-09-24 11:59",
+    "timezone": "UTC+8",
+    "reward": 300,
+    "notes": "Endgame season. Neptune 1.5/1.6 calendar (official notice times).",
+    "sourceKey": "hist:endfield:1.5:echoes-of-war-virtuality"
+  },
+  {
+    "game": "endfield",
+    "name": "Snow Over Deep Woods",
+    "type": "event",
+    "start": "2026-09-02 12:00",
+    "end": "2026-09-30 12:00",
+    "timezone": "UTC+8",
+    "reward": 1200,
+    "notes": "Guide event. Neptune 1.5/1.6 calendar (official notice times).",
+    "sourceKey": "hist:endfield:1.5:snow-over-deep-woods"
+  },
+  {
+    "game": "endfield",
     "name": "Trial of the Bow",
     "type": "event",
     "start": "2026-09-09 12:00",
@@ -88,6 +1165,17 @@
     "dailyTouch": true,
     "notes": "",
     "sourceKey": "seed:endfield:1.5-sanity-1"
+  },
+  {
+    "game": "endfield",
+    "name": "Echoes of War: Season of Illusion",
+    "type": "event",
+    "start": "2026-09-24 12:00",
+    "end": "2026-10-15 06:00",
+    "timezone": "UTC+8",
+    "reward": 300,
+    "notes": "Neptune 1.5/1.6 calendar (official notice times).",
+    "sourceKey": "hist:endfield:1.5:echoes-of-war-illusion"
   },
   {
     "game": "endfield",
@@ -143,6 +1231,17 @@
   },
   {
     "game": "endfield",
+    "name": "OrbiPom! MERGE! (web event)",
+    "type": "event",
+    "start": "2026-10-01 12:00",
+    "end": "2026-10-15 06:00",
+    "timezone": "UTC+8",
+    "reward": 300,
+    "notes": "Neptune 1.5/1.6 calendar (official notice times).",
+    "sourceKey": "hist:endfield:1.5:orbipom-merge"
+  },
+  {
+    "game": "endfield",
     "name": "Ridgeline Flows of Autumn — sign-in",
     "type": "event",
     "start": "2026-10-01 12:00",
@@ -174,6 +1273,17 @@
   },
   {
     "game": "endfield",
+    "name": "Sanctuary of Ink New Version Guide (web event)",
+    "type": "event",
+    "start": "2026-10-06 20:00",
+    "end": "2026-10-15 06:00",
+    "timezone": "UTC+8",
+    "reward": 1000,
+    "notes": "Neptune 1.5/1.6 calendar (official notice times).",
+    "sourceKey": "hist:endfield:1.5:new-version-guide-web"
+  },
+  {
+    "game": "endfield",
     "name": "Sanity Supply (second window)",
     "type": "event",
     "start": "2026-10-08 04:00",
@@ -182,6 +1292,17 @@
     "notify": false,
     "notes": "Asia closes October 15 at 04:00; Americas and Europe use the displayed deadline. Estimated dates.",
     "sourceKey": "seed:endfield:1.5-sanity-2"
+  },
+  {
+    "game": "endfield",
+    "name": "Inkwashed World Sign-In",
+    "type": "event",
+    "start": "2026-10-08 12:00",
+    "end": "2026-10-15 06:00",
+    "timezone": "UTC+8",
+    "reward": 500,
+    "notes": "Also 2 Basic HH Permits. Neptune 1.5/1.6 calendar (official notice times).",
+    "sourceKey": "hist:endfield:1.5:inkwashed-world-sign-in"
   },
   {
     "game": "endfield",

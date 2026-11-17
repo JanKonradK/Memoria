@@ -1,6 +1,575 @@
 [
   {
     "game": "nte",
+    "name": "Hethereau Residents Guide (pre-launch)",
+    "type": "event",
+    "start": "2026-03-26 00:00",
+    "end": "2026-04-28 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "Pre-launch event; rewards Fons, Beetle Coins, Fabricated Dice and the Arc The Forgotten. NTE Build.",
+    "sourceKey": "hist:nte:1.0:hethereau-residents-guide"
+  },
+  {
+    "game": "nte",
+    "name": "14-Day Sign-in: Free Aurelia",
+    "type": "event",
+    "start": "2026-04-29 00:00",
+    "end": "2026-05-13 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "Launch login event (free A-class Aurelia). NTE Build.",
+    "sourceKey": "hist:nte:1.0:14-day-sign-in-aurelia"
+  },
+  {
+    "game": "nte",
+    "name": "The Ichi-daime — Nanally",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-04-29 11:00",
+    "end": "2026-05-13 05:59",
+    "timezone": "UTC+8",
+    "notes": "Limited S-class. Wiki board page.",
+    "sourceKey": "hist:nte:1.0:ichi-daime"
+  },
+  {
+    "game": "nte",
+    "name": "Tiger Perks (The Ichi-daime)",
+    "type": "event",
+    "start": "2026-04-29 11:00",
+    "end": "2026-05-13 05:59",
+    "timezone": "UTC+8",
+    "notes": "Board companion perks: Annulith and pass cosmetics. NTE Build; times follow the board.",
+    "sourceKey": "hist:nte:1.0:tiger-perks"
+  },
+  {
+    "game": "nte",
+    "name": "Tiger Special — Arc board",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-04-29 11:00",
+    "end": "2026-05-13 05:59",
+    "timezone": "UTC+8",
+    "notes": "Nanally signature Arc. Wiki Arc Research Program page.",
+    "sourceKey": "hist:nte:1.0:tiger-special"
+  },
+  {
+    "game": "nte",
+    "name": "Bright Moon Special — Marching Beyond Time",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-05-13 11:00",
+    "end": "2026-06-03 05:59",
+    "timezone": "UTC+8",
+    "notes": "Hotori signature Arc. Kaiden; times follow the board.",
+    "sourceKey": "hist:nte:1.0:bright-moon-special"
+  },
+  {
+    "game": "nte",
+    "name": "Hourglass Perks (Misty Tipsy Style)",
+    "type": "event",
+    "start": "2026-05-13 11:00",
+    "end": "2026-06-03 05:59",
+    "timezone": "UTC+8",
+    "notes": "Board companion perks: Annulith and pass cosmetics. NTE Build; times follow the board.",
+    "sourceKey": "hist:nte:1.0:hourglass-perks"
+  },
+  {
+    "game": "nte",
+    "name": "Misty Tipsy Style — Hotori",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-05-13 11:00",
+    "end": "2026-06-03 05:59",
+    "timezone": "UTC+8",
+    "notes": "Limited S-class. Wiki board page.",
+    "sourceKey": "hist:nte:1.0:misty-tipsy-style"
+  },
+  {
+    "game": "nte",
+    "name": "Zero's Companion",
+    "type": "event",
+    "start": "2026-05-13 12:00",
+    "end": "2026-05-27 04:59",
+    "timezone": "UTC+8",
+    "notes": "Wiki infobox.",
+    "sourceKey": "hist:nte:1.0:zeros-companion"
+  },
+  {
+    "game": "nte",
+    "name": "Whisker Patrol",
+    "type": "event",
+    "start": "2026-05-27 12:00",
+    "end": "2026-06-03 04:59",
+    "timezone": "UTC+8",
+    "notes": "Rewards Annulith, Expansion Cores, Fons. Wiki infobox.",
+    "sourceKey": "hist:nte:1.0:whisker-patrol"
+  },
+  {
+    "game": "nte",
+    "name": "Beyond the Rails: Uncharted Circle",
+    "type": "event",
+    "start": "2026-06-03 00:00",
+    "end": "2026-06-17 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "Endgame rotation opened with 1.1 (NTE Build gives only the start; 14-day rotation assumed from later rotations).",
+    "sourceKey": "hist:nte:1.1:beyond-the-rails-uncharted"
+  },
+  {
+    "game": "nte",
+    "name": "Fons Rush",
+    "type": "event",
+    "start": "2026-06-03 00:00",
+    "end": "2026-07-08 00:00",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "Double Fons; listed for 1.1 by the wiki without dates. Version window as a bound.",
+    "sourceKey": "hist:nte:1.1:fons-rush"
+  },
+  {
+    "game": "nte",
+    "name": "Hunter's Crucible",
+    "type": "event",
+    "start": "2026-06-03 00:00",
+    "end": "2026-07-08 00:00",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "Listed for 1.1 by the wiki without dates. Version window as a bound.",
+    "sourceKey": "hist:nte:1.1:hunters-crucible"
+  },
+  {
+    "game": "nte",
+    "name": "Pixel Surge",
+    "type": "event",
+    "start": "2026-06-03 00:00",
+    "end": "2026-07-08 00:00",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "Double Character Pixel rewards; listed for 1.1 by the wiki without dates. Version window as a bound.",
+    "sourceKey": "hist:nte:1.1:pixel-surge"
+  },
+  {
+    "game": "nte",
+    "name": "v1.1 update maintenance",
+    "type": "maintenance",
+    "start": "2026-06-03 06:00",
+    "end": "2026-06-03 11:00",
+    "timezone": "UTC+8",
+    "notes": "Window inferred: 1.0 boards close 05:59 and 1.1 boards open 11:00.",
+    "sourceKey": "hist:nte:1.1:maintenance"
+  },
+  {
+    "game": "nte",
+    "name": "Circle Gifts — login rewards",
+    "type": "event",
+    "start": "2026-06-03 11:00",
+    "end": "2026-07-08 05:59",
+    "timezone": "UTC+8",
+    "notes": "10 Solid Dice over 7 logins. NTE Build; version-window times.",
+    "sourceKey": "hist:nte:1.1:circle-gifts"
+  },
+  {
+    "game": "nte",
+    "name": "Daydream Perks (Fading Reverie)",
+    "type": "event",
+    "start": "2026-06-03 11:00",
+    "end": "2026-06-24 05:59",
+    "timezone": "UTC+8",
+    "notes": "Board companion perks. NTE Build.",
+    "sourceKey": "hist:nte:1.1:daydream-perks"
+  },
+  {
+    "game": "nte",
+    "name": "Fading Reverie — Lacrimosa",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-06-03 11:00",
+    "end": "2026-06-24 05:59",
+    "timezone": "UTC+8",
+    "notes": "Limited S-class. Wiki board page.",
+    "sourceKey": "hist:nte:1.1:fading-reverie"
+  },
+  {
+    "game": "nte",
+    "name": "Fight Championship",
+    "type": "event",
+    "start": "2026-06-03 11:00",
+    "end": "2026-07-08 05:59",
+    "timezone": "UTC+8",
+    "notes": "Listed as a 1.1 limited event by the wiki; later permanent (NTE Build). End date not sourced; version window assumed.",
+    "sourceKey": "hist:nte:1.1:fight-championship"
+  },
+  {
+    "game": "nte",
+    "name": "Nocturne Special — Arc board",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-06-03 11:00",
+    "end": "2026-06-24 05:59",
+    "timezone": "UTC+8",
+    "notes": "Lacrimosa signature Arc. NTE Quick; times follow the board.",
+    "sourceKey": "hist:nte:1.1:nocturne-special"
+  },
+  {
+    "game": "nte",
+    "name": "Sunward Travelogue",
+    "type": "event",
+    "start": "2026-06-03 11:00",
+    "end": "2026-07-08 05:59",
+    "timezone": "UTC+8",
+    "notes": "Pays Annulith. NTE Build; version-window times.",
+    "sourceKey": "hist:nte:1.1:sunward-travelogue"
+  },
+  {
+    "game": "nte",
+    "name": "The Long Dream",
+    "type": "event",
+    "start": "2026-06-03 11:00",
+    "end": "2026-07-08 05:59",
+    "timezone": "UTC+8",
+    "notes": "Pays Annulith. NTE Build; version-window times.",
+    "sourceKey": "hist:nte:1.1:the-long-dream"
+  },
+  {
+    "game": "nte",
+    "name": "Underground Circuit",
+    "type": "event",
+    "start": "2026-06-03 11:00",
+    "end": "2026-07-08 05:59",
+    "timezone": "UTC+8",
+    "notes": "Pays Annulith. NTE Build; version-window times.",
+    "sourceKey": "hist:nte:1.1:underground-circuit"
+  },
+  {
+    "game": "nte",
+    "name": "What's Baking",
+    "type": "event",
+    "start": "2026-06-03 11:00",
+    "end": "2026-07-08 05:59",
+    "timezone": "UTC+8",
+    "notes": "Pays Annulith. NTE Build; version-window times.",
+    "sourceKey": "hist:nte:1.1:whats-baking"
+  },
+  {
+    "game": "nte",
+    "name": "Everdriving Mystery Box",
+    "type": "banner",
+    "bannerKind": "other",
+    "start": "2026-06-03 17:00",
+    "end": "2026-07-08 05:59",
+    "timezone": "UTC+8",
+    "notes": "Vehicle cosmetics box (Porsche collab). Wiki infobox.",
+    "sourceKey": "hist:nte:1.1:everdriving-mystery-box"
+  },
+  {
+    "game": "nte",
+    "name": "Fogshroud Perks (Forsaken Path)",
+    "type": "event",
+    "start": "2026-06-24 11:00",
+    "end": "2026-07-08 05:59",
+    "timezone": "UTC+8",
+    "notes": "Board companion perks. NTE Build.",
+    "sourceKey": "hist:nte:1.1:fogshroud-perks"
+  },
+  {
+    "game": "nte",
+    "name": "Forsaken Path — Chaos",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-06-24 11:00",
+    "end": "2026-07-08 05:59",
+    "timezone": "UTC+8",
+    "notes": "Limited S-class. Wiki board page.",
+    "sourceKey": "hist:nte:1.1:forsaken-path"
+  },
+  {
+    "game": "nte",
+    "name": "Pursuit Special — Arc board",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-06-24 11:00",
+    "end": "2026-07-08 05:59",
+    "timezone": "UTC+8",
+    "notes": "Chaos signature Arc. NTE Quick; times follow the board.",
+    "sourceKey": "hist:nte:1.1:pursuit-special"
+  },
+  {
+    "game": "nte",
+    "name": "Grab a Bite with Shinku (community event)",
+    "type": "event",
+    "start": "2026-07-08 00:00",
+    "end": "2026-07-14 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "Social/community event. NTE Build.",
+    "sourceKey": "hist:nte:1.2:grab-a-bite-with-shinku"
+  },
+  {
+    "game": "nte",
+    "name": "Mint's Day Off (community event)",
+    "type": "event",
+    "start": "2026-07-08 00:00",
+    "end": "2026-07-08 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "Social/community event; only a start date is given. NTE Build.",
+    "sourceKey": "hist:nte:1.2:mints-day-off"
+  },
+  {
+    "game": "nte",
+    "name": "v1.2 update maintenance",
+    "type": "maintenance",
+    "start": "2026-07-08 06:00",
+    "end": "2026-07-08 11:00",
+    "timezone": "UTC+8",
+    "notes": "Window inferred: 1.1 boards close 05:59 and 1.2 boards open 11:00.",
+    "sourceKey": "hist:nte:1.2:maintenance"
+  },
+  {
+    "game": "nte",
+    "name": "Mews Flash",
+    "type": "event",
+    "start": "2026-07-08 10:00",
+    "end": "2026-08-19 05:59",
+    "timezone": "UTC+8",
+    "notes": "Wiki infobox start; wiki end 17:59 is past the version close, so 05:59 used.",
+    "sourceKey": "hist:nte:1.2:mews-flash"
+  },
+  {
+    "game": "nte",
+    "name": "Before the Dawn — Shinku",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-07-08 11:00",
+    "end": "2026-07-29 05:59",
+    "timezone": "UTC+8",
+    "notes": "Limited S-class. Wiki board page.",
+    "sourceKey": "hist:nte:1.2:before-the-dawn"
+  },
+  {
+    "game": "nte",
+    "name": "Circle Gifts — login rewards",
+    "type": "event",
+    "start": "2026-07-08 11:00",
+    "end": "2026-08-19 05:59",
+    "timezone": "UTC+8",
+    "notes": "Solid Dice and Annulith. NTE Build; version-window times.",
+    "sourceKey": "hist:nte:1.2:circle-gifts"
+  },
+  {
+    "game": "nte",
+    "name": "Resolve Perks (Before the Dawn)",
+    "type": "event",
+    "start": "2026-07-08 11:00",
+    "end": "2026-07-29 05:59",
+    "timezone": "UTC+8",
+    "notes": "Board companion perks. NTE Build.",
+    "sourceKey": "hist:nte:1.2:resolve-perks"
+  },
+  {
+    "game": "nte",
+    "name": "Resolve Special — Blushing Mirage",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-07-08 11:00",
+    "end": "2026-07-29 05:59",
+    "timezone": "UTC+8",
+    "notes": "Shinku signature Arc (rerun in 1.5). Times follow the board.",
+    "sourceKey": "hist:nte:1.2:resolve-special"
+  },
+  {
+    "game": "nte",
+    "name": "Summer Special Gift Pack",
+    "type": "event",
+    "start": "2026-07-08 11:00",
+    "end": "2026-08-19 05:59",
+    "timezone": "UTC+8",
+    "notes": "NTE Build; version-window times.",
+    "sourceKey": "hist:nte:1.2:summer-special-gift-pack"
+  },
+  {
+    "game": "nte",
+    "name": "Neon Rift Mystery Box",
+    "type": "banner",
+    "bannerKind": "other",
+    "start": "2026-07-08 17:00",
+    "end": "2026-08-19 05:59",
+    "timezone": "UTC+8",
+    "notes": "Wiki infobox.",
+    "sourceKey": "hist:nte:1.2:neon-rift-mystery-box"
+  },
+  {
+    "game": "nte",
+    "name": "Stamina Recharge",
+    "type": "event",
+    "start": "2026-07-13 00:00",
+    "end": "2026-07-20 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "2x Hethereau Hobbies efficiency. NTE Build.",
+    "sourceKey": "hist:nte:1.2:stamina-recharge"
+  },
+  {
+    "game": "nte",
+    "name": "Beyond the Rails: Blazing Circle",
+    "type": "event",
+    "start": "2026-07-16 00:00",
+    "end": "2026-07-30 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "Endgame rotation (pays Annulith). NTE Build.",
+    "sourceKey": "hist:nte:1.2:beyond-the-rails-blazing"
+  },
+  {
+    "game": "nte",
+    "name": "Shadow-n-Seek",
+    "type": "event",
+    "start": "2026-07-17 10:00",
+    "end": "2026-08-19 05:59",
+    "timezone": "UTC+8",
+    "notes": "Annulith and Beetle Coins. Wiki infobox start; version close used for end.",
+    "sourceKey": "hist:nte:1.2:shadow-n-seek"
+  },
+  {
+    "game": "nte",
+    "name": "Gold Clash",
+    "type": "event",
+    "start": "2026-07-20 00:00",
+    "end": "2026-08-03 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "NTE Build.",
+    "sourceKey": "hist:nte:1.2:gold-clash"
+  },
+  {
+    "game": "nte",
+    "name": "Eibon Partner Program",
+    "type": "event",
+    "start": "2026-07-26 11:00",
+    "end": "2026-08-19 05:59",
+    "timezone": "UTC+8",
+    "notes": "Wiki infobox.",
+    "sourceKey": "hist:nte:1.2:eibon-partner-program"
+  },
+  {
+    "game": "nte",
+    "name": "Dreamgate Special — Arc board",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-07-29 11:00",
+    "end": "2026-08-19 05:59",
+    "timezone": "UTC+8",
+    "notes": "Iroi signature Arc. NTE Quick; times follow the board.",
+    "sourceKey": "hist:nte:1.2:dreamgate-special"
+  },
+  {
+    "game": "nte",
+    "name": "Going, Going, Gone!",
+    "type": "event",
+    "start": "2026-07-29 11:00",
+    "end": "2026-08-19 05:59",
+    "timezone": "UTC+8",
+    "notes": "Auction minigame (Fons). Wiki infobox start; version close used for end.",
+    "sourceKey": "hist:nte:1.2:going-going-gone"
+  },
+  {
+    "game": "nte",
+    "name": "The Lifeline — Iroi",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-07-29 11:00",
+    "end": "2026-08-19 05:59",
+    "timezone": "UTC+8",
+    "notes": "Limited S-class. Wiki board page.",
+    "sourceKey": "hist:nte:1.2:the-lifeline"
+  },
+  {
+    "game": "nte",
+    "name": "Wayfarer Perks (The Lifeline)",
+    "type": "event",
+    "start": "2026-07-29 11:00",
+    "end": "2026-08-19 05:59",
+    "timezone": "UTC+8",
+    "notes": "Board companion perks. NTE Build.",
+    "sourceKey": "hist:nte:1.2:wayfarer-perks"
+  },
+  {
+    "game": "nte",
+    "name": "Beyond the Rails: Cresting Circle",
+    "type": "event",
+    "start": "2026-07-30 00:00",
+    "end": "2026-08-13 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "Endgame rotation. NTE Build.",
+    "sourceKey": "hist:nte:1.2:beyond-the-rails-cresting"
+  },
+  {
+    "game": "nte",
+    "name": "Pixel Surge",
+    "type": "event",
+    "start": "2026-08-03 00:00",
+    "end": "2026-08-10 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "NTE Build.",
+    "sourceKey": "hist:nte:1.2:pixel-surge"
+  },
+  {
+    "game": "nte",
+    "name": "999 Nights",
+    "type": "event",
+    "start": "2026-08-03 05:00",
+    "end": "2026-08-19 05:59",
+    "timezone": "UTC+8",
+    "notes": "Wiki infobox start (later permanent mode).",
+    "sourceKey": "hist:nte:1.2:999-nights"
+  },
+  {
+    "game": "nte",
+    "name": "Fishing Frenzy",
+    "type": "event",
+    "start": "2026-08-03 05:00",
+    "end": "2026-08-19 05:59",
+    "timezone": "UTC+8",
+    "notes": "Annulith and Fons. Wiki infobox start.",
+    "sourceKey": "hist:nte:1.2:fishing-frenzy"
+  },
+  {
+    "game": "nte",
+    "name": "Warren Lucky Flip",
+    "type": "event",
+    "start": "2026-08-05 05:00",
+    "end": "2026-08-19 04:59",
+    "timezone": "UTC+8",
+    "notes": "Wiki infobox.",
+    "sourceKey": "hist:nte:1.2:warren-lucky-flip"
+  },
+  {
+    "game": "nte",
+    "name": "Fons Rush",
+    "type": "event",
+    "start": "2026-08-10 00:00",
+    "end": "2026-08-17 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "Double Fons. NTE Build.",
+    "sourceKey": "hist:nte:1.2:fons-rush"
+  },
+  {
+    "game": "nte",
+    "name": "Beyond the Rails: Waxing Circle",
+    "type": "event",
+    "start": "2026-08-13 00:00",
+    "end": "2026-08-27 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "Endgame rotation. NTE Build.",
+    "sourceKey": "hist:nte:1.2:beyond-the-rails-waxing"
+  },
+  {
+    "game": "nte",
     "name": "Circle Bounty",
     "type": "cycle",
     "start": "2026-08-19 04:00",
@@ -56,12 +625,130 @@
   },
   {
     "game": "nte",
+    "name": "v1.3 update maintenance",
+    "type": "maintenance",
+    "start": "2026-08-19 06:00",
+    "end": "2026-08-19 11:00",
+    "timezone": "UTC+8",
+    "notes": "Window inferred: 1.2 boards close 05:59 and 1.3 boards open 11:00.",
+    "sourceKey": "hist:nte:1.3:maintenance"
+  },
+  {
+    "game": "nte",
+    "name": "Alluring Shadows — Zankou",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-08-19 11:00",
+    "end": "2026-09-09 05:59",
+    "timezone": "UTC+8",
+    "notes": "Limited S-class. Wiki board page.",
+    "sourceKey": "hist:nte:1.3:alluring-shadows"
+  },
+  {
+    "game": "nte",
+    "name": "Circle Bounty (battle pass)",
+    "type": "event",
+    "start": "2026-08-19 11:00",
+    "end": "2026-09-30 05:59",
+    "timezone": "UTC+8",
+    "notes": "Season pass. NTE Build gives Aug 19 to Sep 29.",
+    "sourceKey": "hist:nte:1.3:circle-bounty"
+  },
+  {
+    "game": "nte",
+    "name": "Circle Gifts — login rewards",
+    "type": "event",
+    "start": "2026-08-19 11:00",
+    "end": "2026-09-30 05:59",
+    "timezone": "UTC+8",
+    "notes": "10 Solid Dice. NTE Build; version-window times.",
+    "sourceKey": "hist:nte:1.3:circle-gifts"
+  },
+  {
+    "game": "nte",
+    "name": "The Ichi-daime — Nanally rerun",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-08-19 11:00",
+    "end": "2026-09-09 05:59",
+    "timezone": "UTC+8",
+    "notes": "Wiki board page.",
+    "sourceKey": "hist:nte:1.3:ichi-daime-rerun"
+  },
+  {
+    "game": "nte",
+    "name": "Spellbound Special — Arc board",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-08-19 11:00",
+    "end": "2026-09-09 05:59",
+    "timezone": "UTC+8",
+    "notes": "Zankou Arc board per GameWith; times follow the board.",
+    "sourceKey": "hist:nte:1.3:spellbound-special"
+  },
+  {
+    "game": "nte",
+    "name": "Tiger Special — Arc board rerun",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-08-19 11:00",
+    "end": "2026-09-09 05:59",
+    "timezone": "UTC+8",
+    "notes": "Nanally Arc rerun per GameWith; times follow the board.",
+    "sourceKey": "hist:nte:1.3:tiger-special-rerun"
+  },
+  {
+    "game": "nte",
+    "name": "Lucent Tides Mystery Box",
+    "type": "banner",
+    "bannerKind": "other",
+    "start": "2026-08-19 17:00",
+    "end": "2026-09-30 05:59",
+    "timezone": "UTC+8",
+    "notes": "Wiki infobox.",
+    "sourceKey": "hist:nte:1.3:lucent-tides-mystery-box"
+  },
+  {
+    "game": "nte",
+    "name": "Stamina Recharge",
+    "type": "event",
+    "start": "2026-08-24 00:00",
+    "end": "2026-08-31 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "NTE Build.",
+    "sourceKey": "hist:nte:1.3:stamina-recharge"
+  },
+  {
+    "game": "nte",
+    "name": "Beyond the Rails rotation",
+    "type": "event",
+    "start": "2026-08-27 00:00",
+    "end": "2026-09-10 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "Endgame rotation. NTE Build.",
+    "sourceKey": "hist:nte:1.3:beyond-the-rails-aug27"
+  },
+  {
+    "game": "nte",
     "name": "Shipwreck Salvage",
     "type": "event",
     "start": "2026-08-28 03:00",
     "end": "2026-09-29 22:59",
     "notes": "",
     "sourceKey": "seed:nte:1.3-shipwreck"
+  },
+  {
+    "game": "nte",
+    "name": "Gold Clash",
+    "type": "event",
+    "start": "2026-08-31 00:00",
+    "end": "2026-09-14 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "NTE Build.",
+    "sourceKey": "hist:nte:1.3:gold-clash"
   },
   {
     "game": "nte",
@@ -119,6 +806,27 @@
   },
   {
     "game": "nte",
+    "name": "NTE Discord Sign-In Event",
+    "type": "event",
+    "start": "2026-09-09 12:00",
+    "end": "2026-09-23 23:59",
+    "timezone": "UTC+8",
+    "notes": "Community (Discord) sign-in. Wiki infobox.",
+    "sourceKey": "hist:nte:1.3:discord-sign-in"
+  },
+  {
+    "game": "nte",
+    "name": "Beyond the Rails rotation",
+    "type": "event",
+    "start": "2026-09-10 00:00",
+    "end": "2026-09-24 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "NTE Build.",
+    "sourceKey": "hist:nte:1.3:beyond-the-rails-sep10"
+  },
+  {
+    "game": "nte",
     "name": "Pixel Surge",
     "type": "event",
     "start": "2026-09-14 05:00",
@@ -149,6 +857,17 @@
   },
   {
     "game": "nte",
+    "name": "Beyond the Rails rotation",
+    "type": "event",
+    "start": "2026-09-24 00:00",
+    "end": "2026-10-08 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "NTE Build.",
+    "sourceKey": "hist:nte:1.3:beyond-the-rails-sep24"
+  },
+  {
+    "game": "nte",
     "name": "v1.4 update maintenance",
     "type": "maintenance",
     "start": "2026-09-30 06:00",
@@ -157,6 +876,26 @@
     "notify": false,
     "notes": "Estimated dates.",
     "sourceKey": "seed:nte:1.4-maint"
+  },
+  {
+    "game": "nte",
+    "name": "Pukaland Fest Special Gift Pack",
+    "type": "event",
+    "start": "2026-09-30 11:00",
+    "end": "2026-11-11 05:59",
+    "timezone": "UTC+8",
+    "notes": "Solid Dice and Fons. NTE Build.",
+    "sourceKey": "hist:nte:1.4:pukaland-fest-gift-pack"
+  },
+  {
+    "game": "nte",
+    "name": "Terminal Depths",
+    "type": "event",
+    "start": "2026-09-30 11:00",
+    "end": "2026-11-11 05:59",
+    "timezone": "UTC+8",
+    "notes": "New endgame mode (Annulith). NTE Build.",
+    "sourceKey": "hist:nte:1.4:terminal-depths"
   },
   {
     "game": "nte",
@@ -286,6 +1025,17 @@
   },
   {
     "game": "nte",
+    "name": "Beyond the Rails: Sunset Circle",
+    "type": "event",
+    "start": "2026-10-08 00:00",
+    "end": "2026-10-22 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "NTE Build.",
+    "sourceKey": "hist:nte:1.4:beyond-the-rails-sunset"
+  },
+  {
+    "game": "nte",
     "name": "Beyond the Rails: Sunset Circle — time TBC",
     "type": "cycle",
     "start": "2026-10-08 00:00",
@@ -358,6 +1108,17 @@
   },
   {
     "game": "nte",
+    "name": "Beyond the Rails: Lucent Circle",
+    "type": "event",
+    "start": "2026-10-22 00:00",
+    "end": "2026-11-05 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "NTE Build.",
+    "sourceKey": "hist:nte:1.4:beyond-the-rails-lucent"
+  },
+  {
+    "game": "nte",
     "name": "Gold Clash",
     "type": "event",
     "start": "2026-10-26 05:00",
@@ -374,6 +1135,17 @@
     "dailyTouch": true,
     "notes": "Daily quests earn card flips for Annulith and Fabricated Dice.",
     "sourceKey": "seed:nte:1.4-puka-lucky-flip"
+  },
+  {
+    "game": "nte",
+    "name": "Beyond the Rails: Glinting Circle",
+    "type": "event",
+    "start": "2026-11-05 00:00",
+    "end": "2026-11-19 23:59",
+    "dateOnly": true,
+    "timezone": "UTC+8",
+    "notes": "NTE Build.",
+    "sourceKey": "hist:nte:1.5:beyond-the-rails-glinting"
   },
   {
     "game": "nte",

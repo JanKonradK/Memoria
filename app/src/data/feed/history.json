@@ -28,689 +28,17 @@
     "nte": {
       "currency": "Annulith",
       "pullCost": 160,
-      "methodology": "Community F2P estimates per version, excluding the monthly subscription, paid battle pass and top-ups; free limited pull tickets converted at the cost of one pull; null where no source gives a total."
+      "methodology": "Total = free Annulith + free Solid Dice x 160 (one limited-board roll). Counts events, story, exploration, dailies, endgame, compensation, codes, login and shop dice. Excludes Monthly Pass, paid Circle Bounty, Fabricated Dice and Tri-Keys (standard/Arc). 1.0-1.2 and 1.4 use the NTE Build tracker (rolls x 160; 1.4 from its Annulith + dice split); 1.3 uses Kaiden's itemised count. 1.5 is open.",
+      "archiveSince": "2026-04-29"
     },
     "endfield": {
       "currency": "Oroberyl",
       "pullCost": 500,
-      "methodology": "Community F2P estimates per version in Oroberyl, excluding the monthly pass, paid battle pass and top-ups; free limited headhunt permits converted at 500 Oroberyl; null where no source gives a total."
+      "methodology": "Total = free Oroberyl + free Chartered HH Permits (banner sign-ins and AIC Quota shop) x 500, all from Neptune Impact's Mega Oroberyl Tracker: one F2P count per version covering dailies, weeklies, free pass track, events, challenges, story, exploration, mail compensation, codes and web events. Excludes Monthly Pass, paid Protocol Pass, Origeometry, Basic HH Permits, Arsenal Tickets, Urgent Recruit and HH Dossier permits. Event times: Asia server (UTC+8).",
+      "archiveSince": "2026-01-22"
     }
   },
   "versions": [
-    {
-      "game": "endfield",
-      "version": "1.0",
-      "title": null,
-      "start": "2026-01-22",
-      "end": "2026-03-12",
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Laevatain",
-        "Gilberta",
-        "Yvonne"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-01-22",
-          "end": "2026-02-07",
-          "featured": [
-            "Laevatain"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-02-07",
-          "end": "2026-02-24",
-          "featured": [
-            "Gilberta"
-          ]
-        },
-        {
-          "phase": 3,
-          "start": "2026-02-24",
-          "end": "2026-03-12",
-          "featured": [
-            "Yvonne"
-          ]
-        }
-      ],
-      "notes": "Three banner phases, not two: Laevatain (Scars of the Forge), Gilberta (The Floaty Messenger), Yvonne (Hues of Passion), all limited 6-star per AllThings. Total null: no source gives a free Oroberyl total for 1.0. RPG Site mentions a launch-window offer of 135 free pulls, but it does not itemise the Oroberyl or permit amounts, so it is not converted. newCharacters lists only the three featured limited 6-stars; the rest of the launch roster is not itemised in sources.",
-      "sources": [
-        {
-          "label": "AllThings: Endfield launch and version 1.1 timeline (global launch January 22, 1.0 phases)",
-          "url": "https://allthings.how/arknights-endfield-launch-and-version-1-1-timeline-every-key-date-so-far/"
-        },
-        {
-          "label": "RPG Site: version 1.1 article (confirms 1.0 release date January 22)",
-          "url": "https://www.rpgsite.net/news/19756-arknights-endfield-version-1-1-update-release-date-new-features"
-        }
-      ]
-    },
-    {
-      "game": "endfield",
-      "version": "1.1",
-      "title": "Old Deep Water Dies, by Rising Tide It is Denied",
-      "start": "2026-03-12",
-      "end": "2026-04-17",
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Tangtang",
-        "Rossi"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": null,
-          "end": null,
-          "featured": [
-            "Tangtang"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": null,
-          "end": "2026-04-17",
-          "featured": [
-            "Rossi"
-          ]
-        }
-      ],
-      "notes": "Total null: no free Oroberyl total for 1.1. RPG Site gives the title, the March 12 release date, and the rewards (10 Chartered permits from Chapter 1 milestones, sign-in event permits, Protocol Pass Basic permits), but no banner dates. AllThings names the phases as Tangtang (Brigand's Calling weapon banner) and Rossi (Scarlet Pearl weapon banner) without exact dates. Phase 1 and 2 start dates are null. Rossi's Chartered banner is reported to end April 17, which is the 1.2 start. Phases shown as weapon-banner phases, not confirmed as separate character-banner dates.",
-      "sources": [
-        {
-          "label": "RPG Site: Endfield 1.1 title, March 12 release, Tangtang and Rossi as new 6-stars",
-          "url": "https://www.rpgsite.net/news/19756-arknights-endfield-version-1-1-update-release-date-new-features"
-        },
-        {
-          "label": "AllThings: Endfield timeline (1.1 phases: Tangtang, Rossi weapon banners)",
-          "url": "https://allthings.how/arknights-endfield-launch-and-version-1-1-timeline-every-key-date-so-far/"
-        }
-      ]
-    },
-    {
-      "game": "endfield",
-      "version": "1.2",
-      "title": "At the Wake of Spring",
-      "start": "2026-04-17",
-      "end": "2026-06-05",
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Zhuang Fangyi"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-04-17",
-          "end": "2026-05-22",
-          "featured": [
-            "Zhuang Fangyi"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-05-14",
-          "end": "2026-06-05",
-          "featured": []
-        }
-      ],
-      "notes": "Total null: no reliable free Oroberyl total for 1.2. Phase 1 is Zhuang Fangyi (Thunder of Renewal) from April 17. Its end date conflicts across sources: Game8 says May 22, GenshinBuilds says May 7, and a fan livestream guide says May 8; May 22 is used here but is not confirmed. Phase 2 is the Fest of Brilliance rerun (a rerun headhunt featuring four veterans, with a separate pity track), from May 14 to the end of 1.2. No single featured operator is named by a reliable source, so featured is empty. Version start is April 17 per multiple sources; end is June 5, the 1.3 start. The 1.2 title comes from one top-up seller table and is not verified.",
-      "sources": [
-        {
-          "label": "Endfield Hub: 1.2 livestream (April 11 2026)",
-          "url": "https://endfield.pages.dev/blog/arknights-endfield-1-2-livestream-april-2026"
-        },
-        {
-          "label": "GenshinBuilds: Endfield 1.2 banners guide (Zhuang Fangyi Apr 17 to May 7)",
-          "url": "https://genshin-builds.com/fr/arknights-endfield/blog/navigating-arknights-endfield-1-2-banners-is-it-worth-your-pulls"
-        },
-        {
-          "label": "TopUpList: Endfield version table (1.2 date April 17)",
-          "url": "https://topuplist.com/blogs/detail/arknights-endfield-1-5-update"
-        }
-      ]
-    },
-    {
-      "game": "endfield",
-      "version": "1.3",
-      "title": "Sketches of Lost Heirlooms",
-      "start": "2026-06-05",
-      "end": "2026-07-16",
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Mi Fu",
-        "Camille"
-      ],
-      "phases": [],
-      "notes": "Total null: no free Oroberyl total for 1.3. Release June 5 2026 is reported by Gematsu and others. Official special program named Mi Fu and Camille as the new 6-stars; Sword Vault Dale is a map, not an operator. A TopUpList table places Mi Fu and Camille in 1.4 instead, so the 1.3 assignment is single-sourced. The 1.3 banner phases are not confirmed by any source (GenshinBuilds says the first banner is Fists of No Regrets from June 5; the rest of the schedule is not visible), so phases is empty. The end date of July 16 is the 1.4 start.",
-      "sources": [
-        {
-          "label": "Gematsu: Endfield version 1.3 Sketches of Lost Heirlooms launches June 5",
-          "url": "https://gematsu.com/2026/05/arknights-endfield-version-update-sketches-of-lost-heirlooms-launches-june-5"
-        },
-        {
-          "label": "Notebookcheck: Endfield 1.3 heads to Sword Vault Dale (new 6-stars)",
-          "url": "https://www.notebookcheck.net/Arknights-Endfield-1-3-heads-to-Sword-Vault-Dale.1304870.0.html"
-        },
-        {
-          "label": "GenshinBuilds: Endfield 1.3 patch notes and strategy guide",
-          "url": "https://genshin-builds.com/th/arknights-endfield/blog/arknights-endfield-sketches-of-lost-heirlooms-patch-notes-strategy-guide"
-        }
-      ]
-    },
-    {
-      "game": "endfield",
-      "version": "1.4",
-      "title": "Homecoming",
-      "start": "2026-07-16",
-      "end": "2026-09-02",
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Arcane",
-        "Liino"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-07-16",
-          "end": "2026-08-09",
-          "featured": [
-            "Arcane"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-08-09",
-          "end": "2026-08-30",
-          "featured": [
-            "Liino"
-          ]
-        }
-      ],
-      "notes": "Total null. Two free-reward figures for 1.4 from TopUpList conflict: about 10,000 Oroberyl with 15 permits, and a fixed 17,600 Oroberyl with five Bedazzling Dawnstar permits. TopUpList sells top-ups, so neither was used. Release July 16 2026 at 12:00 UTC+8. Phase 1 Arcane (Type 42: Solemn Phalanx) July 16 to August 9; Phase 2 Liino from August 9 to August 30 per GamsGo. The gap from August 30 to 1.5 on September 2 is unexplained in the sources. Camille is an off-rate in one source's 1.4 Phase 1 listing and is already in newCharacters for 1.3. Whether Arcane and Liino were first released in 1.4 is not verified.",
-      "sources": [
-        {
-          "label": "GamsGo: Endfield 1.4 banner (Arcane, Liino, dates)",
-          "url": "https://www.gamsgo.com/blog/arknights-endfield-1-4-banner"
-        },
-        {
-          "label": "LootBar: Endfield version 1.4 banners",
-          "url": "https://lootbar.gg/blog/en/arknights-endfield-version-1-4-banners.html"
-        },
-        {
-          "label": "TopUpList: Endfield 1.4 Homecoming guide (free-reward claims, contested)",
-          "url": "https://topuplist.com/blogs/detail/arknights-endfield-1-4-homecoming-guide"
-        }
-      ]
-    },
-    {
-      "game": "endfield",
-      "version": "1.5",
-      "title": null,
-      "start": "2026-09-02",
-      "end": "2026-10-15",
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Typhoeus"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-09-02",
-          "end": "2026-09-30",
-          "featured": [
-            "Typhoeus"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": null,
-          "end": null,
-          "featured": []
-        }
-      ],
-      "notes": "Total null. No official 1.5 patch notes were found, and no free Oroberyl total. Start September 2 2026 is reported by several sources, and 1.6 starts October 15 per Prydwen and WotPack. Phase 1 Typhoeus (Winter Hunt character banner, Deep Cold Issue weapon banner with Umbra of Frigid Eventide) runs September 2 to 30 per one French source; Game8 gives the weapon banner an end of November 25, which is inconsistent with the 1.6 start and is not used. Phase 2 has no confirmed date or featured operator; a TopUpList/GamsGo title says 'Typhoeus, Yvonne', which is unverified. The 1.5 title is not found, so it is null.",
-      "sources": [
-        {
-          "label": "Game8: Endfield headhunting banner schedule (1.5 Deep Cold Issue from 09/02/2026)",
-          "url": "https://game8.co/games/Arknights-Endfield/archives/524215"
-        },
-        {
-          "label": "Gaming Deputy (FR): Endfield 1.5 banners",
-          "url": "https://www.gamingdeputy.com/france/arknights-endfield-mise-a-jour-1-5-bannieres/"
-        },
-        {
-          "label": "TopUpList: Endfield 1.5 update (version table, 1.5 start)",
-          "url": "https://topuplist.com/blogs/detail/arknights-endfield-1-5-update"
-        }
-      ]
-    },
-    {
-      "game": "endfield",
-      "version": "1.6",
-      "title": "Sanctuary of Ink",
-      "start": "2026-10-15",
-      "end": null,
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Si",
-        "Silver Stream"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-10-15",
-          "end": "2026-11-05",
-          "featured": [
-            "Si"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-11-05",
-          "end": "2026-11-25",
-          "featured": [
-            "Silver Stream"
-          ]
-        }
-      ],
-      "notes": "Running on 2026-11-15, so end is null. Total null: the only free Oroberyl figure found is 1,000 for the Sanctuary of Ink rewards page, which is one reward page rather than a version total. Phase 1 Si (Cryo 6-star, Jade Vessel weapon) October 15 to November 5. Phase 2 is a 6-star named Silver Stream by WotPack and Argent Flow by Game8 (likely the same operator in different translations); November 5 to November 25 per Game8. Tangtang reruns on a Refactoring banner October 29 to November 19 (Game8) and is not in the phase table. Title: WotPack calls the version 'Painted Refuge', while endfield.gg and the Genshin-Builds page use 'Sanctuary of Ink'; the latter is used. The Game8 end of November 25 is the scheduled end of the phase 2 banner, not confirmed as the version end; the 1.7 date was not found.",
-      "sources": [
-        {
-          "label": "WotPack: Endfield 1.6 release and banners (Oct 15 release, Si, Silver Stream)",
-          "url": "https://wotpack.ru/en/obnovlenie-arknights-endfield-1-6-kogda-vyydet-bannery-i-sobytiya/"
-        },
-        {
-          "label": "Game8: Endfield headhunting banner schedule (1.6 Si, Argent Flow, rerun dates)",
-          "url": "https://game8.co/games/Arknights-Endfield/archives/524215"
-        },
-        {
-          "label": "Prydwen: Endfield banners (Patch 1.6 Phase 1 Oct 15 to Nov 5)",
-          "url": "https://www.prydwen.gg/arknights-endfield/banners"
-        },
-        {
-          "label": "Genshin-Builds: Sanctuary of Ink rewards page (1,000 Oroberyl; page live Oct 6 2026)",
-          "url": "https://genshin-builds.com/en/arknights-endfield/blog/arknights-endfield-sanctuary-of-ink-guide-rewards"
-        }
-      ]
-    },
-    {
-      "game": "nte",
-      "version": "1.0",
-      "title": null,
-      "start": "2026-04-29",
-      "end": "2026-06-03",
-      "currency": {
-        "total": 33600,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Nanally",
-        "Hotori"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-04-29",
-          "end": "2026-05-13",
-          "featured": [
-            "Nanally"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-05-13",
-          "end": "2026-06-03",
-          "featured": [
-            "Hotori"
-          ]
-        }
-      ],
-      "notes": "Total = 210 free limited-board rolls from the NTE Build tracker x 160 Annulith per roll. A roll costs 160 Annulith or one Solid Die, so rolls x 160 is the Annulith-equivalent. The tracker says the 1.0 figure includes launch and pre-registration rewards; no breakdown is given. Launch date April 29 is from pre-launch articles and the Neverness Guide list. Phase dates come from the NTE Guide archive. newCharacters lists only the two featured S-class launch banners: the launch roster is 14 playable characters, and the other 12 are not itemised in any source found.",
-      "sources": [
-        {
-          "label": "NTE Guide banner archive (1.0 phase dates and featured S-class)",
-          "url": "https://nteguide.com/en/banners/"
-        },
-        {
-          "label": "NTE Build free-to-play limited-roll tracker (210 rolls for 1.0)",
-          "url": "https://www.ntebuild.com/pull-count"
-        },
-        {
-          "label": "Neverness Guide version history (1.0 launch, April 29 2026)",
-          "url": "https://nevernessguide.pages.dev/version-history"
-        },
-        {
-          "label": "RPG Site: global launch on April 29 2026 (pre-launch article)",
-          "url": "https://www.rpgsite.net/news/19734-neverness-to-everness-release-date-pre-registration-link"
-        }
-      ]
-    },
-    {
-      "game": "nte",
-      "version": "1.1",
-      "title": "Dreamwalk Corridor",
-      "start": "2026-06-03",
-      "end": "2026-07-08",
-      "currency": {
-        "total": 13120,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Lacrimosa",
-        "Chaos"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-06-03",
-          "end": "2026-06-24",
-          "featured": [
-            "Lacrimosa"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-06-24",
-          "end": "2026-07-08",
-          "featured": [
-            "Chaos"
-          ]
-        }
-      ],
-      "notes": "Total = 82 free limited-board rolls from the NTE Build tracker x 160 Annulith = 13,120. Lootbar's 1.1 pull guide estimates 9,800 to 10,800 Annulith (about 61 to 67 pulls from Annulith alone); it does not count Solid Dice and is a single source, so it was not used. Global release June 3 2026 (China server May 28). Phase 1 Lacrimosa June 3 to June 24 and Phase 2 June 24 to July 8 follow the global dates from the Kaiden / search summaries. NTE Guide's archive lists 1.1 phases as May 28 to June 11 (Lacrimosa) and June 11 to June 25 (Chaos), which match China server timing and were not used for dates; both sources agree that Chaos is the Phase 2 featured character. Title and new characters (Lacrimosa, Chaos) are from search summaries and the NTE Guide archive; phase 2 featured is cited by two sources.",
-      "sources": [
-        {
-          "label": "NTE Build free-to-play limited-roll tracker (82 rolls for 1.1)",
-          "url": "https://www.ntebuild.com/pull-count"
-        },
-        {
-          "label": "Kaiden: NTE 1.1 Dreamwalk Corridor update notes",
-          "url": "https://www.kaiden.gg/blog/nte-v11-dreamwalk-corridor-update-notes/"
-        },
-        {
-          "label": "NTE Guide banner archive (1.1 phases and featured characters)",
-          "url": "https://nteguide.com/en/banners/"
-        },
-        {
-          "label": "Neverness Guide version history (1.1 release)",
-          "url": "https://nevernessguide.pages.dev/version-history"
-        }
-      ]
-    },
-    {
-      "game": "nte",
-      "version": "1.2",
-      "title": null,
-      "start": "2026-07-08",
-      "end": "2026-08-19",
-      "currency": {
-        "total": 15360,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Shinku",
-        "Iroi"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-07-08",
-          "end": "2026-07-29",
-          "featured": [
-            "Shinku"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-07-29",
-          "end": "2026-08-19",
-          "featured": [
-            "Iroi"
-          ]
-        }
-      ],
-      "notes": "Total = 96 free limited-board rolls from the NTE Build tracker x 160 = 15,360. allthings.how gives a different 1.2 breakdown (11,430 Annulith plus 16 Solid Dice = 13,990 Annulith-equivalent, plus 60 Tri-Keys and 23 Fabricated Dice). Tri-Keys and Fabricated Dice are standard or Arc tickets and are excluded by the brief, and its figures are CN-derived, so the tracker was used. Phase 1 Shinku July 8 to 29 and Phase 2 Iroi July 29 to August 19 are the most common dates. One NTE Guide preview names the Phase 2 character Illica, and the NTE Guide archive lists Phase 1 as starting July 2 with Illica; those are treated as outliers. The 1.2 title is not confirmed by a reliable source, so it is null.",
-      "sources": [
-        {
-          "label": "NTE Build free-to-play limited-roll tracker (96 rolls for 1.2)",
-          "url": "https://www.ntebuild.com/pull-count"
-        },
-        {
-          "label": "Icy Veins: when Iroi releases in NTE 1.2 (Phase 2 July 29 to August 19)",
-          "url": "https://www.icy-veins.com/neverness-to-everness/news/when-does-iroi-release-in-nte-version-1-2/"
-        },
-        {
-          "label": "NTE Guide banner archive (1.2 phases; Shinku listed as Zhenhong)",
-          "url": "https://nteguide.com/en/banners/"
-        },
-        {
-          "label": "allthings.how: free pulls and Fons in NTE 1.2 (CN-derived breakdown)",
-          "url": "https://allthings.how/free-pulls-and-fons-you-can-earn-in-nte-1-2-pull-count/"
-        }
-      ]
-    },
-    {
-      "game": "nte",
-      "version": "1.3",
-      "title": "Rising from the Moonlit Fog",
-      "start": "2026-08-19",
-      "end": "2026-09-30",
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Zankou",
-        "Linko"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-08-19",
-          "end": "2026-09-09",
-          "featured": [
-            "Zankou"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-09-09",
-          "end": "2026-09-30",
-          "featured": [
-            "Linko"
-          ]
-        }
-      ],
-      "notes": "Total null: the NTE Build tracker explicitly does not track version 1.3, and no other source gives a free-to-play total for it. Phase 1 Zankou (limited, Alluring Shadows) with a Nanally rerun (The Ichi Daime Returns); Phase 2 Linko (limited, Surfing All Channels) with a Hotori rerun (Misty Tipsy Style Returns). Phase boundaries are at 05:59 UTC+8. Zankou and Linko are S-class, per GameWith. The version ran August 19 to September 30 2026; 1.4 began September 30.",
-      "sources": [
-        {
-          "label": "GameWith: NTE 1.3 version guide (phases, reruns, new S-class)",
-          "url": "https://gamewith.net/nte/77217"
-        },
-        {
-          "label": "NTE Guide banner archive (1.3 phases)",
-          "url": "https://nteguide.com/en/banners/"
-        },
-        {
-          "label": "NTE Build pull-count tracker (1.3 not tracked)",
-          "url": "https://www.ntebuild.com/pull-count"
-        }
-      ]
-    },
-    {
-      "game": "nte",
-      "version": "1.4",
-      "title": "For Whom the Verses Mourn",
-      "start": "2026-09-30",
-      "end": "2026-11-11",
-      "currency": {
-        "total": 17410,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Blackbird",
-        "Akane Rin"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-09-30",
-          "end": "2026-10-21",
-          "featured": [
-            "Blackbird"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-10-21",
-          "end": "2026-11-11",
-          "featured": [
-            "Akane Rin"
-          ]
-        }
-      ],
-      "notes": "Total = 12,610 Annulith plus 30 Solid Dice (30 x 160 = 4,800), taken from the NTE Build tracker's own breakdown = 17,410. The tracker's 108-roll headline x 160 would give 17,280; the difference is rounding in its roll count (12,610 / 160 = 78.8 rolls). The tracker excludes the Monthly Pass and Battle Pass. Phase dates: Blackbird (Foretold Finale) September 30 to October 21, and Akane Rin (Dazzling Star) October 21 to November 11. The NTE 1.4 livestream summary says no banner dates were announced, so these dates are unofficial; the 1.4 global start on September 30 is reported as official. The 1.5 start of November 11 is the 1.4 end. Blackbird and Akane Rin are the limited S-class new characters.",
-      "sources": [
-        {
-          "label": "NTE Build free-to-play tracker (1.4: 108 rolls, 12,610 Annulith, 30 Solid Dice)",
-          "url": "https://www.ntebuild.com/pull-count"
-        },
-        {
-          "label": "NTE Build: 1.4 livestream summary (no banner dates officially announced)",
-          "url": "https://www.ntebuild.com/news/nte-1-4-livestream-summary"
-        },
-        {
-          "label": "Have a Good Holiday: NTE 1.4 launches September 30 with Blackbird",
-          "url": "https://www.haveagood-holiday.com/en/articles/nte-neverness-to-everness-ver-1-4-blackbird-pukaland-porsche"
-        },
-        {
-          "label": "GuruGamer: NTE 1.4 livestream reveals For Whom the Verses Mourn",
-          "url": "https://gurugamer.com/mobile-games/nte-version-1-4-livestream-reveals-for-whom-the-verses-mourn-27308"
-        }
-      ]
-    },
-    {
-      "game": "nte",
-      "version": "1.5",
-      "title": "Once Upon a Glitched Call",
-      "start": "2026-11-11",
-      "end": null,
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Elyms",
-        "Exe"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-11-11",
-          "end": "2026-12-02",
-          "featured": [
-            "Elyms"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-12-02",
-          "end": "2026-12-23",
-          "featured": [
-            "Exe"
-          ]
-        }
-      ],
-      "notes": "Running on 2026-11-15, so end is null. Total null: no complete free-to-play total exists yet for 1.5, and the version is in progress. Known free premium currency so far: 600 Annulith from maintenance and bug-fix mail compensation (300 + 300, per AccountShark, single source), plus up to 10 Solid Dice from a 7-day login event. Those are not summed into a total. Phase 1 Elyms (limited S-class, Android Dreams) with a Shinku rerun (Before the Dawn), runs November 11 to December 2 (AccountShark gives the end as December 1 3:59 PM CT, which is December 2 05:59 UTC+8). Phase 2 Exe (Offline Equations) starts December 2 and ends December 23 per GoSuGamers. The rerun for Phase 2 conflicts: GoSuGamers lists Chaos, and AccountShark lists no rerun. Exe is counted in newCharacters even though he is first playable on December 2, which is after today.",
-      "sources": [
-        {
-          "label": "GoSuGamers: everything revealed for NTE 1.5 (Elyms, Exe, Shinku rerun, phase dates)",
-          "url": "https://www.gosugamers.net/entertainment/news/79433-everything-revealed-for-neverness-to-everness-version-1-5-exe-elyms-vehicles-events"
-        },
-        {
-          "label": "AccountShark: NTE 1.5 guide (release, phases, 600 Annulith compensation)",
-          "url": "https://accountshark.net/blog/nte-neverness-to-everness-version-1-5-once-upon-a-glitched-call-elyms-banner-shinku-rerun-events-guide"
-        },
-        {
-          "label": "PlayNews: NTE update 1.5 and what changes for pulls",
-          "url": "https://www.playnews.gg/en/updates/nte-neverness-to-everness-update-1-5-is-here-what-does-it-change-for-your-pulls"
-        }
-      ]
-    },
     {
       "game": "genshin",
       "version": "1.0",
@@ -8897,6 +8225,766 @@
         {
           "label": "TopUpLive: 3.8 pull count (83 limited pulls)",
           "url": "https://www.topuplive.com/news/wuwa-3-8-pull-count.html"
+        }
+      ]
+    },
+    {
+      "game": "nte",
+      "version": "1.0",
+      "title": null,
+      "start": "2026-04-29",
+      "end": "2026-06-03",
+      "currency": {
+        "total": 33600,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Nanally",
+        "Hotori",
+        "Baicang",
+        "Chiz",
+        "Esper Zero",
+        "Fadia",
+        "Hathor",
+        "Daffodill",
+        "Jiuyuan",
+        "Sakiri",
+        "Adler",
+        "Aurelia",
+        "Edgar",
+        "Haniel",
+        "Mint",
+        "Skia"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-04-29",
+          "end": "2026-05-13",
+          "featured": [
+            "Nanally"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-05-13",
+          "end": "2026-06-03",
+          "featured": [
+            "Hotori"
+          ]
+        }
+      ],
+      "notes": "Total kept from the earlier round: 210 free limited-board rolls (NTE Build tracker, includes launch and pre-registration rewards) x 160 = 33,600; no breakdown exists. Boards run 11:00 to 05:59 UTC+8 (wiki board pages). newCharacters is now the full launch roster from the wiki 1.0 page (10 S-class incl. the two limited, 6 A-class). China launched April 23. Calendar: 6 events, 4 banners (character, Arc and mystery box), 0 maintenance.",
+      "sources": [
+        {
+          "label": "NTE Build free-to-play limited-roll tracker",
+          "url": "https://www.ntebuild.com/pull-count"
+        },
+        {
+          "label": "NTE Fandom wiki: Version pages, board pages and event infoboxes (MediaWiki API)",
+          "url": "https://neverness-to-everness.fandom.com/wiki/Version"
+        },
+        {
+          "label": "NTE Quick banner history (character and Arc boards per phase)",
+          "url": "https://ntequicktools.pages.dev/banner-history/"
+        },
+        {
+          "label": "RPG Site: global launch on April 29 2026 (pre-launch article)",
+          "url": "https://www.rpgsite.net/news/19734-neverness-to-everness-release-date-pre-registration-link"
+        }
+      ]
+    },
+    {
+      "game": "nte",
+      "version": "1.1",
+      "title": "Dreamwalk Corridor",
+      "start": "2026-06-03",
+      "end": "2026-07-08",
+      "currency": {
+        "total": 13120,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Lacrimosa",
+        "Chaos"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-06-03",
+          "end": "2026-06-24",
+          "featured": [
+            "Lacrimosa"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-06-24",
+          "end": "2026-07-08",
+          "featured": [
+            "Chaos"
+          ]
+        }
+      ],
+      "notes": "Total kept: 82 tracker rolls x 160 = 13,120. A CN tally (18183) claims 11,850 Annulith for 1.1 but its 12 rows sum to 9,080 and it omits dice, so it was not used. Phase dates now confirmed by the wiki board pages (Fading Reverie 2026-06-03 11:00 to 06-24 05:59; Forsaken Path 06-24 11:00 to 07-08 05:59 UTC+8). The wiki version infobox says June 4 / July 7, which contradicts its own board pages; boards used. Calendar: 12 events, 5 banners (character, Arc and mystery box), 1 maintenance.",
+      "sources": [
+        {
+          "label": "NTE Build free-to-play limited-roll tracker",
+          "url": "https://www.ntebuild.com/pull-count"
+        },
+        {
+          "label": "NTE Fandom wiki: Version pages, board pages and event infoboxes (MediaWiki API)",
+          "url": "https://neverness-to-everness.fandom.com/wiki/Version"
+        },
+        {
+          "label": "NTE Build events calendar (every banner and limited event since launch)",
+          "url": "https://www.ntebuild.com/events"
+        },
+        {
+          "label": "NTE Quick banner history (character and Arc boards per phase)",
+          "url": "https://ntequicktools.pages.dev/banner-history/"
+        },
+        {
+          "label": "18183: NTE 1.1 Annulith summary (CN, 11,850 claimed; rows sum to 9,080)",
+          "url": "https://www.18183.com/gonglue/202606/g9cch7tf.html"
+        }
+      ]
+    },
+    {
+      "game": "nte",
+      "version": "1.2",
+      "title": "999 Nights",
+      "start": "2026-07-08",
+      "end": "2026-08-19",
+      "currency": {
+        "total": 15360,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Shinku",
+        "Iroi"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-07-08",
+          "end": "2026-07-29",
+          "featured": [
+            "Shinku"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-07-29",
+          "end": "2026-08-19",
+          "featured": [
+            "Iroi"
+          ]
+        }
+      ],
+      "notes": "Total kept: 96 tracker rolls x 160 = 15,360 (allthings.how CN-derived 13,990 incl. Solid Dice not used). Title 999 Nights from the wiki version list (it names the version after its new mode). Phases confirmed by wiki board pages: Before the Dawn 07-08 11:00 to 07-29 05:59, The Lifeline 07-29 11:00 to 08-19 05:59 UTC+8. Several wiki event infoboxes give ends of 08-19 17:59, which is past the version close; the version close 05:59 was used. Calendar: 20 events, 5 banners (character, Arc and mystery box), 1 maintenance.",
+      "sources": [
+        {
+          "label": "NTE Build free-to-play limited-roll tracker",
+          "url": "https://www.ntebuild.com/pull-count"
+        },
+        {
+          "label": "NTE Fandom wiki: Version pages, board pages and event infoboxes (MediaWiki API)",
+          "url": "https://neverness-to-everness.fandom.com/wiki/Version"
+        },
+        {
+          "label": "NTE Build events calendar (every banner and limited event since launch)",
+          "url": "https://www.ntebuild.com/events"
+        },
+        {
+          "label": "NTE Quick banner history (character and Arc boards per phase)",
+          "url": "https://ntequicktools.pages.dev/banner-history/"
+        },
+        {
+          "label": "allthings.how: free pulls and Fons in NTE 1.2 (CN-derived breakdown)",
+          "url": "https://allthings.how/free-pulls-and-fons-you-can-earn-in-nte-1-2-pull-count/"
+        }
+      ]
+    },
+    {
+      "game": "nte",
+      "version": "1.3",
+      "title": "Rising from the Moonlit Fog",
+      "start": "2026-08-19",
+      "end": "2026-09-30",
+      "currency": {
+        "total": 13365,
+        "events": 2860,
+        "daily": 2520,
+        "endgame": 2400,
+        "other": 5585,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Zankou",
+        "Linko"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-08-19",
+          "end": "2026-09-09",
+          "featured": [
+            "Zankou",
+            "Nanally"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-09-09",
+          "end": "2026-09-30",
+          "featured": [
+            "Linko",
+            "Hotori"
+          ]
+        }
+      ],
+      "notes": "NEW total: Kaiden itemised F2P count, 10,965 Annulith + 15 Solid Dice (7-day login 10, monthly Lost Exchange 5) x 160 = 13,365; monthly card and paid pass excluded; updated Aug 20. Breakdown: events 2,860 (Volley Star 1,200, Runaway Echoes 500, Shipwreck Salvage 320, Surf Breaker 300, Breezy Tour 300, Hunter's Crucible 240); daily 2,520 (60 x 42); endgame 2,400 (Beyond the Rails, 3 rotations); other 5,585 (compensation 900, codes 300, story 300, exploration/racing/commissions/achievements/bonds/trials/Hunter Exchange 1,685, Solid Dice 2,400). Single source; the NTE Build tracker skips 1.3. featured now includes the reruns (Nanally, Hotori). Calendar: 16 events, 9 banners (character, Arc and mystery box), 1 maintenance.",
+      "sources": [
+        {
+          "label": "Kaiden: NTE 1.3 income estimates (10,965 Annulith + 15 Solid Dice, itemised)",
+          "url": "https://www.kaiden.gg/nte/guides/version-1-3-income-estimates-fons-annulith-and-pulls/"
+        },
+        {
+          "label": "NTE Fandom wiki: Version pages, board pages and event infoboxes (MediaWiki API)",
+          "url": "https://neverness-to-everness.fandom.com/wiki/Version"
+        },
+        {
+          "label": "NTE Build events calendar (every banner and limited event since launch)",
+          "url": "https://www.ntebuild.com/events"
+        },
+        {
+          "label": "NTE Quick banner history (character and Arc boards per phase)",
+          "url": "https://ntequicktools.pages.dev/banner-history/"
+        },
+        {
+          "label": "GameWith: NTE 1.3 version guide (phases, reruns, new S-class)",
+          "url": "https://gamewith.net/nte/77217"
+        }
+      ]
+    },
+    {
+      "game": "nte",
+      "version": "1.4",
+      "title": "For Whom the Verses Mourn",
+      "start": "2026-09-30",
+      "end": "2026-11-11",
+      "currency": {
+        "total": 17410,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Blackbird",
+        "Akane Rin"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-09-30",
+          "end": "2026-10-21",
+          "featured": [
+            "Blackbird",
+            "Lacrimosa"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-10-21",
+          "end": "2026-11-11",
+          "featured": [
+            "Akane Rin"
+          ]
+        }
+      ],
+      "notes": "Total kept: NTE Build 1.4 breakdown, 12,610 Annulith + 30 Solid Dice x 160 = 17,410 (Monthly Pass and Battle Pass excluded). Phase dates are now confirmed by the wiki board pages (Foretold Finale and the Fading Reverie rerun 09-30 11:00 to 10-21 05:59; Dazzling Star 10-21 11:00 to 11-11 05:59 UTC+8). featured includes the Lacrimosa rerun. Calendar: 14 events, 8 banners (character, Arc and mystery box), 2 maintenance.",
+      "sources": [
+        {
+          "label": "NTE Build free-to-play limited-roll tracker",
+          "url": "https://www.ntebuild.com/pull-count"
+        },
+        {
+          "label": "NTE Fandom wiki: Version pages, board pages and event infoboxes (MediaWiki API)",
+          "url": "https://neverness-to-everness.fandom.com/wiki/Version"
+        },
+        {
+          "label": "NTE Build events calendar (every banner and limited event since launch)",
+          "url": "https://www.ntebuild.com/events"
+        },
+        {
+          "label": "NTE Quick banner history (character and Arc boards per phase)",
+          "url": "https://ntequicktools.pages.dev/banner-history/"
+        }
+      ]
+    },
+    {
+      "game": "nte",
+      "version": "1.5",
+      "title": "Once Upon a Glitched Call",
+      "start": "2026-11-11",
+      "end": null,
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Elyms",
+        "Exe"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-11-11",
+          "end": "2026-12-02",
+          "featured": [
+            "Elyms",
+            "Shinku"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-12-02",
+          "end": "2026-12-23",
+          "featured": [
+            "Exe",
+            "Chaos"
+          ]
+        }
+      ],
+      "notes": "Running on 2026-11-16; scheduled to close 2026-12-23 05:59 UTC+8 (wiki infobox), so end stays null. Total null: the only tally (GamingonPhone, Nov 15) states 9,410 Annulith + 25 Solid Dice (= 13,410 at 160/roll), but its own rows add to different sums in every category (e.g. regular sources 6,360 vs 6,520 stated) and it counts 1.6 livestream codes, so it is not used. Known so far: 600 Annulith maintenance and bug-fix mail, 10 Solid Dice from the 7-day login. Phase 2 rerun is Chaos (Forsaken Path), per the wiki and NTE Build banners page, which settles the earlier conflict. Wiki also lists On the Line with Elyms, Tycoon's Deck and Magic Lucky Flip with no dates; not in the calendar. Calendar: 10 events, 7 banners (character, Arc and mystery box), 1 maintenance.",
+      "sources": [
+        {
+          "label": "NTE Fandom wiki: Version pages, board pages and event infoboxes (MediaWiki API)",
+          "url": "https://neverness-to-everness.fandom.com/wiki/Version"
+        },
+        {
+          "label": "GamingonPhone: NTE 1.5 free pulls estimate (9,410 Annulith + 25 Solid Dice; rows do not reconcile)",
+          "url": "https://gamingonphone.com/guides/neverness-to-everness-version-1-5-update-how-to-get-9400-annuliths-and-a-total-of-184-pulls-for-free/"
+        },
+        {
+          "label": "GoSuGamers: everything revealed for NTE 1.5 (Elyms, Exe, Shinku rerun, phase dates)",
+          "url": "https://www.gosugamers.net/entertainment/news/79433-everything-revealed-for-neverness-to-everness-version-1-5-exe-elyms-vehicles-events"
+        },
+        {
+          "label": "AccountShark: NTE 1.5 guide (release, phases, 600 Annulith compensation)",
+          "url": "https://accountshark.net/blog/nte-neverness-to-everness-version-1-5-once-upon-a-glitched-call-elyms-banner-shinku-rerun-events-guide"
+        }
+      ]
+    },
+    {
+      "game": "endfield",
+      "version": "1.0",
+      "title": "Zeroth Directive",
+      "start": "2026-01-22",
+      "end": "2026-03-12",
+      "currency": {
+        "total": 124626,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Laevatain",
+        "Gilberta",
+        "Yvonne"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-01-22",
+          "end": "2026-02-07",
+          "featured": [
+            "Laevatain"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-02-07",
+          "end": "2026-02-24",
+          "featured": [
+            "Gilberta"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": "2026-02-24",
+          "end": "2026-03-12",
+          "featured": [
+            "Yvonne"
+          ]
+        }
+      ],
+      "notes": "Total = 98,626 free Oroberyl + (37 login + 15 AIC Quota shop) Chartered HH Permits x 500 = 124,626 (Neptune tracker; includes launch and pre-registration gifts, 49 days). No breakdown published for 1.0. Title per Neptune (CN: 零号委托). Phases from the datamine: Scars of the Forge from launch (Jan 22 11:00 UTC+8) to Feb 7 12:00, The Floaty Messenger Feb 7 to Feb 24 12:00, Hues of Passion Feb 24 to Mar 12 06:00. newCharacters lists only the three limited 6-stars. Calendar: 16 events, 6 banners (character and weapon), 0 maintenance.",
+      "sources": [
+        {
+          "label": "Neptune Impact: Endfield Mega Oroberyl Tracker (F2P Oroberyl + login/shop Chartered permits per version, 1.0 to 1.6)",
+          "url": "https://neptuneimpact.com/endfield/mega-oroberyl-tracker/"
+        },
+        {
+          "label": "rmxlinux/EndfieldData datamine: TableCfg ActivityTable, TimeRangeTable, GachaCharPoolTable, GachaWeaponPoolTable (EN text map)",
+          "url": "https://github.com/rmxlinux/EndfieldData/tree/main/TableCfg"
+        },
+        {
+          "label": "Bilibili Endfield wiki: 活动一览 (version and narrative event dates)",
+          "url": "https://wiki.biligame.com/zmd/%E6%B4%BB%E5%8A%A8%E4%B8%80%E8%A7%88"
+        },
+        {
+          "label": "PC Gamer: Endfield launch times (Jan 22 2026, 11:00 UTC+8)",
+          "url": "https://www.pcgamer.com/games/rpg/arknights-endfield-launch-time-release-date/"
+        }
+      ]
+    },
+    {
+      "game": "endfield",
+      "version": "1.1",
+      "title": "Old Deep Water Dies, by Rising Tide It is Denied",
+      "start": "2026-03-12",
+      "end": "2026-04-17",
+      "currency": {
+        "total": 46176,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Tangtang",
+        "Rossi"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-03-12",
+          "end": "2026-03-29",
+          "featured": [
+            "Tangtang"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-03-29",
+          "end": "2026-04-17",
+          "featured": [
+            "Rossi"
+          ]
+        }
+      ],
+      "notes": "Total = 31,176 Oroberyl + (20 login + 10 shop) permits x 500 = 46,176 (Neptune tracker, 36 days). Phases now dated from the datamine character pools: River's Daughter (Tangtang) Mar 12 to Mar 29 12:00, Wolf Pearl (Rossi) Mar 29 to Apr 17 06:00 UTC+8. Calendar: 14 events, 4 banners (character and weapon), 1 maintenance.",
+      "sources": [
+        {
+          "label": "Neptune Impact: Endfield Mega Oroberyl Tracker (F2P Oroberyl + login/shop Chartered permits per version, 1.0 to 1.6)",
+          "url": "https://neptuneimpact.com/endfield/mega-oroberyl-tracker/"
+        },
+        {
+          "label": "rmxlinux/EndfieldData datamine: TableCfg ActivityTable, TimeRangeTable, GachaCharPoolTable, GachaWeaponPoolTable (EN text map)",
+          "url": "https://github.com/rmxlinux/EndfieldData/tree/main/TableCfg"
+        },
+        {
+          "label": "Bilibili Endfield wiki: 活动一览 (version and narrative event dates)",
+          "url": "https://wiki.biligame.com/zmd/%E6%B4%BB%E5%8A%A8%E4%B8%80%E8%A7%88"
+        }
+      ]
+    },
+    {
+      "game": "endfield",
+      "version": "1.2",
+      "title": "At the Wake of Spring",
+      "start": "2026-04-17",
+      "end": "2026-06-05",
+      "currency": {
+        "total": 51924,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Zhuang Fangyi"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-04-17",
+          "end": "2026-05-22",
+          "featured": [
+            "Zhuang Fangyi"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-05-14",
+          "end": "2026-06-05",
+          "featured": [
+            "Laevatain",
+            "Gilberta"
+          ]
+        }
+      ],
+      "notes": "Total = 44,424 Oroberyl + (10 login + 5 shop) permits x 500 = 51,924 (Neptune tracker, 49 days). A CN count for the second half alone gives 10,400 Oroberyl + 5 limited pulls, consistent in scale. Phase 1 Thunder of Renewal (Zhuang Fangyi) ends May 22 12:00 per the datamine, settling the May 7/8/22 conflict. Phase 2 is the Fest of Brilliance joint headhunt featuring Laevatain and Gilberta, May 14 12:00 to Jun 5 06:00, overlapping phase 1. Calendar: 14 events, 5 banners (character and weapon), 1 maintenance.",
+      "sources": [
+        {
+          "label": "Neptune Impact: Endfield Mega Oroberyl Tracker (F2P Oroberyl + login/shop Chartered permits per version, 1.0 to 1.6)",
+          "url": "https://neptuneimpact.com/endfield/mega-oroberyl-tracker/"
+        },
+        {
+          "label": "rmxlinux/EndfieldData datamine: TableCfg ActivityTable, TimeRangeTable, GachaCharPoolTable, GachaWeaponPoolTable (EN text map)",
+          "url": "https://github.com/rmxlinux/EndfieldData/tree/main/TableCfg"
+        },
+        {
+          "label": "Bilibili Endfield wiki: 活动一览 (version and narrative event dates)",
+          "url": "https://wiki.biligame.com/zmd/%E6%B4%BB%E5%8A%A8%E4%B8%80%E8%A7%88"
+        },
+        {
+          "label": "17173: Endfield 1.2 second-half Oroberyl summary (10,400 for May 14 to Jun 4)",
+          "url": "https://news.17173.com/content/05152026/135436663.shtml"
+        }
+      ]
+    },
+    {
+      "game": "endfield",
+      "version": "1.3",
+      "title": "Sketches of Lost Heirlooms",
+      "start": "2026-06-05",
+      "end": "2026-07-16",
+      "currency": {
+        "total": 40979,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Mi Fu",
+        "Camille"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-06-05",
+          "end": "2026-06-26",
+          "featured": [
+            "Mi Fu"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-06-26",
+          "end": "2026-07-16",
+          "featured": [
+            "Camille"
+          ]
+        }
+      ],
+      "notes": "Total = 30,979 Oroberyl + (10 login + 10 shop) permits x 500 = 40,979 (Neptune tracker, 41 days). Phases from the datamine: Fists of No Regrets (Mi Fu) Jun 5 to Jun 26 12:00, Expunger of Sin (Camille) Jun 26 to Jul 16 06:00. Mi Fu and Camille confirmed as 1.3 by their 1.3 pools, sign-ins and narrative events. Calendar: 14 events, 4 banners (character and weapon), 1 maintenance.",
+      "sources": [
+        {
+          "label": "Neptune Impact: Endfield Mega Oroberyl Tracker (F2P Oroberyl + login/shop Chartered permits per version, 1.0 to 1.6)",
+          "url": "https://neptuneimpact.com/endfield/mega-oroberyl-tracker/"
+        },
+        {
+          "label": "rmxlinux/EndfieldData datamine: TableCfg ActivityTable, TimeRangeTable, GachaCharPoolTable, GachaWeaponPoolTable (EN text map)",
+          "url": "https://github.com/rmxlinux/EndfieldData/tree/main/TableCfg"
+        },
+        {
+          "label": "Bilibili Endfield wiki: 活动一览 (version and narrative event dates)",
+          "url": "https://wiki.biligame.com/zmd/%E6%B4%BB%E5%8A%A8%E4%B8%80%E8%A7%88"
+        }
+      ]
+    },
+    {
+      "game": "endfield",
+      "version": "1.4",
+      "title": "Homecoming",
+      "start": "2026-07-16",
+      "end": "2026-09-02",
+      "currency": {
+        "total": 54174,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Arcane",
+        "Liino"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-07-16",
+          "end": "2026-08-09",
+          "featured": [
+            "Arcane"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-08-09",
+          "end": "2026-09-02",
+          "featured": [
+            "Liino"
+          ]
+        }
+      ],
+      "notes": "Total = 44,174 Oroberyl + (10 login + 10 shop) permits x 500 = 54,174 (Neptune tracker, 48 days). Topuplive gives 40,325 Oroberyl; the TopUpList 17,600 figure is a narrower event-only count. Phase 2 (Good Morning from Your Dawnstar, Liino) runs to Sep 2 06:00 per the datamine, which removes the earlier Aug 30 gap. Arcane's pool is North Yearns the Rift Vigile. Calendar: 15 events, 4 banners (character and weapon), 1 maintenance.",
+      "sources": [
+        {
+          "label": "Neptune Impact: Endfield Mega Oroberyl Tracker (F2P Oroberyl + login/shop Chartered permits per version, 1.0 to 1.6)",
+          "url": "https://neptuneimpact.com/endfield/mega-oroberyl-tracker/"
+        },
+        {
+          "label": "rmxlinux/EndfieldData datamine: TableCfg ActivityTable, TimeRangeTable, GachaCharPoolTable, GachaWeaponPoolTable (EN text map)",
+          "url": "https://github.com/rmxlinux/EndfieldData/tree/main/TableCfg"
+        },
+        {
+          "label": "Bilibili Endfield wiki: 活动一览 (version and narrative event dates)",
+          "url": "https://wiki.biligame.com/zmd/%E6%B4%BB%E5%8A%A8%E4%B8%80%E8%A7%88"
+        },
+        {
+          "label": "Topuplive: Endfield 1.4 pull count (40,325 Oroberyl, cross-check)",
+          "url": "https://www.topuplive.com/news/arknights-endfield-version-1-4-pull-count.html"
+        }
+      ]
+    },
+    {
+      "game": "endfield",
+      "version": "1.5",
+      "title": "Dreamscape of Wind and Snow",
+      "start": "2026-09-02",
+      "end": "2026-10-15",
+      "currency": {
+        "total": 38564,
+        "events": 11200,
+        "daily": 13732,
+        "endgame": null,
+        "other": 13632,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Typhoeus",
+        "Purrchena"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-09-02",
+          "end": "2026-09-30",
+          "featured": [
+            "Typhoeus"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-09-24",
+          "end": "2026-10-15",
+          "featured": [
+            "Yvonne"
+          ]
+        }
+      ],
+      "notes": "Total = 33,564 Oroberyl + (5 login + 5 shop) permits x 500 = 38,564. Breakdown (Neptune): daily 13,732 (dailies, weekly routine, free Originium Supply Pass); events 11,200 (incl. Monumental Etching and Echoes of War, so endgame is not split out); other 13,632 (story and exploration 4,815, mail/codes/web 3,817, 10 permits 5,000). EnjoyGM's 76-pull count differs. Phase 2 is the Resplendent Spectrum RE-Factor rerun of Yvonne from Sep 24. Purrchena is a free 5-star giveaway, not a banner. Calendar: 19 events, 4 banners (character and weapon), 1 maintenance.",
+      "sources": [
+        {
+          "label": "Neptune Impact: Endfield Mega Oroberyl Tracker (F2P Oroberyl + login/shop Chartered permits per version, 1.0 to 1.6)",
+          "url": "https://neptuneimpact.com/endfield/mega-oroberyl-tracker/"
+        },
+        {
+          "label": "Neptune Impact: Endfield 1.5 version calendar + Oroberyl count (itemised)",
+          "url": "https://neptuneimpact.com/endfield/version-calendar/1.5/"
+        },
+        {
+          "label": "rmxlinux/EndfieldData datamine: TableCfg ActivityTable, TimeRangeTable, GachaCharPoolTable, GachaWeaponPoolTable (EN text map)",
+          "url": "https://github.com/rmxlinux/EndfieldData/tree/main/TableCfg"
+        }
+      ]
+    },
+    {
+      "game": "endfield",
+      "version": "1.6",
+      "title": "Sanctuary of Ink",
+      "start": "2026-10-15",
+      "end": null,
+      "currency": {
+        "total": 43989,
+        "events": 11000,
+        "daily": 13020,
+        "endgame": null,
+        "other": 19969,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Si",
+        "Argent Flow"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-10-15",
+          "end": "2026-11-05",
+          "featured": [
+            "Si"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-10-29",
+          "end": "2026-11-19",
+          "featured": [
+            "Tangtang"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": "2026-11-05",
+          "end": "2026-11-25",
+          "featured": [
+            "Argent Flow"
+          ]
+        }
+      ],
+      "notes": "Running on 2026-11-16; scheduled to end 2026-11-25 06:00 UTC+8 (datamine version window), so end is null. Total = 33,989 Oroberyl + (10 login + 10 shop) permits x 500 = 43,989: a full-version projection (Neptune, everything cleared), not yet final. Breakdown: daily 13,020; events 11,000 (incl. challenges); other 19,969 (story/exploration 5,860, mail/codes/web 4,109 incl. 1,800 compensation, 20 permits 10,000). Phase 2 is the Tangtang RE-Factor rerun (Oct 29 to Nov 19); phase 3 Argent Flow (datamine EN name; WotPack's Silver Stream is a translation). Calendar: 18 events, 6 banners (character and weapon), 2 maintenance.",
+      "sources": [
+        {
+          "label": "Neptune Impact: Endfield Mega Oroberyl Tracker (F2P Oroberyl + login/shop Chartered permits per version, 1.0 to 1.6)",
+          "url": "https://neptuneimpact.com/endfield/mega-oroberyl-tracker/"
+        },
+        {
+          "label": "Neptune Impact: Endfield 1.6 version calendar + Oroberyl count (itemised)",
+          "url": "https://neptuneimpact.com/endfield/version-calendar/"
+        },
+        {
+          "label": "rmxlinux/EndfieldData datamine: TableCfg ActivityTable, TimeRangeTable, GachaCharPoolTable, GachaWeaponPoolTable (EN text map)",
+          "url": "https://github.com/rmxlinux/EndfieldData/tree/main/TableCfg"
         }
       ]
     }
