@@ -396,9 +396,9 @@ function QuestRow({
   const own = marks.get(questMarkId(game.id, line.id));
   const finished = progress.status === 'done' || progress.status === 'skipped';
   const panelId = `quest-panel-${line.id.replace(/[^a-z0-9-]/gi, '-')}`;
-  const meta = [line.region, line.version ? `v${line.version}` : null, `${progress.done}/${progress.total}`].filter(
-    Boolean,
-  );
+  // Games without version numbers date their story content instead.
+  const version = line.version ? (/^\d{4}-/.test(line.version) ? line.version : `v${line.version}`) : null;
+  const meta = [line.region, version, `${progress.done}/${progress.total}`].filter(Boolean);
 
   const finishAll = () => setQuestMarks(game.id, [{ questId: line.id, state: 'done' }]);
   const clearAll = () =>
