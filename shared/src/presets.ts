@@ -129,17 +129,16 @@ export interface GamePreset {
 export const SERVER_TZ_OPTIONS: Array<{ label: string; tz: string }> = [
   { label: 'HoYo/Kuro America (UTC-5)', tz: 'Etc/GMT+5' },
   { label: 'HoYo/Kuro Europe (UTC+1)', tz: 'Etc/GMT-1' },
-  { label: 'HoYo/Kuro Asia (UTC+8)', tz: 'Etc/GMT-8' },
+  { label: 'HoYo/Kuro/Infold Asia (UTC+8)', tz: 'Etc/GMT-8' },
   // Non-HoYo publishers cut their regions differently. Infold gives Love and
   // Deepspace a UTC+2 Europe and a UTC-7 America; Shift Up runs every NIKKE
-  // region off one UTC+9 clock; Cygames runs Umamusume Global on UTC+0. All are
-  // fixed offsets, like the HoYo/Kuro ones — none of them observe DST.
+  // region off one UTC+9 clock, as Devsisters does Crumble; Cygames runs Umamusume Global on UTC+0. All are
+  // fixed offsets, like the HoYo/Kuro ones — none of them observe DST. Each zone
+  // appears once: the picker is keyed by zone, so a game sharing one joins its label.
   { label: 'Infold Europe (UTC+2)', tz: 'Etc/GMT-2' },
   { label: 'Infold America (UTC-7)', tz: 'Etc/GMT+7' },
-  { label: 'Infold Asia (UTC+8)', tz: 'Etc/GMT-8' },
-  { label: 'NIKKE, all regions (UTC+9)', tz: 'Etc/GMT-9' },
+  { label: 'NIKKE, all regions, and CookieRun: Crumble (UTC+9)', tz: 'Etc/GMT-9' },
   { label: 'Umamusume Global (UTC+0)', tz: 'Etc/GMT' },
-  { label: 'CookieRun: Crumble (UTC+9)', tz: 'Etc/GMT-9' },
   { label: 'UTC', tz: 'Etc/UTC' },
   { label: 'US Pacific (DST)', tz: 'America/Los_Angeles' },
   { label: 'US Eastern (DST)', tz: 'America/New_York' },

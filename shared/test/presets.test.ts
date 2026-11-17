@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { missingPresetTasks, presetForGame, PRESETS } from '../src/presets';
+import { missingPresetTasks, presetForGame, PRESETS, SERVER_TZ_OPTIONS } from '../src/presets';
 
 describe('game presets', () => {
+  it('lists each server time zone once, since the picker is keyed by zone', () => {
+    const zones = SERVER_TZ_OPTIONS.map((option) => option.tz);
+    expect(zones.filter((tz, index) => zones.indexOf(tz) !== index)).toEqual([]);
+  });
+
   it('ships editable defaults for every supported title', () => {
     expect(PRESETS.length).toBeGreaterThanOrEqual(5);
     for (const preset of PRESETS) {

@@ -37,7 +37,7 @@ test('game tracking controls keep energy, task, reset and reminder edits', async
   await page.screenshot({ path: info.outputPath('task-editor.png') });
   await dialog.getByRole('tab', { name: 'Game', exact: true }).click();
   await dialog.getByRole('combobox', { name: 'Server' }).click();
-  await page.getByRole('option', { name: 'NIKKE, all regions (UTC+9)', exact: true }).click();
+  await page.getByRole('option', { name: 'NIKKE, all regions, and CookieRun: Crumble (UTC+9)', exact: true }).click();
   await dialog.getByLabel('Daily reset hour', { exact: true }).fill('5');
   await dialog.getByRole('tab', { name: 'Reminders', exact: true }).click();
   await dialog.getByLabel('Reminder message').fill('Claim weekly rewards');

@@ -42,6 +42,24 @@
       "pullCost": 200,
       "methodology": "No per-version F2P Crystal totals are computed: no community tally exists yet (the game is 3.5 months old), and Crystal income in an idle game depends mostly on stage progress and Arena tier. All totals are null. Version notes list only the one-off Crystal grants the official notices state. Versions follow the wiki numbering (1.0–1.6); 1.6 includes the 11/05 mid-update. Phase times are KST (UTC+9) maintenance-end → next maintenance start. Ends marked \"assumed\" are the next update.",
       "archiveSince": "2026-07-30"
+    },
+    "uma": {
+      "currency": "Carats",
+      "pullCost": 150,
+      "methodology": "Periods are calendar months from global launch (2025-06-26). No itemised F2P Carat tally per month exists for global, so totals are null; notes give datamined event Carats only. Banners, story events, Champions Meetings, Legend Races, limited missions and mode events come from GameTora global (EN) data files; times are UTC. Featured = highest-rate pickups; \"debut\" = flagged new on global.",
+      "archiveSince": "2025-06-26"
+    },
+    "nikke": {
+      "currency": "Gems",
+      "pullCost": 300,
+      "methodology": "Periods are calendar months from global launch (2022-11-04). Totals are null: no community tracks free Gems per month or per update in a consistent itemised way (guides give only rough monthly baselines or anniversary pull headlines). Events, passes, raids and banner windows come from the NIKKE Fandom wiki event pages (UTC+9); pickup lineups from BannerHistory. One Special Recruit pull = 300 Gems or 1 Advanced Recruit Voucher.",
+      "archiveSince": "2022-11-04"
+    },
+    "lads": {
+      "currency": "Diamonds",
+      "pullCost": 150,
+      "methodology": "Versions are the numbered updates 1.0–6.5 (start = wiki release template; end = next start). Totals are null: no community keeps an itemised F2P Diamond count per version, only rough monthly estimates. Events and wish pools come from the LADS wiki.gg Cargo Events table; \"server time\" entries use UTC+2 (Memoria's LADS server), Promise rows UTC+8 as the wiki gives them. One wish = 150 Diamonds.",
+      "archiveSince": "2024-01-18"
     }
   },
   "versions": [
@@ -9383,6 +9401,4704 @@
         {
           "label": "Patch Notes 1.6 (EN, wiki)",
           "url": "https://cookierun.wiki/w/Patch_Notes_(Crumble)/1.6"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2025-06",
+      "title": null,
+      "start": "2025-06-26",
+      "end": "2025-07-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[O Sole Suo!] TM Opera O"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": []
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[O Sole Suo!] TM Opera O"
+          ]
+        }
+      ],
+      "notes": "5 dated items start this month (2 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 800. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2025-07",
+      "title": null,
+      "start": "2025-07-01",
+      "end": "2025-08-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[MB-19890425] Mihono Bourbon",
+        "[pf. Winning Equation...] Biwa Hayahide",
+        "[Beyond the Horizon] Tokai Teio",
+        "[End of the Skies] Mejiro McQueen",
+        "[Fille Éclair] Curren Chan"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[MB-19890425] Mihono Bourbon"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[pf. Winning Equation...] Biwa Hayahide"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Special Dreamer] Special Week",
+            "[Innocent Silence] Silence Suzuka",
+            "[Peak Joy] Tokai Teio"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Beyond the Horizon] Tokai Teio",
+            "[End of the Skies] Mejiro McQueen"
+          ]
+        }
+      ],
+      "notes": "17 dated items start this month (5 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 1860. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2025-08",
+      "title": null,
+      "start": "2025-08-01",
+      "end": "2025-09-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[Nevertheless] Narita Taishin",
+        "[LOVE☆4EVER] Smart Falcon",
+        "[Maverick] Narita Brian",
+        "[Sunlight Bouquet] Mayano Top Gun",
+        "[Quercus Civilis] Air Groove"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Nevertheless] Narita Taishin"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[LOVE☆4EVER] Smart Falcon"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Maverick] Narita Brian"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Sunlight Bouquet] Mayano Top Gun",
+            "[Quercus Civilis] Air Groove"
+          ]
+        }
+      ],
+      "notes": "18 dated items start this month (4 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 1850. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2025-09",
+      "title": null,
+      "start": "2025-09-01",
+      "end": "2025-10-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[Reeling in the Big One] Seiun Sky",
+        "[Azure Amazon] Hishi Amazon",
+        "[Kukulkan Warrior] El Condor Pasa",
+        "[Saintly Jade Cleric] Grass Wonder"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Reeling in the Big One] Seiun Sky"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Azure Amazon] Hishi Amazon"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Kukulkan Warrior] El Condor Pasa",
+            "[Saintly Jade Cleric] Grass Wonder"
+          ]
+        }
+      ],
+      "notes": "10 dated items start this month (3 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 1200. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2025-10",
+      "title": null,
+      "start": "2025-10-01",
+      "end": "2025-11-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[Shooting Star Revue] Fuji Kiseki",
+        "[Authentic / 1928] Gold City",
+        "[Hopp'n♪Happy Heart] Special Week",
+        "[Hot☆Summer Night] Maruzensky",
+        "[Turbulent Blue] Meisho Doto",
+        "[Meisterschaft] Eishin Flash"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Shooting Star Revue] Fuji Kiseki"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Authentic / 1928] Gold City"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Hopp'n♪Happy Heart] Special Week",
+            "[Hot☆Summer Night] Maruzensky"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Turbulent Blue] Meisho Doto"
+          ]
+        }
+      ],
+      "notes": "18 dated items start this month (5 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 2000. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2025-11",
+      "title": null,
+      "start": "2025-11-01",
+      "end": "2025-12-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[Lucky Tidings] Matikanefukukitaru",
+        "[Buono ☆ Alla Moda] Hishi Akebono",
+        "[Full-Color Fangirling] Agnes Digital",
+        "[Vampire Makeover!] Rice Shower",
+        "[Chiffon-Wrapped Mummy] Super Creek"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Lucky Tidings] Matikanefukukitaru"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Buono ☆ Alla Moda] Hishi Akebono"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Full-Color Fangirling] Agnes Digital"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Vampire Makeover!] Rice Shower",
+            "[Chiffon-Wrapped Mummy] Super Creek"
+          ]
+        }
+      ],
+      "notes": "16 dated items start this month (4 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 3100. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2025-12",
+      "title": null,
+      "start": "2025-12-01",
+      "end": "2026-01-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[Princess of Pink] Kawakami Princess",
+        "[Creeping Shadow] Manhattan Cafe",
+        "[Archer by Moonlight] Symboli Rudolf",
+        "[Autumn Cosmos] Gold City",
+        "[Jokester ☆ Vibes] Tosen Jordan",
+        "[Off the Line] Mejiro Dober"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Princess of Pink] Kawakami Princess"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Creeping Shadow] Manhattan Cafe"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Archer by Moonlight] Symboli Rudolf",
+            "[Autumn Cosmos] Gold City"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Jokester ☆ Vibes] Tosen Jordan"
+          ]
+        }
+      ],
+      "notes": "23 dated items start this month (5 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 3150. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2026-01",
+      "title": null,
+      "start": "2026-01-01",
+      "end": "2026-02-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[Ashen Miracle] Oguri Cap",
+        "[Rouge Caroler] Biwa Hayahide",
+        "[Noble Seamair] Fine Motion",
+        "[Fast as Lightning] Tamamo Cross",
+        "[New Year ♪ New Urara!] Haru Urara",
+        "[New Year, Same Radiance!] TM Opera O"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Ashen Miracle] Oguri Cap",
+            "[Rouge Caroler] Biwa Hayahide"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Noble Seamair] Fine Motion"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Fast as Lightning] Tamamo Cross"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[New Year ♪ New Urara!] Haru Urara",
+            "[New Year, Same Radiance!] TM Opera O"
+          ]
+        }
+      ],
+      "notes": "20 dated items start this month (4 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 3000. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2026-02",
+      "title": null,
+      "start": "2026-02-01",
+      "end": "2026-03-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[Strength in Full Bloom] Sakura Chiyono O",
+        "[CODE: ICING] Mihono Bourbon",
+        "[Precise Chocolatier] Eishin Flash",
+        "[Crystalline] Mejiro Ardan"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Special Dreamer] Special Week",
+            "[Innocent Silence] Silence Suzuka",
+            "[Peak Joy] Tokai Teio",
+            "[Formula R] Maruzensky",
+            "[Starlight Beat] Oguri Cap",
+            "[Wild Frontier] Taiki Shuttle",
+            "[Frontline Elegance] Mejiro McQueen",
+            "[O Sole Suo!] TM Opera O",
+            "[Emperor's Path] Symboli Rudolf",
+            "[Rosy Dreams] Rice Shower",
+            "[MB-19890425] Mihono Bourbon",
+            "[pf. Winning Equation...] Biwa Hayahide"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Strength in Full Bloom] Sakura Chiyono O"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[CODE: ICING] Mihono Bourbon",
+            "[Precise Chocolatier] Eishin Flash"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Crystalline] Mejiro Ardan"
+          ]
+        }
+      ],
+      "notes": "13 dated items start this month (4 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 100. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2026-03",
+      "title": null,
+      "start": "2026-03-01",
+      "end": "2026-04-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[Starry Nocturne] Admire Vega",
+        "[Clippety-Tippety-Clop] Matikanetannhauser",
+        "[Natural Brilliance] Satono Diamond",
+        "[Brunissage Line] Mejiro Bright"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Starry Nocturne] Admire Vega"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Clippety-Tippety-Clop] Matikanetannhauser"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Natural Brilliance] Satono Diamond"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Brunissage Line] Mejiro Bright"
+          ]
+        }
+      ],
+      "notes": "22 dated items start this month (4 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 2500. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2026-04",
+      "title": null,
+      "start": "2026-04-01",
+      "end": "2026-05-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[Soirée des Chatons] Seiun Sky",
+        "[Succès Étoilé] Fuji Kiseki",
+        "[Layered Petals] Nishino Flower",
+        "[Blazed Head, Covered Fists] Yaeno Muteki",
+        "[Run & Win] Nice Nature",
+        "[Cheerleader in Noble White] King Halo",
+        "[Always Electrifying] Ines Fujin"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Soirée des Chatons] Seiun Sky",
+            "[Succès Étoilé] Fuji Kiseki"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Layered Petals] Nishino Flower"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Blazed Head, Covered Fists] Yaeno Muteki"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Run & Win] Nice Nature",
+            "[Cheerleader in Noble White] King Halo"
+          ]
+        }
+      ],
+      "notes": "20 dated items start this month (5 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 850. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2026-05",
+      "title": null,
+      "start": "2026-05-01",
+      "end": "2026-06-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[Line Breakthrough] Mejiro Palmer",
+        "[Ma Chérie of the New Moon] Curren Chan",
+        "[Titania] Fine Motion",
+        "[Edomurasaki] Inari One"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Line Breakthrough] Mejiro Palmer"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Ma Chérie of the New Moon] Curren Chan",
+            "[Titania] Fine Motion"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Edomurasaki] Inari One"
+          ]
+        }
+      ],
+      "notes": "14 dated items start this month (3 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 600. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2026-06",
+      "title": null,
+      "start": "2026-06-01",
+      "end": "2026-07-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[Platanus Witch] Sweep Tosho",
+        "[Bubblegum☆Memories] Taiki Shuttle",
+        "[Sapphire Sojourn] Mejiro Dober",
+        "[unsigned] Air Shakur"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Platanus Witch] Sweep Tosho"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Bubblegum☆Memories] Taiki Shuttle",
+            "[Sapphire Sojourn] Mejiro Dober"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[unsigned] Air Shakur"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Maverick] Narita Brian",
+            "[Reeling in the Big One] Seiun Sky"
+          ]
+        }
+      ],
+      "notes": "17 dated items start this month (4 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 600. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2026-07",
+      "title": null,
+      "start": "2026-07-01",
+      "end": "2026-08-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[Fair Lady of the Waves] Mejiro McQueen",
+        "[RUN! RUIN! LAUNCHER!] Gold Ship",
+        "[Iron Ambition] Bamboo Memory",
+        "[Eightfold☆Fortune] Copano Rickey",
+        "[Twilight Triumph] Smart Falcon",
+        "[Dream Deliverer] Winning Ticket",
+        "[Difference Engineer] Narita Taishin"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Fair Lady of the Waves] Mejiro McQueen",
+            "[RUN! RUIN! LAUNCHER!] Gold Ship"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Iron Ambition] Bamboo Memory"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Eightfold☆Fortune] Copano Rickey"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Twilight Triumph] Smart Falcon"
+          ]
+        }
+      ],
+      "notes": "17 dated items start this month (5 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 1500. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2026-08",
+      "title": null,
+      "start": "2026-08-01",
+      "end": "2026-09-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[Darl'n Snowflake] Yukino Bijin",
+        "[Rocket☆Star] Seeking the Pearl",
+        "[Fanatic♡Jiangshi] Agnes Digital",
+        "[Dot-o'-Lantern] Meisho Doto",
+        "[Flare] Aston Machan"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Darl'n Snowflake] Yukino Bijin"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Rocket☆Star] Seeking the Pearl"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Fanatic♡Jiangshi] Agnes Digital",
+            "[Dot-o'-Lantern] Meisho Doto"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Flare] Aston Machan"
+          ]
+        }
+      ],
+      "notes": "17 dated items start this month (4 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 750. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2026-09",
+      "title": null,
+      "start": "2026-09-01",
+      "end": "2026-10-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[Fluttertail Spirit] Yamanin Zephyr",
+        "[Raging Thunder] Tamamo Cross",
+        "[Golden Dream] Inari One",
+        "[Desperate Measures] Nakayama Festa",
+        "[Butterfly Sting] Wonder Acute",
+        "[Fiery Aqua Vitae] Vodka",
+        "[Nuit Étoilée de Scarlet] Daiwa Scarlet"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Fluttertail Spirit] Yamanin Zephyr"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Raging Thunder] Tamamo Cross",
+            "[Golden Dream] Inari One"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Desperate Measures] Nakayama Festa"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Butterfly Sting] Wonder Acute"
+          ]
+        }
+      ],
+      "notes": "26 dated items start this month (5 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 1050. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2026-10",
+      "title": null,
+      "start": "2026-10-01",
+      "end": "2026-11-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[Heroic Author] Zenno Rob Roy",
+        "[Ravenous Wolf] Narita Brian",
+        "[Crane's Ambition] Kitasan Black",
+        "[Jade's Prosperity] Satono Diamond",
+        "[Starry Lightship] Hokko Tarumae"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Heroic Author] Zenno Rob Roy"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Ravenous Wolf] Narita Brian"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Crane's Ambition] Kitasan Black",
+            "[Jade's Prosperity] Satono Diamond"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Starry Lightship] Hokko Tarumae"
+          ]
+        }
+      ],
+      "notes": "32 dated items start this month (4 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 900. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "uma",
+      "version": "2026-11",
+      "title": null,
+      "start": "2026-11-01",
+      "end": null,
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "[Fun☆Fun☆Party Night] Daitaku Helios",
+        "[Melt Your Heart] Ines Fujin",
+        "[Marguerite Latte] Mejiro Ryan"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Fun☆Fun☆Party Night] Daitaku Helios"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Vampire Makeover!] Rice Shower",
+            "[New Year ♪ New Urara!] Haru Urara"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "[Melt Your Heart] Ines Fujin",
+            "[Marguerite Latte] Mejiro Ryan"
+          ]
+        }
+      ],
+      "notes": "17 dated items start this month (3 trainee banners). No community tracks a per-month F2P Carat total for global, so total is null. Datamined Carats from events starting this month (story-event points/bingo where global data exists, limited and event missions): 700. Not counted there: login bonuses, daily/weekly missions, Team Trials, Champions Meeting, Club rewards, free daily scouts.",
+      "sources": [
+        {
+          "label": "GameTora global gacha history (data)",
+          "url": "https://gametora.com/umamusume/gacha/history?server=en"
+        },
+        {
+          "label": "GameTora story events",
+          "url": "https://gametora.com/umamusume/events/story-events"
+        },
+        {
+          "label": "GameTora Champions Meeting",
+          "url": "https://gametora.com/umamusume/events/champions-meeting"
+        },
+        {
+          "label": "GameTora missions (limited)",
+          "url": "https://gametora.com/umamusume/missions"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2022-11",
+      "title": null,
+      "start": "2022-11-04",
+      "end": "2022-12-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Helm",
+        "Laplace"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Helm"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Laplace"
+          ]
+        }
+      ],
+      "notes": "4 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2022-12",
+      "title": null,
+      "start": "2022-12-01",
+      "end": "2023-01-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Rupee: Winter Shopper",
+        "Anne: Miracle Fairy",
+        "Modernia"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rupee: Winter Shopper"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Anne: Miracle Fairy"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Modernia"
+          ]
+        }
+      ],
+      "notes": "5 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2023-01",
+      "title": null,
+      "start": "2023-01-01",
+      "end": "2023-02-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Jackal",
+        "Viper"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Jackal"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Viper"
+          ]
+        }
+      ],
+      "notes": "6 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2023-02",
+      "title": null,
+      "start": "2023-02-01",
+      "end": "2023-03-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Cocoa",
+        "Soda",
+        "Makima",
+        "Power"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Cocoa"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Soda"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Makima"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Power"
+          ]
+        }
+      ],
+      "notes": "5 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2023-03",
+      "title": null,
+      "start": "2023-03-01",
+      "end": "2023-04-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Biscuit",
+        "Sakura"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Biscuit"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Sakura"
+          ]
+        }
+      ],
+      "notes": "6 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2023-04",
+      "title": null,
+      "start": "2023-04-01",
+      "end": "2023-05-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "D",
+        "Alice",
+        "Dorothy"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "D"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Alice"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Dorothy"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rei"
+          ]
+        }
+      ],
+      "notes": "5 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2023-05",
+      "title": null,
+      "start": "2023-05-01",
+      "end": "2023-06-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Blanc",
+        "Noir"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Blanc"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Noir"
+          ]
+        }
+      ],
+      "notes": "6 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2023-06",
+      "title": null,
+      "start": "2023-06-01",
+      "end": "2023-07-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Rosanna",
+        "Mary: Bay Goddess",
+        "Neon: Blue Ocean"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rosanna"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Mary: Bay Goddess"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Neon: Blue Ocean"
+          ]
+        }
+      ],
+      "notes": "10 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2023-07",
+      "title": null,
+      "start": "2023-07-01",
+      "end": "2023-08-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Nero",
+        "Mast"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Nero"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Mast"
+          ]
+        }
+      ],
+      "notes": "11 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2023-08",
+      "title": null,
+      "start": "2023-08-01",
+      "end": "2023-09-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Anis: Sparkling Summer",
+        "Helm: Aquamarine"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Anis: Sparkling Summer"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Helm: Aquamarine"
+          ]
+        }
+      ],
+      "notes": "13 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2023-09",
+      "title": null,
+      "start": "2023-09-01",
+      "end": "2023-10-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "2B",
+        "A2",
+        "Marciana"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "2B"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "A2"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Marciana"
+          ]
+        }
+      ],
+      "notes": "10 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2023-10",
+      "title": null,
+      "start": "2023-10-01",
+      "end": "2023-11-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Naga",
+        "Tia",
+        "Quiry"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Naga"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Tia"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Quiry"
+          ]
+        }
+      ],
+      "notes": "8 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2023-11",
+      "title": null,
+      "start": "2023-11-01",
+      "end": "2023-12-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Red Hood",
+        "Tove"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Red Hood"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Snow White: Innocent Days"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Tove"
+          ]
+        }
+      ],
+      "notes": "3 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2023-12",
+      "title": null,
+      "start": "2023-12-01",
+      "end": "2024-01-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Ludmilla: Winter Owner",
+        "Mica: Snow Buddy"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rupee: Winter Shopper (rerun)"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Anne: Miracle Fairy (rerun)"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Ludmilla: Winter Owner"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Mica: Snow Buddy"
+          ]
+        }
+      ],
+      "notes": "13 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2024-01",
+      "title": null,
+      "start": "2024-01-01",
+      "end": "2024-02-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Scarlet: Black Shadow",
+        "Leona",
+        "Moran"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Modernia (rerun)"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Scarlet: Black Shadow"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Leona"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Moran"
+          ]
+        }
+      ],
+      "notes": "12 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2024-02",
+      "title": null,
+      "start": "2024-02-01",
+      "end": "2024-03-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Privaty: Unkind Maid",
+        "Ade",
+        "Elegg"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Privaty: Unkind Maid"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Ade"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Elegg"
+          ]
+        }
+      ],
+      "notes": "15 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2024-03",
+      "title": null,
+      "start": "2024-03-01",
+      "end": "2024-04-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "D: Killer Wife",
+        "Emilia",
+        "Rem"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "D: Killer Wife"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Emilia"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rem"
+          ]
+        }
+      ],
+      "notes": "12 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2024-04",
+      "title": null,
+      "start": "2024-04-01",
+      "end": "2024-05-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Bay",
+        "Crown"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Bay"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Crown"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Kilo"
+          ]
+        }
+      ],
+      "notes": "9 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2024-05",
+      "title": null,
+      "start": "2024-05-01",
+      "end": "2024-06-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Trony",
+        "Soda: Twinkling Bunny"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Trony"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Soda: Twinkling Bunny"
+          ]
+        }
+      ],
+      "notes": "11 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2024-06",
+      "title": null,
+      "start": "2024-06-01",
+      "end": "2024-07-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Alice: Wonderland Bunny",
+        "Clay"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Alice: Wonderland Bunny"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Clay"
+          ]
+        }
+      ],
+      "notes": "9 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2024-07",
+      "title": null,
+      "start": "2024-07-01",
+      "end": "2024-08-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Sakura: Bloom in Summer",
+        "Rosanna: Chic Ocean",
+        "Ein"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Mary: Bay Goddess (rerun)",
+            "Neon: Blue Ocean (rerun)"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Sakura: Bloom in Summer"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rosanna: Chic Ocean"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Anis: Sparkling Summer (rerun)",
+            "Helm: Aquamarine (rerun)"
+          ]
+        }
+      ],
+      "notes": "17 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2024-08",
+      "title": null,
+      "start": "2024-08-01",
+      "end": "2024-09-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Zwei",
+        "Asuka",
+        "Rei"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Zwei"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Asuka"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rei"
+          ]
+        }
+      ],
+      "notes": "14 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2024-09",
+      "title": null,
+      "start": "2024-09-01",
+      "end": "2024-10-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Mari",
+        "Rouge"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Mari"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rouge"
+          ]
+        }
+      ],
+      "notes": "8 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2024-10",
+      "title": null,
+      "start": "2024-10-01",
+      "end": "2024-11-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Quency: Escape Queen",
+        "Phantom",
+        "Rumani",
+        "Cinderella"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Quency: Escape Queen"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Phantom"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rumani"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Cinderella"
+          ]
+        }
+      ],
+      "notes": "13 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2024-11",
+      "title": null,
+      "start": "2024-11-01",
+      "end": "2024-12-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Grave",
+        "Flora"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Grave"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Flora"
+          ]
+        }
+      ],
+      "notes": "9 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2024-12",
+      "title": null,
+      "start": "2024-12-01",
+      "end": "2025-01-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Maiden: Ice Rose",
+        "Guillotine: Winter Slayer"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Ludmilla: Winter Owner (rerun)",
+            "Mica: Snow Buddy (rerun)"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Maiden: Ice Rose"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Guillotine: Winter Slayer"
+          ]
+        }
+      ],
+      "notes": "11 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2025-01",
+      "title": null,
+      "start": "2025-01-01",
+      "end": "2025-02-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Rapi: Red Hood",
+        "Mana",
+        "Mast: Romantic Maid"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Scarlet: Black Shadow (rerun)"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rapi: Red Hood"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Mana"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Mast: Romantic Maid"
+          ]
+        }
+      ],
+      "notes": "16 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2025-02",
+      "title": null,
+      "start": "2025-02-01",
+      "end": "2025-03-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Anchor: Innocent Maid",
+        "Asuka: WILLE",
+        "Rei (Tentative Name)"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Anchor: Innocent Maid"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Asuka (rerun)",
+            "Rei (rerun)",
+            "Mari (rerun)"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Asuka: WILLE"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rei (Tentative Name)"
+          ]
+        }
+      ],
+      "notes": "11 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2025-03",
+      "title": null,
+      "start": "2025-03-01",
+      "end": "2025-04-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Trina",
+        "Bready"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Trina"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Bready"
+          ]
+        }
+      ],
+      "notes": "8 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2025-04",
+      "title": null,
+      "start": "2025-04-01",
+      "end": "2025-05-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Crust",
+        "Little Mermaid"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Crust"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Little Mermaid"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Mori"
+          ]
+        }
+      ],
+      "notes": "17 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2025-05",
+      "title": null,
+      "start": "2025-05-01",
+      "end": "2025-06-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Mihara: Bonding Chain",
+        "Arcana",
+        "K"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Mihara: Bonding Chain"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Arcana"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "K"
+          ]
+        }
+      ],
+      "notes": "17 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2025-06",
+      "title": null,
+      "start": "2025-06-01",
+      "end": "2025-07-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Eve",
+        "Raven"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Eve"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Raven"
+          ]
+        }
+      ],
+      "notes": "14 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2025-07",
+      "title": null,
+      "start": "2025-07-01",
+      "end": "2025-08-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Sora",
+        "Dorothy: Serendipity",
+        "Elegg: Boom and Shock"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "2B (rerun)",
+            "A2 (rerun)"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Sora"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Dorothy: Serendipity"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Sakura: Bloom in Summer (rerun)"
+          ]
+        }
+      ],
+      "notes": "21 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2025-08",
+      "title": null,
+      "start": "2025-08-01",
+      "end": "2025-09-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Emma",
+        "Eunhwa",
+        "Vesti"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Emma",
+            "Eunhwa",
+            "Vesti"
+          ]
+        }
+      ],
+      "notes": "11 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2025-09",
+      "title": null,
+      "start": "2025-09-01",
+      "end": "2025-10-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Ade: Agent Bunny",
+        "Milk: Blooming Bunny",
+        "Ada"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rupee: Winter Shopper (rerun)",
+            "Anne: Miracle Fairy (rerun)",
+            "Mary: Bay Goddess (rerun)",
+            "Neon: Blue Ocean (rerun)",
+            "Anis: Sparkling Summer (rerun)",
+            "Helm: Aquamarine (rerun)"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Ade: Agent Bunny"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Milk: Blooming Bunny"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Ada"
+          ]
+        }
+      ],
+      "notes": "11 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2025-10",
+      "title": null,
+      "start": "2025-10-01",
+      "end": "2025-11-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Jill",
+        "Delta: Ninja Thief",
+        "Nayuta"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Jill"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Delta: Ninja Thief"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Modernia (rerun)",
+            "Dorothy (rerun)",
+            "Red Hood (rerun)"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Nayuta"
+          ]
+        }
+      ],
+      "notes": "17 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2025-11",
+      "title": null,
+      "start": "2025-11-01",
+      "end": "2025-12-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Liberalio",
+        "Soline: Frost Ticket"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Liberalio"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Soline: Frost Ticket"
+          ]
+        }
+      ],
+      "notes": "7 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2025-12",
+      "title": null,
+      "start": "2025-12-01",
+      "end": "2026-01-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Diesel: Winter Sweets",
+        "Brid: Silent Track"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Maiden: Ice Rose (rerun)"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Guillotine: Winter Slayer (rerun)"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Diesel: Winter Sweets"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Brid: Silent Track"
+          ]
+        }
+      ],
+      "notes": "15 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2026-01",
+      "title": null,
+      "start": "2026-01-01",
+      "end": "2026-02-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Snow White: Heavy Arms",
+        "Label",
+        "Velvet"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rapi: Red Hood (rerun)"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Snow White: Heavy Arms"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Label"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Velvet"
+          ]
+        }
+      ],
+      "notes": "20 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2026-02",
+      "title": null,
+      "start": "2026-02-01",
+      "end": "2026-03-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Chisato",
+        "Takina"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Chisato"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Takina"
+          ]
+        }
+      ],
+      "notes": "9 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2026-03",
+      "title": null,
+      "start": "2026-03-01",
+      "end": "2026-04-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "E.H.",
+        "Arcana: Fortune Mate"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "E.H."
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Arcana: Fortune Mate"
+          ]
+        }
+      ],
+      "notes": "10 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2026-04",
+      "title": null,
+      "start": "2026-04-01",
+      "end": "2026-05-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Snow Crane",
+        "Anis: Star",
+        "Neon: Vision Eye"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Snow Crane"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Anis: Star"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Avistar"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Neon: Vision Eye"
+          ]
+        }
+      ],
+      "notes": "18 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2026-05",
+      "title": null,
+      "start": "2026-05-01",
+      "end": "2026-06-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Mint",
+        "Prika"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Eve (rerun)"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Mint"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Raven (rerun)"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Prika"
+          ]
+        }
+      ],
+      "notes": "14 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2026-06",
+      "title": null,
+      "start": "2026-06-01",
+      "end": "2026-07-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Ark Ranger Black"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Mary: Bay Goddess (rerun)",
+            "Neon: Blue Ocean (rerun)",
+            "Anis: Sparkling Summer (rerun)",
+            "Helm: Aquamarine (rerun)",
+            "Sakura: Bloom in Summer (rerun)",
+            "Rosanna: Chic Ocean (rerun)"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Ark Ranger Black"
+          ]
+        }
+      ],
+      "notes": "4 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2026-07",
+      "title": null,
+      "start": "2026-07-01",
+      "end": "2026-08-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Cinderella: Crystal Wave",
+        "Marciana: Marine Study",
+        "Laplace: Ultimate Hero",
+        "Maxwell: Ordinary Mechanic"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Dorothy: Serendipity (rerun)"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Cinderella: Crystal Wave"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Elegg: Boom and Shock (rerun)"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Marciana: Marine Study"
+          ]
+        }
+      ],
+      "notes": "15 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2026-08",
+      "title": null,
+      "start": "2026-08-01",
+      "end": "2026-09-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Queen",
+        "Yukiko"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Queen"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Yukiko"
+          ]
+        }
+      ],
+      "notes": "12 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2026-09",
+      "title": null,
+      "start": "2026-09-01",
+      "end": "2026-10-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Drake: Great Villain",
+        "Guilty: Mighty Bunny",
+        "Sin: Swift Bunny"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Drake: Great Villain"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rupee: Winter Shopper (rerun)",
+            "Anne: Miracle Fairy (rerun)",
+            "Ludmilla: Winter Owner (rerun)",
+            "Mica: Snow Buddy (rerun)",
+            "Maiden: Ice Rose (rerun)",
+            "Guillotine: Winter Slayer (rerun)"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Guilty: Mighty Bunny"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Sin: Swift Bunny"
+          ]
+        }
+      ],
+      "notes": "10 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2026-10",
+      "title": null,
+      "start": "2026-10-01",
+      "end": "2026-11-01",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Belorta: Pumpkin Witch",
+        "Marian: Queen"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Belorta: Pumpkin Witch"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Cinderella (rerun)",
+            "Grave (rerun)",
+            "Nayuta (rerun)"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Marian: Queen"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rapunzel: Sanctuary"
+          ]
+        }
+      ],
+      "notes": "8 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "nikke",
+      "version": "2026-11",
+      "title": null,
+      "start": "2026-11-01",
+      "end": null,
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Scarlet: Goddeath",
+        "Sky"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Scarlet: Goddeath"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Sky"
+          ]
+        }
+      ],
+      "notes": "11 dated items start this month. Phases = SSR pickups starting this month (BannerHistory, start times UTC+9); end from the wiki banner line, else the story event that opened the same day; null if neither. No per-month F2P Gem tally exists, so total is null.",
+      "sources": [
+        {
+          "label": "NIKKE Wiki (Fandom) event list",
+          "url": "https://nikke-goddess-of-victory-international.fandom.com/wiki/Event"
+        },
+        {
+          "label": "BannerHistory NIKKE pickups",
+          "url": "https://bannerhistory.app/en/nikke-banners"
+        }
+      ]
+    },
+    {
+      "game": "lads",
+      "version": "1.0",
+      "title": "Love and Deepspace",
+      "start": "2024-01-18",
+      "end": "2024-07-15",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Xavier: Heartstring Symphony"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rafayel: Fireworks Vow"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Xavier: Tender Night",
+            "Zayne: Drunken Intimacy",
+            "Rafayel: Tipsy Invitation"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Zayne: Medical Rescue"
+          ]
+        }
+      ],
+      "notes": "40 dated items start in this version; 13 limited wish pools (0 reruns). New limited 5★ memories: Xavier: Heartstring Symphony, Rafayel: Fireworks Vow, Xavier: Tender Night, Zayne: Drunken Intimacy, Rafayel: Tipsy Invitation, Zayne: Medical Rescue, Rafayel: Unforgettable Adventure, Xavier: Romantic Afternoon, Zayne: Heart Within Reach, Rafayel: Whispers, Rafayel: Temple's Sunset, Rafayel: Temple's Promise, Xavier: Faint Sensation, Zayne: Exclusive Tutorial, Xavier: Midnight Rainfall, Xavier: Midnight Whispers, Rafayel: Private Trip, Zayne: Snowfall Embrace, Zayne: Snowfall Encounter, Xavier: 21 Days, Zayne: Snowy Serenity, Rafayel: Floral Promise. No itemised F2P Diamond tally per version exists, so total is null.",
+      "sources": [
+        {
+          "label": "Love and Deepspace Wiki (wiki.gg) Events Cargo table",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Events/Archive"
+        },
+        {
+          "label": "Love and Deepspace Wiki: Game Version",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Game_Version"
+        }
+      ]
+    },
+    {
+      "game": "lads",
+      "version": "2.0",
+      "title": "Opposing Visions",
+      "start": "2024-07-15",
+      "end": "2024-12-31",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Sylus"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Sylus: No Defense Zone"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "{{{Related Memories}}}"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Xavier: No Restraint",
+            "Zayne: Hidden Motive",
+            "Rafayel: Omnipotent Perception",
+            "Sylus: Lost Oasis"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Zayne: Eternal Attachment"
+          ]
+        }
+      ],
+      "notes": "51 dated items start in this version; 12 limited wish pools (0 reruns). New limited 5★ memories: Sylus: No Defense Zone, Xavier: No Restraint, Zayne: Hidden Motive, Rafayel: Omnipotent Perception, Sylus: Lost Oasis, Zayne: Eternal Attachment, Rafayel: Into The Canvas, Xavier: Floral Blessing, Zayne: Moonlit Dream, Rafayel: Gem Affection, Sylus: Grassland Romance, Xavier: Celestial Message, Sylus: Radiant Brilliance, Zayne: Heartstring Notes, Xavier: Floof Attack, Zayne: Fluffy Treatment, Rafayel: Tailwag Moment, Sylus: Goodcat Code, Sylus: Abyssal Mark, Sylus: Abyssal Blossom, Xavier: Silvery Polyphony. New love interest: Sylus. No itemised F2P Diamond tally per version exists, so total is null.",
+      "sources": [
+        {
+          "label": "Love and Deepspace Wiki (wiki.gg) Events Cargo table",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Events/Archive"
+        },
+        {
+          "label": "Love and Deepspace Wiki: Game Version",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Game_Version"
+        }
+      ]
+    },
+    {
+      "game": "lads",
+      "version": "3.0",
+      "title": "Cosmic Encounter",
+      "start": "2024-12-31",
+      "end": "2025-04-30",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Caleb"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Xavier: Misty Silhouette",
+            "Zayne: Absolute Zeal",
+            "Rafayel: Intertidal Zone",
+            "Sylus: Night Of Secrecy"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Caleb: Painful Signal"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "{{{Related Memories}}}"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Xavier: Deluded Fiction",
+            "Zayne: Immediate Disorder",
+            "Rafayel: Extreme Dose",
+            "Sylus: Innocent Birdcage",
+            "Caleb: Tainted Cuts"
+          ]
+        }
+      ],
+      "notes": "35 dated items start in this version; 11 limited wish pools (3 reruns). New limited 5★ memories: Xavier: Misty Silhouette, Zayne: Absolute Zeal, Rafayel: Intertidal Zone, Sylus: Night Of Secrecy, Caleb: Painful Signal, Xavier: Deluded Fiction, Zayne: Immediate Disorder, Rafayel: Extreme Dose, Sylus: Innocent Birdcage, Caleb: Tainted Cuts, Rafayel: Boundless Seas, Zayne: Everlasting Wish, Caleb: Loneroad Unreturned, Caleb: Loneroad Together, Sylus: Where Hearts Live. New love interest: Caleb (released 2025-01-22, mid-version). The wiki main page dates 3.0 to 2025-01-22 (Caleb); the version page and release template say 2024-12-31. No itemised F2P Diamond tally per version exists, so total is null.",
+      "sources": [
+        {
+          "label": "Love and Deepspace Wiki (wiki.gg) Events Cargo table",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Events/Archive"
+        },
+        {
+          "label": "Love and Deepspace Wiki: Game Version",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Game_Version"
+        }
+      ]
+    },
+    {
+      "game": "lads",
+      "version": "3.5",
+      "title": null,
+      "start": "2025-04-30",
+      "end": "2025-07-03",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Xavier: Inflorescence Imprints",
+            "Zayne: Fragrant Possession",
+            "Rafayel: Wisteria Waltz",
+            "Sylus: Valleydream Bloom",
+            "Caleb: Floating Floraletter"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "{{{Related Memories}}}"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Xavier: Feverish Attempts"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Caleb: No-Return Night"
+          ]
+        }
+      ],
+      "notes": "18 dated items start in this version; 5 limited wish pools (1 reruns). New limited 5★ memories: Xavier: Inflorescence Imprints, Zayne: Fragrant Possession, Rafayel: Wisteria Waltz, Sylus: Valleydream Bloom, Caleb: Floating Floraletter, Xavier: Feverish Attempts, Caleb: No-Return Night, Rafayel: Mistsea Descent, Rafayel: Mistsea Lament. No version name recorded on the wiki. No itemised F2P Diamond tally per version exists, so total is null.",
+      "sources": [
+        {
+          "label": "Love and Deepspace Wiki (wiki.gg) Events Cargo table",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Events/Archive"
+        },
+        {
+          "label": "Love and Deepspace Wiki: Game Version",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Game_Version"
+        }
+      ]
+    },
+    {
+      "game": "lads",
+      "version": "4.0",
+      "title": "Witnessed by Deepspace",
+      "start": "2025-07-03",
+      "end": "2025-10-29",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Xavier: Starfall Sanctuary",
+            "Zayne: Iceborn Warmth",
+            "Rafayel: Destined Dawntide",
+            "Sylus: Alternative Darkborne",
+            "Caleb: Wayward Wonderland"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Xavier: Nightvow Mooncurse",
+            "Xavier: Nightvow Requiem"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Xavier: Coolsplash Soak",
+            "Zayne: Runaway Waves",
+            "Rafayel: Heatwave Torrent",
+            "Sylus: Lovespeed Ride",
+            "Caleb: Clearwind Glide"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "{{{Related Memories}}}"
+          ]
+        }
+      ],
+      "notes": "38 dated items start in this version; 11 limited wish pools (4 reruns). New limited 5★ memories: Xavier: Starfall Sanctuary, Zayne: Iceborn Warmth, Rafayel: Destined Dawntide, Sylus: Alternative Darkborne, Caleb: Wayward Wonderland, Xavier: Nightvow Mooncurse, Xavier: Nightvow Requiem, Xavier: Coolsplash Soak, Zayne: Runaway Waves, Rafayel: Heatwave Torrent, Sylus: Lovespeed Ride, Caleb: Clearwind Glide, Zayne: Dawnbreak Promise, Sylus: Passionate Appraisal, Zayne: Diviner's Hymn, Zayne: Diviner's Stillness, Xavier: Between Stars. No itemised F2P Diamond tally per version exists, so total is null.",
+      "sources": [
+        {
+          "label": "Love and Deepspace Wiki (wiki.gg) Events Cargo table",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Events/Archive"
+        },
+        {
+          "label": "Love and Deepspace Wiki: Game Version",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Game_Version"
+        }
+      ]
+    },
+    {
+      "game": "lads",
+      "version": "4.5",
+      "title": "Heartbeats Ablaze",
+      "start": "2025-10-29",
+      "end": "2025-12-31",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Xavier: Offbeat Track",
+            "Zayne: Chilling Crescendo",
+            "Rafayel: Ignited Echoes",
+            "Sylus: Improvised Flow",
+            "Caleb: Passionate Overload"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Xavier: Heartstring Symphony"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rafayel: Sweet Overdrive"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Sylus: Crimson Departure",
+            "Sylus: Crimson Rapture"
+          ]
+        }
+      ],
+      "notes": "18 dated items start in this version; 7 limited wish pools (3 reruns). New limited 5★ memories: Xavier: Offbeat Track, Zayne: Chilling Crescendo, Rafayel: Ignited Echoes, Sylus: Improvised Flow, Caleb: Passionate Overload, Rafayel: Sweet Overdrive, Sylus: Crimson Departure, Sylus: Crimson Rapture, Caleb: Indulgent Scheme. No itemised F2P Diamond tally per version exists, so total is null.",
+      "sources": [
+        {
+          "label": "Love and Deepspace Wiki (wiki.gg) Events Cargo table",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Events/Archive"
+        },
+        {
+          "label": "Love and Deepspace Wiki: Game Version",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Game_Version"
+        }
+      ]
+    },
+    {
+      "game": "lads",
+      "version": "5.0",
+      "title": "Throne of Eros",
+      "start": "2025-12-31",
+      "end": "2026-07-09",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Xavier: Eulogy of Light",
+            "Zayne: Aeon's Canon",
+            "Rafayel: Fires of Devotion",
+            "Sylus: Primordial Chaos",
+            "Caleb: Imperial Thronesong"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "{{{Related Memories}}}"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Zayne: Secret's Kiss"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "{{{Related Memories}}}"
+          ]
+        }
+      ],
+      "notes": "89 dated items start in this version; 24 limited wish pools (12 reruns). New limited 5★ memories: Xavier: Eulogy of Light, Zayne: Aeon's Canon, Rafayel: Fires of Devotion, Sylus: Primordial Chaos, Caleb: Imperial Thronesong, Zayne: Secret's Kiss, Xavier: Blades with Blossoms, Zayne: Entwined Kites, Rafayel: Carved Gemheart, Sylus: Shared Lanterns, Caleb: Clearday Return, Rafayel: Duskbright Steps, Xavier: Tranquil Moments, Caleb: Nether Yearning, Caleb: Nether Parting, Sylus: Rainlit Night, Xavier: Sunken Glow, Zayne: Silent Underflow, Rafayel: Rippling Blossoms, Sylus: Darkbound Souls, Caleb: Vinesurge Instinct, Sylus: Kitten Included, Caleb: Your Skyblue, Xavier: Runaway Hearts, Zayne: Dawn and Devotion, Rafayel: Sunset on Canvas, Sylus: Finale Undone, Caleb: Up Close. No itemised F2P Diamond tally per version exists, so total is null.",
+      "sources": [
+        {
+          "label": "Love and Deepspace Wiki (wiki.gg) Events Cargo table",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Events/Archive"
+        },
+        {
+          "label": "Love and Deepspace Wiki: Game Version",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Game_Version"
+        }
+      ]
+    },
+    {
+      "game": "lads",
+      "version": "6.0",
+      "title": null,
+      "start": "2026-07-09",
+      "end": "2026-11-06",
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Xavier: Floral Blessing",
+            "Zayne: Moonlit Dream",
+            "Rafayel: Gem Affection",
+            "Sylus: Grassland Romance"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "{{{Related Memories}}}"
+          ]
+        },
+        {
+          "phase": 3,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Caleb: Summer Surge"
+          ]
+        },
+        {
+          "phase": 4,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Rafayel: Masked Radiance",
+            "Rafayel: Masked Dissolution"
+          ]
+        }
+      ],
+      "notes": "53 dated items start in this version; 14 limited wish pools (7 reruns). New limited 5★ memories: Caleb: Summer Surge, Rafayel: Masked Radiance, Rafayel: Masked Dissolution, Zayne: When Embers Rise, Xavier: Bound by Starlight, Zayne: Past Midnight, Rafayel: Alluring Hues, Sylus: Nightly Duet, Caleb: Spoils of Night, Xavier: Lingering Light, Rafayel: Nightly Overflow. No version name recorded on the wiki. No itemised F2P Diamond tally per version exists, so total is null.",
+      "sources": [
+        {
+          "label": "Love and Deepspace Wiki (wiki.gg) Events Cargo table",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Events/Archive"
+        },
+        {
+          "label": "Love and Deepspace Wiki: Game Version",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Game_Version"
+        }
+      ]
+    },
+    {
+      "game": "lads",
+      "version": "6.5",
+      "title": null,
+      "start": "2026-11-06",
+      "end": null,
+      "currency": {
+        "total": null,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [],
+      "phases": [
+        {
+          "phase": 1,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Xavier: Program Fallacy",
+            "Zayne: Shattered Simulacrum",
+            "Rafayel: Synced Drowning",
+            "Sylus: Paradox Vector",
+            "Caleb: Oneiric Protocol"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": null,
+          "end": null,
+          "featured": [
+            "Sylus: Radiant Brilliance"
+          ]
+        }
+      ],
+      "notes": "11 dated items start in this version; 2 limited wish pools (1 reruns). New limited 5★ memories: Xavier: Program Fallacy, Zayne: Shattered Simulacrum, Rafayel: Synced Drowning, Sylus: Paradox Vector, Caleb: Oneiric Protocol. No version name recorded on the wiki. No itemised F2P Diamond tally per version exists, so total is null.",
+      "sources": [
+        {
+          "label": "Love and Deepspace Wiki (wiki.gg) Events Cargo table",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Events/Archive"
+        },
+        {
+          "label": "Love and Deepspace Wiki: Game Version",
+          "url": "https://loveanddeepspace.wiki.gg/wiki/Game_Version"
         }
       ]
     }

@@ -1987,16 +1987,6 @@
     },
     {
       "game": "lads",
-      "name": "Shared Bloom",
-      "type": "event",
-      "start": "2026-09-08 05:00",
-      "end": "2026-09-17 04:59",
-      "dailyTouch": true,
-      "notes": "",
-      "sourceKey": "seed:lads:shared-bloom-2026-09"
-    },
-    {
-      "game": "lads",
       "name": "Blooming Osmanthus — daily check-in",
       "type": "event",
       "start": "2026-09-17 05:00",
@@ -2200,38 +2190,6 @@
     },
     {
       "game": "nikke",
-      "name": "DAILY EVIL DEED — 7-day login",
-      "type": "event",
-      "start": "2026-09-03 18:00",
-      "end": "2026-09-17 04:59",
-      "timezone": "UTC+9",
-      "dailyTouch": true,
-      "notes": "",
-      "sourceKey": "seed:nikke:daily-evil-deed"
-    },
-    {
-      "game": "nikke",
-      "name": "Drake: Great Villain Pick Up",
-      "type": "banner",
-      "bannerKind": "character",
-      "start": "2026-09-03 18:00",
-      "end": "2026-09-17 04:59",
-      "timezone": "UTC+9",
-      "notes": "",
-      "sourceKey": "seed:nikke:drake-great-villain-pickup"
-    },
-    {
-      "game": "nikke",
-      "name": "GREAT VILLAIN UNION",
-      "type": "event",
-      "start": "2026-09-03 18:00",
-      "end": "2026-09-17 04:59",
-      "timezone": "UTC+9",
-      "notes": "",
-      "sourceKey": "seed:nikke:great-villain-union"
-    },
-    {
-      "game": "nikke",
       "name": "Simulation Room: Overclock — reward cycle",
       "type": "cycle",
       "start": "2026-09-08 05:00",
@@ -2239,16 +2197,6 @@
       "notify": false,
       "notes": "Final Season 9 cycle. Estimated dates.",
       "sourceKey": "seed:nikke:overclock-2026-09-08"
-    },
-    {
-      "game": "nikke",
-      "name": "September 17 update maintenance",
-      "type": "maintenance",
-      "start": "2026-09-17 11:00",
-      "end": "2026-09-17 18:00",
-      "timezone": "UTC+9",
-      "notes": "Estimated dates.",
-      "sourceKey": "seed:nikke:2026-09-17-maint"
     },
     {
       "game": "nikke",
@@ -3305,17 +3253,6 @@
     },
     {
       "game": "uma",
-      "name": "Bonus Daily Race Entry Tickets",
-      "type": "event",
-      "start": "2026-09-03 15:00",
-      "end": "2026-09-17 14:59",
-      "timezone": "UTC",
-      "dailyTouch": true,
-      "notes": "",
-      "sourceKey": "seed:uma:daily-race-tickets-2026-09"
-    },
-    {
-      "game": "uma",
       "name": "Spotlight Scout — Tamamo Cross / Inari One",
       "type": "banner",
       "bannerKind": "character",
@@ -3343,27 +3280,6 @@
       "timezone": "UTC",
       "notes": "",
       "sourceKey": "seed:uma:story-event-19"
-    },
-    {
-      "game": "uma",
-      "name": "JBC Series — limited missions",
-      "type": "event",
-      "start": "2026-09-10 15:00",
-      "end": "2026-09-17 14:59",
-      "timezone": "UTC",
-      "notes": "",
-      "sourceKey": "seed:uma:fall-g1-jbc-2026"
-    },
-    {
-      "game": "uma",
-      "name": "Bonus Star Pieces — JBC races",
-      "type": "event",
-      "start": "2026-09-15 15:00",
-      "end": "2026-09-17 14:59",
-      "timezone": "UTC",
-      "dailyTouch": true,
-      "notes": "Daily race bonus.",
-      "sourceKey": "seed:uma:star-pieces-jbc-2026"
     },
     {
       "game": "uma",
@@ -3693,17 +3609,6 @@
       "dailyTouch": false,
       "notes": "",
       "sourceKey": "seed:uma:sparkly-magic-show-2026-10"
-    },
-    {
-      "game": "uma",
-      "name": "Legend Races — October",
-      "type": "event",
-      "start": "2026-10-19 22:00",
-      "end": "2026-10-25 14:59",
-      "timezone": "UTC",
-      "dailyTouch": true,
-      "notes": "Arima Kinen: Nakayama Turf 2500m (Long), Right/Inner, Winter, Sunny, Firm. Second race from October 22 at 15:00.",
-      "sourceKey": "seed:uma:legend-races-2026-10"
     },
     {
       "game": "uma",

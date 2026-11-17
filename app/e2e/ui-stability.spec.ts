@@ -197,7 +197,7 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   await addPreset(page, 'Honkai: Star Rail', 'HSR');
   await page.getByRole('heading', { name: 'Honkai: Star Rail', exact: true }).scrollIntoViewIfNeeded();
   // The reserve always shows; there is no summary line to open.
-  await expect(page.getByLabel(/Reserve TB Power for Trailblaze Power/)).toBeVisible();
+  await expect(page.getByLabel(/Reserved Trailblaze Power for Trailblaze Power/)).toBeVisible();
 
   const allGames = page.getByRole('button', { name: 'Back to Today', exact: true });
   if (await allGames.isVisible()) await allGames.click();
