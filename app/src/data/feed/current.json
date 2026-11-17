@@ -4033,26 +4033,6 @@
     },
     {
       "game": "wuwa",
-      "name": "Jingran + Hiyuki/Mornye reruns (phase 2)",
-      "type": "banner",
-      "bannerKind": "character",
-      "start": "2026-09-10 10:00",
-      "end": "2026-09-29 11:59",
-      "notes": "",
-      "sourceKey": "seed:wuwa:3.6-p2"
-    },
-    {
-      "game": "wuwa",
-      "name": "Thousandfold Deliverance / Frostburn / Starfield Calibrator — weapons",
-      "type": "banner",
-      "bannerKind": "weapon",
-      "start": "2026-09-10 10:00",
-      "end": "2026-09-29 11:59",
-      "notes": "",
-      "sourceKey": "seed:wuwa:3.6-p2-weapons"
-    },
-    {
-      "game": "wuwa",
       "name": "Wuthering Exploration: Fogveil Pagoda",
       "type": "event",
       "start": "2026-09-17 04:00",
@@ -4114,28 +4094,6 @@
     },
     {
       "game": "wuwa",
-      "name": "Chisa + Iuno — reruns",
-      "type": "banner",
-      "bannerKind": "character",
-      "start": "2026-09-30 11:00",
-      "end": "2026-10-22 09:59",
-      "startTimezone": "UTC+8",
-      "notes": "",
-      "sourceKey": "seed:wuwa:3.7-p1"
-    },
-    {
-      "game": "wuwa",
-      "name": "Kumokiri / Moongazer’s Sigil",
-      "type": "banner",
-      "bannerKind": "weapon",
-      "start": "2026-09-30 11:00",
-      "end": "2026-10-22 09:59",
-      "startTimezone": "UTC+8",
-      "notes": "",
-      "sourceKey": "seed:wuwa:3.7-p1-weapons"
-    },
-    {
-      "game": "wuwa",
       "name": "Artisan’s Search",
       "type": "event",
       "start": "2026-10-08 04:00",
@@ -4161,26 +4119,6 @@
       "end": "2026-11-09 03:59",
       "notes": "",
       "sourceKey": "seed:wuwa:3.7-echo-erase"
-    },
-    {
-      "game": "wuwa",
-      "name": "Lucilla + Lynae — reruns (phase 2)",
-      "type": "banner",
-      "bannerKind": "character",
-      "start": "2026-10-22 10:00",
-      "end": "2026-11-11 11:59",
-      "notes": "",
-      "sourceKey": "seed:wuwa:3.7-p2"
-    },
-    {
-      "game": "wuwa",
-      "name": "Freeze Frame / Spectrum Blaster (phase 2)",
-      "type": "banner",
-      "bannerKind": "weapon",
-      "start": "2026-10-22 10:00",
-      "end": "2026-11-11 11:59",
-      "notes": "",
-      "sourceKey": "seed:wuwa:3.7-p2-weapons"
     },
     {
       "game": "wuwa",

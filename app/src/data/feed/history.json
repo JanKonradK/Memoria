@@ -22,8 +22,8 @@
     "wuwa": {
       "currency": "Astrites",
       "pullCost": 160,
-      "methodology": "Community full-clear estimates are expressed as raw Astrite plus explicitly listed Radiant and Forging Tides at 160 each, excluding Lustrous Tides and paid rewards; dates use UTC+8 patch dates except the requested May 22 launch date, and missing or incomplete evidence remains null. Re-checked 2026-11-15 from launch: totals now come from itemised community estimates, each version noting its sources; most are pre-release projections. Earlier figures that could not be traced are replaced or flagged in the notes.",
-      "archiveSince": "2026-07-11"
+      "methodology": "Total = F2P (零氪) line of a pre-release community Astrite tally: Astrite + free Radiant and Forging Tides (3.4: also collab Dreamcatcher Tides) x160; Lustrous and paid items excluded. 17 versions use one author's series (轩儿Xuaner, Gamersky/Bilibili): dailies, Tower and other endgame, events, story, exploration estimates, compensation, codes, login gifts and coral-shop tickets. 1.0, 1.2, 1.3, 2.5, 2.6 and 3.2 use other counts of the same kind. No breakdowns.",
+      "archiveSince": "2024-05-22"
     },
     "nte": {
       "currency": "Annulith",
@@ -708,1407 +708,6 @@
         {
           "label": "PlayNews: NTE update 1.5 and what changes for pulls",
           "url": "https://www.playnews.gg/en/updates/nte-neverness-to-everness-update-1-5-is-here-what-does-it-change-for-your-pulls"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "1.0",
-      "title": "Waking of a World",
-      "start": "2024-05-22",
-      "end": "2024-06-28",
-      "currency": {
-        "total": 29160,
-        "events": 2445,
-        "daily": 2220,
-        "endgame": 2650,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Rover",
-        "Jiyan",
-        "Yinlin",
-        "Calcharo",
-        "Encore",
-        "Jianxin",
-        "Lingyang",
-        "Verina",
-        "Aalto",
-        "Baizhi",
-        "Chixia",
-        "Danjin",
-        "Mortefi",
-        "Sanhua",
-        "Taoqi",
-        "Yangyang",
-        "Yuanwu"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-05-23",
-          "end": "2024-06-13",
-          "featured": [
-            "Jiyan"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-06-06",
-          "end": "2024-06-26",
-          "featured": [
-            "Yinlin"
-          ]
-        }
-      ],
-      "notes": "The total of 29160 is from an earlier pass and could not be traced to a source on 2026-11-15. Start is 2024-05-22: the launch-era article says the global launch was Wednesday 22 May 2024 at 3 AM BST, which is 10:00 UTC+8 on 22 May. Game8 lists 23 May for the same version, so the two sources differ by one day. Phase 1 (23 May to 13 Jun) and Phase 2 (6 Jun to 26 Jun) overlap in the source. The total is null: the carried-over value 29160 from the brief could not be reproduced. Gameleap estimates about 20000 Astrites plus 20 event pulls and 90 standard pulls, which does not fix a limited total. Another guide lists 1800 Astrites plus 14 Radiant Tides and 84 Lustrous Tides (Lustrous is standard, so excluded), which is incomplete. Launch-roster characters beyond the two limited debuts were not enumerated.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "r/WutheringWaves F2P launch calculation",
-          "url": "https://www.reddit.com/r/WutheringWaves/comments/1dh0iyk"
-        },
-        {
-          "label": "Game8 All Gacha Banner History (phase dates and featured units)",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        },
-        {
-          "label": "Game8 version release dates list",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/559680"
-        },
-        {
-          "label": "Gameleap: how to get 150+ pulls when starting out (launch-era F2P estimate)",
-          "url": "https://www.gameleap.com/articles/wuthering-waves-how-to-get-150-pulls-when-starting-out"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "1.1",
-      "title": "Thaw of Eons",
-      "start": "2024-06-28",
-      "end": "2024-08-15",
-      "currency": {
-        "total": 15952,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Jinhsi",
-        "Changli"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-06-28",
-          "end": "2024-07-22",
-          "featured": [
-            "Jinhsi"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-07-22",
-          "end": "2024-08-14",
-          "featured": [
-            "Changli"
-          ]
-        }
-      ],
-      "notes": "Total = 12432 Astrites + (16 Radiant + 6 Forging) x 160 = 15952. Lustrous (21) excluded as standard. Source is a pre-release leak mirror, not a post-release tally. A different leaker (PalitoGodd, via the same Sportskeeda coverage) estimated about 120 free pulls, which would be roughly 19200 currency, so the range is wide. The source also says the calculation skipped some exploration mechanics, so it may be an underestimate. Maintenance compensation, shown as 10 free pulls, is not separately itemised here. Source-described phase dates for 1.1 are consistent with Game8.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "Sportskeeda: Wuthering Waves 1.1 free Astrites total and pulls estimation (leaks)",
-          "url": "https://sportskeeda.com/esports/wuthering-waves-1-1-free-astrites-total-pulls-estimation-leaks"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        },
-        {
-          "label": "Game8 version release dates list",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/559680"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "1.2",
-      "title": "In the Turquoise Moonglow",
-      "start": "2024-08-15",
-      "end": "2024-09-29",
-      "currency": {
-        "total": 14180,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Zhezhi",
-        "Xiangli Yao"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-08-15",
-          "end": "2024-09-07",
-          "featured": [
-            "Zhezhi"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-09-07",
-          "end": "2024-09-28",
-          "featured": [
-            "Xiangli Yao"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 11860 that could not be traced to a source on 2026-11-15. Sportskeeda, citing leaker PalitoGodd, puts free income at 88 pulls worth 14180 Astrites. Taken as 14180 Astrites with no limited tickets mentioned. Pre-release beta-leak figure. GameWitted says the beta data is incomplete, so the final total may be higher. The carried-over value 11860 from the brief could not be reproduced. Phase dates are from Game8.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "Community retrospective; fallback r/gachagaming",
-          "url": "https://www.reddit.com/r/gachagaming/comments/1kdv8uy"
-        },
-        {
-          "label": "Sportskeeda: Wuthering Waves 1.2 Astrites count, 90+ pulls expected (leaker PalitoGodd)",
-          "url": "https://www.sportskeeda.com/esports/wuthering-waves-1-2-astrites-count-90-pulls-worth-free-pulls-expected"
-        },
-        {
-          "label": "GameWitted: Wuthering Waves 1.2 Astrite count speculation",
-          "url": "https://gamewitted.com/gaming/wuthering-waves-1-2-astrite-count-speculation"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "1.3",
-      "title": "To the Shore's End",
-      "start": "2024-09-29",
-      "end": "2024-11-14",
-      "currency": {
-        "total": 17480,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "The Shorekeeper",
-        "Youhu"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-09-29",
-          "end": "2024-10-24",
-          "featured": [
-            "The Shorekeeper"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-10-24",
-          "end": "2024-11-13",
-          "featured": [
-            "Jiyan"
-          ]
-        }
-      ],
-      "notes": "The total of 17480 is from an earlier pass and could not be traced to a source on 2026-11-15. Total is null. The only figure found is a pre-release leak of about 13640 Astrites (about 97 pulls). The article says this assumes a Lunite Subscription worth 4380 Astrites, but it is unclear whether that is inside the 13640. The stated pull count does not reconcile with either reading (9260 or 13640 Astrites / 160). The carried-over value 17480 from the brief could not be reproduced. The three 1.3 livestream codes gave 300 Astrites and are part of the free total if counted, but no full tally was found.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "Community retrospective; fallback r/gachagaming",
-          "url": "https://www.reddit.com/r/gachagaming/comments/1kdv8uy"
-        },
-        {
-          "label": "Sportskeeda: Wuthering Waves 1.3 free pulls and total Astrites calculation (leaked)",
-          "url": "https://www.sportskeeda.com/esports/wuthering-waves-1-3-free-pulls-total-astrites-calculation-leaked"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "1.4",
-      "title": "When the Night Knocks",
-      "start": "2024-11-14",
-      "end": "2025-01-02",
-      "currency": {
-        "total": 12880,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Camellya",
-        "Lumi"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2024-11-14",
-          "end": "2024-12-12",
-          "featured": [
-            "Camellya"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2024-12-12",
-          "end": "2025-01-01",
-          "featured": [
-            "Yinlin",
-            "Xiangli Yao"
-          ]
-        }
-      ],
-      "notes": "The total of 12880 is from an earlier pass and could not be traced to a source on 2026-11-15. Total is null. No F2P total for 1.4 was found in any source this session. The carried-over value 12880 from the brief could not be reproduced. Phase dates and reruns are from Game8 and corroborated by The Nerd Stash.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "Community retrospective; fallback r/gachagaming",
-          "url": "https://www.reddit.com/r/gachagaming/comments/1kdv8uy"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        },
-        {
-          "label": "Game8 version release dates list",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/559680"
-        },
-        {
-          "label": "The Nerd Stash: complete Wuthering Waves banner history",
-          "url": "https://thenerdstash.com/complete-wuthering-waves-banner-history"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "2.0",
-      "title": "All Silent Souls Can Sing",
-      "start": "2025-01-02",
-      "end": "2025-02-13",
-      "currency": {
-        "total": 27210,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Carlotta",
-        "Roccia"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-01-02",
-          "end": "2025-01-23",
-          "featured": [
-            "Carlotta",
-            "Zhezhi"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-01-23",
-          "end": "2025-02-12",
-          "featured": [
-            "Roccia",
-            "Jinhsi"
-          ]
-        }
-      ],
-      "notes": "The total of 27210 is from an earlier pass and could not be traced to a source on 2026-11-15. Total is null. The only figure found is a Phase 1 estimate of up to 15935 Astrites and up to 136 pulls, depending on activity and premium subscription, from one guide that could not be cross-checked. Phase 1 alone does not give a full-version total. The carried-over value 27210 from the brief could not be reproduced. Phase dates from Game8.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "Community retrospective; fallback r/gachagaming",
-          "url": "https://www.reddit.com/r/gachagaming/comments/1kdv8uy"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        },
-        {
-          "label": "GamingOnPhone: Wuthering Waves 2.0 rewards calculation",
-          "url": "https://gamingonphone.com/guides/wuthering-waves-version-2-0-rewards-calculation"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "2.1",
-      "title": "Waves Sing, and the Cerulean Bird Calls",
-      "start": "2025-02-13",
-      "end": "2025-03-27",
-      "currency": {
-        "total": 16630,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Phoebe",
-        "Brant"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-02-13",
-          "end": "2025-03-06",
-          "featured": [
-            "Phoebe"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-03-06",
-          "end": "2025-03-26",
-          "featured": [
-            "Brant",
-            "Changli"
-          ]
-        }
-      ],
-      "notes": "The total of 16630 is from an earlier pass and could not be traced to a source on 2026-11-15. Total is null. No version-specific F2P total was found. The only generic figure is a per-patch range of 8000 to 12800 Astrites (50 to 80 pulls) from dailies, Tower of Adversity and story, which is not specific to 2.1. Some guide sites list 2.1 in 2026. The 2025 date matches official coverage and Game8, so the 2026 dates are treated as errors. The carried-over value 16630 from the brief could not be reproduced.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "Community retrospective; fallback r/gachagaming",
-          "url": "https://www.reddit.com/r/gachagaming/comments/1kdv8uy"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        },
-        {
-          "label": "BitTopup: Wuthering Waves 2.1 banner pull guide (Phoebe or Brant)",
-          "url": "https://news.bittopup.com/news/wuthering-waves-2.1-banner-pull-phoebe-or-brant-2026"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "2.2",
-      "title": "Tangled Truth in Inverted Tower",
-      "start": "2025-03-27",
-      "end": "2025-04-29",
-      "currency": {
-        "total": 15250,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Cantarella"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-03-27",
-          "end": "2025-04-17",
-          "featured": [
-            "Cantarella",
-            "Camellya"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-04-17",
-          "end": "2025-04-28",
-          "featured": [
-            "The Shorekeeper"
-          ]
-        }
-      ],
-      "notes": "The total of 15250 is from an earlier pass and could not be traced to a source on 2026-11-15. Total is null. The Sportskeeda 2.2 breakdown lists partial sources only (dailies 1980, missions 630, codes 180, livestream codes 300, Battle Pass 1480) and does not give a complete tally. Excluding the Lunite subscription, the listed free items sum to about 4570 Astrites, which is clearly incomplete. The carried-over value 15250 from the brief could not be reproduced.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "Community retrospective; fallback r/gachagaming",
-          "url": "https://www.reddit.com/r/gachagaming/comments/1kdv8uy"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        },
-        {
-          "label": "Sportskeeda: Wuthering Waves 2.2 free pulls and total Astrites estimation",
-          "url": "https://sportskeeda.com/esports/wuthering-waves-wuwa-2-2-free-pulls-total-astrites-estimation"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "2.3",
-      "title": "Fiery Arpeggio of Summer Reunion",
-      "start": "2025-04-29",
-      "end": "2025-06-12",
-      "currency": {
-        "total": 20400,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Zani",
-        "Ciaccona"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-04-29",
-          "end": "2025-05-22",
-          "featured": [
-            "Zani",
-            "Jiyan (anniversary rerun)",
-            "Yinlin (anniversary rerun)",
-            "Zhezhi (anniversary rerun)",
-            "Xiangli Yao (anniversary rerun)",
-            "Phoebe (anniversary rerun)"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-05-22",
-          "end": "2025-06-11",
-          "featured": [
-            "Ciaccona",
-            "Jinhsi (anniversary rerun)",
-            "Changli (anniversary rerun)",
-            "Carlotta (anniversary rerun)",
-            "Roccia (anniversary rerun)",
-            "Brant (anniversary rerun)"
-          ]
-        }
-      ],
-      "notes": "Replaces an earlier figure of 17260 that could not be traced to a source on 2026-11-15. Total = 13680 Astrites + 42 Radiant Tides x 160 = 20400. Source is a Reddit-calculation leak (pre-release, April 2025). Its headline says about 134 pulls, which does not reconcile with its own components (about 127.5 pulls). The same article also gives 9900 Astrites plus 42 Radiant as an alternative free figure (16620). The carried-over value 17260 from the brief could not be reproduced. Anniversary reruns are part of the phase featured lists. Lustrous and Forging counts for 2.3 are not in the source and are not included.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "Destructoid pre-release estimate; fallback",
-          "url": "https://www.destructoid.com/wuthering-waves-2-3-astrite-and-total-pull-count-estimation/"
-        },
-        {
-          "label": "Sportskeeda: Wuthering Waves 2.3 free pulls and total Astrite estimation",
-          "url": "https://www.sportskeeda.com/esports/wuthering-waves-wuwa-2-3-free-pulls-total-astrite-estimation"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "2.4",
-      "title": "Lightly We Toss the Crown",
-      "start": "2025-06-12",
-      "end": "2025-07-24",
-      "currency": {
-        "total": 18430,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Cartethyia",
-        "Lupa"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-06-12",
-          "end": "2025-07-03",
-          "featured": [
-            "Cartethyia"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-07-03",
-          "end": "2025-07-23",
-          "featured": [
-            "Lupa"
-          ]
-        }
-      ],
-      "notes": "Total = 13790 Astrites + (22 Radiant + 7 Forging) x 160 = 18430. Matches the brief's value. The leak figure is pre-release. Source explicitly excludes 33 Lustrous Tides (standard) and counts 22 Radiant and 7 Forging in the 108-pull line. The 18520 figure cited in the same article includes the premium Battle Pass and is excluded.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "TechWiser / Toskkur pre-release estimate; fallback",
-          "url": "https://techwiser.com/wuthering-waves-2-4-astrites-estimation-and-free-pulls-count-leaked/"
-        },
-        {
-          "label": "Sportskeeda: Wuthering Waves 2.4 free pulls and total Astrite estimation (leak by Toskkur)",
-          "url": "https://www.sportskeeda.com/esports/wuthering-waves-wuwa-2-4-free-pulls-total-astrite-estimation"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "2.5",
-      "title": "Unfading Melody of Life",
-      "start": "2025-07-24",
-      "end": "2025-08-28",
-      "currency": {
-        "total": 14580,
-        "events": 3260,
-        "daily": 2520,
-        "endgame": 3260,
-        "other": 3140,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Phrolova"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-07-24",
-          "end": "2025-08-14",
-          "featured": [
-            "Phrolova",
-            "Roccia"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-08-14",
-          "end": "2025-08-27",
-          "featured": [
-            "Cantarella",
-            "Brant"
-          ]
-        }
-      ],
-      "notes": "The total of 14580 is from an earlier pass and could not be traced to a source on 2026-11-15. Total is null. The leak source gives about 11540 Astrites and 12 Lustrous Tides for F2P, and roughly 84 pulls that is not clearly tied to the free tier. The Radiant and Forging counts needed for a limited total were not found. Lunite and Battle Pass figures are paid and excluded. The carried-over value 14580 from the brief could not be reproduced.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "TechWiser / Toskkur pre-release estimate; fallback",
-          "url": "https://techwiser.com/wuthering-waves-2-5-leak-how-many-astrites-and-free-pulls-you-get/"
-        },
-        {
-          "label": "Gurugamer: how many free pulls in Wuthering Waves 2.5 (leak by Toskkur)",
-          "url": "https://gurugamer.com/mobile-games/how-many-free-pulls-can-you-get-in-wuthering-waves-2-5-25210"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "2.6",
-      "title": "By Sun's Scourge, By Moon's Revelation",
-      "start": "2025-08-28",
-      "end": "2025-10-09",
-      "currency": {
-        "total": 20370,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Augusta",
-        "Iuno"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-08-28",
-          "end": "2025-09-17",
-          "featured": [
-            "Augusta",
-            "Carlotta",
-            "The Shorekeeper"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-09-17",
-          "end": "2025-10-08",
-          "featured": [
-            "Iuno",
-            "Ciaccona"
-          ]
-        }
-      ],
-      "notes": "Total = 14130 Astrites + (22 Radiant + 17 Forging) x 160 = 20370. Based on the Toskkur leak (pre-release), which LDShop repeats; LDShop is an affiliate blog and not an independent count. The leak says about 9950 Astrites come in Phase 1 and 4180 in Phase 2 (the remainder is unassigned). Depends on event participation. Lustrous (25) excluded.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "Sportskeeda: Wuthering Waves 2.6 free pulls and total Astrite estimation (leaker Toskkur)",
-          "url": "https://www.sportskeeda.com/esports/wuthering-waves-2-6-free-pulls-total-astrite-estimation"
-        },
-        {
-          "label": "LDShop: how many pulls in WuWa 2.6",
-          "url": "https://www.ldshop.gg/blog/wuthering-waves/how-many-pulls-in-wuwa-2-6.html"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "2.7",
-      "title": "Dawn Breaks on Dark Tides",
-      "start": "2025-10-09",
-      "end": "2025-11-20",
-      "currency": {
-        "total": 13462,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Galbrena",
-        "Qiuyuan"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-10-09",
-          "end": "2025-10-30",
-          "featured": [
-            "Galbrena",
-            "Lupa"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-10-30",
-          "end": "2025-11-19",
-          "featured": [
-            "Qiuyuan",
-            "Zani"
-          ]
-        }
-      ],
-      "notes": "Total = 10422 Astrites + (12 Radiant + 7 Forging) x 160 = 13462. Matches the brief's value. LDShop's F2P line is 10422 Astrites with 12 Radiant and 7 Forging (77 pulls from Astrites plus the 12 Radiant), and Lustrous (22) is excluded. LDShop's Lunite line (14202 Astrites) is paid and excluded. Figures are third-party estimates.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "TOPUPlive pre-release estimate; fallback",
-          "url": "https://www.topuplive.com/news/wuwa-2-7-how-many-pulls.html"
-        },
-        {
-          "label": "LDShop: How many pulls in WuWa 2.7",
-          "url": "https://www.ldshop.gg/blog/wuthering-waves/2-7-pulls-count.html"
-        },
-        {
-          "label": "Gurugamer: Wuthering Waves 2.7 total Astrite count and event calendar",
-          "url": "https://gurugamer.com/mobile-games/wuthering-waves-2-7-total-astrite-count-and-event-calendar-25662"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "2.8",
-      "title": "To the City Set in Amber",
-      "start": "2025-11-20",
-      "end": "2025-12-25",
-      "currency": {
-        "total": 14070,
-        "events": 3160,
-        "daily": 2100,
-        "endgame": 3200,
-        "other": 4460,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Chisa",
-        "Buling"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-11-20",
-          "end": "2025-12-11",
-          "featured": [
-            "Chisa",
-            "Phoebe"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2025-12-11",
-          "end": "2025-12-24",
-          "featured": [
-            "Phrolova",
-            "Cantarella"
-          ]
-        }
-      ],
-      "notes": "The total of 14070 is from an earlier pass and could not be traced to a source on 2026-11-15. Total is null. Game8 gives 10170 F2P Astrites, which it converts to about 97 pulls in one table and about 63 pulls in another, so its ticket counts do not reconcile. The brief's value 14070 could not be reproduced. Phase dates from Game8.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "Sportsdunia / Toskkur estimate; fallback",
-          "url": "https://www.sportsdunia.com/gaming/wuthering-waves-2-8-astrite-count-total-pull-rewards-leaked"
-        },
-        {
-          "label": "Game8: What can you do as a free member? (2.8 free-to-play estimate, 10170 Astrites)",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/568117"
-        },
-        {
-          "label": "Sportskeeda: Wuthering Waves 2.8 Astrite count and total pull rewards leaked",
-          "url": "https://widgets.sportskeeda.com/esports/wuthering-waves-2-8-astrite-count-total-pull-rewards-leaked"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "3.0",
-      "title": "We Who See the Stars",
-      "start": "2025-12-25",
-      "end": "2026-02-05",
-      "currency": {
-        "total": null,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Lynae",
-        "Mornye"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2025-12-25",
-          "end": "2026-01-15",
-          "featured": [
-            "Lynae",
-            "Cartethyia",
-            "Ciaccona"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-01-15",
-          "end": "2026-02-04",
-          "featured": [
-            "Mornye",
-            "Augusta",
-            "Iuno"
-          ]
-        }
-      ],
-      "notes": "Total is null. The only figure found is a pre-release leak of 18972 Astrites (about 140 limited pulls, or 22752 with the Lunite subscription) reported as preload-data leaks. The leak does not give a ticket breakdown, and no source confirmed it after release. Lunite figures are paid and excluded. Phase dates from Game8. A pre-release article expected Phase 1 on 1 January 2026, but official-schedule coverage says 25 December 2025.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "Gurugamer: Wuthering Waves 3.0 all rewards and pull count breakdown",
-          "url": "https://gurugamer.com/mobile-games/wuthering-waves-3-0-all-rewards-and-pull-count-breakdown-26104"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        },
-        {
-          "label": "Game8 version release dates list",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/559680"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "3.1",
-      "title": "For You Who Walk in Snow",
-      "start": "2026-02-05",
-      "end": "2026-03-19",
-      "currency": {
-        "total": 20831,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Aemeath",
-        "Luuk Herssen"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-02-05",
-          "end": "2026-02-26",
-          "featured": [
-            "Aemeath",
-            "Chisa",
-            "Lupa"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-02-26",
-          "end": "2026-03-18",
-          "featured": [
-            "Luuk Herssen",
-            "Galbrena"
-          ]
-        }
-      ],
-      "notes": "Total = 16191 Astrites + (22 Radiant + 7 Forging) x 160 = 20831. The 16191 Astrites and 22 Radiant figures are repeated by two pre-patch guides (Feb 2026); the 7 Forging figure is from one guide. The breakdown assumes no missed logins, and the figure is pre-patch, not a post-release tally. Another guide gives 15350 Astrites and 12 Radiant (96 pulls from Astrites). Prydwen and LDShop's 20651 Astrites figures include the Lunite subscription and are excluded. The brief had no 3.1 total, so this is new.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "GuruGamer: leaked Astrite totals and free pulls in Wuthering Waves 3.1",
-          "url": "https://gurugamer.com/mobile-games/leaked-astrite-totals-and-free-pulls-in-wuthering-waves-3-1-26316"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "3.2",
-      "title": "Resolution to Illuminate the Shadows",
-      "start": "2026-03-19",
-      "end": "2026-04-30",
-      "currency": {
-        "total": 13670,
-        "events": 3950,
-        "daily": 2520,
-        "endgame": 3760,
-        "other": 3140,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Sigrika"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-03-19",
-          "end": "2026-04-09",
-          "featured": [
-            "Sigrika",
-            "Qiuyuan"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-04-09",
-          "end": "2026-04-29",
-          "featured": [
-            "Lynae",
-            "Zani",
-            "Phoebe"
-          ]
-        }
-      ],
-      "notes": "The total of 13670 is from an earlier pass and could not be traced to a source on 2026-11-15. Total is null. Sources disagree: Gaming On Phone gives 10600+ Astrites, BitTopup says about 102 pulls with an itemised daily login and a 1600 Astrite zone clear, and neither gives a complete tally with Tide counts. The brief's value 13670 could not be reproduced. Phase dates from Game8.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "GAMES.GG estimate; fallback",
-          "url": "https://games.gg/wuthering-waves/guides/wuthering-waves-32-complete-guide/"
-        },
-        {
-          "label": "BitTopup: free Astrite in Wuthering Waves 3.2, about 102 pulls possible",
-          "url": "https://news.bittopup.com/news/free-astrite-in-wuthering-waves-3.2-102-pulls-possible"
-        },
-        {
-          "label": "Gaming On Phone: Wuthering Waves 3.2, how to get 10600 Astrites for free",
-          "url": "https://gamingonphone.com/guides/wuthering-waves-version-3-2-update-how-to-get-10600-astrites-for-free"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "3.3",
-      "title": "Reverbs From the End of Galaxies",
-      "start": "2026-04-30",
-      "end": "2026-06-08",
-      "currency": {
-        "total": 24550,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Hiyuki",
-        "Denia"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-04-30",
-          "end": "2026-05-21",
-          "featured": [
-            "Hiyuki",
-            "Mornye",
-            "Iuno"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-05-21",
-          "end": "2026-06-07",
-          "featured": [
-            "Denia",
-            "Chisa",
-            "Phrolova"
-          ]
-        }
-      ],
-      "notes": "Total = 15110 Astrites + (42 Radiant + 17 Forging) x 160 = 24550. The 15110 'up to' figure, plus 42 Radiant and 17 Forging, is the free-track baseline in Allthings (the article's own 'total limited pulls: 170' does not reconcile with its components, so it was not used). Lustrous (48) excluded. Another guide gives 12170 Astrites with 42 Radiant and 17 Forging, which would total 21610. Phase 2 end is 7 June per Game8 and 11 June per Allthings; 3.4 starts 8 June, so 7 June is used. Anniversary and login rewards are included in the source's Astrite figure.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "Allthings.how: how many pulls you can earn in Wuthering Waves 3.4 (3.3 baseline)",
-          "url": "https://allthings.how/how-many-pulls-you-can-earn-in-wuthering-waves-3-4/"
-        },
-        {
-          "label": "Allthings.how: Version 3.3 Phase 2 and 3.4 banner schedule",
-          "url": "https://allthings.how/wuthering-waves-june-2026-version-3-3-phase-2-and-3-4-banner-schedule/"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "3.4",
-      "title": "The Dream Not Dreamed",
-      "start": "2026-06-08",
-      "end": "2026-07-10",
-      "currency": {
-        "total": 15330,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Lucy",
-        "Rebecca",
-        "Lucilla"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-06-08",
-          "end": "2026-07-09",
-          "featured": [
-            "Lucy",
-            "Rebecca"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-06-13",
-          "end": "2026-07-09",
-          "featured": [
-            "Lucilla",
-            "Cartethyia (rerun, from 2026-06-18)"
-          ]
-        }
-      ],
-      "notes": "Total = 9570 Astrites + (7 Radiant + 22 Dreamcatcher + 7 Forging) x 160 = 15330. Figures come from a TopUpLive search snippet (the page returned 404 on fetch), which states 96 limited pulls (60 from Astrites plus 36 tickets) and 12 Lustrous (excluded). 'Dreamcatcher Tide' is not explained in the snippet and is counted as a limited ticket. LootBar gives 106 total pulls, which is not broken down. Allthings says no official 3.4 total exists yet. Phase split is unclear: Game8 has Lucy and Rebecca running 8 June to 9 July, and Lucilla from 13 June and Cartethyia from 18 June, so the phase boundaries are approximate.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "r/WutheringWaves preliminary calculation, disputed in comments",
-          "url": "https://www.reddit.com/r/WutheringWaves/comments/1tulas4/i_calculated_the_total_f2p_pulls_we_can_get_from/"
-        },
-        {
-          "label": "TopUpLive: Wuthering Waves 3.4 how many pulls and Astrite count (search snippet; page returned 404 on fetch)",
-          "url": "https://www.topuplive.com/news/wuthering-waves-3-4-how-many-pulls-astrite-count.html"
-        },
-        {
-          "label": "Allthings.how: how many pulls you can earn in Wuthering Waves 3.4",
-          "url": "https://allthings.how/how-many-pulls-you-can-earn-in-wuthering-waves-3-4/"
-        },
-        {
-          "label": "Allthings.how: Version 3.3 Phase 2 and 3.4 banner schedule",
-          "url": "https://allthings.how/wuthering-waves-june-2026-version-3-3-phase-2-and-3-4-banner-schedule/"
-        },
-        {
-          "label": "Beebom: Wuthering Waves banners (June 2026)",
-          "url": "https://beebom.com/wuthering-waves-banners/amp/"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "3.5",
-      "title": "Blade of Past Resounds, Lingering Dream Hymns",
-      "start": "2026-07-10",
-      "end": "2026-08-20",
-      "currency": {
-        "total": 16630,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Yangyang: Xuanling",
-        "Suisui",
-        "Yangyang Xuanling"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-07-10",
-          "end": "2026-07-30",
-          "featured": [
-            "Yangyang Xuanling",
-            "Lynae",
-            "Luuk Herssen"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-07-30",
-          "end": "2026-08-19",
-          "featured": [
-            "Suisui",
-            "Aemeath"
-          ]
-        }
-      ],
-      "notes": "Total = 13590 Astrites + (12 character + 7 weapon limited) x 160 = 16630. Matches the brief's value. Source is the Phrasemaker free-to-play full-clear count (Astrites 13590 and 97 Astrite-derived pulls). The same article's 116 limited pulls total also includes the tickets, and TopUpLive's 96-pull figure for the same 13590 Astrites excludes them. Lunite and Battle Pass figures are paid and excluded. Phase 1 end is 30 July per Game8 (494979) and 31 July per another Game8-linked table, so 30 July is used. Yangyang Xuanling is described as the first SP Resonator, and her rerun status is not stated. Luuk Herssen and Lynae are reruns; Aemeath is a rerun.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "TOPUPlive estimate; fallback",
-          "url": "https://www.topuplive.com/fr/news/wuthering-waves-3-5-pulls-count.html"
-        },
-        {
-          "label": "The Phrasemaker: Wuthering Waves 3.5 total Astrite count and limited pulls",
-          "url": "https://thephrasemaker.com/2026/07/10/wuthering-waves-3-5-total-astrite-count-and-limited-pulls/"
-        },
-        {
-          "label": "TopUpList: Wuthering Waves Version 3.5 pull guide",
-          "url": "https://topuplist.com/blogs/detail/wuthering-waves-version-3-5-pull-guide"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        },
-        {
-          "label": "Beebom: Wuthering Waves banners (June 2026)",
-          "url": "https://beebom.com/wuthering-waves-banners/amp/"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "3.6",
-      "title": "Lamplight in Mirage, Sword's Resolve in Heart",
-      "start": "2026-08-20",
-      "end": "2026-09-30",
-      "currency": {
-        "total": 16040,
-        "events": null,
-        "daily": 2400,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Qingxiao",
-        "Jingran"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-08-20",
-          "end": "2026-09-10",
-          "featured": [
-            "Qingxiao",
-            "Denia"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-09-10",
-          "end": "2026-09-29",
-          "featured": [
-            "Jingran"
-          ]
-        }
-      ],
-      "notes": "The total of 16040 is from an earlier pass and could not be traced to a source on 2026-11-15. Total is null. No post-release F2P total was found. The 3.6 livestream codes (300 Astrites) expired 9 August 2026. Pre-launch guides disagreed on which new 5-star headlines Phase 1. The brief's value 16040 could not be reproduced. Phase dates from Game8.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "GameMarket projection (~13000 raw Astrite); fallback",
-          "url": "https://gamemarket.gg/news/wuthering-waves/wuthering-waves-3-6-astrite-calculation-pull-income"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        },
-        {
-          "label": "Game8 version release dates list",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/559680"
-        },
-        {
-          "label": "TopUpList: Wuthering Waves 3.6 Qingxiao and Jingran guide",
-          "url": "https://topuplist.com/blogs/detail/wuthering-waves-3-6-qingxiao-jingran-guide"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "3.7",
-      "title": "Prism's Illusion, Heart's Illumination",
-      "start": "2026-09-30",
-      "end": "2026-11-12",
-      "currency": {
-        "total": 19102,
-        "events": 3890,
-        "daily": 2520,
-        "endgame": 3760,
-        "other": 4292,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Hsin",
-        "Suoming"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-09-30",
-          "end": "2026-10-22",
-          "featured": [
-            "Hsin",
-            "Iuno",
-            "Chisa"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-10-22",
-          "end": "2026-11-11",
-          "featured": [
-            "Suoming",
-            "Lynae",
-            "Lucilla"
-          ]
-        }
-      ],
-      "notes": "Total = 14462 Astrites + (22 Radiant + 7 Forging) x 160 = 19102, which matches the brief's value. The Allthings Astrite breakdown is events 3890, daily 2520, endgame 3760 (Tower 1600, Fantasies 960, Whimpering Wastes 800, Endstate 400), and other 4292 (exploration 2192, compensation 600, achievements 390, quests 350, codes 300, main story 200, web events 180, trials 80). The breakdown fields are Astrite-only and sum to 14462, not to the total, because the total also includes the 29 limited tickets (4640 currency). GameMarket gives about 14572 Astrites with the same 22 Radiant and 7 Forging, which would total 19212. EnjoyGM gives a lower 12405 Astrites and 22 character and 7 weapon pulls (17045), so the range is roughly 17000 to 19200. Version end is 12 Nov 2026 (3.8 start, 11:00 UTC+8). Phase dates from Game8.",
-      "sources": [
-        {
-          "label": "SenseOS version archive (Kuro patch-note index)",
-          "url": "https://senseos.gg/wiki/wuthering-waves/versions/?view=all"
-        },
-        {
-          "label": "AllThingsHow pre-release estimate; fallback",
-          "url": "https://allthings.how/wuthering-waves-3-7-how-many-free-astrites-and-pulls-you-can-get/"
-        },
-        {
-          "label": "GameMarket: 113 free pulls, the ultimate WuWa 3.7 F2P Astrite guide",
-          "url": "https://gamemarket.gg/news/wuthering-waves/113-free-pulls-the-ultimate-wuwa-3-7-f2p-astrite-guide"
-        },
-        {
-          "label": "EnjoyGM: Wuthering Waves 3.7 pull count guide",
-          "url": "https://www.enjoygm.com/blog/wuthering-waves/3-7-pull-count-guide"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        },
-        {
-          "label": "Gematsu: Wuthering Waves 3.7 launches 30 September",
-          "url": "https://www.gematsu.com/2026/09/wuthering-waves-version-3-7-update-prisms-illusion-hearts-illumination-launches-september-30"
-        }
-      ]
-    },
-    {
-      "game": "wuwa",
-      "version": "3.8",
-      "title": "Lilies in a Dying Dream",
-      "start": "2026-11-12",
-      "end": null,
-      "currency": {
-        "total": 13280,
-        "events": null,
-        "daily": null,
-        "endgame": null,
-        "other": null,
-        "basis": "community-estimate"
-      },
-      "newCharacters": [
-        "Lily"
-      ],
-      "phases": [
-        {
-          "phase": 1,
-          "start": "2026-11-12",
-          "end": "2026-12-03",
-          "featured": [
-            "Lily",
-            "Sigrika (rerun, unconfirmed)",
-            "Qiuyuan (rerun, unconfirmed)"
-          ]
-        },
-        {
-          "phase": 2,
-          "start": "2026-12-03",
-          "end": "2026-12-21",
-          "featured": [
-            "Yangyang Xuanling",
-            "Suisui",
-            "Hiyuki"
-          ]
-        }
-      ],
-      "notes": "Launch confirmed: 3.8 went live 12 Nov 2026 at 11:00 UTC+8 (announced as 10 PM ET on 11 Nov). It is the version running on 15 Nov 2026, so end is null. Total = 83 limited pulls x 160 = 13280. This is a single pre-release TopUpLive estimate for F2P players, which the page says assumes reaching the reward tiers, and no second source was found. Current-version total, so it may change. Phase 2 reruns and the Phase 1 reruns Sigrika and Qiuyuan are from Game8/GenshinBuilds and are not confirmed by an official source. Phase 1 start is 12 Nov and Phase 2 start is 3 Dec per Game8, but GenshinBuilds gives no phase dates.",
-      "sources": [
-        {
-          "label": "TopUpLive: Wuthering Waves 3.8 pull count (search snippet, pre-release)",
-          "url": "https://www.topuplive.com/news/wuwa-3-8-pull-count.html"
-        },
-        {
-          "label": "GenshinBuilds: Wuthering Waves 3.8 release date and banner schedule",
-          "url": "https://genshin-builds.com/en/wuthering-waves/blog/wuwa-3-8-release-date-banner-schedule"
-        },
-        {
-          "label": "Game8 All Gacha Banner History",
-          "url": "https://game8.co/games/Wuthering-Waves/archives/494979"
-        },
-        {
-          "label": "Invenglobal: Kuro Games details Wuthering Waves Version 3.8 for November 12th",
-          "url": "https://www.invenglobal.com/articles/28284/kuro-games-details-wuthering-waves-version-38-for-november-12th"
         }
       ]
     },
@@ -9131,6 +7730,1173 @@
         {
           "label": "HoYo青枫 3.3 count",
           "url": "https://www.reddit.com/r/Zenlesszonezeroleaks_/comments/1x2bpng/"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "1.0",
+      "title": "Waking of a World",
+      "start": "2024-05-22",
+      "end": "2024-06-28",
+      "currency": {
+        "total": 31760,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Rover",
+        "Jiyan",
+        "Yinlin",
+        "Calcharo",
+        "Encore",
+        "Jianxin",
+        "Lingyang",
+        "Verina",
+        "Aalto",
+        "Baizhi",
+        "Chixia",
+        "Danjin",
+        "Mortefi",
+        "Sanhua",
+        "Taoqi",
+        "Yangyang",
+        "Yuanwu"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-05-23",
+          "end": "2024-06-13",
+          "featured": [
+            "Jiyan"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-06-06",
+          "end": "2024-06-26",
+          "featured": [
+            "Yinlin"
+          ]
+        }
+      ],
+      "notes": "Total = ~26000 Astrite + (30 Radiant + 6 Forging) x160 = 31760. Rough round-number launch tally (no Xuaner count exists for 1.0); it includes one-time launch gifts (pre-registration 200 Astrite, Awakening Journey 1600 Astrite, 14 Radiant from login and thank-you mail) and first-time Huanglong exploration, so it is not comparable to later versions. Replaces the earlier 29160 (untraced). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 16 events and 4 banners. Omitted (permanent, no end date): Echo Hunters; Awakening Journey; Rumbling Hollows; Gifts of Thawing Frost.",
+      "sources": [
+        {
+          "label": "18touch: 鸣潮1.0版本抽卡资源获取汇总 (F2P ~26000 Astrite, 30 Radiant, 6 Forging)",
+          "url": "https://m.18touch.com/news/42313.html"
+        },
+        {
+          "label": "Gamersky: 鸣潮公测福利一览 (launch gifts)",
+          "url": "https://www.gamersky.com/handbook/202405/1747868.shtml"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "1.1",
+      "title": "Thaw of Eons",
+      "start": "2024-06-28",
+      "end": "2024-08-15",
+      "currency": {
+        "total": 19182,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Jinhsi",
+        "Changli"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-06-28",
+          "end": "2024-07-22",
+          "featured": [
+            "Jinhsi"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-07-22",
+          "end": "2024-08-14",
+          "featured": [
+            "Changli"
+          ]
+        }
+      ],
+      "notes": "Total = 12462 Astrite + (26 Radiant + 16 Forging) x160 = 19182. Itemised: Mt. Firmament map 2385, dailies 48 days 2880, Tower 1400, events ~2700, achievements 800, maintenance and bug fixes 920; tickets from 7-day login, the limited thank-you login (10 Radiant + 10 Forging), Tidal Explorer and the coral shop (6+6). Replaces the earlier 15952 (pre-release leak without the 1.1 thank-you login tickets). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 16 events and 4 banners plus the update maintenance.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 1.1 星声统计 (Gamersky)",
+          "url": "https://www.gamersky.com/handbook/202406/1780341.shtml"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "1.2",
+      "title": "In the Turquoise Moonglow",
+      "start": "2024-08-15",
+      "end": "2024-09-29",
+      "currency": {
+        "total": 12200,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Zhezhi",
+        "Xiangli Yao"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-08-15",
+          "end": "2024-09-07",
+          "featured": [
+            "Zhezhi"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-09-07",
+          "end": "2024-09-28",
+          "featured": [
+            "Xiangli Yao"
+          ]
+        }
+      ],
+      "notes": "Total = 9160 Astrite + (12 Radiant + 7 Forging) x160 = 12200. Pre-release CN count; it says events were estimated from 1.1. Another CN count (7723) gives 9580 + 12 + 7 with Tower fully cleared. Replaces the earlier 14180 (PalitoGodd beta headline, no ticket split). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 21 events and 4 banners plus the update maintenance. Omitted (permanent, no end date): Reprise of Tides.",
+      "sources": [
+        {
+          "label": "Gamersky: 鸣潮1.2版本星声数量统计 (0氪 9160 Astrite, 12 Radiant, 7 Forging)",
+          "url": "https://www.gamersky.com/handbook/202408/1799923.shtml"
+        },
+        {
+          "label": "Gamersky (Busynight): 鸣潮1.2版本可获取星声统计",
+          "url": "https://www.gamersky.com/handbook/202408/1801447.shtml"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "1.3",
+      "title": "To the Shore's End",
+      "start": "2024-09-29",
+      "end": "2024-11-14",
+      "currency": {
+        "total": 16486,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "The Shorekeeper",
+        "Youhu"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-09-29",
+          "end": "2024-10-24",
+          "featured": [
+            "Shorekeeper"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-10-24",
+          "end": "2024-11-13",
+          "featured": [
+            "Jiyan"
+          ]
+        }
+      ],
+      "notes": "Total = 13446 Astrite + (12 Radiant + 7 Forging) x160 = 16486. Count published after release (excludes coral-shop Lustrous and platform incentives). GameKee's 1.3 count is lower: 11520 + 12 + 7 (14560). Replaces the earlier 17480 (untraced). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 18 events and 4 banners plus the update maintenance.",
+      "sources": [
+        {
+          "label": "Gamersky (凡尘zeros): 鸣潮1.3版本抽卡资源统计 (0氪 13446 Astrite, 12 Radiant, 7 Forging)",
+          "url": "https://www.gamersky.com/handbook/202409/1824188.shtml"
+        },
+        {
+          "label": "GameKee: 版本抽卡资源统计 (V1.3 0氪 11520 + 12 + 7)",
+          "url": "https://www.gamekee.com/cahsh/624352_183177.html"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "1.4",
+      "title": "When the Night Knocks",
+      "start": "2024-11-14",
+      "end": "2025-01-02",
+      "currency": {
+        "total": 12840,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Camellya",
+        "Lumi"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2024-11-14",
+          "end": "2024-12-12",
+          "featured": [
+            "Camellya"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2024-12-12",
+          "end": "2025-01-01",
+          "featured": [
+            "Xiangli Yao",
+            "Yinlin"
+          ]
+        }
+      ],
+      "notes": "Total = 9800 Astrite + (12 Radiant + 7 Forging) x160 = 12840. Itemised: dailies 49 days 2940, Tower 3 cycles 2800, events ~3300, maintenance 300, other small items; tickets from 7-day login (5) and coral shop (7+7). Replaces the earlier 12880 (untraced; close to this count). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 15 events and 6 banners plus the update maintenance.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 1.4 星声统计 (Gamersky)",
+          "url": "https://www.gamersky.com/handbook/202411/1843398.shtml"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.0",
+      "title": "All Silent Souls Can Sing",
+      "start": "2025-01-02",
+      "end": "2025-02-13",
+      "currency": {
+        "total": 23640,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Carlotta",
+        "Roccia"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-01-02",
+          "end": "2025-01-23",
+          "featured": [
+            "Zhezhi",
+            "Carlotta"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-01-23",
+          "end": "2025-02-12",
+          "featured": [
+            "Roccia",
+            "Jinhsi"
+          ]
+        }
+      ],
+      "notes": "Total = 19000 Astrite + (22 Radiant + 7 Forging) x160 = 23640. Includes the new Rinascita map (~5100 chests, ~580 achievements and more), the 1600 Astrite celebration gift and 10 Radiant given at login. Dailies 42 days 2520, Tower 3 cycles 2100. Replaces the earlier 27210 (untraced). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 20 events and 8 banners plus the update maintenance. Omitted (permanent, no end date): Next Stop: Rinascita; Tales of the Isles.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 2.0 星声统计 (Gamersky)",
+          "url": "https://www.gamersky.com/handbook/202501/1866378.shtml"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.1",
+      "title": "Waves Sing, and the Cerulean Bird Calls",
+      "start": "2025-02-13",
+      "end": "2025-03-27",
+      "currency": {
+        "total": 17720,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Phoebe",
+        "Brant"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-02-13",
+          "end": "2025-03-06",
+          "featured": [
+            "Phoebe"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-03-06",
+          "end": "2025-03-26",
+          "featured": [
+            "Brant",
+            "Changli"
+          ]
+        }
+      ],
+      "notes": "Total = 14680 Astrite + (12 Radiant + 7 Forging) x160 = 17720. Another CN count (高Alhena, Gamersky 1882415) gives at least 85 pulls of Astrite (~13600) with the same tickets. Replaces the earlier 16630 (untraced). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 12 events and 6 banners plus the update maintenance.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 2.1 星声统计 (Gamersky)",
+          "url": "https://www.gamersky.com/handbook/202502/1883896.shtml"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.2",
+      "title": "Tangled Truth in Inverted Tower",
+      "start": "2025-03-27",
+      "end": "2025-04-29",
+      "currency": {
+        "total": 15060,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Cantarella"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-03-27",
+          "end": "2025-04-17",
+          "featured": [
+            "Cantarella",
+            "Camellya"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-04-17",
+          "end": "2025-04-28",
+          "featured": [
+            "Shorekeeper"
+          ]
+        }
+      ],
+      "notes": "Total = 12020 Astrite + (12 Radiant + 7 Forging) x160 = 15060. Replaces the earlier 15250 (untraced; close to this count). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 19 events and 6 banners plus the update maintenance.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 2.2 星声统计 (Gamersky)",
+          "url": "https://www.gamersky.com/handbook/202503/1903843.shtml"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.3",
+      "title": "Fiery Arpeggio of Summer Reunion",
+      "start": "2025-04-29",
+      "end": "2025-06-12",
+      "currency": {
+        "total": 23030,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Zani",
+        "Ciaccona"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-04-29",
+          "end": "2025-05-22",
+          "featured": [
+            "Zani",
+            "Jiyan",
+            "Yinlin",
+            "Zhezhi",
+            "Xiangli Yao",
+            "Phoebe"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-05-22",
+          "end": "2025-06-11",
+          "featured": [
+            "Ciaccona",
+            "Jinhsi",
+            "Changli",
+            "Carlotta",
+            "Roccia",
+            "Brant"
+          ]
+        }
+      ],
+      "notes": "Total = 11990 Astrite + (52 Radiant + 17 Forging) x160 = 23030. First anniversary: the 52 Radiant include anniversary login and the 10 from the cumulative-convene shop. Post-release check: a launch-day zero-spend account actually received 10910 Astrite + 52 Radiant + 17 Forging this version (21950). Replaces the earlier 20400 (pre-release leak without Forging). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 25 events and 24 banners plus the update maintenance.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 2.3 星声统计 (Gamersky)",
+          "url": "https://www.gamersky.com/handbook/202504/1919989.shtml"
+        },
+        {
+          "label": "Bilibili (qqm123456): post-release income of a launch-day zero-spend account, 2.3-3.3",
+          "url": "https://www.bilibili.com/opus/1232207429853249539"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.4",
+      "title": "Lightly We Toss the Crown",
+      "start": "2025-06-12",
+      "end": "2025-07-24",
+      "currency": {
+        "total": 18420,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Cartethyia",
+        "Lupa"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-06-12",
+          "end": "2025-07-03",
+          "featured": [
+            "Cartethyia"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-07-03",
+          "end": "2025-07-23",
+          "featured": [
+            "Lupa"
+          ]
+        }
+      ],
+      "notes": "Total = 13780 Astrite + (22 Radiant + 7 Forging) x160 = 18420. Itemised: dailies 2520, Tower 2 cycles 1400, Whimpering Wastes 800, Thousand Gateways 960, events ~3500, compensation 600, codes 300, open world taken as 2000. Post-release check: a launch-day zero-spend account actually received 14994 Astrite + 22 Radiant + 7 Forging this version (19634). Replaces the earlier 18430 (Toskkur leak, 13790 Astrite). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 19 events and 4 banners plus the update maintenance. Omitted (permanent, no end date): Solaris New Voyage Celebration; Banners Never Fall.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 2.4 星声统计 (Gamersky)",
+          "url": "https://www.gamersky.com/handbook/202506/1941833.shtml"
+        },
+        {
+          "label": "Bilibili (qqm123456): post-release income of a launch-day zero-spend account, 2.3-3.3",
+          "url": "https://www.bilibili.com/opus/1232207429853249539"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.5",
+      "title": "Unfading Melody of Life",
+      "start": "2025-07-24",
+      "end": "2025-08-28",
+      "currency": {
+        "total": 14580,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Phrolova"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-07-24",
+          "end": "2025-08-14",
+          "featured": [
+            "Phrolova",
+            "Roccia"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-08-14",
+          "end": "2025-08-27",
+          "featured": [
+            "Cantarella",
+            "Brant"
+          ]
+        }
+      ],
+      "notes": "Total = 11540 Astrite + (12 Radiant + 7 Forging) x160 = 14580. No Xuaner count found for 2.5. Astrite is the Toskkur beta-data F2P figure; the ticket counts are from 17173 for the same version (7-day login 5, coral shop 7 + 7). Short 35-day version. 17173's own conservative count (no exploration) is 66 limited pulls including tickets. Post-release check: a launch-day zero-spend account actually received 9381 Astrite + 12 Radiant + 7 Forging this version (12421). The same total was carried before untraced; the earlier breakdown is dropped because it did not match this tally. Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 12 events and 8 banners plus the update maintenance.",
+      "sources": [
+        {
+          "label": "Gurugamer: 2.5 free pulls (leaker Toskkur, 11540 Astrite)",
+          "url": "https://gurugamer.com/mobile-games/how-many-free-pulls-can-you-get-in-wuthering-waves-2-5-25210"
+        },
+        {
+          "label": "TechWiser: 2.5 Astrite leak",
+          "url": "https://techwiser.com/wuthering-waves-2-5-leak-how-many-astrites-and-free-pulls-you-get/"
+        },
+        {
+          "label": "17173: 鸣潮2.5版本星声汇总 (12 Radiant + 7 Forging for F2P)",
+          "url": "https://news.17173.com/content/07232025/234514596.shtml"
+        },
+        {
+          "label": "Bilibili (qqm123456): post-release income of a launch-day zero-spend account, 2.3-3.3",
+          "url": "https://www.bilibili.com/opus/1232207429853249539"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.6",
+      "title": "By Sun's Scourge, By Moon's Revelation",
+      "start": "2025-08-28",
+      "end": "2025-10-09",
+      "currency": {
+        "total": 20370,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Augusta",
+        "Iuno"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-08-28",
+          "end": "2025-09-17",
+          "featured": [
+            "Augusta",
+            "Carlotta",
+            "Shorekeeper"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-09-17",
+          "end": "2025-10-08",
+          "featured": [
+            "Iuno",
+            "Ciaccona"
+          ]
+        }
+      ],
+      "notes": "Total = 14130 Astrite + (22 Radiant + 17 Forging) x160 = 20370. No Xuaner count found for 2.6. Toskkur beta-data F2P figure; a TapTap count gives ~78 pulls of Astrite (~12500, with Tower and Whimpering Wastes not fully cleared, 640 short) and the same tickets. Post-release check: a launch-day zero-spend account actually received 13339 Astrite + 22 Radiant + 17 Forging this version (19579). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 20 events and 10 banners plus the update maintenance. Omitted (permanent, no end date): Windrider Project.",
+      "sources": [
+        {
+          "label": "Sportskeeda: 2.6 free pulls (leaker Toskkur)",
+          "url": "https://www.sportskeeda.com/esports/wuthering-waves-2-6-free-pulls-total-astrite-estimation"
+        },
+        {
+          "label": "17173/TapTap: 2.6 F2P income (~78 pulls of Astrite + 22 Radiant + 17 Forging)",
+          "url": "https://news.17173.com/content/09162025/220303956.shtml"
+        },
+        {
+          "label": "Bilibili (qqm123456): post-release income of a launch-day zero-spend account, 2.3-3.3",
+          "url": "https://www.bilibili.com/opus/1232207429853249539"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.7",
+      "title": "Dawn Breaks on Dark Tides",
+      "start": "2025-10-09",
+      "end": "2025-11-20",
+      "currency": {
+        "total": 13570,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Galbrena",
+        "Qiuyuan"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-10-09",
+          "end": "2025-10-30",
+          "featured": [
+            "Lupa",
+            "Galbrena"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-10-30",
+          "end": "2025-11-19",
+          "featured": [
+            "Qiuyuan",
+            "Zani"
+          ]
+        }
+      ],
+      "notes": "Total = 10530 Astrite + (12 Radiant + 7 Forging) x160 = 13570. Itemised: dailies 2520, Tower 2 cycles 1600, Wastes 800, Gateways 960, compensation 600, codes 300, events ~2800, map/achievements/quests ~1150. Post-release check: a launch-day zero-spend account actually received 10555 Astrite + 12 Radiant + 7 Forging this version (13595). Replaces the earlier 13462 (LDShop, 10422 Astrite). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 15 events and 8 banners plus the update maintenance.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 2.7 星声统计 (Gamersky)",
+          "url": "https://www.gamersky.com/handbook/202510/2024047.shtml"
+        },
+        {
+          "label": "轩儿Xuaner: 鸣潮 2.7 星声统计 (Bilibili)",
+          "url": "https://www.bilibili.com/video/BV1GpxQzSEWA"
+        },
+        {
+          "label": "Bilibili (qqm123456): post-release income of a launch-day zero-spend account, 2.3-3.3",
+          "url": "https://www.bilibili.com/opus/1232207429853249539"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "2.8",
+      "title": "To the City Set in Amber",
+      "start": "2025-11-20",
+      "end": "2025-12-25",
+      "currency": {
+        "total": 12420,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Chisa",
+        "Buling"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-11-20",
+          "end": "2025-12-11",
+          "featured": [
+            "Chisa",
+            "Phoebe"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2025-12-11",
+          "end": "2025-12-24",
+          "featured": [
+            "Cantarella",
+            "Phrolova"
+          ]
+        }
+      ],
+      "notes": "Total = 9380 Astrite + (12 Radiant + 7 Forging) x160 = 12420. Short 35-day version. Kuro also mailed 1000 Astrite for the TGA nomination; it is unclear whether the count includes it. Post-release check: a launch-day zero-spend account actually received 12433 Astrite + 12 Radiant + 7 Forging this version (15473). Replaces the earlier 14070 (untraced). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 15 events and 8 banners plus the update maintenance.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 2.8 星声统计 (Bilibili)",
+          "url": "https://www.bilibili.com/video/BV19Yy3BvEox"
+        },
+        {
+          "label": "Bilibili (qqm123456): post-release income of a launch-day zero-spend account, 2.3-3.3",
+          "url": "https://www.bilibili.com/opus/1232207429853249539"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.0",
+      "title": "We Who See the Stars",
+      "start": "2025-12-25",
+      "end": "2026-02-05",
+      "currency": {
+        "total": 20720,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Lynae",
+        "Mornye"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2025-12-25",
+          "end": "2026-01-15",
+          "featured": [
+            "Lynae",
+            "Cartethyia",
+            "Ciaccona"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-01-15",
+          "end": "2026-02-04",
+          "featured": [
+            "Mornye",
+            "Augusta",
+            "Iuno"
+          ]
+        }
+      ],
+      "notes": "Total = 16080 Astrite + (22 Radiant + 7 Forging) x160 = 20720. Includes the new Lahai-Roi map (~4400 estimated) and 10 Radiant given at launch; the returnee event (480) is excluded. Post-release check: a launch-day zero-spend account actually received 16139 Astrite + 22 Radiant + 7 Forging this version (20779). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 12 events and 12 banners plus the update maintenance. Omitted (permanent, no end date): Operation: Frontier Renewal; Lahai-Roi Pioneers; Next Stop: Lahai-Roi.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 3.0 星声统计 (Gamersky)",
+          "url": "https://www.gamersky.com/handbook/202512/2065595.shtml"
+        },
+        {
+          "label": "Bilibili (qqm123456): post-release income of a launch-day zero-spend account, 2.3-3.3",
+          "url": "https://www.bilibili.com/opus/1232207429853249539"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.1",
+      "title": "For You Who Walk in Snow",
+      "start": "2026-02-05",
+      "end": "2026-03-19",
+      "currency": {
+        "total": 19040,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Aemeath",
+        "Luuk Herssen"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-02-05",
+          "end": "2026-02-26",
+          "featured": [
+            "Chisa",
+            "Aemeath",
+            "Lupa"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-02-26",
+          "end": "2026-03-18",
+          "featured": [
+            "Luuk Herssen",
+            "Galbrena"
+          ]
+        }
+      ],
+      "notes": "Total = 16000 Astrite + (12 Radiant + 7 Forging) x160 = 19040. Includes the 1600 Astrite Spring Festival gift; returnee and cumulative-top-up rewards excluded. Post-release check: a launch-day zero-spend account actually received 16161 Astrite + 22 Radiant + 7 Forging this version (20801). Replaces the earlier 20831 (pre-patch guide, 16191 Astrite + 22 Radiant). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 13 events and 10 banners plus the update maintenance. Omitted (permanent, no end date): Startorch for You; Starpaths Intertwined.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 3.1 星声统计 (Gamersky)",
+          "url": "https://www.gamersky.com/handbook/202602/2089553.shtml"
+        },
+        {
+          "label": "轩儿Xuaner: 鸣潮 3.1 星声统计 (Bilibili)",
+          "url": "https://www.bilibili.com/video/BV1gcFMzREWM"
+        },
+        {
+          "label": "Bilibili (qqm123456): post-release income of a launch-day zero-spend account, 2.3-3.3",
+          "url": "https://www.bilibili.com/opus/1232207429853249539"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.2",
+      "title": "Resolution to Illuminate the Shadows",
+      "start": "2026-03-19",
+      "end": "2026-04-30",
+      "currency": {
+        "total": 14020,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Sigrika"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-03-19",
+          "end": "2026-04-09",
+          "featured": [
+            "Sigrika",
+            "Qiuyuan"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-04-09",
+          "end": "2026-04-29",
+          "featured": [
+            "Lynae",
+            "Zani",
+            "Phoebe"
+          ]
+        }
+      ],
+      "notes": "Total = 10980 Astrite + (12 Radiant + 7 Forging) x160 = 14020. No Xuaner count found for 3.2. Itemised in the source: dailies 2520, Tower 1600, Wastes 800, Matrix 400, Gateways 960, compensation 600, codes 300, quests 300, trials 100, achievements 100; no new map. Post-release check: a launch-day zero-spend account actually received 11285 Astrite + 12 Radiant + 7 Forging this version (14325). Replaces the earlier 13670 (untraced). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 10 events and 10 banners plus the update maintenance. Omitted (permanent, no end date): Whispers Between Stars.",
+      "sources": [
+        {
+          "label": "17173: 3.2 Astrite summary (0氪 10980 Astrite + 12 Radiant + 7 Forging)",
+          "url": "https://news.17173.com/content/03162026/001157251.shtml"
+        },
+        {
+          "label": "Bilibili (qqm123456): post-release income of a launch-day zero-spend account, 2.3-3.3",
+          "url": "https://www.bilibili.com/opus/1232207429853249539"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.3",
+      "title": "Reverbs From the End of Galaxies",
+      "start": "2026-04-30",
+      "end": "2026-06-08",
+      "currency": {
+        "total": 23090,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Hiyuki",
+        "Denia"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-04-30",
+          "end": "2026-05-21",
+          "featured": [
+            "Hiyuki",
+            "Mornye",
+            "Iuno"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-05-21",
+          "end": "2026-06-07",
+          "featured": [
+            "Denia",
+            "Chisa",
+            "Phrolova"
+          ]
+        }
+      ],
+      "notes": "Total = 13650 Astrite + (42 Radiant + 17 Forging) x160 = 23090. Second anniversary; version cut to 39 days because 3.4 moved to 8 June. Post-release check: a launch-day zero-spend account actually received 14754 Astrite + 42 Radiant + 17 Forging this version (24194). Replaces the earlier 24550 (Allthings, 15110 Astrite). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 14 events and 12 banners plus the update maintenance. Omitted (permanent, no end date): Into the Land of Paradox.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 3.3 星声统计 (Gamersky)",
+          "url": "https://www.gamersky.com/handbook/202604/2133668.shtml"
+        },
+        {
+          "label": "Bilibili (qqm123456): post-release income of a launch-day zero-spend account, 2.3-3.3",
+          "url": "https://www.bilibili.com/opus/1232207429853249539"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.4",
+      "title": "The Dream Not Dreamed",
+      "start": "2026-06-08",
+      "end": "2026-07-10",
+      "currency": {
+        "total": 16010,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Lucy",
+        "Rebecca",
+        "Lucilla"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-06-08",
+          "end": "2026-07-09",
+          "featured": [
+            "Lucy",
+            "Rebecca",
+            "Lucilla"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-06-18",
+          "end": "2026-07-09",
+          "featured": [
+            "Cartethyia"
+          ]
+        }
+      ],
+      "notes": "Total = 10250 Astrite + (7 Radiant + 22 Dreamcatcher + 7 Forging) x160 = 16010. Collab version (32 days): login pays collab-only Dreamcatcher Tides instead of Radiant, counted as limited tickets; collab cumulative pulls counted as 2 only. Another CN count gives 9570 Astrite. Replaces the earlier 15330 (TopUpLive, 9570 Astrite). Phases from the wiki's Convene pages (character banners only; server dates). Lucilla opened 2026-06-13. Calendar: 13 events and 8 banners plus the update maintenance.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 3.4 星声统计 (Bilibili)",
+          "url": "https://www.bilibili.com/video/BV1BjEb6fENa"
+        },
+        {
+          "label": "17173: 3.4 count (0氪 9570 Astrite, another author)",
+          "url": "https://news.17173.com/content/06032026/223346605.shtml"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.5",
+      "title": "Blade of Past Resounds, Lingering Dream Hymns",
+      "start": "2026-07-10",
+      "end": "2026-08-20",
+      "currency": {
+        "total": 17700,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Yangyang: Xuanling",
+        "Suisui",
+        "Yangyang Xuanling"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-07-10",
+          "end": "2026-07-30",
+          "featured": [
+            "Yangyang: Xuanling",
+            "Lynae",
+            "Luuk Herssen"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-07-30",
+          "end": "2026-08-19",
+          "featured": [
+            "Suisui",
+            "Aemeath"
+          ]
+        }
+      ],
+      "notes": "Total = 14660 Astrite + (12 Radiant + 7 Forging) x160 = 17700. The free first ten-pull on the Reverb banner is not counted. Includes the new Xuanfang map. Replaces the earlier 16630 (Phrasemaker, 13590 Astrite). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 15 events and 12 banners plus the update maintenance. Omitted (permanent, no end date): Endstate Matrix; Shape of Yesterday; Next Stop: Mengzhou.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 3.5 星声统计 (Bilibili)",
+          "url": "https://www.bilibili.com/video/BV1gpMV65Evr"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.6",
+      "title": "Lamplight in Mirage, Sword's Resolve in Heart",
+      "start": "2026-08-20",
+      "end": "2026-09-30",
+      "currency": {
+        "total": 14280,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Qingxiao",
+        "Jingran"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-08-20",
+          "end": "2026-09-10",
+          "featured": [
+            "Qingxiao",
+            "Denia"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-09-10",
+          "end": "2026-09-29",
+          "featured": [
+            "Jingran",
+            "Hiyuki",
+            "Mornye"
+          ]
+        }
+      ],
+      "notes": "Total = 11240 Astrite + (12 Radiant + 7 Forging) x160 = 14280. Another CN count (浅凝半夏ovo) gives 82 limited pulls for F2P. Replaces the earlier 16040 (untraced). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 8 events and 10 banners plus the update maintenance.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 3.6 星声统计 (Bilibili)",
+          "url": "https://www.bilibili.com/video/BV1tX8u6XEmm"
+        },
+        {
+          "label": "Bilibili (浅凝半夏ovo): 3.6 count, 0氪 82 pulls",
+          "url": "https://www.bilibili.com/video/BV135uB6SEPf"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.7",
+      "title": "Prism's Illusion, Heart's Illumination",
+      "start": "2026-09-30",
+      "end": "2026-11-12",
+      "currency": {
+        "total": 18640,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Hsin",
+        "Suoming"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-09-30",
+          "end": "2026-10-22",
+          "featured": [
+            "Hsin",
+            "Chisa",
+            "Iuno"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-10-22",
+          "end": "2026-11-11",
+          "featured": [
+            "Suoming",
+            "Lynae",
+            "Lucilla"
+          ]
+        }
+      ],
+      "notes": "Total = 14000 Astrite + (22 Radiant + 7 Forging) x160 = 18640. Counted as 42 days (30 Sep dailies sit in 3.6). Allthings gives 14462 Astrite with the same tickets (19102). Replaces the earlier 19102 (Allthings; its breakdown is dropped). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 10 events and 12 banners plus the update maintenance.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 3.7 星声统计 (Bilibili)",
+          "url": "https://www.bilibili.com/video/BV1mBaV6iEvL"
+        },
+        {
+          "label": "Allthings: 3.7 free Astrites (14462 + 22 + 7)",
+          "url": "https://allthings.how/wuthering-waves-3-7-how-many-free-astrites-and-pulls-you-can-get/"
+        }
+      ]
+    },
+    {
+      "game": "wuwa",
+      "version": "3.8",
+      "title": "Lilies in a Dying Dream",
+      "start": "2026-11-12",
+      "end": null,
+      "currency": {
+        "total": 13340,
+        "events": null,
+        "daily": null,
+        "endgame": null,
+        "other": null,
+        "basis": "community-estimate"
+      },
+      "newCharacters": [
+        "Lily"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "start": "2026-11-12",
+          "end": "2026-12-03",
+          "featured": [
+            "Lily",
+            "Sigrika",
+            "Qiuyuan"
+          ]
+        },
+        {
+          "phase": 2,
+          "start": "2026-12-03",
+          "end": "2026-12-21",
+          "featured": [
+            "Yangyang: Xuanling",
+            "Suisui",
+            "Hiyuki"
+          ]
+        }
+      ],
+      "notes": "Total = 10300 Astrite + (12 Radiant + 7 Forging) x160 = 13340. Running version (40 days, to 21 Dec); pre-release count, may change. Matches TopUpLive's 83 limited pulls. Replaces the earlier 13280 (TopUpLive headline). Phases from the wiki's Convene pages (character banners only; server dates). Calendar: 7 events and 14 banners plus the update maintenance.",
+      "sources": [
+        {
+          "label": "轩儿Xuaner: 鸣潮 3.8 星声统计 (Bilibili)",
+          "url": "https://www.bilibili.com/video/BV1JZW86EEbt"
+        },
+        {
+          "label": "TopUpLive: 3.8 pull count (83 limited pulls)",
+          "url": "https://www.topuplive.com/news/wuwa-3-8-pull-count.html"
         }
       ]
     }

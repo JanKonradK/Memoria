@@ -184,8 +184,8 @@ describe('planSeedImport', () => {
     expect(row('seed:hsr:4.6-pearl').end).toBe(Date.parse(`2026-11-10T15:00:00${offset}`));
     expect(row('seed:hsr:4.6-interastral-gala').start).toBe(Date.parse(`2026-10-21T12:00:00${offset}`));
     expect(row('seed:hsr:4.6-interastral-gala').end).toBe(Date.parse('2026-11-10T19:59:00Z'));
-    expect(row('seed:wuwa:3.7-p1').start).toBe(Date.parse('2026-09-30T03:00:00Z'));
-    expect(row('seed:wuwa:3.7-p1').end).toBe(Date.parse(`2026-10-22T09:59:00${offset}`));
+    expect(row('seed:wuwa:3.7-suoming').start).toBe(Date.parse(`2026-10-22T10:00:00${offset}`));
+    expect(row('seed:wuwa:3.7-suoming').end).toBe(Date.parse(`2026-11-11T11:59:00${offset}`));
     expect(row('seed:nte:1.4-coal-lump').start).toBe(Date.parse('2026-10-08T02:00:00Z'));
     expect(row('seed:nte:1.4-pixel-surge').start).toBe(Date.parse(`2026-10-19T05:00:00${offset}`));
   });
