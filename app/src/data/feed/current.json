@@ -770,15 +770,6 @@
     },
     {
       "game": "genshin",
-      "name": "Trial of the Bastion",
-      "type": "event",
-      "start": "2026-09-07 10:00",
-      "end": "2026-09-17 03:59",
-      "notes": "Five trials, unlocked in order; requires AR20, Prologue Act III and Gunfire in the Silent Lands.",
-      "sourceKey": "genshin:21816"
-    },
-    {
-      "game": "genshin",
       "name": "Starlight Voyage: Joyous Moment — claim rewards",
       "type": "event",
       "category": "miliastra",
@@ -786,16 +777,6 @@
       "end": "2026-09-21 03:59",
       "notes": "Claim Prismatic Crystals before this closes; quests end September 17 at 04:00.",
       "sourceKey": "genshin:21831"
-    },
-    {
-      "game": "genshin",
-      "name": "Starlight Voyage: Joyous Moment — quests",
-      "type": "event",
-      "category": "miliastra",
-      "start": "2026-09-07 10:00",
-      "end": "2026-09-17 04:00",
-      "notes": "Requires an awakened Miliastra Wonderland Manekin; quests close before reward claims.",
-      "sourceKey": "seed:genshin:7.0-starlight-voyage-quests"
     },
     {
       "game": "genshin",

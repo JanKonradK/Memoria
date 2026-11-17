@@ -204,25 +204,20 @@ describe('planSeedImport', () => {
     expect(gifts.seed?.notify).not.toBe(false);
   });
 
-  it('imports urgent Genshin gameplay cutoffs separately from the later reward claim', () => {
+  it("closes Genshin gameplay windows on each server's own clock", () => {
     const state = {
       ...emptyState(),
       games: [account('eu', 'UTC+1'), account('us', 'UTC-5'), account('asia', 'UTC+8')],
     };
-    const plans = planSeedImport(state, Date.parse('2026-09-17T00:00:00Z'));
-    const bastion = plans.filter((row) => row.seed?.sourceKey === 'genshin:21816');
-    expect(bastion.map((row) => [row.gameId, row.end])).toEqual([
-      ['eu', Date.parse('2026-09-17T02:59:00Z')],
-      ['us', Date.parse('2026-09-17T08:59:00Z')],
+    // The Miliastra play phase closes at 03:59 server time on every server, so
+    // Asia's window has shut by 21:00 UTC on 12-14 while Europe and America run on.
+    const plans = planSeedImport(state, Date.parse('2026-12-14T21:00:00Z'));
+    const play = plans.filter((row) => row.seed?.sourceKey === 'genshin:21993');
+    expect(play.map((row) => [row.gameId, row.end])).toEqual([
+      ['eu', Date.parse('2026-12-15T02:59:00Z')],
+      ['us', Date.parse('2026-12-15T08:59:00Z')],
     ]);
-    const quests = plans.find(
-      (row) => row.gameId === 'eu' && row.seed?.sourceKey === 'seed:genshin:7.0-starlight-voyage-quests',
-    );
-    const claims = plans.find((row) => row.gameId === 'eu' && row.seed?.sourceKey === 'genshin:21831');
-    expect(quests?.end).toBe(Date.parse('2026-09-17T03:00:00Z'));
-    expect(claims?.end).toBe(Date.parse('2026-09-21T02:59:00Z'));
-    expect(quests?.seed?.notify).not.toBe(false);
-    expect(claims?.seed?.notify).not.toBe(false);
+    expect(play.every((row) => row.seed?.notify !== false)).toBe(true);
   });
 
   it('opens ZZZ after global maintenance but closes at each server deadline', () => {

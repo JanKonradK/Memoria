@@ -1,0 +1,664 @@
+[
+  {
+    "game": "zzz",
+    "name": "Return to Ridu — anniversary login",
+    "type": "event",
+    "start": "2026-06-06 20:30",
+    "end": "2026-07-17 03:59",
+    "dailyTouch": true,
+    "sourceKey": "zzz:1189"
+  },
+  {
+    "game": "zzz",
+    "name": "All-New Program",
+    "type": "event",
+    "start": "2026-06-15 13:00",
+    "end": "2026-07-28 03:59",
+    "notify": false,
+    "sourceKey": "zzz:1200"
+  },
+  {
+    "game": "zzz",
+    "name": "Celestial Nexus Intelligence Dossier",
+    "type": "event",
+    "start": "2026-06-15 18:30",
+    "end": "2026-07-29 05:59",
+    "notify": false,
+    "notes": "Roscaelifer exploration — runs to version end.",
+    "sourceKey": "zzz:1205"
+  },
+  {
+    "game": "zzz",
+    "name": "Commemorative Gift (anniversary)",
+    "type": "event",
+    "start": "2026-06-16 18:30",
+    "end": "2026-07-29 05:59",
+    "sourceKey": "zzz:203"
+  },
+  {
+    "game": "zzz",
+    "name": "Bangbang the Genius & Miracle Chip",
+    "type": "event",
+    "start": "2026-06-17 12:00",
+    "end": "2026-07-29 05:59",
+    "notify": false,
+    "sourceKey": "seed:zzz:3.0-bangbang"
+  },
+  {
+    "game": "zzz",
+    "name": "Gleaming Shadow Team Battle",
+    "type": "event",
+    "start": "2026-06-18 12:30",
+    "end": "2026-07-13 03:59",
+    "sourceKey": "zzz:1201"
+  },
+  {
+    "game": "zzz",
+    "name": "Assemble! Mock Exam Comeback Plan",
+    "type": "event",
+    "start": "2026-06-24 12:00",
+    "end": "2026-07-27 03:59",
+    "sourceKey": "zzz:1204"
+  },
+  {
+    "game": "zzz",
+    "name": "Tales of the Hobbling Crow",
+    "type": "event",
+    "start": "2026-07-01 12:30",
+    "end": "2026-07-20 03:59",
+    "sourceKey": "zzz:1203"
+  },
+  {
+    "game": "zzz",
+    "name": "Deadly Assault — current phase",
+    "type": "cycle",
+    "start": "2026-07-02 04:00",
+    "end": "2026-07-16 03:59",
+    "notes": "Biweekly Friday alternation — verify in-game.",
+    "sourceKey": "seed:zzz:da-2026-07-02"
+  },
+  {
+    "game": "zzz",
+    "name": "'En-Nah' Into Your Lap",
+    "type": "event",
+    "start": "2026-07-06 18:00",
+    "end": "2026-07-28 03:59",
+    "sourceKey": "zzz:1226"
+  },
+  {
+    "game": "zzz",
+    "name": "Art Is Bangboo!",
+    "type": "event",
+    "start": "2026-07-06 18:15",
+    "end": "2026-07-27 03:59",
+    "sourceKey": "zzz:212"
+  },
+  {
+    "game": "zzz",
+    "name": "The Final Callback",
+    "type": "event",
+    "start": "2026-07-08 12:00",
+    "end": "2026-07-28 03:59",
+    "sourceKey": "seed:zzz:3.0-final-callback"
+  },
+  {
+    "game": "zzz",
+    "name": "Norma (Outlier of Prodigies) + Sunna rerun — phase 2",
+    "type": "banner",
+    "start": "2026-07-08 12:00",
+    "end": "2026-07-28 14:59",
+    "sourceKey": "zzz:214"
+  },
+  {
+    "game": "zzz",
+    "name": "Shiyu Defense: Critical — current phase",
+    "type": "cycle",
+    "start": "2026-07-10 04:00",
+    "end": "2026-07-24 03:59",
+    "notes": "Biweekly Friday alternation — verify in-game.",
+    "sourceKey": "seed:zzz:shiyu-2026-07-10"
+  },
+  {
+    "game": "zzz",
+    "name": "Return to Ridu: Feathers of Reunion",
+    "type": "event",
+    "start": "2026-07-17 13:30",
+    "end": "2026-09-08 22:59",
+    "notes": "Rewards for returning players.",
+    "sourceKey": "seed:zzz:3.1-return-to-ridu"
+  },
+  {
+    "game": "zzz",
+    "name": "Data Bounty — Combat Simulation",
+    "type": "event",
+    "start": "2026-07-22 12:00",
+    "end": "2026-07-27 03:59",
+    "dailyTouch": true,
+    "notes": "Short combat-sim window.",
+    "sourceKey": "seed:zzz:3.0-data-bounty"
+  },
+  {
+    "game": "zzz",
+    "name": "v3.1 update maintenance",
+    "type": "maintenance",
+    "start": "2026-07-28 23:00",
+    "end": "2026-07-29 04:00",
+    "sourceKey": "seed:zzz:3.1-maint"
+  },
+  {
+    "game": "zzz",
+    "name": "Aria — Neon Angel rerun (phase 1)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-07-29 04:00",
+    "end": "2026-08-19 11:59",
+    "sourceKey": "seed:zzz:3.1-aria"
+  },
+  {
+    "game": "zzz",
+    "name": "Angel in the Shell — W-Engine (phase 1)",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-07-29 04:00",
+    "end": "2026-08-19 11:59",
+    "sourceKey": "seed:zzz:3.1-aria-engine"
+  },
+  {
+    "game": "zzz",
+    "name": "New Eridu City Fund 3.1",
+    "type": "event",
+    "start": "2026-07-29 04:00",
+    "end": "2026-09-07 03:59",
+    "notes": "Plan purchases close September 7 at 02:59; Expansion Tasks and reward claims close one hour later.",
+    "sourceKey": "seed:zzz:3.1-city-fund"
+  },
+  {
+    "game": "zzz",
+    "name": "Filmgoer Thank-You Gift",
+    "type": "event",
+    "start": "2026-07-29 04:00",
+    "end": "2026-09-08 22:59",
+    "notes": "Purchase rewards.",
+    "sourceKey": "seed:zzz:3.1-filmgoer"
+  },
+  {
+    "game": "zzz",
+    "name": "The Final Callback — audition stages",
+    "type": "event",
+    "start": "2026-07-29 04:00",
+    "end": "2026-09-08 14:59",
+    "notes": "First-clear rewards: Remielle until September 8 at 14:59, Aria until August 19 at 11:59; phase 2 trials open August 19 at 12:00.",
+    "sourceKey": "seed:zzz:3.1-final-callback"
+  },
+  {
+    "game": "zzz",
+    "name": "Gift From the Clouds — 10 free tapes",
+    "type": "event",
+    "start": "2026-07-29 04:00",
+    "end": "2026-09-08 03:59",
+    "dailyTouch": true,
+    "notes": "Log in on 7 days.",
+    "sourceKey": "seed:zzz:3.1-gift-clouds"
+  },
+  {
+    "game": "zzz",
+    "name": "Phaethon's Grand Reveal of the Year",
+    "type": "event",
+    "start": "2026-07-29 04:00",
+    "end": "2026-09-08 23:00",
+    "notes": "",
+    "sourceKey": "seed:zzz:3.1-grand-reveal"
+  },
+  {
+    "game": "zzz",
+    "name": "Potential Hypothesis: Hunting Game",
+    "type": "event",
+    "start": "2026-07-29 04:00",
+    "end": "2026-09-08 23:00",
+    "notes": "One-time trial stages.",
+    "sourceKey": "seed:zzz:3.1-hunting-game"
+  },
+  {
+    "game": "zzz",
+    "name": "Marcel Anniversary Gift — free S-Rank Agent + W-Engine",
+    "type": "event",
+    "start": "2026-07-29 04:00",
+    "end": "2026-09-08 23:00",
+    "notes": "Choose 1 of 5 limited S-Rank Agents and 1 of 5 limited S-Rank W-Engines; 1,600 Polychrome.",
+    "sourceKey": "seed:zzz:3.1-marcel"
+  },
+  {
+    "game": "zzz",
+    "name": "Remielle — Paradise Regained (flagship)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-07-29 04:00",
+    "end": "2026-09-08 14:59",
+    "notes": "Runs through both phases of 3.1.",
+    "sourceKey": "seed:zzz:3.1-remielle"
+  },
+  {
+    "game": "zzz",
+    "name": "Ode of Resurrected Wings — W-Engine (flagship)",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-07-29 04:00",
+    "end": "2026-09-08 14:59",
+    "sourceKey": "seed:zzz:3.1-remielle-engine"
+  },
+  {
+    "game": "zzz",
+    "name": "Summer Waves Roll In — Fantasy Resort summer event",
+    "type": "event",
+    "start": "2026-07-29 04:00",
+    "end": "2026-09-07 03:59",
+    "notes": "Lucy outfit, namecard and Hamster Cage.",
+    "sourceKey": "seed:zzz:3.1-summer-waves"
+  },
+  {
+    "game": "zzz",
+    "name": "Deadly Assault",
+    "type": "cycle",
+    "start": "2026-07-29 04:00",
+    "end": "2026-08-14 03:59",
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:zzz:da-2026-07-29"
+  },
+  {
+    "game": "zzz",
+    "name": "Shiyu Defense: Critical",
+    "type": "cycle",
+    "start": "2026-08-07 04:00",
+    "end": "2026-08-21 03:59",
+    "notify": false,
+    "notes": "Critical Node, 3.1 Phase I buffs. Estimated dates.",
+    "sourceKey": "seed:zzz:shiyu-2026-08-07"
+  },
+  {
+    "game": "zzz",
+    "name": "Snap! Focus Showdown!",
+    "type": "event",
+    "start": "2026-08-07 10:00",
+    "end": "2026-08-24 03:59",
+    "sourceKey": "seed:zzz:3.1-snap-showdown"
+  },
+  {
+    "game": "zzz",
+    "name": "Extensive Patrol: Triple Bounty",
+    "type": "event",
+    "start": "2026-08-12 04:00",
+    "end": "2026-08-17 03:59",
+    "dailyTouch": true,
+    "notes": "Triple Area Patrol rewards.",
+    "sourceKey": "seed:zzz:3.1-patrol-bounty"
+  },
+  {
+    "game": "zzz",
+    "name": "Deadly Assault",
+    "type": "cycle",
+    "start": "2026-08-14 04:00",
+    "end": "2026-08-28 03:59",
+    "notify": false,
+    "notes": "3.1 Phase II: Girtablullu, Ye Shiyuan the Thrall and Miasma Priest. Estimated dates.",
+    "sourceKey": "seed:zzz:da-2026-08-14"
+  },
+  {
+    "game": "zzz",
+    "name": "Crispy Meal Deployment Plan",
+    "type": "event",
+    "start": "2026-08-19 10:00",
+    "end": "2026-09-07 03:59",
+    "dailyTouch": true,
+    "notes": "Event commissions unlock daily.",
+    "sourceKey": "seed:zzz:3.1-crispy-meal"
+  },
+  {
+    "game": "zzz",
+    "name": "Great En-Nah Giveaway — 10 tapes + 10 Boopons",
+    "type": "event",
+    "start": "2026-08-19 10:00",
+    "end": "2026-09-08 03:59",
+    "dailyTouch": true,
+    "notes": "Log in on 7 days.",
+    "sourceKey": "seed:zzz:3.1-ennah-giveaway"
+  },
+  {
+    "game": "zzz",
+    "name": "W-Engine Reverberation — selectable rerun (phase 2)",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-08-19 12:00",
+    "end": "2026-09-08 14:59",
+    "sourceKey": "seed:zzz:3.1-engine-reverb"
+  },
+  {
+    "game": "zzz",
+    "name": "Exclusive Rescreening: Dialyn · Yuzuha · Harumasa (phase 2)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-08-19 12:00",
+    "end": "2026-09-08 14:59",
+    "notes": "Choose a rerun banner.",
+    "sourceKey": "seed:zzz:3.1-rescreening"
+  },
+  {
+    "game": "zzz",
+    "name": "Sigrid — Till the Ends of the Sky (phase 2)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-08-19 12:00",
+    "end": "2026-09-08 14:59",
+    "sourceKey": "seed:zzz:3.1-sigrid"
+  },
+  {
+    "game": "zzz",
+    "name": "Knight's Extolment — Sigrid W-Engine (phase 2)",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-08-19 12:00",
+    "end": "2026-09-08 14:59",
+    "sourceKey": "seed:zzz:3.1-sigrid-engine"
+  },
+  {
+    "game": "zzz",
+    "name": "Shiyu Defense: Critical",
+    "type": "cycle",
+    "start": "2026-08-21 04:00",
+    "end": "2026-09-04 03:59",
+    "notify": false,
+    "notes": "3.1 Phase II buffs. Estimated dates.",
+    "sourceKey": "seed:zzz:shiyu-2026-08-21"
+  },
+  {
+    "game": "zzz",
+    "name": "Dangerous Fugitive's Leisurely Vacation",
+    "type": "event",
+    "start": "2026-08-24 10:00",
+    "end": "2026-09-07 03:59",
+    "sourceKey": "seed:zzz:3.1-fugitive"
+  },
+  {
+    "game": "zzz",
+    "name": "Deadly Assault",
+    "type": "cycle",
+    "start": "2026-08-28 04:00",
+    "end": "2026-09-11 03:59",
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:zzz:da-2026-08-28"
+  },
+  {
+    "game": "zzz",
+    "name": "Ding-Dong! Delivery Training in Progress",
+    "type": "event",
+    "start": "2026-08-28 10:00",
+    "end": "2026-09-14 03:59",
+    "sourceKey": "seed:zzz:3.1-delivery-training"
+  },
+  {
+    "game": "zzz",
+    "name": "ZZZ 3.2 Special Program",
+    "type": "livestream",
+    "start": "2026-08-28 12:30",
+    "end": "2026-08-28 14:30",
+    "notes": "Officially announced: 19:30 UTC+8. Reveals the v3.2 slate — refresh this file after it airs.",
+    "sourceKey": "seed:zzz:3.2-livestream"
+  },
+  {
+    "game": "zzz",
+    "name": "Combat Training: Triple Bounty",
+    "type": "event",
+    "start": "2026-09-02 04:00",
+    "end": "2026-09-07 03:59",
+    "dailyTouch": true,
+    "notes": "Triple Combat Simulation rewards.",
+    "sourceKey": "seed:zzz:3.1-combat-bounty"
+  },
+  {
+    "game": "zzz",
+    "name": "Shiyu Defense: Critical",
+    "type": "cycle",
+    "start": "2026-09-04 04:00",
+    "end": "2026-09-18 03:59",
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:zzz:shiyu-2026-09-04"
+  },
+  {
+    "game": "zzz",
+    "name": "v3.2 update maintenance",
+    "type": "maintenance",
+    "start": "2026-09-08 22:00",
+    "end": "2026-09-09 03:00",
+    "timezone": "UTC",
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:zzz:3.2-maint"
+  },
+  {
+    "game": "zzz",
+    "name": "All-New Program — 7-day login",
+    "type": "event",
+    "start": "2026-09-09 03:00",
+    "end": "2026-10-20 03:59",
+    "startTimezone": "UTC",
+    "dailyTouch": true,
+    "notes": "",
+    "sourceKey": "seed:zzz:3.2-all-new-program"
+  },
+  {
+    "game": "zzz",
+    "name": "Angels Support Operation",
+    "type": "event",
+    "start": "2026-09-09 03:00",
+    "end": "2026-11-30 03:59",
+    "startTimezone": "UTC",
+    "notes": "Spans 3.2–3.3. Pick one Angels of Delusion outfit; unclaimed rewards are not reissued after the end (ann 239). Clearing every Spooky Funhouse Tales Mission Mode stage completes the 3.3 mission.",
+    "sourceKey": "seed:zzz:3.2-angels-support"
+  },
+  {
+    "game": "zzz",
+    "name": "New Eridu City Fund",
+    "type": "event",
+    "start": "2026-09-09 03:00",
+    "end": "2026-10-19 03:59",
+    "startTimezone": "UTC",
+    "dailyTouch": true,
+    "notes": "",
+    "sourceKey": "seed:zzz:3.2-city-fund"
+  },
+  {
+    "game": "zzz",
+    "name": "Claret — Bloodmoon Rising (phase 1)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-09-09 03:00",
+    "end": "2026-09-30 11:59",
+    "startTimezone": "UTC",
+    "notes": "",
+    "sourceKey": "seed:zzz:3.2-claret"
+  },
+  {
+    "game": "zzz",
+    "name": "Final Callback — phase 1 auditions",
+    "type": "event",
+    "start": "2026-09-09 03:00",
+    "end": "2026-09-30 11:59",
+    "startTimezone": "UTC",
+    "notes": "",
+    "sourceKey": "seed:zzz:3.2-final-callback"
+  },
+  {
+    "game": "zzz",
+    "name": "Nangong Yu — Axiom of Captivation rerun (phase 1)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-09-09 03:00",
+    "end": "2026-09-30 11:59",
+    "startTimezone": "UTC",
+    "notes": "",
+    "sourceKey": "seed:zzz:3.2-nangong-yu"
+  },
+  {
+    "game": "zzz",
+    "name": "Crimson Thirst / Neon Fantasies — W-Engines (phase 1)",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-09-09 03:00",
+    "end": "2026-09-30 11:59",
+    "startTimezone": "UTC",
+    "notes": "",
+    "sourceKey": "seed:zzz:3.2-p1-engines"
+  },
+  {
+    "game": "zzz",
+    "name": "Potential Hypothesis: Reforged in Fire",
+    "type": "event",
+    "start": "2026-09-09 03:00",
+    "end": "2026-10-20 22:00",
+    "timezone": "UTC",
+    "notes": "",
+    "sourceKey": "seed:zzz:3.2-reforged"
+  },
+  {
+    "game": "zzz",
+    "name": "Clink, Clank, Pinball Knight!",
+    "type": "event",
+    "start": "2026-09-10 10:00",
+    "end": "2026-10-19 03:59",
+    "notes": "",
+    "sourceKey": "seed:zzz:3.2-pinball-knight"
+  },
+  {
+    "game": "zzz",
+    "name": "Deadly Assault",
+    "type": "cycle",
+    "start": "2026-09-11 04:00",
+    "end": "2026-09-25 03:59",
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:zzz:da-2026-09-11"
+  },
+  {
+    "game": "zzz",
+    "name": "Shadow Chase Showdown",
+    "type": "event",
+    "start": "2026-09-16 10:00",
+    "end": "2026-10-05 03:59",
+    "notes": "",
+    "sourceKey": "seed:zzz:3.2-shadow-chase"
+  },
+  {
+    "game": "zzz",
+    "name": "Shiyu Defense: Critical",
+    "type": "cycle",
+    "start": "2026-09-18 04:00",
+    "end": "2026-10-02 03:59",
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:zzz:shiyu-2026-09-18"
+  },
+  {
+    "game": "zzz",
+    "name": "Advanced Bounty: Area Patrol",
+    "type": "event",
+    "start": "2026-09-23 04:00",
+    "end": "2026-09-28 03:59",
+    "dailyTouch": true,
+    "notes": "",
+    "sourceKey": "seed:zzz:3.2-area-bounty"
+  },
+  {
+    "game": "zzz",
+    "name": "Surprise Screening Plan",
+    "type": "event",
+    "start": "2026-09-23 10:00",
+    "end": "2026-10-20 03:59",
+    "dailyTouch": true,
+    "notes": "",
+    "sourceKey": "seed:zzz:3.2-screening"
+  },
+  {
+    "game": "zzz",
+    "name": "En-Nah Into Your Lap",
+    "type": "event",
+    "start": "2026-09-30 10:00",
+    "end": "2026-10-20 03:59",
+    "dailyTouch": true,
+    "notes": "",
+    "sourceKey": "seed:zzz:3.2-en-nah"
+  },
+  {
+    "game": "zzz",
+    "name": "Diary of an Orbie Parent",
+    "type": "event",
+    "start": "2026-09-30 10:00",
+    "end": "2026-10-19 03:59",
+    "dailyTouch": true,
+    "notes": "",
+    "sourceKey": "seed:zzz:3.2-orbie-parent"
+  },
+  {
+    "game": "zzz",
+    "name": "Crimson Moon Casket / Frostfall Sickle — W-Engines (phase 2)",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-09-30 12:00",
+    "end": "2026-10-20 14:59",
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:zzz:3.2-p2-engines"
+  },
+  {
+    "game": "zzz",
+    "name": "Promeia — Cold Rain Wanes in the Night rerun (phase 2)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-09-30 12:00",
+    "end": "2026-10-20 14:59",
+    "notify": false,
+    "notes": "First rerun. Estimated dates.",
+    "sourceKey": "seed:zzz:3.2-promeia"
+  },
+  {
+    "game": "zzz",
+    "name": "Roxy — Cindernight Respite (phase 2)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-09-30 12:00",
+    "end": "2026-10-20 14:59",
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:zzz:3.2-roxy"
+  },
+  {
+    "game": "zzz",
+    "name": "Chronicles of the Hobbling Crow",
+    "type": "event",
+    "start": "2026-10-03 10:00",
+    "end": "2026-10-19 03:59",
+    "dailyTouch": false,
+    "notes": "",
+    "sourceKey": "seed:zzz:3.2-hobbling-crow"
+  },
+  {
+    "game": "zzz",
+    "name": "ZZZ 3.3 Special Program",
+    "type": "livestream",
+    "start": "2026-10-09 12:30",
+    "end": "2026-10-09 13:30",
+    "timezone": "UTC+1",
+    "notes": "Journey to the Sky. Estimated window.",
+    "sourceKey": "seed:zzz:3.3-livestream"
+  },
+  {
+    "game": "zzz",
+    "name": "Data Bounty: Combat Simulation",
+    "type": "event",
+    "start": "2026-10-14 04:00",
+    "end": "2026-10-19 03:59",
+    "dailyTouch": true,
+    "notes": "",
+    "sourceKey": "seed:zzz:3.2-data-bounty"
+  }
+]

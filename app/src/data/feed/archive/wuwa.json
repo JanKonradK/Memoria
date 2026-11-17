@@ -1,0 +1,459 @@
+[
+  {
+    "game": "wuwa",
+    "name": "Cyberpunk collab: Lucy · Rebecca · Lucilla — final hours",
+    "type": "banner",
+    "start": "2026-06-04 10:00",
+    "end": "2026-07-09 23:00",
+    "notes": "Collab does not rerun — last chance.",
+    "sourceKey": "seed:wuwa:3.4-cyberpunk"
+  },
+  {
+    "game": "wuwa",
+    "name": "Cartethyia rerun — final hours (3.4)",
+    "type": "banner",
+    "start": "2026-06-18 10:00",
+    "end": "2026-07-09 23:00",
+    "sourceKey": "seed:wuwa:3.4-cartethyia"
+  },
+  {
+    "game": "wuwa",
+    "name": "v3.5 update maintenance",
+    "type": "maintenance",
+    "start": "2026-07-09 23:00",
+    "end": "2026-07-10 04:00",
+    "sourceKey": "seed:wuwa:3.5-maint"
+  },
+  {
+    "game": "wuwa",
+    "name": "Gifts of Starpath — free convenes",
+    "type": "event",
+    "start": "2026-07-10 04:00",
+    "end": "2026-08-19 03:59",
+    "notify": false,
+    "sourceKey": "seed:wuwa:3.5-gifts-starpath"
+  },
+  {
+    "game": "wuwa",
+    "name": "Gifts of Aftertune (login)",
+    "type": "event",
+    "start": "2026-07-10 04:00",
+    "end": "2026-08-19 03:59",
+    "dailyTouch": true,
+    "sourceKey": "seed:wuwa:3.5-login"
+  },
+  {
+    "game": "wuwa",
+    "name": "Mingshen Notices — commissions",
+    "type": "event",
+    "start": "2026-07-10 04:00",
+    "end": "2026-08-19 03:59",
+    "notify": false,
+    "sourceKey": "seed:wuwa:3.5-mingshen"
+  },
+  {
+    "game": "wuwa",
+    "name": "Lynae & Luuk Herssen reruns (phase 1)",
+    "type": "banner",
+    "start": "2026-07-10 04:00",
+    "end": "2026-07-31 09:59",
+    "sourceKey": "seed:wuwa:3.5-p1-reruns"
+  },
+  {
+    "game": "wuwa",
+    "name": "Shape of Yesterday",
+    "type": "event",
+    "start": "2026-07-10 04:00",
+    "end": "2026-08-20 23:00",
+    "notify": false,
+    "notes": "End TBC — verify in-game.",
+    "sourceKey": "seed:wuwa:3.5-shape"
+  },
+  {
+    "game": "wuwa",
+    "name": "Starpath Reverbs Convene — selectable 1.x rerun",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-07-10 04:00",
+    "end": "2026-08-19 11:59",
+    "notes": "Jiyan, Yinlin, Jinhsi, Changli, Zhezhi and Xiangli Yao; first 10-pull is free.",
+    "sourceKey": "seed:wuwa:3.5-starpath"
+  },
+  {
+    "game": "wuwa",
+    "name": "Tideforge Reverbs Convene — selectable weapon rerun",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-07-10 04:00",
+    "end": "2026-08-19 11:59",
+    "notify": false,
+    "sourceKey": "seed:wuwa:3.5-tideforge"
+  },
+  {
+    "game": "wuwa",
+    "name": "A Glimpse of Xuanfang",
+    "type": "event",
+    "start": "2026-07-10 04:00",
+    "end": "2026-08-19 03:59",
+    "notify": false,
+    "notes": "Explore to earn Astrite and materials. Estimated dates.",
+    "sourceKey": "seed:wuwa:3.5-xuanfang"
+  },
+  {
+    "game": "wuwa",
+    "name": "Yangyang: Xuanling + signature weapon (phase 1)",
+    "type": "banner",
+    "start": "2026-07-10 04:00",
+    "end": "2026-07-31 09:59",
+    "notes": "First SP character.",
+    "sourceKey": "seed:wuwa:3.5-xuanling"
+  },
+  {
+    "game": "wuwa",
+    "name": "Lament Recon: Tacet Crisis",
+    "type": "event",
+    "start": "2026-07-11 10:00",
+    "end": "2026-08-19 11:59",
+    "notify": false,
+    "notes": "1,200 Astrite and cosmetics. Estimated dates.",
+    "sourceKey": "seed:wuwa:3.5-lament"
+  },
+  {
+    "game": "wuwa",
+    "name": "Recaptured: Action Highlights",
+    "type": "event",
+    "start": "2026-07-16 04:00",
+    "end": "2026-08-06 03:59",
+    "sourceKey": "seed:wuwa:3.5-recaptured"
+  },
+  {
+    "game": "wuwa",
+    "name": "Bountiful Crescendo — double drops",
+    "type": "event",
+    "start": "2026-07-23 04:00",
+    "end": "2026-07-30 03:59",
+    "dailyTouch": true,
+    "notes": "Double leveling-material drops — plan Waveplates. One source says it runs to Aug 13 — verify in-game.",
+    "sourceKey": "seed:wuwa:3.5-crescendo"
+  },
+  {
+    "game": "wuwa",
+    "name": "Suisui + Aemeath rerun (phase 2)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-07-30 10:00",
+    "end": "2026-08-19 11:59",
+    "sourceKey": "seed:wuwa:3.5-p2"
+  },
+  {
+    "game": "wuwa",
+    "name": "Absolute Pulsation: Firstlight's Herald + Everbright Polestar (phase 2)",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-07-30 10:00",
+    "end": "2026-08-19 11:59",
+    "sourceKey": "seed:wuwa:3.5-p2-weapons"
+  },
+  {
+    "game": "wuwa",
+    "name": "Virtual Crisis: Quadrant Trials",
+    "type": "event",
+    "start": "2026-07-30 10:00",
+    "end": "2026-08-19 03:59",
+    "sourceKey": "seed:wuwa:3.5-quadrant"
+  },
+  {
+    "game": "wuwa",
+    "name": "Lollo Campaign: New Journey",
+    "type": "event",
+    "start": "2026-08-06 04:00",
+    "end": "2026-08-19 03:59",
+    "dailyTouch": true,
+    "notes": "Daily commissions and a stamp roulette for Astrite.",
+    "sourceKey": "seed:wuwa:3.5-lollo"
+  },
+  {
+    "game": "wuwa",
+    "name": "Chord Cleansing — double echo drops",
+    "type": "event",
+    "start": "2026-08-12 04:00",
+    "end": "2026-08-19 03:59",
+    "dailyTouch": true,
+    "notify": false,
+    "notes": "Double Echo drops. Estimated dates.",
+    "sourceKey": "seed:wuwa:3.5-chord"
+  },
+  {
+    "game": "wuwa",
+    "name": "v3.6 \"Lamplight in Mirage\" update maintenance",
+    "type": "maintenance",
+    "start": "2026-08-19 21:00",
+    "end": "2026-08-20 04:00",
+    "notes": "300 Astrite and 2 Crystal Solvents in compensation; maintenance may end early.",
+    "sourceKey": "seed:wuwa:3.6-maint"
+  },
+  {
+    "game": "wuwa",
+    "name": "Gifts of Drifting Mist (login)",
+    "type": "event",
+    "start": "2026-08-20 04:00",
+    "end": "2026-09-29 03:59",
+    "dailyTouch": true,
+    "notes": "",
+    "sourceKey": "seed:wuwa:3.6-login"
+  },
+  {
+    "game": "wuwa",
+    "name": "Qingxiao + Denia rerun (phase 1)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-08-20 04:00",
+    "end": "2026-09-10 09:59",
+    "notes": "",
+    "sourceKey": "seed:wuwa:3.6-p1"
+  },
+  {
+    "game": "wuwa",
+    "name": "Glint of Clouds + Forged Dwarf Star (phase 1 weapons)",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-08-20 04:00",
+    "end": "2026-09-10 09:59",
+    "notes": "",
+    "sourceKey": "seed:wuwa:3.6-p1-weapons"
+  },
+  {
+    "game": "wuwa",
+    "name": "Resonance Sim Realm",
+    "type": "event",
+    "start": "2026-08-22 10:00",
+    "end": "2026-09-29 11:59",
+    "sourceKey": "seed:wuwa:3.6-sim-realm"
+  },
+  {
+    "game": "wuwa",
+    "name": "Second Coming of Solaris: Coded Deception",
+    "type": "event",
+    "start": "2026-08-27 04:00",
+    "end": "2026-09-14 03:59",
+    "sourceKey": "seed:wuwa:3.6-solaris"
+  },
+  {
+    "game": "wuwa",
+    "name": "The Strings Remember",
+    "type": "event",
+    "start": "2026-09-03 04:00",
+    "end": "2026-09-21 03:59",
+    "sourceKey": "seed:wuwa:3.6-strings"
+  },
+  {
+    "game": "wuwa",
+    "name": "If Dreams Still Reverberate",
+    "type": "event",
+    "start": "2026-09-10 10:00",
+    "end": "2026-09-29 03:59",
+    "sourceKey": "seed:wuwa:3.6-dreams"
+  },
+  {
+    "game": "wuwa",
+    "name": "Jingran + Hiyuki/Mornye reruns (phase 2)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-09-10 10:00",
+    "end": "2026-09-29 11:59",
+    "notes": "",
+    "sourceKey": "seed:wuwa:3.6-p2"
+  },
+  {
+    "game": "wuwa",
+    "name": "Thousandfold Deliverance / Frostburn / Starfield Calibrator — weapons",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-09-10 10:00",
+    "end": "2026-09-29 11:59",
+    "notes": "",
+    "sourceKey": "seed:wuwa:3.6-p2-weapons"
+  },
+  {
+    "game": "wuwa",
+    "name": "Wuthering Exploration: Fogveil Pagoda",
+    "type": "event",
+    "start": "2026-09-17 04:00",
+    "end": "2026-09-29 03:59",
+    "notes": "",
+    "sourceKey": "seed:wuwa:3.6-fogveil"
+  },
+  {
+    "game": "wuwa",
+    "name": "WuWa 3.7 Special Broadcast",
+    "type": "livestream",
+    "start": "2026-09-19 11:00",
+    "end": "2026-09-19 12:00",
+    "timezone": "UTC",
+    "notes": "Estimated window. Recap is in Livestreams.",
+    "sourceKey": "seed:wuwa:3.7-livestream"
+  },
+  {
+    "game": "wuwa",
+    "name": "Chord Cleansing — double Echo drops",
+    "type": "event",
+    "start": "2026-09-22 04:00",
+    "end": "2026-09-29 03:59",
+    "dailyTouch": true,
+    "notes": "Double Tacet Suppression rewards for Waveplates; requires Union Level 19.",
+    "sourceKey": "seed:wuwa:3.6-chord"
+  },
+  {
+    "game": "wuwa",
+    "name": "v3.7 update maintenance",
+    "type": "maintenance",
+    "start": "2026-09-30 04:00",
+    "end": "2026-09-30 11:00",
+    "timezone": "UTC+8",
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:wuwa:3.7-maint"
+  },
+  {
+    "game": "wuwa",
+    "name": "Dreams in the Capsule",
+    "type": "event",
+    "start": "2026-09-30 11:00",
+    "end": "2026-11-11 03:59",
+    "startTimezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:wuwa:3.7-capsule"
+  },
+  {
+    "game": "wuwa",
+    "name": "Cubie Wars",
+    "type": "event",
+    "start": "2026-09-30 11:00",
+    "end": "2026-11-11 11:59",
+    "startTimezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:wuwa:3.7-cubie"
+  },
+  {
+    "game": "wuwa",
+    "name": "Gifts of Waking Moon",
+    "type": "event",
+    "start": "2026-09-30 11:00",
+    "end": "2026-11-11 03:59",
+    "startTimezone": "UTC+8",
+    "dailyTouch": true,
+    "notes": "",
+    "sourceKey": "seed:wuwa:3.7-login"
+  },
+  {
+    "game": "wuwa",
+    "name": "Chisa + Iuno — reruns",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-09-30 11:00",
+    "end": "2026-10-22 09:59",
+    "startTimezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:wuwa:3.7-p1"
+  },
+  {
+    "game": "wuwa",
+    "name": "Kumokiri / Moongazer’s Sigil",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-09-30 11:00",
+    "end": "2026-10-22 09:59",
+    "startTimezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:wuwa:3.7-p1-weapons"
+  },
+  {
+    "game": "wuwa",
+    "name": "Artisan’s Search",
+    "type": "event",
+    "start": "2026-10-08 04:00",
+    "end": "2026-10-26 03:59",
+    "notes": "",
+    "sourceKey": "seed:wuwa:3.7-artisan"
+  },
+  {
+    "game": "wuwa",
+    "name": "Waking Moon Fishing — web event",
+    "type": "event",
+    "start": "2026-10-15 10:00",
+    "end": "2026-11-01 09:59",
+    "timezone": "UTC+8",
+    "notes": "Web event with Astrite rewards.",
+    "sourceKey": "seed:wuwa:3.7-waking-moon-fishing"
+  },
+  {
+    "game": "wuwa",
+    "name": "Echo Erase",
+    "type": "event",
+    "start": "2026-10-22 10:00",
+    "end": "2026-11-09 03:59",
+    "notes": "",
+    "sourceKey": "seed:wuwa:3.7-echo-erase"
+  },
+  {
+    "game": "wuwa",
+    "name": "Lucilla + Lynae — reruns (phase 2)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-10-22 10:00",
+    "end": "2026-11-11 11:59",
+    "notes": "",
+    "sourceKey": "seed:wuwa:3.7-p2"
+  },
+  {
+    "game": "wuwa",
+    "name": "Freeze Frame / Spectrum Blaster (phase 2)",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-10-22 10:00",
+    "end": "2026-11-11 11:59",
+    "notes": "",
+    "sourceKey": "seed:wuwa:3.7-p2-weapons"
+  },
+  {
+    "game": "wuwa",
+    "name": "Gifts of Singing Drizzle",
+    "type": "event",
+    "start": "2026-10-22 10:00",
+    "end": "2026-11-11 03:59",
+    "dailyTouch": true,
+    "notes": "Log in on 1 and 3 days to claim 5 Radiant Tides each.",
+    "sourceKey": "seed:wuwa:3.7-singing-drizzle"
+  },
+  {
+    "game": "wuwa",
+    "name": "Suoming (phase 2)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-10-22 10:00",
+    "end": "2026-11-11 11:59",
+    "notify": false,
+    "notes": "New 5★. Estimated dates.",
+    "sourceKey": "seed:wuwa:3.7-suoming"
+  },
+  {
+    "game": "wuwa",
+    "name": "Beyond the Waves: Land of Xuanfang",
+    "type": "event",
+    "start": "2026-10-29 04:00",
+    "end": "2026-11-11 03:59",
+    "dailyTouch": true,
+    "notes": "",
+    "sourceKey": "seed:wuwa:3.7-beyond-waves"
+  },
+  {
+    "game": "wuwa",
+    "name": "WuWa 3.8 Special Broadcast",
+    "type": "livestream",
+    "start": "2026-11-06 11:00",
+    "end": "2026-11-06 12:00",
+    "timezone": "UTC",
+    "notes": "Announced for 19:00 UTC+8.",
+    "sourceKey": "seed:wuwa:3.8-livestream"
+  }
+]

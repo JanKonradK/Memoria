@@ -1,0 +1,592 @@
+[
+  {
+    "game": "hsr",
+    "name": "Stellar Companion — free 5★ selector",
+    "type": "event",
+    "start": "2026-04-22 04:00",
+    "end": "2026-08-25 23:00",
+    "notify": false,
+    "notes": "Free 5★ selector. Estimated dates.",
+    "sourceKey": "seed:hsr:stellar-companion"
+  },
+  {
+    "game": "hsr",
+    "name": "Anomaly Arbitration — The Humming Laughter",
+    "type": "cycle",
+    "start": "2026-06-01 04:00",
+    "end": "2026-07-13 03:59",
+    "sourceKey": "seed:hsr:aa-4.3"
+  },
+  {
+    "game": "hsr",
+    "name": "Pixel Plane Rumble",
+    "type": "event",
+    "start": "2026-06-01 12:00",
+    "end": "2026-07-14 23:00",
+    "notes": "Runs to the end of 4.3 — finish before maintenance.",
+    "sourceKey": "seed:hsr:4.3-pixel-plane"
+  },
+  {
+    "game": "hsr",
+    "name": "Apocalyptic Shadow — current phase",
+    "type": "cycle",
+    "start": "2026-06-08 04:00",
+    "end": "2026-07-20 03:59",
+    "sourceKey": "seed:hsr:as-4.3"
+  },
+  {
+    "game": "hsr",
+    "name": "Pure Fiction — current phase",
+    "type": "cycle",
+    "start": "2026-06-22 04:00",
+    "end": "2026-08-03 03:59",
+    "sourceKey": "seed:hsr:pf-4.3"
+  },
+  {
+    "game": "hsr",
+    "name": "Cyrene banner — 4.3 final phase",
+    "type": "banner",
+    "start": "2026-06-24 12:00",
+    "end": "2026-07-14 23:00",
+    "sourceKey": "seed:hsr:4.3-cyrene"
+  },
+  {
+    "game": "hsr",
+    "name": "Phainon banner — 4.3 final phase",
+    "type": "banner",
+    "start": "2026-06-24 12:00",
+    "end": "2026-07-14 23:00",
+    "sourceKey": "seed:hsr:4.3-phainon"
+  },
+  {
+    "game": "hsr",
+    "name": "Wispae Amusement Park",
+    "type": "event",
+    "start": "2026-06-24 12:00",
+    "end": "2026-07-14 23:00",
+    "notes": "Runs to the end of 4.3 — finish before maintenance.",
+    "sourceKey": "seed:hsr:4.3-wispae"
+  },
+  {
+    "game": "hsr",
+    "name": "Realm of the Strange — 2× cavern relics",
+    "type": "event",
+    "start": "2026-07-03 04:00",
+    "end": "2026-07-13 03:59",
+    "dailyTouch": true,
+    "notes": "Double relic drops from Caverns — dump Trailblaze Power.",
+    "sourceKey": "seed:hsr:4.3-realm"
+  },
+  {
+    "game": "hsr",
+    "name": "Memory of Chaos — current phase",
+    "type": "cycle",
+    "start": "2026-07-06 04:00",
+    "end": "2026-08-17 03:59",
+    "sourceKey": "seed:hsr:moc-4.3"
+  },
+  {
+    "game": "hsr",
+    "name": "v4.4 update maintenance",
+    "type": "maintenance",
+    "start": "2026-07-14 23:00",
+    "end": "2026-07-15 04:00",
+    "sourceKey": "seed:hsr:4.4-maint"
+  },
+  {
+    "game": "hsr",
+    "name": "Antigraft Brickbuster (flagship)",
+    "type": "event",
+    "start": "2026-07-15 04:00",
+    "end": "2026-08-25 20:59",
+    "sourceKey": "seed:hsr:4.4-brickbuster"
+  },
+  {
+    "game": "hsr",
+    "name": "A Star That Lights the Night — Light Cone Warp",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-07-15 04:00",
+    "end": "2026-08-25 15:00",
+    "sourceKey": "seed:hsr:4.4-himeko-lc"
+  },
+  {
+    "game": "hsr",
+    "name": "Himeko • Nova (runs all of 4.4)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-07-15 04:00",
+    "end": "2026-08-25 15:00",
+    "sourceKey": "seed:hsr:4.4-himeko-nova"
+  },
+  {
+    "game": "hsr",
+    "name": "4.4 Gift of Odyssey — 10 free pulls",
+    "type": "event",
+    "start": "2026-07-15 04:00",
+    "end": "2026-08-25 23:00",
+    "dailyTouch": true,
+    "notes": "Log in on 7 days.",
+    "sourceKey": "seed:hsr:4.4-login"
+  },
+  {
+    "game": "hsr",
+    "name": "Sparxie · Dan Heng PT · Evernight reruns (phase 1)",
+    "type": "banner",
+    "start": "2026-07-15 04:00",
+    "end": "2026-08-05 11:59",
+    "sourceKey": "seed:hsr:4.4-p1-reruns"
+  },
+  {
+    "game": "hsr",
+    "name": "Anomaly Arbitration",
+    "type": "cycle",
+    "start": "2026-07-15 04:00",
+    "end": "2026-08-25 23:00",
+    "notify": false,
+    "notes": "Enwreathed by the World; refreshes with the version update. Estimated dates.",
+    "sourceKey": "seed:hsr:aa-4.4"
+  },
+  {
+    "game": "hsr",
+    "name": "Apocalyptic Shadow",
+    "type": "cycle",
+    "start": "2026-07-20 04:00",
+    "end": "2026-08-31 03:59",
+    "notes": "Vanguard Knight.",
+    "sourceKey": "seed:hsr:as-4.4"
+  },
+  {
+    "game": "hsr",
+    "name": "Fate collab: Rin Tohsaka & Gilgamesh",
+    "type": "banner",
+    "start": "2026-07-24 12:00",
+    "end": "2026-08-25 23:00",
+    "sourceKey": "seed:hsr:4.4-fate-banners"
+  },
+  {
+    "game": "hsr",
+    "name": "Fate/Star Rail Night — collab event",
+    "type": "event",
+    "start": "2026-07-24 12:00",
+    "end": "2026-08-25 20:59",
+    "sourceKey": "seed:hsr:4.4-fate-event"
+  },
+  {
+    "game": "hsr",
+    "name": "Fate Gift — free collab Light Cone",
+    "type": "event",
+    "start": "2026-07-24 12:00",
+    "end": "2026-08-25 23:00",
+    "dailyTouch": true,
+    "notes": "Log in to claim the collab gift.",
+    "sourceKey": "seed:hsr:4.4-fate-gift"
+  },
+  {
+    "game": "hsr",
+    "name": "Fate Contract: Renewal — free Gilgamesh or Archer",
+    "type": "event",
+    "start": "2026-07-24 12:00",
+    "end": "2026-11-11 06:00",
+    "endTimezone": "UTC+8",
+    "notify": false,
+    "notes": "Claim Gilgamesh or Archer before Version 4.6 ends. Estimated dates.",
+    "sourceKey": "seed:hsr:4.4-free-servant"
+  },
+  {
+    "game": "hsr",
+    "name": "Planar Fissure — 2× Planar Ornaments",
+    "type": "event",
+    "start": "2026-07-27 04:00",
+    "end": "2026-08-10 03:59",
+    "dailyTouch": true,
+    "notes": "Double ornament drops — plan Trailblaze Power.",
+    "sourceKey": "seed:hsr:4.4-planar-fissure"
+  },
+  {
+    "game": "hsr",
+    "name": "Pure Fiction",
+    "type": "cycle",
+    "start": "2026-08-03 04:00",
+    "end": "2026-09-14 03:59",
+    "notes": "Fabricated Business.",
+    "sourceKey": "seed:hsr:pf-4.4"
+  },
+  {
+    "game": "hsr",
+    "name": "Phase 2 Light Cone Warps — Golden Blood · Cast to Flames · Unjust Destiny",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-08-05 12:00",
+    "end": "2026-08-25 15:00",
+    "sourceKey": "seed:hsr:4.4-p2-lc"
+  },
+  {
+    "game": "hsr",
+    "name": "Cerydra · Anaxa · Aventurine reruns (phase 2)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-08-05 12:00",
+    "end": "2026-08-25 15:00",
+    "sourceKey": "seed:hsr:4.4-p2-reruns"
+  },
+  {
+    "game": "hsr",
+    "name": "Garden of Plenty — 2× Calyx rewards",
+    "type": "event",
+    "start": "2026-08-14 04:00",
+    "end": "2026-08-24 03:59",
+    "dailyTouch": true,
+    "notes": "Double Calyx drops.",
+    "sourceKey": "seed:hsr:4.4-garden"
+  },
+  {
+    "game": "hsr",
+    "name": "Memory of Chaos",
+    "type": "cycle",
+    "start": "2026-08-17 04:00",
+    "end": "2026-09-27 23:00",
+    "notes": "Stormcleanse.",
+    "sourceKey": "seed:hsr:moc-4.5"
+  },
+  {
+    "game": "hsr",
+    "name": "v4.5 update maintenance",
+    "type": "maintenance",
+    "start": "2026-08-25 23:00",
+    "end": "2026-08-26 04:00",
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:hsr:4.5-maint"
+  },
+  {
+    "game": "hsr",
+    "name": "Nameless Honor — Battle Pass",
+    "type": "event",
+    "start": "2026-08-26 03:00",
+    "end": "2026-09-27 19:59",
+    "timezone": "UTC",
+    "notes": "Purchases close one hour before rewards.",
+    "sourceKey": "hsr:1361"
+  },
+  {
+    "game": "hsr",
+    "name": "4.5 Gift of Odyssey — 10 free pulls",
+    "type": "event",
+    "start": "2026-08-26 04:00",
+    "end": "2026-09-27 23:00",
+    "dailyTouch": true,
+    "notes": "Log in on 7 days to claim ten pulls.",
+    "sourceKey": "seed:hsr:4.5-login"
+  },
+  {
+    "game": "hsr",
+    "name": "Overdrive: Whirlwind Grand Prix (flagship)",
+    "type": "event",
+    "start": "2026-08-26 04:00",
+    "end": "2026-09-27 20:59",
+    "notes": "",
+    "sourceKey": "seed:hsr:4.5-overdrive"
+  },
+  {
+    "game": "hsr",
+    "name": "Rise and Sing · Long May Rainbows Adorn the Sky — phase 1 Light Cone Warps",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-08-26 04:00",
+    "end": "2026-09-12 11:59",
+    "notes": "Brilliant Fixation: Rise and Sing; Bygone Reminiscence: Long May Rainbows Adorn the Sky.",
+    "sourceKey": "seed:hsr:4.5-p1-lc"
+  },
+  {
+    "game": "hsr",
+    "name": "Robin • Summeretto · Hyacine rerun (phase 1)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-08-26 04:00",
+    "end": "2026-09-12 11:59",
+    "notes": "Summer Chorus and A Rainbow onto Twilight.",
+    "sourceKey": "seed:hsr:4.5-p1-robin"
+  },
+  {
+    "game": "hsr",
+    "name": "Anomaly Arbitration",
+    "type": "cycle",
+    "start": "2026-08-26 04:00",
+    "end": "2026-09-27 23:00",
+    "notify": false,
+    "notes": "Return of the Legion; refreshes with the version update. Estimated dates.",
+    "sourceKey": "seed:hsr:aa-4.5"
+  },
+  {
+    "game": "hsr",
+    "name": "Apocalyptic Shadow",
+    "type": "cycle",
+    "start": "2026-08-31 04:00",
+    "end": "2026-10-05 03:59",
+    "notes": "Celestial Lupine; five-week rotation.",
+    "sourceKey": "seed:hsr:as-4.5"
+  },
+  {
+    "game": "hsr",
+    "name": "Planar Fissure",
+    "type": "event",
+    "start": "2026-09-07 04:00",
+    "end": "2026-09-21 03:59",
+    "notes": "Double Planar Ornament drops.",
+    "sourceKey": "hsr:1391"
+  },
+  {
+    "game": "hsr",
+    "name": "Minuscule Great Adventure",
+    "type": "event",
+    "start": "2026-09-12 12:00",
+    "end": "2026-09-27 20:59",
+    "notes": "Opens with phase 2.",
+    "sourceKey": "seed:hsr:4.5-minuscule"
+  },
+  {
+    "game": "hsr",
+    "name": "Aventurine • Waveflair · Ashveil rerun (phase 2)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-09-12 12:00",
+    "end": "2026-09-28 03:59",
+    "notify": false,
+    "notes": "Finish pulls before maintenance. Estimated dates.",
+    "sourceKey": "seed:hsr:4.5-p2-aventurine"
+  },
+  {
+    "game": "hsr",
+    "name": "Summer Rides the Surf · The Finale of a Lie — phase 2 Light Cone Warps",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-09-12 12:00",
+    "end": "2026-09-28 03:59",
+    "notify": false,
+    "notes": "Finish pulls before maintenance. Estimated dates.",
+    "sourceKey": "seed:hsr:4.5-p2-lc"
+  },
+  {
+    "game": "hsr",
+    "name": "Pure Fiction",
+    "type": "cycle",
+    "start": "2026-09-14 04:00",
+    "end": "2026-10-19 03:59",
+    "notes": "Domain Genesis; five-week rotation.",
+    "sourceKey": "seed:hsr:pf-4.5"
+  },
+  {
+    "game": "hsr",
+    "name": "Realm of the Strange",
+    "type": "event",
+    "start": "2026-09-19 04:00",
+    "end": "2026-09-28 03:59",
+    "endTimezone": "UTC+8",
+    "notes": "Double Cavern Relic drops.",
+    "sourceKey": "hsr:1392"
+  },
+  {
+    "game": "hsr",
+    "name": "HSR 4.6 Special Program",
+    "type": "livestream",
+    "start": "2026-09-20 11:30",
+    "end": "2026-09-20 12:30",
+    "timezone": "UTC",
+    "notes": "Estimated window. Recap and codes are in Livestreams.",
+    "sourceKey": "seed:hsr:4.6-livestream"
+  },
+  {
+    "game": "hsr",
+    "name": "Anomaly Arbitration",
+    "type": "cycle",
+    "start": "2026-09-28 04:00",
+    "end": "2026-11-10 23:00",
+    "notify": false,
+    "notes": "Return to Roots; refreshes with the version update. Estimated dates.",
+    "sourceKey": "seed:hsr:aa-4.6"
+  },
+  {
+    "game": "hsr",
+    "name": "v4.6 update maintenance",
+    "type": "maintenance",
+    "start": "2026-09-28 06:00",
+    "end": "2026-09-28 11:00",
+    "timezone": "UTC+8",
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:hsr:4.6-maint"
+  },
+  {
+    "game": "hsr",
+    "name": "Love, Ghosts & Robots",
+    "type": "event",
+    "start": "2026-09-28 11:00",
+    "end": "2026-11-11 03:59",
+    "startTimezone": "UTC+8",
+    "endTimezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "hsr:1364"
+  },
+  {
+    "game": "hsr",
+    "name": "Wishpower UP! Down with Voracity!",
+    "type": "event",
+    "start": "2026-09-28 11:00",
+    "end": "2026-11-11 06:00",
+    "startTimezone": "UTC+8",
+    "endTimezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "hsr:1389"
+  },
+  {
+    "game": "hsr",
+    "name": "Nameless Honor — Battle Pass",
+    "type": "event",
+    "start": "2026-09-28 11:00",
+    "end": "2026-11-09 03:59",
+    "startTimezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "hsr:1416"
+  },
+  {
+    "game": "hsr",
+    "name": "Astral Imagea Park: Astral Trendible",
+    "type": "event",
+    "start": "2026-09-28 11:00",
+    "end": "2026-11-11 06:00",
+    "startTimezone": "UTC+8",
+    "endTimezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:hsr:4.6-astral-trendible"
+  },
+  {
+    "game": "hsr",
+    "name": "Brilliant Fixation — Colors for Tomorrow",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-09-28 11:00",
+    "end": "2026-11-10 15:00",
+    "startTimezone": "UTC+8",
+    "notes": "Pearl and her Light Cone run longer than the Evanescia rerun.",
+    "sourceKey": "seed:hsr:4.6-colors-for-tomorrow"
+  },
+  {
+    "game": "hsr",
+    "name": "The Demoiselle in Charge — Evanescia",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-09-28 11:00",
+    "end": "2026-10-21 11:59",
+    "startTimezone": "UTC+8",
+    "notes": "The Evanescia rerun ends before Pearl and her Light Cone.",
+    "sourceKey": "seed:hsr:4.6-evanescia"
+  },
+  {
+    "game": "hsr",
+    "name": "Brilliant Fixation — Until the Flowers Bloom Again",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-09-28 11:00",
+    "end": "2026-10-21 11:59",
+    "startTimezone": "UTC+8",
+    "notes": "The Evanescia rerun ends before Pearl and her Light Cone.",
+    "sourceKey": "seed:hsr:4.6-flowers-bloom"
+  },
+  {
+    "game": "hsr",
+    "name": "Astral Imagea Park: Park Souvenir — free vouchers",
+    "type": "event",
+    "start": "2026-09-28 11:00",
+    "end": "2026-11-11 06:00",
+    "startTimezone": "UTC+8",
+    "endTimezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:hsr:4.6-park-souvenir"
+  },
+  {
+    "game": "hsr",
+    "name": "An Ocean in a Pearl — Pearl",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-09-28 11:00",
+    "end": "2026-11-10 15:00",
+    "startTimezone": "UTC+8",
+    "notes": "Pearl and her Light Cone run longer than the Evanescia rerun.",
+    "sourceKey": "seed:hsr:4.6-pearl"
+  },
+  {
+    "game": "hsr",
+    "name": "Memory of Chaos",
+    "type": "cycle",
+    "start": "2026-09-28 11:00",
+    "end": "2026-11-02 03:59",
+    "startTimezone": "UTC+8",
+    "notes": "Crossing the Afterlife.",
+    "sourceKey": "seed:hsr:moc-4.6"
+  },
+  {
+    "game": "hsr",
+    "name": "Apocalyptic Shadow",
+    "type": "cycle",
+    "start": "2026-10-05 04:00",
+    "end": "2026-11-16 03:59",
+    "notes": "Dominance of Oblivion.",
+    "sourceKey": "seed:hsr:as-2026-10-05"
+  },
+  {
+    "game": "hsr",
+    "name": "Planar Fissure",
+    "type": "event",
+    "start": "2026-10-12 04:00",
+    "end": "2026-10-25 03:59",
+    "notes": "Double Planar Ornament drops.",
+    "sourceKey": "hsr:1423"
+  },
+  {
+    "game": "hsr",
+    "name": "Pure Fiction",
+    "type": "cycle",
+    "start": "2026-10-19 04:00",
+    "end": "2026-11-30 03:59",
+    "notes": "Imagined Words.",
+    "sourceKey": "seed:hsr:pf-2026-10-19"
+  },
+  {
+    "game": "hsr",
+    "name": "Interastral Peace Gala: One Take",
+    "type": "event",
+    "start": "2026-10-21 12:00",
+    "end": "2026-11-11 03:59",
+    "endTimezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:hsr:4.6-interastral-gala"
+  },
+  {
+    "game": "hsr",
+    "name": "Now I Am Become Blade — Mortenax Blade rerun",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-10-21 12:00",
+    "end": "2026-11-10 15:00",
+    "notes": "",
+    "sourceKey": "seed:hsr:4.6-mortenax-blade"
+  },
+  {
+    "game": "hsr",
+    "name": "Bygone Reminiscence — Reforged in Hellfire",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-10-21 12:00",
+    "end": "2026-11-10 15:00",
+    "notes": "",
+    "sourceKey": "seed:hsr:4.6-reforged-in-hellfire"
+  },
+  {
+    "game": "hsr",
+    "name": "Memory of Chaos",
+    "type": "cycle",
+    "start": "2026-11-02 04:00",
+    "end": "2026-12-14 03:59",
+    "notes": "Survival of the Fittest.",
+    "sourceKey": "seed:hsr:moc-2026-11-02"
+  }
+]

@@ -106,8 +106,8 @@ test('version history compares free pulls across games and lists every version w
   await expect(page.getByRole('img', { name: 'Primogems per Genshin Impact version' })).toBeVisible();
   // Hover, not focus: on a small screen focus scrolls the page under the resting pointer,
   // which then hovers a different bar.
-  await page.getByRole('button', { name: /^5\.0: 17,660 Primogems$/ }).hover();
-  await expect(page.getByRole('status').filter({ hasText: '17,660 Primogems' })).toBeVisible();
+  await page.getByRole('button', { name: /^5\.0: 19,940 Primogems$/ }).hover();
+  await expect(page.getByRole('status').filter({ hasText: '19,940 Primogems' })).toBeVisible();
 
   await page
     .getByRole('region', { name: /Genshin Impact · Primogems per version/ })

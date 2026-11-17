@@ -1,0 +1,387 @@
+[
+  {
+    "game": "nte",
+    "name": "Circle Bounty",
+    "type": "cycle",
+    "start": "2026-08-19 04:00",
+    "end": "2026-09-29 16:59",
+    "notes": "",
+    "sourceKey": "seed:nte:1.3-circle-bounty"
+  },
+  {
+    "game": "nte",
+    "name": "Hunter's Crucible",
+    "type": "event",
+    "start": "2026-08-19 04:00",
+    "end": "2026-09-29 22:59",
+    "notes": "",
+    "sourceKey": "seed:nte:1.3-hunters-crucible"
+  },
+  {
+    "game": "nte",
+    "name": "1.3 login — 10 Solid Dice",
+    "type": "event",
+    "start": "2026-08-19 04:00",
+    "end": "2026-09-29 22:59",
+    "dailyTouch": true,
+    "notes": "",
+    "sourceKey": "seed:nte:1.3-login"
+  },
+  {
+    "game": "nte",
+    "name": "Surf Breaker",
+    "type": "event",
+    "start": "2026-08-19 04:00",
+    "end": "2026-09-29 22:59",
+    "notes": "",
+    "sourceKey": "seed:nte:1.3-surf-breaker"
+  },
+  {
+    "game": "nte",
+    "name": "Volley Star",
+    "type": "event",
+    "start": "2026-08-19 04:00",
+    "end": "2026-09-29 22:59",
+    "notes": "",
+    "sourceKey": "seed:nte:1.3-volley-star"
+  },
+  {
+    "game": "nte",
+    "name": "Water Racing",
+    "type": "event",
+    "start": "2026-08-19 04:00",
+    "end": "2026-09-29 22:59",
+    "notify": false,
+    "sourceKey": "seed:nte:1.3-water-racing"
+  },
+  {
+    "game": "nte",
+    "name": "Shipwreck Salvage",
+    "type": "event",
+    "start": "2026-08-28 03:00",
+    "end": "2026-09-29 22:59",
+    "notes": "",
+    "sourceKey": "seed:nte:1.3-shipwreck"
+  },
+  {
+    "game": "nte",
+    "name": "Misty Tipsy Style — Hotori rerun (phase 2)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-09-09 11:00",
+    "end": "2026-09-30 05:59",
+    "timezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:nte:1.3-hotori"
+  },
+  {
+    "game": "nte",
+    "name": "Surfing All Channels — Linko (phase 2)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-09-09 11:00",
+    "end": "2026-09-30 05:59",
+    "timezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:nte:1.3-linko"
+  },
+  {
+    "game": "nte",
+    "name": "Bright Moon Special — Marching Beyond Time",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-09-09 11:00",
+    "end": "2026-09-30 05:59",
+    "timezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:nte:1.3-marching"
+  },
+  {
+    "game": "nte",
+    "name": "Runaway Echoes",
+    "type": "event",
+    "start": "2026-09-09 11:00",
+    "end": "2026-09-30 05:59",
+    "timezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:nte:1.3-runaway-echoes"
+  },
+  {
+    "game": "nte",
+    "name": "Soundscape Special — Voice of the Voyager",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-09-09 11:00",
+    "end": "2026-09-30 05:59",
+    "timezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:nte:1.3-voyager"
+  },
+  {
+    "game": "nte",
+    "name": "Pixel Surge",
+    "type": "event",
+    "start": "2026-09-14 05:00",
+    "end": "2026-09-21 04:59",
+    "dailyTouch": true,
+    "notes": "",
+    "sourceKey": "seed:nte:1.3-pixelsurge"
+  },
+  {
+    "game": "nte",
+    "name": "Breezy Tour",
+    "type": "event",
+    "start": "2026-09-17 10:00",
+    "end": "2026-09-30 05:59",
+    "timezone": "UTC+8",
+    "notes": "Claim limited rewards before this closes; Cycling Invitations remain available.",
+    "sourceKey": "seed:nte:1.3-breezy-tour"
+  },
+  {
+    "game": "nte",
+    "name": "Fons Rush",
+    "type": "event",
+    "start": "2026-09-21 05:00",
+    "end": "2026-09-28 04:59",
+    "dailyTouch": true,
+    "notes": "",
+    "sourceKey": "seed:nte:1.3-fonsrush"
+  },
+  {
+    "game": "nte",
+    "name": "v1.4 update maintenance",
+    "type": "maintenance",
+    "start": "2026-09-30 06:00",
+    "end": "2026-09-30 11:00",
+    "timezone": "UTC+8",
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:nte:1.4-maint"
+  },
+  {
+    "game": "nte",
+    "name": "Foretold Finale — Blackbird",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-09-30 11:00",
+    "end": "2026-10-21 05:59",
+    "timezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:nte:1.4-blackbird"
+  },
+  {
+    "game": "nte",
+    "name": "Blackbird’s Invitation — web event",
+    "type": "event",
+    "start": "2026-09-30 11:00",
+    "end": "2026-11-11 05:59",
+    "timezone": "UTC+8",
+    "notes": "Invite-link web event.",
+    "sourceKey": "seed:nte:1.4-blackbird-invitation"
+  },
+  {
+    "game": "nte",
+    "name": "Born to Race — mystery boxes",
+    "type": "banner",
+    "bannerKind": "other",
+    "start": "2026-09-30 11:00",
+    "end": "2026-11-11 05:59",
+    "timezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:nte:1.4-born-to-race"
+  },
+  {
+    "game": "nte",
+    "name": "Circle Bounty",
+    "type": "event",
+    "start": "2026-09-30 11:00",
+    "end": "2026-11-10 23:59",
+    "timezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:nte:1.4-circle-bounty"
+  },
+  {
+    "game": "nte",
+    "name": "Circle Gifts — login rewards",
+    "type": "event",
+    "start": "2026-09-30 11:00",
+    "end": "2026-11-11 05:59",
+    "timezone": "UTC+8",
+    "dailyTouch": true,
+    "notes": "",
+    "sourceKey": "seed:nte:1.4-circle-gifts"
+  },
+  {
+    "game": "nte",
+    "name": "Everdriving — mystery boxes",
+    "type": "banner",
+    "bannerKind": "other",
+    "start": "2026-09-30 11:00",
+    "end": "2026-11-11 05:59",
+    "timezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:nte:1.4-everdriving"
+  },
+  {
+    "game": "nte",
+    "name": "Fading Reverie — Lacrimosa",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-09-30 11:00",
+    "end": "2026-10-21 05:59",
+    "timezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:nte:1.4-lacrimosa"
+  },
+  {
+    "game": "nte",
+    "name": "The Last Rose — Nocturne Special",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-09-30 11:00",
+    "end": "2026-10-21 05:59",
+    "timezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:nte:1.4-nocturne"
+  },
+  {
+    "game": "nte",
+    "name": "Pukaland Travelogue",
+    "type": "event",
+    "start": "2026-09-30 11:00",
+    "end": "2026-11-11 05:59",
+    "timezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:nte:1.4-pukaland-travelogue"
+  },
+  {
+    "game": "nte",
+    "name": "Crime and Punishment — Roostfeather Special",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-09-30 11:00",
+    "end": "2026-10-21 05:59",
+    "timezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:nte:1.4-roostfeather"
+  },
+  {
+    "game": "nte",
+    "name": "Terminal Depths",
+    "type": "cycle",
+    "start": "2026-09-30 11:00",
+    "end": "2026-11-11 05:59",
+    "timezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:nte:1.4-terminal-depths"
+  },
+  {
+    "game": "nte",
+    "name": "Stamina Recharge",
+    "type": "event",
+    "start": "2026-10-05 05:00",
+    "end": "2026-10-19 04:59",
+    "notes": "City Stamina is consumed at twice the normal efficiency.",
+    "sourceKey": "seed:nte:1.4-stamina-recharge"
+  },
+  {
+    "game": "nte",
+    "name": "Beyond the Rails: Sunset Circle — time TBC",
+    "type": "cycle",
+    "start": "2026-10-08 00:00",
+    "end": "2026-10-22 23:59",
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:nte:1.4-sunset-circle"
+  },
+  {
+    "game": "nte",
+    "name": "Coal Lump’s Treasure",
+    "type": "event",
+    "start": "2026-10-08 10:00",
+    "end": "2026-11-11 05:59",
+    "timezone": "UTC+8",
+    "notes": "",
+    "sourceKey": "seed:nte:1.4-coal-lump"
+  },
+  {
+    "game": "nte",
+    "name": "Pixel Surge",
+    "type": "event",
+    "start": "2026-10-19 05:00",
+    "end": "2026-10-26 04:59",
+    "dailyTouch": true,
+    "notes": "Double rewards for up to 120 Character Pixels daily; unused allowance carries over, up to 840 total.",
+    "sourceKey": "seed:nte:1.4-pixel-surge"
+  },
+  {
+    "game": "nte",
+    "name": "October 21 update maintenance",
+    "type": "maintenance",
+    "start": "2026-10-21 06:00",
+    "end": "2026-10-21 11:00",
+    "timezone": "UTC+8",
+    "notes": "300 Annulith compensation.",
+    "sourceKey": "seed:nte:1.4-oct21-maint"
+  },
+  {
+    "game": "nte",
+    "name": "Dazzling Star — Akane Rin",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-10-21 11:00",
+    "end": "2026-11-11 05:59",
+    "timezone": "UTC+8",
+    "notes": "New limited S-class.",
+    "sourceKey": "seed:nte:1.4-akane-rin"
+  },
+  {
+    "game": "nte",
+    "name": "Far Side of the Moon — Celestial Special",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-10-21 11:00",
+    "end": "2026-11-11 05:59",
+    "timezone": "UTC+8",
+    "notes": "New limited S-class Arc.",
+    "sourceKey": "seed:nte:1.4-far-side-of-the-moon"
+  },
+  {
+    "game": "nte",
+    "name": "Snap! Golden Crackshot",
+    "type": "event",
+    "start": "2026-10-21 11:00",
+    "end": "2026-11-11 05:59",
+    "timezone": "UTC+8",
+    "notes": "Trade Caramel Tumbleweed for Annulith, Fons and Floe Cinema Tickets.",
+    "sourceKey": "seed:nte:1.4-golden-crackshot"
+  },
+  {
+    "game": "nte",
+    "name": "Gold Clash",
+    "type": "event",
+    "start": "2026-10-26 05:00",
+    "end": "2026-11-09 04:59",
+    "notes": "Double Fons in Pink Paws Heist.",
+    "sourceKey": "seed:nte:1.4-gold-crash"
+  },
+  {
+    "game": "nte",
+    "name": "Puka Lucky Flip",
+    "type": "event",
+    "start": "2026-10-29 05:00",
+    "end": "2026-11-11 05:59",
+    "dailyTouch": true,
+    "notes": "Daily quests earn card flips for Annulith and Fabricated Dice.",
+    "sourceKey": "seed:nte:1.4-puka-lucky-flip"
+  },
+  {
+    "game": "nte",
+    "name": "Beyond the Rails",
+    "type": "cycle",
+    "start": "2026-11-05 05:00",
+    "end": "2026-11-19 04:59",
+    "notes": "Special Route: Glinting Circle. Notices tag these times UTC+8 but they sit on the local 05:00 reset, so they are treated as local (see feed-notes).",
+    "sourceKey": "seed:nte:1.5-rails-glinting"
+  }
+]

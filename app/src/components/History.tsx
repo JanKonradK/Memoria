@@ -30,13 +30,17 @@ interface GameMeta {
   rows: VersionRow[];
 }
 
+/** Each game's archived events, one chunk per game, so no single file outgrows the bundle budget. */
+const archives = import.meta.glob<{ default: unknown[] }>('../data/feed/archive/*.json');
+
 export function useHistory(): { history: VersionHistory | null; error: string } {
   const [result, setResult] = useState<{ history: VersionHistory | null; error: string }>({ history: null, error: '' });
   useEffect(() => {
     let live = true;
-    import('../data/feed/history.json')
-      .then((module) => {
-        const parsed = VersionHistorySchema.safeParse(module.default);
+    Promise.all([import('../data/feed/history.json'), ...Object.values(archives).map((load) => load())])
+      .then(([module, ...games]) => {
+        const archive = games.flatMap((game) => (Array.isArray(game.default) ? game.default : []));
+        const parsed = VersionHistorySchema.safeParse({ ...module.default, archive });
         if (live)
           setResult(
             parsed.success

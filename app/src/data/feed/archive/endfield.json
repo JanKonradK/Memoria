@@ -1,0 +1,256 @@
+[
+  {
+    "game": "endfield",
+    "name": "Combat Drills: Typhoeus",
+    "type": "event",
+    "start": "2026-09-02 04:00",
+    "end": "2026-09-30 11:59",
+    "startTimezone": "UTC",
+    "notes": "Trial runs throughout the Winter Hunt banner.",
+    "sourceKey": "seed:endfield:1.5-drills-typhoeus"
+  },
+  {
+    "game": "endfield",
+    "name": "Fletched Irontip — sign-in",
+    "type": "event",
+    "start": "2026-09-02 04:00",
+    "end": "2026-09-30 11:59",
+    "startTimezone": "UTC",
+    "dailyTouch": true,
+    "notes": "Sign-in rewards available throughout the Winter Hunt banner.",
+    "sourceKey": "seed:endfield:1.5-fletched-irontip"
+  },
+  {
+    "game": "endfield",
+    "name": "Snow Over Deep Woods",
+    "type": "event",
+    "start": "2026-09-02 04:00",
+    "end": "2026-09-30 12:00",
+    "startTimezone": "UTC",
+    "notes": "",
+    "sourceKey": "seed:endfield:1.5-snow-over-deep-woods"
+  },
+  {
+    "game": "endfield",
+    "name": "Winter Hunt — Typhoeus",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-09-02 04:00",
+    "end": "2026-09-30 11:59",
+    "startTimezone": "UTC",
+    "notes": "",
+    "sourceKey": "seed:endfield:1.5-typhoeus"
+  },
+  {
+    "game": "endfield",
+    "name": "Echoes of War",
+    "type": "cycle",
+    "start": "2026-09-02 04:00",
+    "end": "2026-09-24 11:59",
+    "startTimezone": "UTC",
+    "notes": "Season of Virtuality; three cycles.",
+    "sourceKey": "seed:endfield:eow-1.5-1"
+  },
+  {
+    "game": "endfield",
+    "name": "Trial of the Bow",
+    "type": "event",
+    "start": "2026-09-09 12:00",
+    "end": "2026-10-14 17:00",
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:endfield:1.5-trial-of-the-bow"
+  },
+  {
+    "game": "endfield",
+    "name": "AIC Support: Chubby Lung Attacks",
+    "type": "event",
+    "start": "2026-09-16 12:00",
+    "end": "2026-09-30 16:00",
+    "notes": "Goods exchange stays open until October 7 at 04:00 after production ends.",
+    "sourceKey": "seed:endfield:1.5-aic-chubby-lung"
+  },
+  {
+    "game": "endfield",
+    "name": "Chubby Lung Attacks — goods exchange",
+    "type": "event",
+    "start": "2026-09-16 12:00",
+    "end": "2026-10-07 04:00",
+    "notes": "Exchange goods before this closes; production ends earlier.",
+    "sourceKey": "seed:endfield:1.5-aic-exchange"
+  },
+  {
+    "game": "endfield",
+    "name": "Sanity Supply (first window)",
+    "type": "event",
+    "start": "2026-09-17 04:00",
+    "end": "2026-09-24 04:00",
+    "dailyTouch": true,
+    "notes": "",
+    "sourceKey": "seed:endfield:1.5-sanity-1"
+  },
+  {
+    "game": "endfield",
+    "name": "Echoing Bell of an Old City",
+    "type": "event",
+    "start": "2026-09-24 12:00",
+    "end": "2026-10-14 17:00",
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:endfield:1.5-echoing-bell"
+  },
+  {
+    "game": "endfield",
+    "name": "Purry Big Feline! RAWR! — free Purrchena",
+    "type": "event",
+    "start": "2026-09-24 12:00",
+    "end": "2026-10-14 17:00",
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:endfield:1.5-purrchena"
+  },
+  {
+    "game": "endfield",
+    "name": "Tag Artist Issue — Artzy Tyrannical rerun (phase 2)",
+    "type": "banner",
+    "bannerKind": "weapon",
+    "start": "2026-09-24 12:00",
+    "end": "2026-10-14 17:00",
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:endfield:1.5-tag-artist"
+  },
+  {
+    "game": "endfield",
+    "name": "Resplendent Spectrum — Yvonne rerun (phase 2)",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-09-24 12:00",
+    "end": "2026-10-14 17:00",
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:endfield:1.5-yvonne"
+  },
+  {
+    "game": "endfield",
+    "name": "Echoes of War",
+    "type": "cycle",
+    "start": "2026-09-24 12:00",
+    "end": "2026-10-14 17:00",
+    "notify": false,
+    "notes": "Season of Illusion; three cycles. Estimated dates.",
+    "sourceKey": "seed:endfield:eow-1.5-4"
+  },
+  {
+    "game": "endfield",
+    "name": "Ridgeline Flows of Autumn — sign-in",
+    "type": "event",
+    "start": "2026-10-01 12:00",
+    "end": "2026-10-14 17:00",
+    "dailyTouch": true,
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:endfield:1.5-ridgeline"
+  },
+  {
+    "game": "endfield",
+    "name": "Runners’ Steeplechase",
+    "type": "event",
+    "start": "2026-10-01 12:00",
+    "end": "2026-10-14 17:00",
+    "dailyTouch": false,
+    "notify": false,
+    "notes": "Estimated dates.",
+    "sourceKey": "seed:endfield:1.5-steeplechase"
+  },
+  {
+    "game": "endfield",
+    "name": "Monumental Etching: Shadow Marked",
+    "type": "event",
+    "start": "2026-10-05 12:00",
+    "end": "2026-10-19 04:00",
+    "notes": "",
+    "sourceKey": "seed:endfield:1.5-monument-shadow"
+  },
+  {
+    "game": "endfield",
+    "name": "Sanity Supply (second window)",
+    "type": "event",
+    "start": "2026-10-08 04:00",
+    "end": "2026-10-14 17:00",
+    "dailyTouch": true,
+    "notify": false,
+    "notes": "Asia closes October 15 at 04:00; Americas and Europe use the displayed deadline. Estimated dates.",
+    "sourceKey": "seed:endfield:1.5-sanity-2"
+  },
+  {
+    "game": "endfield",
+    "name": "v1.6 \"Sanctuary of Ink\" update maintenance",
+    "type": "maintenance",
+    "start": "2026-10-14 17:00",
+    "end": "2026-10-14 23:00",
+    "notes": "",
+    "sourceKey": "seed:endfield:1.6-maint"
+  },
+  {
+    "game": "endfield",
+    "name": "Yuanyuan’s Blazing Stoves",
+    "type": "event",
+    "start": "2026-10-14 23:00",
+    "end": "2026-11-24 17:00",
+    "reward": 1000,
+    "notes": "Session Tasks close with the version; Inn Milestone rewards stay claimable.",
+    "sourceKey": "seed:endfield:1.6-blazing-stoves"
+  },
+  {
+    "game": "endfield",
+    "name": "1.6 compensation mails — claim",
+    "type": "event",
+    "start": "2026-10-14 23:00",
+    "end": "2026-11-24 17:00",
+    "reward": 1800,
+    "notes": "Two mails (900 + 900) expire at the next version maintenance.",
+    "sourceKey": "seed:endfield:1.6-compensation"
+  },
+  {
+    "game": "endfield",
+    "name": "All the Inky Hues",
+    "type": "event",
+    "start": "2026-10-14 23:00",
+    "end": "2026-11-05 12:00",
+    "startTimezone": "UTC-5",
+    "notes": "1,200 Oroberyl.",
+    "sourceKey": "seed:endfield:1.6-inky-hues"
+  },
+  {
+    "game": "endfield",
+    "name": "Protocol Pass: Ink Scroll — season end",
+    "type": "event",
+    "start": "2026-10-14 23:00",
+    "end": "2026-11-24 17:00",
+    "notes": "Claim pass rewards before the version 1.7 maintenance.",
+    "sourceKey": "seed:endfield:1.6-protocol-pass"
+  },
+  {
+    "game": "endfield",
+    "name": "Rejuvenation — Si",
+    "type": "banner",
+    "bannerKind": "character",
+    "start": "2026-10-14 23:00",
+    "end": "2026-11-05 11:59",
+    "startTimezone": "UTC-5",
+    "notes": "",
+    "sourceKey": "seed:endfield:1.6-si"
+  },
+  {
+    "game": "endfield",
+    "name": "Spirit’s Restoration — sign-in",
+    "type": "event",
+    "start": "2026-10-14 23:00",
+    "end": "2026-11-05 11:59",
+    "startTimezone": "UTC-5",
+    "dailyTouch": true,
+    "notes": "Five Spirit’s Restoration HH Permits over seven sign-ins.",
+    "sourceKey": "seed:endfield:1.6-spirits-restoration"
+  }
+]
