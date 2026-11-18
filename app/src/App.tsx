@@ -76,7 +76,6 @@ const EventPeek = lazy(() => import('./components/EventPeek').then((module) => (
 const ReminderSheet = lazy(() =>
   import('./components/ReminderSheet').then((module) => ({ default: module.ReminderSheet })),
 );
-const CatchUpSheet = lazy(() => import('./components/CatchUp').then((module) => ({ default: module.CatchUpSheet })));
 
 type PagePosition = { page: number; board: number };
 
@@ -143,7 +142,6 @@ function AppSheets() {
           )}
           {sheet.kind === 'eventPeek' && <EventPeek key={`peek-${sheet.eventId}`} open eventId={sheet.eventId} />}
           {sheet.kind === 'reminder' && <ReminderSheet key="reminder" open />}
-          {sheet.kind === 'catchUp' && <CatchUpSheet key={`catch-up-${sheet.gameId}`} open gameId={sheet.gameId} />}
         </Suspense>
       )}
     </AnimatePresence>

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { emptyState, PRESETS } from '@memoria/shared';
 import { makeGame } from '../../shared/test/helpers';
-import { openSettings } from './support';
+import { openGame, openSettings } from './support';
 
 const hsr = PRESETS.find((preset) => preset.key === 'hsr')!;
 
@@ -42,7 +42,14 @@ async function loadGame(page: import('@playwright/test').Page, now: number) {
     .locator('input[type="file"]')
     .setInputFiles({ name: 'quests.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Quests', exact: true }).click();
+  await openQuests(page);
+}
+
+/** Quests is a tab of the game's own page. */
+async function openQuests(page: import('@playwright/test').Page) {
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
+  await openGame(page, hsr.name);
+  await page.getByRole('tab', { name: 'Quests', exact: true }).click();
 }
 
 test('quest parts tick done, then partly done, and the line shows its progress', async ({ page }) => {
@@ -51,7 +58,9 @@ test('quest parts tick done, then partly done, and the line shows its progress',
   await loadGame(page, now);
 
   const page_ = page.getByRole('region', { name: `${hsr.name} quests` });
-  await expect(page_.getByRole('heading', { name: hsr.name, level: 1 })).toBeVisible();
+  await expect(page_.getByRole('heading', { name: 'Story progress', level: 2 })).toBeVisible();
+  // The page bar names the game; the tab has no game picker.
+  await expect(page.getByRole('radiogroup', { name: 'Game' })).toHaveCount(0);
   // Events running now sit above the story, with their parts.
   await expect(page_.getByText('Fluffy Movie Night')).toBeVisible();
   await page_.getByRole('button', { name: 'One more part done for Fluffy Movie Night' }).click();
@@ -82,7 +91,7 @@ test('quest parts tick done, then partly done, and the line shows its progress',
     await flushPersist();
   });
   await page.reload();
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Quests', exact: true }).click();
+  await openQuests(page);
   await expect(
     page
       .locator('.quests-row')

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { emptyState, PRESETS } from '@memoria/shared';
 import { makeGame } from '../../shared/test/helpers';
-import { openSettings } from './support';
+import { openGame, openSettings } from './support';
 
 const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
 const DAY = 86_400_000;
@@ -42,7 +42,14 @@ async function loadGenshin(page: import('@playwright/test').Page, now: number) {
     .locator('input[type="file"]')
     .setInputFiles({ name: 'pulls.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Pulls', exact: true }).click();
+  await openPulls(page);
+}
+
+/** Pulls is a tab of the game's own page. */
+async function openPulls(page: import('@playwright/test').Page) {
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
+  await openGame(page, genshin.name);
+  await page.getByRole('tab', { name: 'Pulls', exact: true }).click();
 }
 
 test('saving for a banner shows pulls on hand and a forecast range from version history', async ({ page }, info) => {
@@ -50,7 +57,7 @@ test('saving for a banner shows pulls on hand and a forecast range from version 
   await page.clock.setFixedTime(new Date(now));
   await loadGenshin(page, now);
 
-  const card = page.getByRole('region', { name: genshin.name });
+  const card = page.getByRole('region', { name: genshin.name, exact: true });
   await card.getByLabel('Primogems').fill('8000');
   await card.getByLabel('Pull tickets').fill('12');
   await card.getByRole('button', { name: 'Save balance' }).click();
@@ -81,23 +88,24 @@ test('saving for a banner shows pulls on hand and a forecast range from version 
 
   // The plan is stored with the game, so it survives a reload.
   await page.reload();
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Pulls', exact: true }).click();
-  const reloaded = page.getByRole('region', { name: genshin.name });
+  await openPulls(page);
+  const reloaded = page.getByRole('region', { name: genshin.name, exact: true });
   await expect(reloaded.getByRole('list', { name: 'Goals' }).getByText('Columbina — Moonlit Requiem')).toBeVisible();
   // A banner with a goal is no longer offered as a new one.
   await expect(reloaded.locator('option', { hasText: 'Columbina' })).toHaveCount(0);
 });
 
-test('version history compares free pulls across games and lists every version with sources', async ({
+test('version history lists every version of the game with sources and compares it with others', async ({
   page,
 }, info) => {
   const now = Date.parse('2026-11-05T12:00:00Z');
   await page.clock.setFixedTime(new Date(now));
   await loadGenshin(page, now);
-  await page.getByRole('radio', { name: 'Version history' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Version history', level: 1 })).toBeVisible();
-  // Only the tracked game is selected at first.
+  // The game's own history comes first, under its savings and pity.
+  await expect(page.getByRole('heading', { name: 'Version history', level: 2 })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Primogems per Genshin Impact version' })).toBeVisible();
+  // Only the tracked game is selected for comparison at first.
   await expect(page.getByRole('button', { name: 'Genshin', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('button', { name: 'HSR', exact: true })).toHaveAttribute('aria-pressed', 'false');
   await page.getByRole('button', { name: 'ZZZ', exact: true }).click();
@@ -128,7 +136,7 @@ test('an out-of-range number says so instead of failing silently', async ({ page
   const now = Date.parse('2026-11-05T12:00:00Z');
   await page.clock.setFixedTime(new Date(now));
   await loadGenshin(page, now);
-  const card = page.getByRole('region', { name: genshin.name });
+  const card = page.getByRole('region', { name: genshin.name, exact: true });
   const amount = card.getByLabel('Primogems');
   // Skip the browser's own range check to reach the app's.
   await amount.evaluate((input) => input.removeAttribute('max'));
@@ -143,7 +151,7 @@ test('the pity tracker counts pulls, records a lost 50/50 and feeds the savings 
   await page.clock.setFixedTime(new Date(now));
   await loadGenshin(page, now);
 
-  const card = page.getByRole('region', { name: genshin.name });
+  const card = page.getByRole('region', { name: genshin.name, exact: true });
   const track = card.getByRole('group', { name: 'Character event' });
   await track.getByRole('button', { name: 'Add 10 pulls to Character event' }).click();
   await track.getByRole('button', { name: 'Add 10 pulls to Character event' }).click();
@@ -176,7 +184,7 @@ test('the pity tracker counts pulls, records a lost 50/50 and feeds the savings 
 
   // Stored with the game, so it survives a reload.
   await page.reload();
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Pulls', exact: true }).click();
+  await openPulls(page);
   await expect(
     card.getByRole('group', { name: 'Character event' }).getByRole('meter', { name: 'Character event pity' }),
   ).toHaveAttribute('aria-valuenow', '3');

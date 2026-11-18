@@ -14,10 +14,9 @@ test.beforeEach(async ({ page }, info) => {
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
-test("a game's page keeps its actions in its heading", async ({ page }) => {
+test("a game's page keeps its actions in its bar and its tracking in columns", async ({ page }) => {
   await openGame(page, 'Genshin Impact');
-  // The actions are a plain labelled div rather than a landmark, so they are found by their label.
-  const bar = page.getByLabel('Genshin Impact tracking controls', { exact: true });
+  const bar = page.locator('.game-bar');
   await expect(bar).toBeVisible();
   await expect(bar).toBeInViewport();
   await expect(bar.getByRole('button', { name: 'Edit Genshin Impact', exact: true })).toBeVisible();
@@ -30,12 +29,18 @@ test("a game's page keeps its actions in its heading", async ({ page }) => {
   expect(barBox!.y + barBox!.height).toBeLessThanOrEqual(resourcesBox!.y);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
-  const desktop = (page.viewportSize()?.width ?? 0) >= 900;
-  if (desktop) {
-    // Tasks sit in the same column as the resources, below them.
-    const tasksBox = await page.locator('[data-section="tasks"]').first().boundingBox();
-    expect(Math.abs(tasksBox!.x - resourcesBox!.x)).toBeLessThanOrEqual(2);
+  const width = page.viewportSize()?.width ?? 0;
+  const tasksBox = await page.locator('[data-section="tasks"]').first().boundingBox();
+  const sideBox = await page.locator('.game-track-side').boundingBox();
+  if (width >= 1280) {
+    // Energy, tasks, then events and notes: three columns from the same top.
+    expect(tasksBox!.x).toBeGreaterThan(resourcesBox!.x + resourcesBox!.width - 1);
+    expect(sideBox!.x).toBeGreaterThan(tasksBox!.x + tasksBox!.width - 1);
+    expect(Math.abs(tasksBox!.y - resourcesBox!.y)).toBeLessThanOrEqual(24);
+  } else {
+    // A phone reads energy, then tasks, then events.
     expect(tasksBox!.y).toBeGreaterThan(resourcesBox!.y);
+    expect(sideBox!.y).toBeGreaterThan(tasksBox!.y);
   }
 });
 
@@ -55,6 +60,8 @@ test('an event can be ticked off and taken back on its page', async ({ page }) =
   await starts.fill(earlier.toISOString().slice(0, 16));
   await dialog.getByRole('button', { name: 'Add event', exact: true }).click();
   await expect(dialog).toHaveCount(0);
+  // Events are added from their tab and ticked on Track.
+  await page.getByRole('tab', { name: 'Track', exact: true }).click();
 
   // One tick steps through partly done and done, then back to not started.
   const tick = page.getByRole('checkbox', { name: 'Tick me: done', exact: true });

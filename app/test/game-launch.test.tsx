@@ -36,12 +36,12 @@ it('shows Launch only once its target is chosen in the card settings, then launc
   vi.stubGlobal('memoriaDesktop', { version: 1, launch: host });
   initGameLaunch();
   show();
-  expect(screen.queryByRole('button', { name: 'Launch Honkai: Star Rail' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Play Honkai: Star Rail' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Choose' }));
-  const launch = await screen.findByRole('button', { name: 'Launch Honkai: Star Rail' });
+  const launch = await screen.findByRole('button', { name: 'Play Honkai: Star Rail' });
   expect(host.choose).toHaveBeenCalledExactlyOnceWith('hsr');
   expect(screen.getByRole('group', { name: 'Launch settings for Honkai: Star Rail' })).toHaveTextContent(
-    'Launch starts launcher.exe',
+    'Play starts launcher.exe',
   );
   fireEvent.click(launch);
   await waitFor(() => expect(useGameLaunch.getState().notice?.text).toBe('Starting launcher.exe.'));
@@ -58,14 +58,14 @@ it('reports why Windows refused, without the bridge prefix', async () => {
   vi.stubGlobal('memoriaDesktop', { version: 1, launch: host });
   useGameLaunch.setState({ available: true, targets: { hsr: 'launcher.exe' } });
   show();
-  fireEvent.click(screen.getByRole('button', { name: 'Launch Honkai: Star Rail' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Play Honkai: Star Rail' }));
   await waitFor(() =>
     expect(useGameLaunch.getState().notice).toMatchObject({
       tone: 'error',
       text: 'launcher.exe is no longer there. Choose it again.',
     }),
   );
-  expect(screen.getByRole('button', { name: 'Launch Honkai: Star Rail' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Play Honkai: Star Rail' })).toBeEnabled();
 });
 
 it('removes the target from the card settings', async () => {
@@ -74,6 +74,6 @@ it('removes the target from the card settings', async () => {
   show();
   fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
   await screen.findByRole('button', { name: 'Choose' });
-  expect(screen.queryByRole('button', { name: 'Launch Honkai: Star Rail' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Play Honkai: Star Rail' })).not.toBeInTheDocument();
   expect(host.clear).toHaveBeenCalledExactlyOnceWith('hsr');
 });

@@ -38,6 +38,7 @@ import { calendarSchedule } from '../event-schedule';
 import { readingSource } from '../reading-source';
 import { LaunchButton } from './GameLaunch';
 import { useCatchUpUnread } from '../catch-up-status';
+import { openGame } from '../workspace-navigation';
 import { passSession, sessionNeed, sessionResource, useSession, type SessionNeed } from '../session-focus';
 
 const CADENCE_ORDER = ['daily', 'custom', 'weekly', 'monthly'] as const;
@@ -1069,7 +1070,7 @@ function GameControlsHeader({
                 if (!focusEvents.current) return;
                 focusEvents.current = false;
                 event.preventDefault();
-                document.getElementById(eventsPanelId)?.querySelector<HTMLElement>('h3')?.focus();
+                document.getElementById(eventsPanelId)?.querySelector<HTMLElement>('h2')?.focus();
               }}
             >
               <DropdownMenuPrimitive.Item onSelect={onEdit} className={MENU_ITEM}>
@@ -1087,10 +1088,10 @@ function GameControlsHeader({
   );
 }
 
-/** Opens what the game added since the player last caught up; a dot marks unread versions. */
+/** Opens the game's News tab, where it catches up; a dot marks unread versions. */
 function CatchUpButton({ game }: { game: Game }) {
   const { total, unread } = useCatchUpUnread(game);
-  const openSheet = useUI((s) => s.openSheet);
+  const setGameTab = useUI((s) => s.setGameTab);
   if (total === 0) return null;
   return (
     <Tooltip
@@ -1100,7 +1101,10 @@ function CatchUpButton({ game }: { game: Game }) {
         type="button"
         className={`relative inline-flex shrink-0 items-center gap-2 ${TOUCH_BUTTON}`}
         aria-label={`Catch up on ${game.name}${unread > 0 ? `, ${unread} new` : ''}`}
-        onClick={() => openSheet({ kind: 'catchUp', gameId: game.id })}
+        onClick={() => {
+          setGameTab('news');
+          openGame(game.id);
+        }}
       >
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" className="icon h-4 w-4" aria-hidden>
           <path d="M3 5.5h14v9H3zM7.5 17.5h5M8.5 7.8v4.4L12.3 10z" strokeLinecap="round" strokeLinejoin="round" />
@@ -1124,9 +1128,12 @@ export function GameControlsView({
   actionsEnd,
   aside,
   heading = true,
+  split = false,
 }: {
   /** False where the page bar already names the game and holds its actions. */
   heading?: boolean;
+  /** A game's own page: energy, tasks, and events with the aside each take a column. */
+  split?: boolean;
   entry: GameUrgency;
   state: AppState;
   actions: GameControlActions;
@@ -1281,14 +1288,27 @@ export function GameControlsView({
         </div>
       )}
       <div id={eventsPanelId} hidden={!managingEvents}>
-        {managingEvents && <GameEvents key={game.id} game={game} now={now} />}
+        {managingEvents && (
+          <GameEvents key={game.id} game={game} now={now} titled className="mt-4 border-y border-line-edge py-4" />
+        )}
       </div>
       <div
         className={`relative z-10 flex flex-1 flex-col ${game.paused ? 'opacity-50' : ''}`}
         data-session-need={need ?? undefined}
         data-session-pulse={(need && live?.nudged) || undefined}
       >
-        {layout === 'focus' ? (
+        {layout === 'focus' && split ? (
+          // Energy, then tasks, then what is running beside the notes. Narrower
+          // pages fold the side column under energy and tasks.
+          <div className="game-track-grid" data-cols={columns}>
+            <div className="game-track-energy focus-track min-w-0">{resources}</div>
+            <div className="game-track-tasks min-w-0">{tasks}</div>
+            <div className="game-track-side min-w-0">
+              <div className="focus-events min-w-0">{events}</div>
+              {aside && <div className="focus-context min-w-0">{aside}</div>}
+            </div>
+          </div>
+        ) : layout === 'focus' ? (
           // Context on the left, what you track in the middle, what is running on the right.
           <div className="focus-bay-grid grid gap-x-8 gap-y-6" data-cols={columns} data-aside={aside ? '' : undefined}>
             <div className="focus-track min-w-0">

@@ -20,7 +20,7 @@ async function stored(page: Page) {
   );
 }
 
-test('a game page lays out notes, tracking, and events side by side', async ({ page }, info) => {
+test('a game page lays out energy, tasks, and events with notes side by side', async ({ page }, info) => {
   test.skip(!['desktop', 'mobile-390'].includes(info.project.name), 'One wide and one phone layout');
   const now = Date.parse('2026-11-05T12:00:00Z');
   await page.clock.setFixedTime(new Date(now));
@@ -54,7 +54,7 @@ test('a game page lays out notes, tracking, and events side by side', async ({ p
   await openGame(page, zzz.name);
 
   const context = page.getByRole('complementary', { name: `${zzz.name} notes` });
-  // Livestreams live in Catch up, not beside the tracking.
+  // Livestreams live in the News tab, not beside the tracking.
   await expect(context.getByRole('region', { name: 'Last livestream' })).toHaveCount(0);
   const notes = context.getByRole('textbox', { name: 'Notes' });
   await notes.fill('Save pulls for Severian.');
@@ -66,11 +66,15 @@ test('a game page lays out notes, tracking, and events side by side', async ({ p
   expect((await stored(page)).games.find((game) => game.id === 'legacy')?.presetKey).toBe('hsr');
 
   const track = (await page.locator('.focus-track').boundingBox())!;
+  const tasks = (await page.locator('.game-track-tasks').boundingBox())!;
   const side = (await page.locator('.focus-context').boundingBox())!;
   const events = (await page.locator('.focus-events').boundingBox())!;
   if (info.project.name === 'desktop') {
-    expect(side.x + side.width).toBeLessThanOrEqual(track.x + 1);
-    expect(track.x + track.width).toBeLessThanOrEqual(events.x + 1);
+    // Energy, then tasks, then events above the notes.
+    expect(track.x + track.width).toBeLessThanOrEqual(tasks.x + 1);
+    expect(tasks.x + tasks.width).toBeLessThanOrEqual(events.x + 1);
+    expect(Math.abs(side.x - events.x)).toBeLessThanOrEqual(1);
+    expect(events.y).toBeLessThan(side.y);
   } else {
     // One column: events come before the notes (F6).
     expect(track.y).toBeLessThan(events.y);

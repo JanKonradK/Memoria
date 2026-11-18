@@ -89,13 +89,13 @@ describe('game event management', () => {
       genshin,
     );
     render(<GameEvents game={genshin} now={NOW} />);
-    expect(screen.getAllByRole('heading', { level: 4 }).map((heading) => heading.textContent)).toEqual([
+    expect(screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.firstChild?.textContent)).toEqual([
       'Teyvat',
       'Miliastra Wonderland',
       'Banners',
     ]);
     fireEvent.change(screen.getByRole('searchbox', { name: 'Find event' }), { target: { value: 'Wonderland' } });
-    expect(screen.getAllByRole('heading', { level: 4 }).map((heading) => heading.textContent)).toEqual([
+    expect(screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.firstChild?.textContent)).toEqual([
       'Miliastra Wonderland',
     ]);
     fireEvent.click(screen.getByRole('radio', { name: 'Finished (1)' }));

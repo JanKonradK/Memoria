@@ -1,7 +1,7 @@
 import type { Game } from '@memoria/shared';
-import { QuestsPage } from '../Quests';
+import { GameQuestsView } from '../Quests';
 
 /** One game's story progress. */
 export function GameQuests({ game }: { game: Game }) {
-  return <QuestsPage key={game.id} />;
+  return <GameQuestsView key={game.id} game={game} />;
 }

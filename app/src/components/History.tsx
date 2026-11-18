@@ -1,22 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   PRESETS,
+  presetForGame,
   summarizeVersions,
   VersionHistorySchema,
   versionRows,
   type VersionHistory,
   type VersionRow,
+  type Game,
 } from '@memoria/shared';
 import { useApp } from '../store';
 import { useElementWidth, useNow } from '../hooks';
 import { useGround } from '../theme';
 import { assignGameInks } from '../game-color';
-import { Page, SectionTitle } from './ui';
+import { SectionTitle } from './ui';
 import { GameSavingsPanel, useOpenBanners } from './Savings';
 import { GamePityPanel } from './Pity';
-import { GameLogo } from './GameLogo';
 import { rosterGames } from './roster';
 import { ChartTip, fmt, Legend, niceMax, shortDate, signed, spreadLabels, tickLabel, ticks } from './chart';
+import { VERSION_HISTORY_GAMES } from './game-tabs/availability';
 import '../history.css';
 
 interface GameMeta {
@@ -56,24 +58,13 @@ export function useHistory(): { history: VersionHistory | null; error: string } 
   return result;
 }
 
-const HISTORY = 'history';
-const PICK_KEY = 'memoria-pulls-view';
-
-function readPick(): string | null {
-  try {
-    return localStorage.getItem(PICK_KEY);
-  } catch {
-    return null;
-  }
-}
-
 /**
- * The Pulls page: one game at a time — its savings and its pity side by side —
- * or Version history (what did each version give a free player?). The history
- * file loads only when this page opens, so the timeline never carries years of
- * old patches.
+ * A game's Pulls tab: its savings and its pity side by side, then what each of
+ * its versions gave a free player, with other games beside it for comparison.
+ * The history file loads only when this tab opens, so the timeline never
+ * carries years of old patches.
  */
-export function PullsPage() {
+export function GamePullsView({ game }: { game: Game }) {
   const loaded = useHistory();
   const state = useApp((s) => s.state);
   const ground = useGround();
@@ -81,98 +72,47 @@ export function PullsPage() {
   const games = useMemo(() => rosterGames(state.games), [state.games]);
   const inks = useMemo(() => assignGameInks(games, ground), [games, ground]);
   const banners = useOpenBanners(now);
-  const [pick, setPick] = useState<string | null>(() => readPick());
-  const choose = (value: string) => {
-    setPick(value);
-    try {
-      localStorage.setItem(PICK_KEY, value);
-    } catch {
-      // Remembering the choice is a convenience; the page works without it.
-    }
-  };
-  const view = pick === HISTORY || games.some((game) => game.id === pick) ? pick! : (games[0]?.id ?? HISTORY);
-  const game = games.find((candidate) => candidate.id === view);
-  // Two accounts of one game share a short name; the nickname tells them apart.
-  const shortCount = new Map<string, number>();
-  for (const g of games) shortCount.set(g.short, (shortCount.get(g.short) ?? 0) + 1);
-  const options = [
-    ...games.map((g) => ({
-      value: g.id,
-      label: (shortCount.get(g.short) ?? 0) > 1 && g.accountLabel ? `${g.short} · ${g.accountLabel}` : g.short,
-      game: g,
-    })),
-    { value: HISTORY, label: 'Version history', game: undefined },
-  ];
-  const title = game ? (game.accountLabel ? `${game.name} · ${game.accountLabel}` : game.name) : 'Version history';
+  const preset = game.presetKey ?? presetForGame(game)?.key;
+  const ink = inks[game.id] ?? game.color;
+  const title = game.accountLabel ? `${game.name} · ${game.accountLabel}` : game.name;
 
   return (
-    <Page className="history-page">
-      <header className="pulls-header">
-        <div role="radiogroup" aria-label="Pulls view" className="pulls-switch">
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              role="radio"
-              aria-checked={option.value === view}
-              className="pulls-switch-item"
-              onClick={() => choose(option.value)}
-            >
-              {option.game && (
-                <span
-                  aria-hidden
-                  className="pulls-switch-dot"
-                  style={{ background: inks[option.game.id] ?? option.game.color }}
-                />
-              )}
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </header>
+    <div className="history-page">
       {loaded.error && <p className="mb-4 text-body text-danger-fg">{loaded.error}</p>}
-      {game ? (
-        <section className="pulls-game" aria-label={title}>
-          <div className="pulls-game-heading">
-            <GameLogo game={game} size={44} />
-            <h1 className="text-title font-semibold text-fg">{title}</h1>
-          </div>
-          <div className="pulls-game-grid">
-            <GameSavingsPanel
-              game={game}
-              history={loaded.history}
-              ink={inks[game.id]!}
-              banners={banners.get(game.id) ?? []}
-              tz={state.settings.localTz}
-              now={now}
-            />
-            <GamePityPanel game={game} ink={inks[game.id]!} tz={state.settings.localTz} />
-          </div>
-          <p className="mt-6 text-caption text-dim">
-            Free income is the currency per day of the game’s last six finished versions, from Version history: what the
-            game gives out, not what you will collect. Enter your balance again whenever you pull or top up.
+      <section className="pulls-game" aria-label={title}>
+        <div className="pulls-game-grid">
+          <GameSavingsPanel
+            game={game}
+            history={loaded.history}
+            ink={ink}
+            banners={banners.get(game.id) ?? []}
+            tz={state.settings.localTz}
+            now={now}
+          />
+          <GamePityPanel game={game} ink={ink} tz={state.settings.localTz} />
+        </div>
+        <p className="mt-6 text-caption text-dim">
+          Free income is the currency per day of the game’s last six finished versions, from Version history: what the
+          game gives out, not what you will collect. Enter your balance again whenever you pull or top up.
+        </p>
+      </section>
+      {preset && VERSION_HISTORY_GAMES.includes(preset) && (
+        <section className="mt-10" aria-labelledby="pulls-version-history">
+          <h2 id="pulls-version-history" className="tab-label">
+            Version history
+          </h2>
+          <p className="mb-5 max-w-3xl text-meta text-muted">
+            Free premium currency each version gave a player who spends nothing, from the first version on: no monthly
+            pass, no paid battle pass, no top-ups. Free limited pull tickets count at the cost of one pull.
           </p>
+          <HistoryView {...loaded} focus={preset} />
         </section>
-      ) : (
-        <>
-          <div className="mb-4">
-            <h1 className="text-title font-semibold text-fg">Version history</h1>
-            <p className="mt-1 text-meta text-muted">
-              Free premium currency each version gave a player who spends nothing, from the first version on: no monthly
-              pass, no paid battle pass, no top-ups. Free limited pull tickets count at the cost of one pull.
-            </p>
-          </div>
-          {games.length === 0 && (
-            <p className="mb-4 text-meta text-muted">Add a game to plan savings and track pity for it.</p>
-          )}
-          <HistoryView {...loaded} />
-        </>
       )}
-    </Page>
+    </div>
   );
 }
 
-function HistoryView({ history, error }: { history: VersionHistory | null; error: string }) {
+function HistoryView({ history, error, focus }: { history: VersionHistory | null; error: string; focus: string }) {
   const ground = useGround();
   const tracked = useApp((s) => s.state.games);
   const games = useMemo<GameMeta[]>(() => {
@@ -214,12 +154,12 @@ function HistoryView({ history, error }: { history: VersionHistory | null; error
     [tracked],
   );
   const [picked, setPicked] = useState<Set<string> | null>(null);
-  // Until the player chooses, show the games they track, or every game when none have history.
+  // Until the player chooses, compare this game with the others they track.
   const selected = useMemo(() => {
     if (picked) return picked;
-    const own = games.filter((g) => yours.has(g.key)).map((g) => g.key);
-    return new Set(own.length ? own : games.map((g) => g.key));
-  }, [picked, games, yours]);
+    return new Set(games.filter((g) => g.key === focus || yours.has(g.key)).map((g) => g.key));
+  }, [picked, games, yours, focus]);
+  const own = games.find((g) => g.key === focus);
   const shown = games.filter((g) => selected.has(g.key));
 
   const toggle = (key: string) => {
@@ -232,20 +172,23 @@ function HistoryView({ history, error }: { history: VersionHistory | null; error
   return (
     <>
       {!history && !error && <p className="py-8 text-center text-body text-dim">Loading version history…</p>}
-      {history && games.length === 0 && (
-        <p className="py-8 text-center text-body text-dim">No version history is available yet.</p>
-      )}
+      {history && !own && <p className="py-8 text-center text-body text-dim">No version history is available yet.</p>}
 
-      {games.length > 0 && (
-        <>
-          <div className="history-filters mb-5 flex flex-wrap gap-2" role="group" aria-label="Games to show">
+      {own && <GameHistory game={own} />}
+
+      {own && games.length > 1 && (
+        <section className="mt-8" aria-labelledby="history-compare">
+          <h3 id="history-compare" className="tab-label">
+            Compare games
+          </h3>
+          <div className="history-filters mb-5 mt-3 flex flex-wrap gap-2" role="group" aria-label="Games to show">
             {games.map((game) => (
               <button
                 key={game.key}
                 type="button"
                 aria-pressed={selected.has(game.key)}
                 onClick={() => toggle(game.key)}
-                className="history-chip min-h-9 rounded-ui-full border px-3 text-meta font-semibold"
+                className="history-chip min-h-11 rounded-ui-full border px-3 text-meta font-semibold sm:min-h-9"
               >
                 <span aria-hidden className="history-chip-dot" style={{ background: game.ink }} />
                 {game.short}
@@ -258,16 +201,21 @@ function HistoryView({ history, error }: { history: VersionHistory | null; error
           ) : (
             <>
               <PullsComparison games={shown} />
-              {shown.map((game) => (
-                <GameHistory key={game.key} game={game} />
-              ))}
-              <p className="mt-6 text-caption text-dim">
-                Totals are community estimates unless marked official, checked {history!.reviewed}. Event and banner
-                counts start from {shortDate(history!.archiveSince)}, when Memoria began keeping its feed.
-              </p>
+              {shown
+                .filter((game) => game.key !== focus)
+                .map((game) => (
+                  <GameHistory key={game.key} game={game} />
+                ))}
             </>
           )}
-        </>
+        </section>
+      )}
+
+      {own && (
+        <p className="mt-6 text-caption text-dim">
+          Totals are community estimates unless marked official, checked {history!.reviewed}. Event and banner counts
+          start from {shortDate(history!.archiveSince)}, when Memoria began keeping its feed.
+        </p>
       )}
     </>
   );
@@ -308,7 +256,7 @@ function PullsComparison({ games }: { games: GameMeta[] }) {
 
   return (
     <section className="history-card mb-5" aria-labelledby="history-pulls">
-      <SectionTitle level={2}>
+      <SectionTitle>
         <span id="history-pulls">Free pulls per version</span>
       </SectionTitle>
       <p className="-mt-1 mb-3 text-caption text-dim">
@@ -404,7 +352,7 @@ function GameHistory({ game }: { game: GameMeta }) {
   return (
     <section className="history-card mb-5" aria-labelledby={`history-${game.key}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-        <SectionTitle level={2}>
+        <SectionTitle>
           <span id={`history-${game.key}`}>
             <span aria-hidden className="history-chip-dot" style={{ background: game.ink }} />
             {game.name} · {game.currency} per version

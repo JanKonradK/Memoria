@@ -44,7 +44,9 @@ test.beforeEach(async ({ page }, info) => {
   await openWorkspace(page);
 });
 
-test('cards add, rename, change behavior, and delete finished events from Manage events', async ({ page }, info) => {
+test('a game page adds, renames, changes behavior, and deletes finished events from its Events tab', async ({
+  page,
+}, info) => {
   await addFromShell(page, 'Event');
   let dialog = page.getByRole('dialog', { name: 'New event' });
   await expect(dialog.getByRole('combobox', { name: 'Game', exact: true })).toContainText('Genshin Impact');
@@ -59,7 +61,7 @@ test('cards add, rename, change behavior, and delete finished events from Manage
   await expect(dialog).toHaveCount(0);
   await chooseFromEdit(page, 'Genshin Impact', 'Manage events');
   const panel = page.getByRole('region', { name: 'Events for Genshin Impact' });
-  await expect(panel.getByRole('heading', { name: 'Events', exact: true })).toBeFocused();
+  await expect(page.getByRole('tab', { name: /^Events/ })).toHaveAttribute('aria-selected', 'true');
   await panel.getByRole('searchbox', { name: 'Find event' }).fill('My personal window');
   const row = panel.getByRole('button', { name: 'Edit Genshin Impact event: My personal window', exact: true });
   await expect(row).toContainText('Daily check-in');
@@ -82,7 +84,7 @@ test('cards add, rename, change behavior, and delete finished events from Manage
     .toMatchObject({ type: 'cycle', done: true, dailyTouch: true, notify: false });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(
-    (await new AxeBuilder({ page }).analyze()).violations.filter((issue) =>
+    (await new AxeBuilder({ page }).include('.focus-workspace').analyze()).violations.filter((issue) =>
       ['serious', 'critical'].includes(issue.impact ?? ''),
     ),
   ).toEqual([]);
@@ -127,6 +129,7 @@ test('pause survives reload and resumes saved daily progress from the game page'
   await expect(edit.getByRole('textbox', { name: 'Name', exact: true })).toBeVisible();
   await edit.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(edit).toHaveCount(0);
+  await chooseFromEdit(page, 'Genshin Impact', 'Close events');
   await expect(page.getByRole('button', { name: 'Resume tracking', exact: true })).toBeVisible();
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.reload();

@@ -19,19 +19,19 @@ export function LaunchButton({ game }: { game: Game }) {
         kind="primary"
         className={`${TOUCH_BUTTON} inline-flex items-center gap-1.5`}
         disabled={busy}
-        aria-label={`Launch ${game.name}`}
+        aria-label={`Play ${game.name}`}
         onClick={() => void launchGame(game.id)}
       >
         <svg viewBox="0 0 20 20" aria-hidden className="h-3.5 w-3.5" fill="currentColor">
           <path d="M6.5 4.6v10.8a.6.6 0 0 0 .92.5l8.3-5.4a.6.6 0 0 0 0-1L7.42 4.1a.6.6 0 0 0-.92.5Z" />
         </svg>
-        Launch
+        Play
       </Btn>
     </Tooltip>
   );
 }
 
-/** In Game settings: what Launch starts, and a way to change it. */
+/** In Game settings: what Play starts, and a way to change it. */
 export function LaunchSettings({ game }: { game: Game }) {
   const available = useGameLaunch((store) => store.available);
   const target = useGameLaunch((store) => store.targets[game.id]);
@@ -44,7 +44,7 @@ export function LaunchSettings({ game }: { game: Game }) {
       aria-label={`Launch settings for ${game.name}`}
     >
       <p className="mr-auto min-w-0 text-meta text-muted">
-        Launch starts <span className="break-all font-medium text-fg-soft">{target ?? 'nothing yet'}</span>
+        Play starts <span className="break-all font-medium text-fg-soft">{target ?? 'nothing yet'}</span>
       </p>
       <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => void chooseLaunchTarget(game.id)}>
         {target ? 'Change' : 'Choose'}

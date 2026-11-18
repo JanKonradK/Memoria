@@ -197,3 +197,12 @@ button.quests-row-title:hover > span:first-child {
 .quests-link:hover {
   color: var(--color-fg);
 }
+
+/* A game's Quests tab opens on its totals; the page bar already names the game. */
+.quests-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-line);
+}

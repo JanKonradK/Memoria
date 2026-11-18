@@ -1,9 +1,7 @@
 import type { Game } from '@memoria/shared';
-import { useUI } from '../../ui-store';
-import { Btn } from '../ui';
+import { CatchUpView } from '../CatchUp';
 
 /** What the game's recent versions added, its livestreams and codes. */
-export function GameNews({ game }: { game: Game; now: number }) {
-  const openSheet = useUI((s) => s.openSheet);
-  return <Btn onClick={() => openSheet({ kind: 'catchUp', gameId: game.id })}>Catch up</Btn>;
+export function GameNews({ game, now }: { game: Game; now: number }) {
+  return <CatchUpView key={game.id} game={game} now={now} />;
 }

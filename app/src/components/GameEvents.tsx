@@ -1,4 +1,5 @@
 import '../today.css';
+import './game-tabs/game-tabs.css';
 import { useState } from 'react';
 import { DateTime } from 'luxon';
 import type { Game } from '@memoria/shared';
@@ -7,12 +8,26 @@ import { useUI } from '../ui-store';
 import { sortTimelineEvents } from '../timeline-sort';
 import { groupGameEvents } from '../event-category';
 import { calendarSchedule } from '../event-schedule';
+import { fmtDur } from '../util';
 import { EventTags } from './EventTags';
 import { CalendarBehindNote } from './CalendarBehind';
-import { Btn, Field, Segmented, TextInput, TOUCH_BUTTON } from './ui';
+import { Btn, Segmented, TextInput, TOUCH_BUTTON } from './ui';
 
-/** Complete event management, independent of the card's visible events widget. */
-export function GameEvents({ game, now, onBeforeOpen }: { game: Game; now: number; onBeforeOpen?: () => boolean }) {
+/** Every event of one game, to add, find and edit. It sits on the page, under one toolbar. */
+export function GameEvents({
+  game,
+  now,
+  onBeforeOpen,
+  className = '',
+  titled = false,
+}: {
+  game: Game;
+  now: number;
+  onBeforeOpen?: () => boolean;
+  className?: string;
+  /** Show the Events heading; a game's Events tab already names it. */
+  titled?: boolean;
+}) {
   const state = useApp((store) => store.state);
   const openSheet = useUI((store) => store.openSheet);
   const openEvent = (eventId?: string) => {
@@ -31,61 +46,75 @@ export function GameEvents({ game, now, onBeforeOpen }: { game: Game; now: numbe
       (!match || event.name.toLocaleLowerCase().includes(match))
     );
   });
+  const zone = state.settings.localTz;
 
   return (
-    <section className="mt-4 border-y border-line-edge py-4" aria-label={`Events for ${game.name}`}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 tabIndex={-1} className="text-body font-semibold text-fg">
-          Events
-        </h3>
-        <Btn className={TOUCH_BUTTON} onClick={() => openEvent()}>
+    <section className={className} aria-label={`Events for ${game.name}`}>
+      <h2 tabIndex={-1} className={titled ? 'mb-3 text-body font-semibold text-fg' : 'sr-only'}>
+        Events
+      </h2>
+      <div className="game-events-bar">
+        <Segmented
+          ariaLabel="Game event status"
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { value: 'current', label: `Current (${events.length - finished})` },
+            { value: 'finished', label: `Finished (${finished})` },
+            { value: 'all', label: `All (${events.length})` },
+          ]}
+        />
+        {events.length > 0 && (
+          <TextInput
+            type="search"
+            aria-label="Find event"
+            placeholder="Find event"
+            className="game-events-search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        )}
+        <Btn kind="primary" className={`game-events-add ${TOUCH_BUTTON}`} onClick={() => openEvent()}>
           Add event
         </Btn>
       </div>
-      <CalendarBehindNote gameId={game.id} now={now} className="mt-2" />
-      <Segmented
-        ariaLabel="Game event status"
-        value={filter}
-        onChange={setFilter}
-        options={[
-          { value: 'current', label: `Current (${events.length - finished})` },
-          { value: 'finished', label: `Finished (${finished})` },
-          { value: 'all', label: `All (${events.length})` },
-        ]}
-      />
-      {events.length > 0 && (
-        <div className="mt-3">
-          <Field label="Find event">
-            <TextInput type="search" value={query} onChange={(event) => setQuery(event.target.value)} />
-          </Field>
-        </div>
-      )}
-      <div className="mt-3 max-h-96 overflow-y-auto overscroll-contain">
+      <CalendarBehindNote gameId={game.id} now={now} className="mt-3" />
+      <div className="mt-5">
         {shown.length === 0 ? (
           <p className="py-2 text-meta text-muted">
             {match ? 'No matches.' : filter === 'finished' ? 'No finished events.' : 'No events.'}
           </p>
         ) : (
           groupGameEvents(game, shown).map((group) => (
-            <section key={group.key} className="mt-4 first:mt-0" aria-label={`${group.label} event management`}>
-              {group.key !== 'events' && (
-                <div className="today-group-rule">
-                  <h4 className="text-meta font-semibold text-fg-soft">{group.label}</h4>
-                  <span aria-hidden />
-                </div>
-              )}
-              <ul className="grid gap-0.5">
+            <section key={group.key} className="mt-6 first:mt-0" aria-label={`${group.label} event management`}>
+              <h3 className="tab-label">
+                {group.label}
+                <span className="tab-label-end numeral">{group.events.length}</span>
+              </h3>
+              <ul className="game-events-list">
                 {group.events.map((event) => {
                   const calendar = calendarSchedule(event);
+                  const status = event.done
+                    ? 'Done'
+                    : event.end <= now
+                      ? 'Ended'
+                      : event.start > now
+                        ? 'Upcoming'
+                        : 'Active';
+                  const when = calendar
+                    ? `${calendar.label} (${calendar.zone})`
+                    : event.done || event.end <= now
+                      ? `Ended ${DateTime.fromMillis(event.end, { zone }).toFormat('d LLL yyyy')}`
+                      : event.start > now
+                        ? `Starts in ${fmtDur(event.start - now)}`
+                        : `Ends in ${fmtDur(event.end - now)}`;
                   return (
                     <li key={event.id}>
-                      <button
-                        type="button"
-                        className="flex min-h-11 w-full items-center gap-3 rounded-ui-lg px-2 py-3 text-left transition hover:bg-fill-1"
-                        onClick={() => openEvent(event.id)}
-                      >
-                        <span className="min-w-0 flex-1">
-                          <span className="block break-words text-body font-semibold text-fg-soft">
+                      <button type="button" className="game-events-row" onClick={() => openEvent(event.id)}>
+                        <span className="min-w-0">
+                          <span
+                            className={`block break-words text-body font-semibold ${event.done ? 'text-muted line-through' : 'text-fg-soft'}`}
+                          >
                             <span className="sr-only">Edit {game.name} event:</span> {event.name}
                           </span>
                           <span
@@ -94,30 +123,19 @@ export function GameEvents({ game, now, onBeforeOpen }: { game: Game; now: numbe
                           >
                             <span>{event.type}</span>
                             <EventTags game={game} event={event} />
-                            <span>
-                              {event.done
-                                ? 'Done'
-                                : event.end <= now
-                                  ? 'Ended'
-                                  : event.start > now
-                                    ? 'Upcoming'
-                                    : 'Active'}
-                            </span>
+                            <span>{status}</span>
                             {event.dailyTouch && <span>Daily check-in</span>}
                             {!event.notify && <span>Next actions off</span>}
                           </span>
-                          <span className="mt-1 block text-label text-muted" aria-hidden>
-                            {calendar ? (
-                              `${calendar.label} (${calendar.zone})`
-                            ) : (
-                              <>
-                                Ends{' '}
-                                {DateTime.fromMillis(event.end, { zone: state.settings.localTz }).toFormat(
-                                  'd LLL yyyy, HH:mm',
-                                )}
-                              </>
-                            )}
-                          </span>
+                        </span>
+                        <span className="game-events-when numeral" aria-hidden>
+                          {calendar ? (
+                            when
+                          ) : (
+                            <span title={DateTime.fromMillis(event.end, { zone }).toFormat('d LLL yyyy, HH:mm')}>
+                              {when}
+                            </span>
+                          )}
                         </span>
                         <svg
                           viewBox="0 0 20 20"

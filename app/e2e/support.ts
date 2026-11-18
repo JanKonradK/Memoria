@@ -14,16 +14,26 @@ export async function openGame(page: Page, name: string): Promise<void> {
   await expect(page.locator('.focus-workspace')).toBeVisible();
 }
 
-/** A game's one Edit menu: its settings and its events panel. */
+/**
+ * A game's settings or its events. On its own page the pencil opens settings and
+ * the events have their own tab; the card beside Today keeps the Edit menu.
+ */
 export async function chooseFromEdit(
   page: Page,
   game: string,
   item: 'Game settings' | 'Manage events' | 'Close events',
 ): Promise<void> {
+  const tabs = page.getByRole('tablist', { name: `${game} sections`, exact: true });
+  const onPage = await tabs.isVisible();
+  if (onPage && item !== 'Game settings') {
+    await tabs.getByRole('tab', { name: item === 'Manage events' ? /^Events/ : 'Track' }).click();
+    return;
+  }
   await page
     .getByRole('button', { name: `Edit ${game}`, exact: true })
     .last()
     .click();
+  if (onPage) return;
   await page.getByRole('menuitem', { name: item, exact: true }).click();
 }
 

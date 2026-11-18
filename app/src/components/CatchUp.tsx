@@ -12,17 +12,11 @@ import {
   type VersionDigest,
 } from '../data/catch-up';
 import { useNow } from '../hooks';
-import { nextBroadcast } from '../catch-up-status';
+import { lastAiredStream, nextBroadcast } from '../catch-up-status';
 import { useApp } from '../store';
-import { useUI } from '../ui-store';
-import { titleStyle } from '../fonts';
-import { gameShellVars, useSurfaces } from '../theme';
 import { fmtDur } from '../util';
-import { GameLogo } from './GameLogo';
 import { LivestreamCodes } from './LivestreamCodes';
-import { useIdentityColors } from './roster';
-import { Sheet } from './Sheet';
-import { Btn, Segmented } from './ui';
+import { Btn, Segmented, TOUCH_BUTTON } from './ui';
 import '../catch-up.css';
 
 function day(iso: string, format = 'd LLL'): string {
@@ -117,13 +111,12 @@ function Changes({ items }: { items: string[] }) {
 function VersionBody({ digest, summary = true }: { digest: VersionDigest; summary?: boolean }) {
   const labels = CATCH_UP_LABELS[digest.game] ?? { weapons: 'Weapons', gear: 'Gear sets' };
   const now = useNow(60_000);
-  // Usable codes lead; expired or undated ones wait at the end, folded.
+  // Usable codes stand beside the notes; expired or undated ones wait at the end, folded.
   const codesLive = redemptionCodeStatus(digest.codes?.expiresAt, now) === 'available';
   const codes = digest.codes && <LivestreamCodes redemption={digest.codes} gameName={`Version ${digest.version}`} />;
   return (
     <div className="catch-up-body">
       {summary && <p className="text-body leading-relaxed text-fg-soft">{digest.summary}</p>}
-      {codesLive && codes}
       <SectionBlock title="Characters" section={digest.characters}>
         {(items) => <Characters items={items} />}
       </SectionBlock>
@@ -245,11 +238,9 @@ function NextStream({ state, game, now }: { state: AppState; game: Game; now: nu
   const at = (ms: number, format: string) => DateTime.fromMillis(ms, { zone }).toFormat(format);
   const live = !next.estimated && next.event.start <= now;
   return (
-    <section className="catch-up-stream" aria-label="Next livestream">
-      <span className="catch-up-label">Next livestream</span>
-      <span className="min-w-0 flex-1 basis-48 truncate text-body text-fg">
-        {next.event.name.replace(/\s*—\s*predicted window/i, '')}
-      </span>
+    <section className="game-news-stream" aria-label="Next livestream">
+      <h3 className="tab-label">Next livestream</h3>
+      <span className="text-body text-fg">{next.event.name.replace(/\s*—\s*predicted window/i, '')}</span>
       <span className="numeral text-meta text-fg-soft">
         {next.estimated
           ? `Estimated ${at(next.event.start, 'd LLL')}–${at(next.event.end, 'd LLL')}`
@@ -261,76 +252,62 @@ function NextStream({ state, game, now }: { state: AppState; game: Game; now: nu
   );
 }
 
-export function CatchUpSheet({ open, gameId }: { open: boolean; gameId: string }) {
-  const now = useNow(60_000);
+/** The newest livestream that has aired, with its replay. */
+function LastStream({ presetKey, now }: { presetKey: string | undefined; now: number }) {
+  const last = lastAiredStream(presetKey, now);
+  if (!last?.stream) return null;
+  return (
+    <section className="game-news-stream" aria-label="Last livestream">
+      <h3 className="tab-label">Last livestream</h3>
+      <span className="text-body text-fg">Version {last.version}</span>
+      <span className="numeral text-meta text-muted">Aired {day(last.stream.aired, 'd LLL yyyy')}</span>
+      <a className="catch-up-replay" href={last.stream.replay} target="_blank" rel="noreferrer">
+        Watch the replay ↗
+      </a>
+    </section>
+  );
+}
+
+/**
+ * A game's News tab: what its recent versions added, new to you or all of them,
+ * beside its livestreams and the codes that still work.
+ */
+export function CatchUpView({ game, now }: { game: Game; now: number }) {
   const state = useApp((store) => store.state);
   const markRead = useApp((store) => store.markCatchUpRead);
-  const closeSheet = useUI((ui) => ui.closeSheet);
-  const surfaces = useSurfaces();
-  const identityColors = useIdentityColors(state.games);
-  const game = state.games.find((item) => item.id === gameId && !item.deleted);
-  const preset = game ? presetForGame(game)?.key : undefined;
+  const preset = presetForGame(game)?.key;
   const digests = useMemo(() => digestsForGame(preset), [preset]);
   const seen = preset ? state.settings.catchUpSeen?.[preset] : undefined;
   const unread = useMemo(() => unreadDigests(digests, seen), [digests, seen]);
-  // The scope is fixed when the sheet opens, so marking read does not empty the view under you.
+  // The scope is fixed when the tab opens, so marking read does not empty the view under you.
   const [scope, setScope] = useState<'new' | 'all'>(() => (unread.length > 0 ? 'new' : 'all'));
   const [openedUnread] = useState(() => new Set(unread.map(digestKey)));
   const shown = scope === 'new' ? digests.filter((digest) => openedUnread.has(digestKey(digest))) : digests;
   const stillUnread = shown.filter((digest) => unread.includes(digest));
-
-  if (!game) {
-    return (
-      <Sheet open={open} onClose={closeSheet} title="Catch up">
-        <p className="text-body text-muted">This game is no longer tracked.</p>
-      </Sheet>
-    );
-  }
-
+  const liveCodes = digests.filter(
+    (digest) => digest.codes && redemptionCodeStatus(digest.codes.expiresAt, now) === 'available',
+  );
   const versions = digests.map((digest) => digest.version);
   const coverage =
     versions.length > 0 ? `Covers Version ${versions.at(-1)}${versions.length > 1 ? ` to ${versions[0]}` : ''}` : '';
+  const stream = nextBroadcast(state, game.id, now);
+  const replay = lastAiredStream(preset, now);
+  const side = Boolean(stream || replay?.stream || liveCodes.length);
 
   return (
-    <Sheet
-      open={open}
-      onClose={closeSheet}
-      title={`Catch up: ${game.name}`}
-      hideTitle
-      wide
-      footer={
-        stillUnread.length > 0 ? (
-          <div className="flex items-center justify-end gap-3">
-            <Btn
-              kind="primary"
-              onClick={() =>
-                preset &&
-                markRead(
-                  preset,
-                  stillUnread.map((digest) => digestKey(digest)),
-                )
-              }
-            >
-              Mark {stillUnread.length === 1 ? 'as' : `all ${stillUnread.length}`} read
-            </Btn>
-          </div>
-        ) : undefined
-      }
-    >
-      <div className="catch-up" style={gameShellVars(game, surfaces, identityColors[game.id])}>
-        <header className="catch-up-header">
-          <GameLogo game={{ ...game, ...identityColors[game.id] }} size={52} />
-          <div className="min-w-0 flex-1">
-            <p className="catch-up-label">Catch up</p>
-            <h2 className="truncate text-title" style={{ ...titleStyle(game.titleFont), color: 'var(--game-ink)' }}>
-              {game.name}
-            </h2>
-            {coverage && <p className="aside text-meta text-muted">{coverage}</p>}
-          </div>
-        </header>
-
+    <div className="game-news" data-side={side || undefined}>
+      {side && (
+        <aside className="game-news-side" aria-label={`${game.name} livestreams and codes`}>
+          <NextStream state={state} game={game} now={now} />
+          <LastStream presetKey={preset} now={now} />
+          {liveCodes.map((digest) => (
+            <LivestreamCodes key={digest.id} redemption={digest.codes!} gameName={`Version ${digest.version}`} />
+          ))}
+        </aside>
+      )}
+      <div className="catch-up game-news-main">
         {digests.length > 0 && (
-          <div className="catch-up-scope">
+          <div className="catch-up-toolbar">
             <Segmented
               ariaLabel="Versions to show"
               value={scope}
@@ -340,17 +317,31 @@ export function CatchUpSheet({ open, gameId }: { open: boolean; gameId: string }
                 { value: 'all', label: 'All versions' },
               ]}
             />
+            {coverage && <p className="aside text-meta text-muted">{coverage}</p>}
+            {stillUnread.length > 0 && (
+              <Btn
+                kind="primary"
+                className={`catch-up-mark ${TOUCH_BUTTON}`}
+                onClick={() =>
+                  preset &&
+                  markRead(
+                    preset,
+                    stillUnread.map((digest) => digestKey(digest)),
+                  )
+                }
+              >
+                Mark {stillUnread.length === 1 ? 'as' : `all ${stillUnread.length}`} read
+              </Btn>
+            )}
           </div>
         )}
-
-        <NextStream state={state} game={game} now={now} />
 
         {digests.length === 0 ? (
           <p className="catch-up-empty text-body text-muted">No version notes for this game yet.</p>
         ) : shown.length === 0 ? (
           <div className="catch-up-empty">
             <p className="text-body text-fg-soft">You’re caught up.</p>
-            <Btn className="mt-3" onClick={() => setScope('all')}>
+            <Btn className={`mt-3 ${TOUCH_BUTTON}`} onClick={() => setScope('all')}>
               Show all versions
             </Btn>
           </div>
@@ -360,6 +351,6 @@ export function CatchUpSheet({ open, gameId }: { open: boolean; gameId: string }
           ))
         )}
       </div>
-    </Sheet>
+    </div>
   );
 }

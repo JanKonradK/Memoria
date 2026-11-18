@@ -41,68 +41,67 @@ async function openGenshin(page: import('@playwright/test').Page, now: number) {
     .locator('input[type="file"]')
     .setInputFiles({ name: 'catch-up.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Today', exact: true }).click();
-  // Catch up sits in the game's heading, on its own page at every width.
-  await openGame(page, genshin.name);
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
 }
 
-test('a game page opens its catch-up, which marks versions read and stays honest about gaps', async ({
+/** Catch up is the game's News tab. */
+async function openNews(page: import('@playwright/test').Page) {
+  await openGame(page, genshin.name);
+  await page.getByRole('tab', { name: /^News/ }).click();
+  return page.getByRole('tabpanel');
+}
+
+test('a game page catches up in its News tab, which marks versions read and stays honest about gaps', async ({
   page,
 }, info) => {
   const now = Date.parse('2026-11-05T12:00:00Z');
   await page.clock.setFixedTime(new Date(now));
   await openGenshin(page, now);
-  const open = page.getByRole('button', { name: /^Catch up on Genshin Impact, 2 new/ }).first();
-  await open.click();
-  const sheet = page.getByRole('dialog', { name: 'Catch up: Genshin Impact' });
-  await expect(sheet).toBeVisible();
-  await expect(sheet.getByRole('heading', { name: /Version 7\.2/ })).toBeVisible();
-  await expect(sheet.getByText('Mitya', { exact: true })).toBeVisible();
+  let news;
+  if ((page.viewportSize()?.width ?? 0) >= 900) {
+    // The card beside Today opens the same tab.
+    await page.getByRole('button', { name: /^Review Genshin Impact/ }).click();
+    await page.getByRole('button', { name: /^Catch up on Genshin Impact, 2 new/ }).click();
+    await expect(page.getByRole('tab', { name: /^News/ })).toHaveAttribute('aria-selected', 'true');
+    news = page.getByRole('tabpanel');
+  } else news = await openNews(page);
+  await expect(page.getByRole('tab', { name: /^News.*2 new$/ })).toBeVisible();
+  await expect(news.getByRole('heading', { name: /Version 7\.2/ })).toBeVisible();
+  await expect(news.getByText('Mitya', { exact: true })).toBeVisible();
   // The estimated stream window is labelled, not counted down.
-  await expect(sheet.getByLabel('Next livestream')).toContainText('Estimated');
-  // A section nobody has checked never reads as "none".
-  await expect(sheet.getByText('Not reviewed yet.').first()).toBeVisible();
-  // Expired codes stay folded away.
-  await expect(sheet.getByRole('button', { name: 'Copy HourofRuin', exact: true })).toBeHidden();
-  // Let the sheet finish sliding in, or the scan reads half-faded text.
-  await page.evaluate(() =>
-    Promise.all(
-      document
-        .getAnimations()
-        .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
-        .map((animation) => animation.finished.catch(() => {})),
-    ),
+  await expect(news.getByLabel('Next livestream')).toContainText('Estimated');
+  // The last stream that aired links its replay.
+  await expect(news.getByRole('region', { name: 'Last livestream' }).getByRole('link')).toHaveAttribute(
+    'href',
+    /^https:\/\//,
   );
+  // A section nobody has checked never reads as "none".
+  await expect(news.getByText('Not reviewed yet.').first()).toBeVisible();
+  // Expired codes stay folded away.
+  await expect(news.getByRole('button', { name: 'Copy HourofRuin', exact: true })).toBeHidden();
   expect(
-    (await new AxeBuilder({ page }).include('[role="dialog"]').analyze()).violations.filter((issue) =>
+    (await new AxeBuilder({ page }).include('[role="tabpanel"]').analyze()).violations.filter((issue) =>
       ['serious', 'critical'].includes(issue.impact ?? ''),
     ),
   ).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath('catch-up.png') });
-  await sheet
-    .getByRole('heading', { name: 'Quality of life' })
-    .first()
-    .scrollIntoViewIfNeeded()
-    .catch(() => {});
-  await sheet.getByText('Quality of life', { exact: true }).first().scrollIntoViewIfNeeded();
+  await news.getByText('Quality of life', { exact: true }).first().scrollIntoViewIfNeeded();
   await page.screenshot({ path: info.outputPath('catch-up-body.png') });
-  await sheet.getByRole('button', { name: 'Mark all 2 read', exact: true }).click();
-  await expect(sheet.getByRole('button', { name: /^Mark/ })).toHaveCount(0);
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('button', { name: 'Catch up on Genshin Impact', exact: true }).first()).toBeVisible();
+  await news.getByRole('button', { name: 'Mark all 2 read', exact: true }).click();
+  await expect(news.getByRole('button', { name: /^Mark/ })).toHaveCount(0);
+  // Nothing new is left, so the tab loses its dot.
+  await expect(page.getByRole('tab', { name: 'News', exact: true })).toBeVisible();
 });
 
-test('codes copy, link to the official page and expire while the sheet stays open', async ({ page, context }) => {
+test('codes copy, link to the official page and expire while the tab stays open', async ({ page, context }) => {
   // Genshin 7.2 codes expire October 26 at 00:00 (UTC-4), two minutes from here.
   const now = Date.parse('2026-10-26T03:58:00Z');
   await page.clock.install({ time: new Date(now) });
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await openGenshin(page, now);
-  await page
-    .getByRole('button', { name: /^Catch up on Genshin Impact/ })
-    .first()
-    .click();
-  const codes = page.getByRole('region', { name: 'Version 7.2 reward codes' });
+  const news = await openNews(page);
+  const codes = news.getByRole('region', { name: 'Version 7.2 reward codes' });
   await codes.getByRole('button', { name: 'Copy HourofRuin', exact: true }).click();
   await expect(codes.getByRole('status')).toHaveText('Copied HourofRuin');
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('HourofRuin');

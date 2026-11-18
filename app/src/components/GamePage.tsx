@@ -22,6 +22,7 @@ import { localResetLabel } from '../util';
 import { gameServerLabel } from '../server-choice';
 import { useCatchUpUnread } from '../catch-up-status';
 import { gameTabAvailable } from './game-tabs/availability';
+import './game-tabs/game-tabs.css';
 
 const GamePulls = lazy(() => import('./game-tabs/GamePulls').then((module) => ({ default: module.GamePulls })));
 const GameQuests = lazy(() => import('./game-tabs/GameQuests').then((module) => ({ default: module.GameQuests })));
@@ -170,7 +171,7 @@ export function GamePage({ now }: { now: number }) {
   // Without a game there is no page. The shell sends this route back to Today.
   if (!focusedEntry) return null;
   const game = { ...focusedEntry.game, ...(identityColors[focusedEntry.game.id] ?? {}) };
-  const tabs = GAME_TABS.filter((tab) => gameTabAvailable(game, tab));
+  const tabs = GAME_TABS.filter((tab) => gameTabAvailable(game, tab, { state, now }));
   const tab = tabs.includes(gameTab) ? gameTab : 'track';
   const eventCount = state.events.filter(
     (event) => event.gameId === game.id && !event.deleted && !event.done && event.end > now,
@@ -217,6 +218,7 @@ export function GamePage({ now }: { now: number }) {
               onBack={closeWorkspace}
               layout="focus"
               heading={false}
+              split
               columns={threeColumns ? 3 : twoColumns ? 2 : 1}
               onOpenEvent={openGameEvent}
               aside={<GameContext game={focusedEntry.game} />}

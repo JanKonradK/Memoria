@@ -125,7 +125,6 @@ export type SheetRoute =
   | { kind: 'eventPeek'; eventId: string }
   | { kind: 'reminder' }
   /** What a game added since the player last caught up. */
-  | { kind: 'catchUp'; gameId: string }
   | null;
 
 interface UIStore {

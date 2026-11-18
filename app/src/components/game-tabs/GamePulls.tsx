@@ -1,7 +1,7 @@
 import type { Game } from '@memoria/shared';
-import { PullsPage } from '../History';
+import { GamePullsView } from '../History';
 
 /** One game's savings, pity and version history. */
 export function GamePulls({ game }: { game: Game }) {
-  return <PullsPage key={game.id} />;
+  return <GamePullsView key={game.id} game={game} />;
 }

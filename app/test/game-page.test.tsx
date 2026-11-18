@@ -52,7 +52,15 @@ function controls(): GameControlActions {
 }
 
 /** Reads the store on every render, as GamePage does, so a store change reaches the view. */
-function GamePageControls({ layout, actionsEnd }: { layout?: 'card' | 'focus'; actionsEnd?: ReactNode }) {
+function GamePageControls({
+  layout,
+  actionsEnd,
+  split,
+}: {
+  layout?: 'card' | 'focus';
+  actionsEnd?: ReactNode;
+  split?: boolean;
+}) {
   const state = useApp((store) => store.state);
   const entry: GameUrgency = { game, next: null, actions: [] };
   return (
@@ -64,6 +72,9 @@ function GamePageControls({ layout, actionsEnd }: { layout?: 'card' | 'focus'; a
       layout={layout}
       onOpenEvent={() => {}}
       actionsEnd={actionsEnd}
+      split={split}
+      columns={split ? 3 : 1}
+      aside={split ? <aside aria-label="Notes" /> : undefined}
     />
   );
 }
@@ -150,6 +161,18 @@ describe('game page controls', () => {
     expect(resources!.compareDocumentPosition(tasks!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(right!).getByRole('region', { name: 'Testland events' })).toBeInTheDocument();
     expect(within(left!).queryByRole('region', { name: /events for/ })).not.toBeInTheDocument();
+  });
+
+  it("gives energy, tasks, and events with the notes a column each on the game's own page", () => {
+    useApp.setState({ state: roster([event('Open window')]) });
+    const { container } = show(<GamePageControls layout="focus" split />);
+    const grid = container.querySelector<HTMLElement>('.game-track-grid');
+    expect(grid).toHaveAttribute('data-cols', '3');
+    const [energy, tasks, side] = Array.from(grid!.children) as HTMLElement[];
+    expect(energy!.querySelector('[data-section="resources"]')).not.toBeNull();
+    expect(tasks!.querySelector('[data-section="tasks"]')).not.toBeNull();
+    expect(within(side!).getByRole('region', { name: 'Testland events' })).toBeInTheDocument();
+    expect(within(side!).getByRole('complementary', { name: 'Notes' })).toBeInTheDocument();
   });
 
   it('steps an event through partly done and done in the store, then takes it back', () => {

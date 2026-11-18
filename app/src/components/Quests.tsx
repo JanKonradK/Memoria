@@ -22,14 +22,12 @@ import { useNow } from '../hooks';
 import { useGround } from '../theme';
 import { assignGameInks } from '../game-color';
 import { fmtDur } from '../util';
-import { GameLogo } from './GameLogo';
 import { rosterGames } from './roster';
-import { Btn, ConfirmAction, Field, Page, Select, TextArea, TextInput } from './ui';
+import { Btn, ConfirmAction, Field, Select, TextArea, TextInput } from './ui';
 import { ProgressBar, Tick } from './primitives';
 import '../history.css';
 import '../quests.css';
 
-const PICK_KEY = 'memoria-quests-game';
 const catalogs = import.meta.glob<{ default: unknown }>('../data/quests/*.json');
 
 export const KIND_LABELS: Record<QuestKind, string> = {
@@ -95,67 +93,22 @@ function useCatalog(key: string | null): LoadedCatalog | null {
   return loaded?.key === key ? loaded : null;
 }
 
-function readPick(): string | null {
-  try {
-    return localStorage.getItem(PICK_KEY);
-  } catch {
-    return null;
-  }
-}
-
 type StatusFilter = 'all' | 'open' | 'started' | 'done';
 
 /**
- * Quests: a companion to each game's story. Every main-story act, world-quest
- * series and character story, with the parts a player ticks off, partly or
- * fully, and who is in them. Progress is per account and syncs like the rest.
+ * A game's Quests tab: a companion to its story. Every main-story act,
+ * world-quest series and character story, with the parts a player ticks off,
+ * partly or fully, and who is in them. Progress is per account and syncs.
  */
-export function QuestsPage() {
-  const state = useApp((s) => s.state);
+export function GameQuestsView({ game }: { game: Game }) {
+  const games = useApp((s) => s.state.games);
   const ground = useGround();
-  const games = useMemo(() => rosterGames(state.games), [state.games]);
-  const inks = useMemo(() => assignGameInks(games, ground), [games, ground]);
-  const [pick, setPick] = useState<string | null>(readPick);
-  const game = games.find((candidate) => candidate.id === pick) ?? games[0];
-  const choose = (id: string) => {
-    setPick(id);
-    try {
-      localStorage.setItem(PICK_KEY, id);
-    } catch {
-      // A convenience only.
-    }
-  };
-  const shortCount = new Map<string, number>();
-  for (const g of games) shortCount.set(g.short, (shortCount.get(g.short) ?? 0) + 1);
-
-  if (!game)
-    return (
-      <Page className="quests-page">
-        <p className="py-12 text-center text-body text-muted">Add a game to follow its quests.</p>
-      </Page>
-    );
-
+  const roster = useMemo(() => rosterGames(games), [games]);
+  const inks = useMemo(() => assignGameInks(roster, ground), [roster, ground]);
   return (
-    <Page className="quests-page">
-      <header className="pulls-header">
-        <div role="radiogroup" aria-label="Game" className="pulls-switch quests-switch">
-          {games.map((g) => (
-            <button
-              key={g.id}
-              type="button"
-              role="radio"
-              aria-checked={g.id === game.id}
-              className="pulls-switch-item"
-              onClick={() => choose(g.id)}
-            >
-              <span aria-hidden className="pulls-switch-dot" style={{ background: inks[g.id] ?? g.color }} />
-              {(shortCount.get(g.short) ?? 0) > 1 && g.accountLabel ? `${g.short} · ${g.accountLabel}` : g.short}
-            </button>
-          ))}
-        </div>
-      </header>
-      <GameQuests key={game.id} game={game} ink={inks[game.id] ?? game.color} />
-    </Page>
+    <div className="quests-page">
+      <GameQuests game={game} ink={inks[game.id] ?? game.color} />
+    </div>
   );
 }
 
@@ -217,10 +170,9 @@ function GameQuests({ game, ink }: { game: Game; ink: string }) {
 
   return (
     <section aria-label={`${title} quests`}>
-      <div className="pulls-game-heading">
-        <GameLogo game={game} size={44} />
+      <div className="quests-summary">
         <div className="min-w-0 flex-1">
-          <h1 className="text-title font-semibold text-fg">{title}</h1>
+          <h2 className="text-lead font-semibold text-fg">Story progress</h2>
           {lines.length > 0 && (
             <p className="text-meta text-muted">
               {totals.done} of {totals.lines} quest lines finished · {totals.started} in progress · {totals.partsDone}{' '}

@@ -22,7 +22,7 @@ async function addGame(page: Page, name: string, short: string, first: boolean) 
 
 /** Words of the heading that the browser split across two lines. */
 async function brokenWords(page: Page): Promise<string[]> {
-  return page.locator('.focus-workspace .game-card-heading h2').evaluate((heading) => {
+  return page.locator('.focus-workspace .game-bar-title').evaluate((heading) => {
     const text = heading.firstChild;
     if (!text || text.nodeType !== Node.TEXT_NODE) return ['(no text)'];
     const broken: string[] = [];

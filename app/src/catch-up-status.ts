@@ -11,7 +11,7 @@ export function useCatchUpUnread(game: Game | undefined): { total: number; unrea
 }
 
 /** The game's next livestream, from its own events, so owner edits and deletions win. */
-export function nextBroadcast(state: AppState, gameId: string, now: number) {
+export function nextBroadcast(state: Pick<AppState, 'events'>, gameId: string, now: number) {
   return state.events
     .filter(
       (event) =>
