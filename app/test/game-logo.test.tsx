@@ -89,9 +89,12 @@ describe('GameLogo', () => {
 
   it('sets a custom game in text: two lines in front, its short name behind', () => {
     const { container } = render(<GameLogo game={custom} />);
-    const front = [...container.querySelectorAll('.game-logo-front .game-logo-name > span')];
-    expect(front.map((line) => line.textContent)).toEqual(['My', 'Custom Game']);
-    expect(container.querySelector('.game-logo-back .game-logo-name')).toHaveTextContent('MCG');
+    const lines = (face: string) =>
+      [...container.querySelectorAll(`.game-logo-${face} .game-logo-line`)].map((line) =>
+        line.getAttribute('data-line'),
+      );
+    expect(lines('front')).toEqual(['My', 'Custom Game']);
+    expect(lines('back')).toEqual(['MCG']);
   });
 
   it('shows the full name until it is flipped, and is decorative unless it can be', () => {

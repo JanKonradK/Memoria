@@ -263,6 +263,46 @@
   margin: -3px;
   scrollbar-width: none;
 }
+/* A soft edge where more games are scrolled out of view, on that side only. The
+   scroll timeline is inactive when everything fits, so the strip is then unmasked. */
+@property --switch-fade-start {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --switch-fade-end {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@keyframes switch-fade {
+  from {
+    --switch-fade-start: 0px;
+    --switch-fade-end: 2rem;
+  }
+  8%,
+  92% {
+    --switch-fade-start: 2rem;
+    --switch-fade-end: 2rem;
+  }
+  to {
+    --switch-fade-start: 2rem;
+    --switch-fade-end: 0px;
+  }
+}
+@supports (animation-timeline: scroll()) {
+  .pulls-switch {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--switch-fade-start),
+      #000 calc(100% - var(--switch-fade-end)),
+      transparent
+    );
+    animation: switch-fade linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
 .pulls-switch-item {
   display: inline-flex;
   flex-shrink: 0;

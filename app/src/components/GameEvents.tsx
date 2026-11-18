@@ -82,12 +82,16 @@ export function GameEvents({ game, now, onBeforeOpen }: { game: Game; now: numbe
                       <button
                         type="button"
                         className="flex min-h-11 w-full items-center gap-3 rounded-ui-lg px-2 py-3 text-left transition hover:bg-fill-1"
-                        aria-label={`Edit ${game.name} event: ${event.name}`}
                         onClick={() => openEvent(event.id)}
                       >
                         <span className="min-w-0 flex-1">
-                          <span className="block break-words text-body font-semibold text-fg-soft">{event.name}</span>
-                          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 aside text-label text-muted">
+                          <span className="block break-words text-body font-semibold text-fg-soft">
+                            <span className="sr-only">Edit {game.name} event:</span> {event.name}
+                          </span>
+                          <span
+                            className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 aside text-label text-muted"
+                            aria-hidden
+                          >
                             <span>{event.type}</span>
                             <EventTags game={game} event={event} />
                             <span>
@@ -102,7 +106,7 @@ export function GameEvents({ game, now, onBeforeOpen }: { game: Game; now: numbe
                             {event.dailyTouch && <span>Daily check-in</span>}
                             {!event.notify && <span>Next actions off</span>}
                           </span>
-                          <span className="mt-1 block text-label text-muted">
+                          <span className="mt-1 block text-label text-muted" aria-hidden>
                             {calendar ? (
                               `${calendar.label} (${calendar.zone})`
                             ) : (

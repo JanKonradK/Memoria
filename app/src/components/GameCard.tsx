@@ -851,7 +851,7 @@ function ChecklistControls({
                   type="button"
                   className="-my-1.5 shrink-0 rounded-ui-sm px-2 py-1.5 text-caption font-semibold hover:bg-fill-2 focus-visible:bg-fill-2"
                   style={{ color: actionInk }}
-                  aria-label={`Complete all dailies for ${game.name}`}
+                  aria-label={`Tick all dailies for ${game.name}`}
                   onClick={() => setCompletedAction(completeDailies(game.id))}
                 >
                   Tick all

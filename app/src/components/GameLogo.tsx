@@ -133,10 +133,10 @@ function FaceText({
   };
   return (
     <span ref={ref} className="game-logo-name" style={style}>
+      {/* Drawn letters, not text: the name is already beside the coin (or in the
+          flip button's label), so it must not be read or matched a second time. */}
       {lines.map((line, index) => (
-        <span key={index} className="block">
-          {line}
-        </span>
+        <span key={index} className="game-logo-line block" data-line={line} />
       ))}
     </span>
   );
@@ -180,6 +180,15 @@ export function GameLogo({
   const [ringA, ringB] = logoRing(game);
   const art = game.presetKey ? LOGO_ART[game.presetKey] : undefined;
   const coin = size * COIN_SHARE;
+  // Any name set small enough to fit a list-sized coin is unreadable, so a small
+  // text coin is a monogram: the short name's first letter, large, on both faces.
+  const monogram = size < 44;
+  const lines = (which: 'front' | 'back'): string[] =>
+    monogram
+      ? [Array.from(game.short.trim() || game.name.trim())[0] ?? '?']
+      : which === 'front'
+        ? logoLines(game.name)
+        : [game.short];
   const face = (which: 'front' | 'back') => (
     <span className={`game-logo-face game-logo-${which}`}>
       {art ? (
@@ -188,10 +197,10 @@ export function GameLogo({
         </svg>
       ) : (
         <FaceText
-          lines={which === 'front' ? logoLines(game.name) : [game.short]}
+          lines={lines(which)}
           font={game.titleFont}
           room={coin * 0.82}
-          size={coin * (which === 'front' ? 0.24 : 0.34)}
+          size={coin * (monogram ? 0.62 : which === 'front' ? 0.24 : 0.34)}
         />
       )}
     </span>

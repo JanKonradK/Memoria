@@ -1,3 +1,4 @@
+import { computeAccessibleName } from 'dom-accessibility-api';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import type { Game, GameEvent } from '@memoria/shared';
 import { beforeEach, expect, it } from 'vitest';
@@ -35,7 +36,7 @@ function strip(events: GameEvent[], games: Game[] = [game]) {
 const chipNames = () =>
   screen
     .getAllByRole('button')
-    .map((button) => button.getAttribute('aria-label'))
+    .map((button) => computeAccessibleName(button))
     .filter((label) => label?.startsWith('Open pinned'));
 
 beforeEach(() => useUI.setState({ sheet: null }));

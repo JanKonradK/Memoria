@@ -163,7 +163,7 @@ describe('EnergyRow reserve controls', () => {
     const onCommit = vi.fn();
     renderRow({ onCommit });
     openReserve();
-    const reserveIncrement = screen.getByRole('button', { name: 'Increase Reserve TB Power' });
+    const reserveIncrement = screen.getByRole('button', { name: /^Increase Reserve TB Power by / });
 
     fireEvent.click(reserveIncrement);
 
@@ -177,7 +177,7 @@ describe('EnergyRow reserve controls', () => {
     openReserve();
 
     // Keyboard activation surfaces as a click with detail 0.
-    fireEvent.click(screen.getByRole('button', { name: 'Decrease Reserve TB Power' }), { detail: 0 });
+    fireEvent.click(screen.getByRole('button', { name: /^Decrease Reserve TB Power by / }), { detail: 0 });
 
     expect(onCommit).toHaveBeenCalledWith(300, 310);
   });

@@ -485,6 +485,21 @@
     scrollbar-color: transparent transparent;
     scrollbar-gutter: stable;
   }
+  /* Its scrollbar hides until the pointer is over it, so a soft edge says more
+     is above or below. Scroll-linked; no fade at all when the card fits. */
+  @supports (animation-timeline: scroll()) {
+    .today-detail {
+      mask-image: linear-gradient(
+        to bottom,
+        transparent,
+        #000 var(--detail-fade-top),
+        #000 calc(100% - var(--detail-fade-bottom)),
+        transparent
+      );
+      animation: detail-fade linear both;
+      animation-timeline: scroll(self block);
+    }
+  }
   .today-detail:hover,
   .today-detail:focus-within {
     scrollbar-color: var(--color-line-strong) transparent;
@@ -496,5 +511,31 @@
   .today-priority-row,
   .today-meter > span {
     transition: none;
+  }
+}
+
+@property --detail-fade-top {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --detail-fade-bottom {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@keyframes detail-fade {
+  from {
+    --detail-fade-top: 0px;
+    --detail-fade-bottom: 3rem;
+  }
+  4%,
+  96% {
+    --detail-fade-top: 2rem;
+    --detail-fade-bottom: 3rem;
+  }
+  to {
+    --detail-fade-top: 2rem;
+    --detail-fade-bottom: 0px;
   }
 }

@@ -265,7 +265,7 @@ test('wide Today opens integrated game pages while timeline bars stay in scale',
   await expect(cards).toHaveCount(5);
   const restingOrder = await page
     .locator('[data-roster-game]')
-    .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label')));
+    .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('data-roster-game')));
   const starRailTrigger = gameRow(page, 'Honkai: Star Rail');
   await openGame(page, 'Honkai: Star Rail');
   const workspace = page.getByRole('region', { name: 'Honkai: Star Rail focus workspace' });
@@ -279,7 +279,7 @@ test('wide Today opens integrated game pages while timeline bars stay in scale',
   expect(
     await page
       .locator('[data-roster-game]')
-      .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label'))),
+      .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('data-roster-game'))),
   ).toEqual(restingOrder);
   await expectNoPageOverflow(page);
 

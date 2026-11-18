@@ -1287,6 +1287,8 @@ export function TimelinePage({ now }: { now: number }) {
                   // the game's own primary as the fallback. Bars, connectors and
                   // the heading rule all take it from here so they cannot drift.
                   const ink = laneInk[game.id] ?? colors.color;
+                  const runningText = `${running.length} ${running.length === 1 ? 'event' : 'events'}`;
+                  const nextText = nextEnd ? `next ends ${fmtDur(nextEnd.end - now)}` : 'no upcoming deadline';
                   return (
                     <Disclosure
                       key={game.id}
@@ -1302,8 +1304,8 @@ export function TimelinePage({ now }: { now: number }) {
                             style={{ color: gameTitleInk(colors, titleGround, 4.5) }}
                           >
                             {game.name}
-                          </span>
-                          <ServerChip label={serverLabel} />
+                          </span>{' '}
+                          <ServerChip label={serverLabel} />{' '}
                           {accountLabel && (
                             <span className="aside min-w-0 max-w-[35%] shrink-0 truncate text-meta text-muted">
                               {accountLabel}
@@ -1315,22 +1317,14 @@ export function TimelinePage({ now }: { now: number }) {
                       summary={
                         !open ? (
                           <span className="numeral flex flex-col text-caption text-muted">
-                            <span>
-                              {running.length} {running.length === 1 ? 'event' : 'events'}
-                            </span>
-                            <span>
-                              {nextEnd ? (
-                                <span style={{ color: endTone(nextEnd.end - now) }}>
-                                  next ends {fmtDur(nextEnd.end - now)}
-                                </span>
-                              ) : (
-                                'no upcoming deadline'
-                              )}
-                            </span>
+                            <span>{runningText}</span>{' '}
+                            <span style={nextEnd ? { color: endTone(nextEnd.end - now) } : undefined}>{nextText}</span>
                           </span>
                         ) : undefined
                       }
-                      triggerLabel={`${open ? 'Collapse' : 'Expand'} ${game.name}, ${serverLabel}${accountLabel ? `, ${accountLabel}` : ''} lane`}
+                      // Every word the heading shows, in its order, so the name a voice user
+                      // reads off the screen is the name the button answers to.
+                      triggerLabel={`${open ? 'Collapse' : 'Expand'} ${game.name}, ${serverLabel}${accountLabel ? `, ${accountLabel}` : ''}${open ? '' : `, ${runningText}, ${nextText}`} lane`}
                       className="timeline-game-lane relative"
                       triggerClassName="timeline-game-heading relative z-20 rounded-ui-md transition hover:bg-fill-1"
                       contentClassName="timeline-lane-content"

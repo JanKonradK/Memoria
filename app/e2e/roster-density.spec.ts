@@ -107,13 +107,13 @@ test('Today fits more games and keeps compact summaries readable and actionable'
     ).toEqual([]);
   }
   const trigger = cards.first();
-  const name = (await trigger.getAttribute('aria-label'))!;
+  const game = (await trigger.getAttribute('data-roster-game'))!;
   await trigger.press('Enter');
   // A wide window keeps the card beside the list; its page is one more step.
   if (page.viewportSize()!.width >= 900) await page.getByRole('button', { name: 'Open full page' }).click();
   await expect(page.locator('.focus-workspace')).toBeVisible();
   await page.getByRole('button', { name: 'Back to Today', exact: true }).click();
-  await expect(page.getByRole('button', { name, exact: true })).toBeFocused();
+  await expect(page.locator(`[data-roster-game="${game}"]`)).toBeFocused();
   if (page.viewportSize()!.width < 1280) {
     // Scope large-text verification to the changed summary component.
     // Its rows can grow; density is a default-size target.

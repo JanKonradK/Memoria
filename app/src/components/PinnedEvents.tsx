@@ -68,15 +68,16 @@ export function PinnedEvents({ events, games, now, onOpen }: PinnedEventsProps) 
               key={event.id}
               type="button"
               data-pinned-chip={event.id}
-              aria-label={`Open pinned ${game.name} event: ${event.name}`}
               onClick={() => onOpen(event)}
               className="pinned-chip inline-flex min-h-11 min-w-0 max-w-full items-center gap-2 px-3 text-meta md:min-h-8"
             >
-              <span className="shrink-0 font-semibold" style={{ color: gameTitleInk(colors, ground, 4.5) }}>
+              <span className="shrink-0 font-semibold" style={{ color: gameTitleInk(colors, ground, 4.5) }} aria-hidden>
                 {game.short}
               </span>
-              <span className="min-w-0 max-w-[28ch] truncate text-fg">{event.name}</span>
-              <span className="numeral shrink-0 whitespace-nowrap text-fg-soft">
+              <span className="min-w-0 max-w-[28ch] truncate text-fg">
+                <span className="sr-only">Open pinned {game.name} event:</span> {event.name}
+              </span>
+              <span className="numeral shrink-0 whitespace-nowrap text-fg-soft" aria-hidden>
                 {running ? fmtDur(remaining) : `in ${fmtDur(remaining)}`}
               </span>
             </button>

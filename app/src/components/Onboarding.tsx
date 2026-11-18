@@ -239,7 +239,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
                           type="button"
                           className="onboarding-server"
                           data-active={count > 0 || undefined}
-                          aria-label={`Add a ${game.name} account on ${server.label}${count ? ` (${count} added)` : ''}`}
+                          aria-label={`Add a ${game.name} account on ${server.label}${count ? `, ${count} added` : ''}`}
                           onClick={() => addAccount(game.key, { server: server.id, tz: server.tz })}
                         >
                           <span aria-hidden>+</span> {server.label}
@@ -250,7 +250,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
                     <button
                       type="button"
                       className="onboarding-server"
-                      aria-label={`Add a ${game.name} account on another server`}
+                      aria-label={`Add a ${game.name} account on any other server`}
                       onClick={() => addAccount(game.key, null)}
                     >
                       <span aria-hidden>+</span> Other

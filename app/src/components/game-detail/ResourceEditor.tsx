@@ -32,13 +32,13 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
             summary={`${r.cap} capacity · ${kind === 'regen' ? `${r.regenMinutes} min / point` : kind === 'weekly' ? 'Weekly refill' : 'Manual counter'}`}
           >
             <div className="mb-3 flex flex-wrap items-center gap-2">
-              <Btn disabled={index === 0} onClick={() => moveResource(r.id, -1)} aria-label={`Move ${r.name} up`}>
+              <Btn disabled={index === 0} onClick={() => moveResource(r.id, -1)} aria-label={`Move up: ${r.name}`}>
                 ↑ Move up
               </Btn>
               <Btn
                 disabled={index === resources.length - 1}
                 onClick={() => moveResource(r.id, 1)}
-                aria-label={`Move ${r.name} down`}
+                aria-label={`Move down: ${r.name}`}
               >
                 ↓ Move down
               </Btn>

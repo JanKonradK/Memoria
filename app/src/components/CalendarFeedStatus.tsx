@@ -41,8 +41,8 @@ export function CalendarFeedStatus() {
   const feedDay = published && published >= SEED_UPDATED ? published : SEED_UPDATED;
   return (
     <div className="flex flex-wrap items-center gap-2 text-meta text-muted">
-      <Btn onClick={() => setOpen(true)} aria-label={`Calendar changes (${unread.length})`}>
-        Calendar changes
+      <Btn onClick={() => setOpen(true)} aria-label={`Calendar changes, ${unread.length} new`}>
+        Calendar changes{' '}
         {unread.length > 0 && <span className="rounded-ui-sm bg-fill-2 px-1.5 tabular-nums">{unread.length}</span>}
       </Btn>
       {status === 'error' && (
@@ -51,7 +51,6 @@ export function CalendarFeedStatus() {
             type="button"
             className="min-h-11 text-accent-fg underline underline-offset-4 sm:min-h-8"
             onClick={() => void refreshRemoteFeed()}
-            aria-label="Retry event update"
           >
             Events not updated · Retry
           </button>

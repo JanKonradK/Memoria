@@ -31,7 +31,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       await expect(page.getByRole('dialog')).toHaveCount(0);
     }
     const row = page.locator('[data-roster-game]').last();
-    const rowName = await row.getAttribute('aria-label');
+    const rowGame = await row.getAttribute('data-roster-game');
     await row.scrollIntoViewIfNeeded();
     const scroll = await page.evaluate(() => scrollY);
     expect(scroll).toBeGreaterThan(0);
@@ -61,7 +61,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       await expect(page.locator('.focus-workspace')).toHaveCSS('opacity', '1');
     }
     await back.press('Enter');
-    const returned = page.getByRole('button', { name: rowName!, exact: true });
+    const returned = page.locator(`[data-roster-game="${rowGame}"]`);
     await expect(returned).toBeFocused();
     await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(scroll, 0);
     await expect(page.locator('.today-page')).toHaveCSS('transform', 'none');

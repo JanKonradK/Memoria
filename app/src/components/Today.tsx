@@ -70,6 +70,7 @@ function PriorityRow({
   const badge = compact ? 48 : 60;
   const descriptionId = `today-priority-${encodeURIComponent(game.id)}`;
   const summary = [
+    game.paused && 'Paused',
     next ? `${next.label}${left! > 0 ? ` in ${fmtDur(left!)}` : ' now'}` : 'No upcoming deadlines',
     resource &&
       (known && source
@@ -87,25 +88,29 @@ function PriorityRow({
         className="today-priority-row"
         data-roster-game={game.id}
         data-paused={game.paused || undefined}
-        aria-label={`${desktop ? 'Review' : 'Open'} ${game.name}${game.accountLabel ? ` ${game.accountLabel}` : ''}${game.paused ? ', paused' : ''}`}
         aria-describedby={descriptionId}
         aria-pressed={desktop ? selected : undefined}
         onClick={onSelect}
       >
-        <span id={descriptionId} className="sr-only">
-          {summary}
-        </span>
-        <span className="today-row-badge">
+        {/* Named by its own words: what pressing does and the game. The figures
+            beside them are read once, in order, as the row's description. */}
+        <span className="today-row-badge" aria-hidden>
           <GameLogo game={game} size={badge} />
         </span>
         <span className="today-row-name">
+          <span className="sr-only">{desktop ? 'Review' : 'Open'}</span>{' '}
           <span className="today-row-title text-body font-semibold text-fg">{game.name}</span>
-          {game.accountLabel && <span className="today-row-account aside truncate text-meta">{game.accountLabel}</span>}
+          {game.accountLabel && (
+            <>
+              {' '}
+              <span className="today-row-account aside truncate text-meta">{game.accountLabel}</span>
+            </>
+          )}
         </span>
-        <span className="today-row-time numeral" data-tone={tone}>
+        <span className="today-row-time numeral" data-tone={tone} aria-hidden>
           {left == null ? '—' : left <= 0 ? 'Now' : fmtDur(left)}
         </span>
-        <span className="today-row-reading">
+        <span className="today-row-reading" aria-hidden>
           {resource && (
             <>
               <span
@@ -141,7 +146,7 @@ function PriorityRow({
             {next?.label ?? (resource && !known ? `Enter ${resource.name}` : 'No deadlines')}
           </span>
         </span>
-        <span className="today-row-ring">
+        <span className="today-row-ring" aria-hidden>
           {dailies.length > 0 && (
             <ProgressBar
               variant="ring"
@@ -163,6 +168,9 @@ function PriorityRow({
           )}
         </span>
       </button>
+      <span id={descriptionId} className="sr-only">
+        {summary}
+      </span>
       {(canTick || canUndo) && (
         <button
           type="button"

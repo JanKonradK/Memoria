@@ -79,7 +79,7 @@ export function GameRosterRow({ game, colors, localTz }: { game: Game; colors: G
         aria-label={`Game settings for ${label}`}
         onClick={() => openSheet({ kind: 'game', gameId: game.id })}
       >
-        Edit…
+        Settings
       </Btn>
     </li>
   );

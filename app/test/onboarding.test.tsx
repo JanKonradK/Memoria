@@ -121,8 +121,8 @@ describe('Onboarding energy entry', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Add a Genshin Impact account on TW, HK, MO' }));
     fireEvent.click(screen.getByRole('button', { name: 'Add a Genshin Impact account on Europe' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Add a Genshin Impact account on Europe (1 added)' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Add a Genshin Impact account on another server' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add a Genshin Impact account on Europe, 1 added' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add a Genshin Impact account on any other server' }));
     // The "other" account has no server yet, so it holds the dashboard back.
     expect(screen.getByRole('button', { name: 'Create dashboard' })).toBeDisabled();
     fireEvent.keyDown(screen.getByRole('combobox', { name: 'Genshin Impact account 4 server' }), { key: 'Enter' });

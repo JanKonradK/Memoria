@@ -52,7 +52,7 @@ test('calendar changes need confirmation and keep edited events', async ({ page 
     .click();
   // A current feed says nothing above the Timeline; its provenance is in the sheet.
   await expect(page.getByText(/Feed published/)).toHaveCount(0);
-  const changes = page.getByRole('button', { name: /^Calendar changes \(/ });
+  const changes = page.getByRole('button', { name: /^Calendar changes, / });
   await changes.click();
   const dialog = page.getByRole('dialog', { name: 'Calendar changes' });
   await expect(dialog.getByText(/^Feed published 9 Dec 2026 · /)).toBeVisible();

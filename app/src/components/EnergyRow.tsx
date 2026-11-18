@@ -94,7 +94,7 @@ function StepBtn({ delta, onStep, label }: { delta: number; onStep: (d: number) 
         gesture.current = null;
       }}
       className="energy-step flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-full bg-fill-2 text-meta font-bold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 active:scale-90 md:h-8 md:w-8"
-      aria-label={`${delta > 0 ? 'Increase' : 'Decrease'} ${label}`}
+      aria-label={`${delta > 0 ? 'Increase' : 'Decrease'} ${label} by ${Math.abs(delta)}`}
     >
       {delta > 0 ? `+${delta}` : delta}
     </button>
@@ -402,7 +402,7 @@ export const EnergyRow = memo(function EnergyRow({
             {kind === 'regen' && (
               <button
                 type="button"
-                className="energy-spent min-h-11 rounded-ui-md px-1 text-label font-semibold text-fg-soft underline-offset-4 hover:text-fg hover:underline sm:min-h-6"
+                className="energy-spent -my-3 min-h-11 rounded-ui-md px-1 text-label font-semibold text-fg-soft underline-offset-4 hover:text-fg hover:underline sm:my-0 sm:min-h-6"
                 title="Long-press or right-click: full"
                 aria-label={`Spent all ${res.name}`}
                 onClick={() => commit(0)}

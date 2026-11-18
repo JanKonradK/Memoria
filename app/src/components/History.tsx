@@ -654,7 +654,7 @@ function VersionTable({ game }: { game: GameMeta }) {
                     target="_blank"
                     rel="noreferrer"
                     title={source.label}
-                    aria-label={source.label}
+                    aria-label={`${source.label}, ${new URL(source.url).hostname.replace(/^www\./, '')}`}
                     className="history-source"
                   >
                     {index > 0 && <span aria-hidden> · </span>}

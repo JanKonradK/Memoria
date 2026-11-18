@@ -141,11 +141,12 @@ test('a long desktop Today list restores its scroll and supports repeated page v
   const rows = page.locator('.today-priority-row');
   await expect(rows).toHaveCount(24);
   const trigger = rows.last();
-  const triggerName = (await trigger.getAttribute('aria-label'))!;
+  const triggerGame = (await trigger.getAttribute('data-roster-game'))!;
+  const again = page.locator(`[data-roster-game="${triggerGame}"]`);
   const order = await rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-roster-game')));
   const full = page.getByRole('button', { name: 'Open full page' });
   for (let visit = 0; visit < 3; visit++) {
-    await page.getByRole('button', { name: triggerName, exact: true }).click();
+    await again.click();
     // A short window has the card at the top of the document, so read the
     // scroll the page is left from rather than where the row was.
     await full.scrollIntoViewIfNeeded();
@@ -155,7 +156,7 @@ test('a long desktop Today list restores its scroll and supports repeated page v
     await expect(back).toBeFocused();
     await expect(page.locator('.focus-workspace')).toBeVisible();
     await back.click();
-    await expect(page.getByRole('button', { name: triggerName, exact: true })).toBeFocused();
+    await expect(again).toBeFocused();
     await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(savedScroll, 0);
     expect(await rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-roster-game')))).toEqual(
       order,

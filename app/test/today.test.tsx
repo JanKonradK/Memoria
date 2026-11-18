@@ -123,7 +123,7 @@ it('puts the real, editable card beside the list instead of a link to it', () =>
 
 it('selects a paused game so tracking can be resumed from its card', () => {
   show(<TodayPage now={NOW} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Review Paused game, paused' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Review Paused game', description: /^Paused\. / }));
   expect(
     within(screen.getByRole('region', { name: 'Paused game card' })).getByRole('button', { name: 'Resume tracking' }),
   ).toBeInTheDocument();
