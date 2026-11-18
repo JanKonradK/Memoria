@@ -20,7 +20,7 @@ async function stored(page: Page) {
   );
 }
 
-test('a game page lays out livestreams and notes, tracking, and events side by side', async ({ page }, info) => {
+test('a game page lays out notes, tracking, and events side by side', async ({ page }, info) => {
   test.skip(!['desktop', 'mobile-390'].includes(info.project.name), 'One wide and one phone layout');
   const now = Date.parse('2026-11-05T12:00:00Z');
   await page.clock.setFixedTime(new Date(now));
@@ -53,9 +53,9 @@ test('a game page lays out livestreams and notes, tracking, and events side by s
   await page.getByRole('button', { name: 'Today', exact: true }).click();
   await openGame(page, zzz.name);
 
-  const context = page.getByRole('complementary', { name: `${zzz.name} livestreams and notes` });
-  await expect(context.getByRole('region', { name: 'Last livestream' })).toBeVisible();
-  await expect(context.getByRole('region', { name: 'Next livestream' })).toBeVisible();
+  const context = page.getByRole('complementary', { name: `${zzz.name} notes` });
+  // Livestreams live in Catch up, not beside the tracking.
+  await expect(context.getByRole('region', { name: 'Last livestream' })).toHaveCount(0);
   const notes = context.getByRole('textbox', { name: 'Notes' });
   await notes.fill('Save pulls for Severian.');
   await notes.blur();
@@ -72,7 +72,7 @@ test('a game page lays out livestreams and notes, tracking, and events side by s
     expect(side.x + side.width).toBeLessThanOrEqual(track.x + 1);
     expect(track.x + track.width).toBeLessThanOrEqual(events.x + 1);
   } else {
-    // One column: events come before livestreams, Catch up and notes (F6).
+    // One column: events come before the notes (F6).
     expect(track.y).toBeLessThan(events.y);
     expect(events.y).toBeLessThan(side.y);
   }

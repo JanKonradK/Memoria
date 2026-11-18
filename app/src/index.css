@@ -1142,7 +1142,7 @@ input[type='number'] {
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 2fr);
 }
 
-/* The context column: livestreams and notes, flat on the page ground. */
+/* The context column: the player's notes, flat on the page ground. */
 .game-context {
   display: grid;
   gap: 18px;
@@ -1164,31 +1164,6 @@ input[type='number'] {
   height: 1px;
   flex: 1;
   background: var(--color-line);
-}
-.game-context-stream {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
-  align-items: center;
-  min-height: 44px;
-  padding: 6px;
-  margin: -6px;
-  border-radius: var(--radius-ui-md, 16px);
-}
-@media (hover: hover) {
-  .game-context-stream:hover {
-    background: var(--color-fill-1);
-  }
-}
-.game-context-stream[data-art] {
-  grid-template-columns: 96px minmax(0, 1fr);
-}
-.game-context-thumb {
-  width: 96px;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  border-radius: 10px;
-  background: var(--color-inset);
 }
 .game-notes {
   width: 100%;

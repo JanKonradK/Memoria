@@ -1134,7 +1134,7 @@ export function GameControlsView({
   onBack?: () => void;
   /** Joins the end of the heading's actions, after the game's own. */
   actionsEnd?: ReactNode;
-  /** The full page's context column: livestreams and notes. Outside the editable layout. */
+  /** The full page's context column: the player's notes. Outside the editable layout. */
   aside?: ReactNode;
 }) {
   const { game } = entry;
@@ -1290,7 +1290,7 @@ export function GameControlsView({
               {tasks}
             </div>
             {/* One column (a phone) reads in this order: events come before
-                livestreams, Catch up and notes. Wider grids place them by area. */}
+                the notes. Wider grids place them by area. */}
             <div className="focus-events min-w-0">{events}</div>
             {aside && <div className="focus-context min-w-0">{aside}</div>}
           </div>

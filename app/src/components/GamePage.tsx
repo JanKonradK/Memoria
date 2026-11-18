@@ -71,7 +71,7 @@ export function GamePage({ now }: { now: number }) {
           layout="focus"
           columns={threeColumns ? 3 : twoColumns ? 2 : 1}
           onOpenEvent={openGameEvent}
-          aside={<GameContext game={focusedEntry.game} state={state} now={now} />}
+          aside={<GameContext game={focusedEntry.game} />}
         />
       </section>
     </Page>
