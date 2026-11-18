@@ -1145,8 +1145,19 @@ export const useApp = create<AppStore>((set, get) => ({
       const res = s.resources.find((item) => item.id === resourceId && !item.deleted);
       if (!res) return s;
       const clamped = Math.min(res.cap, Math.max(0, Math.round(value)));
+      // A reading of the main bar alone says nothing about the reserve, so the
+      // reserve carries over as projected. Dropping it zeroed the reserve
+      // whenever only the main number was entered.
+      let keptReserve = reserve;
+      if (keptReserve == null && res.reserveCap > 0) {
+        const game = s.games.find((item) => item.id === res.gameId);
+        const snap = latestSnapshots(s.snapshots).get(resourceId);
+        keptReserve = snap ? (projectEnergy(res, snap, now(), game).reserve ?? snap.reserve) : undefined;
+      }
       const clampedReserve =
-        reserve != null && res.reserveCap > 0 ? Math.min(res.reserveCap, Math.max(0, Math.round(reserve))) : undefined;
+        keptReserve != null && res.reserveCap > 0
+          ? Math.min(res.reserveCap, Math.max(0, Math.round(keptReserve)))
+          : undefined;
       return recordEnergySnapshot(
         s,
         { resourceId, value: clamped, ...(clampedReserve != null ? { reserve: clampedReserve } : {}) },

@@ -93,7 +93,7 @@ function StepBtn({ delta, onStep, label }: { delta: number; onStep: (d: number) 
         if (e.detail === 0 || !press || (!press.stepped && !press.cancelled)) onStep(delta);
         gesture.current = null;
       }}
-      className="energy-step flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-full bg-fill-2 text-meta font-bold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 active:scale-90 md:h-8 md:w-8"
+      className="energy-step energy-row-control flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-full bg-fill-2 text-meta font-bold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 active:scale-90 md:h-8 md:w-8"
       aria-label={`${delta > 0 ? 'Increase' : 'Decrease'} ${label} by ${Math.abs(delta)}`}
     >
       {delta > 0 ? `+${delta}` : delta}
@@ -192,7 +192,7 @@ function ValueStepper({
               inputRef.current?.blur();
             }
           }}
-          className={`bg-transparent text-right tabular-nums outline-none ${valueClassName}`}
+          className={`energy-value-input bg-transparent text-right tabular-nums outline-none ${valueClassName}`}
           // Room for four digits whatever the value, so every currency on a page lines up.
           style={{ color, width: `${Math.max(4, value.length) + 0.5}ch` }}
           aria-label={ariaLabel}
@@ -219,6 +219,9 @@ export const EnergyRow = memo(function EnergyRow({
   localTz,
   onCommit,
   note,
+  need,
+  pulse,
+  onTouched,
 }: {
   res: Resource;
   color: string;
@@ -228,8 +231,14 @@ export const EnergyRow = memo(function EnergyRow({
   now: number;
   localTz: string;
   onCommit: (value: number, reserve?: number) => void;
-  /** Small text at the end of the status line: when the reading was entered. */
+  /** Small text at the end of the status line, only when the reading needs a look. */
   note?: string;
+  /** In a running game's session, the part of this row to bring forward. */
+  need?: 'value' | 'reserve';
+  /** A minute into the session and still owed: the part pulses. */
+  pulse?: boolean;
+  /** The player entered or confirmed a part of the reading. */
+  onTouched?: (part: 'value' | 'reserve') => void;
 }) {
   const kind = effectiveResourceKind(res);
   const compact = kind === 'counter';
@@ -252,6 +261,7 @@ export const EnergyRow = memo(function EnergyRow({
   const commit = (value: number, nextReserve = liveRef.current.reserve) => {
     const clamped = Math.min(res.cap, Math.max(0, Math.round(value)));
     onCommit(clamped, res.reserveCap > 0 ? nextReserve : undefined);
+    onTouched?.('value');
     setDraft(null);
     mainEdit.current.dirty = false;
   };
@@ -272,6 +282,7 @@ export const EnergyRow = memo(function EnergyRow({
         ? intOr(reserveDraft, liveRef.current.reserve)
         : liveRef.current.reserve;
     onCommit(liveRef.current.value, clamp(base + d, 0, res.reserveCap));
+    onTouched?.('reserve');
     setReserveDraft(null);
     reserveEdit.current.dirty = false;
   };
@@ -303,8 +314,8 @@ export const EnergyRow = memo(function EnergyRow({
       subtitle = `refills ${fmtClock(proj.weeklyResetAt, localTz)}`;
       if (!proj.hasSnapshot) subtitle += ' · enter the current value';
     } else if (!proj.hasSnapshot) subtitle = 'enter the current value';
-    else if (compact && res.cap > 0)
-      subtitle = proj.value >= res.cap ? 'MAX — use one before crafting more' : `${res.cap - proj.value} more fit`;
+    // The bar says how much more fits; words only when it is maxed.
+    else if (compact && res.cap > 0 && proj.value >= res.cap) subtitle = 'Max';
   } else if (!proj.hasSnapshot) subtitle = 'enter the current value';
   else if (proj.isFull && res.reserveCap > 0) subtitle = 'FULL';
   else if (proj.isFull) subtitle = `FULL${proj.overflow > 0 ? ` — ${proj.overflow} wasted` : ''}`;
@@ -319,11 +330,11 @@ export const EnergyRow = memo(function EnergyRow({
       const reserveRegenMinutes = effectiveReserveRegenMinutes(res);
       const reserveFullAt = proj.reserveFullAt;
       reserveSubtitle = `+1 / ${reserveRegenMinutes}m · full ${fmtClock(reserveFullAt, localTz)} · in ${fmtDur(reserveFullAt - now)}`;
-    } else reserveSubtitle = `fills while ${res.name} is capped`;
+    }
   }
 
   return (
-    <div className="group/row">
+    <div className="group/row" data-energy-row data-need={need} data-pulse={(need && pulse) || undefined}>
       {/* Name and stepper share one line; a long name wraps rather than pushing the stepper down. */}
       <div className="energy-row-line flex items-center gap-x-2 gap-y-1.5">
         <span className="flex min-w-0 flex-1 items-center">
@@ -402,7 +413,7 @@ export const EnergyRow = memo(function EnergyRow({
             {kind === 'regen' && (
               <button
                 type="button"
-                className="energy-spent -my-3 min-h-11 rounded-ui-md px-1 text-label font-semibold text-fg-soft underline-offset-4 hover:text-fg hover:underline sm:my-0 sm:min-h-6"
+                className="energy-spent energy-row-control -my-3 min-h-11 rounded-ui-md px-1 text-label font-semibold text-fg-soft underline-offset-4 hover:text-fg hover:underline sm:my-0 sm:min-h-6"
                 title="Long-press or right-click: full"
                 aria-label={`Spent all ${res.name}`}
                 onClick={() => commit(0)}
@@ -424,7 +435,7 @@ export const EnergyRow = memo(function EnergyRow({
           {res.reserveCap > 0 && (
             <>
               {/* Backups and reserves are part of the reading, so they always show. */}
-              <div className="mt-2 border-t border-line-hairline pt-2" data-reserve>
+              <div className="energy-reserve mt-2 border-t border-line-hairline pt-2" data-reserve>
                 <div className="mb-1 text-caption font-semibold text-dim">{reserveLabel}</div>
                 <div>
                   <div>
@@ -457,23 +468,27 @@ export const EnergyRow = memo(function EnergyRow({
                             const next = clamp(intOr(reserveDraft, reserveValue), 0, res.reserveCap);
                             if (next !== liveRef.current.reserve) onCommit(liveRef.current.value, next);
                           }
+                          // Looking at the reserve and leaving it as it is confirms it.
+                          if (!edit.cancelled) onTouched?.('reserve');
                           setReserveDraft(null);
                           reserveEdit.current = { dirty: false, cancelled: false };
                         }}
                       />
                     </div>
                     <ProgressBar value={reservePct / 100} color={reserveAccent} />
-                    <div
-                      className={`mt-1 text-meta tabular-nums ${
-                        reserveValue >= res.reserveCap
-                          ? 'font-bold text-danger-fg'
-                          : proj.isFull
-                            ? 'text-ok-fg'
-                            : 'text-dim'
-                      }`}
-                    >
-                      {reserveSubtitle}
-                    </div>
+                    {reserveSubtitle && (
+                      <div
+                        className={`mt-1 text-meta tabular-nums ${
+                          reserveValue >= res.reserveCap
+                            ? 'font-bold text-danger-fg'
+                            : proj.isFull
+                              ? 'text-ok-fg'
+                              : 'text-dim'
+                        }`}
+                      >
+                        {reserveSubtitle}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

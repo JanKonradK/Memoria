@@ -34,6 +34,8 @@ test('phone roster opens full controls and keeps edits across navigation', async
   const value = page.getByLabel('Original Resin current value');
   await value.fill('100');
   await value.press('Enter');
+  // On touch the steppers appear once the reading is reached for.
+  await value.focus();
   await page.getByRole('button', { name: 'Decrease Original Resin' }).click();
   await expect(value).toHaveValue('99');
   const task = page.getByRole('button', { name: /Daily Commissions/ });
@@ -73,6 +75,7 @@ test('touch scroll on an energy button does not change the value', async ({ page
   const value = page.getByLabel('Original Resin current value');
   await value.fill('100');
   await value.press('Enter');
+  await value.focus();
   const step = page.getByRole('button', { name: 'Decrease Original Resin' });
   const touch = { pointerId: 1, pointerType: 'touch', isPrimary: true, button: 0, clientX: 200, clientY: 400 };
   await step.dispatchEvent('pointerdown', touch);

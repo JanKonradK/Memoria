@@ -116,8 +116,6 @@ export type SheetRoute =
   /** The quick view of an existing event; its editor is the `event` route. */
   | { kind: 'eventPeek'; eventId: string }
   | { kind: 'reminder' }
-  /** A game started on this PC a couple of minutes ago: dailies left and energy. */
-  | { kind: 'session'; gameId: string }
   /** What a game added since the player last caught up. */
   | { kind: 'catchUp'; gameId: string }
   | null;

@@ -619,7 +619,7 @@ fn create_tray(app: &AppHandle) -> tauri::Result<()> {
     let notices = CheckMenuItem::with_id(
         app,
         "notices",
-        "Notices when a game starts or closes",
+        "Follow the game you start",
         true,
         prefs.game_start_notices,
         None::<&str>,

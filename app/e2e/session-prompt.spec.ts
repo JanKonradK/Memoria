@@ -1,8 +1,11 @@
 import { expect, test } from '@playwright/test';
 
-test('a game starting on the PC checks in two minutes later with dailies and energy', async ({ page }) => {
+test('a game starting on the PC opens its page, brings the reading forward and nudges a minute in', async ({
+  page,
+}) => {
   await page.addInitScript(() => {
     localStorage.setItem('memoria-onboarding', 'complete');
+    (window as unknown as { notices: unknown[] }).notices = [];
     const started = new Set<(gameId: string) => void>();
     window.addEventListener('test-game-started', (event) => {
       for (const listener of started) listener((event as CustomEvent<string>).detail);
@@ -29,7 +32,10 @@ test('a game starting on the PC checks in two minutes later with dailies and ene
           gameWatch: true,
         }),
         watch: async () => true,
-        notify: async () => true,
+        notify: async (notice: { title: string; body: string }) => {
+          (window as unknown as { notices: unknown[] }).notices.push(notice);
+          return true;
+        },
         onChanged: () => () => {},
         onGameStarted: (listener: (gameId: string) => void) => {
           started.add(listener);
@@ -53,21 +59,33 @@ test('a game starting on the PC checks in two minutes later with dailies and ene
     const { useApp } = await import(path);
     return useApp.getState().state.games[0].id as string;
   });
-  // Two minutes in the app; a second here.
+  // A minute in the app; a second here.
   await page.evaluate(async () => {
     const path = '/src/presence.ts';
-    const { checkInTiming } = await import(path);
-    checkInTiming.delayMs = 1_000;
+    const { nudgeTiming } = await import(path);
+    nudgeTiming.delayMs = 1_000;
   });
   await page.evaluate((id) => window.dispatchEvent(new CustomEvent('test-game-started', { detail: id })), gameId);
-  const sheet = page.getByRole('dialog', { name: 'Genshin Impact check-in' });
-  await expect(sheet).toHaveCount(0);
-  await expect(sheet).toBeVisible();
-  await sheet.getByLabel('Original Resin now').fill('12');
-  await sheet.getByLabel('Already done them').check();
-  await sheet.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(sheet).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /Genshin Impact/ }).first()).toBeVisible();
+  // No pop-up: the game's page comes forward with the reading as its question.
+  await expect(page.locator('.focus-workspace')).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  const reading = page.locator('[data-energy-row][data-need="value"]');
+  await expect(reading).toBeVisible();
+  await expect(reading).not.toHaveAttribute('data-pulse');
+  // Still owed a minute in: one notice, and the reading pulses.
+  await expect(reading).toHaveAttribute('data-pulse', 'true');
+  const notices = await page.evaluate(
+    () => (window as unknown as { notices: { title: string; body: string }[] }).notices,
+  );
+  expect(notices).toEqual([
+    { gameId, title: 'Genshin Impact', body: expect.stringMatching(/^Original Resin\? · \d+ dailies left$/) },
+  ]);
+  const field = page.getByLabel('Original Resin current value');
+  await field.fill('12');
+  await field.press('Enter');
+  // The reading is in, so the dailies come forward.
+  await expect(page.locator('[data-session-need="dailies"]')).toBeVisible();
+  await expect(page.locator('[data-energy-row][data-need]')).toHaveCount(0);
   const recorded = await page.evaluate(async () => {
     const path = '/src/store.ts';
     const { useApp } = await import(path);

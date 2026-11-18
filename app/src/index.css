@@ -1371,3 +1371,154 @@ input[type='number'] {
     min-height: 44px;
   }
 }
+
+/* Show, don't tell: a reading is a number. Its tools (±, Spent all) appear
+   when the row is reached for: hover or focus with a mouse, focus on touch. */
+@media (hover: hover) {
+  .energy-row-control {
+    opacity: 0;
+    transition: opacity var(--dur-fast) var(--ease-out);
+  }
+  [data-energy-row]:hover .energy-row-control,
+  [data-energy-row]:focus-within .energy-row-control,
+  [data-energy-row][data-need='value'] > :not(.energy-reserve) .energy-row-control,
+  [data-energy-row][data-need='reserve'] .energy-reserve .energy-row-control {
+    opacity: 1;
+  }
+}
+@media (hover: none) {
+  .energy-step.energy-row-control,
+  .energy-spent.energy-row-control {
+    display: none;
+  }
+  [data-energy-row]:focus-within .energy-step.energy-row-control,
+  [data-energy-row][data-need='value'] > :not(.energy-reserve) .energy-step.energy-row-control,
+  [data-energy-row][data-need='reserve'] .energy-reserve .energy-step.energy-row-control {
+    display: flex;
+  }
+  [data-energy-row]:focus-within .energy-spent.energy-row-control,
+  [data-energy-row][data-need='value'] .energy-spent.energy-row-control {
+    display: inline-block;
+  }
+}
+
+/* A game running on this PC: its page brings one thing forward at a time
+   (the reading, then the reserve, then the dailies) and lets the rest recede. */
+[data-session-need] {
+  --session-ink: var(--game-ink, var(--color-accent));
+}
+[data-session-need] [data-energy-row],
+[data-session-need] [data-energy-row] > *,
+[data-session-need] [data-section='tasks'] > section,
+[data-session-need] .energy-value-box,
+[data-session-need] .energy-value-input,
+[data-session-need] .energy-resource-name,
+[data-session-need] .game-task-row {
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    height var(--dur-base) var(--ease-out),
+    font-size var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+[data-session-need='energy'] [data-energy-row]:not([data-need]),
+[data-session-need='reserve'] [data-energy-row]:not([data-need]),
+[data-session-need='energy'] [data-section='tasks'] > section,
+[data-session-need='reserve'] [data-section='tasks'] > section,
+[data-session-need='dailies'] [data-section='tasks'] > section:not([data-cadence='daily']),
+[data-energy-row][data-need='reserve'] > :not(.energy-reserve),
+[data-energy-row][data-need='value'] > .energy-reserve {
+  opacity: 0.45;
+}
+[data-session-need] [data-energy-row]:not([data-need]):is(:hover, :focus-within),
+[data-session-need] [data-section='tasks'] > section:is(:hover, :focus-within),
+[data-energy-row][data-need='reserve'] > :not(.energy-reserve):is(:hover, :focus-within),
+[data-energy-row][data-need='value'] > .energy-reserve:is(:hover, :focus-within) {
+  opacity: 1;
+}
+[data-session-need='dailies'] [data-section='resources'] {
+  opacity: 0.45;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+[data-session-need='dailies'] [data-section='resources']:is(:hover, :focus-within) {
+  opacity: 1;
+}
+
+/* The reading grows to the size of a question. */
+[data-energy-row][data-need='value'] > .energy-row-line .energy-value-box {
+  height: 3.5rem;
+  padding-inline: 1rem;
+  box-shadow: 0 0 0 2px var(--session-ink);
+}
+[data-energy-row][data-need='value'] > .energy-row-line .energy-value-input {
+  font-size: var(--text-hero);
+}
+[data-energy-row][data-need='value'] .energy-resource-name {
+  font-size: var(--text-heading);
+  color: var(--color-fg);
+}
+[data-energy-row][data-need='reserve'] .energy-reserve .energy-value-box {
+  height: 3rem;
+  padding-inline: 0.875rem;
+  box-shadow: 0 0 0 2px var(--session-ink);
+}
+[data-energy-row][data-need='reserve'] .energy-reserve .energy-value-input {
+  font-size: var(--text-numeral);
+}
+[data-session-need='dailies'] [data-cadence='daily'] {
+  border-left: 2px solid var(--session-ink);
+  padding-left: 0.5rem;
+  margin-left: -0.625rem;
+}
+[data-session-need='dailies'] [data-cadence='daily'] .game-task-row {
+  min-height: 3rem;
+}
+[data-session-need='dailies'] [data-cadence='daily'] [data-task-name] {
+  font-size: var(--text-lead);
+}
+
+/* A minute in and still owed: the step pulses until it is dealt with. */
+@keyframes session-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px var(--session-ink);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px var(--session-ink),
+      0 0 0 6px color-mix(in oklab, var(--session-ink) 35%, transparent),
+      0 0 28px 6px color-mix(in oklab, var(--session-ink) 30%, transparent);
+  }
+}
+@keyframes session-rail {
+  0%,
+  100% {
+    border-left-color: var(--session-ink);
+  }
+  50% {
+    border-left-color: color-mix(in oklab, var(--session-ink) 30%, transparent);
+  }
+}
+[data-energy-row][data-need='value'][data-pulse] > .energy-row-line .energy-value-box,
+[data-energy-row][data-need='reserve'][data-pulse] .energy-reserve .energy-value-box {
+  animation: session-pulse 1.8s var(--ease-out) infinite;
+}
+[data-session-need='dailies'][data-session-pulse] [data-cadence='daily'] {
+  animation: session-rail 1.8s var(--ease-out) infinite;
+}
+
+/* On a phone the grown reading takes its own line under the bar's name. */
+@media (max-width: 599px) {
+  [data-energy-row][data-need='value'] > .energy-row-line {
+    flex-wrap: wrap;
+  }
+  [data-energy-row][data-need='value'] > .energy-row-line > :first-child {
+    flex-basis: 100%;
+  }
+  [data-energy-row][data-need='value'] > .energy-row-line .energy-value-stepper {
+    width: 100%;
+  }
+  [data-energy-row][data-need='value'] > .energy-row-line .energy-value-box {
+    flex: 1;
+    justify-content: center;
+  }
+}

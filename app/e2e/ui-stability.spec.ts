@@ -186,6 +186,8 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   const resin = page.getByLabel('Original Resin current value');
   await resin.fill('0');
   await resin.blur();
+  // On touch the steppers appear once the reading is reached for.
+  await resin.focus();
   await page.getByRole('button', { name: 'Decrease Original Resin' }).click();
   await expect(resin).toHaveValue('0');
 

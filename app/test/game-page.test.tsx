@@ -213,6 +213,6 @@ describe("Today's selected game", () => {
     const bar = screen.getByLabelText('Testland tracking controls');
     expect(bar.closest('.game-card-heading')).not.toBeNull();
     expect(within(bar).getByRole('button', { name: 'Open full page', exact: true })).toBeInTheDocument();
-    expect(within(bar).getAllByRole('button').at(-1)).toHaveTextContent('Open full page');
+    expect(within(bar).getAllByRole('button').at(-1)).toHaveAccessibleName('Open full page');
   });
 });

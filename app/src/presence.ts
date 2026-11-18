@@ -1,15 +1,8 @@
 import { create } from 'zustand';
-import {
-  checklistFor,
-  effectiveResourceKind,
-  gameGlance,
-  glanceLine,
-  presetForGame,
-  type AppState,
-  type Game,
-} from '@memoria/shared';
+import { presetForGame, type AppState } from '@memoria/shared';
 import type { DesktopPreferences, DesktopPresence } from './desktop-host';
 import { useGameLaunch } from './game-launch';
+import { endSession, nudgeLine, nudgeSession, startSession, useSession } from './session-focus';
 import { useApp } from './store';
 import { useUI } from './ui-store';
 import { openGame } from './workspace-navigation';
@@ -77,16 +70,17 @@ export function initPresence(): (() => void) | undefined {
     host.onChanged((presence) => usePresence.setState({ presence })),
     host.onGameStarted((gameId) => {
       const state = useApp.getState().state;
-      const game = state.games.find((item) => item.id === gameId && !item.deleted);
+      const game = state.games.find((item) => item.id === gameId && !item.deleted && !item.paused);
       if (!game) return;
-      const now = Date.now();
-      const glance = gameGlance(state, game, now);
-      void host
-        .notify({ gameId, title: `${glance.name} started`, body: glanceLine(glance, now) })
-        .catch(() => undefined);
-      scheduleCheckIn(gameId);
+      // The game's page comes forward and shows what is next; nothing pops up.
+      startSession(gameId);
+      if (!useUI.getState().sheet) openGame(gameId);
+      scheduleNudge(gameId);
     }),
-    host.onGameStopped?.((gameId) => cancelCheckIn(gameId)) ?? (() => undefined),
+    host.onGameStopped?.((gameId) => {
+      cancelNudge(gameId);
+      endSession(gameId);
+    }) ?? (() => undefined),
     host.onOpenGame((gameId) => {
       if (useApp.getState().state.games.some((game) => game.id === gameId && !game.deleted)) openGame(gameId);
     }),
@@ -94,65 +88,40 @@ export function initPresence(): (() => void) | undefined {
   sendWatch();
   return () => {
     for (const stop of stops) stop();
-    for (const timer of checkIns.values()) clearTimeout(timer);
-    checkIns.clear();
+    for (const timer of nudges.values()) clearTimeout(timer);
+    nudges.clear();
   };
 
   /**
-   * Early in a session, not after it: two minutes in the player is logged in
-   * and has not started their routine yet, so the prompt can still remind them
-   * what is left — and if they already did it on another device, they record
-   * the energy they see while it is on screen. Asking when the game closed came
-   * too late to change anything.
+   * A minute in, the player is through the login screens with the game's
+   * numbers in front of them. If something is still owed, one notice says what,
+   * and the step on the page starts to pulse.
    */
-  function scheduleCheckIn(gameId: string) {
-    cancelCheckIn(gameId);
-    checkIns.set(
+  function scheduleNudge(gameId: string) {
+    cancelNudge(gameId);
+    nudges.set(
       gameId,
       setTimeout(() => {
-        checkIns.delete(gameId);
+        nudges.delete(gameId);
+        const session = useSession.getState().session;
         const state = useApp.getState().state;
         const game = state.games.find((item) => item.id === gameId && !item.deleted && !item.paused);
-        if (!game) return;
-        const now = Date.now();
-        const line = checkInLine(state, game, now);
+        if (!game || session?.gameId !== gameId) return;
+        const line = nudgeLine(state, game, session, Date.now());
         if (!line) return;
-        // Never over an editor the player has open.
-        if (!useUI.getState().sheet) useUI.getState().openSheet({ kind: 'session', gameId });
-        void host!.notify({ gameId, title: `${game.name} check-in`, body: line }).catch(() => undefined);
-      }, checkInTiming.delayMs),
+        nudgeSession(gameId);
+        void host!.notify({ gameId, title: game.name, body: line }).catch(() => undefined);
+      }, nudgeTiming.delayMs),
     );
   }
 }
 
-/** How long after a game starts its check-in appears: inside the first three minutes. */
-export const checkInTiming = { delayMs: 2 * 60_000 };
-const checkIns = new Map<string, ReturnType<typeof setTimeout>>();
+/** How long after a game starts its notice comes, if one is needed. */
+export const nudgeTiming = { delayMs: 60_000 };
+const nudges = new Map<string, ReturnType<typeof setTimeout>>();
 
-function cancelCheckIn(gameId: string) {
-  const timer = checkIns.get(gameId);
+function cancelNudge(gameId: string) {
+  const timer = nudges.get(gameId);
   if (timer) clearTimeout(timer);
-  checkIns.delete(gameId);
-}
-
-/** What the check-in notice says, or nothing when there is nothing to ask. */
-export function checkInLine(state: AppState, game: Game, now: number): string {
-  const glance = gameGlance(state, game, now);
-  const dailies = checklistFor(state, game, now).filter((item) => item.cadence === 'daily');
-  const left = dailies.filter((item) => !item.done);
-  const regen = state.resources.some(
-    (item) => item.gameId === game.id && !item.deleted && effectiveResourceKind(item) === 'regen',
-  );
-  if (!left.length && !regen) return '';
-  const parts: string[] = [];
-  if (left.length) {
-    const names = left.slice(0, 3).map((item) => item.name);
-    parts.push(
-      `${left.length} ${left.length === 1 ? 'daily' : 'dailies'} left: ${names.join(', ')}${left.length > 3 ? '…' : ''}`,
-    );
-  } else if (dailies.length) parts.push('Dailies done');
-  const energy = glance.energy[0];
-  if (energy) parts.push(`${energy.name} about ${energy.value}/${energy.cap} — record the real number`);
-  else if (regen) parts.push('Record your energy while it is on screen');
-  return parts.join('. ');
+  nudges.delete(gameId);
 }

@@ -24,10 +24,12 @@ import { GamePage } from './GamePage';
 import { TodayNotices } from './TodayNotices';
 import { TodayCodes } from './TodayCodes';
 import { ProgressBar } from './primitives';
-import { Btn, Page, Tooltip } from './ui';
+import { Btn, Page, Tooltip, TOUCH_BUTTON } from './ui';
 import '../today.css';
 
 const URGENT_MS = 2 * 60 * 60_000;
+/** A reading older than this shows its age on the row. */
+const STALE_READING_MS = 12 * 60 * 60_000;
 
 function PriorityRow({
   entry,
@@ -52,6 +54,15 @@ function PriorityRow({
   const { resource, projection } = derived.primaryEnergy(game.id);
   const source = readingSource(resource ? derived.snaps.get(resource.id) : undefined, now);
   const known = Boolean(resource && projection?.hasSnapshot);
+  const snap = resource ? derived.snaps.get(resource.id) : undefined;
+  const stale =
+    source?.kind === 'estimate' ||
+    (snap != null && now - (snap.provenance?.observedAt ?? snap.takenAt) > STALE_READING_MS);
+  // The bar already is the main energy, so its own cap needs no words; anything else does.
+  const what =
+    next && resource && next.label === `${resource.name} caps`
+      ? ''
+      : (next?.label ?? (resource && !known ? `Enter ${resource.name}` : ''));
   const dailies = (derived.checklistByGame.get(game.id) ?? []).filter((item) => item.cadence === 'daily');
   const done = dailies.filter((item) => item.done).length;
   // The ring ticks every check-type daily from Today, with Undo, without opening the game.
@@ -129,7 +140,7 @@ function PriorityRow({
                 {known ? <TickNumber value={projection!.value} /> : '—'}
                 <span className="text-muted">/{resource.cap}</span>
               </span>
-              {known && source && (
+              {known && source && stale && (
                 <Tooltip
                   content={
                     source.kind === 'estimate'
@@ -142,9 +153,7 @@ function PriorityRow({
               )}
             </>
           )}
-          <span className="today-row-what truncate text-caption">
-            {next?.label ?? (resource && !known ? `Enter ${resource.name}` : 'No deadlines')}
-          </span>
+          {what && <span className="today-row-what truncate text-caption">{what}</span>}
         </span>
         <span className="today-row-ring" aria-hidden>
           {dailies.length > 0 && (
@@ -458,7 +467,23 @@ export function TodayPage({ now }: { now: number }) {
                   entry={selected}
                   now={now}
                   layout="focus"
-                  actionsEnd={<Btn onClick={() => openGame(selected.game.id)}>Open full page</Btn>}
+                  actionsEnd={
+                    <Tooltip content="Open full page">
+                      <Btn
+                        className={`inline-flex shrink-0 items-center ${TOUCH_BUTTON}`}
+                        aria-label="Open full page"
+                        onClick={() => openGame(selected.game.id)}
+                      >
+                        <svg viewBox="0 0 20 20" aria-hidden className="icon h-4 w-4" fill="none" stroke="currentColor">
+                          <path
+                            d="M12 3.5h4.5V8M16.5 3.5 11 9M8 16.5H3.5V12M3.5 16.5 9 11"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </Btn>
+                    </Tooltip>
+                  }
                 />
               </section>
             </div>

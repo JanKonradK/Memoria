@@ -38,8 +38,13 @@ import { calendarSchedule } from '../event-schedule';
 import { readingSource } from '../reading-source';
 import { LaunchButton } from './GameLaunch';
 import { useCatchUpUnread } from '../catch-up-status';
+import { passSession, sessionNeed, sessionResource, useSession, type SessionNeed } from '../session-focus';
 
 const CADENCE_ORDER = ['daily', 'custom', 'weekly', 'monthly'] as const;
+/** A reading older than this shows when it was taken. */
+const STALE_READING_MS = 12 * 60 * 60_000;
+/** A session the PC never saw end stops leading the page after this long. */
+const SESSION_MAX_MS = 8 * 60 * 60_000;
 const MENU_ITEM =
   'flex min-h-11 cursor-pointer items-center rounded-ui-sm px-3 text-body text-fg-soft outline-none transition-colors data-[highlighted]:bg-fill-2 data-[highlighted]:text-fg sm:min-h-9';
 const CADENCE_LABEL = { daily: 'Daily', custom: 'Cycle', weekly: 'Weekly', monthly: 'Monthly' } as const;
@@ -557,6 +562,8 @@ function EnergyControlRow({
   localTz,
   setEnergy,
   note,
+  need,
+  pulse,
 }: {
   game: Game;
   res: AppState['resources'][number];
@@ -564,14 +571,20 @@ function EnergyControlRow({
   now: number;
   localTz: string;
   setEnergy: GameControlActions['setEnergy'];
-  /** When the reading was entered, for the game's main energy. */
+  /** When the reading was entered, only when it needs a look. */
   note?: string;
+  need?: 'value' | 'reserve';
+  pulse?: boolean;
 }) {
   const ground = useGround();
   const projection = useMemo(() => projectEnergy(res, measuredSnapshot(res, snap), now, game), [game, now, res, snap]);
   const commit = useCallback(
     (value: number, reserve?: number) => setEnergy(res.id, value, reserve),
     [res.id, setEnergy],
+  );
+  const touched = useCallback(
+    (part: 'value' | 'reserve') => passSession(game.id, part === 'value' ? 'energy' : 'reserve'),
+    [game.id],
   );
   return (
     <EnergyRow
@@ -584,6 +597,9 @@ function EnergyControlRow({
       localTz={localTz}
       onCommit={commit}
       note={note}
+      need={need}
+      pulse={pulse}
+      onTouched={touched}
     />
   );
 }
@@ -596,6 +612,7 @@ function ResourceControls({
   now,
   actions,
   reading,
+  session,
 }: {
   game: Game;
   state: AppState;
@@ -605,6 +622,8 @@ function ResourceControls({
   now: number;
   actions: GameControlActions;
   reading?: { resourceId: string; label: string };
+  /** A running game's next step, on the bar it starts with. */
+  session?: { resourceId: string; need: SessionNeed; pulse: boolean };
 }) {
   const resources = state.resources.filter((r) => r.gameId === game.id && !r.deleted).sort((a, b) => a.sort - b.sort);
   const cardResources = resources.filter(
@@ -626,6 +645,14 @@ function ResourceControls({
               localTz={state.settings.localTz}
               setEnergy={actions.setEnergy}
               note={reading?.resourceId === res.id ? reading.label : undefined}
+              need={
+                session?.resourceId === res.id && session.need !== 'dailies'
+                  ? session.need === 'energy'
+                    ? 'value'
+                    : 'reserve'
+                  : undefined
+              }
+              pulse={session?.pulse}
             />
           ))}
         </div>
@@ -787,11 +814,18 @@ function LinkedTaskRow({
             href={item.link}
             target="_blank"
             rel="noreferrer"
-            className="min-h-11 shrink-0 content-center rounded-ui-sm px-2 text-caption font-semibold text-accent-fg hover:bg-fill-2 sm:min-h-8"
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-ui-sm text-accent-fg hover:bg-fill-2 sm:min-h-8 sm:min-w-8"
             aria-label={`Open ${item.name}`}
+            title={`Open ${item.name}`}
             onClick={() => setOpened(true)}
           >
-            Open
+            <svg viewBox="0 0 20 20" aria-hidden className="icon h-4 w-4" fill="none" stroke="currentColor">
+              <path
+                d="M11 4h5v5M16 4l-7 7M14 11.5V15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </a>
         ))}
     </div>
@@ -825,7 +859,11 @@ function ChecklistControls({
     <div data-section="tasks" className="mt-3.5">
       <Hint id="tasks" className="mb-2" />
       {groups.map((group) => (
-        <section key={group.cadence} aria-label={`${CADENCE_LABEL[group.cadence]} tasks for ${game.name}`}>
+        <section
+          key={group.cadence}
+          data-cadence={group.cadence}
+          aria-label={`${CADENCE_LABEL[group.cadence]} tasks for ${game.name}`}
+        >
           <ChecklistGroupRule
             cadence={group.cadence}
             done={group.done}
@@ -849,12 +887,18 @@ function ChecklistControls({
               ) : canComplete ? (
                 <button
                   type="button"
-                  className="-my-1.5 shrink-0 rounded-ui-sm px-2 py-1.5 text-caption font-semibold hover:bg-fill-2 focus-visible:bg-fill-2"
+                  className="-my-1.5 inline-flex shrink-0 items-center rounded-ui-sm px-2 py-1.5 hover:bg-fill-2 focus-visible:bg-fill-2"
                   style={{ color: actionInk }}
                   aria-label={`Tick all dailies for ${game.name}`}
-                  onClick={() => setCompletedAction(completeDailies(game.id))}
+                  title="Tick all dailies"
+                  onClick={() => {
+                    passSession(game.id, 'energy', 'reserve');
+                    setCompletedAction(completeDailies(game.id));
+                  }}
                 >
-                  Tick all
+                  <svg viewBox="0 0 20 20" aria-hidden className="icon h-4 w-4" fill="none" stroke="currentColor">
+                    <path d="m2.5 10.5 3 3 6.5-7M9.5 13l.5.5 6.5-7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </button>
               ) : undefined
             }
@@ -1012,8 +1056,6 @@ function GameControlsHeader({
                     strokeLinejoin="round"
                   />
                 </svg>
-                {/* A phone gives the game's name the room; the pencil says Edit. */}
-                <span className="hidden sm:inline">Edit</span>
               </Btn>
             </DropdownMenuPrimitive.Trigger>
           </Tooltip>
@@ -1063,7 +1105,6 @@ function CatchUpButton({ game }: { game: Game }) {
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" className="icon h-4 w-4" aria-hidden>
           <path d="M3 5.5h14v9H3zM7.5 17.5h5M8.5 7.8v4.4L12.3 10z" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <span className="hidden sm:inline">Catch up</span>
         {unread > 0 && <span aria-hidden className="catch-up-dot" />}
       </Btn>
     </Tooltip>
@@ -1143,14 +1184,44 @@ export function GameControlsView({
   const checklist = allChecklist.filter((item) => !hidden.has(`task:${item.taskId}`));
   const dailies = allChecklist.filter((item) => item.cadence === 'daily');
   const { resource: mainResource } = derived.primaryEnergy(game.id);
-  const source = mainResource ? readingSource(derived.snaps.get(mainResource.id), now) : null;
+  const mainSnap = mainResource ? derived.snaps.get(mainResource.id) : undefined;
+  const source = readingSource(mainSnap, now);
+  // When the reading was taken only shows when it is worth doubting.
+  const stale =
+    !mainSnap ||
+    !source ||
+    source.kind === 'estimate' ||
+    now - (mainSnap.provenance?.observedAt ?? mainSnap.takenAt) > STALE_READING_MS;
   const reading =
-    mainResource && !game.paused
+    mainResource && !game.paused && stale
       ? {
           resourceId: mainResource.id,
           label: !source ? 'No reading yet' : source.kind === 'estimate' ? source.label : `Updated ${source.age}`,
         }
       : undefined;
+  const session = useSession((store) => store.session);
+  const live =
+    session && session.gameId === game.id && !game.paused && now - session.startedAt < SESSION_MAX_MS ? session : null;
+  const need = live ? sessionNeed(state, game, live, now) : null;
+  const sessionBar = live ? sessionResource(state, game.id) : undefined;
+  // Doing a task means the player has moved past the reading.
+  const sessionActions = useMemo<GameControlActions>(
+    () =>
+      live
+        ? {
+            ...actions,
+            setTaskDone: (...args) => {
+              passSession(game.id, 'energy', 'reserve');
+              actions.setTaskDone(...args);
+            },
+            setTaskCount: (...args) => {
+              passSession(game.id, 'energy', 'reserve');
+              actions.setTaskCount(...args);
+            },
+          }
+        : actions,
+    [actions, game.id, live],
+  );
 
   const resources = (
     <ResourceControls
@@ -1161,9 +1232,10 @@ export function GameControlsView({
       now={now}
       actions={actions}
       reading={reading}
+      session={need && sessionBar ? { resourceId: sessionBar.id, need, pulse: live?.nudged ?? false } : undefined}
     />
   );
-  const tasks = <ChecklistControls game={visualGame} checklist={checklist} now={now} actions={actions} />;
+  const tasks = <ChecklistControls game={visualGame} checklist={checklist} now={now} actions={sessionActions} />;
   const focus = layout === 'focus';
   const setProgress = (event: GameEvent, progress: EventProgress) =>
     useApp.getState().upsertEvent({ id: event.id, gameId: event.gameId, ...setEventProgress(progress) });
@@ -1174,7 +1246,6 @@ export function GameControlsView({
       now={now}
       onOpenEvent={onOpenEvent}
       onSetProgress={focus ? setProgress : undefined}
-      emptyLabel={focus ? 'No events.' : undefined}
     />
   );
   return (
@@ -1206,7 +1277,11 @@ export function GameControlsView({
       <div id={eventsPanelId} hidden={!managingEvents}>
         {managingEvents && <GameEvents key={game.id} game={game} now={now} />}
       </div>
-      <div className={`relative z-10 flex flex-1 flex-col ${game.paused ? 'opacity-50' : ''}`}>
+      <div
+        className={`relative z-10 flex flex-1 flex-col ${game.paused ? 'opacity-50' : ''}`}
+        data-session-need={need ?? undefined}
+        data-session-pulse={(need && live?.nudged) || undefined}
+      >
         {layout === 'focus' ? (
           // Context on the left, what you track in the middle, what is running on the right.
           <div className="focus-bay-grid grid gap-x-8 gap-y-6" data-cols={columns} data-aside={aside ? '' : undefined}>

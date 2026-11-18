@@ -744,6 +744,15 @@ describe('resource rule edits', () => {
 });
 
 describe('setEnergy', () => {
+  it('keeps the reserve when only the main number is entered', () => {
+    const { resourceId } = addGameWithResource(240, 6, 2400);
+    writeEnergy(resourceId, 100, 800);
+    writeEnergy(resourceId, 120);
+    const latest = latestSnapshots(useApp.getState().state.snapshots).get(resourceId);
+    expect(latest?.value).toBe(120);
+    expect(latest?.reserve).toBe(800);
+  });
+
   it('clamps to the resource cap and to zero', () => {
     const { resourceId } = addGameWithResource(100);
 

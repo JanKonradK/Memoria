@@ -32,11 +32,13 @@ export function selectTodayAgenda(order: GameUrgency[], events: GameEvent[], now
     count: 0,
   };
 
-  for (const { game, actions } of order) {
+  for (const { game, actions, next } of order) {
     if (game.paused) continue;
     active.add(game.id);
     for (const action of actions) {
       if (action.at > until) break;
+      // The game's own row already counts down to its next cap.
+      if (action.kind === 'energy_soon' && next && action.at === next.at && action.label === next.label) continue;
       if (action.kind === 'energy_full') {
         if (!full.gameIds.includes(game.id)) full.gameIds.push(game.id);
         full.count += 1;

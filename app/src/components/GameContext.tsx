@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { DateTime } from 'luxon';
 import { presetForGame, type AppState, type Game } from '@memoria/shared';
-import { lastAiredStream, nextBroadcast, useCatchUpUnread } from '../catch-up-status';
-import { useUI } from '../ui-store';
+import { lastAiredStream, nextBroadcast } from '../catch-up-status';
 import { fmtDur } from '../util';
 import { useGameDraft } from './game-detail/useGameDraft';
-import { Btn } from './ui';
 
 const NOTES_FIELDS = ['notes'] as const;
 
@@ -41,12 +39,10 @@ function GameNotes({ game }: { game: Game }) {
 }
 
 /**
- * The left column of a game's page: the last livestream and the next one, a
- * way into Catch up, and the player's own notes.
+ * The left column of a game's page: the last livestream and the next one when
+ * there are any, and the player's own notes.
  */
 export function GameContext({ game, state, now }: { game: Game; state: AppState; now: number }) {
-  const openSheet = useUI((ui) => ui.openSheet);
-  const { total, unread } = useCatchUpUnread(game);
   const [notesFocused, setNotesFocused] = useState(false);
   // Another device's edit refreshes the box, but never while it is being typed in.
   const [notesKey, setNotesKey] = useState(game.notes ?? '');
@@ -59,8 +55,8 @@ export function GameContext({ game, state, now }: { game: Game; state: AppState;
 
   return (
     <aside className="game-context" aria-label={`${game.name} livestreams and notes`}>
-      <StreamLine label="Last livestream">
-        {last?.stream ? (
+      {last?.stream && (
+        <StreamLine label="Last livestream">
           <a
             className="game-context-stream"
             data-art={last.artwork ? '' : undefined}
@@ -81,13 +77,11 @@ export function GameContext({ game, state, now }: { game: Game; state: AppState;
               </span>
             </span>
           </a>
-        ) : (
-          <p className="aside text-meta text-muted">No recap for this game yet.</p>
-        )}
-      </StreamLine>
+        </StreamLine>
+      )}
 
-      <StreamLine label="Next livestream">
-        {next ? (
+      {next && (
+        <StreamLine label="Next livestream">
           <div>
             <p className="text-body text-fg">{next.event.name.replace(/\s*—\s*predicted window/i, '')}</p>
             <p className="numeral text-meta text-fg-soft">
@@ -99,15 +93,7 @@ export function GameContext({ game, state, now }: { game: Game; state: AppState;
             </p>
             <p className="aside text-caption text-muted">{next.estimated ? 'Predicted' : 'Announced'}</p>
           </div>
-        ) : (
-          <p className="aside text-meta text-muted">Not announced yet.</p>
-        )}
-      </StreamLine>
-
-      {total > 0 && (
-        <Btn className="justify-self-start" onClick={() => openSheet({ kind: 'catchUp', gameId: game.id })}>
-          Catch up{unread > 0 ? ` · ${unread} new` : ''}
-        </Btn>
+        </StreamLine>
       )}
 
       <div onFocus={() => setNotesFocused(true)} onBlur={() => setNotesFocused(false)}>
