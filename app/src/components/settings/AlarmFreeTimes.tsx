@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { MAX_ALARM_FREE_WINDOWS, type AlarmFreeWindow } from '@memoria/shared';
 import { useApp } from '../../store';
 import { uid } from '../../util';
@@ -32,6 +33,8 @@ function suggestion(existing: AlarmFreeWindow[]): AlarmFreeWindow {
 export function AlarmFreeTimes() {
   const windows = useApp((s) => s.state.settings.alarmFreeWindows ?? NONE);
   const updateSettings = useApp((s) => s.updateSettings);
+  // Rows on the page when it opened stay put; only ones added here settle in.
+  const [initial] = useState(() => new Set(windows.map((window) => window.id)));
   const save = (next: AlarmFreeWindow[]) => updateSettings({ alarmFreeWindows: next });
   const change = (id: string, patch: Partial<AlarmFreeWindow>) =>
     save(windows.map((window) => (window.id === id ? { ...window, ...patch } : window)));
@@ -47,7 +50,7 @@ export function AlarmFreeTimes() {
           {windows.map((window) => {
             const name = window.label.trim() || 'No-alarm time';
             return (
-              <li key={window.id} className="flex flex-col gap-2 py-3">
+              <li key={window.id} className={`flex flex-col gap-2 py-3 ${initial.has(window.id) ? '' : 'row-arrive'}`}>
                 <div className="flex flex-wrap items-center gap-2">
                   <TextInput
                     className="!min-h-11 min-w-0 flex-1 basis-32 sm:!min-h-8 sm:!py-1"

@@ -168,7 +168,9 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
                     }
                   >
                     <GameLogo game={{ ...game, presetKey: game.key }} size={48} className="shrink-0" />
-                    <span className="min-w-0 flex-1 truncate text-body font-semibold text-fg">{game.name}</span>
+                    <span className="line-clamp-2 min-w-0 flex-1 text-body leading-snug font-semibold text-fg">
+                      {game.name}
+                    </span>
                     <span aria-hidden className="onboarding-check">
                       {active && (
                         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" className="h-4 w-4">

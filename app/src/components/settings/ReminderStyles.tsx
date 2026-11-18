@@ -26,7 +26,7 @@ export const STYLE_HINTS: Record<NotificationStyle, string> = {
   silent: 'No sound. It waits in the notification list.',
   gentle: 'A soft chime.',
   standard: 'Pops up with a sound.',
-  alarm: 'Rings at alarm volume, with Snooze.',
+  alarm: 'Rings like an alarm clock until you snooze or dismiss it.',
 };
 
 const KIND_LABELS: Record<NotificationKind, string> = {
@@ -67,10 +67,10 @@ export function ReminderStyles() {
     <div className="min-w-0">
       <SettingRow
         label="How reminders arrive"
-        hint="Silent waits in the list, Gentle chimes softly, Standard pops up, Alarm rings at alarm volume with Snooze. Each kind can differ."
+        hint="Silent waits in the list, Gentle chimes softly, Standard pops up, Alarm rings like an alarm clock until you snooze or dismiss it. Each kind can differ."
         control="below"
       >
-        <ul className="w-full max-w-xl divide-y divide-line-hairline">
+        <ul className="w-full divide-y divide-line-hairline">
           {NOTIFICATION_KINDS.map((kind) => {
             const style = notificationStyle(settings, kind);
             return (

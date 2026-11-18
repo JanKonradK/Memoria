@@ -760,9 +760,11 @@ input[type='number'] {
   overflow-wrap: normal;
   text-wrap: balance;
 }
-/* The dailies ring drops below a long name rather than squeezing it. */
-.focus-workspace .game-card-title-row {
-  flex-wrap: wrap;
+/* The dailies ring stays beside the name, which wraps between words next to
+   it. The name never breaks inside a word, so the row is at least its longest
+   word and the ring wide, and the actions take their own line before that. */
+.focus-workspace .game-card-heading h2 {
+  min-width: min-content;
 }
 .focus-workspace .workspace-back {
   margin-left: -6px;
@@ -776,13 +778,12 @@ input[type='number'] {
 .focus-workspace .game-card-actions {
   align-self: flex-start;
 }
-/* The name keeps a readable width; when the actions cannot fit beside it they
-   move to their own line instead of squeezing it to a letter per line. */
+/* When the actions cannot fit beside the name they move to their own line. */
 .focus-workspace .game-card-heading {
   flex-wrap: wrap;
 }
 .focus-workspace .game-card-title {
-  min-width: min(100%, 12rem);
+  min-width: auto;
 }
 .focus-workspace .game-card-actions {
   margin-left: auto;
@@ -944,6 +945,17 @@ input[type='number'] {
 }
 .fade-in {
   animation: fadeIn 0.18s ease-out;
+}
+/* A row the player just added settles into its list. Rows already there when
+   the page opened never animate, so arriving on a page stays instant. */
+@keyframes rowArrive {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.row-arrive {
+  animation: rowArrive var(--dur-base) var(--ease-out);
 }
 
 /* Radix retains closed menus until the exit animation ends. AddMenu transfers

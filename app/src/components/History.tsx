@@ -16,7 +16,7 @@ import { GameSavingsPanel, useOpenBanners } from './Savings';
 import { GamePityPanel } from './Pity';
 import { GameLogo } from './GameLogo';
 import { rosterGames } from './roster';
-import { ChartTip, fmt, Legend, niceMax, shortDate, signed, tickLabel, ticks } from './chart';
+import { ChartTip, fmt, Legend, niceMax, shortDate, signed, spreadLabels, tickLabel, ticks } from './chart';
 import '../history.css';
 
 interface GameMeta {
@@ -297,6 +297,14 @@ function PullsComparison({ games }: { games: GameMeta[] }) {
   const y = (value: number) => PAD.top + plotH - (value / yMax) * plotH;
   const years = [];
   for (let year = new Date(x0).getUTCFullYear() + 1; Date.UTC(year, 0, 1) <= x1; year++) years.push(year);
+  // The names stand in one column past the plot, each level with its line's end
+  // where it can be and never on top of another.
+  const labelY = spreadLabels(
+    series.map((s) => y(s.points.at(-1)!.pulls!)),
+    13,
+    PAD.top,
+    PAD.top + plotH,
+  );
 
   return (
     <section className="history-card mb-5" aria-labelledby="history-pulls">
@@ -326,8 +334,7 @@ function PullsComparison({ games }: { games: GameMeta[] }) {
                 </text>
               );
             })}
-            {series.map(({ game, points }) => {
-              const last = points.at(-1)!;
+            {series.map(({ game, points }, index) => {
               return (
                 <g key={game.key}>
                   <polyline
@@ -348,7 +355,7 @@ function PullsComparison({ games }: { games: GameMeta[] }) {
                       className="history-dot"
                     />
                   ))}
-                  <text x={x(last.record.start) + 10} y={y(last.pulls!)} dy="0.32em" className="history-label">
+                  <text x={PAD.left + plotW + 10} y={labelY[index]} dy="0.32em" className="history-label">
                     {game.short}
                   </text>
                 </g>

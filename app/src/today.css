@@ -278,16 +278,16 @@
   overflow-wrap: normal;
   text-wrap: balance;
 }
-/* The same rules as the game page: the name keeps a readable width and the
-   dailies ring drops below a long name instead of sitting on it. */
+/* The same rules as the game page: the ring stays beside the name, and the
+   actions move to their own line before the name breaks inside a word. */
 .today-card > .game-card-heading {
   flex-wrap: wrap;
 }
 .today-card .game-card-title {
-  min-width: min(100%, 12rem);
+  min-width: auto;
 }
-.today-card .game-card-title-row {
-  flex-wrap: wrap;
+.today-card .game-card-heading h2 {
+  min-width: min-content;
 }
 .today-card .game-card-actions {
   margin-left: auto;

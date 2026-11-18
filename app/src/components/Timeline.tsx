@@ -47,6 +47,8 @@ const MONTH_LABEL_PX = 42;
 /** Space kept between neighbouring day labels. */
 const LABEL_GAP_PX = 8;
 export const MIN_LABEL_PX = 40;
+/** An outside label this wide shows most event names whole. */
+const COMFORTABLE_LABEL_PX = 160;
 
 /** Pausing keeps the account visible without exposing any of its event rows. */
 function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; onResume: () => void }) {
@@ -239,7 +241,17 @@ export function timelineRowLayout(
   const minimalClusterStartPx = Math.max(0, safeLaneWidth - minimalTrailingClusterPx);
   const afterLabelPx = Math.max(0, minimalClusterStartPx - barEndPx);
   const beforeLabelPx = Math.max(0, Math.min(barLeftPx, minimalClusterStartPx));
-  const labelPlacement = afterLabelPx >= MIN_LABEL_PX ? 'after' : beforeLabelPx >= MIN_LABEL_PX ? 'before' : 'none';
+  // After the bar reads first, but not when that gap would cut the name to a
+  // few letters while the lead-in before the bar has room for all of it.
+  const afterRoomy = afterLabelPx >= COMFORTABLE_LABEL_PX || afterLabelPx >= beforeLabelPx;
+  const labelPlacement =
+    afterLabelPx >= MIN_LABEL_PX && afterRoomy
+      ? 'after'
+      : beforeLabelPx >= MIN_LABEL_PX
+        ? 'before'
+        : afterLabelPx >= MIN_LABEL_PX
+          ? 'after'
+          : 'none';
   const barTextMaxWidth = labelPlacement === 'after' ? afterLabelPx : labelPlacement === 'before' ? beforeLabelPx : 0;
 
   return {

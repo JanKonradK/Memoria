@@ -136,6 +136,15 @@ describe('timelineRowLayout', () => {
     expect(timelineRowLayout(98, 2, laneWidth).labelPlacement).toBe('before');
   });
 
+  it('puts an outside title before a short bar when the gap after it would cut the name to a few letters', () => {
+    // A livestream near the end of a 1200px lane: about 50px after it, 800px before it.
+    const late = timelineRowLayout(80, 1, 1200, 'outside');
+    expect(late.labelPlacement).toBe('before');
+    expect(late.barTextMaxWidth).toBeGreaterThan(160);
+    // With room after it, the title still follows the bar.
+    expect(timelineRowLayout(40, 1, 1200, 'outside').labelPlacement).toBe('after');
+  });
+
   it('keeps special-program and maintenance titles outside even when their bar could hold text', () => {
     expect(timelineRowLayout(20, 30, laneWidth, 'outside').labelPlacement).toBe('after');
   });
