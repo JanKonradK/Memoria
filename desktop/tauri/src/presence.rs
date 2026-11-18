@@ -236,10 +236,9 @@ impl GameWatcher {
                     }
                     !state.watch.is_empty()
                 };
-                if watching {
-                    if let Ok(Ok(programs)) = tokio::task::spawn_blocking(running_programs).await {
-                        watcher.tick(&programs);
-                    }
+                if watching
+                    && let Ok(Ok(programs)) = tokio::task::spawn_blocking(running_programs).await {
+                    watcher.tick(&programs);
                 }
                 tokio::time::sleep(Duration::from_secs(10)).await;
             }

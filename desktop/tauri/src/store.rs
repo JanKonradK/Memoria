@@ -95,14 +95,13 @@ pub fn watch_state_file(
     use notify::{RecursiveMode, Watcher};
     let mut watcher = notify::recommended_watcher(move |event: notify::Result<notify::Event>| {
         // The write is a rename onto state.json, so watch the folder and match the name.
-        if let Ok(event) = event {
-            if event
+        if let Ok(event) = event
+            && event
                 .paths
                 .iter()
                 .any(|p| p.file_name().is_some_and(|n| n == "state.json"))
-            {
-                let _ = changes.send(());
-            }
+        {
+            let _ = changes.send(());
         }
     })
     .ok()?;
@@ -122,9 +121,8 @@ pub fn write_json(file: &Path, value: &serde_json::Value) -> io::Result<()> {
 /// 32 random bytes as base64url: 43 characters, the token shape the app and phone accept.
 pub fn new_token() -> String {
     use base64::Engine;
-    use rand::RngCore;
     let mut bytes = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut bytes);
+    rand::fill(&mut bytes);
     base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
 }
 

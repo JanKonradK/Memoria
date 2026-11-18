@@ -4,7 +4,7 @@ For download and daily-use instructions, see the [README](../README.md) and the 
 
 ## Run from source
 
-CI and the Windows download use Node **24.21.0**. Use that version for release checks; any Node 24.15+ or 26+ runs the app.
+CI and the release build use Node **26.13.1** (the current LTS). Use that version for release checks; any Node 24.15+ or 26+ runs the app.
 The app and shared packages compile with TypeScript 7.0.2. ESLint stays on TypeScript 6.0.3, which its parser still needs. The `xcode` dependency pins `uuid` 11.1.1 to avoid a known defect.
 
 README screenshots live in `docs/screenshots`; retake them when a screen changes noticeably.
@@ -91,7 +91,7 @@ Offline edits stay on the phone until the PC becomes available.
 
 ## Build the Android APK
 
-Install Android Studio with Android SDK 36 and JDK 21 or later.
+Install Android Studio with Android SDK 36 and JDK 21. Gradle 8.14 does not run on Java 25, which newer Android Studio versions bundle, so point `JAVA_HOME` at a JDK 21.
 Then run:
 
 ```sh

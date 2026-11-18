@@ -45,10 +45,9 @@ impl GameLaunch {
         let mut targets = BTreeMap::new();
         if let Some(Value::Object(saved)) = crate::store::read_json(&file) {
             for (game_id, path) in saved.into_iter().take(MAX_TARGETS) {
-                if let Some(path) = path.as_str().map(PathBuf::from) {
-                    if valid_id(&game_id) && valid_target(&path) {
-                        targets.insert(game_id, path);
-                    }
+                if let Some(path) = path.as_str().map(PathBuf::from)
+                    && valid_id(&game_id) && valid_target(&path) {
+                    targets.insert(game_id, path);
                 }
             }
         }

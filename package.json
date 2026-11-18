@@ -1,7 +1,7 @@
 {
   "name": "memoria",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "workspaces": [
     "shared",
     "app"
@@ -25,7 +25,7 @@
     "check:calendar": "node scripts/check-calendar.mjs",
     "check": "npm run lint && npm run format:check && npm run check:events && npm run typecheck && npm test && npm run test:rust && npm run build && npm run check:pwa",
     "typecheck": "npm -w shared run typecheck && npm -w app run typecheck",
-    "audit": "npm audit --audit-level=moderate",
+    "audit": "npm audit --omit=dev --audit-level=moderate && npm audit --audit-level=critical",
     "icons": "node app/scripts/gen-mark.mjs && node app/scripts/gen-icons.mjs && node app/scripts/gen-ico.mjs",
     "ico": "node app/scripts/gen-ico.mjs",
     "install:desktop": "powershell -ExecutionPolicy Bypass -File desktop/Install-Shortcut.ps1",
@@ -38,21 +38,21 @@
     "test:rust": "npm run build:desktop && cargo test --manifest-path desktop/tauri/Cargo.toml --quiet"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.13.0",
-    "@capacitor/cli": "8.5.2",
+    "@axe-core/playwright": "^4.14.0",
+    "@capacitor/cli": "8.6.2",
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.63.0",
+    "@playwright/test": "^1.65.1",
     "esbuild": "^0.28.2",
-    "eslint": "^10.12.0",
+    "eslint": "^10.15.0",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.7",
-    "globals": "^17.13.0",
-    "prettier": "^3.9.9",
+    "eslint-plugin-react-refresh": "^0.5.8",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.71.1",
-    "vite": "^8.3.3",
-    "vitest": "^5.0.3"
+    "typescript-eslint": "^8.73.0",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
   },
   "engines": {
     "node": "^24.15.0 || >=26.0.0"

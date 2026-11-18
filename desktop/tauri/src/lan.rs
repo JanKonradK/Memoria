@@ -16,7 +16,6 @@ use axum::extract::{ConnectInfo, Request, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Router;
-use rand::{Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tokio::sync::oneshot;
@@ -85,10 +84,9 @@ fn shared_address_space(ip: IpAddr) -> bool {
 fn on_tailnet() -> bool {
     static CACHE: Mutex<Option<(std::time::Instant, bool)>> = Mutex::new(None);
     let mut cache = CACHE.lock().unwrap();
-    if let Some((at, value)) = *cache {
-        if at.elapsed() < std::time::Duration::from_secs(60) {
-            return value;
-        }
+    if let Some((at, value)) = *cache
+        && at.elapsed() < std::time::Duration::from_secs(60) {
+        return value;
     }
     let value = if_addrs::get_if_addrs()
         .map(|items| items.iter().any(|item| shared_address_space(item.ip())))
@@ -232,14 +230,13 @@ fn parse_config(value: &Value) -> Option<Config> {
 /// so a copied `devices.json` is useless on another account or PC.
 fn stored_config(config: &Config) -> Value {
     let mut value = serde_json::to_value(config).unwrap_or_default();
-    if let Some(blob) = crate::dpapi::protect(config.secret.as_bytes()) {
-        if let Some(object) = value.as_object_mut() {
-            object.remove("secret");
-            object.insert(
-                "protectedSecret".into(),
-                Value::String(base64::engine::general_purpose::STANDARD.encode(blob)),
-            );
-        }
+    if let Some(blob) = crate::dpapi::protect(config.secret.as_bytes())
+        && let Some(object) = value.as_object_mut() {
+        object.remove("secret");
+        object.insert(
+            "protectedSecret".into(),
+            Value::String(base64::engine::general_purpose::STANDARD.encode(blob)),
+        );
     }
     value
 }
@@ -364,10 +361,9 @@ impl Lan {
 
     /// Starts the listener again if the user left Wi-Fi sync on.
     pub async fn restore(&self) {
-        if self.inner.lock().unwrap().config.enabled {
-            if let Err(error) = self.start().await {
-                eprintln!("Wi-Fi sync unavailable: {}", error.message);
-            }
+        let enabled = self.inner.lock().unwrap().config.enabled;
+        if enabled && let Err(error) = self.start().await {
+            eprintln!("Wi-Fi sync unavailable: {}", error.message);
         }
     }
 
@@ -375,10 +371,9 @@ impl Lan {
         let _serial = self.control_lock.lock().await;
         let action = body.get("action").and_then(Value::as_str).unwrap_or("");
         let load_error = self.inner.lock().unwrap().load_error;
-        if let Some(message) = load_error {
-            if action != "reset" {
-                return Err(fail(409, message));
-            }
+        if let Some(message) = load_error
+            && action != "reset" {
+            return Err(fail(409, message));
         }
         match action {
             "reset" => {
@@ -387,7 +382,7 @@ impl Lan {
                 }
                 if self.file.exists() {
                     let mut suffix = [0u8; 4];
-                    rand::thread_rng().fill_bytes(&mut suffix);
+                    rand::fill(&mut suffix);
                     let backup = self.file.with_file_name(format!(
                         "devices-unreadable-{}-{}.json",
                         now_ms(),
@@ -442,7 +437,7 @@ impl Lan {
         if inner.running.is_none() {
             return Err(fail(409, "Turn on Wi-Fi sync first."));
         }
-        let code = format!("{:08}", rand::thread_rng().gen_range(0..100_000_000u32));
+        let code = format!("{:08}", rand::random_range(0..100_000_000u32));
         inner.pairing = Some(Pairing {
             code,
             expires_at: now_ms() + CODE_TTL_MS,
@@ -627,7 +622,7 @@ impl Lan {
                 ));
             }
             let mut id = [0u8; 12];
-            rand::thread_rng().fill_bytes(&mut id);
+            rand::fill(&mut id);
             let name = body
                 .get("name")
                 .and_then(Value::as_str)

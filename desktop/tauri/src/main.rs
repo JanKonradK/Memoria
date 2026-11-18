@@ -473,15 +473,14 @@ fn record_bounds(window: &WebviewWindow) {
     if window.is_maximized().unwrap_or(false) || window.is_minimized().unwrap_or(false) {
         return;
     }
-    if let (Ok(position), Ok(size)) = (window.outer_position(), window.inner_size()) {
-        if size.width > 0 && size.height > 0 {
-            *window.state::<App>().bounds.lock().unwrap() = Some(Bounds {
-                x: position.x,
-                y: position.y,
-                width: size.width,
-                height: size.height,
-            });
-        }
+    if let (Ok(position), Ok(size)) = (window.outer_position(), window.inner_size())
+        && size.width > 0 && size.height > 0 {
+        *window.state::<App>().bounds.lock().unwrap() = Some(Bounds {
+            x: position.x,
+            y: position.y,
+            width: size.width,
+            height: size.height,
+        });
     }
 }
 
@@ -1125,10 +1124,8 @@ fn install_root() -> (PathBuf, bool) {
     if let Some(dir) = std::env::current_exe()
         .ok()
         .and_then(|exe| exe.parent().map(Path::to_path_buf))
-    {
-        if dir.join("release.json").is_file() {
-            return (dir, true);
-        }
+        && dir.join("release.json").is_file() {
+        return (dir, true);
     }
     if let Some(root) = std::env::var_os("MEMORIA_ROOT") {
         return (PathBuf::from(root), false);
@@ -1173,11 +1170,10 @@ fn main() {
     let mut context = tauri::generate_context!();
     // A check run against a scratch data folder must not hand off to the
     // player's own running copy, which shares the app id.
-    if let Ok(instance) = std::env::var("MEMORIA_INSTANCE") {
-        if !instance.is_empty() && instance.len() <= 32 && instance.bytes().all(|b| b.is_ascii_alphanumeric()) {
-            let id = format!("{}.{instance}", context.config().identifier);
-            context.config_mut().identifier = id;
-        }
+    if let Ok(instance) = std::env::var("MEMORIA_INSTANCE")
+        && !instance.is_empty() && instance.len() <= 32 && instance.bytes().all(|b| b.is_ascii_alphanumeric()) {
+        let id = format!("{}.{instance}", context.config().identifier);
+        context.config_mut().identifier = id;
     }
     if already_running(&context.config().identifier) {
         // The single-instance plugin tells the open copy to show itself, then exits.
@@ -1343,10 +1339,9 @@ fn main() {
                 watcher.stop();
             }
             let install = std::mem::take(&mut state.close.lock().unwrap().install_on_quit);
-            if install {
-                if let Err(error) = update::run_staged_installer(&state.root, &state.update_paths) {
-                    fatal(&format!("Update refused: {error}"));
-                }
+            if install
+                && let Err(error) = update::run_staged_installer(&state.root, &state.update_paths) {
+                fatal(&format!("Update refused: {error}"));
             }
         }
         _ => {}

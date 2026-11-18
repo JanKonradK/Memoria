@@ -2,7 +2,6 @@ use chacha20poly1305::{
     aead::{Aead, Payload},
     KeyInit, XChaCha20Poly1305, XNonce,
 };
-use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -10,7 +9,7 @@ use x25519_dalek::{PublicKey, StaticSecret};
 
 pub fn random_hex<const N: usize>() -> String {
     let mut bytes = [0; N];
-    rand::thread_rng().fill_bytes(&mut bytes);
+    rand::fill(&mut bytes);
     hex::encode(bytes)
 }
 fn bytes32(hex: &str) -> Result<[u8; 32], String> {
@@ -62,7 +61,7 @@ pub fn open(key: &[u8; 32], path: &str, packet: &Packet, reply_to: &str) -> Resu
     let ciphertext = hex::decode(&packet.ciphertext).map_err(|_| "Invalid encrypted sync packet.")?;
     let data = XChaCha20Poly1305::new(key.into())
         .decrypt(
-            XNonce::from_slice(&nonce),
+            &XNonce::from(nonce),
             Payload {
                 msg: &ciphertext,
                 aad: aad(path, &packet.challenge, reply_to).as_bytes(),
@@ -80,11 +79,11 @@ pub fn seal(
     reply_to: &str,
 ) -> Result<Packet, String> {
     let nonce = random_hex::<24>();
-    let bytes = hex::decode(&nonce).unwrap();
+    let bytes: [u8; 24] = hex::decode(&nonce).unwrap().try_into().unwrap();
     let data = serde_json::to_vec(data).map_err(|e| e.to_string())?;
     let ciphertext = XChaCha20Poly1305::new(key.into())
         .encrypt(
-            XNonce::from_slice(&bytes),
+            &XNonce::from(bytes),
             Payload {
                 msg: &data,
                 aad: aad(path, challenge, reply_to).as_bytes(),
