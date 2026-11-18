@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-16",
+  "updated": "2026-11-18",
   "withdrawn": [
     "seed:endfield:1.5-deep-cold-issue"
   ],
@@ -160,7 +160,7 @@
       "end": "2026-11-19 12:00",
       "timezone": "UTC+9",
       "notify": false,
-      "notes": "Season 3, cross-server PvP on irregular seasons. Season 2 ran Oct 8 14:00 → Oct 21 13:00 KST, so the Season 3 end is a guess. Rumble Medals carry over between seasons. Sources: https://cafe.naver.com/cookieruncrumble/59775 (11/5 patch notes); https://cookierun.wiki/w/Patch_Notes_(Crumble)/1.6; https://cafe.naver.com/cookieruncrumble/55740",
+      "notes": "Season 3, cross-server PvP on irregular seasons. Season 2 ran Oct 8 14:00 → Oct 21 13:00 KST, so the Season 3 end is a guess. Rumble Medals carry over between seasons. Sources: https://cafe.naver.com/cookieruncrumble/59775 (11/5 patch notes); https://cookierun.wiki/w/Patch_Notes_(Crumble)/1.6; https://cafe.naver.com/cookieruncrumble/55740 The Nov 19 patch notes do not announce a Season 4, so Season 3 may run past this estimate.",
       "sourceKey": "seed:crumble:rumble-s3"
     },
     {
@@ -203,8 +203,124 @@
       "start": "2026-11-19 13:00",
       "end": "2026-11-19 15:00",
       "timezone": "UTC+9",
-      "notes": "The 100-day notice confirms a maintenance on Thu Nov 19 and says the next update brings Crumb Clash (부스러기 쟁탈전, a base-building PvP season mode). Recent maintenances ran 13:00–15:00 (Nov 5) and 13:00–18:00 (Oct 22). Estimated dates. Source: https://cafe.naver.com/cookieruncrumble/60441",
+      "notes": "The official Nov 19 patch notes confirm the update: Crumb Clash, Moonlight Cookie's Crescent Guardian, Sea Fairy Cookie's Rippling Moonlight, Main Stages to 444-30, Dimensional Rift Season 5. The notes give no maintenance hours; recent maintenances ran 13:00–15:00 (Nov 5) and 13:00–18:00 (Oct 22), and Digital Circus Tickets and Gamer Concentrate only work until it starts. Estimated times. Source: official Nov 19 patch notes, CookieRun: Crumble Discord #dev-updates (posted 2026-11-18); https://cafe.naver.com/cookieruncrumble/60441",
       "sourceKey": "seed:crumble:2026-11-19-maint"
+    },
+    {
+      "game": "crumble",
+      "name": "Moonlight Cookie's Crescent Guardian Special Gacha (TSSR)",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-11-19 15:00",
+      "end": "2026-12-17 13:00",
+      "timezone": "UTC+9",
+      "notes": "TSSR Light Support. Paid with Moonlit Dreams from the Moon's Protection event; leftovers turn into Crystals by mail when the gacha ends. No end date is published; earlier TSSR special gachas mostly ran four weeks, so the end is estimated. Source: official Nov 19 patch notes, CookieRun: Crumble Discord #dev-updates (posted 2026-11-18)",
+      "sourceKey": "seed:crumble:1.7-moonlight-gacha"
+    },
+    {
+      "game": "crumble",
+      "name": "Moon's Protection (Moonlight currency event)",
+      "type": "event",
+      "start": "2026-11-19 15:00",
+      "end": "2026-12-17 13:00",
+      "timezone": "UTC+9",
+      "notes": "Collect Moonlit Dreams for Moonlight Cookie's Crescent Guardian's Special Gacha. The end is assumed to match that gacha. Source: official Nov 19 patch notes, CookieRun: Crumble Discord #dev-updates (posted 2026-11-18)",
+      "sourceKey": "seed:crumble:1.7-moons-protection"
+    },
+    {
+      "game": "crumble",
+      "name": "Sea's Yearning (Sea Fairy Cookie mission event)",
+      "type": "event",
+      "start": "2026-11-19 15:00",
+      "end": "2026-12-17 13:00",
+      "timezone": "UTC+9",
+      "notes": "Earn Sea's Yearning mission points to get Sea Fairy Cookie's Rippling Moonlight (TSSR Water Ranged). With the 7-Day and 25-Day Check-ins it gives up to 3 guaranteed copies. The end is estimated. Source: official Nov 19 patch notes, CookieRun: Crumble Discord #dev-updates (posted 2026-11-18)",
+      "sourceKey": "seed:crumble:1.7-seas-yearning"
+    },
+    {
+      "game": "crumble",
+      "name": "7-Day / 25-Day Check-in (Sea Fairy Cookie's Rippling Moonlight)",
+      "type": "event",
+      "start": "2026-11-19 15:00",
+      "end": "2026-12-17 13:00",
+      "timezone": "UTC+9",
+      "dailyTouch": true,
+      "notes": "Daily log-ins; both check-ins count toward the guaranteed Sea Fairy Cookie copies. No end is published; a 25-day check-in needs about four weeks, so the end is estimated. Source: official Nov 19 patch notes, CookieRun: Crumble Discord #dev-updates (posted 2026-11-18)",
+      "sourceKey": "seed:crumble:1.7-checkins"
+    },
+    {
+      "game": "crumble",
+      "name": "Space Doughnut's Healthy Bagel Pick-up Gacha",
+      "type": "banner",
+      "bannerKind": "character",
+      "start": "2026-11-19 15:00",
+      "end": "2026-12-03 13:00",
+      "timezone": "UTC+9",
+      "notes": "New SSR Grass Ranged Cookie. The banner itself is implied by the release event; SSR pick-ups have run two weeks, so the end is estimated at the next update. Source: official Nov 19 patch notes, CookieRun: Crumble Discord #dev-updates (posted 2026-11-18)",
+      "sourceKey": "seed:crumble:1.7-space-doughnut-gacha"
+    },
+    {
+      "game": "crumble",
+      "name": "Space Doughnut's Healthy Bagel release missions",
+      "type": "event",
+      "start": "2026-11-19 15:00",
+      "end": "2026-12-03 13:00",
+      "timezone": "UTC+9",
+      "notes": "Missions that support pulling Space Doughnut's Healthy Bagel. Pick-up Points reset when the event ends. The end is estimated. Source: official Nov 19 patch notes, CookieRun: Crumble Discord #dev-updates (posted 2026-11-18)",
+      "sourceKey": "seed:crumble:1.7-space-doughnut-missions"
+    },
+    {
+      "game": "crumble",
+      "name": "New Pet Pick-up Gacha (Night Sky Suncatcher · Wave Drop)",
+      "type": "banner",
+      "bannerKind": "other",
+      "start": "2026-11-19 15:00",
+      "end": "2026-12-17 13:00",
+      "timezone": "UTC+9",
+      "notes": "Two new SSR pets: Dreamcatcher's Night Sky Suncatcher (Chain Synergy) and Wave Drop (shields at the start of battle). The notes list them as new pets but do not name the pick-up banner; it is assumed from earlier updates, as are the dates. Source: official Nov 19 patch notes, CookieRun: Crumble Discord #dev-updates (posted 2026-11-18)",
+      "sourceKey": "seed:crumble:1.7-pet-pickup"
+    },
+    {
+      "game": "crumble",
+      "name": "Clash of the Crumbs (Crumb Clash launch event)",
+      "type": "event",
+      "start": "2026-11-19 15:00",
+      "end": "2026-12-08 15:00",
+      "timezone": "UTC+9",
+      "notes": "Play Crumb Clash and collect Portal Stones. The end is assumed to be when the first season stops taking battles. Source: official Nov 19 patch notes, CookieRun: Crumble Discord #dev-updates (posted 2026-11-18)",
+      "sourceKey": "seed:crumble:1.7-clash-of-the-crumbs"
+    },
+    {
+      "game": "crumble",
+      "name": "Crumb Clash",
+      "type": "cycle",
+      "start": "2026-11-19 15:00",
+      "end": "2026-12-08 15:00",
+      "timezone": "UTC+9",
+      "notify": false,
+      "notes": "Season 1 of the new cross-server mode: claim and hold Portals with Bear Jelly Temps, earn Region Points, win Promotion Matches within 24 hours to move up. Seasons run 3 weeks then break for 1; the last 2 days only tally, so battles stop here, rewards by final Region and rank follow about Dec 10 and Season 2 should open about Dec 17. Portal rewards past their cap are lost. Estimated dates. Source: official Nov 19 patch notes, CookieRun: Crumble Discord #dev-updates (posted 2026-11-18)",
+      "sourceKey": "seed:crumble:crumb-clash-s1"
+    },
+    {
+      "game": "crumble",
+      "name": "Sugar Rune Artisan event",
+      "type": "event",
+      "start": "2026-11-19 15:00",
+      "end": "2026-12-03 13:00",
+      "timezone": "UTC+9",
+      "notes": "Roll Sugar Runes for extra rewards. It ran two weeks last time (Aug 27 – Sep 10), so the end is assumed. Source: official Nov 19 patch notes, CookieRun: Crumble Discord #dev-updates (posted 2026-11-18)",
+      "sourceKey": "seed:crumble:1.7-sugar-rune-artisan"
+    },
+    {
+      "game": "crumble",
+      "name": "Dimensional Rift",
+      "type": "cycle",
+      "start": "2026-11-19 15:00",
+      "end": "2026-12-03 12:00",
+      "timezone": "UTC+9",
+      "notify": false,
+      "notes": "Season 5: opens after clearing Main Stage 444-30, with harder stages throughout. Each season resets with an update, so the end is estimated. Source: official Nov 19 patch notes, CookieRun: Crumble Discord #dev-updates (posted 2026-11-18)",
+      "sourceKey": "seed:crumble:rift-s5"
     },
     {
       "game": "crumble",
@@ -4268,16 +4384,6 @@
       "notify": false,
       "notes": "The start follows the official 3.8 conclusion (12-22 03:59 UTC+8). The 7-hour length is copied from 3.8's 04:00–11:00, and the version number is not announced.",
       "sourceKey": "seed:wuwa:3.8-end-maint"
-    },
-    {
-      "game": "zzz",
-      "name": "Shiyu Defense: Critical",
-      "type": "cycle",
-      "start": "2026-09-04 04:00",
-      "end": "2026-09-18 03:59",
-      "notify": false,
-      "notes": "Estimated dates.",
-      "sourceKey": "seed:zzz:shiyu-2026-09-04"
     },
     {
       "game": "zzz",
