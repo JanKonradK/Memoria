@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { chooseFromEdit, gameRow, openGame } from './support';
+import { chooseFromEdit, gameRow, openGame, addFromShell } from './support';
 
 test.beforeEach(async ({ page }, info) => {
   test.skip(!['android-s23', 'mobile-320', 'mobile-390'].includes(info.project.name), 'Phone check-in flow');
@@ -41,7 +41,7 @@ test('phone roster opens full controls and keeps edits across navigation', async
   const task = page.getByRole('button', { name: /Daily Commissions/ });
   await task.click();
   await expect(task).toHaveAttribute('aria-pressed', 'true');
-  await page.getByRole('button', { name: 'Back to Today', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await expect(gameRow(page, 'Genshin Impact')).toHaveAccessibleDescription(/1 of 6 dailies done/);
   await expect(gameRow(page, 'Genshin Impact')).toContainText(/99\s*\/\s*200/);
   await openGame(page, 'Genshin Impact');
@@ -51,17 +51,16 @@ test('phone roster opens full controls and keeps edits across navigation', async
   await expect(page.getByRole('dialog', { name: 'Genshin Impact' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Back to Today', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await expect(page.getByRole('list', { name: 'Games', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Add', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Reminder', exact: true }).click();
+  await addFromShell(page, 'Reminder');
   const message = 'Remember to collect every expedition reward before the next server reset tonight.';
   await page.getByRole('textbox', { name: 'Message' }).fill(message);
   await page.getByRole('button', { name: 'Add reminder', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.emulateMedia({ colorScheme: 'light' });
   // Scan the settled theme rather than an intermediate color transition.
-  await expect(page.getByRole('button', { name: 'Timeline', exact: true })).toHaveCSS('color', 'rgb(53, 55, 64)');
+  await expect(page.getByRole('button', { name: 'Calendar', exact: true })).toHaveCSS('color', 'rgb(53, 55, 64)');
   expect(
     (await new AxeBuilder({ page }).analyze()).violations.filter((v) =>
       ['serious', 'critical'].includes(v.impact ?? ''),
@@ -90,12 +89,11 @@ test('touch scroll on an energy button does not change the value', async ({ page
 test('event actions stay visible while the form scrolls and both event views remain available', async ({
   page,
 }, info) => {
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   // Time bars open first on a phone too, each event a name line above a thin bar.
   await expect(page.getByRole('radio', { name: 'Timeline', exact: true })).toHaveAttribute('data-state', 'on');
-  await page.getByRole('radio', { name: 'List', exact: true }).click();
-  await page.getByRole('button', { name: 'Add', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Event', exact: true }).click();
+  await page.getByRole('radio', { name: 'Agenda', exact: true }).click();
+  await addFromShell(page, 'Event');
   const dialog = page.getByRole('dialog', { name: 'New event' });
   const save = dialog.getByRole('button', { name: 'Add event', exact: true });
   // Measure the fixed footer after the sheet entrance and font swap settle.

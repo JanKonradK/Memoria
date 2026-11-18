@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { chooseFromEdit, openGame } from './support';
+import { chooseFromEdit, openGame, addFromShell } from './support';
 
 /** Game settings, on its Tasks tab. */
 async function openTaskSettings(page: Page, game: string) {
@@ -92,8 +92,7 @@ test('daily task rules can change on the card, including count targets and new t
   await expect(
     page.getByRole('button', { name: 'My weekly bosses: 1 of 6 done, click to mark one more', exact: true }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Add', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Event', exact: true }).click();
+  await addFromShell(page, 'Event');
   const event = page.getByRole('dialog', { name: 'New event', exact: true });
   await expect(event).toBeVisible();
   await expect

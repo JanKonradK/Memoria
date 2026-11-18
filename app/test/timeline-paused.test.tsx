@@ -40,7 +40,7 @@ const events = [
 ];
 const fixture: AppState = { ...emptyState(), games: [active, paused, deleted], events };
 
-function show(view: 'lanes' | 'list', options: { focus?: string; finished?: boolean } = {}) {
+function show(view: 'lanes' | 'agenda', options: { focus?: string; finished?: boolean } = {}) {
   useApp.setState({ state: structuredClone(fixture) });
   useUI.setState({
     timelineGameId: options.focus ?? null,
@@ -59,7 +59,7 @@ afterEach(() => {
   useUI.setState({ timelineGameId: null, timelineView: null, timelineShowFinished: false });
 });
 
-describe.each(['lanes', 'list'] as const)('paused games in %s', (view) => {
+describe.each(['lanes', 'agenda'] as const)('paused games in %s', (view) => {
   it('keeps a compact account row and excludes all its events and counts', () => {
     const { container } = show(view);
     expect(screen.getByText('1 event')).toBeInTheDocument();

@@ -163,7 +163,7 @@
   --dur-base: 260ms;
   --dur-slow: 420ms;
   --stagger: 40ms;
-  /* --app-bar-h is MEASURED and written by AppBar, never guessed. A guess was
+  /* --app-bar-h is MEASURED and written by the page bar, never guessed. A guess was
      wrong twice: the route control changed the measured height, and the bar
      wraps to two rows below the lg breakpoint, where no single constant holds.
      The fallback only has to be sane for the first paint before the measure lands. */
@@ -300,47 +300,6 @@ body {
   font-weight: 300;
 }
 
-/* Desktop shell rows. Phone rules below move navigation to the bottom edge. */
-.app-bar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: 'brand utilities' 'nav nav' 'actions actions';
-  gap: 6px 12px;
-}
-.app-brand {
-  grid-area: brand;
-}
-.app-nav {
-  grid-area: nav;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-ui-full);
-  padding: 5px;
-  background: var(--glass-bg);
-  box-shadow:
-    inset 0 1px 0 var(--glass-highlight),
-    var(--glass-shadow);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
-}
-.app-nav-button,
-.app-nav .nav-slider {
-  border-radius: var(--radius-ui-full);
-}
-.app-nav-button[aria-current='page'] {
-  color: var(--nav-ink);
-}
-.app-nav .nav-slider {
-  background: color-mix(in srgb, var(--color-surface-2) 90%, transparent);
-  box-shadow:
-    inset 0 1px 0 var(--glass-highlight),
-    0 2px 5px rgba(0, 0, 0, 0.08);
-}
-.app-utilities {
-  grid-area: utilities;
-}
-.app-route-actions {
-  grid-area: actions;
-}
 .app-toasts {
   bottom: calc(0.75rem + env(safe-area-inset-bottom));
 }
@@ -488,9 +447,6 @@ html {
   z-index: 35;
   background: var(--color-surface-0);
 }
-.app-bar:not(:has(.app-game-scope)) {
-  grid-template-areas: 'brand utilities' 'nav nav';
-}
 
 .shell-control {
   display: inline-flex;
@@ -531,36 +487,6 @@ html {
     min-width: 36px;
   }
 }
-@media (min-width: 768px) {
-  .app-bar {
-    grid-template-columns: auto auto minmax(0, 1fr);
-    grid-template-areas: 'brand nav utilities' 'actions actions actions';
-  }
-  .app-bar:not(:has(.app-game-scope)) {
-    grid-template-areas: 'brand nav utilities';
-  }
-}
-@media (min-width: 1280px) {
-  .app-bar,
-  .app-bar:not(:has(.app-game-scope)) {
-    grid-template-columns: auto auto minmax(0, 1fr) auto;
-    grid-template-areas: 'brand nav actions utilities';
-  }
-}
-
-/* Keep navigation and every utility reachable in a snapped desktop window.
-   Accessible button names remain intact when their visible labels give way. */
-@media (min-width: 768px) and (max-width: 1099px) {
-  .app-utilities .shell-control > span,
-  .app-brand > span:last-child {
-    display: none;
-  }
-}
-@media (max-width: 439px) {
-  .app-bar[data-desktop='true'] .app-brand > span {
-    display: none;
-  }
-}
 
 /* Phone check-in: a readable roster, reachable navigation, and a single
    document scroll. Desktop retains its full stage and compact controls. */
@@ -573,57 +499,11 @@ html {
     --text-label: 0.875rem;
     --text-label--line-height: 1.25rem;
     /* The dock floats over the page; this is only what content must clear at its end. */
-    --mobile-nav-h: calc(66px + env(safe-area-inset-bottom));
+    --mobile-nav-h: calc(76px + env(safe-area-inset-bottom));
   }
   html {
     scroll-padding-top: calc(var(--app-bar-h) + 1rem);
     scroll-padding-bottom: calc(var(--mobile-nav-h) + 1rem);
-  }
-  .app-bar,
-  .app-bar:not(:has(.app-game-scope)) {
-    grid-template-areas: 'brand utilities' 'actions actions';
-    padding-top: max(0.5rem, env(safe-area-inset-top));
-    background: var(--color-surface-0);
-    /* A filter would make the fixed bottom nav relative to this header. */
-    backdrop-filter: none;
-  }
-  /* Large enough to read as the app's name, no taller than the bar's controls. */
-  .app-brand > span {
-    font-size: 1.25rem;
-    line-height: 1;
-  }
-  .app-brand > span.hidden {
-    display: none;
-  }
-  .app-nav {
-    position: fixed;
-    inset: auto 16px calc(8px + env(safe-area-inset-bottom));
-    z-index: 40;
-    height: 54px;
-    max-width: 400px;
-    margin-inline: auto;
-    padding: 4px;
-    gap: 0;
-  }
-  .app-nav-button {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1px;
-    min-height: 44px;
-    padding: 2px;
-    border-radius: var(--radius-ui-full);
-    font-size: 0.6875rem;
-    line-height: 1.1;
-  }
-  .app-nav .nav-slider {
-    border-radius: var(--radius-ui-full);
-  }
-  .app-route-actions {
-    flex-wrap: wrap;
-    overflow: visible;
   }
   .app-game-scope {
     width: 100%;
@@ -634,19 +514,6 @@ html {
   button[role='combobox'] {
     min-height: 44px;
     min-width: 44px;
-  }
-  .app-utilities {
-    gap: 0;
-  }
-  .app-bar button {
-    /* Sticky controls already clear the header; exclude its content inset. */
-    scroll-margin-top: calc(-1 * (var(--app-bar-h) + 1rem));
-  }
-  .app-utilities .shell-control {
-    padding-inline: 0.5rem;
-  }
-  .app-utilities .shell-control span.hidden {
-    display: none;
   }
   .app-page {
     padding-top: 1rem;
@@ -665,15 +532,7 @@ html {
    content still has room between the header and bottom navigation. */
 @media (min-width: 540px) and (max-width: 767px) and (max-height: 500px) {
   :root {
-    --mobile-nav-h: calc(60px + env(safe-area-inset-bottom));
-  }
-  .app-nav {
-    height: 52px;
-    bottom: calc(6px + env(safe-area-inset-bottom));
-  }
-  .app-nav-button {
-    flex-direction: row;
-    gap: 0.5rem;
+    --mobile-nav-h: calc(68px + env(safe-area-inset-bottom));
   }
   .app-game-scope {
     width: auto;
@@ -1197,13 +1056,6 @@ input[type='number'] {
   animation-duration: 320ms;
   animation-timing-function: var(--ease-out);
 }
-/* The route pill. Transform and width only — both are cheap, and the pill sits
-   under the labels rather than reflowing them. */
-.nav-slider {
-  transition:
-    transform var(--dur-base) var(--ease-out),
-    width var(--dur-base) var(--ease-out);
-}
 
 @media (prefers-reduced-motion: reduce) {
   /* Pseudo-elements need naming explicitly — a bare `*` does not match them, and
@@ -1221,9 +1073,6 @@ input[type='number'] {
   .attention-indicator {
     animation: none !important;
     opacity: 0.45;
-  }
-  .nav-slider {
-    transition-duration: 0.001ms !important;
   }
 }
 
@@ -1285,24 +1134,9 @@ input[type='number'] {
     corner-shape: superellipse(1.5);
   }
 }
-@media (max-width: 767px) {
-  .app-nav-button {
-    font-size: 0.6875rem;
-    font-weight: 600;
-  }
-  .app-nav-button svg {
-    width: 20px;
-    height: 20px;
-  }
-}
 /* A blur behind the dock and sheets is recomputed on every scroll frame. On a
    phone that is the hot path, so touch screens get a solid tint instead. */
 @media (pointer: coarse) {
-  .app-nav {
-    background: color-mix(in srgb, var(--color-surface-1) 94%, transparent);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
   .glass {
     background: var(--color-surface-1);
     backdrop-filter: none;
@@ -1313,10 +1147,6 @@ input[type='number'] {
   }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .app-nav {
-    background: var(--color-surface-1);
-    backdrop-filter: none;
-  }
   .glass {
     background: var(--color-surface-1);
     backdrop-filter: none;

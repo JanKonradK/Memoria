@@ -151,7 +151,7 @@ function arrive(
     }
   } else {
     window.scrollTo({ top: 0, behavior: 'instant' });
-    if (restoreFocus) document.querySelector<HTMLElement>('[data-workspace-back]')?.focus({ preventScroll: true });
+    if (restoreFocus) document.querySelector<HTMLElement>('.focus-workspace h1')?.focus({ preventScroll: true });
   }
 
   if (reducedMotion) return;

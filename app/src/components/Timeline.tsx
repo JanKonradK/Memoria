@@ -20,6 +20,9 @@ import { CalendarToolbar } from './CalendarToolbar';
 import { CalendarFeedStatus } from './CalendarFeedStatus';
 import { CalendarBehindNote } from './CalendarBehind';
 import { TimelineList } from './TimelineList';
+import { MonthView } from './calendar/MonthView';
+import { SoonView } from './calendar/SoonView';
+import { PageBar, PageBarEnd, PageTitle } from './shell/PageBar';
 import { PinnedEvents } from './PinnedEvents';
 import { PinMark } from './EventPeek';
 import { gameServerLabel } from '../server-choice';
@@ -1186,11 +1189,8 @@ export function TimelinePage({ now }: { now: number }) {
 
   return (
     <Page className="timeline-page">
-      <div className="timeline-page-heading">
-        {/* The dock already names the page; the heading stays for screen readers and focus. */}
-        <h1 tabIndex={-1} className="sr-only">
-          Event timeline
-        </h1>
+      <PageBar className="calendar-bar">
+        <PageTitle>Calendar</PageTitle>
         <CalendarToolbar view={view}>
           <TimelineTools
             showFinished={showFinished}
@@ -1199,7 +1199,26 @@ export function TimelinePage({ now }: { now: number }) {
             onEditing={setEditing}
           />
         </CalendarToolbar>
-      </div>
+        <PageBarEnd>
+          <Btn
+            className={`inline-flex items-center gap-1.5 ${TOUCH_BUTTON}`}
+            aria-label="Add an event"
+            onClick={() => openSheet({ kind: 'event', gameId: focusedGameId ?? undefined })}
+          >
+            <svg
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              className="icon h-4 w-4"
+              aria-hidden
+            >
+              <path d="M10 4v12M4 10h12" />
+            </svg>
+            Event
+          </Btn>
+        </PageBarEnd>
+      </PageBar>
       <p id="event-reorder-help" className="sr-only">
         Hold an event and drag it, or in edit mode focus its handle and press Arrow Up or Arrow Down.
       </p>
@@ -1214,7 +1233,11 @@ export function TimelinePage({ now }: { now: number }) {
       <Hint id="events" className="mt-3" />
       <PinnedEvents events={events} games={games} now={now} onOpen={peekEvent} />
 
-      {games.length > 0 && games.every((game) => game.paused) ? null : view === 'list' ? (
+      {games.length > 0 && games.every((game) => game.paused) ? null : view === 'month' ? (
+        <MonthView games={games} events={events} now={now} onOpenEvent={peekEvent} onToggleEvent={toggleEvent} />
+      ) : view === 'soon' ? (
+        <SoonView games={games} events={events} now={now} onOpenEvent={peekEvent} onToggleEvent={toggleEvent} />
+      ) : view === 'agenda' ? (
         <TimelineList
           games={games}
           events={events}
@@ -1389,7 +1412,7 @@ export function TimelinePage({ now }: { now: number }) {
           {pausedRows}
         </div>
       )}
-      {(view === 'list' || games.every((game) => game.paused)) && pausedRows}
+      {(view !== 'lanes' || games.every((game) => game.paused)) && pausedRows}
     </Page>
   );
 }

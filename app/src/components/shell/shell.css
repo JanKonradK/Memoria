@@ -1,0 +1,525 @@
+/* The rail: the app's one navigation. A column down the left edge on a PC,
+   the dock along the bottom on a phone. Flat like the rest of the app; the
+   chosen place takes the pressed fill with an inset edge. */
+:root {
+  --rail-w: 88px;
+}
+
+.app-rail {
+  position: fixed;
+  z-index: 40;
+  inset: 0 auto 0 0;
+  width: var(--rail-w);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 0 12px;
+  background: color-mix(in srgb, var(--color-surface-1) 55%, var(--color-surface-0));
+  border-right: 1px solid var(--color-line-hairline);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.app-rail::-webkit-scrollbar {
+  display: none;
+}
+.rail-mark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 44px;
+  margin-bottom: 6px;
+}
+.rail-views,
+.rail-games,
+.rail-end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.rail-end {
+  margin-top: auto;
+  padding-top: 10px;
+}
+.rail-sep {
+  flex: none;
+  width: 40px;
+  height: 1px;
+  margin: 8px 0;
+  background: var(--color-line);
+}
+
+.rail-view,
+.rail-game {
+  position: relative;
+  flex: none;
+  width: 72px;
+  border-radius: var(--radius-ui-md);
+  color: var(--color-muted);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+.rail-view {
+  min-height: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  line-height: 1;
+}
+.rail-icon {
+  width: 22px;
+  height: 22px;
+}
+.rail-add {
+  min-height: 48px;
+  margin-top: 4px;
+}
+.rail-game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 0 6px;
+}
+@media (hover: hover) {
+  .rail-view:hover,
+  .rail-game:hover {
+    background: var(--color-fill-2);
+    color: var(--color-fg);
+  }
+}
+.rail-view:active:not(:disabled),
+.rail-game:active {
+  transform: scale(0.96);
+}
+.rail-view[aria-current='page'],
+.rail-game[aria-current='page'] {
+  background: var(--color-fill-3);
+  box-shadow: inset 0 0 0 1px var(--color-line-edge);
+  color: var(--color-fg);
+}
+.rail-badge {
+  position: absolute;
+  top: 5px;
+  right: 11px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-ui-full);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+.rail-dot {
+  position: absolute;
+  top: 9px;
+  right: 20px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-accent);
+}
+/* The open game's own colour marks it from the rail's edge. */
+.rail-pin {
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  width: 4px;
+  height: 0;
+  border-radius: 0 4px 4px 0;
+  background: var(--rail-ink);
+  transform: translateY(-60%);
+  transition: height var(--dur-base) var(--ease-out);
+}
+.rail-game[aria-current='page'] .rail-pin {
+  height: 30px;
+}
+.rail-game-logo {
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    filter var(--dur-fast) var(--ease-out);
+}
+.rail-game[data-paused] .rail-game-logo {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+.rail-countdown {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--color-muted);
+}
+.rail-countdown[data-tone='now'] {
+  color: var(--color-rose);
+}
+.rail-countdown[data-tone='soon'] {
+  color: var(--color-warn-fg);
+}
+.rail-trouble {
+  color: var(--color-danger-fg);
+}
+.rail-trouble-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--color-danger);
+}
+.rail-status:empty {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .app-frame {
+    padding-left: var(--rail-w);
+  }
+}
+
+/* The dock: the same rail along the bottom edge. Today and Calendar stay put;
+   the games scroll sideways, then Add and Settings. */
+@media (max-width: 767px) {
+  .app-rail {
+    inset: auto 0 0 0;
+    width: auto;
+    height: var(--mobile-nav-h);
+    flex-direction: row;
+    gap: 0;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+    border-right: 0;
+    border-top: 1px solid var(--color-line-hairline);
+    background: color-mix(in srgb, var(--color-surface-1) 96%, transparent);
+    overflow: hidden;
+  }
+  .rail-mark {
+    display: none;
+  }
+  .rail-views,
+  .rail-end {
+    flex-direction: row;
+    flex: none;
+  }
+  .rail-end {
+    margin: 0;
+    padding: 0;
+  }
+  .rail-sep {
+    width: 1px;
+    height: 36px;
+    margin: 0 4px;
+  }
+  .rail-games {
+    flex: 1;
+    min-width: 0;
+    flex-direction: row;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  }
+  .rail-games::-webkit-scrollbar {
+    display: none;
+  }
+  .rail-view {
+    width: 60px;
+    min-height: 60px;
+    font-size: 0.75rem;
+  }
+  .rail-add {
+    width: 48px;
+    margin: 0 20px 0 0;
+  }
+  .rail-game {
+    width: 54px;
+    padding: 4px 0;
+    scroll-snap-align: start;
+  }
+  .rail-game :is(.game-logo, [data-game-logo]) {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .rail-countdown {
+    font-size: 0.75rem;
+  }
+  .rail-pin {
+    left: 50%;
+    top: -6px;
+    width: 0;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    transform: translateX(-50%);
+    transition: width var(--dur-base) var(--ease-out);
+  }
+  .rail-game[aria-current='page'] .rail-pin {
+    width: 22px;
+    height: 3px;
+  }
+  .rail-badge {
+    top: 2px;
+    right: 6px;
+  }
+  /* Settings keeps its place at the dock's end as an icon, so games get the room. */
+  .rail-settings {
+    width: 48px;
+  }
+  .rail-settings .rail-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .rail-dot {
+    top: 6px;
+    right: 14px;
+  }
+}
+
+/* Each page's own bar: what it is, its views and its actions. It sticks to the
+   top and stays flat on the page ground. */
+.app-page {
+  --page-gutter: 0.75rem;
+}
+@media (min-width: 640px) {
+  .app-page {
+    --page-gutter: 1rem;
+  }
+}
+@media (min-width: 1024px) {
+  .app-page {
+    --page-gutter: 1.75rem;
+    padding-inline: var(--page-gutter);
+  }
+}
+.app-page:has(> .page-bar:first-child) {
+  padding-top: 0;
+}
+.page-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  min-height: 68px;
+  margin: 0 calc(-1 * var(--page-gutter)) 20px;
+  padding: max(10px, env(safe-area-inset-top)) var(--page-gutter) 10px;
+  background: var(--color-surface-0);
+  border-bottom: 1px solid var(--color-line-hairline);
+}
+.page-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  min-width: 0;
+}
+.page-title h1 {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+}
+.page-title h1:focus {
+  outline: none;
+}
+.page-title-sub {
+  font-size: var(--text-meta);
+  color: var(--color-muted);
+}
+.page-bar-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+@media (max-width: 767px) {
+  .page-bar {
+    min-height: 60px;
+    gap: 10px 12px;
+    margin-bottom: 14px;
+  }
+  .page-title h1 {
+    font-size: 1.5rem;
+  }
+}
+
+/* A page's own views: one quiet pill row, the chosen one raised. */
+.view-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-ui-md);
+  background: var(--color-inset);
+  border: 1px solid var(--color-line);
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.view-switch button {
+  flex: none;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: calc(var(--radius-ui-md) - 4px);
+  color: var(--color-muted);
+  font-size: var(--text-meta);
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .view-switch button:hover {
+    color: var(--color-fg);
+  }
+}
+.view-switch button[aria-pressed='true'],
+.view-switch button[aria-selected='true'] {
+  background: var(--color-surface-2);
+  color: var(--color-fg);
+}
+@media (max-width: 767px) {
+  .view-switch button {
+    min-height: 40px;
+    padding: 0 11px;
+  }
+}
+
+/* A game's bar: its coin and name, its tabs, then Play and Edit. */
+.game-bar {
+  gap: 10px 28px;
+  min-height: 84px;
+}
+.game-bar-id {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.game-bar-title {
+  margin: 0;
+  font-size: clamp(1.375rem, 2.2vw, 1.75rem);
+  line-height: 1.1;
+  overflow-wrap: normal;
+  text-wrap: balance;
+}
+.game-bar-title:focus {
+  outline: none;
+}
+.game-bar-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 6px;
+  font-size: var(--text-label);
+  color: var(--color-muted);
+}
+.game-tabs {
+  display: flex;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.game-tabs::-webkit-scrollbar {
+  display: none;
+}
+.game-tab {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius-ui-sm);
+  color: var(--color-muted);
+  font-size: var(--text-meta);
+  font-weight: 600;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .game-tab:hover {
+    color: var(--color-fg);
+    background: var(--color-fill-2);
+  }
+}
+.game-tab[aria-selected='true'] {
+  color: var(--color-fg);
+  background: var(--color-fill-3);
+}
+.game-tab[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--game-ink, var(--color-accent));
+}
+.game-tab-count {
+  font-size: var(--text-caption);
+  font-weight: 500;
+  color: var(--color-muted);
+}
+.game-tab-new {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-accent);
+}
+.focus-workspace {
+  padding-top: 0;
+}
+@media (max-width: 767px) {
+  .game-bar {
+    min-height: 0;
+    padding-bottom: 0;
+    gap: 6px 10px;
+  }
+  .game-bar-id {
+    flex: 1;
+  }
+  .game-bar .game-bar-logo {
+    width: 44px !important;
+    height: 44px !important;
+  }
+  .game-bar .page-bar-end {
+    order: 2;
+  }
+  .game-tabs {
+    order: 3;
+    flex-basis: 100%;
+    margin: 0 calc(-1 * var(--page-gutter));
+    padding: 0 var(--page-gutter);
+  }
+  .game-tab {
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 0;
+    background: transparent !important;
+  }
+  .game-tab[aria-selected='true']::after {
+    left: 12px;
+    right: 12px;
+    bottom: 0;
+  }
+}

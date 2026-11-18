@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { chooseFromEdit, openGame } from './support';
+import { chooseFromEdit, openGame, addFromShell } from './support';
 
 async function stored(page: Page) {
   return page.evaluate(
@@ -45,8 +45,7 @@ test.beforeEach(async ({ page }, info) => {
 });
 
 test('cards add, rename, change behavior, and delete finished events from Manage events', async ({ page }, info) => {
-  await page.getByRole('button', { name: 'Add', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Event', exact: true }).click();
+  await addFromShell(page, 'Event');
   let dialog = page.getByRole('dialog', { name: 'New event' });
   await expect(dialog.getByRole('combobox', { name: 'Game', exact: true })).toContainText('Genshin Impact');
   await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('My personal window');
@@ -129,7 +128,7 @@ test('pause survives reload and resumes saved daily progress from the game page'
   await edit.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(edit).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Resume tracking', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Back to Today', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.reload();
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await openWorkspace(page);

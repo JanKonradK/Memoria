@@ -3,10 +3,16 @@ import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group';
 import { useUI, type TimelineView } from '../ui-store';
 import { GameScope } from './GameScope';
 
-/** The two ways to look at what is coming: time bars or a list. A game's livestreams live on its Catch up. */
+/** Four ways to look at what is coming: time bars, an agenda by day, a month grid, and what ends soon. */
 const VIEWS: { id: TimelineView; label: string; icon: string }[] = [
   { id: 'lanes', label: 'Timeline', icon: 'M3 5h8M6 10h11M3 15h6' },
-  { id: 'list', label: 'List', icon: 'M7 5h10M7 10h10M7 15h10M3 5h.01M3 10h.01M3 15h.01' },
+  { id: 'agenda', label: 'Agenda', icon: 'M7 5h10M7 10h10M7 15h10M3 5h.01M3 10h.01M3 15h.01' },
+  {
+    id: 'month',
+    label: 'Month',
+    icon: 'M3 6.5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2V15a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 8.5h14M8 8.5V17M12 8.5V17M3 12.7h14',
+  },
+  { id: 'soon', label: 'Ending soon', icon: 'M10 3.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13M10 6.5V10l2.5 1.5' },
 ];
 
 /**

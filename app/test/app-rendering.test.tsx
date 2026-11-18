@@ -6,14 +6,14 @@ const views = vi.hoisted(() => ({
   today: vi.fn(({ now }: { now: number }) => <div>Today time: {now}</div>),
   timeline: vi.fn(({ now }: { now: number }) => <div>Timeline time: {now}</div>),
   settings: vi.fn(() => <div>Settings</div>),
-  shell: vi.fn(() => <header>App bar</header>),
+  shell: vi.fn(() => <nav>Rail</nav>),
   editor: vi.fn(() => <div>Game editor</div>),
 }));
 
 vi.mock('../src/components/Today', () => ({ TodayRoute: views.today }));
 vi.mock('../src/components/Timeline', () => ({ TimelinePage: views.timeline }));
 vi.mock('../src/components/Settings', () => ({ SettingsPage: views.settings }));
-vi.mock('../src/components/AppBar', () => ({ AppBar: views.shell }));
+vi.mock('../src/components/shell/AppRail', () => ({ AppRail: views.shell }));
 vi.mock('../src/components/GameDetail', () => ({ GameDetailSheet: views.editor }));
 vi.mock('../src/cloud-sync', () => ({ initCloudSync: vi.fn() }));
 vi.mock('../src/data/remote-feed', () => ({ initRemoteFeed: vi.fn() }));

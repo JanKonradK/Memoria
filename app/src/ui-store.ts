@@ -39,7 +39,13 @@ export function migrateLegacyUiStorage(): void {
 
 migrateLegacyUiStorage();
 
-export type Tab = 'today' | 'home' | 'timeline' | 'history' | 'quests' | 'settings';
+/** The rail's places. `home` is one game's page; `timeline` is the Calendar. */
+export type Tab = 'today' | 'home' | 'timeline' | 'settings';
+/** A game page's own tabs. Pulls, Quests and News (Catch up) live inside each game. */
+export type GameTab = 'track' | 'events' | 'pulls' | 'quests' | 'news';
+export const GAME_TABS: readonly GameTab[] = ['track', 'events', 'pulls', 'quests', 'news'];
+/** Today as one ordered list of steps across games, or as the ranked games. */
+export type TodayView = 'steps' | 'games';
 export type Theme = 'dark' | 'light';
 /** What the player chose. System follows the device, which is the default. */
 export type ThemePreference = Theme | 'system';
@@ -54,7 +60,9 @@ export function systemTheme(): Theme {
 }
 export const resolveTheme = (preference: ThemePreference): Theme =>
   preference === 'system' ? systemTheme() : preference;
-export type TimelineView = 'list' | 'lanes';
+/** The Calendar's ways of seeing the same events. */
+export type TimelineView = 'lanes' | 'agenda' | 'month' | 'soon';
+export const TIMELINE_VIEWS: readonly TimelineView[] = ['lanes', 'agenda', 'month', 'soon'];
 export const HINT_KEYS = ['energy', 'tasks', 'events'] as const;
 export type HintKey = (typeof HINT_KEYS)[number];
 
@@ -129,6 +137,12 @@ interface UIStore {
   flipLogo(key: string): void;
   theme: Theme;
   focusedGameId: string | null;
+  /** The tab open on a game's page. Session only; opening another game keeps it. */
+  gameTab: GameTab;
+  setGameTab(tab: GameTab): void;
+  /** Steps or Games on Today. Remembered on this device. */
+  todayView: TodayView;
+  setTodayView(view: TodayView): void;
   /** The game whose card sits beside Today's list. Null follows the most urgent game. */
   todayGameId: string | null;
   setTodayGameId(gameId: string | null): void;
@@ -182,6 +196,10 @@ export const useUI = create<UIStore>()(
         }),
       theme: resolveTheme('system'),
       focusedGameId: null,
+      gameTab: 'track',
+      setGameTab: (gameTab) => set({ gameTab }),
+      todayView: 'steps',
+      setTodayView: (todayView) => set({ todayView }),
       timelineView: null,
       timelineShowFinished: false,
       timelineGameId: null,
@@ -246,6 +264,7 @@ export const useUI = create<UIStore>()(
         logoFlipped: state.logoFlipped,
         hintsArmed: state.hintsArmed,
         hintsSeen: state.hintsSeen,
+        todayView: state.todayView,
       }),
       merge: (persisted, current) => {
         // Rebuilt from a whitelist rather than spread over the defaults. This
@@ -289,6 +308,7 @@ export const useUI = create<UIStore>()(
                 )
               : current.logoFlipped,
           hintsArmed: stored.hintsArmed === true,
+          todayView: stored.todayView === 'games' ? 'games' : 'steps',
           hintsSeen:
             stored.hintsSeen && typeof stored.hintsSeen === 'object'
               ? Object.fromEntries(

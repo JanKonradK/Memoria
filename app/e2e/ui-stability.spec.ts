@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { gameRow, openGame, openSettings } from './support';
+import { gameRow, openGame, openSettings, addFromShell } from './support';
 
 async function expectNoPageOverflow(page: Page) {
   const overflow = await page.evaluate(() => ({
@@ -62,14 +62,15 @@ async function expectTimelineTicksToFit(page: Page) {
   }
 }
 
-/** Adding anything now goes through the app bar's single "+" menu. */
+/** Adding starts where the thing lives; see addFromShell. */
 async function openAddMenu(page: Page, item: 'Add game' | 'Event' | 'Reminder') {
-  await page.getByRole('button', { name: 'Add', exact: true }).click();
-  await page.getByRole('menuitem', { name: item, exact: true }).click();
+  await addFromShell(page, item);
 }
 
 async function addPreset(page: Page, name: string, short: string, first = false) {
-  const allGames = page.getByRole('button', { name: 'Back to Today', exact: true });
+  const allGames = page
+    .getByRole('navigation', { name: 'Primary' })
+    .getByRole('button', { name: 'Today', exact: true });
   if (await allGames.isVisible()) await allGames.click();
   if (first) await page.getByRole('button', { name: 'Add a game' }).click();
   else await openAddMenu(page, 'Add game');
@@ -118,7 +119,7 @@ test('first run sets up games, then shows hints in place, and fits the viewport'
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page
     .getByRole('navigation', { name: 'Primary' })
-    .getByRole('button', { name: 'Timeline', exact: true })
+    .getByRole('button', { name: 'Calendar', exact: true })
     .click();
   await expect(page.locator('[data-hint="events"]')).toBeVisible();
   await expectNoPageOverflow(page);
@@ -134,9 +135,9 @@ test('empty app is accessible and fits the viewport', async ({ page }) => {
   await expectNoSeriousAccessibilityViolations(page);
   await expectSoundDocumentStructure(page);
 
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Event timeline' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Timeline', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('button', { name: 'Calendar', exact: true })).toHaveAttribute('aria-current', 'page');
   await expectNoPageOverflow(page);
   await expectSoundDocumentStructure(page);
 
@@ -201,7 +202,9 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   // The reserve always shows; there is no summary line to open.
   await expect(page.getByLabel(/Reserved Trailblaze Power for Trailblaze Power/)).toBeVisible();
 
-  const allGames = page.getByRole('button', { name: 'Back to Today', exact: true });
+  const allGames = page
+    .getByRole('navigation', { name: 'Primary' })
+    .getByRole('button', { name: 'Today', exact: true });
   if (await allGames.isVisible()) await allGames.click();
   await openAddMenu(page, 'Add game');
   await page.getByRole('button', { name: /Neverness to Everness/ }).click();
@@ -219,7 +222,7 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
 test('tabs, timeline controls, and settings fit after adding a game', async ({ page }) => {
   await addGenshin(page);
 
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await expectNoPageOverflow(page);
   // The 7d/40d control is retired: the window is fixed at 40 days, so the only
   // thing left to hold is that the ruler still fits whatever width it is given.
@@ -275,7 +278,7 @@ test('wide Today opens integrated game pages while timeline bars stay in scale',
   await expect(workspace).not.toHaveClass(/card-shell/);
   await expect(page.getByRole('combobox', { name: 'Filter by game' })).toHaveCount(0);
   await expectNoPageOverflow(page);
-  await page.getByRole('button', { name: 'Back to Today', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await expect(starRailTrigger).toBeFocused();
   await expect(cards).toHaveCount(5);
   expect(
@@ -285,7 +288,7 @@ test('wide Today opens integrated game pages while timeline bars stay in scale',
   ).toEqual(restingOrder);
   await expectNoPageOverflow(page);
 
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   // Importing the bundled feed is automatic on load, so the seeded lane is
   // present without anything being pressed. The button it replaced is gone.
   await expect(page.getByRole('button', { name: /^Import \d+$/ })).toHaveCount(0);
@@ -326,32 +329,16 @@ test('tabs cross-slide without spilling the page sideways', async ({ page }) => 
   }
 });
 
-test('animated Add menu transfers focus to a sheet and releases pointer input', async ({ page }) => {
+test('the rail opens Add game as a sheet that takes focus and gives it back', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  const add = page.getByRole('button', { name: 'Add', exact: true });
+  const add = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Add game', exact: true });
   await add.click();
-  await expect(page.getByRole('menu')).toHaveCSS('animation-name', 'popoverOpen');
-  await page.getByRole('menuitem', { name: 'Reminder', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
   await expect.poll(() => dialog.evaluate((node) => node.contains(document.activeElement))).toBe(true);
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
-  await add.click();
-  await expect(page.getByRole('menu')).toBeVisible();
-  await page.keyboard.press('Escape');
   await expect(add).toBeFocused();
-
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await add.click();
-  const duration = await page
-    .getByRole('menu')
-    .evaluate((node) => parseFloat(getComputedStyle(node).animationDuration));
-  expect(duration).toBeLessThan(0.001);
-  await page.keyboard.press('Escape');
-  await page.emulateMedia({ colorScheme: 'light' });
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-  await expectNoPageOverflow(page);
 });
 
 test('floating phone navigation contains touch targets and tracks each selected route', async ({ page }) => {

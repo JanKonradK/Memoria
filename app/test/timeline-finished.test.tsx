@@ -123,7 +123,7 @@ describe('finished events leave the lane', () => {
     expect(screen.getByText('1 event')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Show finished events' }));
     expect(screen.getByText('2 events')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('radio', { name: 'List', exact: true }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Agenda', exact: true }));
     expect(screen.getByText('3 events')).toBeInTheDocument();
   });
 

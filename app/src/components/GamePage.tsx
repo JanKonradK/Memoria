@@ -1,21 +1,137 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, type KeyboardEvent } from 'react';
+import type { Game } from '@memoria/shared';
 import { useMediaQuery } from '../hooks';
 import { useDerived } from '../selectors';
 import { useApp } from '../store';
-import { useUI } from '../ui-store';
+import { GAME_TABS, useUI, type GameTab } from '../ui-store';
 import { GameControlsView } from './GameCard';
-import { gameShellVars, useSurfaces } from '../theme';
+import { gameShellVars, useGround, useSurfaces } from '../theme';
 import { useIdentityColors } from './roster';
-import { Page } from './ui';
+import { Btn, Page, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
+import { Pill } from './primitives';
 import { GameContext } from './GameContext';
+import { GameLogo } from './GameLogo';
+import { LaunchButton } from './GameLaunch';
+import { GameEvents } from './GameEvents';
+import { AttentionIndicator } from './AttentionIndicator';
+import { PageBar, PageBarEnd } from './shell/PageBar';
 import { closeWorkspace, recordWorkspaceHistory } from '../workspace-navigation';
+import { titleStyle } from '../fonts';
+import { gameTitleInk } from '../game-color';
+import { localResetLabel } from '../util';
+import { gameServerLabel } from '../server-choice';
+import { useCatchUpUnread } from '../catch-up-status';
+import { gameTabAvailable } from './game-tabs/availability';
 
-/** One game's full controls. Today is the overview this page returns to. */
+const GamePulls = lazy(() => import('./game-tabs/GamePulls').then((module) => ({ default: module.GamePulls })));
+const GameQuests = lazy(() => import('./game-tabs/GameQuests').then((module) => ({ default: module.GameQuests })));
+const GameNews = lazy(() => import('./game-tabs/GameNews').then((module) => ({ default: module.GameNews })));
+
+const TAB_LABEL: Record<GameTab, string> = {
+  track: 'Track',
+  events: 'Events',
+  pulls: 'Pulls',
+  quests: 'Quests',
+  news: 'News',
+};
+
+/** The game's name, where it plays, and its reset, beside its coin. */
+function GameIdentity({ game, now, urgent }: { game: Game; now: number; urgent: boolean }) {
+  const ground = useGround();
+  const zone = useApp((s) => s.state.settings.localTz);
+  const account = game.accountLabel?.trim();
+  return (
+    <div className="game-bar-id">
+      <GameLogo game={game} size={52} flippable className="game-bar-logo" />
+      <div className="min-w-0">
+        <h1
+          tabIndex={-1}
+          className="game-bar-title"
+          style={{ ...titleStyle(game.titleFont), color: `var(--game-ink, ${gameTitleInk(game, ground, 4.5)})` }}
+        >
+          {game.name}
+        </h1>
+        <div className="game-bar-meta">
+          <ServerChip label={gameServerLabel(game, now)} className="max-w-20 truncate" />
+          {account && <span className="truncate">{account}</span>}
+          <span>resets {localResetLabel(game, zone, now)}</span>
+          {game.paused && (
+            <Pill variant="paused" size="md">
+              paused
+            </Pill>
+          )}
+          {urgent && <AttentionIndicator />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Track, Events, Pulls, Quests and News: everything about one game, one tab at a time. */
+function GameTabs({
+  game,
+  tabs,
+  current,
+  eventCount,
+}: {
+  game: Game;
+  tabs: GameTab[];
+  current: GameTab;
+  eventCount: number;
+}) {
+  const setGameTab = useUI((s) => s.setGameTab);
+  const { unread } = useCatchUpUnread(game);
+  const refs = useRef(new Map<GameTab, HTMLButtonElement>());
+  const move = (event: KeyboardEvent<HTMLDivElement>) => {
+    const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+    if (!step && event.key !== 'Home' && event.key !== 'End') return;
+    event.preventDefault();
+    const index = tabs.indexOf(current);
+    const next =
+      event.key === 'Home'
+        ? tabs[0]!
+        : event.key === 'End'
+          ? tabs[tabs.length - 1]!
+          : tabs[(index + step + tabs.length) % tabs.length]!;
+    setGameTab(next);
+    refs.current.get(next)?.focus();
+  };
+  return (
+    <div role="tablist" aria-label={`${game.name} sections`} className="game-tabs" onKeyDown={move}>
+      {tabs.map((tab) => (
+        <button
+          key={tab}
+          ref={(node) => {
+            if (node) refs.current.set(tab, node);
+            else refs.current.delete(tab);
+          }}
+          type="button"
+          role="tab"
+          id={`game-tab-${tab}`}
+          aria-selected={tab === current}
+          aria-controls="game-tab-panel"
+          tabIndex={tab === current ? 0 : -1}
+          className="game-tab"
+          onClick={() => setGameTab(tab)}
+        >
+          {TAB_LABEL[tab]}
+          {tab === 'events' && eventCount > 0 && <span className="game-tab-count numeral">{eventCount}</span>}
+          {tab === 'news' && unread > 0 && (
+            <>
+              <span aria-hidden className="game-tab-new" />
+              <span className="sr-only">, {unread} new</span>
+            </>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** One game's full page. Its bar holds who it is, its tabs, Play and Edit. */
 export function GamePage({ now }: { now: number }) {
   const derived = useDerived(now);
   const { state, entryById } = derived;
-  // Individual selectors (zustand action refs are stable). Grouped into one
-  // object for passing down to the game-control view.
   const upsertEvent = useApp((s) => s.upsertEvent);
   const setTaskDone = useApp((s) => s.setTaskDone);
   const restartTaskTimer = useApp((s) => s.restartTaskTimer);
@@ -38,10 +154,10 @@ export function GamePage({ now }: { now: number }) {
   );
   const openSheet = useUI((s) => s.openSheet);
   const openGameEvent = useCallback((eventId: string) => openSheet({ kind: 'eventPeek', eventId }), [openSheet]);
-  // Three columns where the window has room for them: context, tracking, events.
   const twoColumns = useMediaQuery('(min-width: 900px)');
   const threeColumns = useMediaQuery('(min-width: 1280px)');
   const focusedGameId = useUI((s) => s.focusedGameId);
+  const gameTab = useUI((s) => s.gameTab);
   const focusedEntry = focusedGameId ? entryById.get(focusedGameId) : undefined;
   const workspaceId = focusedEntry?.game.id;
   const surfaces = useSurfaces();
@@ -53,26 +169,66 @@ export function GamePage({ now }: { now: number }) {
 
   // Without a game there is no page. The shell sends this route back to Today.
   if (!focusedEntry) return null;
+  const game = { ...focusedEntry.game, ...(identityColors[focusedEntry.game.id] ?? {}) };
+  const tabs = GAME_TABS.filter((tab) => gameTabAvailable(game, tab));
+  const tab = tabs.includes(gameTab) ? gameTab : 'track';
+  const eventCount = state.events.filter(
+    (event) => event.gameId === game.id && !event.deleted && !event.done && event.end > now,
+  ).length;
+  const urgent = !game.paused && focusedEntry.next != null && focusedEntry.next.at - now < 2 * 60 * 60_000;
 
   return (
     <Page>
       <section
-        key={focusedEntry.game.id}
+        key={game.id}
         className="focus-workspace"
-        style={gameShellVars(focusedEntry.game, surfaces, identityColors[focusedEntry.game.id])}
-        aria-label={`${focusedEntry.game.name} focus workspace`}
+        style={gameShellVars(focusedEntry.game, surfaces, identityColors[game.id])}
+        aria-label={`${game.name} focus workspace`}
       >
-        <GameControlsView
-          entry={focusedEntry}
-          state={state}
-          actions={actions}
-          now={now}
-          onBack={closeWorkspace}
-          layout="focus"
-          columns={threeColumns ? 3 : twoColumns ? 2 : 1}
-          onOpenEvent={openGameEvent}
-          aside={<GameContext game={focusedEntry.game} />}
-        />
+        <PageBar className="game-bar">
+          <GameIdentity game={game} now={now} urgent={urgent} />
+          <GameTabs game={game} tabs={tabs} current={tab} eventCount={eventCount} />
+          <PageBarEnd>
+            <LaunchButton game={game} />
+            <Tooltip content={`Edit ${game.name}`}>
+              <Btn
+                className={`inline-flex shrink-0 items-center ${TOUCH_BUTTON}`}
+                aria-label={`Edit ${game.name}`}
+                onClick={() => openSheet({ kind: 'game', gameId: game.id })}
+              >
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" className="icon h-4 w-4" aria-hidden>
+                  <path
+                    d="M13.3 3.7a1.7 1.7 0 0 1 2.4 2.4L7.4 14.4 4 15l.6-3.4z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </Btn>
+            </Tooltip>
+          </PageBarEnd>
+        </PageBar>
+        <div role="tabpanel" id="game-tab-panel" aria-labelledby={`game-tab-${tab}`} className="game-tab-panel">
+          {tab === 'track' && (
+            <GameControlsView
+              entry={focusedEntry}
+              state={state}
+              actions={actions}
+              now={now}
+              onBack={closeWorkspace}
+              layout="focus"
+              heading={false}
+              columns={threeColumns ? 3 : twoColumns ? 2 : 1}
+              onOpenEvent={openGameEvent}
+              aside={<GameContext game={focusedEntry.game} />}
+            />
+          )}
+          {tab === 'events' && <GameEvents game={focusedEntry.game} now={now} />}
+          <Suspense fallback={<p className="py-8 text-center text-meta text-muted">Loading…</p>}>
+            {tab === 'pulls' && <GamePulls game={focusedEntry.game} />}
+            {tab === 'quests' && <GameQuests game={focusedEntry.game} />}
+            {tab === 'news' && <GameNews game={focusedEntry.game} now={now} />}
+          </Suspense>
+        </div>
       </section>
     </Page>
   );

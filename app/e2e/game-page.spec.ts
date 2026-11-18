@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openGame } from './support';
+import { openGame, addFromShell } from './support';
 
 test.beforeEach(async ({ page }, info) => {
   test.skip(!['desktop', 'android-s23'].includes(info.project.name), 'Game page on desktop and phone');
@@ -41,8 +41,7 @@ test("a game's page keeps its actions in its heading", async ({ page }) => {
 
 test('an event can be ticked off and taken back on its page', async ({ page }) => {
   await openGame(page, 'Genshin Impact');
-  await page.getByRole('button', { name: 'Add', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Event', exact: true }).click();
+  await addFromShell(page, 'Event');
   const dialog = page.getByRole('dialog', { name: 'New event' });
   await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('Tick me');
   // The sheet opens a window at the moment it opens, but the page clock only ticks every 30 seconds.

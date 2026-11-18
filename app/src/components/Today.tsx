@@ -25,6 +25,7 @@ import { TodayNotices } from './TodayNotices';
 import { TodayCodes } from './TodayCodes';
 import { ProgressBar } from './primitives';
 import { Btn, Page, Tooltip, TOUCH_BUTTON } from './ui';
+import { PageBar, PageTitle } from './shell/PageBar';
 import '../today.css';
 
 const URGENT_MS = 2 * 60 * 60_000;
@@ -408,10 +409,9 @@ export function TodayPage({ now }: { now: number }) {
 
   return (
     <Page className="today-page">
-      <div className="today-heading">
-        <h1 className="text-title font-semibold tracking-[-0.02em] text-fg">Today</h1>
-        <p className="text-meta text-muted">{date}</p>
-      </div>
+      <PageBar>
+        <PageTitle sub={date}>Today</PageTitle>
+      </PageBar>
       <TodayNotices now={now} />
       {order.length === 0 ? (
         <section className="today-empty">

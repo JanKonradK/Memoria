@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openGame } from './support';
+import { openGame, addFromShell } from './support';
 
 const GAMES = [
   ['Honkai: Star Rail', 'HSR'],
@@ -11,8 +11,7 @@ const GAMES = [
 async function addGame(page: Page, name: string, short: string, first: boolean) {
   if (first) await page.getByRole('button', { name: 'Add a game' }).click();
   else {
-    await page.getByRole('button', { name: 'Add', exact: true }).click();
-    await page.getByRole('menuitem', { name: 'Add game', exact: true }).click();
+    await addFromShell(page, 'Add game');
   }
   await page.getByRole('button', { name: new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) }).click();
   await page.getByRole('combobox', { name: 'Server' }).click();
@@ -48,6 +47,6 @@ test('game headings wrap between words, never inside one', async ({ page }) => {
   for (const [name] of GAMES) {
     await openGame(page, name);
     expect(await brokenWords(page), name).toEqual([]);
-    await page.getByRole('button', { name: 'Back to Today', exact: true }).click();
+    await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   }
 });

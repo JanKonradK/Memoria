@@ -89,7 +89,7 @@ test('paused accounts stay compact in both views and resume their saved events',
     .locator('input[type="file"]')
     .setInputFiles({ name: 'paused.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   const view = page.getByRole('radiogroup', { name: 'Event view' });
   const altRows = page.locator('[data-event-id^="alt-"], [data-list-event^="alt-"]');
   const altPause = page.locator('[data-paused-game="alt"]');
@@ -139,7 +139,7 @@ test('paused accounts stay compact in both views and resume their saved events',
   );
   await page.reload();
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await view.getByRole('radio', { name: 'Timeline', exact: true }).click();
   await expect(page.locator('[data-event-id^="alt-"]')).toHaveCount(2);
   await expect(page.locator('[data-paused-game="alt"]')).toHaveCount(0);

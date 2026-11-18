@@ -81,7 +81,7 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
     )
     .toBeGreaterThan(0);
   await page.reload();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   const view = page.getByRole('radiogroup', { name: 'Event view' });
   await view.getByRole('radio', { name: 'Timeline', exact: true }).click();
   const groups = page.locator('[data-timeline-event-group]');
@@ -135,7 +135,7 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
     await banners.getByRole('heading').scrollIntoViewIfNeeded();
     await page.screenshot({ path: info.outputPath(`genshin-timeline-banners-${theme}.png`) });
   }
-  await view.getByRole('radio', { name: 'List', exact: true }).click();
+  await view.getByRole('radio', { name: 'Agenda', exact: true }).click();
   const snowball = state.events.find((event) => event.sourceKey === 'seed:genshin:7.1-snowball')!;
   const listRow = page.locator(`[data-list-event="${snowball.id}"]`);
   // A timed row lists its start and end clocks rather than a calendar range.

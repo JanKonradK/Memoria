@@ -32,7 +32,7 @@ test('event handles reorder with mouse, touch, and keyboard and persist across r
     .locator('input[type="file"]')
     .setInputFiles({ name: 'order.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })
@@ -98,7 +98,7 @@ test('event handles reorder with mouse, touch, and keyboard and persist across r
     .toBe(0);
   await page.reload();
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })
@@ -161,7 +161,7 @@ test('seeded Genshin events reorder within Teyvat and keep world sections after 
     .locator('input[type="file"]')
     .setInputFiles({ name: 'seeds.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })
@@ -206,7 +206,7 @@ test('seeded Genshin events reorder within Teyvat and keep world sections after 
   await expect(page.getByRole('status').filter({ hasText: /moved to position 1 of/ })).toBeVisible();
   // Switch views before reloading so this checks committed state, not the drag preview.
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })
@@ -214,7 +214,7 @@ test('seeded Genshin events reorder within Teyvat and keep world sections after 
   await expect.poll(shownInOrder).toBe(true);
   await page.reload();
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Timeline', exact: true })

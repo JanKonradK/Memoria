@@ -63,7 +63,7 @@ test('24 events remain reachable in the rounded timeline board with controls in 
     .locator('input[type="file"]')
     .setInputFiles({ name: 'density.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await expect(page.locator('.calendar-toolbar').getByRole('combobox', { name: 'Filter by game' })).toBeVisible();
   await expect(page.getByRole('button', { name: '+ Event', exact: true })).toHaveCount(0);
   await expect(page.locator('[data-timeline-event-row]')).toHaveCount(24);
@@ -110,7 +110,7 @@ test('first-run hints appear in place, once, and can be shown again', async ({ p
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page
     .getByRole('navigation', { name: 'Primary' })
-    .getByRole('button', { name: 'Timeline', exact: true })
+    .getByRole('button', { name: 'Calendar', exact: true })
     .click();
   const hint = page.locator('[data-hint="events"]');
   await expect(hint).toContainText('Events live here');
@@ -120,7 +120,7 @@ test('first-run hints appear in place, once, and can be shown again', async ({ p
   await page.reload();
   await page
     .getByRole('navigation', { name: 'Primary' })
-    .getByRole('button', { name: 'Timeline', exact: true })
+    .getByRole('button', { name: 'Calendar', exact: true })
     .click();
   await expect(page.getByRole('radiogroup', { name: 'Event view' })).toBeVisible();
   await expect(hint).toHaveCount(0);
@@ -128,7 +128,7 @@ test('first-run hints appear in place, once, and can be shown again', async ({ p
   await page.getByRole('button', { name: 'Show hints again', exact: true }).click();
   await page
     .getByRole('navigation', { name: 'Primary' })
-    .getByRole('button', { name: 'Timeline', exact: true })
+    .getByRole('button', { name: 'Calendar', exact: true })
     .click();
   await expect(hint).toBeVisible();
 });

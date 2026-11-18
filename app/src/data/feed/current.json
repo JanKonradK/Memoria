@@ -1,8 +1,6 @@
 {
   "updated": "2026-11-18",
-  "withdrawn": [
-    "seed:endfield:1.5-deep-cold-issue"
-  ],
+  "withdrawn": ["seed:endfield:1.5-deep-cold-issue"],
   "events": [
     {
       "game": "crumble",

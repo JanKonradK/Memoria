@@ -2,6 +2,7 @@ import { Activity } from './settings/Activity';
 import { useRef, useState, type ReactNode } from 'react';
 import { detectLocalTz, normalizeState, safeParseAppState } from '@memoria/shared';
 import { useApp } from '../store';
+import { PageBar, PageBarEnd, PageTitle } from './shell/PageBar';
 import { useUI, type ThemePreference } from '../ui-store';
 import { servedByLauncher } from '../launcher';
 import { syncNow } from '../sync';
@@ -157,12 +158,13 @@ export function SettingsPage() {
 
   return (
     <Page className="settings-page">
-      <div className="settings-shell">
-        <div className="settings-heading">
-          <h1 className="text-title font-semibold tracking-[-0.02em] text-fg">Settings</h1>
+      <PageBar>
+        <PageTitle>Settings</PageTitle>
+        <PageBarEnd>
           <Btn onClick={() => useUI.getState().armHints()}>Show hints again</Btn>
-        </div>
-
+        </PageBarEnd>
+      </PageBar>
+      <div className="settings-shell">
         <div className="settings-layout">
           {split && (
             <nav className="settings-nav" aria-label="Settings sections">

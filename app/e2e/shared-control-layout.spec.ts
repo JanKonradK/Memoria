@@ -19,7 +19,7 @@ test('long game choices fit the viewport and backup import has visible keyboard 
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await page
     .getByRole('navigation', { name: 'Primary' })
-    .getByRole('button', { name: 'Timeline', exact: true })
+    .getByRole('button', { name: 'Calendar', exact: true })
     .click();
   const scope = page.getByRole('combobox', { name: 'Filter by game' });
   await scope.click();

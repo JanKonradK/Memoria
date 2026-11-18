@@ -44,7 +44,7 @@ test('a pinned event stands out on the calendar in both views and in its strip',
     buffer: Buffer.from(JSON.stringify(state)),
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
 
   const strip = page.getByRole('region', { name: 'Pinned events' });
   await expect(strip.getByRole('button')).toHaveCount(1);
@@ -74,7 +74,10 @@ test('a pinned event stands out on the calendar in both views and in its strip',
   ).toEqual([]);
   await page.screenshot({ path: info.outputPath('pinned-events-timeline.png') });
 
-  await page.getByRole('radiogroup', { name: 'Event view' }).getByRole('radio', { name: 'List', exact: true }).click();
+  await page
+    .getByRole('radiogroup', { name: 'Event view' })
+    .getByRole('radio', { name: 'Agenda', exact: true })
+    .click();
   await expect(page.locator('[data-list-event="pinned-event"]')).toHaveAttribute('data-pinned', 'true');
   await expect(page.locator('[data-list-event="plain-event"]')).not.toHaveAttribute('data-pinned');
 

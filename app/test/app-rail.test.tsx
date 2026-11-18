@@ -1,7 +1,8 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { AppBar } from '../src/components/AppBar';
-import { CalendarToolbar } from '../src/components/CalendarToolbar';
+import type { ReactElement } from 'react';
+import { AppRail } from '../src/components/shell/AppRail';
+import { TooltipProvider } from '../src/components/ui';
 import { useApp } from '../src/store';
 import { useUI } from '../src/ui-store';
 import { syncNow } from '../src/sync';
@@ -14,8 +15,6 @@ vi.mock('../src/lan-sync', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../src/lan-sync')>()),
   syncLanNow: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock('../src/components/AddMenu', () => ({ AddMenu: () => null }));
-vi.mock('../src/components/GameScope', () => ({ GameScope: () => null }));
 
 const originalLoad = useApp.getState().load;
 
@@ -35,41 +34,39 @@ beforeEach(() => {
 
 afterEach(() => useApp.setState({ load: originalLoad }));
 
-it('keeps five primary routes and makes timeline livestreams and settings reachable', () => {
+const renderRail = (node: ReactElement = <AppRail />) => render(<TooltipProvider>{node}</TooltipProvider>);
+
+it('leads with Today and Calendar, ends with Settings, and adds a game from the rail', () => {
   useUI.setState({ tab: 'today' });
-  render(
-    <>
-      <AppBar />
-      <CalendarToolbar view="lanes" />
-    </>,
-  );
+  renderRail();
   const nav = screen.getByRole('navigation', { name: 'Primary' });
-  expect(
-    within(nav)
-      .getAllByRole('button')
-      .map((button) => button.textContent),
-  ).toEqual(['Timeline', 'Today', 'Pulls', 'Quests', 'Settings']);
-  fireEvent.click(within(nav).getByRole('button', { name: 'Timeline' }));
-  // Timeline's own views sit on the page, outside the app bar.
-  expect(within(screen.getByRole('banner')).queryByRole('radio', { name: 'List' })).toBeNull();
-  // Livestreams moved to each game's Catch up, so the switch has two views.
-  expect(screen.queryByRole('radio', { name: 'Livestreams' })).toBeNull();
-  expect(within(nav).getByRole('button', { name: 'Timeline' })).toHaveAttribute('aria-current', 'page');
+  const names = within(nav)
+    .getAllByRole('button')
+    .map((button) => button.getAttribute('aria-label') ?? button.textContent);
+  expect(names[0]).toBe('Today');
+  expect(names[1]).toBe('Calendar');
+  expect(names.at(-1)).toBe('Settings');
+  expect(names).toContain('Add game');
+  // Pulls and Quests live inside each game now.
+  expect(within(nav).queryByRole('button', { name: 'Pulls' })).toBeNull();
+  fireEvent.click(within(nav).getByRole('button', { name: 'Calendar' }));
+  expect(useUI.getState().tab).toBe('timeline');
   fireEvent.click(within(nav).getByRole('button', { name: 'Settings' }));
   expect(useUI.getState().tab).toBe('settings');
+  fireEvent.click(within(nav).getByRole('button', { name: 'Add game' }));
+  expect(useUI.getState().sheet).toEqual({ kind: 'addGame' });
 });
 
 it('shows phone sync status even without a desktop launcher in this window', () => {
   useLanSync.setState({ status: 'ok' });
-  render(<AppBar />);
+  renderRail();
   expect(screen.getByRole('status')).toHaveTextContent('Synced');
 });
 
 it('shows a connection error ahead of another successful connection', () => {
   useApp.setState({ syncStatus: 'ok', cloudStatus: 'needs-permission', cloudError: 'Reconnect the sync file.' });
-  render(<AppBar />);
-  expect(screen.getByRole('status')).toHaveTextContent('Reconnect the sync file.');
-  expect(screen.getByRole('status')).toHaveAttribute('title', 'Reconnect the sync file.');
+  renderRail();
+  expect(screen.getByRole('button', { name: 'Sync needs attention: Reconnect the sync file.' })).toBeInTheDocument();
 });
 
 it('refreshes connected devices after local loading', async () => {
@@ -90,7 +87,7 @@ it('refreshes connected devices after local loading', async () => {
       }),
   );
   useApp.setState({ syncStatus: 'error' });
-  render(<AppBar />);
+  renderRail();
   const refresh = screen.getByRole('button', { name: 'Refresh data' });
   fireEvent.click(refresh);
   expect(refresh).toBeDisabled();
@@ -111,7 +108,7 @@ it.each(['loadError', 'saveError'] as const)('avoids sync after %s', async (fiel
     }),
     syncStatus: 'error',
   });
-  render(<AppBar />);
+  renderRail();
   const refresh = screen.getByRole('button', { name: 'Refresh data' });
   fireEvent.click(refresh);
   await waitFor(() => expect(refresh).toBeEnabled());
@@ -122,17 +119,17 @@ it.each(['loadError', 'saveError'] as const)('avoids sync after %s', async (fiel
 
 it('keeps healthy sync and refresh out of sight', () => {
   useApp.setState({ syncStatus: 'ok' });
-  render(<AppBar />);
+  renderRail();
   expect(screen.queryByRole('button', { name: 'Refresh data' })).toBeNull();
   expect(screen.queryByText('Sync needs attention')).toBeNull();
   expect(screen.queryByRole('button', { name: /theme/i })).toBeNull();
 });
 
-it('keeps Today selected on a game page and returns to Today from it', () => {
+it('marks the open game rather than Today on a game page, and Today returns from it', () => {
   useUI.setState({ tab: 'home', focusedGameId: 'game' });
-  render(<AppBar />);
+  renderRail();
   const today = within(screen.getByRole('navigation', { name: 'Primary' })).getByRole('button', { name: 'Today' });
-  expect(today).toHaveAttribute('aria-current', 'page');
+  expect(today).not.toHaveAttribute('aria-current');
   fireEvent.click(today);
   expect(useUI.getState().tab).toBe('today');
   expect(useUI.getState().focusedGameId).toBeNull();

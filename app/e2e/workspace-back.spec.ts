@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { gameRow, openGame } from './support';
+import { gameRow, openGame, addFromShell } from './support';
 
 test.beforeEach(async ({ page }, info) => {
   test.skip(!['desktop', 'android-s23', 'mobile-320'].includes(info.project.name), 'Workspace return sizes');
@@ -38,7 +38,7 @@ test('browser Back and Forward use the same workspace and focus path as the arro
   await page.goBack();
   await expect(card).toBeFocused();
   await page.goForward();
-  const back = page.getByRole('button', { name: 'Back to Today', exact: true });
+  const back = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true });
   await expect(back).toBeFocused();
   await expect(back).toHaveAttribute('aria-keyshortcuts', 'Alt+ArrowLeft');
   await back.click();
@@ -51,8 +51,7 @@ test('browser Back and Forward use the same workspace and focus path as the arro
 
 test('returning dismisses an event first and preserves a rejected dirty draft', async ({ page }) => {
   const gameId = await page.evaluate(() => history.state.memoriaWorkspace as string);
-  await page.getByRole('button', { name: 'Add', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Event', exact: true }).click();
+  await addFromShell(page, 'Event');
   const editor = page.getByRole('dialog', { name: 'New event', exact: true });
   await editor.getByLabel('Name', { exact: true }).fill('Keep my event draft');
   let discard = false;

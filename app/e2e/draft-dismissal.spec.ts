@@ -1,3 +1,4 @@
+import { addFromShell } from './support';
 import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }, info) => {
@@ -18,8 +19,7 @@ test.beforeEach(async ({ page }, info) => {
 for (const kind of ['Event', 'Reminder'] as const) {
   test(`${kind} keeps its draft when dismissal is rejected`, async ({ page }, info) => {
     const open = async () => {
-      await page.getByRole('button', { name: 'Add', exact: true }).click();
-      await page.getByRole('menuitem', { name: kind, exact: true }).click();
+      await addFromShell(page, kind);
       await expect(page.getByRole('dialog')).toBeVisible();
     };
     await open();
@@ -123,8 +123,7 @@ test('game settings protect unfinished tasks and reminders through dismissal and
 });
 
 test('event and reminder forms save from Enter and explain invalid dates', async ({ page }) => {
-  await page.getByRole('button', { name: 'Add', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Event', exact: true }).click();
+  await addFromShell(page, 'Event');
   const event = page.getByRole('dialog', { name: 'New event', exact: true });
   await event.getByLabel('Name', { exact: true }).fill('Keyboard event');
   const starts = event.getByLabel('Starts', { exact: true });
@@ -141,8 +140,7 @@ test('event and reminder forms save from Enter and explain invalid dates', async
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.locator('[data-layer=sheet]')).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'Add', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Reminder', exact: true }).click();
+  await addFromShell(page, 'Reminder');
   const reminder = page.getByRole('dialog', { name: 'New reminder', exact: true });
   await reminder.getByLabel('Message', { exact: true }).fill('Keyboard reminder');
   const when = reminder.getByLabel('When', { exact: true });
@@ -163,8 +161,8 @@ test('event and reminder forms save from Enter and explain invalid dates', async
   await expect(page.getByRole('button', { name: 'Edit reminder Keyboard reminder', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.locator('[data-layer=sheet]')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
-  await page.getByRole('radio', { name: 'List', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page.getByRole('radio', { name: 'Agenda', exact: true }).click();
   await expect(
     page.getByRole('button', { name: 'Edit Genshin Impact event: Keyboard event', exact: true }),
   ).toBeVisible();

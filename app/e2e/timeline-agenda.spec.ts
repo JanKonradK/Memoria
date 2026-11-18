@@ -39,8 +39,11 @@ test('agenda keeps full titles, actions and route-return choices usable at every
     .locator('input[type="file"]')
     .setInputFiles({ name: 'agenda.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
-  await page.getByRole('radiogroup', { name: 'Event view' }).getByRole('radio', { name: 'List', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await page
+    .getByRole('radiogroup', { name: 'Event view' })
+    .getByRole('radio', { name: 'Agenda', exact: true })
+    .click();
   await expect(page.locator('[data-list-event]')).toHaveCount(12);
   // Finished names what a press does, as the theme button does. There is no Find: the browser has one.
   await expect(page.getByRole('button', { name: 'Find events', exact: true })).toHaveCount(0);
@@ -89,7 +92,7 @@ test('agenda keeps full titles, actions and route-return choices usable at every
   });
   expect(scrollPosition).toBeGreaterThan(0);
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(scrollPosition, 0);
 
   // Use a non-default view so returning to the route cannot pass by resetting
@@ -100,9 +103,9 @@ test('agenda keeps full titles, actions and route-return choices usable at every
   await page.getByRole('button', { name: 'Show finished events', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Hide finished events', exact: true })).toHaveText('Hide finished');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await expect(viewControls.getByRole('radio', { name: chosenView, exact: true })).toHaveAttribute('data-state', 'on');
   await expect(page.getByRole('button', { name: 'Hide finished events', exact: true })).toBeVisible();
-  await viewControls.getByRole('radio', { name: 'List', exact: true }).click();
+  await viewControls.getByRole('radio', { name: 'Agenda', exact: true }).click();
   await expect(page.locator('[data-list-event]')).toHaveCount(12);
 });

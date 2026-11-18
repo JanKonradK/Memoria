@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { emptyState, PRESETS } from '@memoria/shared';
 import { makeGame } from '../../shared/test/helpers';
-import { gameRow, openGame, openSettings } from './support';
+import { gameRow, openGame, openSettings, addFromShell } from './support';
 
 test('saved sheets animate out and lazy editors can open after dismissal', async ({ page }, testInfo) => {
   test.skip(!['desktop', 'mobile-390'].includes(testInfo.project.name), 'Desktop dialog and mobile sheet');
@@ -9,9 +9,7 @@ test('saved sheets animate out and lazy editors can open after dismissal', async
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  const add = page.getByRole('button', { name: 'Add', exact: true });
-  await add.click();
-  await page.getByRole('menuitem', { name: 'Reminder', exact: true }).click();
+  await addFromShell(page, 'Reminder');
   await page.getByRole('textbox', { name: 'Message' }).fill('Animation check');
   await page.waitForTimeout(500);
   const samples = await page.evaluate(async () => {
@@ -31,13 +29,11 @@ test('saved sheets animate out and lazy editors can open after dismissal', async
   // A busy CI runner may paint only one in the window, so do not ask for two.
   expect(samples.filter((opacity) => opacity > 0.02 && opacity < 0.98).length).toBeGreaterThan(0);
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await add.click();
-  await page.getByRole('menuitem', { name: 'Reminder', exact: true }).click();
+  await page.getByRole('button', { name: 'New reminder', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Message' })).toHaveValue('');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await add.click();
-  await page.getByRole('menuitem', { name: 'Add game', exact: true }).click();
+  await addFromShell(page, 'Add game');
   await page.getByPlaceholder('Custom game name…').fill('Motion preview');
   await page.getByRole('button', { name: 'Add custom game', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Motion preview' })).toBeVisible();
@@ -60,8 +56,7 @@ test('a desktop row opens an integrated page and returns to the same Today geome
   ] as const) {
     if (index === 0) await page.getByRole('button', { name: 'Add a game' }).click();
     else {
-      await page.getByRole('button', { name: 'Add', exact: true }).click();
-      await page.getByRole('menuitem', { name: 'Add game', exact: true }).click();
+      await addFromShell(page, 'Add game');
     }
     await page.getByRole('button', { name: new RegExp(name) }).click();
     // No server is chosen for you: pick the game's first one.
@@ -93,7 +88,7 @@ test('a desktop row opens an integrated page and returns to the same Today geome
   await expect(workspace).toBeVisible();
   await expect(workspace).not.toHaveClass(/\bcard-shell\b/);
   await expect(page.locator('.today-page')).toHaveCount(0);
-  const back = page.getByRole('button', { name: 'Back to Today', exact: true });
+  const back = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true });
   await expect(back).toBeFocused();
   // Reverse while the content arrives; navigation and controls stay usable.
   await back.click();
@@ -152,7 +147,7 @@ test('a long desktop Today list restores its scroll and supports repeated page v
     await full.scrollIntoViewIfNeeded();
     const savedScroll = await page.evaluate(() => scrollY);
     await full.click();
-    const back = page.getByRole('button', { name: 'Back to Today', exact: true });
+    const back = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true });
     await expect(back).toBeFocused();
     await expect(page.locator('.focus-workspace')).toBeVisible();
     await back.click();
@@ -173,8 +168,7 @@ test('a phone sheet follows its drag, returns smoothly, and dismisses from the r
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  await page.getByRole('button', { name: 'Add', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Reminder', exact: true }).click();
+  await addFromShell(page, 'Reminder');
   const dialog = page.getByRole('dialog', { name: 'New reminder' });
   await expect(dialog).toBeVisible();
   await page.waitForTimeout(650);

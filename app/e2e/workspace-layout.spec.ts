@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { openGame } from './support';
+import { openGame, addFromShell } from './support';
 
 async function addGames(page: Page) {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
@@ -13,8 +13,7 @@ async function addGames(page: Page) {
   ] as const) {
     if (index === 0) await page.getByRole('button', { name: 'Add a game' }).click();
     else {
-      await page.getByRole('button', { name: 'Add', exact: true }).click();
-      await page.getByRole('menuitem', { name: 'Add game', exact: true }).click();
+      await addFromShell(page, 'Add game');
     }
     await page.getByRole('button', { name: new RegExp(name) }).click();
     // No server is chosen for you: pick the game's first one.
@@ -33,7 +32,9 @@ test('shared game focus and event editing work at every size', async ({ page }, 
   await expect(workspace).toBeVisible();
   await expect(workspace).not.toHaveClass(/\bcard-shell\b/);
   await expect(page.getByRole('combobox', { name: 'Filter by game' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Back to Today', exact: true })).toHaveCount(1);
+  await expect(
+    page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }),
+  ).toHaveCount(1);
   await expect(workspace.getByRole('button', { name: 'Edit Genshin Impact', exact: true })).toHaveCount(1);
   expect(
     (await new AxeBuilder({ page }).analyze()).violations.filter((issue) =>
@@ -42,12 +43,14 @@ test('shared game focus and event editing work at every size', async ({ page }, 
   ).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('game-page.png') });
-  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   // Opening a game never filters the Timeline (F4).
   await expect(page.getByRole('combobox', { name: 'Filter by game' })).toContainText('All games');
-  await page.getByRole('radiogroup', { name: 'Event view' }).getByRole('radio', { name: 'List', exact: true }).click();
-  await page.getByRole('button', { name: 'Add', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Event', exact: true }).click();
+  await page
+    .getByRole('radiogroup', { name: 'Event view' })
+    .getByRole('radio', { name: 'Agenda', exact: true })
+    .click();
+  await addFromShell(page, 'Event');
   await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Review window');
   await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('Keep these notes.');
   await page.getByRole('button', { name: 'End 3 days after start', exact: true }).click();

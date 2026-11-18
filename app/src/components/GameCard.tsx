@@ -1123,7 +1123,10 @@ export function GameControlsView({
   onBack,
   actionsEnd,
   aside,
+  heading = true,
 }: {
+  /** False where the page bar already names the game and holds its actions. */
+  heading?: boolean;
   entry: GameUrgency;
   state: AppState;
   actions: GameControlActions;
@@ -1250,22 +1253,25 @@ export function GameControlsView({
   );
   return (
     <>
-      <GameControlsHeader
-        game={visualGame}
-        dailies={dailies}
-        now={now}
-        localTz={state.settings.localTz}
-        onEdit={openSettings}
-        onBack={onBack}
-        editRef={editRef}
-        urgent={!game.paused && entry.next != null && entry.next.at - now < 2 * 60 * 60_000}
-        layout={layout}
-        managingEvents={managingEvents}
-        onToggleEvents={() => setManagingEvents((value) => !value)}
-        eventsPanelId={eventsPanelId}
-        actions={<LaunchButton game={game} />}
-        actionsEnd={actionsEnd}
-      />
+      {/* A game's own page carries its identity and actions in the page bar. */}
+      {heading && (
+        <GameControlsHeader
+          game={visualGame}
+          dailies={dailies}
+          now={now}
+          localTz={state.settings.localTz}
+          onEdit={openSettings}
+          onBack={onBack}
+          editRef={editRef}
+          urgent={!game.paused && entry.next != null && entry.next.at - now < 2 * 60 * 60_000}
+          layout={layout}
+          managingEvents={managingEvents}
+          onToggleEvents={() => setManagingEvents((value) => !value)}
+          eventsPanelId={eventsPanelId}
+          actions={<LaunchButton game={game} />}
+          actionsEnd={actionsEnd}
+        />
+      )}
       {game.paused && (
         <div className="relative z-10 mt-2 flex flex-wrap items-center gap-2">
           <p className="mr-auto text-meta text-muted">Paused</p>

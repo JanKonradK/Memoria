@@ -1,3 +1,4 @@
+import { addFromShell } from './support';
 import { expect, test } from '@playwright/test';
 
 for (const reducedMotion of ['no-preference', 'reduce'] as const) {
@@ -20,8 +21,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     ]) {
       if (name === 'Genshin Impact') await page.getByRole('button', { name: 'Add a game' }).click();
       else {
-        await page.getByRole('button', { name: 'Add', exact: true }).click();
-        await page.getByRole('menuitem', { name: 'Add game', exact: true }).click();
+        await addFromShell(page, 'Add game');
       }
       await page.getByRole('button', { name: new RegExp(name) }).click();
       // No server is chosen for you: pick the game's first one.
@@ -36,7 +36,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     const scroll = await page.evaluate(() => scrollY);
     expect(scroll).toBeGreaterThan(0);
     await row.click();
-    const back = page.getByRole('button', { name: 'Back to Today', exact: true });
+    const back = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true });
     await expect(back).toBeFocused();
     await expect(page.locator('.focus-workspace')).toBeVisible();
     if (reducedMotion === 'no-preference') {

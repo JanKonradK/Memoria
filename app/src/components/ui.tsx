@@ -352,12 +352,21 @@ export function Segmented<T extends string>({
 export const TooltipProvider = TooltipPrimitive.Provider;
 
 /** Radix tooltip used for terse countdown abbreviations and icon-only affordances. */
-export function Tooltip({ children, content }: { children: ReactElement; content: ReactNode }) {
+export function Tooltip({
+  children,
+  content,
+  side,
+}: {
+  children: ReactElement;
+  content: ReactNode;
+  side?: 'top' | 'right' | 'bottom' | 'left';
+}) {
   return (
     <TooltipPrimitive.Root>
       <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
       <TooltipPrimitive.Portal>
         <TooltipPrimitive.Content
+          side={side}
           sideOffset={6}
           collisionPadding={8}
           className="fade-in z-[90] max-w-64 rounded-ui-sm bg-surface-2 px-2 py-1 text-caption text-fg-soft shadow-float ring-1 ring-line"
