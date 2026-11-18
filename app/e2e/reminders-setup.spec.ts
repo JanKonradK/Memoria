@@ -73,3 +73,38 @@ test('quiet hours are off by default and move reminders rather than drop them', 
   await expect(page.getByRole('switch', { name: 'Quiet hours' })).toBeChecked();
   await expect(page.getByLabel('Quiet hours start')).toHaveValue('01:00');
 });
+
+test('no-alarm times can be added, edited and kept, on every screen size', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
+  await page.goto('/');
+  await openSettings(page, 'Reminders');
+  await page.getByRole('button', { name: 'Add a no-alarm time' }).click();
+  // The first suggestion is a weekday working day.
+  const work = page.getByRole('list', { name: 'No-alarm times' }).getByRole('listitem').first();
+  await expect(work.getByLabel('Name of Work')).toHaveValue('Work');
+  await expect(work.getByLabel('Work starts')).toHaveValue('09:00');
+  const days = work.getByRole('group', { name: 'Days for Work' });
+  await expect(days.getByRole('button', { name: 'Friday' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(days.getByRole('button', { name: 'Saturday' })).toHaveAttribute('aria-pressed', 'false');
+  await work.getByLabel('Work ends').fill('18:30');
+  await days.getByRole('button', { name: 'Saturday' }).click();
+  await expect(days.getByRole('button', { name: 'Saturday' })).toHaveAttribute('aria-pressed', 'true');
+  // The next suggestion is sleep, every night.
+  await page.getByRole('button', { name: 'Add a no-alarm time' }).click();
+  await expect(page.getByLabel('Name of Sleep')).toHaveValue('Sleep');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.evaluate(async () => {
+    const path = '/src/store.ts';
+    const { flushPersist } = await import(path);
+    await flushPersist();
+  });
+  await page.reload();
+  await openSettings(page, 'Reminders');
+  await expect(page.getByLabel('Work ends')).toHaveValue('18:30');
+  await expect(
+    page.getByRole('group', { name: 'Days for Work' }).getByRole('button', { name: 'Saturday' }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Delete Sleep' }).click();
+  await page.getByRole('button', { name: 'Confirm delete Sleep' }).click();
+  await expect(page.getByLabel('Name of Sleep')).toHaveCount(0);
+});

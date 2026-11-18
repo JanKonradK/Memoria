@@ -14,7 +14,7 @@ import { buildUrgencyContext } from './urgency';
 import { projectEnergy } from './energy';
 import { effectiveResourceKind } from './tracking';
 import { DateTime } from 'luxon';
-import { quietWindowAt } from './quiet';
+import { alarmFreeWindowAt, quietWindowAt } from './quiet';
 import { eventReward } from './event-reward';
 import { presetForGame } from './presets';
 import { PAID_PASSES } from './savings';
@@ -174,7 +174,9 @@ export function buildNotificationPlan(state: AppState, now: number): PlannedNoti
     if (when <= now + 1000) return;
     let id = notificationId(key);
     while (plan.some((item) => item.id === id)) id = (id % 2000000000) + 1;
-    const style = styleOverride ?? notificationStyle(state.settings, kind);
+    const chosen = styleOverride ?? notificationStyle(state.settings, kind);
+    // Inside a no-alarm window (work, sleep) an alarm still arrives, silently.
+    const style = chosen === 'alarm' && alarmFreeWindowAt(state.settings, when) ? 'silent' : chosen;
     plan.push({
       id,
       kind,

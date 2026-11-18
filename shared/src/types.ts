@@ -349,7 +349,8 @@ export type SettingsField =
   | 'sleepHours'
   | 'digestAt'
   | 'notificationStyles'
-  | 'alarmTone';
+  | 'alarmTone'
+  | 'alarmFreeWindows';
 /** Settings merged one field at a time, so edits on two devices do not overwrite each other. */
 export const SETTINGS_FIELDS: SettingsField[] = [
   'quietStart',
@@ -360,7 +361,24 @@ export const SETTINGS_FIELDS: SettingsField[] = [
   'digestAt',
   'notificationStyles',
   'alarmTone',
+  'alarmFreeWindows',
 ];
+
+/**
+ * A stretch of the week when no alarm rings, such as work or sleep. An alarm
+ * that falls inside one still arrives, as a silent notification.
+ */
+export interface AlarmFreeWindow {
+  id: string;
+  /** What it is for, e.g. "Work". */
+  label: string;
+  /** Minutes from midnight, home time. An end before the start runs past midnight. */
+  start: number;
+  end: number;
+  /** ISO weekdays (1 = Monday) the window starts on. */
+  days: number[];
+}
+export const MAX_ALARM_FREE_WINDOWS = 12;
 
 export interface Settings extends Syncable {
   /**
@@ -388,6 +406,8 @@ export interface Settings extends Syncable {
   notificationStyles?: Partial<Record<NotificationKind, NotificationStyle>>;
   /** The ring of alarm-style notifications. Absent = classic. */
   alarmTone?: AlarmTone;
+  /** Times when no alarm rings; alarms inside them arrive silently. Absent = none. */
+  alarmFreeWindows?: AlarmFreeWindow[];
   /**
    * The `SEED_UPDATED` stamp of the bundled event feed this device has already
    * taken a refresh from, as `YYYY-MM-DD`.

@@ -10,6 +10,7 @@ import { DigestField } from './DigestField';
 import { ReminderStyles, STYLE_LABELS } from './ReminderStyles';
 import { useNotifications } from '../../notifications';
 import { QuietHoursField } from './QuietHoursField';
+import { AlarmFreeTimes } from './AlarmFreeTimes';
 import { repeatLabel } from './reminder-repeat';
 import { SettingRow } from './SettingRow';
 
@@ -109,6 +110,7 @@ export function RemindersPane() {
       )}
       <ReminderStyles />
       <QuietHoursField />
+      <AlarmFreeTimes />
       <DigestField />
       <CustomReminders />
     </div>

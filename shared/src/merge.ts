@@ -3,6 +3,7 @@ import { HlcSchema } from './validation';
 import type { ZodType } from 'zod';
 import { IANAZone } from 'luxon';
 import type {
+  AlarmFreeWindow,
   AlarmTone,
   AppState,
   NotificationStyle,
@@ -15,6 +16,7 @@ import type {
 } from './types';
 import {
   ALARM_TONES,
+  MAX_ALARM_FREE_WINDOWS,
   emptyState,
   isSafeGameImage,
   NOTIFICATION_KINDS,
@@ -457,8 +459,8 @@ function normalizeQuietHours(
 /** An unknown style or tone is dropped alone, so it cannot reset every other setting. */
 function normalizeNotificationStyles(
   record: Record<string, unknown>,
-): Pick<Settings, 'notificationStyles' | 'alarmTone'> {
-  const out: Pick<Settings, 'notificationStyles' | 'alarmTone'> = {};
+): Pick<Settings, 'notificationStyles' | 'alarmTone' | 'alarmFreeWindows'> {
+  const out: Pick<Settings, 'notificationStyles' | 'alarmTone' | 'alarmFreeWindows'> = {};
   const styles = objectRecord(record.notificationStyles);
   if (styles) {
     const kept = Object.fromEntries(
@@ -469,7 +471,30 @@ function normalizeNotificationStyles(
     if (Object.keys(kept).length) out.notificationStyles = kept;
   }
   if (ALARM_TONES.includes(record.alarmTone as AlarmTone)) out.alarmTone = record.alarmTone as AlarmTone;
+  const windows = normalizeAlarmFreeWindows(record.alarmFreeWindows);
+  if (windows) out.alarmFreeWindows = windows;
   return out;
+}
+
+/** Well-formed no-alarm windows only; a broken one is dropped alone. */
+function normalizeAlarmFreeWindows(raw: unknown): AlarmFreeWindow[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const minute = (value: unknown) =>
+    Number.isInteger(value) && (value as number) >= 0 && (value as number) < 1440 ? (value as number) : null;
+  const kept: AlarmFreeWindow[] = [];
+  for (const item of raw) {
+    const row = objectRecord(item);
+    if (!row || typeof row.id !== 'string' || row.id.length < 1 || row.id.length > 40) continue;
+    const start = minute(row.start);
+    const end = minute(row.end);
+    const days = Array.isArray(row.days)
+      ? [...new Set(row.days.filter((day): day is number => Number.isInteger(day) && day >= 1 && day <= 7))].sort()
+      : [];
+    if (start == null || end == null || start === end || days.length === 0) continue;
+    if (kept.some((window) => window.id === row.id)) continue;
+    kept.push({ id: row.id, label: typeof row.label === 'string' ? row.label.slice(0, 40) : '', start, end, days });
+  }
+  return kept.slice(0, MAX_ALARM_FREE_WINDOWS);
 }
 
 function normalizeSettings(raw: unknown): Settings {

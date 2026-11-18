@@ -271,6 +271,18 @@ const settings = z.object({
     .partialRecord(z.enum(['daily', 'weekly', 'monthly', 'event', 'energy', 'reminder', 'digest']), notificationStyle)
     .optional(),
   alarmTone: z.enum(['classic', 'pulse', 'chime', 'ring']).optional(),
+  alarmFreeWindows: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(40),
+        label: z.string().max(40),
+        start: z.number().int().min(0).max(1439),
+        end: z.number().int().min(0).max(1439),
+        days: z.array(z.number().int().min(1).max(7)).min(1).max(7),
+      }),
+    )
+    .max(12)
+    .optional(),
   /** A SEED_UPDATED stamp: YYYY-MM-DD, or absent. */
   seedImportedVersion: z
     .string()

@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import type { Settings } from './types';
+import type { AlarmFreeWindow, Settings } from './types';
 
 type QuietSettings = Pick<Settings, 'quietStart' | 'quietEnd' | 'localTz'>;
 
@@ -59,4 +59,30 @@ export function nextQuietWindow(settings: QuietSettings, now: number): QuietWind
 export function actBy(settings: QuietSettings, at: number, now: number): number {
   const window = quietWindowAt(settings, at);
   return window && window.start > now ? window.start : at;
+}
+
+/**
+ * The no-alarm window (work, sleep) that `at` falls in, or null. A window
+ * belongs to the day it starts on, so a 23:00–07:00 window set for Friday
+ * still covers early Saturday morning.
+ */
+export function alarmFreeWindowAt(
+  settings: Pick<Settings, 'alarmFreeWindows' | 'localTz'>,
+  at: number,
+): AlarmFreeWindow | null {
+  const windows = settings.alarmFreeWindows;
+  if (!windows?.length) return null;
+  const time = DateTime.fromMillis(at).setZone(settings.localTz || 'UTC');
+  if (!time.isValid) return null;
+  const minute = time.hour * 60 + time.minute;
+  const today = time.weekday;
+  const yesterday = today === 1 ? 7 : today - 1;
+  return (
+    windows.find((window) =>
+      window.start < window.end
+        ? window.days.includes(today) && minute >= window.start && minute < window.end
+        : (window.days.includes(today) && minute >= window.start) ||
+          (window.days.includes(yesterday) && minute < window.end),
+    ) ?? null
+  );
 }

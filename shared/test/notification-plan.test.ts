@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   actBy,
+  alarmFreeWindowAt,
   alertMinutes,
   eventReward,
   buildNotificationPlan,
@@ -115,6 +116,51 @@ describe('quiet hours', () => {
     expect(chosen.settings).toMatchObject({ quietStart: 60, quietEnd: 480, quietHoursChosen: true });
     const other = normalizeState({ ...makeState(), settings: { ...quietOff, quietStart: 23 * 60, quietEnd: 6 * 60 } });
     expect(other.settings).toMatchObject({ quietStart: 23 * 60, quietEnd: 6 * 60 });
+  });
+});
+
+describe('no-alarm windows', () => {
+  const sleep = { id: 'sleep', label: 'Sleep', start: 23 * 60, end: 7 * 60, days: [2] };
+  const work = { id: 'work', label: 'Work', start: 9 * 60, end: 17 * 60, days: [1, 2, 3, 4, 5] };
+
+  it('finds the window a time falls in, counting an overnight window on the day it starts', () => {
+    const settings = { localTz: 'UTC', alarmFreeWindows: [sleep, work] };
+    // Tuesday 23:30 and early Wednesday belong to Tuesday's sleep window.
+    expect(alarmFreeWindowAt(settings, utc('2026-10-06T23:30:00Z'))?.id).toBe('sleep');
+    expect(alarmFreeWindowAt(settings, utc('2026-10-07T06:59:00Z'))?.id).toBe('sleep');
+    // Wednesday night is not set, and 07:00 is already outside.
+    expect(alarmFreeWindowAt(settings, utc('2026-10-07T07:00:00Z'))).toBeNull();
+    expect(alarmFreeWindowAt(settings, utc('2026-10-08T02:00:00Z'))).toBeNull();
+    // Work on a weekday, not on Saturday.
+    expect(alarmFreeWindowAt(settings, utc('2026-10-07T12:00:00Z'))?.id).toBe('work');
+    expect(alarmFreeWindowAt(settings, utc('2026-10-10T12:00:00Z'))).toBeNull();
+  });
+
+  it('delivers an alarm inside a window silently and leaves alarms outside ringing', () => {
+    const state = dailyState({
+      settings: { ...quietOff, notificationStyles: { daily: 'alarm' }, alarmFreeWindows: [sleep] },
+    });
+    const daily = ofKind(state, 'daily');
+    // Wednesday 02:00 falls in Tuesday night's window; Thursday 02:00 does not.
+    expect(daily[0]).toMatchObject({ at: nextDailyReset - HOUR, style: 'silent' });
+    expect(daily[0]?.tone).toBeUndefined();
+    expect(daily[1]).toMatchObject({ style: 'alarm', tone: 'classic' });
+  });
+
+  it('keeps well-formed windows and drops broken ones on load', () => {
+    const loaded = normalizeState({
+      ...makeState(),
+      settings: {
+        ...quietOff,
+        alarmFreeWindows: [
+          work,
+          { ...work, id: 'same', start: 60, end: 60 },
+          { ...work, id: 'nodays', days: [] },
+          'junk',
+        ],
+      },
+    });
+    expect(loaded.settings.alarmFreeWindows).toEqual([work]);
   });
 });
 

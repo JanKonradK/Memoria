@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { isNativeApp } from '../../native';
 import {
+  openAlarmFullScreenSettings,
   openAndroidBatterySettings,
   openAndroidNotificationSettings,
   requestExactReminders,
@@ -11,7 +12,8 @@ import { Btn } from '../ui';
 import { SettingRow } from './SettingRow';
 
 export function DeviceNotifications() {
-  const { enabled, scheduled, error, exact, permission, batteryUnrestricted, blockedChannels } = useNotifications();
+  const { enabled, scheduled, error, exact, permission, batteryUnrestricted, blockedChannels, fullScreen } =
+    useNotifications();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   if (!isNativeApp) return null;
@@ -56,6 +58,14 @@ export function DeviceNotifications() {
           >
             Allow exact timing
           </Btn>
+        </SettingRow>
+      )}
+      {enabled && fullScreen === false && (
+        <SettingRow
+          label="Alarms over the lock screen"
+          hint="Android is keeping alarms from opening full screen, so they ring as a pop-up instead. Allow full screen alerts for Memoria to see Snooze and Dismiss on the lock screen."
+        >
+          <Btn onClick={() => void openAlarmFullScreenSettings()}>Allow full screen</Btn>
         </SettingRow>
       )}
       {permission === 'denied' && (

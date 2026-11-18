@@ -34,6 +34,18 @@ const ReminderChannels = registerPlugin<{
   openBatterySettings(): Promise<void>;
 }>('ReminderChannels');
 
+/**
+ * Alarm-style reminders ring as real alarms on Android (AlarmClockPlugin):
+ * full screen over the lock screen, on a loop, until dismissed or snoozed.
+ */
+type NativeAlarm = Pick<PlannedNotification, 'id' | 'at' | 'title' | 'body'> & { tone: AlarmTone };
+const AlarmClock = registerPlugin<{
+  schedule(options: { alarms: NativeAlarm[] }): Promise<{ scheduled: number }>;
+  status(): Promise<{ exact: boolean; fullScreen: boolean }>;
+  openFullScreenSettings(): Promise<void>;
+  test(options: { tone: AlarmTone; title?: string; body?: string }): Promise<void>;
+}>('AlarmClock');
+
 export function channelFor(style: NotificationStyle = 'standard', tone: AlarmTone = 'classic'): string {
   return style === 'alarm' ? `memoria-alarm-${tone}` : `memoria-${style}`;
 }
@@ -103,6 +115,8 @@ export const useNotifications = create<{
   blockedChannels: string[];
   /** Whether Windows lets Memoria's toasts through; null outside the Windows app. */
   windows: WindowsToastSetting | null;
+  /** Android lets alarms open full screen over the lock screen; null until checked. */
+  fullScreen: boolean | null;
 }>(() => ({
   enabled: enabledOnDevice(),
   error: '',
@@ -113,6 +127,7 @@ export const useNotifications = create<{
   batteryUnrestricted: null,
   blockedChannels: [],
   windows: null,
+  fullScreen: null,
 }));
 
 /** Reads what Android currently allows, for the prompts in Today and Settings. */
@@ -124,12 +139,13 @@ export async function refreshNotificationStatus(): Promise<void> {
     return;
   }
   if (!isNativeApp) return;
-  const [permission, exact, channels] = await Promise.all([
+  const [permission, exact, channels, alarms] = await Promise.all([
     LocalNotifications.checkPermissions().then((result) => result.display),
     LocalNotifications.checkExactNotificationSetting()
       .then((result) => result.exact_alarm === 'granted')
       .catch(() => null),
     ReminderChannels.status().catch(() => null),
+    AlarmClock.status().catch(() => null),
   ]);
   useNotifications.setState({
     permission: permission === 'granted' ? 'granted' : permission === 'denied' ? 'denied' : 'prompt',
@@ -142,11 +158,17 @@ export async function refreshNotificationStatus(): Promise<void> {
             .map(([id]) => id),
         }
       : {}),
+    ...(alarms ? { fullScreen: alarms.fullScreen } : {}),
   });
 }
 
 export function openAndroidNotificationSettings(): Promise<void> {
   return isNativeApp ? ReminderChannels.openNotificationSettings() : Promise.resolve();
+}
+
+/** Android 14 asks separately before an alarm may open full screen. */
+export function openAlarmFullScreenSettings(): Promise<void> {
+  return isNativeApp ? AlarmClock.openFullScreenSettings() : Promise.resolve();
 }
 
 export function openAndroidBatterySettings(): Promise<void> {
@@ -169,6 +191,14 @@ export async function sendTestNotification(style: NotificationStyle, tone: Alarm
   if (!isNativeApp) throw new Error('Test reminders need the Android app or the Windows app.');
   if ((await LocalNotifications.requestPermissions()).display !== 'granted')
     throw new Error('Notifications are off for Memoria in Android settings.');
+  if (style === 'alarm') {
+    try {
+      await AlarmClock.test({ tone });
+      return;
+    } catch {
+      // An older Android build without the alarm ringer: the alarm channel still rings once.
+    }
+  }
   await registerActions();
   await LocalNotifications.schedule({
     notifications: [
@@ -351,6 +381,15 @@ export function rescheduleNotifications(): Promise<void> {
     if (owned.length) await LocalNotifications.cancel({ notifications: owned.map(({ id }) => ({ id })) });
     // A later scheduling failure must not leave the old count visible after cancellation.
     useNotifications.setState({ scheduled: 0 });
+    // Alarms go to the alarm ringer, which replaces its own planned list; the
+    // rest, and every alarm on a build without the ringer, go to notifications.
+    const alarms = plan.filter((item) => item.style === 'alarm' && item.id !== RUNWAY_ID);
+    const rung = await AlarmClock.schedule({
+      alarms: alarms.map(({ id, at, title, body, tone }) => ({ id, at, title, body, tone: tone ?? 'classic' })),
+    })
+      .then(() => true)
+      .catch(() => false);
+    const notices = rung ? plan.filter((item) => !alarms.includes(item)) : plan;
     if (!useNotifications.getState().enabled) {
       useNotifications.setState({ scheduled: 0, error: '' });
       return;
@@ -359,9 +398,9 @@ export function rescheduleNotifications(): Promise<void> {
     // every schedule() would open Android's settings screen each time, so the
     // permission is checked here and requested only from Settings.
     const exact = (await LocalNotifications.checkExactNotificationSetting()).exact_alarm === 'granted';
-    if (plan.length) {
+    if (notices.length) {
       await registerActions();
-      await LocalNotifications.schedule({ notifications: plan.map((item) => nativeNotification(item, exact)) });
+      await LocalNotifications.schedule({ notifications: notices.map((item) => nativeNotification(item, exact)) });
     }
     writeDelivery(delivery);
     const reminders = plan.filter((item) => item.id !== RUNWAY_ID).length;

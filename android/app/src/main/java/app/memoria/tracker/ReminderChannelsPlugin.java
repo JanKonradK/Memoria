@@ -84,6 +84,20 @@ public class ReminderChannelsPlugin extends Plugin {
             channel.setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
             channels.add(channel);
         }
+        // The ringing alarm itself. Silent as a channel: AlarmService plays the
+        // tone on a loop and vibrates, so the notification only carries the
+        // full-screen page and the Snooze and Dismiss buttons.
+        NotificationChannel ringing = new NotificationChannel(
+            AlarmService.RINGING_CHANNEL,
+            "Ringing alarms",
+            NotificationManager.IMPORTANCE_HIGH
+        );
+        ringing.setDescription("An alarm ringing now, with Snooze and Dismiss.");
+        ringing.setSound(null, null);
+        ringing.enableVibration(false);
+        ringing.setBypassDnd(true);
+        ringing.setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
+        channels.add(ringing);
         manager.createNotificationChannels(channels);
     }
 
