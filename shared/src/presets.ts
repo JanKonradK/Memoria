@@ -143,7 +143,7 @@ export const SERVER_TZ_OPTIONS: Array<{ label: string; tz: string }> = [
   { label: 'US Pacific (DST)', tz: 'America/Los_Angeles' },
   { label: 'US Eastern (DST)', tz: 'America/New_York' },
   { label: 'Japan (UTC+9)', tz: 'Asia/Tokyo' },
-  { label: 'Central Europe, NTE Europe (DST)', tz: 'Europe/Warsaw' },
+  { label: 'Central Europe (DST)', tz: 'Europe/Warsaw' },
 ];
 
 // Short labels are stored on games. Removing an old alias when a badge changes
@@ -515,17 +515,16 @@ export const PRESETS: GamePreset[] = [
     titleFont: "'Righteous', sans-serif",
     icon: '',
     platform: 'both',
-    // Unlike the HoYo and Kuro servers, NTE's Europe server follows summer
-    // time: its reset stays at 05:00 Central European time, which is 04:00 in
-    // the UK all year. A fixed UTC+1 clock would put it an hour early every winter.
-    tz: 'Europe/Warsaw',
+    // A fixed UTC+1 clock, like the HoYo and Kuro Europe servers: NTE does not
+    // move its reset for summer or winter time.
+    tz: 'Etc/GMT-1',
     dailyResetHour: 5,
     weeklyResetDay: 1,
     monthlyResetDay: 1,
     resources: [
-      // Version 1.5 (2026-11-11) added overflow storage for both: "excess"
-      // Character Pixels go to Photo Paper Supply (up to 2,400) and excess City
-      // Stamina to City Stamina Reserve (up to 1,000).
+      // Version 1.5 (2026-11-11) added overflow storage for Character Pixels:
+      // the excess goes to Photo Paper Supply (up to 2,400). City Stamina has
+      // no reserve.
       // https://nte.perfectworld.com/en/article/news/gamenews/20261109/264948.html
       // The notes give the caps but not the fill rates; the pixel reserve uses
       // the app's default (half the bar's speed) until a source gives one.
@@ -541,14 +540,12 @@ export const PRESETS: GamePreset[] = [
       },
       // No regeneration: the bar refills to its cap every Monday 05:00. The cap
       // grows with City Tycoon level (100, 200 at 5, 350 at 10, 500 at 16, 700
-      // at 23), so it is asked for. What counts as "excess" for the reserve is
-      // not published, so the reserve is entered by hand and never projected.
+      // at 23), so it is asked for. Whatever is left on Monday is lost.
       {
         name: 'City Stamina',
         cap: 700,
         regenMinutes: 0,
-        reserveCap: 1000,
-        reserveLabel: 'City Stamina Reserve',
+        reserveCap: 0,
         kind: 'weekly',
         promptCap: true,
       },
@@ -569,8 +566,8 @@ export const PRESETS: GamePreset[] = [
       { key: 'nte-ebisu', name: "Ebisu's Auction", cadence: 'weekly' },
       { key: 'nte-realm-of-greed', name: 'Realm of Greed', cadence: 'weekly' },
       { key: 'nte-special-commissions', name: 'Special Delivery Commission (Old Mailbox)', cadence: 'weekly' },
-      // Back since the 1.5 reserve turned out not to be documented as catching
-      // Monday's leftover. A new key: the 1.5 migration deleted the old routine
+      // Back because City Stamina has no reserve: Monday's refill wipes the
+      // leftover. A new key: the 1.5 migration deleted the old routine
       // ('nte-city-stamina') everywhere, and deleted routines stay deleted — by
       // key and by name, so the name differs from the old one too.
       { key: 'nte-city-stamina-spend', name: 'Use City Stamina before the Monday refill', cadence: 'weekly' },
@@ -594,7 +591,7 @@ export const PRESETS: GamePreset[] = [
       { key: 'nte-warp-exchange', name: 'Lost / Warp Exchange + Arc Selection', cadence: 'monthly' },
     ],
     notes:
-      "City Stamina has no regeneration: it refills to your cap every Monday 05:00, and the cap rises with City Tycoon level (100 up to 700) — set yours. Since 1.5, excess City Stamina goes to a 1,000-point reserve and excess Character Pixels (cap 240, 360 with Dream Weaver's Knot) to Photo Paper Supply (2,400). The Tycoon Incentive Fund runs Monday-to-Monday 14-day periods (one began 2026-11-09); anchor that task once.",
+      "City Stamina has no regeneration: it refills to your cap every Monday 05:00, and the cap rises with City Tycoon level (100 up to 700) — set yours. It has no reserve, so use it before Monday. Since 1.5, excess Character Pixels (cap 240, 360 with Dream Weaver's Knot) to Photo Paper Supply (2,400). The Tycoon Incentive Fund runs Monday-to-Monday 14-day periods (one began 2026-11-09); anchor that task once.",
     // Best guess — verify in Task Manager while NTE runs and edit if needed.
     processNames: ['NTE'],
   },
@@ -851,9 +848,8 @@ export const PRESETS: GamePreset[] = [
     // One worldwide service on Korean time, which has no summer time.
     tz: 'Etc/GMT-9',
     dailyResetHour: 0,
-    // No source states when Weekly Missions reset; Monday is the Devsisters
-    // norm. Check it in game and correct it here if it differs.
-    weeklyResetDay: 1,
+    // Weeklies, arena seasons and updates turn over on Thursdays.
+    weeklyResetDay: 4,
     monthlyResetDay: 1,
     resources: [
       // Idle rewards bank for 8 hours at first; Sweet Blessing, the Gnome

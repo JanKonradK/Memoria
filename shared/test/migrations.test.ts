@@ -242,7 +242,8 @@ describe('NTE 1.5 overflow storage', () => {
     const migrated = migrateState(nte()) as AppState;
     const byId = (id: string) => migrated.resources.find((row) => row.id === id)!;
     expect(byId('px')).toMatchObject({ reserveCap: 2400, reserveLabel: 'Photo Paper Supply' });
-    expect(byId('cs')).toMatchObject({ reserveCap: 1000, reserveLabel: 'City Stamina Reserve' });
+    // The 12 -> 13 step takes the City Stamina reserve off again: there is none.
+    expect(byId('cs').reserveCap).toBe(0);
     expect(byId('own')).toMatchObject({ reserveCap: 50, reserveLabel: 'Mine' });
     expect(byId('other').reserveCap).toBe(0);
     expect(migrated.tasks.find((row) => row.id === 'empty')?.deleted).toBe(true);
@@ -259,5 +260,57 @@ describe('NTE 1.5 overflow storage', () => {
     const after = first.resources.find((row) => row.id === 'px')!;
     expect(after.hlc!.counter).toBe(px.hlc!.counter + 1);
     expect(after.hlc!.wall).toBe(px.hlc!.wall);
+  });
+});
+
+describe('NTE corrections', () => {
+  const nte = () =>
+    makeState({
+      schemaVersion: 12,
+      games: [
+        makeGame({ id: 'nte', name: 'Neverness to Everness', presetKey: 'nte', tz: 'Europe/Warsaw', updatedAt: 5 }),
+        makeGame({ id: 'na', name: 'Neverness to Everness', presetKey: 'nte', tz: 'Etc/GMT+5' }),
+      ],
+      resources: [
+        makeResource({
+          id: 'cs',
+          gameId: 'nte',
+          name: 'City Stamina',
+          cap: 700,
+          kind: 'weekly',
+          reserveCap: 1000,
+          reserveLabel: 'City Stamina Reserve',
+        }),
+        makeResource({
+          id: 'own',
+          gameId: 'nte',
+          name: 'City Stamina',
+          cap: 700,
+          reserveCap: 50,
+          reserveLabel: 'Mine',
+        }),
+        makeResource({
+          id: 'px',
+          gameId: 'nte',
+          name: 'Character Pixels',
+          reserveCap: 2400,
+          reserveLabel: 'Photo Paper Supply',
+        }),
+      ],
+    });
+
+  it('moves the Europe server to fixed UTC+1 and takes off the City Stamina reserve', () => {
+    const migrated = migrateState(nte()) as AppState;
+    expect(migrated.games.find((row) => row.id === 'nte')).toMatchObject({ tz: 'Etc/GMT-1', updatedAt: 6 });
+    expect(migrated.games.find((row) => row.id === 'na')?.tz).toBe('Etc/GMT+5');
+    const byId = (id: string) => migrated.resources.find((row) => row.id === id)!;
+    expect(byId('cs').reserveCap).toBe(0);
+    expect(byId('cs').reserveLabel).toBeUndefined();
+    expect(byId('own')).toMatchObject({ reserveCap: 50, reserveLabel: 'Mine' });
+    expect(byId('px')).toMatchObject({ reserveCap: 2400, reserveLabel: 'Photo Paper Supply' });
+  });
+
+  it('upgrades every device identically', () => {
+    expect(migrateState(nte())).toEqual(migrateState(nte()));
   });
 });

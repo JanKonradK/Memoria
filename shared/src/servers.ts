@@ -41,8 +41,7 @@ export const GAME_SERVERS: Readonly<Record<string, readonly GameServer[]>> = {
     { id: 'sea', label: 'SEA', short: 'SEA', tz: 'Etc/GMT-8' },
     CHINA,
   ],
-  // NTE's Europe server follows summer time, unlike the fixed HoYo and Kuro clocks.
-  nte: [{ ...EUROPE, tz: 'Europe/Warsaw' }, AMERICA, ASIA],
+  nte: [EUROPE, AMERICA, ASIA],
   lads: [{ ...EUROPE, tz: 'Etc/GMT-2' }, { ...AMERICA, tz: 'Etc/GMT+7' }, ASIA],
   uma: [{ id: 'global', label: 'Global', short: 'GLOBAL', tz: 'Etc/GMT' }],
   // One worldwide service on Korean time.

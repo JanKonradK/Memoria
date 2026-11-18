@@ -279,16 +279,6 @@ function migrateNteReserves(raw: unknown): unknown {
       .map((game) => game.id),
   );
   if (nteGames.size === 0) return raw;
-  const bump = (row: Record<string, unknown>) => {
-    const clock = objectRecord(row.hlc);
-    const updatedAt = typeof row.updatedAt === 'number' && Number.isFinite(row.updatedAt) ? row.updatedAt : 0;
-    return {
-      updatedAt: updatedAt + 1,
-      ...(clock && typeof clock.wall === 'number' && typeof clock.counter === 'number'
-        ? { hlc: { ...clock, counter: clock.counter + 1 } }
-        : {}),
-    };
-  };
   const RESERVES: Record<string, { reserveCap: number; reserveLabel: string }> = {
     'Character Pixels': { reserveCap: 2400, reserveLabel: 'Photo Paper Supply' },
     'City Stamina': { reserveCap: 1000, reserveLabel: 'City Stamina Reserve' },
@@ -299,7 +289,7 @@ function migrateNteReserves(raw: unknown): unknown {
         if (!row || row.deleted || !nteGames.has(row.gameId) || typeof row.name !== 'string') return rawRow;
         const reserve = RESERVES[row.name];
         if (!reserve || (typeof row.reserveCap === 'number' && row.reserveCap > 0)) return rawRow;
-        return { ...row, ...reserve, ...bump(row) };
+        return { ...row, ...reserve, ...bumpRow(row) };
       })
     : state.resources;
   const tasks = Array.isArray(state.tasks)
@@ -309,10 +299,51 @@ function migrateNteReserves(raw: unknown): unknown {
         // Only the routine as shipped; a renamed one is the player's own.
         if (row.name !== 'Empty City Stamina before Monday') return rawRow;
         if (row.presetTaskKey !== undefined && row.presetTaskKey !== 'nte-city-stamina') return rawRow;
-        return { ...row, deleted: true, ...bump(row) };
+        return { ...row, deleted: true, ...bumpRow(row) };
       })
     : state.tasks;
   return { ...state, resources, tasks };
+}
+
+/** The clock bump migrateNteReserves gives a changed row, so every device lands on the same one. */
+function bumpRow(row: Record<string, unknown>) {
+  const clock = objectRecord(row.hlc);
+  const updatedAt = typeof row.updatedAt === 'number' && Number.isFinite(row.updatedAt) ? row.updatedAt : 0;
+  return {
+    updatedAt: updatedAt + 1,
+    ...(clock && typeof clock.wall === 'number' && typeof clock.counter === 'number'
+      ? { hlc: { ...clock, counter: clock.counter + 1 } }
+      : {}),
+  };
+}
+
+/**
+ * Two NTE corrections. Its Europe server keeps a fixed UTC+1 clock all year,
+ * not Central European summer time; and City Stamina has no reserve, so the one
+ * the 1.5 migration added is taken off again. A reserve the player set up
+ * themselves (any other size or label) is left alone.
+ */
+function migrateNteCorrections(raw: unknown): unknown {
+  const state = objectRecord(raw);
+  if (!state || !Array.isArray(state.games)) return raw;
+  const nteGames = new Set<unknown>();
+  const games = state.games.map((rawRow) => {
+    const row = objectRecord(rawRow);
+    if (!row || row.deleted || presetKeyOf(row) !== 'nte') return rawRow;
+    nteGames.add(row.id);
+    return row.tz === 'Europe/Warsaw' ? { ...row, tz: 'Etc/GMT-1', ...bumpRow(row) } : rawRow;
+  });
+  if (nteGames.size === 0) return raw;
+  const resources = Array.isArray(state.resources)
+    ? state.resources.map((rawRow) => {
+        const row = objectRecord(rawRow);
+        if (!row || row.deleted || !nteGames.has(row.gameId) || row.name !== 'City Stamina') return rawRow;
+        if (row.reserveCap !== 1000 || row.reserveLabel !== 'City Stamina Reserve') return rawRow;
+        const { reserveLabel: _label, reserveRegenMinutes: _rate, ...rest } = row;
+        return { ...rest, reserveCap: 0, ...bumpRow(row) };
+      })
+    : state.resources;
+  return { ...state, games, resources };
 }
 
 /** Keys are source versions; each migration advances its input by one version. */
@@ -324,6 +355,7 @@ export const MIGRATIONS: Readonly<Record<number, StateMigration>> = {
   7: migrateRoutineDefaults,
   9: migrateChangeClocks,
   10: migrateNteReserves,
+  12: migrateNteCorrections,
   // 8 -> 9 changes nothing: it only marks documents that may carry savings plans.
 };
 

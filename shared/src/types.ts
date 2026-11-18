@@ -9,7 +9,7 @@ export type TaskMode = 'check' | 'timer' | 'count';
  * Schema 10 requires HLC-aware peers at every write boundary. Schema 12 adds
  * quest progress, which an older peer would drop on its next write.
  */
-export const CURRENT_SCHEMA_VERSION = 12;
+export const CURRENT_SCHEMA_VERSION = 13;
 export interface Hlc {
   wall: number;
   counter: number;
