@@ -1,5 +1,10 @@
 import { expect, it } from 'vitest';
-import { newDeviceKey, devicePublicKey, lanKeys, sealLan, openLan } from '../src/lan-crypto';
+import { newDeviceKey, devicePublicKey, lanKeys, sealLan, openLan, relayRoom } from '../src/lan-crypto';
+
+it('derives the same relay mailbox as the PC', () => {
+  // desktop/tauri/src/lan_crypto.rs asserts the same value.
+  expect(relayRoom('ab'.repeat(32))).toBe('65bfbe3c8b8a1641acbb9afa43263c2c');
+});
 
 it('agrees on directional keys and rejects tampering, reflection and substituted identities', () => {
   const pcSecret = newDeviceKey(),

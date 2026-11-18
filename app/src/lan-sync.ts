@@ -6,6 +6,7 @@ import {
   lanKeys,
   sealLan,
   openLan,
+  relayRoom,
   type LanPacket,
 } from '@memoria/shared/lan-crypto';
 import { Capacitor, CapacitorHttp, registerPlugin } from '@capacitor/core';
@@ -26,8 +27,19 @@ const PAIR_KEY = 'memoria-wifi-device';
 /** Set from pairing until the first sync has been cleared to run. Survives a restart. */
 const FIRST_SYNC_KEY = 'memoria-wifi-first-sync';
 const CHOOSE = 'Choose in Settings how this device joins your PC.';
-/** `hosts` lists every address the PC has reported, the last working one first. */
-type Pair = { host: string; hosts: string[]; secret: string; publicKey: string; fingerprint: string; deviceId: string };
+/**
+ * `hosts` lists every address the PC has reported, the last working one first.
+ * `relay` is the owner's internet relay, as the PC last reported it.
+ */
+type Pair = {
+  host: string;
+  hosts: string[];
+  secret: string;
+  publicKey: string;
+  fingerprint: string;
+  deviceId: string;
+  relay?: string;
+};
 
 /** The Android Keystore seals the private key; WebView storage only ever holds the sealed text. */
 const DeviceKey = registerPlugin<{
@@ -39,8 +51,8 @@ let persisting = Promise.resolve();
 /** Writes the pairing with its key sealed. Falls back to the plain key only if the Keystore fails. */
 function persistPair(next: Pair) {
   // The public key is derived from the secret on load, so it is not stored.
-  const { secret, host, hosts, fingerprint, deviceId } = next;
-  const rest = { host, hosts, fingerprint, deviceId };
+  const { secret, host, hosts, fingerprint, deviceId, relay } = next;
+  const rest = { host, hosts, fingerprint, deviceId, ...(relay ? { relay } : {}) };
   persisting = persisting
     .catch(() => undefined)
     .then(async () => {
@@ -71,6 +83,8 @@ export const useLanSync = create<{
   deviceId: string;
   pcName: string;
   peers: LanPeer[];
+  /** How the last sync reached the PC: its own network, or the internet relay. */
+  route: 'wifi' | 'relay' | null;
 }>(() => ({
   status: 'off',
   host: '',
@@ -80,6 +94,7 @@ export const useLanSync = create<{
   deviceId: '',
   pcName: '',
   peers: [],
+  route: null,
 }));
 
 /** What the PC lists this device as, so the phone and the tablet are told apart. */
@@ -126,30 +141,86 @@ class LanError extends Error {
   }
 }
 
+const UNREACHABLE =
+  'Cannot reach your PC. Keep Memoria open there, use the same Wi-Fi, and check Device sync in Settings on the PC: Windows may be blocking phones.';
+const UNREACHABLE_ANYWHERE =
+  'Cannot reach your PC on this network or through your relay. Keep Memoria open on the PC with device sync on.';
+
+/** One plain request to the PC; the exchange below seals and opens what it carries. */
+type Transport = {
+  send(path: string, data: unknown): Promise<{ status: number; data: Record<string, unknown> | null }>;
+  /** Carried by the internet relay, whose own errors arrive as statuses. */
+  relayed: boolean;
+};
+
+/** Straight to one of the PC's addresses. */
+function wifi(host: string, connectTimeout = 8000): Transport {
+  return {
+    relayed: false,
+    send: (path, data) =>
+      CapacitorHttp.post({
+        url: `${host}${path}`,
+        data,
+        headers: { 'Content-Type': 'application/json' },
+        responseType: 'json',
+        connectTimeout,
+        readTimeout: 15000,
+        disableRedirects: true,
+      }),
+  };
+}
+
+/** Through the owner's relay, into the PC's mailbox: the same sealed packets, carried. */
+function relayed(relay: string, fingerprint: string): Transport {
+  const url = `${relay}/v1/rooms/${relayRoom(fingerprint)}/call`;
+  return {
+    relayed: true,
+    send: async (path, data) => {
+      const response = await CapacitorHttp.post({
+        url,
+        data: { path, body: data },
+        headers: { 'Content-Type': 'application/json' },
+        responseType: 'json',
+        connectTimeout: 10000,
+        // The relay holds a call up to 25 seconds while the PC answers.
+        readTimeout: 35000,
+        disableRedirects: true,
+      });
+      const reply = response.data as { status?: unknown; body?: unknown } | null;
+      if (response.status !== 200 || typeof reply?.status !== 'number') throw new Error('Not a Memoria relay.');
+      return { status: reply.status, data: (reply.body as Record<string, unknown> | null) ?? null };
+    },
+  };
+}
+
+/** A relay address the PC reported, if it is one this phone may use. */
+function relayFrom(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length <= 200 && /^https:\/\/[^\s?#]+$/.test(value)
+    ? value.replace(/\/+$/, '')
+    : undefined;
+}
+
+/** A relay or PC refusal carried through the relay; the PC being away counts as offline. */
+function relayError(reply: { status: number; data: Record<string, unknown> | null }, fallback: string) {
+  const message = typeof reply.data?.error === 'string' ? reply.data.error : fallback;
+  return new LanError(message, reply.status === 503 || reply.status === 504 ? 0 : reply.status);
+}
+
 async function request(
-  host: string,
+  transport: Transport,
   path: string,
   data: unknown,
   connection?: Pick<Pair, 'secret' | 'fingerprint'>,
-  quick = false,
 ): Promise<Record<string, unknown>> {
   if (!isNativeDevice()) throw new Error('Wi-Fi pairing is available in the Android app.');
   if (!connection) throw new Error('Pair this PC again to enable encrypted sync.');
-  const send = (url: string, data: unknown) =>
-    CapacitorHttp.post({
-      url,
-      data,
-      headers: { 'Content-Type': 'application/json' },
-      responseType: 'json',
-      connectTimeout: quick ? 4000 : 8000,
-      readTimeout: 15000,
-      disableRedirects: true,
-    });
+  const unreachable = transport.relayed ? UNREACHABLE_ANYWHERE : UNREACHABLE;
   let response;
   let packet: LanPacket;
   let responseKey: Uint8Array;
   try {
-    const hello = await send(`${host}/hello`, {});
+    const hello = await transport.send('/hello', {});
+    if (transport.relayed && hello.status !== 200) throw relayError(hello, unreachable);
     const pc = hello.data?.publicKey;
     if (
       hello.status !== 200 ||
@@ -161,15 +232,14 @@ async function request(
     const phone = devicePublicKey(connection.secret);
     const keys = lanKeys(connection.secret, pc, pc, phone);
     responseKey = keys.response;
-    packet = sealLan(keys.request, path, phone, hello.data.challenge, data);
-    response = await send(`${host}${path}`, packet);
+    packet = sealLan(keys.request, path, phone, String(hello.data?.challenge), data);
+    response = await transport.send(path, packet);
   } catch (error) {
     if (error instanceof LanError) throw error;
-    throw new LanError(
-      'Cannot reach your PC. Keep Memoria open there, use the same Wi-Fi, and check Device sync in Settings on the PC: Windows may be blocking phones.',
-      0,
-    );
+    throw new LanError(unreachable, 0);
   }
+  if (transport.relayed && (response.status === 503 || response.status === 504))
+    throw relayError(response, unreachable);
   if (response.status !== 200)
     throw new LanError('Encrypted connection failed. Update both devices and pair again.', 403);
   let body;
@@ -207,19 +277,51 @@ function knownHosts(host: string, reported: unknown, previous: string[]): string
 }
 
 /**
+ * The PC on its own network first, then through the owner's internet relay
+ * when it is out of reach, so sync works wherever the phone is.
+ */
+async function requestPc(connection: Pair, path: string, data: unknown): Promise<Record<string, unknown>> {
+  const offline = (error: unknown) => error instanceof LanError && error.status === 0;
+  const viaRelay = async () => {
+    const body = await request(relayed(connection.relay!, connection.fingerprint), path, data, connection);
+    useLanSync.setState({ route: 'relay' });
+    return body;
+  };
+  // Away from home last time: one quick look for the PC nearby, then the relay.
+  if (connection.relay && useLanSync.getState().route === 'relay') {
+    try {
+      const body = await request(wifi(connection.host, 1500), path, data, connection);
+      useLanSync.setState({ route: 'wifi' });
+      return body;
+    } catch (error) {
+      if (!offline(error)) throw error;
+    }
+    return viaRelay();
+  }
+  try {
+    const body = await requestNearby(connection, path, data);
+    useLanSync.setState({ route: 'wifi' });
+    return body;
+  } catch (error) {
+    if (!connection.relay || !offline(error)) throw error;
+    return viaRelay();
+  }
+}
+
+/**
  * Send to the last working address, then to the PC's other addresses when it
  * cannot be reached, so a new Wi-Fi address or a private network app such as
  * Tailscale keeps sync going without a new code.
  */
-async function requestPc(connection: Pair, path: string, data: unknown): Promise<Record<string, unknown>> {
+async function requestNearby(connection: Pair, path: string, data: unknown): Promise<Record<string, unknown>> {
   const others = connection.hosts.filter((host) => host !== connection.host);
   try {
-    return await request(connection.host, path, data, connection, others.length > 0);
+    return await request(wifi(connection.host, others.length > 0 ? 4000 : 8000), path, data, connection);
   } catch (error) {
     if (!(error instanceof LanError) || error.status !== 0 || others.length === 0) throw error;
     for (const [index, host] of others.entries()) {
       try {
-        const body = await request(host, path, data, connection, true);
+        const body = await request(wifi(host, 4000), path, data, connection);
         if (pair?.secret === connection.secret)
           savePair({ ...connection, host, hosts: knownHosts(host, [], connection.hosts) });
         return body;
@@ -273,7 +375,12 @@ async function connectToPc(hosts: string[], code: string, fingerprint: string): 
     for (const candidate of hosts) {
       if (current !== generation) return;
       try {
-        body = await request(candidate, '/pair', { code: code.replace(/\s/g, ''), name: lanDeviceName() }, credentials);
+        body = await request(
+          wifi(candidate),
+          '/pair',
+          { code: code.replace(/\s/g, ''), name: lanDeviceName() },
+          credentials,
+        );
         host = candidate;
         break;
       } catch (error) {
@@ -298,7 +405,7 @@ async function connectToPc(hosts: string[], code: string, fingerprint: string): 
       // still valid there; retire it so reconnecting does not fill device slots.
       const previousHosts = [...new Set([previous.host, host])];
       for (const previousHost of previousHosts)
-        void request(previousHost, '/disconnect', {}, previous).catch(() => undefined);
+        void request(wifi(previousHost), '/disconnect', {}, previous).catch(() => undefined);
     }
     await syncLanNow();
   } catch (error) {
@@ -318,11 +425,11 @@ export async function disconnectLanSync(): Promise<void> {
   clearTimeout(debounce);
   localStorage.removeItem(PAIR_KEY);
   clearFirstSync();
-  useLanSync.setState({ host: '', lastSyncAt: null, deviceId: '', pcName: '', peers: [] });
+  useLanSync.setState({ host: '', lastSyncAt: null, deviceId: '', pcName: '', peers: [], route: null });
   setStatus('off');
   // Forget locally immediately even when the PC is off. Its Settings can revoke
   // the old device if this best-effort request cannot reach it.
-  if (previous) void request(previous.host, '/disconnect', {}, previous).catch(() => undefined);
+  if (previous) void requestPc(previous, '/disconnect', {}).catch(() => undefined);
 }
 
 /**
@@ -436,7 +543,10 @@ export async function syncLanNow(): Promise<void> {
     // future energy reading into "now" and let it replace the current reading.
     useApp.getState().replaceState(mergeState(local, normalizeState(response.state)));
     const hosts = knownHosts(reached.host, response.addresses, reached.hosts);
-    if (hosts.join() !== reached.hosts.join()) savePair({ ...reached, hosts });
+    // The PC says which relay it answers through, so a phone paired at home keeps syncing away from it.
+    // null means the owner removed it; a PC too old to know relays says nothing.
+    const relay = 'relay' in response ? relayFrom(response.relay) : reached.relay;
+    if (hosts.join() !== reached.hosts.join() || relay !== reached.relay) savePair({ ...reached, hosts, relay });
     useLanSync.setState({
       pcName: typeof response.pc === 'string' ? response.pc : '',
       peers: peersFrom(response.devices),
@@ -481,6 +591,7 @@ export function initLanSync(): void {
         publicKey: devicePublicKey(secret),
         fingerprint: saved.fingerprint!,
         deviceId: saved.deviceId!,
+        relay: relayFrom(saved.relay),
       };
       useLanSync.setState({ host, deviceId: saved.deviceId! });
       return true;

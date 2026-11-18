@@ -130,8 +130,7 @@ public class AlarmService extends Service {
 
     private void playTone(String tone) {
         stopTone();
-        int raw = getResources().getIdentifier("memoria_alarm_" + tone, "raw", getPackageName());
-        if (raw == 0) raw = R.raw.memoria_alarm_classic;
+        int raw = toneResource(tone);
         Uri uri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + getPackageName() + "/" + raw);
         try {
             player = new MediaPlayer();
@@ -147,6 +146,19 @@ public class AlarmService extends Service {
             player.start();
         } catch (Exception failed) {
             stopTone();
+        }
+    }
+
+    private static int toneResource(String tone) {
+        switch (tone) {
+            case "pulse":
+                return R.raw.memoria_alarm_pulse;
+            case "chime":
+                return R.raw.memoria_alarm_chime;
+            case "ring":
+                return R.raw.memoria_alarm_ring;
+            default:
+                return R.raw.memoria_alarm_classic;
         }
     }
 
@@ -208,8 +220,7 @@ public class AlarmService extends Service {
         ringing = null;
         Runnable listener = onStopped.get();
         if (listener != null) listener.run();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) stopForeground(STOP_FOREGROUND_REMOVE);
-        else stopForeground(true);
+        stopForeground(STOP_FOREGROUND_REMOVE);
         stopSelf();
     }
 

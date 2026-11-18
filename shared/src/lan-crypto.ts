@@ -8,6 +8,13 @@ const text = new TextEncoder();
 export const newDeviceKey = () => bytesToHex(x25519.utils.randomSecretKey());
 export const devicePublicKey = (secret: string) => bytesToHex(x25519.getPublicKey(hexToBytes(secret)));
 export const deviceFingerprint = (publicKey: string) => bytesToHex(sha256(hexToBytes(publicKey)));
+/**
+ * The internet relay's mailbox for a PC, from the key fingerprint every paired
+ * device already holds. Knowing it only lets someone send sealed packets the PC
+ * rejects; the PC alone can collect from it (desktop/tauri/src/relay.rs).
+ */
+export const relayRoom = (fingerprint: string) =>
+  bytesToHex(sha256(text.encode(`memoria-relay-v1\n${fingerprint}`))).slice(0, 32);
 export type LanPacket = { publicKey: string; challenge: string; nonce: string; ciphertext: string };
 export type LanKeys = { request: Uint8Array; response: Uint8Array };
 

@@ -8,7 +8,7 @@ import {
 } from '@memoria/shared/lan-crypto';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { emptyState, encodePairingCode, type Game } from '@memoria/shared';
-const native = vi.hoisted(() => ({ post: vi.fn() }));
+const native = vi.hoisted(() => ({ post: vi.fn(), relayOffline: false }));
 vi.mock('@capacitor/core', () => ({
   Capacitor: { isNativePlatform: () => true },
   // A stand-in Keystore: sealed text that is plainly not the key.
@@ -17,28 +17,38 @@ vi.mock('@capacitor/core', () => ({
     unseal: async ({ sealed }: { sealed: string }) => ({ value: atob(sealed).replace(/^sealed:/, '') }),
   }),
   CapacitorHttp: {
-    post: async (options: { url: string; data: LanPacket }) => {
-      const pc = devicePublicKey('11'.repeat(32));
-      if (options.url.endsWith('/hello')) return { status: 200, data: { publicKey: pc, challenge: 'ab'.repeat(32) } };
-      const path = new URL(options.url).pathname;
-      const packet = options.data;
-      const keys = lanKeys('11'.repeat(32), packet.publicKey, pc, packet.publicKey);
-      const data = openLan(keys.request, path, packet);
-      const result = await native.post({ ...options, data });
-      return {
-        status: 200,
-        data: sealLan(
-          keys.response,
-          path,
-          pc,
-          packet.challenge,
-          result.status === 200 ? result.data : { error: result.data.error, status: result.status },
-          packet.nonce,
-        ),
-      };
+    post: async (request: { url: string; data: LanPacket | { path: string; body: LanPacket } }) => {
+      // Through the relay, the PC's answer comes back wrapped with its status.
+      if (request.url.includes('/v1/rooms/')) {
+        if (native.relayOffline)
+          return { status: 200, data: { status: 503, body: { error: 'Your PC is not connected.' } } };
+        const { path, body } = request.data as { path: string; body: LanPacket };
+        const inner = await pcAnswer(`relay:${path}`, path, body, request);
+        return { status: 200, data: { status: inner.status, body: inner.data } };
+      }
+      return pcAnswer(request.url, new URL(request.url).pathname, request.data as LanPacket, request);
     },
   },
 }));
+/** The PC: a challenge for /hello, and for anything else the reply native.post gives, sealed. */
+async function pcAnswer(url: string, path: string, packet: LanPacket, request: object) {
+  const pc = devicePublicKey('11'.repeat(32));
+  if (path === '/hello') return { status: 200, data: { publicKey: pc, challenge: 'ab'.repeat(32) } };
+  const keys = lanKeys('11'.repeat(32), packet.publicKey, pc, packet.publicKey);
+  const data = openLan(keys.request, path, packet);
+  const result = await native.post({ ...request, url, data });
+  return {
+    status: 200,
+    data: sealLan(
+      keys.response,
+      path,
+      pc,
+      packet.challenge,
+      result.status === 200 ? result.data : { error: result.data.error, status: result.status },
+      packet.nonce,
+    ),
+  };
+}
 vi.mock('idb-keyval', () => ({ get: vi.fn(), set: vi.fn(), del: vi.fn(), keys: vi.fn(async () => []) }));
 import {
   disconnectLanSync,
@@ -174,6 +184,51 @@ describe('native LAN sync', () => {
     await vi.waitFor(() =>
       expect(JSON.parse(localStorage.getItem('memoria-wifi-device')!).host).toBe('http://100.101.2.3:17820'),
     );
+  });
+  it('reaches the PC through the relay it reported when no address answers, and looks nearby first next time', async () => {
+    native.post
+      .mockResolvedValueOnce(reply({ token, deviceId: 'phone' }))
+      .mockResolvedValueOnce(reply({ state: emptyState(), relay: 'https://relay.example.workers.dev/' }));
+    await pairLanDevice('192.168.1.20:17820', '12345678', fingerprint);
+    await vi.waitFor(() =>
+      expect(JSON.parse(localStorage.getItem('memoria-wifi-device')!).relay).toBe('https://relay.example.workers.dev'),
+    );
+    native.post.mockClear();
+    native.post
+      .mockRejectedValueOnce(new Error('away from home'))
+      .mockResolvedValueOnce(reply({ state: emptyState() }));
+    await syncLanNow();
+    expect(native.post.mock.calls.map(([options]) => options.url)).toEqual([
+      'http://192.168.1.20:17820/sync',
+      'relay:/sync',
+    ]);
+    expect(useLanSync.getState()).toMatchObject({ status: 'ok', route: 'relay' });
+    native.post.mockClear();
+    native.post.mockRejectedValueOnce(new Error('still away')).mockResolvedValueOnce(reply({ state: emptyState() }));
+    await syncLanNow();
+    expect(native.post.mock.calls.map(([options]) => options.url)).toEqual([
+      'http://192.168.1.20:17820/sync',
+      'relay:/sync',
+    ]);
+    // Back home: the nearby PC answers first and the relay rests.
+    native.post.mockClear();
+    native.post.mockResolvedValueOnce(reply({ state: emptyState(), relay: null }));
+    await syncLanNow();
+    expect(useLanSync.getState().route).toBe('wifi');
+    // The owner removed the relay on the PC, so the phone forgets it too.
+    await vi.waitFor(() => expect(JSON.parse(localStorage.getItem('memoria-wifi-device')!).relay).toBeUndefined());
+  });
+  it('says the PC is away when the relay cannot reach it either', async () => {
+    native.post
+      .mockResolvedValueOnce(reply({ token, deviceId: 'phone' }))
+      .mockResolvedValueOnce(reply({ state: emptyState(), relay: 'https://relay.example.workers.dev' }));
+    await pairLanDevice('192.168.1.20:17820', '12345678', fingerprint);
+    native.post.mockClear();
+    native.post.mockRejectedValueOnce(new Error('away from home'));
+    native.relayOffline = true;
+    await syncLanNow();
+    native.relayOffline = false;
+    expect(useLanSync.getState()).toMatchObject({ status: 'offline', error: 'Your PC is not connected.' });
   });
   it('reports the PC as offline once every known address fails', async () => {
     native.post

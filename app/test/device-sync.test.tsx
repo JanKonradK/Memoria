@@ -78,3 +78,48 @@ it('offers explicit recovery when saved phone connection settings cannot be read
   expect(screen.getByRole('button', { name: 'Connect my phone or tablet' })).toBeVisible();
   expect(screen.queryByRole('alert')).toBeNull();
 });
+
+it('saves the relay address on the PC and explains a refused one', async () => {
+  const off = { url: null as string | null, state: 'off', error: null as string | null };
+  let status = {
+    enabled: true,
+    fingerprint: 'a'.repeat(64),
+    addresses: ['http://192.168.1.2:17820'],
+    code: null,
+    expiresAt: null,
+    devices: [{ id: 'one', name: 'Android phone', pairedAt: Date.now() }],
+    relay: off,
+  };
+  const sent: unknown[] = [];
+  launcher.mockImplementation(async (_path, options?: { body: string }) => {
+    if (!options) return { ok: true, json: async () => status };
+    const body = JSON.parse(options.body) as { url: string };
+    sent.push(body);
+    if (!body.url.startsWith('https://'))
+      return {
+        ok: false,
+        status: 400,
+        json: async () => ({ error: 'Enter the relay address, starting with https://.' }),
+      };
+    status = { ...status, relay: { url: body.url, state: 'connected', error: null } };
+    return { ok: true, json: async () => status };
+  });
+  await act(async () => {
+    render(<DeviceSync />);
+  });
+  fireEvent.click(screen.getByText('Sync away from home'));
+  expect(screen.getByText(/Off\. Phones sync only on the same Wi-Fi/)).toBeVisible();
+  const field = screen.getByLabelText('Relay address');
+  fireEvent.change(field, { target: { value: 'http://relay.example' } });
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  });
+  expect(screen.getByRole('alert')).toHaveTextContent('starting with https://');
+  fireEvent.change(field, { target: { value: 'https://memoria-relay.example.workers.dev' } });
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  });
+  expect(sent.at(-1)).toEqual({ action: 'relay', url: 'https://memoria-relay.example.workers.dev' });
+  expect(screen.getByText(/Connected\. Paired phones sync through it/)).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Remove' })).toBeVisible();
+});

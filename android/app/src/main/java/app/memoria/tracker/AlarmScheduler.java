@@ -208,8 +208,7 @@ final class AlarmScheduler {
             manager.setAlarmClock(new AlarmManager.AlarmClockInfo(alarm.at, showIntent(context)), fire);
         } catch (SecurityException notAllowed) {
             // Exact alarms switched off in Android settings: ring a little late rather than never.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, alarm.at, fire);
-            else manager.set(AlarmManager.RTC_WAKEUP, alarm.at, fire);
+            manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, alarm.at, fire);
         }
     }
 

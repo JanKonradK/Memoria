@@ -250,7 +250,7 @@ mod tests {
     async fn rejects_invalid_documents_and_revoked_devices() {
         let core = Core::start(scratch("invalid"), broadcast::channel(4).0);
         let error = core
-            .merge(r#"{"state":{"schemaVersion":12,"games":"no"}}"#.into(), || true)
+            .merge(r#"{"state":{"schemaVersion":13,"games":"no"}}"#.into(), || true)
             .await
             .unwrap_err();
         assert_eq!(error.status, 400);

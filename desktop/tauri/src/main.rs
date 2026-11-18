@@ -10,6 +10,7 @@ mod core;
 mod dpapi;
 mod firewall;
 mod lan;
+mod relay;
 mod lan_crypto;
 mod publisher;
 mod launch;
@@ -1230,6 +1231,8 @@ fn main() {
     let origin = server.origin();
     Arc::new(server).serve(listener);
     // The user's choice survives restarts. A bind failure does not block local work.
+    // Away from home, phones reach the PC through the owner's relay, if one is set.
+    tauri::async_runtime::spawn(relay::run(lan.clone()));
     tauri::async_runtime::spawn(async move { lan.restore().await });
 
     let prefs = presence::PreferenceFile::new(&data);

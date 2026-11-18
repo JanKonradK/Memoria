@@ -27,6 +27,10 @@ pub fn public(secret: &str) -> Result<String, String> {
 pub fn fingerprint(public: &str) -> Result<String, String> {
     Ok(hex::encode(Sha256::digest(bytes32(public)?)))
 }
+/// The internet relay's mailbox for this PC; shared/src/lan-crypto.ts derives the same.
+pub fn relay_room(fingerprint: &str) -> String {
+    hex::encode(Sha256::digest(format!("memoria-relay-v1\n{fingerprint}").as_bytes()))[..32].to_string()
+}
 pub fn keys(secret: &str, peer: &str, pc: &str, phone: &str) -> Result<([u8; 32], [u8; 32]), String> {
     let shared = StaticSecret::from(bytes32(secret)?).diffie_hellman(&PublicKey::from(bytes32(peer)?));
     if !shared.was_contributory() {
@@ -99,6 +103,10 @@ pub fn seal(
 mod tests {
     use super::*;
     use serde_json::json;
+    #[test]
+    fn relay_room_matches_javascript() {
+        assert_eq!(relay_room(&"ab".repeat(32)), "65bfbe3c8b8a1641acbb9afa43263c2c");
+    }
     #[test]
     fn reads_javascript_handshake_fixture() {
         let fixture: Value = serde_json::from_str(include_str!("../../../shared/test/fixtures/lan-v2.json")).unwrap();

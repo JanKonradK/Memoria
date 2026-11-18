@@ -6,7 +6,7 @@
 
 use base64::Engine as _;
 use std::collections::HashMap;
-use std::net::{IpAddr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -33,6 +33,10 @@ const PAIR_ATTEMPTS_PER_SOURCE: usize = 5;
 /// noisy neighbour can use up, and still about 150 guesses per 8-digit code.
 const PAIR_ATTEMPTS_TOTAL: usize = 30;
 const MAX_DEVICES: usize = 10;
+/// Where requests carried by the internet relay seem to come from: a
+/// documentation address no real device has, so relayed challenges and limits
+/// never mix with a phone on the Wi-Fi.
+const RELAY_PEER: IpAddr = IpAddr::V4(Ipv4Addr::new(192, 0, 2, 1));
 const UNREADABLE: &str =
     "Saved phone connections could not be read. Your progress is safe. Reset phone connections to pair again.";
 
@@ -113,6 +117,14 @@ struct Config {
     enabled: bool,
     devices: Vec<Device>,
     secret: String,
+    /// The internet relay this PC also answers through; None keeps sync to
+    /// Wi-Fi and private networks.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    relay: Option<String>,
+    /// Proves to the relay that this PC owns its mailbox. The relay keeps the
+    /// first one it sees, so another PC cannot collect this one's requests.
+    #[serde(rename = "relayToken")]
+    relay_token: String,
 }
 impl Default for Config {
     fn default() -> Self {
@@ -120,8 +132,32 @@ impl Default for Config {
             enabled: false,
             devices: Vec::new(),
             secret: crypto::random_hex::<32>(),
+            relay: None,
+            relay_token: crypto::random_hex::<32>(),
         }
     }
+}
+
+/// A relay address as saved: https, or http to this machine for testing, with no trailing slash.
+pub fn relay_url(input: &str) -> Option<String> {
+    let trimmed = input.trim().trim_end_matches('/');
+    if trimmed.is_empty() || trimmed.len() > 200 {
+        return None;
+    }
+    let url = reqwest::Url::parse(trimmed).ok()?;
+    let local = matches!(url.host_str(), Some("localhost" | "127.0.0.1"));
+    let allowed = url.scheme() == "https" || (url.scheme() == "http" && local);
+    let plain =
+        url.query().is_none() && url.fragment().is_none() && url.username().is_empty() && url.password().is_none();
+    (allowed && plain).then(|| trimmed.to_string())
+}
+
+/// What Settings shows about the relay connection.
+#[derive(Clone)]
+pub struct RelayStatus {
+    /// off, connecting, connected, offline or error.
+    pub state: &'static str,
+    pub error: Option<String>,
 }
 
 fn parse_config(value: &Value) -> Option<Config> {
@@ -140,13 +176,23 @@ fn parse_config(value: &Value) -> Option<Config> {
     }
     let secret = match (object.get("protectedSecret"), object.get("secret")) {
         (Some(protected), _) => {
-            let blob = base64::engine::general_purpose::STANDARD.decode(protected.as_str()?).ok()?;
+            let blob = base64::engine::general_purpose::STANDARD
+                .decode(protected.as_str()?)
+                .ok()?;
             String::from_utf8(crate::dpapi::unprotect(&blob)?).ok()?
         }
         (None, Some(plain)) => plain.as_str()?.to_string(),
         (None, None) => unreachable!(),
     };
     crypto::public(&secret).ok()?;
+    // A bad relay address or token is dropped alone, never the paired devices.
+    let relay = object.get("relay").and_then(Value::as_str).and_then(relay_url);
+    let relay_token = object
+        .get("relayToken")
+        .and_then(Value::as_str)
+        .filter(|token| token.len() == 64 && token.bytes().all(|b| b.is_ascii_hexdigit()))
+        .map(str::to_string)
+        .unwrap_or_else(crypto::random_hex::<32>);
     let devices = match object.get("devices") {
         None => Vec::new(),
         Some(Value::Array(items)) => {
@@ -177,6 +223,8 @@ fn parse_config(value: &Value) -> Option<Config> {
         enabled,
         devices,
         secret,
+        relay,
+        relay_token,
     })
 }
 
@@ -212,6 +260,7 @@ struct Inner {
     running: Option<(u16, oneshot::Sender<()>)>,
     /// When each device last synced, since Memoria started.
     seen: HashMap<String, u64>,
+    relay: RelayStatus,
 }
 
 #[derive(Clone)]
@@ -255,11 +304,14 @@ impl Lan {
                 .and_then(parse_config)
             {
                 Some(config) => {
-                    // A key saved in the clear by an older version is protected now.
+                    // A key saved in the clear by an older version is protected now,
+                    // and a relay token made on this load is kept for the next one.
                     let stored = stored_config(&config);
-                    if stored.get("protectedSecret").is_some()
-                        && serde_json::from_slice::<Value>(&bytes).is_ok_and(|old| old.get("secret").is_some())
-                    {
+                    let old = serde_json::from_slice::<Value>(&bytes).ok();
+                    let plain_secret = stored.get("protectedSecret").is_some()
+                        && old.as_ref().is_some_and(|o| o.get("secret").is_some());
+                    let new_token = old.as_ref().is_some_and(|o| o.get("relayToken").is_none());
+                    if plain_secret || new_token {
                         let _ = store::write_atomic(&file, stored.to_string().as_bytes());
                     }
                     (config, None)
@@ -277,6 +329,10 @@ impl Lan {
                 challenges: Vec::new(),
                 running: None,
                 seen: HashMap::new(),
+                relay: RelayStatus {
+                    state: "off",
+                    error: None,
+                },
             })),
             control_lock: Arc::new(tokio::sync::Mutex::new(())),
             file,
@@ -345,6 +401,28 @@ impl Lan {
                 Ok(status_of(&inner, self.port))
             }
             "start" => self.start().await,
+            "relay" => {
+                let url = match body.get("url").and_then(Value::as_str).map(str::trim) {
+                    None | Some("") => None,
+                    Some(input) => Some(relay_url(input).ok_or_else(|| {
+                        fail(
+                            400,
+                            "Enter the relay address from your Cloudflare deploy, starting with https://.",
+                        )
+                    })?),
+                };
+                let mut inner = self.inner.lock().unwrap();
+                let mut next = inner.config.clone();
+                next.relay = url;
+                self.commit(&mut inner, next)?;
+                let state = if inner.config.relay.is_some() {
+                    "connecting"
+                } else {
+                    "off"
+                };
+                inner.relay = RelayStatus { state, error: None };
+                Ok(status_of(&inner, self.port))
+            }
             "stop" => self.stop(),
             "code" => self.new_code(),
             "revoke" => {
@@ -429,18 +507,28 @@ impl Lan {
             return Err(fail(404, "Route not found."));
         }
         if path == "/hello" {
-            let mut inner = self.inner.lock().unwrap();
-            inner.challenges.retain(|(_, _, expires)| *expires > now_ms());
-            if inner.challenges.len() >= 256 || inner.challenges.iter().filter(|(_, ip, _)| *ip == peer).count() >= 8 {
-                return Err(fail(429, "Too many connection requests. Try again in a minute."));
-            }
-            let challenge = crypto::random_hex::<32>();
-            inner.challenges.push((challenge.clone(), peer, now_ms() + 60_000));
-            let public_key = crypto::public(&inner.config.secret).map_err(|e| fail(500, e))?;
-            return Ok(json!({ "publicKey": public_key, "challenge": challenge }));
+            return self.hello(peer);
         }
         let headers = request.headers().clone();
         let envelope = read_json(&headers, request.into_body(), MAX_STATE_BYTES * 2 + 2048).await?;
+        self.route_packet(peer, &path, envelope).await
+    }
+
+    /// A one-use challenge and this PC's key, the first step of every request.
+    fn hello(&self, peer: IpAddr) -> Result<Value, LanError> {
+        let mut inner = self.inner.lock().unwrap();
+        inner.challenges.retain(|(_, _, expires)| *expires > now_ms());
+        if inner.challenges.len() >= 256 || inner.challenges.iter().filter(|(_, ip, _)| *ip == peer).count() >= 8 {
+            return Err(fail(429, "Too many connection requests. Try again in a minute."));
+        }
+        let challenge = crypto::random_hex::<32>();
+        inner.challenges.push((challenge.clone(), peer, now_ms() + 60_000));
+        let public_key = crypto::public(&inner.config.secret).map_err(|e| fail(500, e))?;
+        Ok(json!({ "publicKey": public_key, "challenge": challenge }))
+    }
+
+    /// A sealed request: checks its challenge, opens it, runs it, and seals the reply.
+    async fn route_packet(&self, peer: IpAddr, path: &str, envelope: Value) -> Result<Value, LanError> {
         let packet: crypto::Packet = serde_json::from_value(envelope)
             .map_err(|_| fail(400, "Encrypted sync is required. Update both devices and pair again."))?;
         let (pc, keys) = {
@@ -456,15 +544,48 @@ impl Lan {
                 .map_err(|e| fail(403, e))?;
             (pc, keys)
         };
-        let body = crypto::open(&keys.0, &path, &packet, "").map_err(|e| fail(403, e))?;
-        let result = self.route_decrypted(peer, &path, &packet.public_key, body).await;
+        let body = crypto::open(&keys.0, path, &packet, "").map_err(|e| fail(403, e))?;
+        let result = self.route_decrypted(peer, path, &packet.public_key, body).await;
         let body = match result {
             Ok(body) => body,
             Err(error) => json!({ "error": error.message, "status": error.status }),
         };
         let reply =
-            crypto::seal(&keys.1, &path, &pc, &packet.challenge, &body, &packet.nonce).map_err(|e| fail(500, e))?;
+            crypto::seal(&keys.1, path, &pc, &packet.challenge, &body, &packet.nonce).map_err(|e| fail(500, e))?;
         serde_json::to_value(reply).map_err(|e| fail(500, e.to_string()))
+    }
+
+    /// A request the internet relay carried, answered exactly as on Wi-Fi.
+    /// Pairing stays on Wi-Fi: a code is never guessable from the internet.
+    pub async fn relayed(&self, path: &str, envelope: Value) -> Result<Value, LanError> {
+        if !self.enabled() {
+            return Err(fail(503, "Device sync is paused on the PC."));
+        }
+        match path {
+            "/hello" => self.hello(RELAY_PEER),
+            "/sync" | "/disconnect" => self.route_packet(RELAY_PEER, path, envelope).await,
+            "/pair" => Err(fail(
+                403,
+                "Pair on the same Wi-Fi as the PC first. After that, sync works anywhere.",
+            )),
+            _ => Err(fail(404, "Route not found.")),
+        }
+    }
+
+    /// Where to collect relayed requests: the relay, this PC's mailbox and its
+    /// token. None while sync is paused or no relay is set.
+    pub fn relay_target(&self) -> Option<(String, String, String)> {
+        let inner = self.inner.lock().unwrap();
+        inner.running.as_ref()?;
+        let url = inner.config.relay.clone()?;
+        let fingerprint = crypto::public(&inner.config.secret)
+            .and_then(|p| crypto::fingerprint(&p))
+            .ok()?;
+        Some((url, crypto::relay_room(&fingerprint), inner.config.relay_token.clone()))
+    }
+
+    pub fn set_relay_status(&self, state: &'static str, error: Option<String>) {
+        self.inner.lock().unwrap().relay = RelayStatus { state, error };
     }
 
     async fn route_decrypted(&self, peer: IpAddr, path: &str, phone_key: &str, body: Value) -> Result<Value, LanError> {
@@ -567,6 +688,8 @@ impl Lan {
             "addresses": status["addresses"],
             "pc": status["name"],
             "devices": status["devices"],
+            // Phones keep this, so away from home they reach the PC through the relay.
+            "relay": status["relay"]["url"],
         }))
     }
 }
@@ -577,9 +700,7 @@ fn status_of(inner: &Inner, default_port: u16) -> Value {
         let mut found: Vec<(u8, String)> = if_addrs::get_if_addrs()
             .unwrap_or_default()
             .into_iter()
-            .filter(|i| {
-                !i.is_loopback() && i.ip().is_ipv4() && private_address(i.ip()) && !virtual_adapter(&i.name)
-            })
+            .filter(|i| !i.is_loopback() && i.ip().is_ipv4() && private_address(i.ip()) && !virtual_adapter(&i.name))
             .map(|i| (address_rank(i.ip()), format!("http://{}:{port}", i.ip())))
             .collect();
         found.sort();
@@ -598,6 +719,15 @@ fn status_of(inner: &Inner, default_port: u16) -> Value {
         "code": pairing.map(|p| p.code.clone()),
         "expiresAt": pairing.map(|p| p.expires_at),
         "name": pc_name(),
+        "relay": {
+            "url": inner.config.relay,
+            "state": match (&inner.config.relay, &inner.running) {
+                (None, _) => "off",
+                (Some(_), None) => "paused",
+                _ => inner.relay.state,
+            },
+            "error": inner.relay.error,
+        },
         "devices": inner.config.devices.iter()
             .map(|d| json!({
                 "id": d.id,
@@ -732,7 +862,6 @@ mod tests {
         assert!(admitted(tailscale, true));
         assert!(!admitted(public, true));
     }
-
 
     #[cfg(windows)]
     #[test]
@@ -896,6 +1025,45 @@ mod tests {
         assert!(synced["pc"].is_string());
         assert_eq!(synced["devices"][0]["name"], "Galaxy S23");
         assert!(synced["devices"][0]["lastSeenAt"].is_u64());
+        assert!(synced["relay"].is_null());
+
+        // The same phone through the internet relay: same sealing, same answers.
+        assert!(lan.relay_target().is_none());
+        let bad = lan
+            .control(&json!({ "action": "relay", "url": "http://relay.example" }))
+            .await;
+        assert_eq!(bad.err().unwrap().status, 400);
+        let set = lan
+            .control(&json!({ "action": "relay", "url": " https://relay.example.workers.dev/ " }))
+            .await
+            .unwrap();
+        assert_eq!(set["relay"]["url"], "https://relay.example.workers.dev");
+        let (url, room, token) = lan.relay_target().unwrap();
+        assert_eq!(url, "https://relay.example.workers.dev");
+        assert_eq!(room, crypto::relay_room(&crypto::fingerprint(&pc).unwrap()));
+        assert_eq!(token.len(), 64);
+        let hello = lan.relayed("/hello", Value::Null).await.unwrap();
+        let packet = crypto::seal(
+            &keys.0,
+            "/sync",
+            &public,
+            hello["challenge"].as_str().unwrap(),
+            &json!({ "state": state }),
+            "",
+        )
+        .unwrap();
+        let sealed = lan
+            .relayed("/sync", serde_json::to_value(&packet).unwrap())
+            .await
+            .unwrap();
+        let reply: crypto::Packet = serde_json::from_value(sealed).unwrap();
+        let relayed = crypto::open(&keys.1, "/sync", &reply, &packet.nonce).unwrap();
+        assert!(relayed["state"]["games"].is_array());
+        assert_eq!(relayed["relay"], "https://relay.example.workers.dev");
+        // A Wi-Fi challenge is never accepted through the relay, nor pairing at all.
+        assert_eq!(lan.relayed("/pair", json!({})).await.err().unwrap().status, 403);
+        let saved = store::read_json(&dir.join("devices.json")).unwrap();
+        assert_eq!(saved["relayToken"], token.as_str());
         let id = paired["deviceId"].as_str().unwrap();
         lan.control(&json!({"action":"revoke","id":id})).await.unwrap();
         let revoked = send(&client, &base, "/sync", &public, &keys, json!({"state":state})).await;

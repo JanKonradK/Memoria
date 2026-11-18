@@ -23,7 +23,94 @@ type Devices = {
   /** This PC's name. */
   name?: string;
   devices: { id: string; name: string; pairedAt: number; lastSeenAt?: number | null }[];
+  /** The internet relay phones use away from home; absent on older PC builds. */
+  relay?: {
+    url: string | null;
+    state: 'off' | 'paused' | 'connecting' | 'connected' | 'offline' | 'error';
+    error: string | null;
+  };
 };
+
+const RELAY_STATE: Record<NonNullable<Devices['relay']>['state'], string> = {
+  off: 'Off. Phones sync only on the same Wi-Fi or a private network such as Tailscale.',
+  paused: 'Paused with device sync.',
+  connecting: 'Connecting to the relay…',
+  connected: 'Connected. Paired phones sync through it wherever they are.',
+  offline: 'Cannot reach the relay right now. Memoria keeps trying.',
+  error: 'The relay refused this PC.',
+};
+
+/**
+ * The owner's internet relay, so phones paired here keep syncing away from
+ * home. Phones learn the address on their next sync; nothing to set on them.
+ */
+function RelaySetup({
+  relay,
+  busy,
+  save,
+}: {
+  relay: NonNullable<Devices['relay']>;
+  busy: boolean;
+  save: (url: string) => void;
+}) {
+  const [draft, setDraft] = useState(relay.url ?? '');
+  return (
+    <details className={DETAILS} open={relay.url != null || undefined}>
+      <summary>Sync away from home</summary>
+      <div className="space-y-3 pb-3">
+        <p>
+          Deploy the Memoria relay to your own free Cloudflare account (see relay/README.md), then paste its address
+          here. Paired phones pick it up on their next sync. The relay only carries encrypted data it cannot read.
+        </p>
+        <form
+          className="flex flex-wrap items-end gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            save(draft);
+          }}
+        >
+          <Field label="Relay address" className="min-w-0 flex-1 basis-64">
+            <TextInput
+              type="url"
+              inputMode="url"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="https://memoria-relay.you.workers.dev"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+            />
+          </Field>
+          <Btn
+            type="submit"
+            kind="primary"
+            className={TOUCH_BUTTON}
+            disabled={busy || draft.trim() === (relay.url ?? '')}
+          >
+            Save
+          </Btn>
+          {relay.url && (
+            <Btn
+              className={TOUCH_BUTTON}
+              disabled={busy}
+              onClick={() => {
+                setDraft('');
+                save('');
+              }}
+            >
+              Remove
+            </Btn>
+          )}
+        </form>
+        <p
+          role="status"
+          className={relay.state === 'connected' ? 'text-ok-fg' : relay.state === 'error' ? 'text-danger-fg' : ''}
+        >
+          {relay.error && relay.state !== 'connected' ? relay.error : RELAY_STATE[relay.state]}
+        </p>
+      </div>
+    </details>
+  );
+}
 type Firewall = {
   supported: boolean;
   networks?: { name: string; category: string; allowed: boolean }[];
@@ -233,7 +320,7 @@ function DesktopConnection() {
       clearInterval(interval);
     };
   }, []);
-  const control = async (action: string, id?: string) => {
+  const control = async (action: string, extra: { id?: string; url?: string } = {}) => {
     if (working.current) return;
     working.current = true;
     ++requestId.current.id;
@@ -243,9 +330,17 @@ function DesktopConnection() {
       const response = await launcherFetch('/api/devices', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action, id }),
+        body: JSON.stringify({ action, ...extra }),
       });
-      if (!response.ok) throw new Error('Could not connect. Keep Memoria open and try again.');
+      if (!response.ok) {
+        // A refusal the PC explains, such as a mistyped relay address, says why.
+        const reason = (await response.json().catch(() => null)) as { error?: unknown } | null;
+        throw new Error(
+          response.status === 400 && typeof reason?.error === 'string'
+            ? reason.error
+            : 'Could not connect. Keep Memoria open and try again.',
+        );
+      }
       const next = (await response.json()) as Devices;
       setDevices(next);
       pairingDeviceIds.current = next.devices.map((device) => device.id);
@@ -312,7 +407,7 @@ function DesktopConnection() {
                         className={TOUCH_BUTTON}
                         disabled={busy}
                         aria-label={`Disconnect ${device.name} ${device.id}`}
-                        onClick={() => void control('revoke', device.id)}
+                        onClick={() => void control('revoke', { id: device.id })}
                       >
                         Disconnect
                       </Btn>
@@ -385,6 +480,9 @@ function DesktopConnection() {
                 </details>
               </div>
             </div>
+          )}
+          {devices.relay && (
+            <RelaySetup relay={devices.relay} busy={busy} save={(url) => void control('relay', { url })} />
           )}
           {devices.enabled && (
             <details className={DETAILS}>
@@ -549,7 +647,9 @@ function PhoneConnection() {
           <div role="status" className="space-y-1">
             <p className={`text-body font-semibold ${connection.status === 'ok' ? 'text-ok-fg' : 'text-fg'}`}>
               {connection.status === 'ok'
-                ? 'Connected to your PC'
+                ? connection.route === 'relay'
+                  ? 'Connected to your PC over the internet'
+                  : 'Connected to your PC'
                 : connection.status === 'syncing' || connection.status === 'pairing'
                   ? 'Syncing…'
                   : connection.status === 'offline'
@@ -570,7 +670,9 @@ function PhoneConnection() {
                 name: connection.pcName || 'Your PC',
                 detail:
                   connection.status === 'ok'
-                    ? 'PC · connected'
+                    ? connection.route === 'relay'
+                      ? 'PC · connected through your relay'
+                      : 'PC · connected'
                     : connection.status === 'offline'
                       ? 'PC · not reachable'
                       : 'PC',

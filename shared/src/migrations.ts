@@ -339,8 +339,10 @@ function migrateNteCorrections(raw: unknown): unknown {
         const row = objectRecord(rawRow);
         if (!row || row.deleted || !nteGames.has(row.gameId) || row.name !== 'City Stamina') return rawRow;
         if (row.reserveCap !== 1000 || row.reserveLabel !== 'City Stamina Reserve') return rawRow;
-        const { reserveLabel: _label, reserveRegenMinutes: _rate, ...rest } = row;
-        return { ...rest, reserveCap: 0, ...bumpRow(row) };
+        const next: Record<string, unknown> = { ...row, reserveCap: 0, ...bumpRow(row) };
+        delete next.reserveLabel;
+        delete next.reserveRegenMinutes;
+        return next;
       })
     : state.resources;
   return { ...state, games, resources };
