@@ -617,6 +617,9 @@
 }
 .tl-left {
   flex-shrink: 0;
+  /* The tone keeps its hue but leans on the text colour, so it reads at AA on any
+     game's fill, hovered or not, in either theme. */
+  color: color-mix(in srgb, var(--tl-tone, var(--color-muted)) 45%, var(--color-fg));
   font-weight: 600;
 }
 .tl-bar[data-done] .tl-face {

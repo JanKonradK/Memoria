@@ -232,7 +232,7 @@ const TimelineBar = memo(function TimelineBar({
           <span
             data-event-countdown
             className={`tl-left numeral ${barPx > 0 && barPx < COUNTDOWN_ROOM_PX ? 'sr-only' : ''}`}
-            style={{ color: TONE[countdown.tone] }}
+            style={{ '--tl-tone': TONE[countdown.tone] } as CSSProperties}
           >
             {predicted ? 'predicted' : countdown.label}
           </span>
@@ -367,16 +367,19 @@ const TimelineLane = memo(function TimelineLane({
             className="tl-head-button"
             aria-expanded={open}
             aria-controls={contentId}
-            // Starts with the words on screen, so a voice user can say what they see.
-            aria-label={`${shownName} ${countLine}, ${shownName === game.name ? '' : `${game.name}, `}${server}`}
             onClick={() => onOpenChange(!open)}
           >
             <GameLogo game={game} size={compact ? 24 : 28} />
             <span className="tl-head-text">
               <span className="tl-head-name" style={{ color: nameInk }} title={game.name}>
                 {shownName}
-              </span>
+              </span>{' '}
               <span className="tl-head-count numeral">{countLine}</span>
+              {/* The name is the words on screen, so a voice user can say what they see. */}
+              <span className="sr-only">
+                , {shownName === game.name ? '' : `${game.name}, `}
+                {server}
+              </span>
             </span>
             <svg
               className="tl-chevron"
@@ -595,8 +598,7 @@ export function TimelinePage({ now }: { now: number }) {
         (node) => node.dataset.listGame === id,
       );
       const control =
-        lane?.querySelector<HTMLButtonElement>('h2 button') ??
-        row?.querySelector<HTMLButtonElement>('button[aria-label^="Edit "]');
+        lane?.querySelector<HTMLButtonElement>('h2 button') ?? row?.querySelector<HTMLButtonElement>('.cal-row-main');
       (control ?? document.querySelector<HTMLElement>('.timeline-page h1'))?.focus();
     });
   };
