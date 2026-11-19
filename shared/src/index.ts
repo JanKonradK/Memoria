@@ -28,3 +28,4 @@ export * from './hlc';
 export * from './history';
 export * from './servers';
 export * from './today-steps';
+export * from './calendar-views';

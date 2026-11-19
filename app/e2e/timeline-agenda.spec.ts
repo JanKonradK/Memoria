@@ -1,111 +1,81 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { openSettings } from './support';
-import { emptyState } from '@memoria/shared';
-import { makeGame } from '../../shared/test/helpers';
+import { editFromQuickView, mergePresetCalendar } from './support';
 
-test('agenda keeps full titles, actions and route-return choices usable at every width', async ({ page }, info) => {
+// Wednesday 18 November 2026, 14:00 in Warsaw.
+const NOW = Date.parse('2026-11-18T13:00:00Z');
+
+test.use({ timezoneId: 'Europe/Warsaw' });
+
+test('agenda lists each day’s moments, folds shared ends and keeps its controls usable', async ({ page }, info) => {
+  await page.clock.setFixedTime(new Date(NOW));
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  const now = Date.now();
-  const day = 86_400_000;
-  const game = makeGame({ name: 'Agenda test', updatedAt: now });
-  const titles = [
-    'Clink, Clank, Pinball Knight!',
-    'All-New Program — 7-day login',
-    'Angels Support Operation',
-    'New Eridu City Fund',
-    'A long event name that should wrap and keep its edit control available',
-  ];
-  const state = {
-    ...emptyState(),
-    games: [game],
-    events: Array.from({ length: 12 }, (_, i) => ({
-      id: `agenda-${i}`,
-      gameId: game.id,
-      name: titles[i % titles.length],
-      type: 'event',
-      start: now + (i < 6 ? -day : i * day),
-      end: now + (i + 1) * day,
-      dailyTouch: false,
-      notify: true,
-      notes: '',
-      updatedAt: now,
-    })),
-  };
-  await openSettings(page, 'Data');
-  await page
-    .locator('input[type="file"]')
-    .setInputFiles({ name: 'agenda.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
-  await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
-  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
-  await page
-    .getByRole('radiogroup', { name: 'Event view' })
-    .getByRole('radio', { name: 'Agenda', exact: true })
-    .click();
-  await expect(page.locator('[data-list-event]')).toHaveCount(12);
-  // Finished names what a press does, as the theme button does. There is no Find: the browser has one.
-  await expect(page.getByRole('button', { name: 'Find events', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Show finished events', exact: true })).toHaveText('Show finished');
-  for (const name of ['Show finished events']) {
-    const box = (await page.getByRole('button', { name, exact: true }).boundingBox())!;
-    expect(box.x).toBeGreaterThanOrEqual(0);
-    expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
-    if (page.viewportSize()!.width < 768) {
-      expect(box.width).toBeGreaterThanOrEqual(44);
-      expect(box.height).toBeGreaterThanOrEqual(44);
+  await mergePresetCalendar(page, NOW, ['crumble', 'nikke', 'zzz', 'wuwa', 'genshin', 'hsr']);
+  const nav = page.getByRole('navigation', { name: 'Primary' });
+  await nav.getByRole('button', { name: 'Calendar', exact: true }).click();
+  const views = page.getByRole('radiogroup', { name: 'Event view' });
+  await views.getByRole('radio', { name: 'Agenda', exact: true }).click();
+  const phone = page.viewportSize()!.width < 640;
+
+  const today = page.getByRole('region', { name: /^Today Wednesday 18 November$/ });
+  await expect(today).toBeVisible();
+  await expect(page.getByRole('region', { name: /^Tomorrow Thursday 19 November$/ })).toBeVisible();
+  await expect(today.locator('.cal-when span').first()).toHaveText(/^(ends|starts|live|down)$/);
+  // Several events of one game ending together are one row with a count.
+  const fold = today.locator('[data-list-fold]').first();
+  await expect(fold).toBeVisible();
+  const more = fold.locator('.cal-more');
+  await expect(more).toHaveText(/^\+\d+/);
+  const count = Number(await fold.getAttribute('data-list-fold'));
+  await more.click();
+  await expect(more).toHaveAttribute('aria-expanded', 'true');
+  await expect(today.locator('.cal-row-nested')).toHaveCount(count);
+  if (phone)
+    for (const control of [more, today.getByRole('checkbox').first()]) {
+      const box = (await control.boundingBox())!;
+      expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
     }
-  }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  const row = page.locator('[data-list-event="agenda-0"]');
-  await expect(row.getByRole('button', { name: /^Edit/ })).toBeVisible();
-  await expect(row.getByRole('checkbox')).toBeVisible();
-  await expect(row.locator('time')).toHaveCount(2);
-  await expect(row.getByText('Starts', { exact: true })).toBeVisible();
-  await expect(row.getByText('Ends', { exact: true })).toBeVisible();
-  const boxes = await row.evaluate((node) =>
-    [...node.children].map((child) => {
-      const b = child.getBoundingClientRect();
-      return { x: b.x, right: b.right, y: b.y, bottom: b.bottom };
-    }),
-  );
-  for (let i = 0; i < boxes.length; i++)
-    for (let j = i + 1; j < boxes.length; j++) {
-      const a = boxes[i]!;
-      const b = boxes[j]!;
-      expect(
-        Math.min(a.right, b.right) - Math.max(a.x, b.x) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.y, b.y) > 1,
-      ).toBe(false);
-    }
+  const { violations } = await new AxeBuilder({ page }).include('.cal-agenda').analyze();
+  expect(violations.map((item) => item.id)).toEqual([]);
+  await more.click();
   await page.screenshot({ path: info.outputPath('agenda.png') });
-  await row.getByRole('button', { name: /^Edit/ }).click();
-  await expect(page.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(titles[0]!);
+
+  // A tick finishes the event: it leaves the agenda until finished events are shown.
+  const row = today.locator('[data-list-event]').first();
+  const id = (await row.getAttribute('data-list-event'))!;
+  await row.getByRole('checkbox').click();
+  await expect(page.locator(`[data-list-event="${id}"]`)).toHaveCount(0);
+  await page.getByRole('button', { name: 'Show finished events', exact: true }).click();
+  await expect(page.locator(`[data-list-event="${id}"]`).getByRole('checkbox')).toHaveAttribute('aria-checked', 'true');
+  await page.getByRole('button', { name: 'Hide finished events', exact: true }).click();
+
+  // A row opens the quick view, and the editor is one step further.
+  const next = today.locator('[data-list-event] .cal-row-main').first();
+  const name = (await next.locator('.cal-name').textContent())!;
+  await next.click();
+  await expect(page.getByRole('dialog', { name })).toBeVisible();
+  await editFromQuickView(page);
+  await expect(page.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(name);
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
-  const phone = page.viewportSize()!.width < 768;
-  // The page is the only scroller at every width.
+  // The page is the only scroller, and returning to the route keeps the place and the view.
   const scrollPosition = await page.evaluate(() => {
     window.scrollTo({ top: 320, behavior: 'instant' });
     return window.scrollY;
   });
   expect(scrollPosition).toBeGreaterThan(0);
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
+  await nav.getByRole('button', { name: 'Settings', exact: true }).click();
+  await nav.getByRole('button', { name: 'Calendar', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(scrollPosition, 0);
+  await expect(views.getByRole('radio', { name: 'Agenda', exact: true })).toHaveAttribute('data-state', 'on');
 
-  // Use a non-default view so returning to the route cannot pass by resetting
-  // to its device default. Filters should travel with that choice too.
-  const chosenView = phone ? 'Timeline' : 'List';
-  const viewControls = page.getByRole('radiogroup', { name: 'Event view' });
-  await viewControls.getByRole('radio', { name: chosenView, exact: true }).click();
-  await page.getByRole('button', { name: 'Show finished events', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Hide finished events', exact: true })).toHaveText('Hide finished');
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByRole('button', { name: 'Calendar', exact: true }).click();
-  await expect(viewControls.getByRole('radio', { name: chosenView, exact: true })).toHaveAttribute('data-state', 'on');
-  await expect(page.getByRole('button', { name: 'Hide finished events', exact: true })).toBeVisible();
-  await viewControls.getByRole('radio', { name: 'Agenda', exact: true }).click();
-  await expect(page.locator('[data-list-event]')).toHaveCount(12);
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await page.screenshot({ path: info.outputPath('agenda-light.png') });
+  const light = await new AxeBuilder({ page }).include('.cal-agenda').analyze();
+  expect(light.violations.map((item) => item.id)).toEqual([]);
 });

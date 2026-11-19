@@ -1057,11 +1057,7 @@ export function TimelinePage({ now }: { now: number }) {
   // Reorder handles, ticks and order resets stay hidden until asked for.
   const [editing, setEditing] = useState(false);
   const startEditing = useCallback(() => setEditing(true), []);
-  const openEvent = useCallback(
-    (event: GameEvent) => openSheet({ kind: 'event', eventId: event.id, gameId: event.gameId }),
-    [openSheet],
-  );
-  // A bar opens the quick view; the list's Edit button goes straight to the editor.
+  // Every view opens an event's quick view; its Edit button leads to the editor.
   const peekEvent = useCallback((event: GameEvent) => openSheet({ kind: 'eventPeek', eventId: event.id }), [openSheet]);
   const toggleEvent = useCallback(
     (event: GameEvent) => upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done }),
@@ -1234,9 +1230,25 @@ export function TimelinePage({ now }: { now: number }) {
       <PinnedEvents events={events} games={games} now={now} onOpen={peekEvent} />
 
       {games.length > 0 && games.every((game) => game.paused) ? null : view === 'month' ? (
-        <MonthView games={games} events={events} now={now} onOpenEvent={peekEvent} onToggleEvent={toggleEvent} />
+        <MonthView
+          games={games}
+          events={events}
+          now={now}
+          localTz={state.settings.localTz}
+          showFinished={showFinished}
+          onOpenEvent={peekEvent}
+          onToggleEvent={toggleEvent}
+        />
       ) : view === 'soon' ? (
-        <SoonView games={games} events={events} now={now} onOpenEvent={peekEvent} onToggleEvent={toggleEvent} />
+        <SoonView
+          games={games}
+          events={events}
+          now={now}
+          localTz={state.settings.localTz}
+          showFinished={showFinished}
+          onOpenEvent={peekEvent}
+          onToggleEvent={toggleEvent}
+        />
       ) : view === 'agenda' ? (
         <TimelineList
           games={games}
@@ -1244,7 +1256,7 @@ export function TimelinePage({ now }: { now: number }) {
           now={now}
           localTz={state.settings.localTz}
           showFinished={showFinished}
-          onOpenEvent={openEvent}
+          onOpenEvent={peekEvent}
           onToggleEvent={toggleEvent}
         />
       ) : (
