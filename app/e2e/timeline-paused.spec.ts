@@ -1,6 +1,5 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { openSettings } from './support';
+import { openSettings, calendarAxe } from './support';
 import { emptyState } from '@memoria/shared';
 import { makeEvent, makeGame } from '../../shared/test/helpers';
 
@@ -116,11 +115,7 @@ test('paused accounts stay compact in both views and resume their saved events',
         );
       });
       await page.screenshot({ path: info.outputPath(`paused-${mode.toLowerCase()}-${theme}.png`) });
-      expect(
-        (await new AxeBuilder({ page }).analyze()).violations.filter((issue) =>
-          ['serious', 'critical'].includes(issue.impact ?? ''),
-        ),
-      ).toEqual([]);
+      expect(await calendarAxe(page)).toEqual([]);
     }
   }
   await page.getByRole('button', { name: 'Show finished events' }).click();

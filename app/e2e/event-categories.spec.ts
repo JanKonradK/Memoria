@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
 import { emptyState } from '@memoria/shared';
 import { makeGame, makeEvent } from '../../shared/test/helpers';
-import { editFromQuickView, openSettings } from './support';
+import { editFromQuickView, openSettings, calendarAxe } from './support';
 
 test('MW uses an inline tag and owner tag changes persist', async ({ page }) => {
   const now = Date.parse('2026-09-17T12:00:00Z');
@@ -64,7 +63,7 @@ test('MW uses an inline tag and owner tag changes persist', async ({ page }) => 
   await expect(page.locator('[data-event-category]')).toHaveCount(0);
   // Scan the settled lanes, not a frame of their entrance animation.
   await page.waitForTimeout(400);
-  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  expect(await calendarAxe(page, { all: true })).toEqual([]);
   await page.getByRole('button', { name: 'Open Genshin category test event: Miliastra test', exact: true }).click();
   await editFromQuickView(page);
   await page.getByRole('combobox', { name: 'Genshin world' }).click();

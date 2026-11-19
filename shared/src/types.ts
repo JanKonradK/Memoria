@@ -207,7 +207,7 @@ export interface GameEvent extends Syncable {
   category?: 'teyvat' | 'miliastra';
   /** What the banner awards; absent for unclassified or cosmetic banners. */
   bannerKind?: BannerKind;
-  /** Manual timeline position; absent means automatic order. */
+  /** Retired manual timeline position. The timeline packs rows itself; kept so older backups still load. */
   sort?: number;
   start: number;
   end: number;

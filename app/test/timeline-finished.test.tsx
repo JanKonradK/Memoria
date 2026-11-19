@@ -119,12 +119,13 @@ describe('finished events leave the lane', () => {
       event({ id: 'far', name: 'Far ahead', start: NOW + 90 * DAY, end: NOW + 95 * DAY }),
       event({ id: 'other', gameId: 'other', name: 'Another account' }),
     ];
-    show(events);
-    expect(screen.getByText('1 event')).toBeInTheDocument();
+    const { container } = show(events);
+    const caption = () => container.querySelector('.timeline-caption');
+    expect(caption()).toHaveTextContent(/^1 event$/);
     fireEvent.click(screen.getByRole('button', { name: 'Show finished events' }));
-    expect(screen.getByText('2 events')).toBeInTheDocument();
+    expect(caption()).toHaveTextContent(/^2 events$/);
     fireEvent.click(screen.getByRole('radio', { name: 'Agenda', exact: true }));
-    expect(screen.getByText('3 events')).toBeInTheDocument();
+    expect(caption()).toHaveTextContent(/^3 events$/);
   });
 
   it('exposes exact local event dates to keyboard and screen reader users in duration view', () => {
@@ -134,38 +135,32 @@ describe('finished events leave the lane', () => {
     expect(open.getAttribute('title')).toContain('Dated event. Starts');
   });
 
-  it('keeps Genshin world sections in order while reordering and filtering their events', () => {
+  it('keeps Genshin world sections in order, banners on rows of their own', () => {
     const { container } = show(
       [
-        event({ id: 'banner', name: 'Cosmetic draw', type: 'banner', category: 'miliastra', sort: 0 }),
-        event({ id: 'mw-1', name: 'Wonderland first', category: 'miliastra', sort: 1 }),
-        event({ id: 'teyvat-1', name: 'Teyvat first', sort: 2 }),
-        event({ id: 'mw-2', name: 'Wonderland second', category: 'miliastra', sort: 3 }),
-        event({ id: 'teyvat-2', name: 'Teyvat second', type: 'endgame', sort: 4 }),
-        event({ id: 'finished', name: 'Finished Teyvat', done: true, sort: 5 }),
-        event({ id: 'other', name: 'Another account', gameId: 'other', sort: 6 }),
+        event({ id: 'banner', name: 'Cosmetic draw', type: 'banner', category: 'miliastra' }),
+        event({ id: 'mw-1', name: 'Wonderland first', category: 'miliastra' }),
+        event({ id: 'teyvat-1', name: 'Teyvat first' }),
+        event({ id: 'mw-2', name: 'Wonderland second', category: 'miliastra' }),
+        event({ id: 'teyvat-2', name: 'Teyvat second', type: 'cycle' }),
+        event({ id: 'finished', name: 'Finished Teyvat', done: true }),
+        event({ id: 'other', name: 'Another account', gameId: 'other' }),
       ],
       { presetKey: 'genshin' },
     );
     const sections = () =>
       [...container.querySelectorAll('[data-timeline-event-group]')].map((section) => ({
         key: section.getAttribute('data-timeline-event-group'),
-        ids: [...section.querySelectorAll('[data-event-id]')].map((item) => item.getAttribute('data-event-id')),
+        ids: [...section.querySelectorAll('[data-event-id]')].map((item) => item.getAttribute('data-event-id')).sort(),
       }));
     expect(sections()).toEqual([
       { key: 'teyvat', ids: ['teyvat-1', 'teyvat-2'] },
       { key: 'miliastra', ids: ['mw-1', 'mw-2'] },
       { key: 'banners', ids: ['banner'] },
     ]);
-    // Handles only exist in edit mode.
-    expect(screen.queryByRole('button', { name: 'Reorder Wonderland first' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit events' }));
-    fireEvent.keyDown(screen.getByRole('button', { name: 'Reorder Wonderland first' }), { key: 'ArrowUp' });
-    expect(sections()[1].ids).toEqual(['mw-1', 'mw-2']);
-    fireEvent.keyDown(screen.getByRole('button', { name: 'Reorder Wonderland second' }), { key: 'ArrowUp' });
-    expect(sections()[1].ids).toEqual(['mw-2', 'mw-1']);
-    expect(sections()[0].ids).toEqual(['teyvat-1', 'teyvat-2']);
+    expect(screen.queryByRole('button', { name: /^Reorder / })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit events' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Show finished events' }));
-    expect(sections()[0].ids).toEqual(['teyvat-1', 'teyvat-2', 'finished']);
+    expect(sections()[0].ids).toEqual(['finished', 'teyvat-1', 'teyvat-2']);
   });
 });

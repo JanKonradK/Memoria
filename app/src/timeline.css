@@ -1,117 +1,15 @@
 /*
- * THESIS: The event calendar is a calm glass workspace with time as its structure.
- * OWN-WORLD: Shared translucent surfaces, rounded groups, clear type and game ink.
- * STORY: Scan active events, compare dates, then edit or mark a specific event done.
- * FIRST VIEWPORT: A page title and range lead into a lane board or status groups.
- * FORM: User-directed Apple-like glass; desktop lanes retain precise bar geometry,
- * while phone lists give the complete event name its own line above dates/actions.
+ * THESIS: The Calendar is time laid flat: days across, games down, every event a bar.
+ * STORY: See what ends first, tick what is done, open anything for its detail.
+ * FORM: A day ruler over packed rows. Events that do not overlap share a row,
+ * banners have rows of their own, maintenance is a hatched band down its game,
+ * and a livestream is a diamond. The games bring the colour; the rest is ink.
  */
 .timeline-page {
-  padding-top: 16px;
   padding-bottom: 20px;
 }
-.timeline-page-heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 24px;
-  padding: 0 4px;
-}
 .timeline-caption {
-  padding: 10px 4px 12px;
-}
-/* Breathing room: the board stands in from the page edges and the scrollbar,
-   so the last countdown never touches either. Ruler and bars share the inset. */
-.timeline-page .timeline-lanes-board {
-  margin-inline: 12px;
-  margin-bottom: 24px;
-}
-@media (min-width: 1024px) {
-  .timeline-page .timeline-lanes-board {
-    margin-inline: 28px;
-  }
-}
-/* A week line marks the weekly reset. It is a guide behind the rows, not a
-   mark of its own: sparse, faint dots that never compete with a name or a bar
-   (at 32% on a 6px step they read as a dashed rule through every label). */
-.timeline-week-line {
-  background-image: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--color-fg) 16%, transparent) 0.7px,
-    transparent 1px
-  );
-  background-size: 1px 10px;
-}
-@media (max-width: 767px) {
-  .timeline-week-line {
-    background-image: radial-gradient(
-      circle,
-      color-mix(in srgb, var(--color-fg) 11%, transparent) 0.6px,
-      transparent 0.9px
-    );
-    background-size: 1px 12px;
-  }
-}
-/* The lanes sit on the page ground like the Today groups: no panel, no inset. The
-   ruler stays opaque so bars scrolling beneath it do not show through. */
-.timeline-lanes-board [data-timeline-ruler] {
-  height: 28px;
-  border-bottom: 1px solid var(--color-line);
-  background: var(--color-surface-0);
-}
-/* The Today marker is ink, not urgency: red means a deadline under a day away. */
-.timeline-today-label {
-  position: absolute;
-  /* The same 20px band the tick labels sit in. */
-  top: 0;
-  display: flex;
-  height: 20px;
-  align-items: center;
-  padding: 0 8px;
-  transform: translateX(-50%);
-  border-radius: var(--radius-ui-full, 999px);
-  background: var(--color-fg);
-  color: var(--color-surface-0);
-  font-size: var(--text-caption);
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  pointer-events: none;
-}
-.timeline-today-line {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  z-index: 10;
-  width: 1px;
-  background: color-mix(in srgb, var(--color-fg) 38%, transparent);
-  pointer-events: none;
-}
-.timeline-game-lane + .timeline-game-lane {
-  margin-top: 12px;
-}
-/* The same inset as the Today heading rows, so a name lines up with its rule. */
-.timeline-lanes-board .timeline-game-heading {
-  min-height: 44px !important;
-  margin-bottom: 6px;
-  padding-inline: 0.5rem;
-  border-radius: var(--radius-ui-md, 16px);
-}
-.timeline-lane-content {
-  padding-bottom: 8px;
-}
-.timeline-event-lane [data-event-bar],
-.timeline-event-track {
-  border-radius: 999px;
-}
-.timeline-event-track {
-  background: color-mix(in srgb, var(--color-fg) 3%, transparent);
-  border-color: color-mix(in srgb, var(--color-line) 65%, transparent);
-}
-.timeline-event-lane [data-event-countdown] > span {
-  border-radius: 999px;
-  background: var(--color-surface-1);
+  padding: 0 4px 10px;
 }
 /* Sections sit on the page ground like the Today groups: no card, no rule box. */
 .timeline-list-board {
@@ -222,11 +120,6 @@
 .timeline-empty {
   padding: 2.5rem 0.5rem;
 }
-.timeline-tool-button {
-  border-radius: 999px;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
 @media (hover: hover) {
   .timeline-event-row:hover {
     background: var(--color-fill-1);
@@ -272,118 +165,681 @@
     grid-row: 1;
   }
 }
-/* While editing, reorder handles sit in a gutter left of the lanes, which the
-   lane content reaches back into so the handles are not clipped. Otherwise the
-   bars take the full width. */
-[data-editing] .timeline-scale {
-  margin-left: 28px;
-}
-[data-editing] .timeline-lane-content {
-  margin-left: -28px;
-  padding-left: 28px;
-}
-/* A press held on an event picks it up, so it must not select text or open
-   the long-press menu. */
-.timeline-rows {
-  -webkit-touch-callout: none;
-  user-select: none;
-}
-.timeline-event-lane[data-held] {
-  z-index: 40;
-  border-radius: var(--radius-ui-md);
-  background: var(--color-surface-2);
-  box-shadow: 0 6px 20px rgb(0 0 0 / 0.28);
-  scale: 1.02;
-}
-.timeline-reorder-handle {
-  left: -28px;
-  width: 28px;
-  height: var(--lane-row-h);
-}
-
-/* Phone: each event is two short lines, its name with the time left and tick,
-   then a thin bar on the shared time scale. The page itself scrolls, so the
-   content runs on under the floating dock instead of stopping above it. */
-.timeline-event-compact {
-  padding: 3px 0 7px;
-}
-.timeline-compact-head {
-  display: flex;
-  min-height: 32px;
-  align-items: center;
-  gap: 8px;
-  padding-left: 4px;
-}
-.timeline-compact-tick {
-  display: flex;
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  margin-right: -4px;
-  border-radius: 999px;
-}
-.timeline-compact-track {
-  height: 6px;
-  margin: 2px 0 0;
-  border-radius: 999px;
-  background: var(--color-fill-2);
-}
-.timeline-compact-bar {
-  border-radius: 999px;
-}
-/* A pinned event's whole row takes the gold wash, as its lane row does on a wide screen. */
-.timeline-event-compact:has([data-pinned]) > .group\/row {
-  border-radius: var(--radius-ui-md);
-  background: color-mix(in srgb, var(--color-gold) 10%, transparent);
-}
-@media (hover: hover) {
-  .timeline-compact-open:hover {
-    background: var(--color-fill-1);
-  }
-}
-@media (max-width: 639px) {
-  [data-editing] .timeline-scale {
-    margin-left: 20px;
-  }
-  [data-editing] .timeline-lane-content {
-    margin-left: -20px;
-    padding-left: 20px;
-  }
-  .timeline-event-compact .timeline-reorder-handle {
-    left: -22px;
-    width: 20px;
-    height: 32px;
-  }
-  .timeline-game-lane + .timeline-game-lane {
-    margin-top: 6px;
-  }
-  .timeline-lanes-board .timeline-game-heading {
-    min-height: 40px !important;
-    margin-bottom: 0;
-  }
-}
 @media (max-width: 767px) {
   .timeline-page {
     padding-bottom: calc(var(--mobile-nav-h) + 0.75rem);
-  }
-  .timeline-page .timeline-lanes-board {
-    margin-inline: 0;
-  }
-  .timeline-caption {
-    padding: 8px 4px 10px;
   }
   .timeline-event-row {
     padding: 12px;
   }
 }
-@media (max-width: 767px) and (max-height: 500px) {
-  .timeline-page {
-    padding-top: 6px;
+
+/* ---------- Page bar ---------- */
+.calendar-bar {
+  gap: 10px 14px;
+}
+.calendar-view[data-state='on'] {
+  background: var(--color-surface-2);
+  color: var(--color-fg);
+}
+.calendar-view-short {
+  display: none;
+}
+.calendar-games {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+}
+.calendar-bar > .calendar-games {
+  padding-left: 8px;
+  border-left: 1px solid var(--color-line);
+}
+.calendar-game-toggle {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 999px;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    filter var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+.calendar-game-toggle[aria-pressed='false'] {
+  opacity: 0.32;
+  filter: grayscale(1);
+}
+@media (hover: hover) {
+  .calendar-game-toggle:hover {
+    background: var(--color-fill-2);
+    opacity: 1;
   }
-  .timeline-caption {
-    padding-top: 4px;
-    padding-bottom: 8px;
+}
+.calendar-bar-gap {
+  flex: 1 1 0;
+}
+.calendar-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.calendar-tool {
+  display: inline-flex;
+  min-height: 38px;
+  min-width: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--color-line-edge);
+  border-radius: var(--radius-ui-md);
+  background: var(--color-fill-1);
+  color: var(--color-fg);
+  font-size: var(--text-meta);
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.calendar-tool[data-icon-only] {
+  padding: 0;
+}
+@media (max-width: 1599px) {
+  .calendar-tool-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .calendar-tool:has(> .calendar-tool-text) {
+    padding: 0;
+  }
+}
+.calendar-stepper .calendar-tool[data-icon-only] {
+  border-color: transparent;
+  background: none;
+  color: var(--color-muted);
+}
+@media (hover: hover) {
+  .calendar-tool:hover,
+  .calendar-stepper .calendar-tool[data-icon-only]:hover {
+    background: var(--color-fill-2);
+    color: var(--color-fg);
+  }
+}
+.calendar-tool:active {
+  scale: 0.96;
+}
+@media (max-width: 767px) {
+  .calendar-bar .page-bar-end {
+    gap: 4px;
+  }
+  .calendar-bar .calendar-tool {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .calendar-bar .page-bar-end .calendar-tool {
+    border-color: transparent;
+    background: none;
+    color: var(--color-muted);
+  }
+  /* The view switch takes its own full-width line under the title. */
+  .calendar-view-switch {
+    display: grid;
+    order: 3;
+    flex-basis: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .calendar-view-switch button {
+    min-height: 44px;
+    padding: 0 4px;
+  }
+  .calendar-view-long {
+    display: none;
+  }
+  .calendar-view-short {
+    display: inline;
+  }
+  .calendar-games-panel {
+    order: 4;
+    flex-basis: 100%;
+  }
+  .calendar-games-panel .calendar-game-toggle {
+    width: 44px;
+    height: 44px;
+  }
+  .calendar-caption-tools {
+    display: inline-flex;
+    flex: 1 0 auto;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+  }
+  .calendar-caption-tools > .numeral {
+    margin-right: 4px;
+  }
+  .calendar-caption-tools .calendar-tool {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .calendar-caption-tools .calendar-tool[data-icon-only] {
+    border-color: transparent;
+    background: none;
+    color: var(--color-muted);
+  }
+}
+
+/* ---------- Board ---------- */
+.tl-board {
+  --tl-label: 248px;
+  --tl-row: 32px;
+  --tl-head: 40px;
+  position: relative;
+  margin: 0 calc(-1 * var(--page-gutter)) 32px;
+  touch-action: pan-y;
+}
+@media (max-width: 1199px) {
+  .tl-board {
+    --tl-label: 196px;
+  }
+}
+@media (max-width: 1023px) {
+  .tl-board {
+    --tl-label: 160px;
+  }
+}
+.tl-board[data-compact] {
+  --tl-label: 0px;
+  --tl-head: 36px;
+  margin-inline: 0;
+}
+.tl-row {
+  display: grid;
+  grid-template-columns: var(--tl-label) minmax(0, 1fr);
+  min-height: var(--tl-row);
+  align-items: center;
+}
+.tl-track {
+  position: relative;
+  height: var(--tl-row);
+  min-width: 0;
+}
+.tl-board:not([data-compact]) .tl-track {
+  margin-right: var(--page-gutter);
+}
+.tl-label {
+  min-width: 0;
+  margin: 0;
+}
+.tl-ruler {
+  display: grid;
+  grid-template-columns: var(--tl-label) minmax(0, 1fr);
+  border-bottom: 1px solid var(--color-line-hairline);
+}
+.tl-ruler .tl-track {
+  height: 58px;
+}
+.tl-days {
+  position: absolute;
+  inset: 0;
+}
+.tl-day {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  padding-bottom: 4px;
+  color: var(--color-muted);
+  font-size: var(--text-caption);
+  line-height: 1;
+}
+.tl-day b {
+  padding: 3px 6px;
+  border-radius: 8px;
+  color: var(--color-fg-soft);
+  font-size: var(--text-meta);
+  font-weight: 600;
+}
+.tl-day[data-weekend] b {
+  color: var(--color-muted);
+  font-weight: 500;
+}
+.tl-day[data-today] b {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+.tl-month {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  color: var(--color-fg-soft);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.tl-body {
+  position: relative;
+}
+.tl-overlay {
+  position: absolute;
+  inset: 0 0 0 var(--tl-label);
+  pointer-events: none;
+}
+.tl-board:not([data-compact]) .tl-overlay {
+  right: var(--page-gutter);
+}
+.tl-weekend {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--color-fg) 2.5%, transparent);
+}
+.tl-now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 3;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--color-accent);
+}
+
+/* ---------- A game ---------- */
+.tl-game {
+  position: relative;
+  padding: 6px 0 10px;
+  border-bottom: 1px solid var(--color-line-hairline);
+}
+.tl-head {
+  min-height: var(--tl-head);
+}
+.tl-head .tl-track {
+  height: var(--tl-head);
+}
+.tl-head-button {
+  display: flex;
+  width: 100%;
+  min-height: var(--tl-head);
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px 0 calc(var(--page-gutter) - 4px);
+  border-radius: var(--radius-ui-md);
+  text-align: left;
+}
+@media (hover: hover) {
+  .tl-head-button:hover {
+    background: var(--color-fill-1);
+  }
+}
+.tl-head-text {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 10px;
+  line-height: 1.2;
+}
+.tl-head-name {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tl-head-count {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-muted);
+  font-size: var(--text-caption);
+  white-space: nowrap;
+}
+.tl-chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--color-muted);
+  transition: rotate var(--dur-fast) var(--ease-out);
+}
+.tl-game:not([data-open]) .tl-chevron {
+  rotate: -90deg;
+}
+.tl-row-label,
+.tl-summary-text {
+  padding-left: calc(var(--page-gutter) + 34px);
+  padding-right: 12px;
+  color: var(--color-muted);
+  font-size: var(--text-caption);
+}
+.tl-summary-text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--color-fg-soft);
+  line-height: 1.25;
+}
+.tl-note {
+  margin: 2px 0 4px;
+  padding-left: calc(var(--page-gutter) + 34px);
+}
+.tl-content,
+.tl-rows {
+  position: relative;
+}
+.tl-density i {
+  position: absolute;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--ink);
+  opacity: 0.6;
+}
+
+/* ---------- Bars ---------- */
+.tl-bar {
+  position: absolute;
+  top: 4px;
+  height: 24px;
+}
+.tl-open {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 7px;
+}
+.tl-face {
+  position: absolute;
+  inset: 0;
+  /* Above the open button, which it lets clicks through to, so the tick stays on top. */
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--ink) 50%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--ink) 16%, transparent);
+  color: var(--color-fg);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .tl-bar:hover .tl-face {
+    background: color-mix(in srgb, var(--ink) 24%, transparent);
+  }
+}
+.tl-bar:focus-within .tl-face {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 55%, transparent);
+}
+.tl-bar[data-cut-start] .tl-face {
+  border-left-style: dashed;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.tl-bar[data-cut-end] .tl-face {
+  border-right-style: dashed;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.tl-bar[data-predicted] .tl-face {
+  border: 1.5px dashed var(--ink);
+  background: none;
+}
+.tl-name {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+}
+.tl-tag {
+  flex-shrink: 0;
+  color: var(--color-fg-soft);
+  font-weight: 500;
+}
+.tl-left {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+.tl-bar[data-done] .tl-face {
+  opacity: 0.5;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+.tl-bar[data-done] [data-event-title] {
+  text-decoration: line-through;
+}
+/* The tick takes no room until the pointer or focus reaches its bar, and stays
+   reachable by keyboard all the while. */
+.tl-tick {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: 0;
+  height: 16px;
+  flex-shrink: 0;
+  margin-right: -6px;
+  place-items: center;
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: auto;
+  transition:
+    width var(--dur-fast) var(--ease-out),
+    margin var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+}
+/* A larger hit area than the 16px ring it draws. */
+.tl-tick::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+.tl-bar:hover .tl-tick,
+.tl-bar:focus-within .tl-tick,
+.tl-bar[data-done] .tl-tick {
+  width: 16px;
+  margin-right: 0;
+  opacity: 1;
+  box-shadow: inset 0 0 0 1.5px var(--color-fg-soft);
+}
+.tl-bar[data-done] .tl-tick {
+  box-shadow: none;
+  color: var(--color-ok-fg);
+}
+.tl-tick svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---------- Milestones, maintenance ---------- */
+.tl-diamond {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  background: var(--ink, var(--color-fg-soft));
+  rotate: 45deg;
+}
+.tl-milestone {
+  position: absolute;
+  top: 4px;
+  display: flex;
+  height: 24px;
+  align-items: center;
+  gap: 7px;
+  translate: -6px 0;
+  color: var(--color-fg);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tl-milestone .tl-open {
+  inset: -2px -4px;
+}
+.tl-milestone-name {
+  pointer-events: none;
+}
+.tl-milestone[data-done] {
+  opacity: 0.5;
+}
+.tl-milestone[data-done] .tl-milestone-name {
+  text-decoration: line-through;
+}
+.tl-bands {
+  position: absolute;
+  inset: 0 0 0 var(--tl-label);
+  pointer-events: none;
+}
+.tl-board:not([data-compact]) .tl-bands {
+  right: var(--page-gutter);
+}
+.tl-maint {
+  position: absolute;
+  top: 0;
+  bottom: -2px;
+  border-radius: 6px;
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-danger) 24%, transparent) 0 5px,
+    color-mix(in srgb, var(--color-danger) 7%, transparent) 5px 10px
+  );
+  pointer-events: auto;
+}
+.tl-rows [role='group'] {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+.tl-rows .tl-bar,
+.tl-rows .tl-milestone {
+  pointer-events: auto;
+}
+.tl-maint-label {
+  position: absolute;
+  bottom: 2px;
+  translate: -50% 0;
+  color: var(--color-danger-fg);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ---------- Legend and hint ---------- */
+/* Tags read as words before the name, not as chips, inside a bar. */
+.tl-face [data-event-tag] {
+  border: 0;
+  padding: 0;
+  color: var(--color-fg-soft);
+  font-weight: 500;
+}
+.tl-face [data-event-tag]::after {
+  content: ' ·';
+}
+.tl-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding: 14px var(--page-gutter) 0 calc(var(--tl-label) + 4px);
+}
+.tl-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.tl-legend-tick {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1.5px var(--color-fg-soft);
+}
+.tl-legend-predicted,
+.tl-legend-maint {
+  width: 22px;
+  height: 12px;
+  border-radius: 4px;
+}
+.tl-legend-predicted {
+  border: 1.5px dashed var(--color-fg-soft);
+}
+.tl-legend-maint {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-danger) 50%, transparent) 0 4px,
+    color-mix(in srgb, var(--color-danger) 12%, transparent) 4px 8px
+  );
+}
+.tl-hint {
+  margin: 12px 0 0;
+}
+
+/* ---------- Phone ---------- */
+.tl-board[data-compact] .tl-row,
+.tl-board[data-compact] .tl-ruler {
+  grid-template-columns: minmax(0, 1fr);
+}
+.tl-board[data-compact] .tl-head .tl-label,
+.tl-board[data-compact] .tl-summary .tl-label {
+  grid-column: 1 / -1;
+}
+.tl-board[data-compact] .tl-head-button {
+  gap: 8px;
+  padding: 0;
+}
+.tl-board[data-compact] .tl-head-name {
+  font-size: 14px;
+}
+.tl-board[data-compact] .tl-summary-text,
+.tl-board[data-compact] .tl-note {
+  padding-left: 32px;
+  font-size: var(--text-meta);
+}
+.tl-board[data-compact] .tl-game {
+  padding: 4px 0 8px;
+}
+.tl-board[data-compact] .tl-bar {
+  top: 3px;
+  height: 26px;
+}
+.tl-board[data-compact] .tl-face {
+  gap: 5px;
+  padding: 0 7px;
+}
+.tl-board[data-compact] .tl-ruler .tl-track {
+  height: 44px;
+}
+.tl-board[data-compact] .tl-day {
+  justify-content: flex-start;
+  gap: 1px;
+  padding: 3px 0 0;
+}
+.tl-board[data-compact] .tl-month {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-game-toggle,
+  .calendar-tool,
+  .tl-chevron,
+  .tl-face,
+  .tl-tick {
+    transition: none;
   }
 }

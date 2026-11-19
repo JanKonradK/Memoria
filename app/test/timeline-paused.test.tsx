@@ -40,10 +40,10 @@ const events = [
 ];
 const fixture: AppState = { ...emptyState(), games: [active, paused, deleted], events };
 
-function show(view: 'lanes' | 'agenda', options: { focus?: string; finished?: boolean } = {}) {
+function show(view: 'lanes' | 'agenda', options: { hide?: string[]; finished?: boolean } = {}) {
   useApp.setState({ state: structuredClone(fixture) });
   useUI.setState({
-    timelineGameId: options.focus ?? null,
+    timelineHiddenGameIds: options.hide ?? [],
     timelineView: view,
     timelineShowFinished: options.finished ?? false,
   });
@@ -56,7 +56,7 @@ function show(view: 'lanes' | 'agenda', options: { focus?: string; finished?: bo
 
 afterEach(() => {
   useApp.setState({ state: emptyState() });
-  useUI.setState({ timelineGameId: null, timelineView: null, timelineShowFinished: false });
+  useUI.setState({ timelineHiddenGameIds: [], timelineView: null, timelineShowFinished: false });
 });
 
 describe.each(['lanes', 'agenda'] as const)('paused games in %s', (view) => {
@@ -68,7 +68,7 @@ describe.each(['lanes', 'agenda'] as const)('paused games in %s', (view) => {
     expect(screen.queryByText('Secret upcoming')).not.toBeInTheDocument();
     expect(screen.queryByText('Secret finished')).not.toBeInTheDocument();
     expect(screen.queryByText('Deleted account event')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Expand Shared game.*Alt/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Shared game .*Alt/ })).not.toBeInTheDocument();
     expect(useApp.getState().state.events).toEqual(events);
   });
 
@@ -93,8 +93,8 @@ describe.each(['lanes', 'agenda'] as const)('paused games in %s', (view) => {
     expect(container.querySelectorAll('[data-event-id], [data-list-event]')).toHaveLength(1);
   });
 
-  it('keeps a paused game focus without showing another account or an add-event empty state', () => {
-    const { container } = show(view, { focus: paused.id });
+  it('keeps a paused game shown alone without another account or an add-event empty state', () => {
+    const { container } = show(view, { hide: [active.id] });
     expect(screen.getByText('0 events')).toBeInTheDocument();
     expect(container.querySelectorAll('[data-paused-game]')).toHaveLength(1);
     expect(screen.queryByText('Main')).not.toBeInTheDocument();

@@ -1,6 +1,5 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { openSettings } from './support';
+import { openSettings, calendarAxe } from './support';
 import { emptyState } from '@memoria/shared';
 import { makeEvent, makeGame } from '../../shared/test/helpers';
 
@@ -56,11 +55,7 @@ test('an event on the calendar opens a quick view where it is pinned and ticked 
   // Scan the settled sheet, not a frame of its entrance fade.
   await expect(view.locator('..')).toHaveCSS('transform', 'none');
   await page.waitForTimeout(400);
-  expect(
-    (await new AxeBuilder({ page }).analyze()).violations.filter((issue) =>
-      ['serious', 'critical'].includes(issue.impact ?? ''),
-    ),
-  ).toEqual([]);
+  expect(await calendarAxe(page)).toEqual([]);
   await page.screenshot({ path: info.outputPath('event-quick-view.png') });
 
   await view.getByRole('button', { name: 'Pin', exact: true }).click();

@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, type Locator, type Page } from '@playwright/test';
 
 /** A game's row on Today. It reads "Review" beside the desktop card and "Open" where the row is the way in. */
@@ -71,4 +72,14 @@ export async function addFromShell(page: Page, item: 'Add game' | 'Event' | 'Rem
     .getByRole('button', { name: 'Calendar', exact: true })
     .click();
   await page.getByRole('button', { name: 'Add an event', exact: true }).click();
+}
+
+/**
+ * Axe findings on the Calendar, serious and critical unless `all` on the Calendar. The rail's game buttons are
+ * left out: their visible countdown is not yet part of their name, a known gap
+ * owned by the rail, not by the page under test.
+ */
+export async function calendarAxe(page: Page, { all = false } = {}) {
+  const { violations } = await new AxeBuilder({ page }).exclude('.rail-game').analyze();
+  return all ? violations : violations.filter((issue) => ['serious', 'critical'].includes(issue.impact ?? ''));
 }

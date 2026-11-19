@@ -76,3 +76,86 @@ export function timelineDays(start: number, end: number, localTz: string): DateT
   }
   return days;
 }
+
+/** Days before today each range opens on, and how many days it spans. */
+export const TIMELINE_RANGES = {
+  week: { back: 1, days: 7, label: 'Week' },
+  month: { back: TIMELINE_BACK_DAYS, days: TIMELINE_BACK_DAYS + TIMELINE_AHEAD_DAYS, label: '4 weeks' },
+  season: { back: TIMELINE_BACK_DAYS, days: 63, label: 'Season' },
+} as const;
+export type TimelineRangeKey = keyof typeof TIMELINE_RANGES;
+
+/**
+ * The range on screen, in whole local days, moved `weeks` away from the one
+ * that holds now. A week opens on yesterday, so the day just gone stays in view.
+ */
+export function rangeWindow(
+  now: number,
+  localTz: string,
+  range: TimelineRangeKey,
+  weeks = 0,
+): { start: number; end: number } {
+  const { back, days } = TIMELINE_RANGES[range];
+  const first = DateTime.fromMillis(now, { zone: localTz }).startOf('day').minus({ days: back }).plus({ weeks });
+  return { start: first.toMillis(), end: first.plus({ days }).toMillis() };
+}
+
+const HOUR = 3_600_000;
+const DAY = 86_400_000;
+
+export type BarTone = 'rose' | 'warn' | 'muted' | 'ok';
+
+/** Time left, short enough to sit inside a bar: "5h", "2d 4h", "12d". */
+export function shortLeft(ms: number): string {
+  if (ms < HOUR) return `${Math.max(1, Math.floor(ms / 60_000))}m`;
+  if (ms < DAY) return `${Math.floor(ms / HOUR)}h`;
+  if (ms < 3 * DAY) return `${Math.floor(ms / DAY)}d ${Math.floor((ms % DAY) / HOUR)}h`;
+  return `${Math.floor(ms / DAY)}d`;
+}
+
+/**
+ * What a bar says at its end. A running event counts down, rose under a day and
+ * amber under three; one still to come says when it arrives; one that runs past
+ * the range names its last day instead of a number nobody can see the end of.
+ */
+export function barCountdown(
+  event: { start: number; end: number; done?: boolean },
+  now: number,
+  rangeEnd: number,
+  localTz: string,
+): { label: string; tone: BarTone } {
+  if (event.done) return { label: 'done', tone: 'ok' };
+  if (event.end <= now) return { label: 'ended', tone: 'muted' };
+  if (event.start > now) return { label: `in ${shortLeft(event.start - now)}`, tone: 'muted' };
+  const left = event.end - now;
+  if (event.end > rangeEnd && left >= 3 * DAY) {
+    return { label: `to ${DateTime.fromMillis(event.end, { zone: localTz }).toFormat('d LLL')}`, tone: 'muted' };
+  }
+  return { label: shortLeft(left), tone: left < DAY ? 'rose' : left < 3 * DAY ? 'warn' : 'muted' };
+}
+
+/**
+ * One line for a collapsed game: what ends first and how much ends with it on
+ * the same day, "VOLT TRIP and 8 more end today".
+ */
+export function collapsedSummary(
+  events: readonly { name: string; type: string; start: number; end: number; done?: boolean }[],
+  now: number,
+  localTz: string,
+  withTime = false,
+): string {
+  const running = events
+    .filter((e) => !e.done && e.start <= now && e.end > now && e.type !== 'maintenance' && e.type !== 'livestream')
+    .sort((a, b) => a.end - b.end || a.name.localeCompare(b.name));
+  const first = running[0];
+  if (!first) {
+    const coming = events.filter((e) => !e.done && e.start > now).length;
+    return coming > 0 ? `${coming} coming, nothing running` : 'Nothing running';
+  }
+  const end = DateTime.fromMillis(first.end, { zone: localTz });
+  const today = DateTime.fromMillis(now, { zone: localTz }).startOf('day');
+  const more = running.filter((e) => DateTime.fromMillis(e.end, { zone: localTz }).hasSame(end, 'day')).length - 1;
+  const days = Math.round(end.startOf('day').diff(today, 'days').days);
+  const when = days === 0 ? 'today' : days === 1 ? 'tomorrow' : end.toFormat('ccc d LLL');
+  return `${first.name}${more > 0 ? ` and ${more} more end` : ' ends'} ${when}${withTime ? ` at ${end.toFormat('HH:mm')}` : ''}`;
+}
