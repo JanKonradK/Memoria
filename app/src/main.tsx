@@ -8,6 +8,7 @@ import { initPwa } from './pwa';
 import { initNative, isNativeApp } from './native';
 import { accentFor, applyTheme, useUI } from './ui-store';
 import { isDesktopApp } from './desktop-host';
+import { holdThemeColor, initSplash } from './splash';
 import './index.css';
 // These aggregate weight files are the ONLY @fontsource entry points that carry
 // `unicode-range` per subset — the per-subset files (latin-400.css,
@@ -45,6 +46,9 @@ const loadMotionFeatures = () => import('./motion-features').then((module) => mo
   const { theme, palette, accents } = useUI.getState();
   applyTheme(theme, palette, accentFor(accents, palette));
 }
+// The intro in index.html is already playing; this arranges its exit.
+holdThemeColor();
+initSplash();
 // Following the device: a change of its light or dark setting applies at once.
 window.matchMedia?.('(prefers-color-scheme: light)').addEventListener?.('change', () => {
   const { themePreference, setThemePreference } = useUI.getState();

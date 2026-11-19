@@ -44,6 +44,8 @@ First-run setup picks games and servers. After it, three hints appear once each,
 
 Motion explains a change of state; it is never decoration. Keep the coin flip, the tick, the strike-through, numbers counting to a new value, rows gliding to a new place, and the logo travelling between a row and its page. Nothing loops while idle except the small breathing dot on an urgent game, which pauses off screen, in hidden tabs and under reduced motion. Reduced motion changes the view immediately. Route content is usable at once.
 
+The one piece of motion that is not a change of state is the intro, and it earns its place by covering the load. It lives in `index.html` and paints before any script: one still frame of the ground (#0c0d0f, the same as Android's launch screen and the PC window, so the hand-off is seamless), then the mark fades in as a ghost, lights up left to right, catches one glint and settles in a warm glow (about 2.5 s). The app loads and renders underneath. `splash.ts` lifts it only after the first real screen has drawn and the intro has played: the mark leans in and is gone, then the ground lifts off a finished page. If the app needs longer, the glow breathes until it is ready, and gives up at 9 s. A tap skips the rest once the app is ready. It animates only opacity and transform, on layers promoted from the first frame, so the compositor keeps it at full frame rate however busy the page is. Under reduced motion it is a short fade. Automated browsers skip it.
+
 ## Validation
 
 Run `npm run check` and the relevant Playwright specs. Inspect desktop, phone, small phone and light mode for overflow, focus, touch targets, contrast and preserved edits. A design change does not change storage or sync.

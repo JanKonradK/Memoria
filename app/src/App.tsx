@@ -22,6 +22,7 @@ import { useTabSwipe } from './gestures';
 import { AppRail } from './components/shell/AppRail';
 import { Onboarding } from './components/Onboarding';
 import { Btn } from './components/ui';
+import { splashDone } from './splash';
 
 /** The rail's order, top to bottom: Today, then Calendar, then Settings. */
 const TAB_ORDER = ['today', 'timeline', 'settings'] as const;
@@ -31,6 +32,12 @@ const tabRank = (tab: Tab) => (tab === 'home' ? 0.5 : TAB_ORDER.indexOf(tab));
 const ONBOARDING_KEY = 'memoria-onboarding';
 /** The key this flag shipped under before the rename; still honoured on read. */
 const LEGACY_ONBOARDING_KEY = 'void-onboarding';
+
+/** Rendered with the first real screen: the intro may leave once this has drawn. */
+function SplashDone() {
+  useEffect(splashDone, []);
+  return null;
+}
 
 function onboardingComplete(): boolean {
   try {
@@ -286,6 +293,7 @@ export default function App() {
   if (loadError) {
     return (
       <main className="flex min-h-dvh items-center justify-center px-5 py-12">
+        <SplashDone />
         <section className="glass gold-hairline w-full max-w-lg rounded-ui-card p-6" role="alert">
           <p className="text-meta font-bold uppercase tracking-widest text-danger-fg">Local data unavailable</p>
           <h1 className="mt-2 text-heading font-black text-fg-soft">Could not open your data</h1>
@@ -328,12 +336,15 @@ export default function App() {
 
   if (setup && !hasGames)
     return (
-      <Onboarding
-        onComplete={() => {
-          markOnboardingComplete();
-          setSetup(false);
-        }}
-      />
+      <>
+        <SplashDone />
+        <Onboarding
+          onComplete={() => {
+            markOnboardingComplete();
+            setSetup(false);
+          }}
+        />
+      </>
     );
 
   return (
@@ -398,6 +409,8 @@ export default function App() {
           <PageFrame key={tab} tab={tab} direction={direction} positions={pagePositions}>
             {tab === 'settings' ? <SettingsPage /> : <LivePage tab={tab} />}
           </PageFrame>
+          {/* Commits with the page, once its lazy chunk has arrived. */}
+          <SplashDone />
         </Suspense>
       </main>
 

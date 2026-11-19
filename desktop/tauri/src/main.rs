@@ -734,7 +734,7 @@ fn create_window(app: &AppHandle, token: &str) -> tauri::Result<()> {
         .title("Memoria")
         .min_inner_size(360.0, 480.0)
         .visible(false)
-        .background_color(tauri::window::Color(16, 16, 21, 255))
+        .background_color(tauri::window::Color(12, 13, 15, 255))
         .data_directory(state.data.join("webview"))
         .initialization_script(&script)
         .on_navigation(move |url| {

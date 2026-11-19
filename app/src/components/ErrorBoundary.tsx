@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { splashDone } from '../splash';
 import { Btn } from './ui';
 
 interface Props {
@@ -18,6 +19,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('Memoria render failed', error, info);
+    splashDone();
   }
 
   render() {

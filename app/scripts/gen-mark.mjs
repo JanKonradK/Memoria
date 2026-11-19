@@ -7,7 +7,7 @@
 // to the APP ICON (taskbar, home screen, install prompt), where the tile is the
 // product; a tab strip or a dark nav rail wants the mark alone so it sits on
 // whatever is behind it.
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { markAspect, markPath } from './mobius.mjs';
 
@@ -71,4 +71,16 @@ export const MARK_HEIGHT = ${LOGO_HEIGHT};
 
 writeFileSync(join(app, 'public', 'favicon.svg'), favicon);
 writeFileSync(join(app, 'src', 'components', 'mark-path.ts'), module);
+
+// The intro in index.html masks its mark with the same outline. It has to be
+// inline there: the splash paints before any stylesheet or script arrives.
+const indexPath = join(app, 'index.html');
+const splashMask = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${LOGO_WIDTH} ${LOGO_HEIGHT}'%3E%3Cpath d='${logoPath}'/%3E%3C/svg%3E")`;
+const index = readFileSync(indexPath, 'utf8');
+const masked = index.replace(/--splash-mark: url\("[^"]*"\);/, `--splash-mark: ${splashMask};`);
+if (masked === index && !index.includes(splashMask)) throw new Error('index.html has no --splash-mark to update');
+writeFileSync(
+  indexPath,
+  masked.replace(/aspect-ratio: [\d.]+ \/ 24;/, `aspect-ratio: ${LOGO_WIDTH} / ${LOGO_HEIGHT};`),
+);
 console.log(`favicon.svg (${faviconPath.length} chars) and mark-path.ts (${logoPath.length} chars) written`);
