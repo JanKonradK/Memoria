@@ -1,9 +1,18 @@
-import type { AppState, EnergyProjection, Resource, ChecklistItem, GameUrgency, Snapshot } from '@memoria/shared';
+import type {
+  AppState,
+  EnergyProjection,
+  Resource,
+  ChecklistItem,
+  GameUrgency,
+  Snapshot,
+  TodayPlan,
+} from '@memoria/shared';
 import {
   buildUrgencyContext,
   effectiveResourceKind,
   measuredSnapshot,
   projectEnergy,
+  todaySteps,
   urgencyOrder,
 } from '@memoria/shared';
 import { useApp } from './store';
@@ -23,6 +32,8 @@ export interface Derived {
   checklistByGame: Map<string, ChecklistItem[]>;
   primaryEnergy(gameId: string): PrimaryEnergy;
   agenda(mode: AgendaMode): AgendaData;
+  /** Today's steps across every game: ordered, grouped, with the week after. */
+  todaySteps(): TodayPlan;
 }
 
 let cache: { state: AppState; now: number; derived: Derived } | undefined;
@@ -41,6 +52,7 @@ function createDerived(state: AppState, now: number): Derived {
     if (!current || resource.sort < current.sort) primaryByGame.set(resource.gameId, resource);
   }
   const agendaByMode = new Map<AgendaMode, AgendaData>();
+  let plan: TodayPlan | undefined;
 
   return {
     state,
@@ -71,7 +83,16 @@ function createDerived(state: AppState, now: number): Derived {
       agendaByMode.set(mode, result);
       return result;
     },
+    todaySteps() {
+      plan ??= todaySteps(state, now, urgencyContext);
+      return plan;
+    },
   };
+}
+
+/** The steps still open on Today, for the rail's Today badge. */
+export function todayStepsLeft(derived: Derived): number {
+  return derived.todaySteps().open;
 }
 
 /** Shared one-entry derived-data cache keyed by Zustand state and clock identity. */

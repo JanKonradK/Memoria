@@ -25,7 +25,8 @@ import { TodayNotices } from './TodayNotices';
 import { TodayCodes } from './TodayCodes';
 import { ProgressBar } from './primitives';
 import { Btn, Page, Tooltip, TOUCH_BUTTON } from './ui';
-import { PageBar, PageTitle } from './shell/PageBar';
+import { PageBar, PageBarEnd, PageTitle } from './shell/PageBar';
+import { TodaySteps } from './today/TodaySteps';
 import '../today.css';
 
 const URGENT_MS = 2 * 60 * 60_000;
@@ -401,19 +402,76 @@ export function TodayPage({ now }: { now: number }) {
   // One list, soonest first. Paused games follow, dimmed.
   const games = [...order.filter((entry) => !entry.game.paused), ...order.filter((entry) => entry.game.paused)];
   const selected = order.find((entry) => entry.game.id === selectedId) ?? games[0];
-  const date = DateTime.fromMillis(now, { zone: state.settings.localTz }).toFormat('cccc, d LLLL');
+  const phone = useMediaQuery('(max-width: 767px)');
+  const date = DateTime.fromMillis(now, { zone: state.settings.localTz }).toFormat(phone ? 'ccc d LLL' : 'cccc d LLLL');
   const listRef = useFlip<HTMLDivElement>('[data-roster-game]', (node) => node.dataset.rosterGame ?? null);
   const allClear = selectAllClear(derived);
   const [showGames, setShowGames] = useState(false);
   const listFolded = Boolean(allClear) && !showGames && !desktop;
+  const view = useUI((ui) => ui.todayView);
+  const setView = useUI((ui) => ui.setTodayView);
+  const plan = derived.todaySteps();
+  const doneCount = plan.total - plan.open;
 
   return (
     <Page className="today-page">
-      <PageBar>
-        <PageTitle sub={date}>Today</PageTitle>
+      <PageBar className="today-bar">
+        <PageTitle
+          sub={
+            <>
+              {date}
+              {phone && plan.total > 0 && (
+                <span className="numeral">
+                  {' '}
+                  · {doneCount}/{plan.total} done
+                </span>
+              )}
+            </>
+          }
+        >
+          Today
+        </PageTitle>
+        {order.length > 0 && (
+          <div className="view-switch" role="group" aria-label="Today view">
+            {(['steps', 'games'] as const).map((option) => (
+              <button key={option} type="button" aria-pressed={view === option} onClick={() => setView(option)}>
+                {option === 'steps' ? 'Steps' : 'Games'}
+              </button>
+            ))}
+          </div>
+        )}
+        {plan.total > 0 && !phone && (
+          <PageBarEnd>
+            <span className="today-progress">
+              <span className="numeral">
+                {doneCount} of {plan.total} done
+              </span>
+              <span className="today-progress-tube" aria-hidden>
+                <span style={{ width: `${(doneCount / plan.total) * 100}%` }} />
+              </span>
+            </span>
+          </PageBarEnd>
+        )}
       </PageBar>
       <TodayNotices now={now} />
-      {order.length === 0 ? (
+      {order.length > 0 && view === 'steps' ? (
+        <TodaySteps
+          derived={derived}
+          empty={
+            allClear ? (
+              <AllClearNote
+                clear={allClear}
+                zone={state.settings.localTz}
+                folded={false}
+                gameCount={games.length}
+                onShowGames={() => setView('games')}
+              />
+            ) : (
+              <p className="aside today-clear text-meta text-muted">Nothing caps, resets or ends in the next day.</p>
+            )
+          }
+        />
+      ) : order.length === 0 ? (
         <section className="today-empty">
           <h2 className="text-heading font-semibold text-fg">No games yet</h2>
           <div className="mt-5 flex flex-wrap gap-2">

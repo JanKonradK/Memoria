@@ -1,0 +1,296 @@
+import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { DateTime } from 'luxon';
+import type { TodayPlan, TodayStep, TodayStepGroup, TodayWeekItem } from '@memoria/shared';
+import type { Derived } from '../../selectors';
+import { useMediaQuery } from '../../hooks';
+import { gameInk, legible } from '../../game-color';
+import { useGround, useInset } from '../../theme';
+import { useIdentityColors } from '../roster';
+import { GameLogo } from '../GameLogo';
+import { DayStrip } from './DayStrip';
+import { StepRow, stepWhat, type StepGame } from './StepRow';
+import { TodaySide } from './TodaySide';
+import { cadenceNoun, groupTone, hhmm, listNames, weekWhen } from './step-format';
+import './today-steps.css';
+
+/** A group longer than this folds after its first few rows. */
+const FOLD_OVER = 5;
+const FOLD_SHOWN = 4;
+const WEEK_SHOWN = 6;
+/** Finished rows have no reset of their own to name. */
+const DONE_GROUP: TodayStepGroup = { key: 'done', kind: 'reset', at: 0, steps: [], gameIds: [] };
+
+interface Layout {
+  groups: Array<{ group: TodayStepGroup; steps: TodayStep[] }>;
+  done: TodayStep[];
+}
+
+function layoutOf(plan: TodayPlan): Layout {
+  return { groups: plan.groups.map((group) => ({ group, steps: group.steps })), done: plan.done };
+}
+
+/**
+ * The rows keep the places they had when the player reached into the list.
+ * Typing a new value moves its cap and ticking a daily finishes it; neither may
+ * pull a row out from under the pointer or the keyboard. Values stay live; only
+ * the order waits until the player leaves the list.
+ */
+function heldLayout(plan: TodayPlan, held: Layout | null): Layout {
+  if (!held) return layoutOf(plan);
+  const live = new Map<string, TodayStep>();
+  for (const group of plan.groups) for (const step of group.steps) live.set(step.key, step);
+  for (const step of plan.done) live.set(step.key, step);
+  const placed = new Set<string>();
+  const pick = (steps: TodayStep[]) =>
+    steps.flatMap((step) => {
+      const current = live.get(step.key);
+      if (!current) return [];
+      placed.add(step.key);
+      return [current];
+    });
+  const groups = held.groups.map(({ group, steps }) => ({
+    group: plan.groups.find((item) => item.key === group.key) ?? group,
+    steps: pick(steps),
+  }));
+  const done = pick(held.done);
+  // Anything new joins the end of its own group, or a new group at the end.
+  for (const group of plan.groups) {
+    const fresh = group.steps.filter((step) => !placed.has(step.key));
+    if (!fresh.length) continue;
+    const home = groups.find((item) => item.group.key === group.key);
+    if (home) home.steps.push(...fresh);
+    else groups.push({ group, steps: fresh });
+  }
+  return { groups: groups.filter((item) => item.steps.length > 0), done };
+}
+
+function groupTitle(group: TodayStepGroup, plan: TodayPlan, games: Map<string, StepGame>, zone: string, now: number) {
+  if (group.kind === 'hour') return { title: 'Within the hour', sub: `by ${hhmm(now + 3_600_000, zone)}` };
+  if (group.kind === 'evening') {
+    return { title: 'This evening', sub: `before quiet hours at ${hhmm(plan.quiet!.start, zone)}` };
+  }
+  if (group.kind === 'later') {
+    const last = group.steps.at(-1)!.at;
+    const sameDay = DateTime.fromMillis(last, { zone }).hasSame(DateTime.fromMillis(now, { zone }), 'day');
+    return sameDay ? { title: 'Later today', sub: '' } : { title: 'Later', sub: `by ${weekWhen(last, now, zone)}` };
+  }
+  const tasks = group.steps.flatMap((step) => (step.kind === 'task' ? [step.item.cadence] : []));
+  const cadence = tasks.every((item) => item === tasks[0]) ? tasks[0] : undefined;
+  const names = group.gameIds.map((id) => games.get(id)?.game.short ?? '');
+  return {
+    title: `Before the ${hhmm(group.at, zone)} reset`,
+    sub: `${listNames(names)} ${cadence ? cadenceNoun(cadence, 2) : 'tasks'}`,
+  };
+}
+
+function WeekRow({ item, game, now, zone }: { item: TodayWeekItem; game: StepGame; now: number; zone: string }) {
+  const what =
+    item.kind === 'cap'
+      ? `${item.name} caps`
+      : item.kind === 'event'
+        ? `${item.name} ends`
+        : `${item.left === 1 ? item.name : `${item.left} ${cadenceNoun(item.kind, item.left)}`} reset`;
+  return (
+    <li className="today-week-row">
+      <GameLogo game={game.logo} size={28} />
+      <span className="min-w-0 truncate">
+        <b style={{ color: game.text }}>{game.game.short}</b> · {what}
+      </span>
+      <span className="today-week-at numeral">{weekWhen(item.at, now, zone)}</span>
+    </li>
+  );
+}
+
+export function TodaySteps({ derived, empty }: { derived: Derived; empty: ReactNode }) {
+  const { state, now } = derived;
+  const plan = derived.todaySteps();
+  const zone = state.settings.localTz;
+  const ground = useGround();
+  const inset = useInset();
+  const colors = useIdentityColors(state.games);
+  const compact = useMediaQuery('(max-width: 767px)');
+  const games = useMemo(() => {
+    const map = new Map<string, StepGame>();
+    for (const game of state.games) {
+      if (game.deleted || game.paused) continue;
+      const logo = { ...game, ...colors[game.id] };
+      const ink = gameInk(logo, ground);
+      // Checked on the inset well the energy figure sits in, the darker of the two grounds in light mode.
+      map.set(game.id, { game, logo, ink, text: legible(ink, inset, 4.5) });
+    }
+    return map;
+  }, [colors, ground, inset, state.games]);
+
+  // Held while focus or the pointer is in the list; released when both leave.
+  const [held, setHeld] = useState<Layout | null>(null);
+  const inside = useRef({ focus: false, pointer: false });
+  const hold = () => setHeld((current) => current ?? layoutOf(plan));
+  const release = () => {
+    if (!inside.current.focus && !inside.current.pointer) setHeld(null);
+  };
+  const layout = heldLayout(plan, held);
+
+  const [unfolded, setUnfolded] = useState<ReadonlySet<string>>(new Set());
+  const [doneOpen, setDoneOpen] = useState(false);
+  const [weekOpen, setWeekOpen] = useState(false);
+  const week = plan.week.filter((item) => games.has(item.gameId));
+  // Each group's first number: the count runs on across groups, folded rows included.
+  const starts = layout.groups.reduce<number[]>(
+    (acc, _, at) => [...acc, at === 0 ? 1 : acc[at - 1]! + layout.groups[at - 1]!.steps.length],
+    [],
+  );
+
+  return (
+    <>
+      <DayStrip plan={plan} now={now} settings={state.settings} games={games} />
+      <div className="today-steps-body">
+        <div
+          className="today-steps"
+          onFocus={() => {
+            inside.current.focus = true;
+            hold();
+          }}
+          onBlur={(event) => {
+            if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+            inside.current.focus = false;
+            release();
+          }}
+          onPointerEnter={(event) => {
+            if (event.pointerType !== 'mouse') return;
+            inside.current.pointer = true;
+            hold();
+          }}
+          onPointerLeave={() => {
+            inside.current.pointer = false;
+            release();
+          }}
+        >
+          {layout.groups.length === 0 && empty}
+          {layout.groups.map(({ group, steps }, at) => {
+            const { title, sub } = groupTitle(group, plan, games, zone, now);
+            const foldable = group.kind === 'reset' && steps.length > FOLD_OVER && !unfolded.has(group.key);
+            const shown = foldable ? steps.slice(0, FOLD_SHOWN) : steps;
+            const hidden = steps.slice(shown.length);
+            const start = starts[at]!;
+            const rows = shown.map((step, offset) => {
+              const game = games.get(step.gameId);
+              return game ? (
+                <StepRow
+                  key={step.key}
+                  step={step}
+                  group={group}
+                  index={start + offset}
+                  game={game}
+                  now={now}
+                  zone={zone}
+                  settings={state.settings}
+                  compact={compact}
+                />
+              ) : null;
+            });
+            const headingId = `today-group-${group.key}`;
+            const allDaily = hidden.every((step) => step.kind === 'task' && step.item.cadence === 'daily');
+            return (
+              <section key={group.key} className="today-steps-group" aria-labelledby={headingId}>
+                <div className="today-steps-rule">
+                  <h2 id={headingId} data-tone={groupTone(group)}>
+                    {title}
+                  </h2>
+                  {sub && <span>{sub}</span>}
+                </div>
+                <ol start={start} className="today-steps-list">
+                  {rows}
+                </ol>
+                {foldable && (
+                  <button
+                    type="button"
+                    className="today-steps-more"
+                    onClick={() => setUnfolded((current) => new Set(current).add(group.key))}
+                  >
+                    Show {hidden.length} more {allDaily ? cadenceNoun('daily', hidden.length) : 'steps'}
+                  </button>
+                )}
+              </section>
+            );
+          })}
+
+          {week.length > 0 && (
+            <section className="today-steps-group" aria-labelledby="today-group-week">
+              <div className="today-steps-rule">
+                <h2 id="today-group-week" data-tone="calm">
+                  This week
+                </h2>
+                <span>Nothing to do yet, just know it is coming</span>
+              </div>
+              <ul className="today-week-list">
+                {(weekOpen ? week : week.slice(0, WEEK_SHOWN)).map((item) => (
+                  <WeekRow key={item.key} item={item} game={games.get(item.gameId)!} now={now} zone={zone} />
+                ))}
+              </ul>
+              {week.length > WEEK_SHOWN && (
+                <button type="button" className="today-steps-more" onClick={() => setWeekOpen(!weekOpen)}>
+                  {weekOpen ? 'Show less' : `Show ${week.length - WEEK_SHOWN} more this week`}
+                </button>
+              )}
+            </section>
+          )}
+
+          {layout.done.length > 0 && (
+            <section className="today-steps-done" aria-label="Done today">
+              <button
+                type="button"
+                className="today-steps-done-toggle"
+                aria-expanded={doneOpen}
+                aria-controls="today-done-list"
+                onClick={() => setDoneOpen(!doneOpen)}
+              >
+                <svg viewBox="0 0 20 20" aria-hidden className="icon h-4 w-4" fill="none" stroke="currentColor">
+                  <path d="m7 5 5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span className="text-fg-soft">
+                  Done today · <span className="numeral">{layout.done.length}</span>
+                </span>
+                {!doneOpen && (
+                  <span className="truncate text-muted">
+                    {' '}
+                    ·{' '}
+                    {listNames([
+                      ...layout.done
+                        .slice(0, 2)
+                        .map(
+                          (step) =>
+                            `${games.get(step.gameId)?.game.short ?? ''} ${stepWhat(step).replace(/^Finish /, '')}`,
+                        ),
+                      ...(layout.done.length > 2 ? [`${layout.done.length - 2} more`] : []),
+                    ])}
+                  </span>
+                )}
+              </button>
+              {doneOpen && (
+                <ul id="today-done-list" className="today-steps-list">
+                  {layout.done.map((step) => {
+                    const game = games.get(step.gameId);
+                    return game ? (
+                      <StepRow
+                        key={step.key}
+                        step={step}
+                        group={DONE_GROUP}
+                        index={0}
+                        game={game}
+                        now={now}
+                        zone={zone}
+                        settings={state.settings}
+                        compact={compact}
+                      />
+                    ) : null;
+                  })}
+                </ul>
+              )}
+            </section>
+          )}
+        </div>
+        <TodaySide state={state} now={now} games={games} />
+      </div>
+    </>
+  );
+}
