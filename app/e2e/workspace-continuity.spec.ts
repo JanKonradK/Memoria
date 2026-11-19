@@ -37,11 +37,13 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     expect(scroll).toBeGreaterThan(0);
     await row.click();
     const back = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true });
-    await expect(back).toBeFocused();
+    // The game's page takes focus at its heading; the rail's Today leads back.
+    const heading = page.locator('.focus-workspace h1');
+    await expect(heading).toBeFocused();
     await expect(page.locator('.focus-workspace')).toBeVisible();
     if (reducedMotion === 'no-preference') {
       // Pause the actual content arrival partway through, then reverse with
-      // the focused Back button. A pointer click would wait for it to settle.
+      // the keyboard on the rail's Today. A pointer click would wait for it to settle.
       const arrival = await page.locator('.focus-workspace').evaluate((node) => {
         const animation = node.getAnimations()[0];
         if (!animation) return null;
@@ -67,7 +69,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     await expect(page.locator('.today-page')).toHaveCSS('transform', 'none');
     await expect(page.locator('.today-page')).toHaveCSS('opacity', '1');
     await returned.press('Enter');
-    await expect(back).toBeFocused();
+    await expect(heading).toBeFocused();
     await expect(page.locator('.focus-workspace')).toBeVisible();
     await expect(page.locator('.focus-workspace')).toHaveCSS('transform', 'none');
     await expect(page.locator('.focus-workspace')).toHaveCSS('opacity', '1');

@@ -77,7 +77,7 @@ export function useTabSwipe(onSwipe: (direction: 1 | -1) => void) {
       const target = event.target as HTMLElement;
       if (target.closest(INTERACTIVE)) return;
       // Anything that scrolls sideways already means something by a sideways
-      // drag: the timeline ruler, the app bar's action strip, the game rails.
+      // drag: the timeline ruler, a page bar's tabs, the dock's games.
       for (let node: HTMLElement | null = target; node; node = node.parentElement) {
         if (node.scrollWidth > node.clientWidth + 1) return;
       }

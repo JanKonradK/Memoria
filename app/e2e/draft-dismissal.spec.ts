@@ -1,4 +1,4 @@
-import { addFromShell } from './support';
+import { addFromShell, openSettings } from './support';
 import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }, info) => {
@@ -155,7 +155,8 @@ test('event and reminder forms save from Enter and explain invalid dates', async
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.locator('[data-layer=sheet]')).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  // The reminder was added from Settings → Reminders; its game's own list is under Games.
+  await openSettings(page, 'Games');
   await page.getByRole('button', { name: 'Game settings for Genshin Impact', exact: true }).click();
   await page.getByRole('tab', { name: 'Reminders', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Edit reminder Keyboard reminder', exact: true })).toBeVisible();

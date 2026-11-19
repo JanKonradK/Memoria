@@ -127,16 +127,17 @@ test('first run sets up games, then shows hints in place, and fits the viewport'
 });
 
 test('empty app is accessible and fits the viewport', async ({ page }) => {
-  const appBar = page.locator('header');
-  await expect(appBar).toBeVisible();
-  await expect.poll(() => appBar.evaluate((bar) => getComputedStyle(bar).position)).toBe('sticky');
+  // Each page has its own sticky bar; the rail is the navigation.
+  const pageBar = page.locator('header.page-bar');
+  await expect(pageBar).toBeVisible();
+  await expect.poll(() => pageBar.evaluate((bar) => getComputedStyle(bar).position)).toBe('sticky');
   await expect(page.getByRole('button', { name: 'Today', exact: true })).toHaveAttribute('aria-current', 'page');
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
   await expectSoundDocumentStructure(page);
 
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Event timeline' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Calendar', level: 1 })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Calendar', exact: true })).toHaveAttribute('aria-current', 'page');
   await expectNoPageOverflow(page);
   await expectSoundDocumentStructure(page);
@@ -304,9 +305,9 @@ test('wide Today opens integrated game pages while timeline bars stay in scale',
   expect(outOfScale).toBe(0);
   await expectNoPageOverflow(page);
 
-  // The Agenda view was retired; lanes are the timeline. What it used to prove —
-  // that seeded events actually rendered — the lane bars above already cover.
-  await expect(page.getByRole('radio', { name: 'Agenda' })).toHaveCount(0);
+  // The same events read as a list in Agenda, which fits the width the rail leaves.
+  await page.getByRole('radio', { name: 'Agenda', exact: true }).click();
+  await expect(page.getByRole('radio', { name: 'Agenda', exact: true })).toHaveAttribute('data-state', 'on');
   await expectNoPageOverflow(page);
 });
 
@@ -314,7 +315,7 @@ test('tabs cross-slide without spilling the page sideways', async ({ page }) => 
   await addGenshin(page);
 
   for (const [route, heading] of [
-    ['Timeline', 'Event timeline'],
+    ['Calendar', 'Calendar'],
     ['Settings', 'Settings'],
     ['Today', 'Today'],
   ] as const) {
@@ -341,29 +342,36 @@ test('the rail opens Add game as a sheet that takes focus and gives it back', as
   await expect(add).toBeFocused();
 });
 
-test('floating phone navigation contains touch targets and tracks each selected route', async ({ page }) => {
-  test.skip(page.viewportSize()!.width >= 768, 'Floating phone dock');
+test('the phone dock holds 44px touch targets along the bottom edge and tracks each selected route', async ({
+  page,
+}) => {
+  test.skip(page.viewportSize()!.width >= 768, 'Phone dock');
+  await addGenshin(page);
   const nav = page.getByRole('navigation', { name: 'Primary' });
-  for (const route of ['Timeline', 'Today', 'Settings']) {
+  const viewport = page.viewportSize()!;
+  for (const route of ['Calendar', 'Today', 'Settings']) {
     await nav.getByRole('button', { name: route, exact: true }).click();
     const selected = nav.getByRole('button', { name: route, exact: true });
     await expect(selected).toHaveAttribute('aria-current', 'page');
+    // The dock runs edge to edge along the bottom; its safe-area padding sits inside it.
     const dock = (await nav.boundingBox())!;
+    expect(dock.x).toBe(0);
+    expect(dock.width).toBe(viewport.width);
+    expect(dock.y + dock.height).toBeCloseTo(viewport.height, 0);
     for (const button of await nav.getByRole('button').all()) {
+      if (!(await button.isVisible())) continue;
       const box = (await button.boundingBox())!;
       expect(box.width).toBeGreaterThanOrEqual(44);
       expect(box.height).toBeGreaterThanOrEqual(44);
       expect(box.y).toBeGreaterThanOrEqual(dock.y);
       expect(box.y + box.height).toBeLessThanOrEqual(dock.y + dock.height);
     }
-    await expect
-      .poll(async () => {
-        const active = (await selected.boundingBox())!;
-        const pill = (await nav.locator('.nav-slider').boundingBox())!;
-        return Math.abs(active.x - pill.x) + Math.abs(active.y - pill.y);
-      })
-      .toBeLessThan(1);
-    expect(dock.y + dock.height).toBeLessThan(page.viewportSize()!.height);
+    // Only the chosen route is marked, and the page clears the dock at its end.
+    await expect(nav.locator('[aria-current="page"]')).toHaveCount(1);
     await expectNoPageOverflow(page);
   }
+  // On a game's page its own button is marked, not Today.
+  await nav.getByRole('button', { name: /^Genshin Impact/ }).click();
+  await expect(nav.getByRole('button', { name: /^Genshin Impact/ })).toHaveAttribute('aria-current', 'page');
+  await expect(nav.getByRole('button', { name: 'Today', exact: true })).not.toHaveAttribute('aria-current');
 });

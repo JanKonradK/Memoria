@@ -1,8 +1,16 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ComponentPropsWithRef,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import type { Game } from '@memoria/shared';
 import { useAppUpdate } from '../../app-update';
 import { cloudSyncNow } from '../../cloud-sync';
-import { useNow, useReducedMotion } from '../../hooks';
+import { useMediaQuery, useNow, useReducedMotion } from '../../hooks';
 import { syncLanNow, useLanSync } from '../../lan-sync';
 import { useDerived } from '../../selectors';
 import { useApp } from '../../store';
@@ -45,14 +53,17 @@ function Icon({ d }: { d: string }) {
   );
 }
 
+/** A route in the rail. Extra props come from a Tooltip wrapped around it. */
 function RailView({
   label,
   icon,
   current,
   badge,
   describedBy,
+  keyShortcuts,
   className = '',
   onClick,
+  ...trigger
 }: {
   className?: string;
   label: string;
@@ -60,14 +71,17 @@ function RailView({
   current: boolean;
   badge?: ReactNode;
   describedBy?: string;
+  keyShortcuts?: string;
   onClick: () => void;
-}) {
+} & Omit<ComponentPropsWithRef<'button'>, 'onClick' | 'className'>) {
   return (
     <button
+      {...trigger}
       type="button"
       className={`rail-view ${className}`}
       aria-current={current ? 'page' : undefined}
-      aria-describedby={describedBy}
+      aria-describedby={describedBy ?? trigger['aria-describedby']}
+      aria-keyshortcuts={keyShortcuts}
       onClick={onClick}
     >
       <Icon d={icon} />
@@ -77,7 +91,18 @@ function RailView({
   );
 }
 
-/** One game in the rail: its face and how long until it next needs the player. */
+/** The dock lies along the bottom of a phone, so its tips rise above it. */
+const useTipSide = () => (useMediaQuery('(max-width: 767px)') ? 'top' : 'right');
+
+/** A text field keeps Ctrl+digit for itself. */
+const typing = (target: EventTarget | null) =>
+  target instanceof HTMLElement && Boolean(target.closest('input, textarea, select, [contenteditable]'));
+
+/**
+ * One game in the rail: its face and how long until it next needs the player.
+ * Its name is the button's text (read, not shown) so nothing visible is left
+ * out of it; the countdown is shown, and said in full as the description.
+ */
 function RailGame({
   game,
   ink,
@@ -85,6 +110,7 @@ function RailGame({
   label,
   now,
   current,
+  shortcut,
 }: {
   game: Game;
   ink: string;
@@ -92,28 +118,48 @@ function RailGame({
   label?: string;
   now: number;
   current: boolean;
+  shortcut?: number;
 }) {
+  const descriptionId = useId();
+  const tipSide = useTipSide();
   const countdown = at == null ? null : railCountdown(at - now);
   const account = game.accountLabel?.trim();
   const name = account ? `${game.name}, ${account}` : game.name;
-  const summary = [name, label && countdown ? `${label} in ${countdown.long}` : null].filter(Boolean).join(' · ');
+  const next = game.paused ? 'Paused' : label && countdown ? `${label} in ${countdown.long}` : '';
   return (
-    <Tooltip content={summary} side="right">
+    <Tooltip
+      side={tipSide}
+      content={
+        <>
+          <span className="block font-semibold text-fg">{name}</span>
+          {next && <span className="block">{next}</span>}
+          {shortcut && <span className="block text-muted">Ctrl+{shortcut}</span>}
+        </>
+      }
+    >
       <button
         type="button"
         className="rail-game"
         data-rail-game={game.id}
         data-paused={game.paused || undefined}
         aria-current={current ? 'page' : undefined}
-        aria-label={name}
+        aria-describedby={next ? descriptionId : undefined}
+        aria-keyshortcuts={shortcut ? `Control+${shortcut}` : undefined}
         onClick={() => openGame(game.id)}
         style={{ '--rail-ink': ink } as CSSProperties}
       >
         <span aria-hidden className="rail-pin" />
-        <GameLogo game={game} size={40} className="rail-game-logo" />
+        {/* Under 44px a text coin is a monogram, which is what a rail can read. */}
+        <GameLogo game={game} size={42} className="rail-game-logo" />
         <span aria-hidden className="rail-countdown numeral" data-tone={game.paused ? 'paused' : countdown?.tone}>
           {game.paused ? '—' : (countdown?.short ?? '·')}
         </span>
+        <span className="sr-only">{name}</span>
+        {next && (
+          <span id={descriptionId} hidden>
+            {next}
+          </span>
+        )}
       </button>
     </Tooltip>
   );
@@ -135,12 +181,13 @@ function SyncAttention() {
         : lan === 'error' || lan === 'offline'
           ? lanError || 'Device sync needs attention'
           : '';
+  const tipSide = useTipSide();
   const syncing = [desktop, cloud, lan].includes('syncing') || lan === 'pairing';
   const synced = [desktop, cloud, lan].includes('ok');
   return (
     <span role="status" aria-live="polite" className="rail-status">
       {issue ? (
-        <Tooltip content={issue} side="right">
+        <Tooltip content={issue} side={tipSide}>
           <button
             type="button"
             className="rail-view rail-trouble"
@@ -207,7 +254,7 @@ function RefreshButton() {
  * Calendar, then every game in the player's own order with its next deadline,
  * then Add and Settings. On a phone the same rail lies along the bottom as the
  * dock, its games scrolling sideways. The rail never re-sorts, so a game is
- * always where the player left it.
+ * always where the player left it. Ctrl+1 to Ctrl+9 open the first nine games.
  */
 export function AppRail() {
   const now = useNow(30_000);
@@ -222,6 +269,8 @@ export function AppRail() {
   const lanTrouble = useLanSync((s) => s.status === 'error');
   const updateWaiting = useAppUpdate((s) => s.status === 'available' || s.status === 'ready');
   const ground = useGround();
+  const reducedMotion = useReducedMotion();
+  const tipSide = useTipSide();
   const identity = useIdentityColors(derived.state.games);
   const games = derived.state.games
     .filter((game) => !game.deleted)
@@ -234,6 +283,42 @@ export function AppRail() {
     for (const item of derived.checklistByGame.get(game.id) ?? [])
       if (item.cadence === 'daily' && !item.done) open += 1;
   }
+  const currentGame = tab === 'home' ? focusedGameId : null;
+  const order = games.map((game) => game.id).join(' ');
+
+  // Ctrl+1..9 opens the Nth game, unless a field takes the keystroke or a sheet is open.
+  useEffect(() => {
+    const jump = (event: KeyboardEvent) => {
+      if (!event.ctrlKey || event.altKey || event.metaKey || event.shiftKey || event.repeat) return;
+      if (!/^[1-9]$/.test(event.key) || event.defaultPrevented || typing(event.target)) return;
+      if (useUI.getState().sheet || document.querySelector('[role="dialog"], [role="alertdialog"]')) return;
+      const id = order.split(' ')[Number(event.key) - 1];
+      if (!id) return;
+      event.preventDefault();
+      if (useUI.getState().tab !== 'home' || useUI.getState().focusedGameId !== id) openGame(id);
+    };
+    document.addEventListener('keydown', jump);
+    return () => document.removeEventListener('keydown', jump);
+  }, [order]);
+
+  // The dock scrolls its games sideways; the open game is kept in view.
+  const gamesRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const strip = gamesRef.current;
+    if (!strip || !currentGame || strip.scrollWidth <= strip.clientWidth) return;
+    const button = strip.querySelector<HTMLElement>(`[data-rail-game="${CSS.escape(currentGame)}"]`);
+    if (!button) return;
+    const start = button.offsetLeft - strip.offsetLeft;
+    // The strip fades out at its end, so leave room past the button for the fade.
+    const end = start + button.offsetWidth + 28;
+    const target =
+      start < strip.scrollLeft
+        ? start
+        : end > strip.scrollLeft + strip.clientWidth
+          ? end - strip.clientWidth
+          : strip.scrollLeft;
+    if (target !== strip.scrollLeft) strip.scrollTo({ left: target, behavior: reducedMotion ? 'instant' : 'smooth' });
+  }, [currentGame, order, reducedMotion]);
 
   return (
     <nav aria-label="Primary" className="app-rail">
@@ -246,6 +331,7 @@ export function AppRail() {
           icon={ICON.today}
           current={tab === 'today'}
           onClick={() => (tab === 'home' ? closeWorkspace() : setTab('today'))}
+          keyShortcuts={tab === 'home' ? 'Alt+ArrowLeft' : undefined}
           describedBy={open > 0 ? 'rail-today-left' : undefined}
           badge={
             open > 0 ? (
@@ -268,8 +354,8 @@ export function AppRail() {
         />
       </div>
       <span aria-hidden className="rail-sep" />
-      <div className="rail-games" role="group" aria-label="Games">
-        {games.map((game) => {
+      <div ref={gamesRef} className="rail-games" role="group" aria-label="Games">
+        {games.map((game, index) => {
           const next = derived.entryById.get(game.id)?.next ?? null;
           return (
             <RailGame
@@ -279,40 +365,44 @@ export function AppRail() {
               at={next?.at}
               label={next?.label}
               now={now}
-              current={tab === 'home' && focusedGameId === game.id}
+              current={currentGame === game.id}
+              shortcut={index < 9 ? index + 1 : undefined}
             />
           );
         })}
-        <button
-          type="button"
-          className="rail-view rail-add"
-          aria-label="Add game"
-          onClick={() => openSheet({ kind: 'addGame' })}
-        >
-          <Icon d={ICON.add} />
-        </button>
+        <Tooltip content="Add game" side={tipSide}>
+          <RailView
+            className="rail-icon-only rail-add"
+            label="Add game"
+            icon={ICON.add}
+            current={false}
+            onClick={() => openSheet({ kind: 'addGame' })}
+          />
+        </Tooltip>
       </div>
       <div className="rail-end">
         <SyncAttention />
         {(needsRefresh || lanTrouble) && <RefreshButton />}
-        <RailView
-          className="rail-settings"
-          label="Settings"
-          icon={ICON.settings}
-          current={tab === 'settings'}
-          describedBy={updateWaiting ? 'rail-update' : undefined}
-          onClick={() => setTab('settings')}
-          badge={
-            updateWaiting ? (
-              <>
-                <span aria-hidden className="rail-dot" />
-                <span id="rail-update" hidden>
-                  Update available
-                </span>
-              </>
-            ) : undefined
-          }
-        />
+        <Tooltip content={updateWaiting ? 'Settings · Update available' : 'Settings'} side={tipSide}>
+          <RailView
+            className="rail-icon-only rail-settings"
+            label="Settings"
+            icon={ICON.settings}
+            current={tab === 'settings'}
+            describedBy={updateWaiting ? 'rail-update' : undefined}
+            onClick={() => setTab('settings')}
+            badge={
+              updateWaiting ? (
+                <>
+                  <span aria-hidden className="rail-dot" />
+                  <span id="rail-update" hidden>
+                    Update available
+                  </span>
+                </>
+              ) : undefined
+            }
+          />
+        </Tooltip>
       </div>
     </nav>
   );

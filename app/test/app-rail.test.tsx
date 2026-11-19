@@ -2,8 +2,11 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { ReactElement } from 'react';
 import { AppRail } from '../src/components/shell/AppRail';
+import { railCountdown } from '../src/components/shell/rail-countdown';
 import { TooltipProvider } from '../src/components/ui';
+import { emptyState } from '@memoria/shared';
 import { useApp } from '../src/store';
+import { makeGame } from '../../shared/test/helpers';
 import { useUI } from '../src/ui-store';
 import { syncNow } from '../src/sync';
 import { cloudSyncNow } from '../src/cloud-sync';
@@ -29,10 +32,10 @@ beforeEach(() => {
     load: vi.fn().mockResolvedValue(undefined),
   });
   useLanSync.setState({ status: 'off', error: '' });
-  useUI.setState({ tab: 'today', focusedGameId: null });
+  useUI.setState({ tab: 'today', focusedGameId: null, sheet: null });
 });
 
-afterEach(() => useApp.setState({ load: originalLoad }));
+afterEach(() => useApp.setState({ load: originalLoad, state: emptyState() }));
 
 const renderRail = (node: ReactElement = <AppRail />) => render(<TooltipProvider>{node}</TooltipProvider>);
 
@@ -133,4 +136,53 @@ it('marks the open game rather than Today on a game page, and Today returns from
   fireEvent.click(today);
   expect(useUI.getState().tab).toBe('today');
   expect(useUI.getState().focusedGameId).toBeNull();
+});
+
+function withGames() {
+  const state = emptyState();
+  state.games = [
+    makeGame({ id: 'first', name: 'Genshin Impact', accountLabel: 'Main', sort: 0 }),
+    makeGame({ id: 'second', name: 'Honkai: Star Rail', sort: 1 }),
+  ];
+  useApp.setState({ state });
+}
+
+it('names each game by its name and account, and keeps the countdown out of the name', () => {
+  withGames();
+  renderRail();
+  const games = within(screen.getByRole('group', { name: 'Games' }));
+  const first = games.getByRole('button', { name: 'Genshin Impact, Main' });
+  expect(first).toHaveAttribute('aria-keyshortcuts', 'Control+1');
+  expect(games.getByRole('button', { name: 'Honkai: Star Rail' })).toHaveAttribute('aria-keyshortcuts', 'Control+2');
+});
+
+it('opens the Nth game with Ctrl+N, but not while typing or with a sheet open', () => {
+  withGames();
+  renderRail();
+  fireEvent.keyDown(document, { key: '2', ctrlKey: true });
+  expect(useUI.getState()).toMatchObject({ tab: 'home', focusedGameId: 'second' });
+  useUI.setState({ tab: 'today', focusedGameId: null });
+  const field = document.createElement('input');
+  document.body.append(field);
+  fireEvent.keyDown(field, { key: '1', ctrlKey: true });
+  expect(useUI.getState().tab).toBe('today');
+  field.remove();
+  useUI.setState({ sheet: { kind: 'addGame' } });
+  fireEvent.keyDown(document, { key: '1', ctrlKey: true });
+  expect(useUI.getState().tab).toBe('today');
+  useUI.setState({ sheet: null });
+  // There is no ninth game, and Alt or Shift leave the key alone.
+  fireEvent.keyDown(document, { key: '9', ctrlKey: true });
+  fireEvent.keyDown(document, { key: '1', ctrlKey: true, shiftKey: true });
+  expect(useUI.getState().tab).toBe('today');
+});
+
+it('floors rail countdowns like Today and tones them by how soon they come', () => {
+  const minute = 60_000;
+  expect(railCountdown(59.9 * minute)).toMatchObject({ short: '59m', tone: 'now' });
+  expect(railCountdown(119 * minute)).toMatchObject({ short: '1h', long: '1 h 59 min', tone: 'now' });
+  expect(railCountdown(7.9 * 60 * minute)).toMatchObject({ short: '7h', tone: 'soon' });
+  expect(railCountdown(9 * 60 * minute)).toMatchObject({ short: '9h', tone: 'later' });
+  expect(railCountdown(3 * 24 * 60 * minute)).toMatchObject({ short: '3d', tone: 'later' });
+  expect(railCountdown(0)).toMatchObject({ short: 'now', tone: 'now' });
 });

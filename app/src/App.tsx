@@ -126,10 +126,36 @@ function LivePage({ tab }: { tab: 'today' | 'home' | 'timeline' }) {
   return tab === 'timeline' ? <TimelinePage now={now} /> : <TodayRoute tab={tab} now={now} />;
 }
 
+/**
+ * Sheets open from the store, not from a Radix trigger, so Radix has nothing to
+ * give focus back to when one closes. The control that opened it gets it back,
+ * once the sheet has left, if focus was dropped and that control is still here.
+ */
+function useSheetFocusReturn(open: boolean) {
+  const origin = useRef<HTMLElement | null>(null);
+  // A layout effect runs before the sheet's focus scope moves focus inside it.
+  useLayoutEffect(() => {
+    if (!open || origin.current) return;
+    const active = document.activeElement;
+    origin.current = active instanceof HTMLElement && active !== document.body ? active : null;
+  }, [open]);
+  return () => {
+    const target = origin.current;
+    origin.current = null;
+    // After Radix's own close handling, which runs on the next task.
+    window.setTimeout(() => {
+      const active = document.activeElement;
+      if (useUI.getState().sheet || !target?.isConnected || (active && active !== document.body)) return;
+      target.focus({ preventScroll: true });
+    }, 0);
+  };
+}
+
 function AppSheets() {
   const sheet = useUI((s) => s.sheet);
+  const returnFocus = useSheetFocusReturn(Boolean(sheet));
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" onExitComplete={() => !useUI.getState().sheet && returnFocus()}>
       {sheet && (
         // A new lazy editor must not suspend the outgoing sheet during its exit.
         <Suspense key={JSON.stringify(sheet)} fallback={null}>
