@@ -41,15 +41,13 @@ export function sortTimelineEvents(events: GameEvent[]): GameEvent[] {
     group.push(event);
     groups.set(key, group);
   }
-  const automatic = ordered.flatMap((event) => {
+  return ordered.flatMap((event) => {
     const key = cycleKey(event);
     if (key === null) return [event];
     const group = groups.get(key) ?? [];
     groups.delete(key);
     return group.sort((a, b) => a.start - b.start || a.end - b.end || a.id.localeCompare(b.id));
   });
-  // Stable sort retains automatic order for new events and tied positions.
-  return automatic.sort((a, b) => (a.sort ?? Infinity) - (b.sort ?? Infinity));
 }
 
 export function agendaRank(event: GameEvent, now: number): 0 | 1 | 2 | 3 {

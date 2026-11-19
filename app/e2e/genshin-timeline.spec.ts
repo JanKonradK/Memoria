@@ -1,6 +1,5 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { openSettings } from './support';
+import { openSettings, calendarAxe } from './support';
 import { emptyState } from '@memoria/shared';
 import { makeEvent, makeGame } from '../../shared/test/helpers';
 import { eventFingerprint, planSeedImport } from '../src/data/seed-events';
@@ -125,11 +124,7 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
       );
     });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    expect(
-      (await new AxeBuilder({ page }).analyze()).violations.filter((issue) =>
-        ['serious', 'critical'].includes(issue.impact ?? ''),
-      ),
-    ).toEqual([]);
+    expect(await calendarAxe(page)).toEqual([]);
     await teyvat.getByRole('heading').scrollIntoViewIfNeeded();
     await page.screenshot({ path: info.outputPath(`genshin-timeline-${theme}.png`) });
     await banners.getByRole('heading').scrollIntoViewIfNeeded();

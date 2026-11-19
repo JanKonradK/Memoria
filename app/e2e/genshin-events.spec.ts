@@ -1,8 +1,7 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { emptyState } from '@memoria/shared';
 import { makeGame, makeEvent } from '../../shared/test/helpers';
-import { chooseFromEdit, editFromQuickView, openGame, openSettings } from './support';
+import { chooseFromEdit, editFromQuickView, openGame, openSettings, calendarAxe } from './support';
 
 test('Genshin keeps complete Teyvat, Wonderland and banner groups through editing', async ({ page }, info) => {
   const now = Date.now();
@@ -79,11 +78,7 @@ test('Genshin keeps complete Teyvat, Wonderland and banner groups through editin
       await Promise.all(finite.map((animation) => animation.finished.catch(() => {})));
     });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    expect(
-      (await new AxeBuilder({ page }).analyze()).violations.filter((issue) =>
-        ['serious', 'critical'].includes(issue.impact ?? ''),
-      ),
-    ).toEqual([]);
+    expect(await calendarAxe(page)).toEqual([]);
     await teyvat.scrollIntoViewIfNeeded();
     await page.screenshot({ path: info.outputPath(`genshin-teyvat-${theme}.png`) });
     await banners.scrollIntoViewIfNeeded();

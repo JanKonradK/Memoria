@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
 import { emptyState } from '@memoria/shared';
 import { makeGame, makeEvent } from '../../shared/test/helpers';
-import { editFromQuickView, openSettings } from './support';
+import { editFromQuickView, openSettings, calendarAxe } from './support';
 
 test('banner tags distinguish rewards across games and can be edited', async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
@@ -46,7 +45,7 @@ test('banner tags distinguish rewards across games and can be edited', async ({ 
     );
   }
   await page.screenshot({ path: info.outputPath('banner-tags.png') });
-  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  expect(await calendarAxe(page, { all: true })).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page
     .getByRole('button', { name: `${compact ? 'Edit' : 'Open'} genshin event: character test`, exact: true })

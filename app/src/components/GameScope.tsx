@@ -1,32 +1,40 @@
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
-import { Select } from './ui';
 import { gameServerLabel } from '../server-choice';
+import { GameLogo } from './GameLogo';
+import { rosterGames, useIdentityColors } from './roster';
 
-/** The Timeline's game filter: its own choice, all games until changed, never set by opening a game. */
-export function GameScope() {
+/**
+ * The Calendar's game filter: a logo per game, pressed to hide or show that
+ * game. Its own choice for the session; opening a game never changes it.
+ */
+export function GameScope({ id, className = '' }: { id?: string; className?: string }) {
   const games = useApp((s) => s.state.games);
-  const focused = useUI((s) => s.timelineGameId);
-  const setFocused = useUI((s) => s.setTimelineGameId);
-  const active = games.filter((game) => !game.deleted);
-  const value = active.some((game) => game.id === focused) ? focused! : '';
+  const hidden = useUI((s) => s.timelineHiddenGameIds);
+  const toggle = useUI((s) => s.toggleTimelineGame);
+  const colors = useIdentityColors(games);
+  const roster = rosterGames(games);
+  if (roster.length < 2) return null;
   return (
-    <label className="app-game-scope flex min-w-0 items-center text-meta text-muted">
-      <span className="sr-only">Filter by game</span>
-      <Select
-        aria-label="Filter by game"
-        className="!min-h-11 !w-full min-w-0 !py-1 md:!min-h-9"
-        value={value}
-        onChange={(event) => setFocused(event.target.value || null)}
-      >
-        <option value="">All games</option>
-        {active.map((game) => (
-          <option key={game.id} value={game.id}>
-            {game.name} · {gameServerLabel(game, Date.now())}
-            {game.accountLabel ? ` · ${game.accountLabel}` : ''}
-          </option>
-        ))}
-      </Select>
-    </label>
+    <div id={id} role="group" aria-label="Games shown" className={`calendar-games ${className}`}>
+      {roster.map((game) => {
+        const shown = !hidden.includes(game.id);
+        const account = game.accountLabel?.trim();
+        const name = `${game.name}, ${gameServerLabel(game, Date.now())}${account ? `, ${account}` : ''}`;
+        return (
+          <button
+            key={game.id}
+            type="button"
+            className="calendar-game-toggle"
+            aria-pressed={shown}
+            aria-label={name}
+            title={`${shown ? 'Hide' : 'Show'} ${game.name}${account ? `, ${account}` : ''}`}
+            onClick={() => toggle(game.id)}
+          >
+            <GameLogo game={{ ...game, ...colors[game.id] }} size={30} />
+          </button>
+        );
+      })}
+    </div>
   );
 }

@@ -389,7 +389,7 @@ describe('budgetAgenda', () => {
   });
 });
 
-it('manual positions override cycle grouping while new events retain automatic order', () => {
+it('ignores a retired manual position, so old backups sort like new ones', () => {
   const rows = [
     event({ id: 'cycle-a', type: 'cycle', name: 'Cycle', sort: 2 }),
     event({ id: 'cycle-b', type: 'cycle', name: 'Cycle', sort: 0 }),
@@ -397,11 +397,6 @@ it('manual positions override cycle grouping while new events retain automatic o
     event({ id: 'new-late', end: 3000 }),
     event({ id: 'new-soon', end: 2000 }),
   ];
-  expect(sortTimelineEvents(rows).map((row) => row.id)).toEqual([
-    'cycle-b',
-    'between',
-    'cycle-a',
-    'new-soon',
-    'new-late',
-  ]);
+  const unsorted = rows.map((row) => ({ ...row, sort: undefined }));
+  expect(sortTimelineEvents(rows).map((row) => row.id)).toEqual(sortTimelineEvents(unsorted).map((row) => row.id));
 });

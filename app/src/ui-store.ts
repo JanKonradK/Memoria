@@ -63,6 +63,8 @@ export const resolveTheme = (preference: ThemePreference): Theme =>
 /** The Calendar's ways of seeing the same events. */
 export type TimelineView = 'lanes' | 'agenda' | 'month' | 'soon';
 export const TIMELINE_VIEWS: readonly TimelineView[] = ['lanes', 'agenda', 'month', 'soon'];
+/** How much time the Calendar's timeline spans: a week, four weeks, or a season (nine weeks). */
+export type TimelineRange = 'week' | 'month' | 'season';
 export const HINT_KEYS = ['energy', 'tasks', 'events'] as const;
 export type HintKey = (typeof HINT_KEYS)[number];
 
@@ -148,9 +150,12 @@ interface UIStore {
   /** Session-only route controls survive navigation, without entering backups. */
   timelineView: TimelineView | null;
   timelineShowFinished: boolean;
-  /** The Timeline's own game filter. Opening a game never sets it. Null = all games. */
-  timelineGameId: string | null;
-  setTimelineGameId(gameId: string | null): void;
+  /** Games the Calendar hides, by id. Its own filter: opening a game never sets it. Session only. */
+  timelineHiddenGameIds: string[];
+  toggleTimelineGame(gameId: string): void;
+  /** Null follows the window: a week on a phone, four weeks wider. Session only. */
+  timelineRange: TimelineRange | null;
+  setTimelineRange(range: TimelineRange): void;
   setTimelineView(view: TimelineView): void;
   setTimelineShowFinished(show: boolean): void;
   /** Set when first-run setup finishes: only a new install sees the hints. */
@@ -201,8 +206,15 @@ export const useUI = create<UIStore>()(
       setTodayView: (todayView) => set({ todayView }),
       timelineView: null,
       timelineShowFinished: false,
-      timelineGameId: null,
-      setTimelineGameId: (timelineGameId) => set({ timelineGameId }),
+      timelineHiddenGameIds: [],
+      toggleTimelineGame: (gameId) =>
+        set((state) => ({
+          timelineHiddenGameIds: state.timelineHiddenGameIds.includes(gameId)
+            ? state.timelineHiddenGameIds.filter((id) => id !== gameId)
+            : [...state.timelineHiddenGameIds, gameId],
+        })),
+      timelineRange: null,
+      setTimelineRange: (timelineRange) => set({ timelineRange }),
       setTimelineView: (timelineView) => set({ timelineView }),
       setTimelineShowFinished: (timelineShowFinished) => set({ timelineShowFinished }),
       hintsArmed: false,

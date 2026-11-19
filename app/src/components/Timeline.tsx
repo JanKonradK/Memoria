@@ -1,24 +1,19 @@
-import type { ReactNode } from 'react';
-import { Hint } from './Hint';
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { DateTime } from 'luxon';
-import type { Game, GameEvent } from '@memoria/shared';
-import { m } from 'motion/react';
+import { isPredictedWindow, packSpans, type Game, type GameEvent } from '@memoria/shared';
+import { Hint } from './Hint';
 import { useApp } from '../store';
 import { useElementWidth, useMediaQuery } from '../hooks';
-import { cycleKey, sortTimelineEvents } from '../timeline-sort';
 import { useUI } from '../ui-store';
-import { slideIn } from '../motion';
-import { endTone, fmtDur } from '../util';
-import { Disclosure } from './Disclosure';
-import { Pill, ProgressBar } from './primitives';
+import { Pill } from './primitives';
 import { rosterGames, useIdentityColors } from './roster';
-import { Btn, ConfirmAction, Page, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
+import { Btn, Page, ServerChip, TOUCH_BUTTON } from './ui';
 import { GameLogo } from './GameLogo';
-import { TimelineTools } from './TimelineTools';
+import { RangeStepper, RangeSwitch, TimelineTools } from './TimelineTools';
 import { CalendarToolbar } from './CalendarToolbar';
 import { CalendarFeedStatus } from './CalendarFeedStatus';
 import { CalendarBehindNote } from './CalendarBehind';
+import { GameScope } from './GameScope';
 import { TimelineList } from './TimelineList';
 import { MonthView } from './calendar/MonthView';
 import { SoonView } from './calendar/SoonView';
@@ -26,32 +21,45 @@ import { PageBar, PageBarEnd, PageTitle } from './shell/PageBar';
 import { PinnedEvents } from './PinnedEvents';
 import { PinMark } from './EventPeek';
 import { gameServerLabel } from '../server-choice';
-import { assignGameInks, gameTitleInk, mix, onColor } from '../game-color';
-import { useGround, useInset, useSurfaces } from '../theme';
+import { assignGameInks, legible } from '../game-color';
+import { useGround } from '../theme';
 import { EventTags } from './EventTags';
 import { groupGameEvents } from '../event-category';
 import { calendarSchedule } from '../event-schedule';
-import { timelineDays, timelineWindow, weekResetLines } from '../timeline-window';
+import {
+  barCountdown,
+  collapsedSummary,
+  rangeWindow,
+  timelineDays,
+  type BarTone,
+  type TimelineRangeKey,
+} from '../timeline-window';
 import '../timeline.css';
 import '../pinned.css';
 
-const DAY = 86_400_000;
 const HOUR = 3_600_000;
-const TICK_SLOT_PX = 26;
-const COUNTDOWN_PX = 96;
-const SPAN_PX = 116;
-const MIN_BAR_PX = 18;
-const BAR_TEXT_INSET_PX = 8;
-/** Half the Today capsule plus a little air: ticks whose label reaches this far are hidden. */
-const TODAY_HALF_PX = 28;
-/** Rough label widths at caption size: a bare day number, and one with its month ("Nov 9"). */
-const DAY_LABEL_PX = 18;
-const MONTH_LABEL_PX = 42;
-/** Space kept between neighbouring day labels. */
-const LABEL_GAP_PX = 8;
-export const MIN_LABEL_PX = 40;
-/** An outside label this wide shows most event names whole. */
-const COMFORTABLE_LABEL_PX = 160;
+const MINUTE = 60_000;
+/** The narrowest a bar is drawn, so a short update stays a bar and keeps its hit area. */
+const MIN_BAR_PX = 28;
+/** A bar narrower than this shows its name and leaves the countdown to screen readers. */
+const COUNTDOWN_ROOM_PX = 96;
+/** Clear space kept between two bars sharing a row. */
+const ROW_GAP_PX = 1;
+/** Rough caption-size glyph width, for reserving a milestone's label on its row. */
+const LABEL_CHAR_PX = 7.2;
+/** A game name longer than this gives way to its short name in the label column. */
+const LONG_NAME = 20;
+/** Leftward or rightward travel that counts as a swipe between weeks. */
+const SWIPE_PX = 56;
+/** Sideways wheel or trackpad travel that moves one week. */
+const WHEEL_STEP_PX = 140;
+
+const TONE: Record<BarTone, string> = {
+  rose: 'var(--color-rose)',
+  warn: 'var(--color-warn-fg)',
+  muted: 'var(--color-muted)',
+  ok: 'var(--color-ok-fg)',
+};
 
 /** Pausing keeps the account visible without exposing any of its event rows. */
 function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; onResume: () => void }) {
@@ -66,7 +74,7 @@ function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; 
     >
       <GameLogo game={game} size={36} />
       <div className="min-w-0 flex-1">
-        <h2 className="truncate text-body" style={{ color: gameTitleInk(game, ground, 4.5) }}>
+        <h2 className="truncate text-body" style={{ color: legible(game.color, ground, 4.5) }}>
           {game.name}
         </h2>
         <div className="mt-1 flex min-w-0 items-center gap-2 text-caption text-muted">
@@ -86,953 +94,431 @@ function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; 
   );
 }
 
-/**
- * Where a bar sits in its lane, as percentages of the lane width.
- *
- * Shared by the bar and by the cycle connectors that hand off between bars — if
- * these two ever computed it separately, a curve would start a few pixels off the
- * bar it is supposed to leave, which is exactly the kind of drift nobody notices
- * in review and everybody notices on screen.
- */
-export function barGeometry(ev: { start: number; end: number }, ws: number, we: number) {
-  // A degenerate window would divide by zero and put NaN straight into an SVG
-  // path, which fails silently — the browser drops the path and the curve just
-  // is not there. Collapse to the left edge instead.
+/** Where a span sits on the track, as percentages, clipped to the range. */
+function place(start: number, end: number, ws: number, we: number) {
   const span = we - ws;
-  const floor = 0.125;
-  if (!(span > 0)) return { displayLeft: 0, displayWidth: floor, displayRight: floor };
-  const left = (Math.max(ev.start, ws) - ws) / span;
-  const width = (Math.min(ev.end, we) - Math.max(ev.start, ws)) / span;
-  // 0.125% is about 1px on an 800px lane and less than two hours in a 40d
-  // window. It keeps a zero-length mark visible without falsifying short spans;
-  // the full-width row button owns the reachable hit area.
-  const displayWidth = Math.min(100, Math.max(width * 100, floor));
-  const displayLeft = Math.max(0, Math.min(left * 100, 100 - displayWidth));
-  return { displayLeft, displayWidth, displayRight: displayLeft + displayWidth };
+  if (!(span > 0)) return { left: 0, width: 0 };
+  const left = (Math.max(start, ws) - ws) / span;
+  const right = (Math.min(end, we) - ws) / span;
+  return { left: left * 100, width: Math.max(0, right - left) * 100 };
+}
+
+const pct = (value: number) => `${value.toFixed(3)}%`;
+
+interface BoardProps {
+  game: Game;
+  ink: string;
+  now: number;
+  ws: number;
+  we: number;
+  trackPx: number;
+  localTz: string;
+  compact: boolean;
+  onOpenEvent: (event: GameEvent) => void;
+  onToggleEvent: (event: GameEvent) => void;
+}
+
+function scheduleText(ev: GameEvent, localTz: string): string {
+  const calendar = calendarSchedule(ev);
+  if (calendar) return calendar.description;
+  const start = DateTime.fromMillis(ev.start, { zone: localTz });
+  const end = DateTime.fromMillis(ev.end, { zone: localTz });
+  return `Starts ${start.toFormat('d LLL yyyy HH:mm')}. Ends ${end.toFormat('d LLL yyyy HH:mm')}. Dates in ${localTz}.`;
 }
 
 /**
- * Keeps the row controls and the bar label in separate pixel budgets.
- *
- * A bar that ran beyond the scope used to fill the lane and paint its name below
- * the right-anchored countdown. The same estimates now decide whether the tick
- * can float and where bar text must stop, so those two choices cannot drift.
+ * One event on its row. The whole bar opens the quick view; the tick inside it
+ * appears under the pointer or keyboard focus and marks the event done.
  */
-interface TimelineRowLayoutBase {
-  barTextMaxWidth: number;
-  trailingClusterPx: number;
-  barEndPct: number;
-  clusterBefore?: boolean;
-}
-
-export type TimelineRowLayout =
-  | (TimelineRowLayoutBase & {
-      tier: 'roomy';
-      tickFloats: true;
-      showSpan: true;
-      labelPlacement: 'inside';
-    })
-  | (TimelineRowLayoutBase & {
-      tier: 'snug';
-      tickFloats: true;
-      showSpan: false;
-      labelPlacement: 'inside';
-    })
-  | (TimelineRowLayoutBase & {
-      tier: 'tight';
-      tickFloats: false;
-      showSpan: false;
-      labelPlacement: 'inside';
-    })
-  | (TimelineRowLayoutBase & {
-      tier: 'minimal';
-      tickFloats: false;
-      showSpan: false;
-      labelPlacement: 'after' | 'before' | 'none';
-    });
-
-export function timelineRowLayout(
-  displayLeft: number,
-  displayWidth: number,
-  laneWidth: number,
-  labelMode: 'auto' | 'outside' = 'auto',
-  countdownWidth = COUNTDOWN_PX,
-): TimelineRowLayout {
-  const safeLaneWidth = Number.isFinite(laneWidth) ? Math.max(0, laneWidth) : 0;
-  const safeDisplayLeft = Number.isFinite(displayLeft) ? Math.max(0, Math.min(displayLeft, 100)) : 0;
-  const safeDisplayWidth = Number.isFinite(displayWidth)
-    ? Math.max(0, Math.min(displayWidth, 100 - safeDisplayLeft))
-    : 0;
-  const barEndPct = safeDisplayLeft + safeDisplayWidth;
-  // The bar carries px-2 and a 1px border, so it cannot paint narrower than its
-  // own padding however short the event is. A brief update is exactly that case:
-  // its percentage width is near zero while the bar still occupies 18px, and a
-  // tick placed by percentage alone landed back on top of it.
-  const barLeftPx = (safeDisplayLeft / 100) * safeLaneWidth;
-  const proportionalBarEndPx = (barEndPct / 100) * safeLaneWidth;
-  const barEndPx =
-    safeLaneWidth > 0 ? Math.min(safeLaneWidth, Math.max(proportionalBarEndPx, barLeftPx + MIN_BAR_PX)) : 0;
-  const barInnerPx = Math.max(0, barEndPx - barLeftPx - BAR_TEXT_INSET_PX);
-
-  // Preserve room for the optional span before the tick is allowed to float.
-  // This keeps long bars from pushing the tick into the countdown.
-  const tickFloats = safeLaneWidth > 0 && barEndPx + TICK_SLOT_PX <= safeLaneWidth - countdownWidth - SPAN_PX;
-  const trailingClusterPx = countdownWidth + (tickFloats ? 0 : TICK_SLOT_PX);
-  const clusterStartPx = Math.max(0, safeLaneWidth - trailingClusterPx);
-  const textRightPx = Math.min(barEndPx, clusterStartPx);
-  const insideLabelPx = Math.max(0, textRightPx - barLeftPx - BAR_TEXT_INSET_PX);
-
-  if (labelMode !== 'outside' && insideLabelPx >= MIN_LABEL_PX) {
-    if (tickFloats && barInnerPx >= SPAN_PX) {
-      return {
-        tier: 'roomy',
-        tickFloats: true,
-        showSpan: true,
-        labelPlacement: 'inside',
-        barTextMaxWidth: insideLabelPx,
-        trailingClusterPx,
-        barEndPct,
-      };
-    }
-
-    if (tickFloats) {
-      return {
-        tier: 'snug',
-        tickFloats: true,
-        showSpan: false,
-        labelPlacement: 'inside',
-        barTextMaxWidth: insideLabelPx,
-        trailingClusterPx,
-        barEndPct,
-      };
-    }
-
-    return {
-      tier: 'tight',
-      tickFloats: false,
-      showSpan: false,
-      labelPlacement: 'inside',
-      barTextMaxWidth: insideLabelPx,
-      trailingClusterPx,
-      barEndPct,
-    };
-  }
-
-  // A future bar can be clipped by the right edge of the window. Use its
-  // empty lead-in for the countdown so the title stays on its own bar.
-  if (
-    labelMode !== 'outside' &&
-    barInnerPx >= MIN_LABEL_PX &&
-    barLeftPx >= countdownWidth + TICK_SLOT_PX + BAR_TEXT_INSET_PX
-  ) {
-    return {
-      tier: 'tight',
-      tickFloats: false,
-      showSpan: false,
-      labelPlacement: 'inside',
-      barTextMaxWidth: barInnerPx,
-      trailingClusterPx: countdownWidth + TICK_SLOT_PX,
-      barEndPct,
-      clusterBefore: true,
-    };
-  }
-
-  // An outside label and a floating tick would compete for the same gap. Keep
-  // the mandatory tick with the countdown, then give the label the remaining
-  // lane space on either side of the bar.
-  const minimalTrailingClusterPx = countdownWidth + TICK_SLOT_PX;
-  const minimalClusterStartPx = Math.max(0, safeLaneWidth - minimalTrailingClusterPx);
-  const afterLabelPx = Math.max(0, minimalClusterStartPx - barEndPx);
-  const beforeLabelPx = Math.max(0, Math.min(barLeftPx, minimalClusterStartPx));
-  // After the bar reads first, but not when that gap would cut the name to a
-  // few letters while the lead-in before the bar has room for all of it.
-  const afterRoomy = afterLabelPx >= COMFORTABLE_LABEL_PX || afterLabelPx >= beforeLabelPx;
-  const labelPlacement =
-    afterLabelPx >= MIN_LABEL_PX && afterRoomy
-      ? 'after'
-      : beforeLabelPx >= MIN_LABEL_PX
-        ? 'before'
-        : afterLabelPx >= MIN_LABEL_PX
-          ? 'after'
-          : 'none';
-  const barTextMaxWidth = labelPlacement === 'after' ? afterLabelPx : labelPlacement === 'before' ? beforeLabelPx : 0;
-
-  return {
-    tier: 'minimal',
-    tickFloats: false,
-    showSpan: false,
-    labelPlacement,
-    barTextMaxWidth,
-    trailingClusterPx: minimalTrailingClusterPx,
-    barEndPct,
-  };
-}
-
-export function timelineCountdown(
-  event: Pick<GameEvent, 'done' | 'start' | 'end'>,
-  now: number,
-): { ended: boolean; upcoming: boolean; remainingMs: number; label: string } {
-  const ended = event.end <= now;
-  const upcoming = event.start > now;
-  const remainingMs = upcoming ? event.start - now : event.end - now;
-  const label = event.done ? 'done' : ended ? 'ended' : `${upcoming ? 'arrives' : 'ends'} ${fmtDur(remainingMs)}`;
-  return { ended, upcoming, remainingMs, label };
-}
-
-/**
- * Soft hand-offs between consecutive instances of the SAME cycle, and nothing
- * else. A cycle is one recurring thing — Spiral Abyss, Imaginarium Theater — so
- * the curve says "this is that again", which a stack of unrelated bars cannot.
- *
- * The overlay measures the rendered row stack. This keeps each endpoint on the
- * true row centre as the responsive row height changes.
- */
-/**
- * Seamless hand-offs: each instance of a cycle that the next instance of the
- * same cycle follows with no downtime, mapped to that successor. Rows must be
- * adjacent (manual ordering never bridges across other events) and the next
- * window must open within the hour the previous one closes — separate playable
- * windows must not look like one continuous event.
- */
-export function seamlessHandoffs(events: GameEvent[]): Map<string, GameEvent> {
-  const handoffs = new Map<string, GameEvent>();
-  for (let i = 0; i < events.length - 1; i += 1) {
-    const from = events[i]!;
-    const to = events[i + 1]!;
-    const key = cycleKey(from);
-    if (key === null || key !== cycleKey(to)) continue;
-    if (to.start > from.end || to.start < from.end - HOUR) continue;
-    handoffs.set(from.id, to);
-  }
-  return handoffs;
-}
-
-export function buildCycleConnectorPaths(
-  events: GameEvent[],
-  ws: number,
-  we: number,
-  rowCenters: ReadonlyMap<string, number>,
-  laneWidth = 1000,
-  barHeights: ReadonlyMap<string, number> = new Map(),
-): string[] {
-  const paths: string[] = [];
-  const byId = new Map(events.map((event) => [event.id, event]));
-  for (const [fromId, to] of seamlessHandoffs(events)) {
-    const from = byId.get(fromId)!;
-    const r1 = (barHeights.get(from.id) ?? 22) / 2;
-    const r2 = (barHeights.get(to.id) ?? 22) / 2;
-    const x1 = (barGeometry(from, ws, we).displayRight / 100) * laneWidth - r1;
-    const x2 = (barGeometry(to, ws, we).displayLeft / 100) * laneWidth + r2;
-    const y1 = rowCenters.get(from.id);
-    const y2 = rowCenters.get(to.id);
-    if (y1 === undefined || y2 === undefined) continue;
-    const distance = Math.hypot(x2 - x1, y2 - y1);
-    if (!Number.isFinite(distance) || distance < 1 || !(laneWidth > 0)) continue;
-    const dx = (x2 - x1) / distance;
-    const dy = (y2 - y1) / distance;
-    // Attach inside each curved cap. Two curved sides narrow to a small
-    // waist, making a filled bridge rather than an outlined connection.
-    const start = { x: x1 + dx * r1 * 0.5, y: y1 + dy * r1 * 0.5 };
-    const end = { x: x2 - dx * r2 * 0.5, y: y2 - dy * r2 * 0.5 };
-    const middle = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
-    const waist = Math.min(2.2, r1 * 0.2, r2 * 0.2);
-    const pull = Math.hypot(end.x - start.x, end.y - start.y) * 0.22;
-    const point = (center: { x: number; y: number }, width: number, along = 0) =>
-      `${(center.x - dy * width + dx * along).toFixed(2)} ${(center.y + dx * width + dy * along).toFixed(2)}`;
-    paths.push(
-      [
-        `M ${point(start, r1 * 0.65)}`,
-        `C ${point(start, r1 * 0.65, pull)}, ${point(middle, waist, -pull)}, ${point(middle, waist)}`,
-        `C ${point(middle, waist, pull)}, ${point(end, r2 * 0.65, -pull)}, ${point(end, r2 * 0.65)}`,
-        `L ${point(end, -r2 * 0.65)}`,
-        `C ${point(end, -r2 * 0.65, -pull)}, ${point(middle, -waist, pull)}, ${point(middle, -waist)}`,
-        `C ${point(middle, -waist, -pull)}, ${point(start, -r1 * 0.65, pull)}, ${point(start, -r1 * 0.65)}`,
-        'Z',
-      ].join(' '),
-    );
-  }
-  return paths;
-}
-
-interface ConnectorLayout {
-  height: number;
-  width: number;
-  rowCenters: Map<string, number>;
-  barHeights: Map<string, number>;
-}
-
-export function CycleConnectors({ events, ws, we, ink }: { events: GameEvent[]; ws: number; we: number; ink: string }) {
-  const inset = useInset();
-  const svgRef = useRef<SVGSVGElement>(null);
-  const [layout, setLayout] = useState<ConnectorLayout>({
-    height: 0,
-    width: 1000,
-    rowCenters: new Map(),
-    barHeights: new Map(),
-  });
-  const hasConnections = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const event of events) {
-      const key = cycleKey(event);
-      if (key === null) continue;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
-    return [...counts.values()].some((count) => count > 1);
-  }, [events]);
-
-  useLayoutEffect(() => {
-    const stack = svgRef.current?.parentElement;
-    if (!stack) return;
-
-    const rows = [...stack.querySelectorAll<HTMLElement>('[data-timeline-event-row]')];
-    const measure = () => {
-      const rowCenters = new Map<string, number>();
-      const barHeights = new Map<string, number>();
-      for (const row of rows) {
-        const eventId = row.dataset.eventId;
-        const bar = row.querySelector<HTMLElement>('[data-event-bar]');
-        if (eventId) {
-          rowCenters.set(eventId, row.offsetTop + (bar?.offsetTop ?? 0) + (bar?.offsetHeight ?? row.offsetHeight) / 2);
-          barHeights.set(eventId, bar?.offsetHeight || 22);
-        }
-      }
-      const height = stack.clientHeight;
-      const width = stack.clientWidth || 1000;
-      setLayout((current) => {
-        const unchanged =
-          current.height === height &&
-          current.width === width &&
-          current.rowCenters.size === rowCenters.size &&
-          [...rowCenters].every(
-            ([id, center]) =>
-              current.rowCenters.get(id) === center && current.barHeights.get(id) === barHeights.get(id),
-          );
-        return unchanged ? current : { height, width, rowCenters, barHeights };
-      });
-    };
-
-    measure();
-    if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(measure);
-    observer.observe(stack);
-    rows.forEach((row) => observer.observe(row));
-    return () => observer.disconnect();
-  }, [events]);
-
-  const paths = buildCycleConnectorPaths(events, ws, we, layout.rowCenters, layout.width, layout.barHeights);
-  if (!hasConnections) return null;
-
-  return (
-    <svg
-      ref={svgRef}
-      aria-hidden
-      data-cycle-connectors
-      className="pointer-events-none absolute inset-0 z-[1] h-full w-full"
-      viewBox={`0 0 ${layout.width} ${Math.max(layout.height, 1)}`}
-      preserveAspectRatio="none"
-      fill="none"
-    >
-      {paths.map((d) => (
-        <path key={d} d={d} fill={mix(ink, inset, 0.34)} />
-      ))}
-    </svg>
-  );
-}
-
-const EventRow = memo(function EventRow({
+const TimelineBar = memo(function TimelineBar({
   ev,
   game,
   ink,
-  inset,
   now,
   ws,
   we,
-  onOpenEvent,
-  onToggleEvent,
-  laneWidth,
+  trackPx,
   localTz,
   compact,
-  editing,
-  held = false,
-  reorderHandle,
-  follows = false,
-  instances,
-}: {
-  ev: GameEvent;
-  game: Game;
-  /** The lane's assigned colour, so bars and lane title agree. */
-  ink: string;
-  /** The track colour bars are mixed against. Hex, because mix() parses hex. */
-  inset: string;
-  now: number;
-  ws: number;
-  we: number;
-  onOpenEvent: (event: GameEvent) => void;
-  onToggleEvent: (event: GameEvent) => void;
-  /** Measured lane width in px, so the trailing furniture can be laid out. */
-  laneWidth: number;
-  localTz: string;
-  /** Phone width: the name on its own line above a thin time bar. */
-  compact: boolean;
-  /** Ticks and reorder handles only show while editing. */
-  editing: boolean;
-  /** Picked up by a hold and following the finger. */
-  held?: boolean;
-  reorderHandle?: ReactNode;
-  /** The previous instance of this cycle hands straight over to this one. */
-  follows?: boolean;
-  /** Phone width: every instance of a seamless cycle, drawn on this one track. */
-  instances?: GameEvent[];
-}) {
-  const { displayLeft: proportionalLeft, displayWidth } = barGeometry(ev, ws, we);
-  // Keep the minimum painted cap inside the lane for events at the window edge.
-  const displayLeft =
-    laneWidth > 0 ? Math.min(proportionalLeft, Math.max(0, 100 - (MIN_BAR_PX / laneWidth) * 100)) : proportionalLeft;
-  const countdown = timelineCountdown(ev, now);
-  const calendar = calendarSchedule(ev);
-  // The next instance of a cycle that never pauses is not news: the row above
-  // already counts down to the hand-off, so this one says "next", quietly,
-  // instead of repeating the same countdown in an urgent colour.
-  const handedOver = follows && countdown.upcoming && !ev.done;
-  const countdownLabel = handedOver ? 'next' : calendar && !ev.done && ev.end > now ? calendar.label : countdown.label;
-  const [countdownRef, countdownWidth] = useElementWidth();
-  const { ended, remainingMs } = countdown;
-  const maint = ev.type === 'maintenance';
-  const banner = ev.type === 'banner';
-  const cycle = ev.type === 'cycle';
+  onOpenEvent,
+  onToggleEvent,
+}: BoardProps & { ev: GameEvent }) {
+  const { left, width } = place(ev.start, ev.end, ws, we);
+  const predicted = isPredictedWindow(ev);
   const stream = ev.type === 'livestream';
-  const endColor = calendar || handedOver ? 'var(--color-later)' : endTone(remainingMs);
-  const tone = endColor === 'var(--color-later)' ? 'var(--color-muted)' : endColor;
-  const localStart = DateTime.fromMillis(ev.start, { zone: localTz });
-  const localEnd = DateTime.fromMillis(ev.end, { zone: localTz });
-  const spanLabel = calendar?.label ?? `${localStart.toFormat('dd LLL')} → ${localEnd.toFormat('dd LLL')}`;
-  const scheduleDescription =
-    calendar?.description ??
-    `Starts ${localStart.toFormat('d LLL yyyy HH:mm')}. Ends ${localEnd.toFormat('d LLL yyyy HH:mm')}. Dates in ${localTz}.`;
-  // Computed once so the fill and the ink chosen for it can never disagree.
-  // A livestream is a one-off marker only a few hours wide, so it carries the
-  // least inset of any row: at that width a pale fill vanishes into the lane.
-  const barFill = stream
-    ? mix(ink, inset, 0.16)
-    : maint
-      ? mix(ink, inset, 0.22)
-      : cycle
-        ? mix(ink, inset, 0.34)
-        : banner
-          ? mix(ink, inset, 0.28)
-          : mix(ink, inset, 0.46);
-  const barInk = onColor(barFill);
-
-  // Measure the countdown when its size changes so text zoom and longer arrival
-  // labels reserve their true width. ResizeObserver avoids reads on every tick.
-  const { barEndPct, tickFloats, showSpan, labelPlacement, barTextMaxWidth, clusterBefore, trailingClusterPx } =
-    timelineRowLayout(
-      displayLeft,
-      displayWidth,
-      laneWidth,
-      maint || stream ? 'outside' : 'auto',
-      // A hand-off row has no countdown of its own; its name gets the room.
-      handedOver && !editing ? 0 : Math.max(COUNTDOWN_PX, countdownWidth + 8),
-    );
-
-  const tick = (
+  const countdown = barCountdown(ev, now, we, localTz);
+  const description = scheduleText(ev, localTz);
+  const open = (
     <button
       type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onToggleEvent(ev);
-      }}
-      aria-label={ev.done ? `Restore ${ev.name}` : `Mark ${ev.name} done`}
-      className={`pointer-events-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-ui-full transition-opacity duration-(--dur-fast) motion-reduce:transition-none ${
-        tickFloats ? 'absolute z-30 -translate-y-1/2' : ''
-      } ${
-        ev.done
-          ? ''
-          : 'opacity-60 hover:opacity-100 focus-visible:opacity-100 sm:opacity-0 sm:group-hover/row:opacity-100 sm:group-focus-within/row:opacity-100'
-      }`}
-      style={
-        tickFloats
-          ? {
-              left: `calc(max(${barEndPct}%, ${displayLeft}% + ${MIN_BAR_PX}px) + 0.375rem)`,
-              top: 'calc(var(--lane-bar-h) / 2)',
-            }
-          : undefined
-      }
-    >
-      {/* The tick wears the bar's own skin — same fill, same ink border — so it
-          reads as the end cap of that bar rather than a control borrowed from
-          somewhere else in the app. */}
-      <span
-        aria-hidden
-        className="flex h-full w-full items-center justify-center rounded-ui-full border text-caption font-black"
-        style={{
-          backgroundColor: ev.done ? 'var(--color-ok)' : barFill,
-          borderColor: ink,
-          color: ev.done ? 'var(--color-fg-invert)' : barInk,
-        }}
-      >
-        ✓
-      </span>
-    </button>
+      className="tl-open"
+      onClick={() => onOpenEvent(ev)}
+      aria-label={`Open ${game.name} event: ${ev.name}`}
+      aria-description={description}
+      title={`${ev.name}. ${description}`}
+    />
   );
 
-  if (compact) {
-    // Horizontal room is what a phone lacks, so the name gets the full width on
-    // one line and the bar keeps its true time geometry on a thin line beneath.
+  // A confirmed livestream is a moment, not a span: a diamond at its start.
+  if (stream && !predicted) {
     return (
-      <m.div
-        variants={slideIn}
-        initial="hidden"
-        animate="visible"
-        data-timeline-event-row
+      <div
         data-event-id={ev.id}
-        data-held={held || undefined}
-        className="timeline-event-lane timeline-event-compact relative"
+        data-timeline-event-row
+        className="tl-milestone"
+        data-done={ev.done || undefined}
+        style={{ left: pct(left), '--ink': ink } as CSSProperties}
       >
-        {editing && reorderHandle}
-        <div className={`group/row relative w-full ${ev.done ? 'opacity-40' : ''}`}>
-          <button
-            type="button"
-            onClick={() => onOpenEvent(ev)}
-            className="timeline-compact-open absolute inset-0 z-10 rounded-ui-md"
-            aria-label={`Open ${game.name} event: ${ev.name}`}
-            aria-description={scheduleDescription}
-          />
-          <div className="timeline-compact-head pointer-events-none relative z-20">
-            <span
-              className={`flex min-w-0 flex-1 items-center gap-1 text-meta text-fg ${maint || banner ? 'font-normal' : 'font-medium'}`}
-            >
-              <EventTags game={game} event={ev} inherit availableWidth={laneWidth / 2} />
-              {ev.pinned && <PinMark className="h-3.5 w-3.5 shrink-0" />}
-              <span data-event-title className="min-w-0 truncate">
-                {ev.name}
-              </span>
-            </span>
-            <span
-              data-event-countdown
-              className="numeral shrink-0 text-caption font-bold"
-              style={{ color: ev.done ? 'var(--color-ok)' : tone }}
-            >
-              {countdownLabel}
-            </span>
-            {editing && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleEvent(ev);
-                }}
-                aria-label={ev.done ? `Restore ${ev.name}` : `Mark ${ev.name} done`}
-                className="timeline-compact-tick pointer-events-auto"
-              >
-                <span
-                  aria-hidden
-                  className="flex h-5 w-5 items-center justify-center rounded-ui-full border text-caption font-black"
-                  style={{
-                    backgroundColor: ev.done ? 'var(--color-ok)' : barFill,
-                    borderColor: ink,
-                    color: ev.done ? 'var(--color-fg-invert)' : barInk,
-                  }}
-                >
-                  ✓
-                </span>
-              </button>
-            )}
-          </div>
-          <div className="timeline-compact-track timeline-event-track pointer-events-none relative">
-            {(instances ?? [ev]).map((instance, index) => {
-              const own = instance === ev;
-              const geometry = own ? { displayLeft, displayWidth } : barGeometry(instance, ws, we);
-              return (
-                <span
-                  key={instance.id}
-                  data-event-bar={own || undefined}
-                  data-cycle-instance={instances ? instance.id : undefined}
-                  data-pinned={(own && ev.pinned) || undefined}
-                  className="timeline-compact-bar absolute inset-y-0"
-                  style={{
-                    left: `${geometry.displayLeft}%`,
-                    width: `max(${geometry.displayWidth}%, 6px)`,
-                    backgroundColor: ink,
-                    opacity: instance.end <= now ? 0.35 : own ? 1 : 0.55,
-                    // A hairline notch where one instance hands over to the next.
-                    boxShadow: index > 0 ? 'inset 2px 0 0 var(--color-surface-0)' : undefined,
-                  }}
-                />
-              );
-            })}
-          </div>
-        </div>
-      </m.div>
+        {open}
+        <span data-event-bar aria-hidden className="tl-diamond" />
+        <span data-event-title className="tl-milestone-name">
+          {ev.name}
+        </span>
+        <span data-event-countdown className="sr-only">
+          {countdown.label}
+        </span>
+      </div>
     );
   }
 
+  const barPx = (width / 100) * trackPx;
+  const cutStart = ev.start < ws;
+  const cutEnd = ev.end > we;
   return (
-    <m.div
-      variants={slideIn}
-      initial="hidden"
-      animate="visible"
-      data-timeline-event-row
+    <div
       data-event-id={ev.id}
-      data-held={held || undefined}
-      className="timeline-event-lane relative"
+      data-timeline-event-row
+      className="tl-bar"
+      data-done={ev.done || undefined}
+      data-predicted={predicted || undefined}
+      data-cut-start={cutStart || undefined}
+      data-cut-end={cutEnd || undefined}
+      style={
+        {
+          left: pct(left),
+          width: `max(${pct(width)}, ${MIN_BAR_PX}px)`,
+          '--ink': ink,
+        } as CSSProperties
+      }
     >
-      {editing && reorderHandle}
-      <div
-        className={`group/row relative block h-[var(--lane-row-h)] w-full rounded-ui-lg text-left ${
-          ev.done ? 'opacity-40' : ''
-        }`}
-      >
-        <button
-          type="button"
-          onClick={() => onOpenEvent(ev)}
-          className="absolute inset-0 z-10 rounded-ui-lg"
-          aria-label={`Open ${game.name} event: ${ev.name}`}
-          title={`${ev.name}. ${scheduleDescription}`}
-          aria-description={scheduleDescription}
-          style={
-            tickFloats ? undefined : clusterBefore ? { left: `${displayLeft}%` } : { right: trailingClusterPx + 4 }
-          }
-        />
-        <div className="timeline-event-track absolute inset-x-0 top-0 h-[var(--lane-bar-h)] rounded-ui-lg border border-line-hairline bg-fill-2" />
-        <ProgressBar
-          variant="timeline"
-          value={displayWidth / 100}
-          start={displayLeft / 100}
-          color={ink}
-          data-event-bar
-          data-pinned={ev.pinned || undefined}
-          className="absolute top-0 z-[2] flex h-[var(--lane-bar-h)] items-center overflow-hidden rounded-ui-lg border px-2"
-          style={{
-            backgroundColor: barFill,
-            borderColor: ink,
-            opacity: ended ? 0.35 : 1,
-          }}
-        >
-          {labelPlacement === 'inside' && (
-            <span
-              className={`flex min-w-0 flex-1 items-center gap-1 overflow-hidden text-meta ${maint || banner ? 'font-normal' : 'font-medium'}`}
-              style={{ color: barInk, maxWidth: barTextMaxWidth }}
-            >
-              <EventTags game={game} event={ev} inherit availableWidth={barTextMaxWidth} />
-              {ev.pinned && <PinMark className="h-3.5 w-3.5 shrink-0" />}
-              <span data-event-title className="min-w-0 truncate">
-                {ev.name}
-              </span>
-            </span>
-          )}
-          {/* An uncrowded row keeps the range where it reads best: inside the bar
-              it belongs to, revealed on hover. */}
-          {showSpan && (
-            <span
-              className="numeral pointer-events-none absolute inset-y-0 right-2 z-30 flex items-center whitespace-nowrap pl-2 text-caption uppercase opacity-0 transition-opacity duration-(--dur-fast) group-hover/row:opacity-100 group-focus-within/row:opacity-100 motion-reduce:transition-none"
-              style={{ backgroundColor: barFill, color: barInk }}
-            >
-              {spanLabel}
-            </span>
-          )}
-        </ProgressBar>
-
-        {labelPlacement !== 'inside' && labelPlacement !== 'none' && (
-          <span
-            className={`pointer-events-none absolute top-0 z-20 flex h-[var(--lane-bar-h)] items-center overflow-hidden text-meta text-fg-soft ${
-              maint || banner ? 'font-normal' : 'font-medium'
-            } ${labelPlacement === 'before' ? 'justify-end text-right' : ''}`}
-            style={
-              labelPlacement === 'after'
-                ? {
-                    left: `max(${barEndPct}%, calc(${displayLeft}% + ${MIN_BAR_PX}px))`,
-                    width: barTextMaxWidth,
-                  }
-                : {
-                    left: 0,
-                    width: barTextMaxWidth,
-                  }
-            }
+      {open}
+      <span data-event-bar data-pinned={ev.pinned || undefined} className="tl-face">
+        {!compact && (
+          <button
+            type="button"
+            className="tl-tick"
+            aria-label={ev.done ? `Restore ${ev.name}` : `Mark ${ev.name} done`}
+            onClick={() => onToggleEvent(ev)}
           >
-            <span className="flex min-w-0 items-center gap-1">
-              <EventTags game={game} event={ev} inherit availableWidth={barTextMaxWidth} />
-              {ev.pinned && <PinMark className="h-3.5 w-3.5 shrink-0" />}
-              <span data-event-title className="min-w-0 truncate">
-                {ev.name}
-              </span>
-            </span>
+            {ev.done && (
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
+                <path d="m4.5 10.5 3.5 3.5 7.5-8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
+        )}
+        {predicted && stream && <span aria-hidden className="tl-diamond" />}
+        <span className="tl-name">
+          <EventTags game={game} event={ev} inherit availableWidth={barPx - 70} />
+          {ev.type === 'cycle' && barPx > 160 && <span className="tl-tag">Cycle ·</span>}
+          {ev.pinned && <PinMark className="h-3.5 w-3.5 shrink-0" />}
+          <span data-event-title className="min-w-0 truncate">
+            {ev.name.replace(/\s*—\s*predicted window/i, '')}
+          </span>
+        </span>
+        {/* A phone shows the countdown only where it ends inside the week. A bar
+            too short for both keeps its name; the countdown is still read out. */}
+        {(!compact || (countdown.tone !== 'muted' && !cutEnd) || ev.done) && (
+          <span
+            data-event-countdown
+            className={`tl-left numeral ${barPx > 0 && barPx < COUNTDOWN_ROOM_PX ? 'sr-only' : ''}`}
+            style={{ color: TONE[countdown.tone] }}
+          >
+            {predicted ? 'predicted' : countdown.label}
           </span>
         )}
-
-        {editing && tickFloats && tick}
-
-        {/* One right-anchored cluster keeps the mandatory tick and countdown from
-            stacking. The tick only joins it when the measured lane needs the gap. */}
-        <span
-          data-event-countdown
-          className="pointer-events-none absolute right-1 top-0 z-30 flex h-[var(--lane-bar-h)] items-center gap-1.5"
-          style={clusterBefore ? { right: `calc(${100 - displayLeft}% + 8px)` } : undefined}
-        >
-          {editing && !tickFloats && tick}
-          {/* The curve from the row above already says "this comes next". */}
-          {handedOver ? (
-            <span className="sr-only">{countdownLabel}</span>
-          ) : (
-            <Tooltip content={calendar?.description ?? 'Time left'}>
-              <span
-                ref={countdownRef}
-                className="whitespace-nowrap rounded-ui-sm bg-scrim-veil px-1.5 py-px text-caption font-bold tabular-nums"
-                style={{ color: ev.done ? 'var(--color-ok)' : tone }}
-              >
-                {countdownLabel}
-              </span>
-            </Tooltip>
-          )}
-        </span>
-      </div>
-    </m.div>
+      </span>
+    </div>
   );
 });
 
-/** How long a still press on an event takes to pick it up. */
-const HOLD_MS = 450;
-/** Moving further than this before the hold completes is a scroll, not a hold. */
-const HOLD_SLOP_PX = 8;
-
-/**
- * Handles appear only while editing. Holding any event for a moment also picks
- * it up: editing turns on and the event follows the finger until it is let go.
- */
-export function ReorderableEventRows({
-  events,
+/** Maintenance: a hatched band down every row of its game. */
+function MaintenanceBand({
+  ev,
   game,
-  editing,
-  onHold,
-  ...rowProps
+  ws,
+  we,
+  localTz,
+  onOpenEvent,
 }: {
-  events: GameEvent[];
+  ev: GameEvent;
   game: Game;
-  ink: string;
-  inset: string;
-  now: number;
   ws: number;
   we: number;
-  onOpenEvent: (event: GameEvent) => void;
-  onToggleEvent: (event: GameEvent) => void;
-  laneWidth: number;
   localTz: string;
-  compact: boolean;
-  editing: boolean;
-  /** A held event turns editing on. */
-  onHold: () => void;
+  onOpenEvent: (event: GameEvent) => void;
 }) {
-  const reorder = useApp((s) => s.reorderEvents);
-  const container = useRef<HTMLDivElement>(null);
-  const gesture = useRef<{ id: string; pointerId: number; y: number; order: string[]; moved: boolean } | null>(null);
-  const hold = useRef<{ timer: number; pointerId: number; x: number; y: number } | null>(null);
-  const swallowClick = useRef(false);
-  const [preview, setPreview] = useState<string[] | null>(null);
-  const [heldId, setHeldId] = useState<string | null>(null);
-  const [announcement, setAnnouncement] = useState('');
-  const ids = events.map((event) => event.id);
-  const visible = preview ? preview.flatMap((id) => events.filter((event) => event.id === id)) : events;
-  const handoffs = seamlessHandoffs(visible);
-  const followers = new Set([...handoffs.values()].map((event) => event.id));
-  // A phone has no room for a curve between rows, so a cycle that never pauses
-  // is one row: its instances share a track, and the row speaks for the one
-  // running now. Editing splits them again, so each can be ticked and moved.
-  const rows: { event: GameEvent; instances?: GameEvent[] }[] = [];
-  for (const event of visible) {
-    if (!rowProps.compact || editing || !handoffs.has(event.id)) {
-      if (!(rowProps.compact && !editing && followers.has(event.id))) rows.push({ event });
-      continue;
-    }
-    if (followers.has(event.id)) continue;
-    const instances = [event];
-    for (let next = handoffs.get(event.id); next; next = handoffs.get(next.id)) instances.push(next);
-    const live = instances.find((instance) => !instance.done && instance.end > rowProps.now) ?? instances.at(-1)!;
-    rows.push({ event: live, instances });
-  }
-  const commit = (order: string[], id: string) => {
-    reorder(game.id, order);
-    setAnnouncement(
-      `${events.find((event) => event.id === id)?.name} moved to position ${order.indexOf(id) + 1} of ${order.length}.`,
-    );
-  };
-  const cancelHold = () => {
-    if (hold.current) window.clearTimeout(hold.current.timer);
-    hold.current = null;
-  };
-  const endDrag = () => {
-    gesture.current = null;
-    setPreview(null);
-    setHeldId(null);
-  };
+  const { left, width } = place(ev.start, ev.end, ws, we);
+  return (
+    <button
+      type="button"
+      data-event-id={ev.id}
+      data-timeline-event-row
+      className="tl-maint"
+      style={{ left: pct(left), width: `max(${pct(width)}, 6px)` }}
+      onClick={() => onOpenEvent(ev)}
+      aria-label={`Open ${game.name} event: ${ev.name}`}
+      aria-description={scheduleText(ev, localTz)}
+      title={`${ev.name}. ${scheduleText(ev, localTz)}`}
+    >
+      <span data-event-bar aria-hidden />
+    </button>
+  );
+}
 
-  // While an event is held the page must not scroll under the finger. Only a
-  // non-passive listener can stop that.
-  useEffect(() => {
-    const node = container.current;
-    if (!node) return;
-    const stopScroll = (event: TouchEvent) => {
-      if (gesture.current && event.cancelable) event.preventDefault();
-    };
-    node.addEventListener('touchmove', stopScroll, { passive: false });
-    return () => {
-      node.removeEventListener('touchmove', stopScroll);
-      if (hold.current) window.clearTimeout(hold.current.timer);
-    };
+type Row = { group: string; label?: string; events: GameEvent[] };
+
+/**
+ * Rows for one game: banners on rows of their own, everything else packed so
+ * events that do not overlap share a row. Maintenance is not a row; it is
+ * drawn across them.
+ */
+function packGame(game: Game, events: GameEvent[], ws: number, we: number, trackPx: number): Row[] {
+  const msPerPx = trackPx > 0 ? (we - ws) / trackPx : 0;
+  const reach = (ev: GameEvent) => {
+    const minPx = ev.type === 'livestream' && !isPredictedWindow(ev) ? 24 + ev.name.length * LABEL_CHAR_PX : MIN_BAR_PX;
+    return minPx * msPerPx;
+  };
+  const rows: Row[] = [];
+  const rowEvents = events.filter((ev) => ev.type !== 'maintenance');
+  // Genshin already splits by world with banners last; every game gets the banner rows.
+  const groups = [
+    ...groupGameEvents(
+      game,
+      rowEvents.filter((ev) => ev.type !== 'banner'),
+    ),
+    { key: 'banners', label: 'Banners', events: rowEvents.filter((ev) => ev.type === 'banner') },
+  ];
+  const byId = new Map(events.map((ev) => [ev.id, ev]));
+  for (const group of groups) {
+    if (group.events.length === 0) continue;
+    const spans = group.events.map((ev) => {
+      const start = Math.max(ev.start, ws);
+      return { id: ev.id, start, end: Math.max(Math.min(ev.end, we), start + reach(ev)) };
+    });
+    packSpans(spans, 0, ROW_GAP_PX * msPerPx).forEach((packed, index) =>
+      rows.push({
+        group: group.key,
+        label: index === 0 && group.key !== 'events' ? group.label : undefined,
+        events: packed.map((span) => byId.get(span.id)!),
+      }),
+    );
+  }
+  return rows;
+}
+
+const TimelineLane = memo(function TimelineLane({
+  game,
+  ink,
+  nameInk,
+  events,
+  finishedHidden,
+  open,
+  onOpenChange,
+  ...board
+}: BoardProps & {
+  nameInk: string;
+  /** Events this lane shows, already filtered for Show finished. */
+  events: GameEvent[];
+  /** Events in the range that Show finished is hiding. */
+  finishedHidden: number;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { now, ws, we, trackPx, localTz, compact } = board;
+  const server = gameServerLabel(game, now);
+  const account = game.accountLabel?.trim();
+  const countText = `${events.length} ${events.length === 1 ? 'event' : 'events'}`;
+  const countLine = `${countText}${account ? ` · ${account}` : ''}`;
+  const shownName = compact || game.name.length > LONG_NAME ? game.short || game.name : game.name;
+  const rows = useMemo(() => packGame(game, events, ws, we, trackPx), [game, events, ws, we, trackPx]);
+  const maintenance = events.filter((ev) => ev.type === 'maintenance');
+  const contentId = `timeline-lane-${game.id}`;
+  const summary = collapsedSummary(events, now, localTz, compact);
+  const groups = rows.reduce<{ key: string; label: string; rows: Row[] }[]>((list, row) => {
+    const last = list.at(-1);
+    if (last?.key === row.group) last.rows.push(row);
+    else list.push({ key: row.group, label: row.label ?? 'Events', rows: [row] });
+    return list;
   }, []);
 
   return (
-    <div
-      ref={container}
-      className="timeline-rows relative flex flex-col"
-      data-holding={preview ? '' : undefined}
-      onPointerDownCapture={(e) => {
-        if ((e.pointerType === 'mouse' && e.button !== 0) || gesture.current || events.length < 2) return;
-        const target = e.target as HTMLElement;
-        if (target.closest('.timeline-reorder-handle, [aria-label^="Mark "], [aria-label^="Restore "]')) return;
-        const id = target.closest<HTMLElement>('[data-timeline-event-row]')?.dataset.eventId;
-        if (!id) return;
-        cancelHold();
-        const { pointerId, clientX, clientY } = e;
-        hold.current = {
-          pointerId,
-          x: clientX,
-          y: clientY,
-          timer: window.setTimeout(() => {
-            hold.current = null;
-            try {
-              container.current?.setPointerCapture(pointerId);
-            } catch {
-              return; // The press already ended.
-            }
-            swallowClick.current = true;
-            navigator.vibrate?.(12);
-            onHold();
-            gesture.current = { id, pointerId, y: clientY, order: ids, moved: false };
-            setHeldId(id);
-            setPreview(ids);
-          }, HOLD_MS),
-        };
-      }}
-      onClickCapture={(e) => {
-        if (!swallowClick.current) return;
-        swallowClick.current = false;
-        e.preventDefault();
-        e.stopPropagation();
-      }}
-      onContextMenu={(e) => {
-        if (hold.current || gesture.current) {
-          e.preventDefault();
-          return;
-        }
-        // Right-click ticks an event off (or back on). A long press on touch is the reorder gesture.
-        if ((e.nativeEvent as PointerEvent).pointerType === 'touch') return;
-        const id = (e.target as HTMLElement).closest<HTMLElement>('[data-timeline-event-row]')?.dataset.eventId;
-        const event = id ? events.find((item) => item.id === id) : undefined;
-        if (!event) return;
-        e.preventDefault();
-        rowProps.onToggleEvent(event);
-      }}
-      onPointerMove={(e) => {
-        const pending = hold.current;
-        if (pending?.pointerId === e.pointerId) {
-          if (Math.hypot(e.clientX - pending.x, e.clientY - pending.y) > HOLD_SLOP_PX) cancelHold();
-          return;
-        }
-        const drag = gesture.current;
-        if (!drag || drag.pointerId !== e.pointerId || (Math.abs(e.clientY - drag.y) < 5 && !drag.moved)) return;
-        drag.moved = true;
-        // Read current viewport positions: the page can scroll while the pointer is held.
-        // A pointer-down snapshot targets stale slots after a long drag.
-        const centers = [...e.currentTarget.querySelectorAll('[data-timeline-event-row]')].map((row) => {
-          const rect = row.getBoundingClientRect();
-          return rect.top + rect.height / 2;
-        });
-        const target = centers.reduce(
-          (best, center, index) => (Math.abs(center - e.clientY) < Math.abs(centers[best] - e.clientY) ? index : best),
-          0,
-        );
-        const order = drag.order.filter((id) => id !== drag.id);
-        order.splice(target, 0, drag.id);
-        drag.order = order;
-        setPreview(order);
-      }}
-      onPointerUp={(e) => {
-        if (hold.current?.pointerId === e.pointerId) cancelHold();
-        const drag = gesture.current;
-        if (!drag || drag.pointerId !== e.pointerId) return;
-        if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-        if (drag.moved) commit(drag.order, drag.id);
-        endDrag();
-        // A click can still land on the row under the finger. It belongs to the drag.
-        window.setTimeout(() => (swallowClick.current = false), 0);
-      }}
-      onPointerCancel={(e) => {
-        if (hold.current?.pointerId === e.pointerId) cancelHold();
-        if (gesture.current?.pointerId === e.pointerId) endDrag();
-      }}
-      onLostPointerCapture={(e) => {
-        if (gesture.current?.pointerId === e.pointerId) endDrag();
-      }}
+    <section
+      id={`timeline-game-${game.id}`}
+      className="tl-game"
+      data-open={open || undefined}
+      aria-label={`${game.name}${account ? `, ${account}` : ''}`}
+      style={{ '--ink': ink } as CSSProperties}
     >
-      <span className="sr-only" role="status">
-        {announcement}
-      </span>
-      {/* On a phone each bar has a name line above it, so a hand-off between
-          bars would cross that line and read as a stray stroke. */}
-      {!rowProps.compact && <CycleConnectors events={visible} ws={rowProps.ws} we={rowProps.we} ink={rowProps.ink} />}
-      {rows.map(({ event, instances }) => (
-        <EventRow
-          key={event.id}
-          ev={event}
-          game={game}
-          editing={editing}
-          held={heldId === event.id}
-          follows={followers.has(event.id)}
-          instances={instances}
-          {...rowProps}
-          reorderHandle={
-            <button
-              type="button"
-              aria-label={`Reorder ${event.name}`}
-              aria-describedby="event-reorder-help"
-              title="Drag to reorder"
-              disabled={events.length < 2}
-              className="timeline-reorder-handle absolute top-0 z-30 flex touch-none select-none items-center justify-center rounded-ui-sm text-muted hover:bg-fill-2 hover:text-fg disabled:opacity-30"
-              style={{ cursor: preview ? 'grabbing' : 'grab' }}
-              onPointerDown={(e) => {
-                if (e.button !== 0 || gesture.current) return;
-                e.preventDefault();
-                e.currentTarget.focus();
-                container.current?.setPointerCapture(e.pointerId);
-                gesture.current = {
-                  id: event.id,
-                  pointerId: e.pointerId,
-                  y: e.clientY,
-                  order: ids,
-                  moved: false,
-                };
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  gesture.current = null;
-                  setPreview(null);
-                  return;
-                }
-                if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-                e.preventDefault();
-                const from = ids.indexOf(event.id);
-                const to = from + (e.key === 'ArrowUp' ? -1 : 1);
-                if (to < 0 || to >= ids.length) return;
-                const order = [...ids];
-                [order[from], order[to]] = [order[to], order[from]];
-                commit(order, event.id);
-              }}
+      <div className="tl-row tl-head">
+        <h2 className="tl-label">
+          <button
+            type="button"
+            className="tl-head-button"
+            aria-expanded={open}
+            aria-controls={contentId}
+            // Starts with the words on screen, so a voice user can say what they see.
+            aria-label={`${shownName} ${countLine}, ${shownName === game.name ? '' : `${game.name}, `}${server}`}
+            onClick={() => onOpenChange(!open)}
+          >
+            <GameLogo game={game} size={compact ? 24 : 28} />
+            <span className="tl-head-text">
+              <span className="tl-head-name" style={{ color: nameInk }} title={game.name}>
+                {shownName}
+              </span>
+              <span className="tl-head-count numeral">{countLine}</span>
+            </span>
+            <svg
+              className="tl-chevron"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
             >
-              <span aria-hidden>⠿</span>
-            </button>
-          }
-        />
-      ))}
+              <path d="m5 8 5 5 5-5" />
+            </svg>
+          </button>
+        </h2>
+        {!compact && (
+          <div className="tl-track" aria-hidden>
+            {open &&
+              maintenance.map((ev) => {
+                const { left, width } = place(ev.start, ev.end, ws, we);
+                const at = DateTime.fromMillis(ev.start, { zone: localTz });
+                return (
+                  <span key={ev.id} className="tl-maint-label" style={{ left: pct(left + width / 2) }}>
+                    Maintenance {at.toFormat('ccc HH:mm')}
+                  </span>
+                );
+              })}
+          </div>
+        )}
+      </div>
+      <div id={contentId} className="tl-content">
+        <CalendarBehindNote gameId={game.id} now={now} className="tl-note" />
+        {!open ? (
+          <div className="tl-row tl-summary">
+            <p className="tl-label tl-summary-text">{summary}</p>
+            {!compact && (
+              <div className="tl-track tl-density" aria-hidden>
+                {rows.flatMap((row, index) =>
+                  row.events.map((ev) => {
+                    const { left, width } = place(ev.start, ev.end, ws, we);
+                    return (
+                      <i
+                        key={ev.id}
+                        style={{ left: pct(left), width: `max(${pct(width)}, 3px)`, top: (index % 4) * 5 + 6 }}
+                      />
+                    );
+                  }),
+                )}
+              </div>
+            )}
+          </div>
+        ) : events.length === 0 ? (
+          <p className="tl-note text-label text-muted">
+            {finishedHidden > 0 ? `Nothing running. ${finishedHidden} finished hidden.` : 'No events in this window.'}
+          </p>
+        ) : (
+          <div className="tl-rows">
+            {groups.map((group) => (
+              <div
+                key={group.key}
+                role="group"
+                data-timeline-event-group={group.key}
+                aria-label={`${group.label} timeline for ${game.name}`}
+              >
+                {group.rows.map((row, index) => (
+                  <div key={index} className="tl-row">
+                    {!compact && <div className="tl-label tl-row-label">{row.label}</div>}
+                    <div className="tl-track">
+                      {row.events.map((ev) => (
+                        <TimelineBar key={ev.id} ev={ev} game={game} ink={ink} {...board} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+            {maintenance.length > 0 && (
+              <div className="tl-bands">
+                {maintenance.map((ev) => (
+                  <MaintenanceBand
+                    key={ev.id}
+                    ev={ev}
+                    game={game}
+                    ws={ws}
+                    we={we}
+                    localTz={localTz}
+                    onOpenEvent={board.onOpenEvent}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+});
+
+/** The day ruler: weekday and date, today raised, months named where they begin. */
+function Ruler({
+  ws,
+  we,
+  now,
+  localTz,
+  trackPx,
+  compact,
+}: {
+  ws: number;
+  we: number;
+  now: number;
+  localTz: string;
+  trackPx: number;
+  compact: boolean;
+}) {
+  const days = timelineDays(ws, we, localTz);
+  const dayPx = days.length > 0 ? trackPx / days.length : 0;
+  const today = DateTime.fromMillis(now, { zone: localTz }).toISODate();
+  const sparse = dayPx > 0 && dayPx < 24;
+  return (
+    <div className="tl-days" aria-hidden>
+      {days.map((day, index) => {
+        const isToday = day.toISODate() === today;
+        const weekend = day.weekday >= 6;
+        const { left, width } = place(day.toMillis(), day.plus({ days: 1 }).toMillis(), ws, we);
+        const named = !sparse || isToday || day.weekday === 1;
+        return (
+          <span
+            key={day.toMillis()}
+            data-timeline-tick
+            className="tl-day"
+            data-today={isToday || undefined}
+            data-weekend={weekend || undefined}
+            style={{ left: pct(left), width: pct(width) }}
+          >
+            {(index === 0 || day.day === 1) && <span className="tl-month">{day.toFormat('LLL')}</span>}
+            {named && !sparse && (
+              <span className="tl-weekday">{compact ? day.toFormat('ccc') : day.toFormat('ccccc')}</span>
+            )}
+            {named && <b className="numeral">{day.day}</b>}
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -1040,118 +526,65 @@ export function ReorderableEventRows({
 export function TimelinePage({ now }: { now: number }) {
   const state = useApp((s) => s.state);
   const upsertEvent = useApp((s) => s.upsertEvent);
-  const resetEventOrder = useApp((s) => s.resetEventOrder);
   const updateGame = useApp((s) => s.updateGame);
   const openSheet = useUI((s) => s.openSheet);
   const ground = useGround();
-  const surfaces = useSurfaces();
-  const titleGround = surfaces.panel;
-  const laneInset = useInset();
-  const [timelineScaleRef, timelineWidth] = useElementWidth();
-  const focusedGameId = useUI((s) => s.timelineGameId);
-  // Time bars on every width: a phone gives each event a name line above its bar.
+  const localTz = state.settings.localTz;
+  const [trackRef, trackPx] = useElementWidth();
   const view = useUI((s) => s.timelineView) ?? 'lanes';
-  const compact = useMediaQuery('(max-width: 639px)');
+  const compact = useMediaQuery('(max-width: 767px)');
   const showFinished = useUI((s) => s.timelineShowFinished);
   const setShowFinished = useUI((s) => s.setTimelineShowFinished);
-  // Reorder handles, ticks and order resets stay hidden until asked for.
-  const [editing, setEditing] = useState(false);
-  const startEditing = useCallback(() => setEditing(true), []);
-  // Every view opens an event's quick view; its Edit button leads to the editor.
+  const hidden = useUI((s) => s.timelineHiddenGameIds);
+  const chosenRange = useUI((s) => s.timelineRange);
+  const setRange = useUI((s) => s.setTimelineRange);
+  const range: TimelineRangeKey = chosenRange ?? (compact ? 'week' : 'month');
+  const [weeks, setWeeks] = useState(0);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // Ticked here, so they stay on their row, faded, until the page is left.
+  const [justDone, setJustDone] = useState<ReadonlySet<string>>(new Set());
+
   const peekEvent = useCallback((event: GameEvent) => openSheet({ kind: 'eventPeek', eventId: event.id }), [openSheet]);
   const toggleEvent = useCallback(
-    (event: GameEvent) => upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done }),
+    (event: GameEvent) => {
+      if (!event.done) setJustDone((current) => new Set(current).add(event.id));
+      upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done });
+    },
     [upsertEvent],
   );
 
-  // Lane membership and the ruler only change on the hour; the Today marker below
-  // reads raw `now`. Without this the whole grid rebuilt every tick.
+  // The grid is rebuilt on the hour; countdowns and the now line move each minute.
   const hourBucket = Math.floor(now / HOUR);
-  const { games, events, eventsByGame, days, weekLines, ws, we, span } = useMemo(() => {
-    const { start: rangeStart, end: rangeEnd } = timelineWindow(now, state.settings.localTz);
-    const rangeSpan = rangeEnd - rangeStart;
-    const live = state.events.filter((event) => !event.deleted);
-    const hasFocus = state.games.some((game) => !game.deleted && game.id === focusedGameId);
-    const activeGames = rosterGames(state.games).filter((game) => !hasFocus || game.id === focusedGameId);
-    const gameIds = new Set(activeGames.filter((game) => !game.paused).map((game) => game.id));
-    const byGame = new Map<string, GameEvent[]>(
-      activeGames.map((game) => [
-        game.id,
-        sortTimelineEvents(
-          live.filter(
-            (event) => !game.paused && event.gameId === game.id && event.end > rangeStart && event.start < rangeEnd,
-          ),
-        ),
-      ]),
-    );
-    const shownGames = activeGames.filter((game) => !game.paused);
-
-    return {
-      games: activeGames,
-      // The undeleted set the list view shows, so both views count the same events.
-      events: live.filter((event) => gameIds.has(event.gameId)),
-      eventsByGame: byGame,
-      days: timelineDays(rangeStart, rangeEnd, state.settings.localTz),
-      // Week lines sit on the weekly reset the shown games share, not on midnight.
-      weekLines: weekResetLines(shownGames, rangeStart, rangeEnd, state.settings.localTz),
-      ws: rangeStart,
-      we: rangeEnd,
-      span: rangeSpan,
-    };
-    // Timeline membership and grid construction intentionally invalidate on
-    // the hour bucket; the Today marker below continues to use raw `now`.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hourBucket, state.events, state.games, state.settings.localTz, focusedGameId]);
-
-  // One pass assigns every lane a colour, so the timeline and the dashboard agree
-  // and no two lanes land in the same region of hue and lightness. Without it,
-  // three of the five reference games resolve to near-identical greys.
-  const laneInk = useMemo(() => assignGameInks(games, ground), [games, ground]);
-  const identityColors = useIdentityColors(games);
-  // One fraction positions the Today capsule and the line; the px form is for tick clearance.
-  const todayFraction = (now - ws) / span;
-  const todayLeft = `${todayFraction * 100}%`;
-  const todayX = todayFraction * timelineWidth;
-  // Day labels sit in the middle of their day. Every day is named when there is
-  // room; otherwise only the days a week line falls on. A label is left out
-  // rather than drawn over its neighbour, the ruler's ends, or the Today capsule.
-  const weekDays = new Set(
-    weekLines.map((line) => DateTime.fromMillis(line, { zone: state.settings.localTz }).toISODate()),
+  const minuteNow = Math.floor(now / MINUTE) * MINUTE;
+  const { start: ws, end: we } = useMemo(
+    () => rangeWindow(hourBucket * HOUR, localTz, range, weeks),
+    [hourBucket, localTz, range, weeks],
   );
-  const dayPx = span > 0 ? (DAY / span) * timelineWidth : 0;
-  const everyDay = dayPx >= DAY_LABEL_PX + LABEL_GAP_PX + 6;
-  // Week days are placed first so a plain day number never pushes one out. The
-  // month is named on week days and on the 1st, which is enough to read the dates.
-  type DayLabel = { day: DateTime; center: number; left: number; right: number; showMonth: boolean; week: boolean };
-  const placed: DayLabel[] = [];
-  if (timelineWidth > 0) {
-    const candidates = days.flatMap((day): DayLabel[] => {
-      const week = weekDays.has(day.toISODate());
-      if (!everyDay && !week) return [];
-      const center = ((day.toMillis() + DAY / 2 - ws) / span) * timelineWidth;
-      const showMonth = week || day.day === 1;
-      const half = (showMonth ? MONTH_LABEL_PX : DAY_LABEL_PX) / 2;
-      return [{ day, center, left: center - half, right: center + half, showMonth, week }];
-    });
-    for (const pass of [true, false]) {
-      for (const label of candidates) {
-        if (label.week !== pass) continue;
-        if (label.left < 0 || label.right > timelineWidth) continue;
-        if (label.left < todayX + TODAY_HALF_PX && label.right > todayX - TODAY_HALF_PX) continue;
-        const clash = placed.some(
-          (other) => label.left < other.right + LABEL_GAP_PX && label.right + LABEL_GAP_PX > other.left,
-        );
-        if (!clash) placed.push(label);
-      }
+  const games = useMemo(
+    () => rosterGames(state.games).filter((game) => !hidden.includes(game.id)),
+    [state.games, hidden],
+  );
+  const { events, eventsByGame } = useMemo(() => {
+    const live = state.events.filter((event) => !event.deleted);
+    const open = new Set(games.filter((game) => !game.paused).map((game) => game.id));
+    const byGame = new Map<string, GameEvent[]>();
+    for (const event of live) {
+      if (!open.has(event.gameId) || event.end <= ws || event.start >= we) continue;
+      const list = byGame.get(event.gameId) ?? [];
+      list.push(event);
+      byGame.set(event.gameId, list);
     }
-    placed.sort((a, b) => a.center - b.center);
-  }
-  const dayLabels = placed;
-  const todayDate = DateTime.fromMillis(now, { zone: state.settings.localTz }).toFormat('cccc d LLLL');
+    // The undeleted set the other views show, so every view counts the same events.
+    return { events: live.filter((event) => open.has(event.gameId)), eventsByGame: byGame };
+  }, [state.events, games, ws, we]);
 
-  // Lanes whose finished pile has been opened. Finished means ticked off OR
-  // simply over: once an event ends there is nothing left to act on, so it stops
-  // competing for the eye with the things that are still running.
+  const laneInk = useMemo(() => assignGameInks(games, ground), [games, ground]);
+  const identityColors = useIdentityColors(state.games);
+  const isShown = useCallback(
+    (event: GameEvent) => showFinished || (event.end > minuteNow && (!event.done || justDone.has(event.id))),
+    [showFinished, minuteNow, justDone],
+  );
+
   const [laneOpen, setLaneOpen] = useState<Record<string, boolean>>({});
   const resumeGame = (id: string) => {
     setLaneOpen((current) => ({ ...current, [id]: true }));
@@ -1167,9 +600,13 @@ export function TimelinePage({ now }: { now: number }) {
       (control ?? document.querySelector<HTMLElement>('.timeline-page h1'))?.focus();
     });
   };
+
   const pausedGames = games.filter((game) => game.paused);
+  const shownGames = games.filter((game) => !game.paused);
   const scopedEvents = view === 'lanes' ? [...eventsByGame.values()].flat() : events;
-  const visibleCount = scopedEvents.filter((event) => showFinished || (!event.done && event.end > now)).length;
+  const visibleCount = scopedEvents.filter(
+    view === 'lanes' ? isShown : (event) => showFinished || (!event.done && event.end > now),
+  ).length;
   const pausedRows = pausedGames.length > 0 && (
     <div className="mt-4 divide-y divide-line-hairline border-t border-line-edge">
       {pausedGames.map((game) => (
@@ -1183,47 +620,103 @@ export function TimelinePage({ now }: { now: number }) {
     </div>
   );
 
+  const first = DateTime.fromMillis(ws, { zone: localTz });
+  const last = DateTime.fromMillis(we - 1, { zone: localTz });
+  const rangeLabel =
+    first.month === last.month
+      ? `${first.toFormat('d')}–${last.toFormat('d LLL')}`
+      : `${first.toFormat('d LLL')} – ${last.toFormat('d LLL')}`;
+  const step = useCallback((by: number) => setWeeks((current) => current + by), []);
+  const nowInView = minuteNow >= ws && minuteNow < we;
+  const lanes = view === 'lanes';
+
+  // A phone swipes between weeks; a trackpad's sideways scroll does the same.
+  const swipe = useRef<{ x: number; y: number } | null>(null);
+  const wheel = useRef({ dx: 0, at: 0 });
+
+  const addButton = (
+    <Btn
+      className={`inline-flex items-center gap-1.5 ${TOUCH_BUTTON}`}
+      aria-label="Add an event"
+      onClick={() => openSheet({ kind: 'event' })}
+    >
+      <svg
+        viewBox="0 0 20 20"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        className="icon h-4 w-4"
+        aria-hidden
+      >
+        <path d="M10 4v12M4 10h12" />
+      </svg>
+      {!compact && 'Event'}
+    </Btn>
+  );
+
+  const nowLeft = place(ws, minuteNow, ws, we).width;
+
   return (
     <Page className="timeline-page">
       <PageBar className="calendar-bar">
         <PageTitle>Calendar</PageTitle>
-        <CalendarToolbar view={view}>
-          <TimelineTools
-            showFinished={showFinished}
-            onShowFinished={setShowFinished}
-            editing={view === 'lanes' ? editing : undefined}
-            onEditing={setEditing}
-          />
-        </CalendarToolbar>
-        <PageBarEnd>
-          <Btn
-            className={`inline-flex items-center gap-1.5 ${TOUCH_BUTTON}`}
-            aria-label="Add an event"
-            onClick={() => openSheet({ kind: 'event', gameId: focusedGameId ?? undefined })}
-          >
-            <svg
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              className="icon h-4 w-4"
-              aria-hidden
+        {compact ? (
+          <PageBarEnd>
+            <button
+              type="button"
+              className="calendar-tool"
+              data-icon-only
+              aria-label="Choose games"
+              aria-expanded={filtersOpen}
+              aria-controls="calendar-game-filter"
+              onClick={() => setFiltersOpen((open) => !open)}
             >
-              <path d="M10 4v12M4 10h12" />
-            </svg>
-            Event
-          </Btn>
-        </PageBarEnd>
+              <svg
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                className="icon h-5 w-5"
+                aria-hidden
+              >
+                <path d="M3.5 5.5h13M6 10h8M8.5 14.5h3" />
+              </svg>
+            </button>
+            {addButton}
+          </PageBarEnd>
+        ) : null}
+        <CalendarToolbar view={view} />
+        {compact ? (
+          filtersOpen && <GameScope id="calendar-game-filter" className="calendar-games-panel" />
+        ) : (
+          <>
+            <GameScope />
+            <span className="calendar-bar-gap" aria-hidden />
+            {lanes && <RangeSwitch range={range} onRange={setRange} />}
+            {lanes && (
+              <RangeStepper label={rangeLabel} onStep={step} onToday={() => setWeeks(0)} atToday={weeks === 0} />
+            )}
+            <TimelineTools showFinished={showFinished} onShowFinished={setShowFinished} />
+            {addButton}
+          </>
+        )}
       </PageBar>
-      <p id="event-reorder-help" className="sr-only">
-        Hold an event and drag it, or in edit mode focus its handle and press Arrow Up or Arrow Down.
-      </p>
       <div className="timeline-caption flex flex-wrap items-center gap-x-3 gap-y-2 text-meta text-muted">
         <span>
           {visibleCount} {visibleCount === 1 ? 'event' : 'events'}
         </span>
         <CalendarFeedStatus />
         {pausedGames.length > 0 && <span>{pausedGames.length} paused</span>}
+        {compact && (
+          <span className="calendar-caption-tools">
+            {lanes && <span className="numeral text-fg-soft">{rangeLabel}</span>}
+            {lanes && (
+              <RangeStepper label={rangeLabel} onStep={step} onToday={() => setWeeks(0)} atToday={weeks === 0} />
+            )}
+            <TimelineTools compact showFinished={showFinished} onShowFinished={setShowFinished} />
+          </span>
+        )}
       </div>
 
       <Hint id="events" className="mt-3" />
@@ -1254,173 +747,114 @@ export function TimelinePage({ now }: { now: number }) {
           games={games}
           events={events}
           now={now}
-          localTz={state.settings.localTz}
+          localTz={localTz}
           showFinished={showFinished}
           onOpenEvent={peekEvent}
           onToggleEvent={toggleEvent}
         />
       ) : (
-        <div data-editing={editing || undefined} className="timeline-board timeline-lanes-board relative">
-          <div ref={timelineScaleRef} data-timeline-scale className="timeline-scale">
-            <div data-timeline-ruler className="relative h-5 text-caption text-muted">
-              {dayLabels.map(({ day, center, showMonth, week }) => (
-                <span
-                  key={day.toMillis()}
-                  data-timeline-tick
-                  className="absolute top-0 flex h-5 -translate-x-1/2 flex-row items-center gap-1"
-                  style={{ left: center }}
-                >
-                  {showMonth && <span className="numeral text-caption uppercase text-dim">{day.toFormat('LLL')}</span>}
-                  <span className={`numeral text-caption ${week ? 'font-semibold text-fg-soft' : 'text-muted'}`}>
-                    {day.toFormat('d')}
-                  </span>
-                </span>
-              ))}
-              <span data-timeline-today className="timeline-today-label" style={{ left: todayLeft }}>
-                Today
-                <span className="sr-only">, {todayDate}</span>
-              </span>
-            </div>
-
-            <div className="relative">
-              {weekLines.map((line) => (
-                <div
-                  key={line}
-                  data-timeline-week-line
-                  className="timeline-grid-dotted timeline-week-line pointer-events-none absolute inset-y-0 w-px"
-                  style={{ left: `${((line - ws) / span) * 100}%` }}
-                />
-              ))}
-              <div data-timeline-now aria-hidden className="timeline-today-line" style={{ left: todayLeft }} />
-
-              {games.length === 0 && <p className="py-8 text-center text-body text-dim">No events.</p>}
-
-              {games
-                .filter((game) => !game.paused)
-                .map((game) => {
-                  const colors = identityColors[game.id] ?? game;
-                  const evs = eventsByGame.get(game.id) ?? [];
-                  const open = laneOpen[game.id] ?? evs.length > 0;
-                  const nextEnd = [...evs]
-                    .sort((a, b) => a.end - b.end)
-                    .find(
-                      (e) =>
-                        e.end > now &&
-                        !e.done &&
-                        e.type !== 'maintenance' &&
-                        e.type !== 'banner' &&
-                        e.type !== 'livestream',
-                    );
-                  // `now` ticks, so a row leaves the lane the moment it ends without
-                  // anyone having to press anything.
-                  const running = evs.filter((event) => !event.done && event.end > now);
-                  const finishedCount = evs.length - running.length;
-                  const shown = showFinished ? evs : running;
-                  const serverLabel = gameServerLabel(game, now);
-                  const accountLabel = game.accountLabel?.trim();
-                  // The lane's colour: assigned in one distinct-lanes pass, with
-                  // the game's own primary as the fallback. Bars, connectors and
-                  // the heading rule all take it from here so they cannot drift.
-                  const ink = laneInk[game.id] ?? colors.color;
-                  const runningText = `${running.length} ${running.length === 1 ? 'event' : 'events'}`;
-                  const nextText = nextEnd ? `next ends ${fmtDur(nextEnd.end - now)}` : 'no upcoming deadline';
-                  return (
-                    <Disclosure
-                      key={game.id}
-                      id={`timeline-game-${game.id}`}
-                      headingLevel={2}
-                      open={open}
-                      onOpenChange={(nextOpen) => setLaneOpen((current) => ({ ...current, [game.id]: nextOpen }))}
-                      title={
-                        <span className="flex min-w-0 items-center gap-2">
-                          <GameLogo game={{ ...game, ...colors }} size={compact ? 30 : 36} />
-                          <span
-                            className="min-w-0 truncate text-body"
-                            style={{ color: gameTitleInk(colors, titleGround, 4.5) }}
-                          >
-                            {game.name}
-                          </span>{' '}
-                          <ServerChip label={serverLabel} />{' '}
-                          {accountLabel && (
-                            <span className="aside min-w-0 max-w-[35%] shrink-0 truncate text-meta text-muted">
-                              {accountLabel}
-                            </span>
-                          )}
-                          <span className="h-px min-w-4 flex-1 bg-line" />
-                        </span>
-                      }
-                      summary={
-                        !open ? (
-                          <span className="numeral flex flex-col text-caption text-muted">
-                            <span>{runningText}</span>{' '}
-                            <span style={nextEnd ? { color: endTone(nextEnd.end - now) } : undefined}>{nextText}</span>
-                          </span>
-                        ) : undefined
-                      }
-                      // Every word the heading shows, in its order, so the name a voice user
-                      // reads off the screen is the name the button answers to.
-                      triggerLabel={`${open ? 'Collapse' : 'Expand'} ${game.name}, ${serverLabel}${accountLabel ? `, ${accountLabel}` : ''}${open ? '' : `, ${runningText}, ${nextText}`} lane`}
-                      className="timeline-game-lane relative"
-                      triggerClassName="timeline-game-heading relative z-20 rounded-ui-md transition hover:bg-fill-1"
-                      contentClassName="timeline-lane-content"
-                    >
-                      <CalendarBehindNote gameId={game.id} now={now} className="mb-2" />
-                      {evs.length === 0 ? (
-                        <p className="py-1 text-label text-muted">No events in this window.</p>
-                      ) : shown.length === 0 ? (
-                        <p className="py-1 text-label text-muted">Nothing running. {finishedCount} finished hidden.</p>
-                      ) : (
-                        <>
-                          {editing &&
-                            state.events.some(
-                              (event) => event.gameId === game.id && !event.deleted && event.sort !== undefined,
-                            ) && (
-                              <ConfirmAction
-                                className="mb-1"
-                                label="Reset automatic order"
-                                confirmLabel="Confirm: drop my order"
-                                cancelLabel="Keep my order"
-                                onConfirm={() => resetEventOrder(game.id)}
-                              />
-                            )}
-                          {groupGameEvents(game, shown).map((group) => (
-                            <section
-                              key={group.key}
-                              data-timeline-event-group={group.key}
-                              className="mt-4 first:mt-0"
-                              aria-label={`${group.label} timeline for ${game.name}`}
-                            >
-                              {group.key !== 'events' && (
-                                <h3 className="mb-2 flex items-center gap-2.5 text-meta font-semibold text-fg-soft">
-                                  {group.label}
-                                  <span aria-hidden className="h-px min-w-4 flex-1 bg-line" />
-                                </h3>
-                              )}
-                              <ReorderableEventRows
-                                events={group.events}
-                                game={game}
-                                ink={ink}
-                                inset={laneInset}
-                                now={now}
-                                ws={ws}
-                                we={we}
-                                onOpenEvent={peekEvent}
-                                onToggleEvent={toggleEvent}
-                                laneWidth={timelineWidth}
-                                localTz={state.settings.localTz}
-                                compact={compact}
-                                editing={editing}
-                                onHold={startEditing}
-                              />
-                            </section>
-                          ))}
-                        </>
-                      )}
-                    </Disclosure>
-                  );
-                })}
+        <div
+          className="timeline-board tl-board"
+          data-compact={compact || undefined}
+          data-range={range}
+          onTouchStart={(e) => {
+            const touch = e.touches[0];
+            swipe.current = touch && e.touches.length === 1 ? { x: touch.clientX, y: touch.clientY } : null;
+          }}
+          onTouchEnd={(e) => {
+            const start = swipe.current;
+            const touch = e.changedTouches[0];
+            swipe.current = null;
+            if (!start || !touch) return;
+            const dx = touch.clientX - start.x;
+            const dy = touch.clientY - start.y;
+            if (Math.abs(dx) >= SWIPE_PX && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
+          }}
+          onWheel={(e) => {
+            if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+            const state = wheel.current;
+            if (e.timeStamp - state.at > 400) state.dx = 0;
+            state.at = e.timeStamp;
+            state.dx += e.deltaX;
+            if (Math.abs(state.dx) < WHEEL_STEP_PX) return;
+            step(state.dx > 0 ? 1 : -1);
+            state.dx = 0;
+          }}
+        >
+          <div className="tl-ruler" data-timeline-ruler>
+            {!compact && <div className="tl-label" />}
+            <div ref={trackRef} data-timeline-scale className="tl-track">
+              <Ruler ws={ws} we={we} now={minuteNow} localTz={localTz} trackPx={trackPx} compact={compact} />
             </div>
           </div>
+          <div className="tl-body">
+            <div className="tl-overlay" aria-hidden>
+              {timelineDays(ws, we, localTz)
+                .filter((day) => day.weekday >= 6)
+                .map((day) => {
+                  const { left, width } = place(day.toMillis(), day.plus({ days: 1 }).toMillis(), ws, we);
+                  return (
+                    <span key={day.toMillis()} className="tl-weekend" style={{ left: pct(left), width: pct(width) }} />
+                  );
+                })}
+              {nowInView && <span data-timeline-now className="tl-now" style={{ left: pct(nowLeft) }} />}
+            </div>
+            {shownGames.length === 0 && pausedGames.length === 0 && (
+              <p className="py-8 text-center text-body text-dim">No events.</p>
+            )}
+            {shownGames.map((game) => {
+              const colors = identityColors[game.id] ?? game;
+              const inRange = eventsByGame.get(game.id) ?? [];
+              const shown = inRange.filter(isShown);
+              const ink = laneInk[game.id] ?? colors.color;
+              return (
+                <TimelineLane
+                  key={game.id}
+                  game={{ ...game, ...colors }}
+                  ink={ink}
+                  nameInk={legible(ink, ground, 4.5)}
+                  events={shown}
+                  finishedHidden={inRange.length - shown.length}
+                  open={laneOpen[game.id] ?? inRange.length > 0}
+                  onOpenChange={(open) => setLaneOpen((current) => ({ ...current, [game.id]: open }))}
+                  now={minuteNow}
+                  ws={ws}
+                  we={we}
+                  trackPx={trackPx}
+                  localTz={localTz}
+                  compact={compact}
+                  onOpenEvent={peekEvent}
+                  onToggleEvent={toggleEvent}
+                />
+              );
+            })}
+          </div>
+          {compact && (
+            <p className="tl-hint text-caption text-muted">
+              Swipe sideways to move through the weeks. Tap a bar to see it or tick it done.
+            </p>
+          )}
+          {!compact && (
+            <div className="tl-legend text-caption text-muted" aria-hidden>
+              <span>
+                <i className="tl-legend-tick" />
+                Hover a bar to tick it done
+              </span>
+              <span>
+                <i className="tl-diamond" />
+                Livestream
+              </span>
+              <span>
+                <i className="tl-legend-predicted" />
+                Predicted
+              </span>
+              <span>
+                <i className="tl-legend-maint" />
+                Maintenance
+              </span>
+              <span>Dashed end: runs past the range</span>
+            </div>
+          )}
           {pausedRows}
         </div>
       )}

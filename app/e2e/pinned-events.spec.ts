@@ -1,6 +1,5 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { openSettings } from './support';
+import { openSettings, calendarAxe } from './support';
 import { emptyState } from '@memoria/shared';
 import { makeEvent, makeGame } from '../../shared/test/helpers';
 
@@ -67,11 +66,7 @@ test('a pinned event stands out on the calendar in both views and in its strip',
   // Scan the settled lanes, not a frame of their entrance animation.
   await page.waitForTimeout(400);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  expect(
-    (await new AxeBuilder({ page }).analyze()).violations.filter((issue) =>
-      ['serious', 'critical'].includes(issue.impact ?? ''),
-    ),
-  ).toEqual([]);
+  expect(await calendarAxe(page)).toEqual([]);
   await page.screenshot({ path: info.outputPath('pinned-events-timeline.png') });
 
   await page

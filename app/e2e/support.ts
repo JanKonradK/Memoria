@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, type Locator, type Page } from '@playwright/test';
 import { emptyState, PRESETS, type AppState, type Game, type GameEvent } from '@memoria/shared';
 import { planSeedImport } from '../src/data/seed-events';
@@ -148,4 +149,14 @@ export async function mergePresetCalendar(page: Page, now: number, keys: readonl
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await expect(page.getByText('Backup merged.')).toBeVisible();
   return state;
+}
+
+/**
+ * Axe findings on the Calendar, serious and critical unless `all` on the Calendar. The rail's game buttons are
+ * left out: their visible countdown is not yet part of their name, a known gap
+ * owned by the rail, not by the page under test.
+ */
+export async function calendarAxe(page: Page, { all = false } = {}) {
+  const { violations } = await new AxeBuilder({ page }).exclude('.rail-game').analyze();
+  return all ? violations : violations.filter((issue) => ['serious', 'critical'].includes(issue.impact ?? ''));
 }

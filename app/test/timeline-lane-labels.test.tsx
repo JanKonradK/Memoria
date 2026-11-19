@@ -32,7 +32,7 @@ describe('Timeline lane identity', () => {
 
     render(<TimelinePage now={Date.UTC(2026, 7, 5, 12)} />);
 
-    expect(screen.getByRole('button', { name: /^Expand Genshin Impact, EU, Main EU, .* lane$/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Expand Genshin Impact, NA, Alt NA, .* lane$/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Genshin Impact 0 events · Main EU, EU$/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Genshin Impact 0 events · Alt NA, NA$/ })).toBeInTheDocument();
   });
 });
