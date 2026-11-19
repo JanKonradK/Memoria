@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { chooseFromEdit, openGame, addFromShell } from './support';
+import { chooseFromEdit, openGame, addFromShell, showTodayGames } from './support';
 
 /** Game settings, on its Tasks tab. */
 async function openTaskSettings(page: Page, game: string) {
@@ -22,6 +22,7 @@ test('daily task rules can change on the card, including count targets and new t
   await page.getByRole('option').nth(1).click();
   await page.getByRole('button', { name: 'Add WuWa', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await showTodayGames(page);
   await page.screenshot({ path: info.outputPath('game-cards.png') });
   // Only a wide window has the card beside Today's list.
   if (page.viewportSize()!.width >= 900) {

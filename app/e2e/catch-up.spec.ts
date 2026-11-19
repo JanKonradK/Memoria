@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { emptyState, PRESETS } from '@memoria/shared';
 import { makeGame } from '../../shared/test/helpers';
-import { openGame, openSettings } from './support';
+import { openGame, openSettings, showTodayGames } from './support';
 
 const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
 
@@ -59,7 +59,8 @@ test('a game page catches up in its News tab, which marks versions read and stay
   await openGenshin(page, now);
   let news;
   if ((page.viewportSize()?.width ?? 0) >= 900) {
-    // The card beside Today opens the same tab.
+    // The card beside Today's games opens the same tab.
+    await showTodayGames(page);
     await page.getByRole('button', { name: /^Review Genshin Impact/ }).click();
     await page.getByRole('button', { name: /^Catch up on Genshin Impact, 2 new/ }).click();
     await expect(page.getByRole('tab', { name: /^News/ })).toHaveAttribute('aria-selected', 'true');

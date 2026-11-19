@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { emptyState, PRESETS } from '@memoria/shared';
 import { makeGame } from '../../shared/test/helpers';
-import { gameRow, openGame, openSettings, addFromShell } from './support';
+import { gameRow, openGame, openSettings, addFromShell, showTodayGames } from './support';
 
 test('saved sheets animate out and lazy editors can open after dismissal', async ({ page }, testInfo) => {
   test.skip(!['desktop', 'mobile-390'].includes(testInfo.project.name), 'Desktop dialog and mobile sheet');
@@ -65,6 +65,7 @@ test('a desktop row opens an integrated page and returns to the same Today geome
     await page.getByRole('button', { name: `Add ${short}`, exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   }
+  await showTodayGames(page);
   const rows = page.locator('.today-priority-row');
   await expect(rows).toHaveCount(3);
   const readGeometry = () =>
@@ -133,6 +134,7 @@ test('a long desktop Today list restores its scroll and supports repeated page v
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await page.getByRole('button', { name: 'Today', exact: true }).click();
+  await showTodayGames(page);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   const rows = page.locator('.today-priority-row');
   await expect(rows).toHaveCount(24);

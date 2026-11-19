@@ -1,4 +1,4 @@
-import { addFromShell } from './support';
+import { addFromShell, showTodayGames } from './support';
 import { expect, test } from '@playwright/test';
 
 for (const reducedMotion of ['no-preference', 'reduce'] as const) {
@@ -30,6 +30,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       await page.getByRole('button', { name: `Add ${short}`, exact: true }).click();
       await expect(page.getByRole('dialog')).toHaveCount(0);
     }
+    await showTodayGames(page);
     const row = page.locator('[data-roster-game]').last();
     const rowGame = await row.getAttribute('data-roster-game');
     await row.scrollIntoViewIfNeeded();

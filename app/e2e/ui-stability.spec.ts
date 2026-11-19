@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { gameRow, openGame, openSettings, addFromShell } from './support';
+import { gameRow, openGame, openSettings, addFromShell, showTodayGames } from './support';
 
 async function expectNoPageOverflow(page: Page) {
   const overflow = await page.evaluate(() => ({
@@ -82,6 +82,7 @@ async function addPreset(page: Page, name: string, short: string, first = false)
   await page.getByRole('button', { name: `Add ${short}` }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   // Its row opens the page on a phone and brings its card beside the list on desktop.
+  await showTodayGames(page);
   await gameRow(page, name).click();
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
 }

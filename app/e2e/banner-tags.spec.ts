@@ -47,11 +47,10 @@ test('banner tags distinguish rewards across games and can be edited', async ({ 
   await page.screenshot({ path: info.outputPath('banner-tags.png') });
   expect(await calendarAxe(page, { all: true })).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page
-    .getByRole('button', { name: `${compact ? 'Edit' : 'Open'} genshin event: character test`, exact: true })
-    .click();
-  // The list's Edit button goes straight to the editor; a timeline bar opens the quick view first.
-  if (!compact) await editFromQuickView(page);
+  // A bar or an agenda row opens the quick view; its Edit button opens the editor.
+  if (compact) await page.locator('[data-list-event="genshin-character"] .cal-row-main').click();
+  else await page.getByRole('button', { name: 'Open genshin event: character test', exact: true }).click();
+  await editFromQuickView(page);
   await page.getByRole('combobox', { name: 'Banner tag', exact: true }).click();
   await page.getByRole('option', { name: 'Weapon banner', exact: true }).click();
   await page.getByRole('button', { name: 'Save', exact: true }).click();

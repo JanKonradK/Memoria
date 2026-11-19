@@ -151,12 +151,8 @@ export async function mergePresetCalendar(page: Page, now: number, keys: readonl
   return state;
 }
 
-/**
- * Axe findings on the Calendar, serious and critical unless `all` on the Calendar. The rail's game buttons are
- * left out: their visible countdown is not yet part of their name, a known gap
- * owned by the rail, not by the page under test.
- */
+/** Axe findings on the Calendar: serious and critical ones, or every one with `all`. */
 export async function calendarAxe(page: Page, { all = false } = {}) {
-  const { violations } = await new AxeBuilder({ page }).exclude('.rail-game').analyze();
+  const { violations } = await new AxeBuilder({ page }).analyze();
   return all ? violations : violations.filter((issue) => ['serious', 'critical'].includes(issue.impact ?? ''));
 }

@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { openGame, addFromShell } from './support';
+import { openGame, addFromShell, editFromQuickView } from './support';
 
 async function addGames(page: Page) {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
@@ -26,12 +26,12 @@ async function addGames(page: Page) {
 
 test('shared game focus and event editing work at every size', async ({ page }, testInfo) => {
   await addGames(page);
-  await expect(page.getByRole('combobox', { name: 'Filter by game' })).toHaveCount(0);
+  await expect(page.getByRole('group', { name: 'Games shown' })).toHaveCount(0);
   await openGame(page, 'Genshin Impact');
   const workspace = page.getByRole('region', { name: 'Genshin Impact focus workspace' });
   await expect(workspace).toBeVisible();
   await expect(workspace).not.toHaveClass(/\bcard-shell\b/);
-  await expect(page.getByRole('combobox', { name: 'Filter by game' })).toHaveCount(0);
+  await expect(page.getByRole('group', { name: 'Games shown' })).toHaveCount(0);
   await expect(
     page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }),
   ).toHaveCount(1);
@@ -44,8 +44,11 @@ test('shared game focus and event editing work at every size', async ({ page }, 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('game-page.png') });
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
-  // Opening a game never filters the Timeline (F4).
-  await expect(page.getByRole('combobox', { name: 'Filter by game' })).toContainText('All games');
+  // Opening a game never filters the Calendar (F4): every game's logo stays pressed.
+  if (page.viewportSize()!.width < 768) await page.getByRole('button', { name: 'Choose games', exact: true }).click();
+  const shown = page.getByRole('group', { name: 'Games shown' }).getByRole('button');
+  await expect(shown).toHaveCount(3);
+  for (const toggle of await shown.all()) await expect(toggle).toHaveAttribute('aria-pressed', 'true');
   await page
     .getByRole('radiogroup', { name: 'Event view' })
     .getByRole('radio', { name: 'Agenda', exact: true })
@@ -56,7 +59,8 @@ test('shared game focus and event editing work at every size', async ({ page }, 
   await page.getByRole('button', { name: 'End 3 days after start', exact: true }).click();
   await page.getByRole('button', { name: 'Add event', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Edit Genshin Impact event: Review window', exact: true }).click();
+  await page.locator('.cal-agenda .cal-row-main').filter({ hasText: 'Review window' }).first().click();
+  await editFromQuickView(page);
   await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue('Keep these notes.');
   const start = await page.getByLabel('Starts', { exact: true }).inputValue();
   await page.getByLabel('Ends', { exact: true }).fill(start);
@@ -67,11 +71,11 @@ test('shared game focus and event editing work at every size', async ({ page }, 
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath('timeline-list.png') });
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await expect(page.getByRole('combobox', { name: 'Filter by game' })).toHaveCount(0);
+  await expect(page.getByRole('group', { name: 'Games shown' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Today', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Genshin Impact focus workspace' })).toHaveCount(0);
-  await expect(page.getByRole('combobox', { name: 'Filter by game' })).toHaveCount(0);
+  await expect(page.getByRole('group', { name: 'Games shown' })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
@@ -80,7 +84,7 @@ test('skipping first-run setup persists and opens no tour', async ({ page }, tes
   await page.goto('/');
   await page.getByRole('button', { name: 'Skip for now', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByRole('combobox', { name: 'Filter by game' })).toHaveCount(0);
+  await expect(page.getByRole('group', { name: 'Games shown' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Add a game' })).toBeVisible();
   await page.reload();
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();

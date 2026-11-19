@@ -94,7 +94,7 @@ test('paused accounts stay compact in both views and resume their saved events',
   const altPause = page.locator('[data-paused-game="alt"]');
   for (const theme of ['dark', 'light']) {
     if (theme === 'light') await page.emulateMedia({ colorScheme: 'light' });
-    for (const mode of ['Timeline', 'List']) {
+    for (const mode of ['Timeline', 'Agenda']) {
       await view.getByRole('radio', { name: mode, exact: true }).click();
       await expect(altPause).toBeVisible();
       await expect(altRows).toHaveCount(0);
@@ -124,9 +124,8 @@ test('paused accounts stay compact in both views and resume their saved events',
   await expect(altRows).toHaveCount(3);
   // The resumed account's three events join the other account's one.
   await expect(page.locator('.timeline-caption')).toContainText('4 events');
-  await expect(
-    page.getByRole('button', { name: 'Edit Shared game (Alt) event: Alt active event', exact: true }),
-  ).toBeFocused();
+  // Focus lands on the resumed account's first agenda row.
+  await expect(page.locator('[data-list-game="alt"] .cal-row-main').first()).toBeFocused();
   await expect(page.locator('[data-paused-game="long"]')).toBeVisible();
   await expect.poll(async () => (await stored(page)).games.find((game) => game.id === alt.id)?.paused).toBe(false);
   expect((await stored(page)).events.sort((a, b) => a.id.localeCompare(b.id))).toMatchObject(

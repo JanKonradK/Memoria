@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { gameRow, openGame, addFromShell } from './support';
+import { gameRow, openGame, addFromShell, showTodayGames, editFromQuickView } from './support';
 
 test.beforeEach(async ({ page }, info) => {
   test.skip(!['android-s23', 'mobile-320', 'mobile-390'].includes(info.project.name), 'Phone check-in flow');
@@ -17,6 +17,7 @@ test.beforeEach(async ({ page }, info) => {
 });
 
 test('phone roster opens full controls and keeps edits across navigation', async ({ page }, info) => {
+  await showTodayGames(page);
   await expect(gameRow(page, 'Genshin Impact')).toBeVisible();
   const nav = page.getByRole('navigation', { name: 'Primary' });
   const box = await nav.boundingBox();
@@ -42,6 +43,7 @@ test('phone roster opens full controls and keeps edits across navigation', async
   await task.click();
   await expect(task).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
+  await showTodayGames(page);
   await expect(gameRow(page, 'Genshin Impact')).toHaveAccessibleDescription(/1 of 6 dailies done/);
   await expect(gameRow(page, 'Genshin Impact')).toContainText(/99\s*\/\s*200/);
   await openGame(page, 'Genshin Impact');
@@ -53,6 +55,7 @@ test('phone roster opens full controls and keeps edits across navigation', async
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
+  await showTodayGames(page);
   await expect(page.getByRole('list', { name: 'Games', exact: true })).toBeVisible();
   await addFromShell(page, 'Reminder');
   const message = 'Remember to collect every expedition reward before the next server reset tonight.';
@@ -108,9 +111,14 @@ test('event actions stay visible while the form scrolls and both event views rem
   expect(Math.abs((await save.boundingBox())!.y - before!.y)).toBeLessThan(2);
   await save.click();
   await expect(dialog).toHaveCount(0);
-  await expect(
-    page.getByRole('button', { name: 'Edit Genshin Impact event: Phone test event', exact: true }),
-  ).toBeVisible();
+  // The agenda row opens its quick view, and the editor keeps the note.
+  const row = page.locator('.cal-agenda .cal-row-main').filter({ hasText: 'Phone test event' }).first();
+  await expect(row).toBeVisible();
+  await row.click();
+  await editFromQuickView(page);
+  await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue('Keep this note.');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(
     (await new AxeBuilder({ page }).analyze()).violations.filter((v) =>
       ['serious', 'critical'].includes(v.impact ?? ''),

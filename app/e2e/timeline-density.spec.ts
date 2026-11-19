@@ -3,9 +3,7 @@ import { openSettings } from './support';
 import { emptyState } from '@memoria/shared';
 import { makeGame } from '../../shared/test/helpers';
 
-test('24 events remain reachable in the rounded timeline board with controls in the app bar', async ({
-  page,
-}, info) => {
+test('24 events remain reachable in the packed timeline with controls in the Calendar bar', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'Measured at a 1365 × 768 CSS viewport, including zoom-sized layouts');
   await page.setViewportSize({ width: 1365, height: 768 });
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
@@ -64,18 +62,29 @@ test('24 events remain reachable in the rounded timeline board with controls in 
     .setInputFiles({ name: 'density.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
-  await expect(page.locator('.calendar-toolbar').getByRole('combobox', { name: 'Filter by game' })).toBeVisible();
+  // The page's own bar holds its controls: views, the game filter, the range, Today, finished events and Add.
+  const bar = page.locator('.calendar-bar');
+  await expect(bar.getByRole('radiogroup', { name: 'Event view' })).toBeVisible();
+  // One game needs no game filter.
+  await expect(bar.getByRole('group', { name: 'Games shown' })).toHaveCount(0);
+  await expect(bar.getByRole('group', { name: 'Range' })).toBeVisible();
+  await expect(bar.getByRole('button', { name: 'Show today', exact: true })).toBeVisible();
+  await expect(bar.getByRole('button', { name: 'Show finished events', exact: true })).toBeVisible();
+  await expect(bar.getByRole('button', { name: 'Add an event', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '+ Event', exact: true })).toHaveCount(0);
   await expect(page.locator('[data-timeline-event-row]')).toHaveCount(24);
   await page.waitForTimeout(350);
-  const bounds = await page.locator('[data-timeline-event-row]').evaluateAll((nodes) =>
+  const bars = page.locator('.tl-bar');
+  const bounds = await bars.evaluateAll((nodes) =>
     nodes.map((node) => {
       const r = node.getBoundingClientRect();
-      return { top: r.top, bottom: r.bottom, height: r.height };
+      return { top: r.top, height: r.height };
     }),
   );
   expect(bounds[0]!.top).toBeGreaterThan(50);
-  expect(bounds.every((row) => row.height >= 26 && row.height <= 27)).toBe(true);
+  // Every bar keeps one height, tall enough for its name and countdown.
+  expect(new Set(bounds.map((row) => Math.round(row.height))).size).toBe(1);
+  expect(bounds[0]!.height).toBeGreaterThanOrEqual(24);
   // The page is the only scroller: the board never grows a scrollbar of its own.
   const board = page.locator('.timeline-board');
   expect(await board.evaluate((node) => node.scrollHeight <= node.clientHeight + 1)).toBe(true);
@@ -85,17 +94,13 @@ test('24 events remain reachable in the rounded timeline board with controls in 
     expect(box.y).toBeGreaterThanOrEqual(0);
     expect(box.y + box.height).toBeLessThanOrEqual(768);
   }
-  const ids = await page
-    .locator('[data-timeline-event-row]')
-    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-event-id')));
-  expect(ids.indexOf('density-2')).toBe(ids.indexOf('density-0') + 1);
-  expect(ids.indexOf('density-3')).toBe(ids.indexOf('density-1') + 1);
-  const future = page.locator('[data-event-id="density-3"]');
-  await expect(future.locator('[data-event-bar]')).toHaveText('Imaginarium Theater');
-  // The next instance of a seamless cycle has no countdown of its own (the
-  // curve from the row above says it comes next), so nothing is drawn over its bar.
-  await expect(future.locator('[data-event-countdown]')).toHaveText('next');
-  await expect(future.locator('[data-event-countdown] .sr-only')).toHaveCount(1);
+  // Events that do not overlap are packed into shared rows, so 22 bars need fewer rows.
+  const rows = await bars.evaluateAll((nodes) => new Set(nodes.map((node) => node.closest('.tl-row'))).size);
+  expect(rows).toBeLessThan(22);
+  // In the default four weeks, a cycle running past the range is cut with a dashed end, its name still on the bar.
+  await expect(page.locator('[data-event-id="density-3"]')).toHaveAttribute('data-cut-end', 'true');
+  await expect(page.locator('[data-event-id="density-3"] [data-event-title]')).toHaveText('Imaginarium Theater');
+  // A livestream is a diamond and maintenance a band: neither draws text on its mark.
   for (const id of ['density-22', 'density-23']) {
     await expect(page.locator(`[data-event-id="${id}"] [data-event-bar]`)).toHaveText('');
   }

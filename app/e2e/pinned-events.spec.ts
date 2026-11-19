@@ -54,15 +54,12 @@ test('a pinned event stands out on the calendar in both views and in its strip',
     .getByRole('radio', { name: 'Timeline', exact: true })
     .click();
   await expect(page.locator('[data-event-id="pinned-event"] [data-event-bar]')).toHaveAttribute('data-pinned', 'true');
-  const trackOf = (id: string) =>
-    page
-      .locator(`[data-event-id="${id}"] .timeline-event-track`)
-      .evaluate((node) => getComputedStyle(node).backgroundColor);
-  const pinnedTrack = await trackOf('pinned-event');
-  const plainTrack = await trackOf('plain-event');
-  expect(pinnedTrack).not.toBe('transparent');
-  expect(pinnedTrack).not.toBe('rgba(0, 0, 0, 0)');
-  expect(pinnedTrack).not.toBe(plainTrack);
+  // The pinned bar wears the gold rim; its neighbour keeps its game's ink.
+  const rimOf = (id: string) =>
+    page.locator(`[data-event-id="${id}"] [data-event-bar]`).evaluate((node) => getComputedStyle(node).borderTopColor);
+  const pinnedRim = await rimOf('pinned-event');
+  expect(pinnedRim).not.toBe('rgba(0, 0, 0, 0)');
+  expect(pinnedRim).not.toBe(await rimOf('plain-event'));
   // Scan the settled lanes, not a frame of their entrance animation.
   await page.waitForTimeout(400);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -76,7 +73,12 @@ test('a pinned event stands out on the calendar in both views and in its strip',
   await expect(page.locator('[data-list-event="pinned-event"]')).toHaveAttribute('data-pinned', 'true');
   await expect(page.locator('[data-list-event="plain-event"]')).not.toHaveAttribute('data-pinned');
 
-  await page.getByRole('button', { name: 'Pin Strip game event: Pinned strip event', exact: true }).click();
+  // A row opens the quick view, where the pin is turned off.
+  await page.locator('[data-list-event="pinned-event"] .cal-row-main').click();
+  const peek = page.getByRole('dialog', { name: 'Pinned strip event' });
+  await peek.getByRole('button', { name: 'Pinned', exact: true }).click();
+  await expect(peek.getByRole('button', { name: 'Pin', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await page.keyboard.press('Escape');
   await expect(page.getByRole('region', { name: 'Pinned events' })).toHaveCount(0);
   await expect(page.locator('[data-list-event="pinned-event"]')).not.toHaveAttribute('data-pinned');
 });

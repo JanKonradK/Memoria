@@ -164,7 +164,5 @@ test('event and reminder forms save from Enter and explain invalid dates', async
   await expect(page.locator('[data-layer=sheet]')).toHaveCount(0);
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   await page.getByRole('radio', { name: 'Agenda', exact: true }).click();
-  await expect(
-    page.getByRole('button', { name: 'Edit Genshin Impact event: Keyboard event', exact: true }),
-  ).toBeVisible();
+  await expect(page.locator('.cal-agenda .cal-row-main').filter({ hasText: 'Keyboard event' }).first()).toBeVisible();
 });

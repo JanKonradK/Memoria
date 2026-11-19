@@ -102,10 +102,12 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
   ).toHaveCount(1);
   // These notices now print exact times, so the rows count down instead of showing calendar dates.
   // Overflowing Favor starts 23 days out, past the timeline's three weeks ahead.
-  for (const key of ['snowball']) {
-    const event = state.events.find((event) => event.sourceKey === `seed:genshin:7.1-${key}`)!;
-    await expect(page.locator(`[data-event-id="${event.id}"] [data-event-countdown]`)).toHaveText(/arrives \d+d/);
-  }
+  // A phone shows one week, before these start; a wider window shows four.
+  if (page.viewportSize()!.width >= 768)
+    for (const key of ['snowball']) {
+      const event = state.events.find((event) => event.sourceKey === `seed:genshin:7.1-${key}`)!;
+      await expect(page.locator(`[data-event-id="${event.id}"] [data-event-countdown]`)).toHaveText(/^in \d+d/);
+    }
   const selectors = state.events.filter((event) => event.sourceKey?.endsWith('-selector'));
   for (const event of selectors) {
     const open = page.locator(`[data-event-id="${event.id}"] button[aria-label^="Open "]`);
@@ -125,15 +127,14 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
     });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     expect(await calendarAxe(page)).toEqual([]);
-    await teyvat.getByRole('heading').scrollIntoViewIfNeeded();
+    await teyvat.scrollIntoViewIfNeeded();
     await page.screenshot({ path: info.outputPath(`genshin-timeline-${theme}.png`) });
-    await banners.getByRole('heading').scrollIntoViewIfNeeded();
+    await banners.scrollIntoViewIfNeeded();
     await page.screenshot({ path: info.outputPath(`genshin-timeline-banners-${theme}.png`) });
   }
   await view.getByRole('radio', { name: 'Agenda', exact: true }).click();
   const snowball = state.events.find((event) => event.sourceKey === 'seed:genshin:7.1-snowball')!;
-  const listRow = page.locator(`[data-list-event="${snowball.id}"]`);
-  // A timed row lists its start and end clocks rather than a calendar range.
-  await expect(listRow).toContainText(/Starts\s*21 Oct \d\d:\d\d/);
-  await expect(listRow).toContainText(/Ends\s*2 Nov \d\d:\d\d/);
+  // A timed event is listed on the day it starts, at its clock time, rather than as a calendar range.
+  const startRow = page.getByRole('region', { name: /21 October$/ }).locator(`[data-list-start="${snowball.id}"]`);
+  await expect(startRow).toContainText(/\d\d:\d\d\s*starts/);
 });

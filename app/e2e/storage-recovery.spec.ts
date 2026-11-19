@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { gameRow } from './support';
+import { gameRow, showTodayGames } from './support';
 
 test('failed local saves keep edits available for retry and backup', async ({ page }, info) => {
   test.skip(!['android-s23', 'desktop'].includes(info.project.name), 'Phone and desktop storage recovery');
@@ -20,6 +20,7 @@ test('failed local saves keep edits available for retry and backup', async ({ pa
   await page.getByRole('option').nth(1).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await showTodayGames(page);
   const open = gameRow(page, 'Genshin Impact');
   const energy = page.getByLabel('Original Resin current value');
   const openControls = async () => {

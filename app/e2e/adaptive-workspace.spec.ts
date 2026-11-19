@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openSettings } from './support';
+import { openSettings, showTodayGames } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { emptyState } from '@memoria/shared';
 import { makeGame, makeResource, makeSnapshot } from '../../shared/test/helpers';
@@ -43,6 +43,7 @@ test('Today and game controls adapt while a PC window is resized', async ({ page
   await importRoster(page);
   const primary = page.getByRole('navigation', { name: 'Primary', exact: true });
   await primary.getByRole('button', { name: 'Today', exact: true }).click();
+  await showTodayGames(page);
 
   for (const viewport of [
     { width: 360, height: 740 },

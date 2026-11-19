@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { createLanSync, createStateAccess } from './pc-stand-in/pc-sync-stand-in.mjs';
 import * as core from '../../desktop/dist/shared-core.mjs';
 import AxeBuilder from '@axe-core/playwright';
-import { gameRow, openGame } from './support';
+import { gameRow, openGame, showTodayGames } from './support';
 
 for (const method of ['scan', 'manual']) {
   test(`Android ${method} pairing merges PC and phone edits and recovers after an outage`, async ({ page }, info) => {
@@ -127,6 +127,7 @@ for (const method of ['scan', 'manual']) {
       remote.games[0] = { ...remote.games[0], name: 'PC edited game', updatedAt: Date.now() + 10 };
       await access.merge(remote);
       await page.evaluate(() => window.dispatchEvent(new Event('online')));
+      await showTodayGames(page);
       await expect(gameRow(page, 'PC edited game')).toBeVisible();
       offline = true;
       await openGame(page, 'PC edited game');

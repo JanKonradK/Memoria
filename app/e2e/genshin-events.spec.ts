@@ -97,7 +97,7 @@ test('Genshin keeps complete Teyvat, Wonderland and banner groups through editin
   await chooseFromEdit(page, 'Genshin Impact', 'Manage events');
   const manager = page.getByRole('region', { name: 'Events for Genshin Impact', exact: true });
   await manager.getByRole('searchbox', { name: 'Find event' }).fill('Personal cosmetic');
-  await expect(manager.getByRole('heading', { level: 4 })).toHaveText('Miliastra Wonderland');
+  await expect(manager.getByRole('heading', { level: 3 })).toHaveText(/^Miliastra Wonderland\s*1$/);
   await manager.getByRole('button', { name: 'Edit Genshin Impact event: Personal cosmetic draw', exact: true }).click();
   await expect(dialog.getByRole('combobox', { name: 'Type', exact: true })).toContainText('event');
 });
