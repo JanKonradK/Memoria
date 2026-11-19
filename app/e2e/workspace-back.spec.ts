@@ -33,18 +33,22 @@ test('Alt+Left returns to the game card and keeps a typed energy value', async (
   await expect(card).toBeFocused();
 });
 
-test('browser Back and Forward use the same workspace and focus path as the arrow', async ({ page }) => {
+test("browser Back and Forward use the same workspace and focus path as the rail's Today", async ({ page }) => {
   const card = gameRow(page, 'Genshin Impact');
+  // Arriving on a game's page lands on its heading; leaving it lands on its row.
+  const heading = page.locator('.focus-workspace').getByRole('heading', { name: 'Genshin Impact', level: 1 });
+  await expect(heading).toBeFocused();
   await page.goBack();
   await expect(card).toBeFocused();
   await page.goForward();
-  const back = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true });
-  await expect(back).toBeFocused();
-  await expect(back).toHaveAttribute('aria-keyshortcuts', 'Alt+ArrowLeft');
-  await back.click();
+  await expect(heading).toBeFocused();
+  const today = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true });
+  await expect(today).toHaveAttribute('aria-keyshortcuts', 'Alt+ArrowLeft');
+  await today.click();
   await expect(card).toBeFocused();
+  await expect(today).not.toHaveAttribute('aria-keyshortcuts');
   await page.goForward();
-  await expect(back).toBeFocused();
+  await expect(heading).toBeFocused();
   await page.keyboard.press('Alt+ArrowLeft');
   await expect(card).toBeFocused();
 });

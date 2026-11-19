@@ -6,7 +6,7 @@ let morph: ViewTransition | undefined;
 let rosterScroll = 0;
 let historyReady = false;
 
-/** Browser Back owns the same game-to-overview transition as the back arrow. */
+/** Browser Back owns the same game-to-Today transition as the rail's Today button and Alt+Left. */
 export function initWorkspaceHistory(): () => void {
   historyReady = true;
   // Focused games are session routes; a reload starts at the overview.
@@ -100,9 +100,18 @@ export function navigateWorkspace(
     return;
   }
 
-  // Clearing a filter on Timeline or Settings is not a roster navigation.
+  // Clearing a filter on Calendar or Settings is not a roster navigation, nor is
+  // a game opened from the rail while Today's list is not on screen. A game
+  // still arrives at its heading, from the top, like every other way in.
   if (!fromRoster && !toRoster) {
+    const before = useUI.getState();
+    const switching = gameId !== null && (before.tab !== 'home' || before.focusedGameId !== gameId);
     flushSync(update);
+    if (switching) {
+      // A new route restores its own scroll; one game's page replacing another starts at the top.
+      if (before.tab === 'home') window.scrollTo({ top: 0, behavior: 'instant' });
+      focusHeading(originalFocus);
+    }
     return;
   }
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -132,6 +141,18 @@ export function navigateWorkspace(
     });
 }
 
+/**
+ * Arrival on a game's page focuses its heading, unless the player has already
+ * moved focus elsewhere. The page can be a lazy chunk still on its way, so a
+ * missing heading is looked for again over the next few frames.
+ */
+function focusHeading(originalFocus: Element | null, tries = 10): void {
+  if (document.activeElement !== originalFocus && document.activeElement !== document.body) return;
+  const heading = document.querySelector<HTMLElement>('.focus-workspace h1');
+  if (heading) heading.focus({ preventScroll: true });
+  else if (tries > 0) requestAnimationFrame(() => focusHeading(originalFocus, tries - 1));
+}
+
 /** Commits the route change, then puts scroll, focus and the content's arrival where the new page needs them. */
 function arrive(
   update: () => void,
@@ -145,13 +166,14 @@ function arrive(
   if (toRoster) {
     window.scrollTo({ top: rosterScroll, behavior: 'instant' });
     if (restoreFocus) {
+      // Back on the game's own row; without one (a narrow list, a deleted game) on the rail's Today.
       const target =
         findRow() ?? document.querySelector<HTMLElement>('nav[aria-label="Primary"] button[aria-current="page"]');
       target?.focus({ preventScroll: true });
     }
   } else {
     window.scrollTo({ top: 0, behavior: 'instant' });
-    if (restoreFocus) document.querySelector<HTMLElement>('.focus-workspace h1')?.focus({ preventScroll: true });
+    if (restoreFocus) focusHeading(document.activeElement);
   }
 
   if (reducedMotion) return;
@@ -159,7 +181,7 @@ function arrive(
   const destination = document.querySelector<HTMLElement>(toRoster ? '.today-page' : '.focus-workspace');
   if (!destination?.animate) return;
   // A short directional arrival explains forward/back navigation. Only the
-  // content moves; the fixed dock and header never enter a snapshot or layer.
+  // content moves; the fixed rail never enters a snapshot or layer.
   // No fill mode leaves a visible, usable page if motion is interrupted.
   const animation = destination.animate(
     [

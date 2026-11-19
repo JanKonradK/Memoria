@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { chooseFromEdit, gameRow, openGame, addFromShell } from './support';
+import { gameRow, openGame, addFromShell } from './support';
 
 test.beforeEach(async ({ page }, info) => {
   test.skip(!['android-s23', 'mobile-320', 'mobile-390'].includes(info.project.name), 'Phone check-in flow');
@@ -20,14 +20,14 @@ test('phone roster opens full controls and keeps edits across navigation', async
   await expect(gameRow(page, 'Genshin Impact')).toBeVisible();
   const nav = page.getByRole('navigation', { name: 'Primary' });
   const box = await nav.boundingBox();
-  // The glass dock floats above the safe area instead of touching the edge.
-  expect(box!.y + box!.height).toBeLessThanOrEqual(page.viewportSize()!.height - 8);
-  expect(box!.y + box!.height).toBeGreaterThan(page.viewportSize()!.height - 60);
-  expect(box!.x).toBeGreaterThanOrEqual(8);
+  // The dock lies along the bottom edge, edge to edge; the safe area is padding inside it.
+  expect(box!.y + box!.height).toBeCloseTo(page.viewportSize()!.height, 0);
+  expect(box!.x).toBe(0);
   for (const button of await nav.getByRole('button').all()) {
     const bounds = await button.boundingBox();
     expect(bounds!.height).toBeGreaterThanOrEqual(44);
     expect(bounds!.width).toBeGreaterThanOrEqual(44);
+    expect(bounds!.y).toBeGreaterThanOrEqual(box!.y);
   }
   await page.screenshot({ path: info.outputPath('phone-roster.png') });
   await openGame(page, 'Genshin Impact');
@@ -47,7 +47,8 @@ test('phone roster opens full controls and keeps edits across navigation', async
   await openGame(page, 'Genshin Impact');
   await expect(value).toHaveValue('99');
   await expect(task).toHaveAttribute('aria-pressed', 'true');
-  await chooseFromEdit(page, 'Genshin Impact', 'Game settings');
+  // A game page's Edit opens its settings; its events live on the Events tab.
+  await page.locator('.focus-workspace').getByRole('button', { name: 'Edit Genshin Impact', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Genshin Impact' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -59,8 +60,9 @@ test('phone roster opens full controls and keeps edits across navigation', async
   await page.getByRole('button', { name: 'Add reminder', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.emulateMedia({ colorScheme: 'light' });
-  // Scan the settled theme rather than an intermediate color transition.
-  await expect(page.getByRole('button', { name: 'Calendar', exact: true })).toHaveCSS('color', 'rgb(53, 55, 64)');
+  // Scan the settled theme rather than an intermediate color transition: a
+  // route the dock is not on reads in the light theme's muted ink.
+  await expect(page.getByRole('button', { name: 'Calendar', exact: true })).toHaveCSS('color', 'rgb(91, 94, 105)');
   expect(
     (await new AxeBuilder({ page }).analyze()).violations.filter((v) =>
       ['serious', 'critical'].includes(v.impact ?? ''),

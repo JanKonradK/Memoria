@@ -89,7 +89,8 @@ test('a desktop row opens an integrated page and returns to the same Today geome
   await expect(workspace).not.toHaveClass(/\bcard-shell\b/);
   await expect(page.locator('.today-page')).toHaveCount(0);
   const back = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true });
-  await expect(back).toBeFocused();
+  const heading = workspace.getByRole('heading', { name: 'Honkai: Star Rail', level: 1 });
+  await expect(heading).toBeFocused();
   // Reverse while the content arrives; navigation and controls stay usable.
   await back.click();
   await expect(open).toBeFocused();
@@ -102,7 +103,7 @@ test('a desktop row opens an integrated page and returns to the same Today geome
     }
   }
   await openGame(page, 'Honkai: Star Rail');
-  await expect(back).toBeFocused();
+  await expect(heading).toBeFocused();
   await expect(workspace.getByRole('button', { name: 'Edit Honkai: Star Rail', exact: true })).toHaveCount(1);
   await page.screenshot({ path: testInfo.outputPath('integrated-game-page.png') });
 });
@@ -148,8 +149,8 @@ test('a long desktop Today list restores its scroll and supports repeated page v
     const savedScroll = await page.evaluate(() => scrollY);
     await full.click();
     const back = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true });
-    await expect(back).toBeFocused();
     await expect(page.locator('.focus-workspace')).toBeVisible();
+    await expect(page.locator('.focus-workspace h1')).toBeFocused();
     await back.click();
     await expect(again).toBeFocused();
     await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(savedScroll, 0);

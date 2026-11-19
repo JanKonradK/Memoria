@@ -34,6 +34,7 @@ test('a sideways swipe moves the page with the finger, then changes tab', async 
     .evaluate((node) => new DOMMatrix(getComputedStyle(node).transform).m41);
   expect(shift).toBeLessThan(-10);
   await send('pointerup', 180);
-  await expect(nav.getByRole('button', { name: 'Pulls', exact: true })).toHaveAttribute('aria-current', 'page');
+  // Today is followed by Calendar, in the dock's own order.
+  await expect(nav.getByRole('button', { name: 'Calendar', exact: true })).toHaveAttribute('aria-current', 'page');
   await expect(page.locator('.page-enter[data-swiping]')).toHaveCount(0);
 });

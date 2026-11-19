@@ -77,8 +77,20 @@
   width: 22px;
   height: 22px;
 }
+/* Add and Settings are icons; their names are read and shown as tips. */
+.rail-icon-only {
+  width: 44px;
+  min-height: 44px;
+}
+.rail-icon-only .rail-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 .rail-add {
-  min-height: 48px;
   margin-top: 4px;
 }
 .rail-game {
@@ -98,6 +110,11 @@
 .rail-view:active:not(:disabled),
 .rail-game:active {
   transform: scale(0.96);
+}
+/* Inside the rail, so a scrolling strip never clips the ring. */
+.rail-view:focus-visible,
+.rail-game:focus-visible {
+  outline-offset: -2px;
 }
 .rail-view[aria-current='page'],
 .rail-game[aria-current='page'] {
@@ -133,12 +150,13 @@
 .rail-pin {
   position: absolute;
   left: -8px;
-  top: 50%;
+  /* Centred on the logo: its top padding plus half its height. */
+  top: 28px;
   width: 4px;
   height: 0;
   border-radius: 0 4px 4px 0;
   background: var(--rail-ink);
-  transform: translateY(-60%);
+  transform: translateY(-50%);
   transition: height var(--dur-base) var(--ease-out);
 }
 .rail-game[aria-current='page'] .rail-pin {
@@ -153,10 +171,14 @@
   opacity: 0.45;
   filter: grayscale(1);
 }
+/* Later reads plainly, under eight hours amber, under two rose; a paused game is quiet. */
 .rail-countdown {
   font-size: var(--text-caption);
   font-weight: 600;
   line-height: 1;
+  color: var(--color-fg-soft);
+}
+.rail-countdown[data-tone='paused'] {
   color: var(--color-muted);
 }
 .rail-countdown[data-tone='now'] {
@@ -177,6 +199,17 @@
 .rail-status:empty {
   display: none;
 }
+@media (prefers-reduced-motion: reduce) {
+  .rail-view,
+  .rail-game,
+  .rail-pin {
+    transition: none;
+  }
+  .rail-view:active:not(:disabled),
+  .rail-game:active {
+    transform: none;
+  }
+}
 
 @media (min-width: 768px) {
   .app-frame {
@@ -193,7 +226,8 @@
     height: var(--mobile-nav-h);
     flex-direction: row;
     gap: 0;
-    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+    padding: 6px max(6px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom))
+      max(6px, env(safe-area-inset-left));
     border-right: 0;
     border-top: 1px solid var(--color-line-hairline);
     background: color-mix(in srgb, var(--color-surface-1) 96%, transparent);
@@ -235,7 +269,10 @@
     font-size: 0.75rem;
   }
   .rail-add {
+    flex: none;
     width: 48px;
+    min-height: 60px;
+    /* Clear of the fade at the strip's end once scrolled there. */
     margin: 0 20px 0 0;
   }
   .rail-game {
@@ -263,6 +300,10 @@
     width: 22px;
     height: 3px;
   }
+  .rail-game {
+    min-height: 60px;
+    justify-content: center;
+  }
   .rail-badge {
     top: 2px;
     right: 6px;
@@ -270,18 +311,33 @@
   /* Settings keeps its place at the dock's end as an icon, so games get the room. */
   .rail-settings {
     width: 48px;
-  }
-  .rail-settings .rail-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+    min-height: 60px;
   }
   .rail-dot {
     top: 6px;
     right: 14px;
+  }
+}
+
+/* A phone on its side has little height to spare: the dock slims to match
+   --mobile-nav-h there. */
+@media (min-width: 540px) and (max-width: 767px) and (max-height: 500px) {
+  .app-rail {
+    padding-top: 4px;
+    padding-bottom: calc(4px + env(safe-area-inset-bottom));
+  }
+  .rail-view,
+  .rail-game,
+  .rail-add,
+  .rail-settings {
+    min-height: 56px;
+  }
+  .rail-view {
+    gap: 3px;
+  }
+  .rail-game :is(.game-logo, [data-game-logo]) {
+    width: 32px !important;
+    height: 32px !important;
   }
 }
 

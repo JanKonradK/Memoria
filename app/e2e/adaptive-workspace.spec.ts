@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chooseFromEdit, openSettings } from './support';
+import { openSettings } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { emptyState } from '@memoria/shared';
 import { makeGame, makeResource, makeSnapshot } from '../../shared/test/helpers';
@@ -62,8 +62,12 @@ test('Today and game controls adapt while a PC window is resized', async ({ page
         (button) => button.offsetHeight > 0,
       );
       const rows = [...document.querySelectorAll('.today-priority-row')].map((row) => row.getBoundingClientRect());
+      // From 768px the rail stands at the left edge and the page takes all the rest.
+      const rail = document.querySelector('nav[aria-label="Primary"]')!.getBoundingClientRect();
       return {
         pageWidth: bounds.width,
+        pageLeft: bounds.left,
+        railRight: innerWidth >= 768 ? rail.right : 0,
         controlsFit: buttons.every((button) => {
           const rect = button.getBoundingClientRect();
           return rect.left >= 0 && rect.right <= innerWidth + 1 && rect.bottom <= innerHeight;
@@ -72,7 +76,8 @@ test('Today and game controls adapt while a PC window is resized', async ({ page
         rowsInside: rows.every((row) => row.left >= 0 && row.right <= innerWidth + 1),
       };
     });
-    expect(geometry.pageWidth).toBe(viewport.width);
+    expect(geometry.pageLeft).toBe(geometry.railRight);
+    expect(geometry.pageWidth).toBe(viewport.width - geometry.railRight);
     expect(geometry.controlsFit).toBe(true);
     // One ranked column at every width, so fill levels and countdowns compare down the list.
     expect(geometry.priorityColumns).toBe(1);
@@ -90,7 +95,8 @@ test('Today and game controls adapt while a PC window is resized', async ({ page
   await page.setViewportSize({ width: 360, height: 600 });
   await expect(energy).toHaveValue('83');
   await energy.press('Enter');
-  await chooseFromEdit(page, 'Genshin Impact', 'Game settings');
+  // A game page's Edit opens its settings; its events live on the Events tab.
+  await page.locator('.focus-workspace').getByRole('button', { name: 'Edit Genshin Impact', exact: true }).click();
   await page.setViewportSize({ width: 900, height: 400 });
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();

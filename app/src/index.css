@@ -439,11 +439,11 @@ html {
   scrollbar-color: var(--color-line-strong) transparent;
 }
 /* The page is the only scroller. A board with its own scrollbar sat beside the
-   page's, and the ruler stays in view by sticking under the app bar instead. */
+   page's, and the ruler stays in view by sticking under the page bar instead. */
 .timeline-board [data-timeline-ruler] {
   position: sticky;
   top: var(--app-bar-h);
-  /* Above the rows' countdowns (z-30), below the app bar (z-40). */
+  /* Above the rows' countdowns (z-30) and the page bar (z-30), below the rail (z-40). */
   z-index: 35;
   background: var(--color-surface-0);
 }
@@ -498,7 +498,7 @@ html {
     --text-meta--line-height: 1.375rem;
     --text-label: 0.875rem;
     --text-label--line-height: 1.25rem;
-    /* The dock floats over the page; this is only what content must clear at its end. */
+    /* The dock is fixed along the bottom; this is what content must clear at its end. */
     --mobile-nav-h: calc(76px + env(safe-area-inset-bottom));
   }
   html {
@@ -529,7 +529,7 @@ html {
 }
 
 /* In phone landscape, keep the game selector and page tools on one row so
-   content still has room between the header and bottom navigation. */
+   content still has room between the page bar and the dock. */
 @media (min-width: 540px) and (max-width: 767px) and (max-height: 500px) {
   :root {
     --mobile-nav-h: calc(68px + env(safe-area-inset-bottom));
@@ -672,8 +672,8 @@ input[type='number'] {
   stroke-width: var(--icon-stroke);
 }
 
-/* The page arriving when you change tab. Same 260ms and curve as the app bar's
-   sliding pill, so the label and the page settle together.
+/* The page arriving when you change tab: 260ms on the shared curve, so the
+   rail's pressed fill and the page settle together.
 
    Note there is no animation-fill-mode: the keyframes run FROM the offset, and
    the element's resting state is the plain, visible one. That is deliberate —
