@@ -12,7 +12,7 @@ import { useAppUpdate } from '../../app-update';
 import { cloudSyncNow } from '../../cloud-sync';
 import { useMediaQuery, useNow, useReducedMotion } from '../../hooks';
 import { syncLanNow, useLanSync } from '../../lan-sync';
-import { useDerived } from '../../selectors';
+import { todayStepsLeft, useDerived } from '../../selectors';
 import { useApp } from '../../store';
 import { syncNow } from '../../sync';
 import { useUI } from '../../ui-store';
@@ -276,13 +276,8 @@ export function AppRail() {
     .filter((game) => !game.deleted)
     .sort((a, b) => a.sort - b.sort)
     .map((game) => ({ ...game, ...(identity[game.id] ?? {}) }));
-  // What Today still asks for: the dailies not yet done on active games.
-  let open = 0;
-  for (const game of games) {
-    if (game.paused) continue;
-    for (const item of derived.checklistByGame.get(game.id) ?? [])
-      if (item.cadence === 'daily' && !item.done) open += 1;
-  }
+  // What Today still asks for: the same steps its own bar counts.
+  const open = todayStepsLeft(derived);
   const currentGame = tab === 'home' ? focusedGameId : null;
   const order = games.map((game) => game.id).join(' ');
 
