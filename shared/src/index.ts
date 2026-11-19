@@ -27,3 +27,4 @@ export * from './pity';
 export * from './hlc';
 export * from './history';
 export * from './servers';
+export * from './calendar-views';

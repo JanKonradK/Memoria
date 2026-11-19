@@ -1,10 +1,14 @@
+import { lazy, Suspense } from 'react';
 import type { CalendarViewProps } from './types';
+import { ViewLoading } from './ViewLoading';
 
-/** Unfinished events in columns by when they end: today, by Sunday, next week, later. */
-export function SoonView({ events }: CalendarViewProps) {
+const SoonBoard = lazy(() => import('./SoonBoard').then((module) => ({ default: module.SoonBoard })));
+
+/** Unfinished events in columns by when they end: today, by Sunday, next week, later. Loaded when first chosen. */
+export function SoonView(props: CalendarViewProps) {
   return (
-    <p className="py-8 text-center text-meta text-muted">
-      {events.length} events. The ending-soon board is on its way.
-    </p>
+    <Suspense fallback={<ViewLoading />}>
+      <SoonBoard {...props} />
+    </Suspense>
   );
 }

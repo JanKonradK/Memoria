@@ -1,4 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { emptyState, PRESETS, type AppState, type Game, type GameEvent } from '@memoria/shared';
+import { planSeedImport } from '../src/data/seed-events';
 
 /** A game's row on Today. It reads "Review" beside the desktop card and "Open" where the row is the way in. */
 export function gameRow(page: Page, name: string): Locator {
@@ -71,4 +73,62 @@ export async function addFromShell(page: Page, item: 'Add game' | 'Event' | 'Rem
     .getByRole('button', { name: 'Calendar', exact: true })
     .click();
   await page.getByRole('button', { name: 'Add an event', exact: true }).click();
+}
+
+/**
+ * Merges a backup holding preset games and every bundled calendar event they
+ * have at `now`, so a Calendar view shows what a player really sees. Leaves
+ * the page on Settings.
+ */
+export async function mergePresetCalendar(page: Page, now: number, keys: readonly string[]): Promise<AppState> {
+  const games: Game[] = keys.map((key, sort) => {
+    const preset = PRESETS.find((item) => item.key === key)!;
+    return {
+      id: `preset-${key}`,
+      name: preset.name,
+      short: preset.short,
+      color: preset.color,
+      color2: preset.color2,
+      color3: preset.color3,
+      titleFont: preset.titleFont,
+      presetKey: key,
+      icon: preset.icon,
+      platform: preset.platform,
+      tz: preset.tz,
+      dailyResetHour: preset.dailyResetHour,
+      weeklyResetDay: preset.weeklyResetDay,
+      monthlyResetDay: preset.monthlyResetDay,
+      paused: false,
+      sort,
+      updatedAt: now,
+    };
+  });
+  const state: AppState = { ...emptyState(), games };
+  state.events = planSeedImport(state, now)
+    .filter((plan) => plan.kind === 'add')
+    .map((plan, index): GameEvent => ({
+      id: `seed-${index}`,
+      gameId: plan.gameId!,
+      name: plan.seed!.name,
+      type: plan.seed!.type,
+      category: plan.seed!.category,
+      bannerKind: plan.seed!.bannerKind,
+      start: plan.start!,
+      end: plan.end!,
+      dailyTouch: plan.seed!.dailyTouch ?? false,
+      notify: plan.seed!.notify ?? true,
+      notes: plan.seed!.notes ?? '',
+      sourceKey: plan.seed!.sourceKey,
+      seedHash: plan.hash,
+      updatedAt: now,
+    }));
+  await openSettings(page, 'Data');
+  await page.locator('input[type="file"]').setInputFiles({
+    name: 'calendar.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(state)),
+  });
+  await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
+  await expect(page.getByText('Backup merged.')).toBeVisible();
+  return state;
 }
