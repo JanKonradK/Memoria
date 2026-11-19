@@ -263,10 +263,17 @@ async function launch() {
   await page.reload();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(page.getByRole('button', { name: 'Today', exact: true })).toBeVisible({ timeout: 30_000 });
-  await page.getByRole('button', { name: 'Review Native archive', exact: true }).click();
-  await page.getByRole('button', { name: 'Open full page', exact: true }).click();
+  // The intro in index.html covers the window until the app has drawn; clicks wait for it.
+  await expect(page.locator('#splash')).toHaveCount(0, { timeout: 15_000 });
+  await openArchive();
   await expect(page.getByRole('heading', { name: 'Native archive', exact: true })).toBeVisible();
-  return page.getByLabel('Archive energy current value', { exact: true });
+  return page.locator('.focus-workspace').getByLabel('Archive energy current value', { exact: true });
+}
+
+/** The game's own page, from its button in the rail. */
+async function openArchive() {
+  await page.locator('[data-rail-game="native-archive-game"]').click();
+  await expect(page.locator('.focus-workspace')).toBeVisible();
 }
 
 /** The Memoria window's handle while it is on screen. */
@@ -438,7 +445,7 @@ try {
   expect(phoneSync.state).toBeTruthy();
   expect(phoneSync.devices.map((device) => device.name)).toEqual(['Check phone']);
   await expect(page.getByText('Connected', { exact: true })).toBeVisible({ timeout: 10_000 });
-  await page.getByRole('button', { name: 'Today', exact: true }).click();
+  await openArchive();
   await expect(page.getByRole('heading', { name: 'Phone archive', exact: true })).toBeVisible({ timeout: 15_000 });
 
   // A change written to the file by something else reaches the open window.
@@ -467,7 +474,7 @@ try {
   await expect.poll(() => windowShown(handle)).toBe(true);
   await page.evaluate(() => window.memoriaDesktop.presence.set({ closeToTray: false }));
 
-  await page.getByLabel('Archive energy current value', { exact: true }).fill('124');
+  await page.locator('.focus-workspace').getByLabel('Archive energy current value', { exact: true }).fill('124');
   await quit();
   expect(latestEnergy()).toBe(124);
   checkExistingData();
