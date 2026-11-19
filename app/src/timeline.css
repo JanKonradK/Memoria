@@ -441,11 +441,13 @@
   bottom: 0;
   background: color-mix(in srgb, var(--color-fg) 2.5%, transparent);
 }
+/* Under the bars' faces, over the empty track: a bar's name is never cut by
+   it, and the gaps between bars still carry the line. */
 .tl-now {
   position: absolute;
   top: 0;
   bottom: 0;
-  z-index: 3;
+  z-index: 1;
   width: 2px;
   margin-left: -1px;
   background: var(--color-accent);
@@ -738,11 +740,14 @@
 .tl-maint-label {
   position: absolute;
   bottom: 2px;
-  translate: -50% 0;
+  translate: 6px 0;
   color: var(--color-danger-fg);
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
+}
+.tl-maint-label[data-side='before'] {
+  translate: calc(-100% - 6px) 0;
 }
 
 /* ---------- Legend and hint ---------- */
@@ -801,6 +806,12 @@
 .tl-board[data-compact] .tl-head .tl-label,
 .tl-board[data-compact] .tl-summary .tl-label {
   grid-column: 1 / -1;
+}
+/* On a phone the game's name spans the board, so the now line breaks for it. */
+.tl-board[data-compact] .tl-head .tl-label {
+  position: relative;
+  z-index: 2;
+  background: var(--color-surface-0);
 }
 .tl-board[data-compact] .tl-head-button {
   gap: 8px;

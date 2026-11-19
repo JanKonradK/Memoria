@@ -128,7 +128,7 @@ export function MonthBoard({ games, events, now, localTz, onOpenEvent, onToggleE
             ))}
           </div>
           {weeks.map((week, index) => {
-            const { bars, hidden, marks, games: dayGames } = packed[index]!;
+            const { bars, hidden, changes, marks, games: dayGames } = packed[index]!;
             return (
               <div key={week.start} className="cal-week">
                 <div className="cal-cells">
@@ -169,9 +169,9 @@ export function MonthBoard({ games, events, now, localTz, onOpenEvent, onToggleE
                           {live && <i className="cal-diamond" style={{ background: calendar.ink(live.gameId) }} />}
                           {down && <i className="cal-hatch" title="Maintenance" />}
                         </span>
-                        {hidden[column]! > 0 && (
+                        {changes[column]! > 0 && (
                           <span className="cal-cell-more" aria-hidden>
-                            +{hidden[column]} more
+                            +{changes[column]} more
                           </span>
                         )}
                         <span className="cal-dots" aria-hidden>

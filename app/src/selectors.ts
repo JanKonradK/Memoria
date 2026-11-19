@@ -1,5 +1,6 @@
 import type {
   AppState,
+  EnergyBank,
   EnergyProjection,
   Resource,
   ChecklistItem,
@@ -10,6 +11,7 @@ import type {
 import {
   buildUrgencyContext,
   effectiveResourceKind,
+  energyBank,
   measuredSnapshot,
   projectEnergy,
   todaySteps,
@@ -21,6 +23,8 @@ import { selectAgendaData, type AgendaData, type AgendaMode } from './agenda-dat
 interface PrimaryEnergy {
   resource: Resource | undefined;
   projection: EnergyProjection | null;
+  /** What banks the bar: its reserve, or the counter crafted from it. */
+  bank: EnergyBank | null;
 }
 
 export interface Derived {
@@ -66,12 +70,15 @@ function createDerived(state: AppState, now: number): Derived {
       if (cached) return cached;
       const resource = primaryByGame.get(gameId);
       const game = gameById.get(gameId);
+      const projection =
+        resource && game
+          ? projectEnergy(resource, measuredSnapshot(resource, snaps.get(resource.id)), now, game)
+          : null;
+      const siblings = urgencyContext.resourcesByGame.get(gameId) ?? [];
       const result = {
         resource,
-        projection:
-          resource && game
-            ? projectEnergy(resource, measuredSnapshot(resource, snaps.get(resource.id)), now, game)
-            : null,
+        projection,
+        bank: resource && projection ? energyBank(resource, projection, siblings, snaps, now, game) : null,
       };
       energyByGame.set(gameId, result);
       return result;

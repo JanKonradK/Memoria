@@ -286,6 +286,12 @@ export interface PackedWeek<E extends CalendarEvent = GameEvent> {
   bars: WeekBar<E>[];
   /** Per day, how many events had no lane left. */
   hidden: number[];
+  /**
+   * Per day, how many of those start or end on it: the ones that change the
+   * day. One running straight past says the same every day, so it is not
+   * counted here; the day's own digest lists it.
+   */
+  changes: number[];
   /** Per day, the maintenance and livestreams that start on it. */
   marks: E[][];
   /** Per day, the games with an event on it, in lane order: the phone grid's dots. */
@@ -302,7 +308,8 @@ function columnOf(at: number, edges: readonly number[]): number {
 /**
  * Packs a week's events into `lanes` rows of bars. Events that start or end
  * in the week claim lanes before those running straight through it, earlier
- * and longer first; what does not fit is counted per day as "+N more". Same-game events with one window fold into one bar. Maintenance and
+ * and longer first; what does not fit is counted per day, and what of it starts
+ * or ends that day is the cell's "+N more". Same-game events with one window fold into one bar. Maintenance and
  * livestreams are marks on their day, not bars.
  */
 export function packWeek<E extends CalendarEvent>(
@@ -350,12 +357,15 @@ export function packWeek<E extends CalendarEvent>(
   const taken: boolean[][] = Array.from({ length: lanes }, () => [false, false, false, false, false, false, false]);
   const bars: WeekBar<E>[] = [];
   const hidden = [0, 0, 0, 0, 0, 0, 0];
+  const changes = [0, 0, 0, 0, 0, 0, 0];
   const games: string[][] = Array.from({ length: 7 }, () => []);
   for (const { group, lead, from, to } of spans) {
     for (let day = from; day < to; day++) if (!games[day]!.includes(lead.gameId)) games[day]!.push(lead.gameId);
     const lane = taken.findIndex((row) => row.slice(from, to).every((used) => !used));
     if (lane < 0) {
       for (let day = from; day < to; day++) hidden[day]! += group.length;
+      if (lead.start >= ws) changes[from]! += group.length;
+      if (lead.end <= we && (lead.start < ws || to - 1 !== from)) changes[to - 1]! += group.length;
       continue;
     }
     for (let day = from; day < to; day++) taken[lane]![day] = true;
@@ -363,7 +373,7 @@ export function packWeek<E extends CalendarEvent>(
   }
   bars.sort((a, b) => a.lane - b.lane || a.from - b.from);
   for (const list of marks) list.sort(compareEvents);
-  return { bars, hidden, marks, games };
+  return { bars, hidden, changes, marks, games };
 }
 
 export interface DayDigest<E extends CalendarEvent = GameEvent> {

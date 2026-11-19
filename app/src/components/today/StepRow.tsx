@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   setEventProgress,
+  type EnergyBank,
   type EnergyStep,
   type EventStep,
   type Game,
@@ -25,6 +26,38 @@ export interface StepGame {
   ink: string;
   /** The ink lifted to body-text contrast, for names and figures. */
   text: string;
+  /** The game's second colour, for what banks its bar. */
+  support: string;
+}
+
+/** 1,240 → 1.2k: a reserve's figure has to fit under the pill. */
+export function compactCount(value: number): string {
+  if (value < 1000) return String(value);
+  const k = value / 1000;
+  return `${k >= 10 ? Math.round(k) : Math.floor(k * 10) / 10}k`;
+}
+
+/**
+ * The bar's second row, under its pill: what banks its overflow. A reserve
+ * fills while the bar is capped; a crafted stock (Condensed Resin) waits to be
+ * made. Read-only here; the game's page enters it.
+ */
+export function BankMeter({ bank, color, owner }: { bank: EnergyBank; color: string; owner: string }) {
+  const fill = bank.value == null || bank.cap <= 0 ? 0 : Math.min(1, bank.value / bank.cap);
+  const figure = bank.value == null ? '—' : compactCount(bank.value);
+  return (
+    <span className="today-step-bank" data-full={bank.full || undefined} title={`${bank.label} for ${owner}`}>
+      <span aria-hidden className="today-step-bank-tube">
+        <i style={{ transform: `scaleX(${fill})`, background: color }} />
+      </span>
+      <span aria-hidden className="today-step-bank-figure numeral">
+        <b>{figure}</b>/{compactCount(bank.cap)}
+      </span>
+      <span className="sr-only">
+        {bank.label}: {bank.value == null ? 'not read yet' : `${bank.value} of ${bank.cap}`}
+      </span>
+    </span>
+  );
 }
 
 /**
@@ -33,7 +66,7 @@ export interface StepGame {
  * an unchanged value (a fresh reading), a blur commits only a real edit, Escape
  * throws the draft away, and A/S/D/F step it.
  */
-function EnergyControl({ step, game, ink }: { step: EnergyStep; game: Game; ink: string }) {
+function EnergyControl({ step, game, ink, bankInk }: { step: EnergyStep; game: Game; ink: string; bankInk: string }) {
   const setEnergy = useApp((store) => store.setEnergy);
   const [draft, setDraft] = useState<string | null>(null);
   const edit = useRef({ dirty: false, cancelled: false });
@@ -80,6 +113,7 @@ function EnergyControl({ step, game, ink }: { step: EnergyStep; game: Game; ink:
           edit.current = { dirty: false, cancelled: false };
         }}
       />
+      {step.bank && <BankMeter bank={step.bank} color={bankInk} owner={step.name} />}
     </span>
   );
 }
@@ -183,7 +217,14 @@ export function stepWhat(step: TodayStep): string {
 }
 
 function stepWhy(step: TodayStep, group: TodayStepGroup, game: Game, zone: string, short: boolean): string {
-  if (step.kind === 'energy') return step.full ? 'full now, regen is going to waste' : `full at ${hhmm(step.at, zone)}`;
+  if (step.kind === 'energy') {
+    if (!step.full) return `full at ${hhmm(step.at, zone)}`;
+    const bank = step.bank;
+    // A reserve still filling keeps what the bar cannot; once it is full too, nothing does.
+    if (bank?.kind === 'reserve' && !bank.full)
+      return short ? 'full, into reserve' : `full now, overflow goes to ${bank.label}`;
+    return 'full now, regen is going to waste';
+  }
   if (step.kind === 'event') {
     if (!step.more) return 'event ends';
     return short ? `+${step.more} more end` : `event ends, and ${step.more} more ${game.short} events`;
@@ -237,7 +278,7 @@ export function StepRow({
       </button>
       <span className="today-step-ctl">
         {step.kind === 'energy' ? (
-          <EnergyControl step={step} game={game.game} ink={game.text} />
+          <EnergyControl step={step} game={game.game} ink={game.text} bankInk={game.support} />
         ) : step.kind === 'task' ? (
           <TaskControl step={step} ink={game.ink} what={what} now={now} />
         ) : (

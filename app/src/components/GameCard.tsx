@@ -4,6 +4,8 @@ import { EventTags } from './EventTags';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
 import type { AppState, ChecklistItem, EventProgress, Game, GameEvent, GameUrgency, Snapshot } from '@memoria/shared';
 import {
+  bankCounterOf,
+  bankedCounterIds,
   effectiveResourceKind,
   EVENT_PROGRESS_LABEL,
   EVENT_STEPS,
@@ -565,10 +567,15 @@ function EnergyControlRow({
   note,
   need,
   pulse,
+  counter,
+  counterSnap,
 }: {
   game: Game;
   res: AppState['resources'][number];
   snap: Snapshot | undefined;
+  /** The counter crafted from this bar (Condensed Resin), shown as its second row. */
+  counter?: AppState['resources'][number];
+  counterSnap?: Snapshot;
   now: number;
   localTz: string;
   setEnergy: GameControlActions['setEnergy'];
@@ -587,6 +594,24 @@ function EnergyControlRow({
     (part: 'value' | 'reserve') => passSession(game.id, part === 'value' ? 'energy' : 'reserve'),
     [game.id],
   );
+  const counted = useMemo(
+    () => (counter ? projectEnergy(counter, measuredSnapshot(counter, counterSnap), now, game) : null),
+    [counter, counterSnap, game, now],
+  );
+  const counterId = counter?.id;
+  const commitCounter = useCallback(
+    (value: number) => {
+      if (counterId) setEnergy(counterId, value);
+    },
+    [counterId, setEnergy],
+  );
+  const bank = useMemo(
+    () =>
+      counter && counted
+        ? { res: counter, value: counted.hasSnapshot ? counted.value : null, onCommit: commitCounter }
+        : undefined,
+    [commitCounter, counted, counter],
+  );
   return (
     <EnergyRow
       res={res}
@@ -601,6 +626,7 @@ function EnergyControlRow({
       need={need}
       pulse={pulse}
       onTouched={touched}
+      counter={bank}
     />
   );
 }
@@ -627,8 +653,13 @@ function ResourceControls({
   session?: { resourceId: string; need: SessionNeed; pulse: boolean };
 }) {
   const resources = state.resources.filter((r) => r.gameId === game.id && !r.deleted).sort((a, b) => a.sort - b.sort);
+  // A counter crafted from a bar (Condensed Resin) is that bar's second row, not a row of its own.
+  const banked = bankedCounterIds(resources);
   const cardResources = resources.filter(
-    (res) => ['regen', 'weekly', 'counter'].includes(effectiveResourceKind(res)) && !hidden.has(`resource:${res.id}`),
+    (res) =>
+      ['regen', 'weekly', 'counter'].includes(effectiveResourceKind(res)) &&
+      !hidden.has(`resource:${res.id}`) &&
+      !banked.has(res.id),
   );
 
   return (
@@ -636,26 +667,32 @@ function ResourceControls({
       {cardResources.length > 0 && (
         <div data-section="resources" className="mt-3.5 space-y-3">
           <Hint id="energy" />
-          {cardResources.map((res) => (
-            <EnergyControlRow
-              key={res.id}
-              game={game}
-              res={res}
-              snap={snaps.get(res.id)}
-              now={now}
-              localTz={state.settings.localTz}
-              setEnergy={actions.setEnergy}
-              note={reading?.resourceId === res.id ? reading.label : undefined}
-              need={
-                session?.resourceId === res.id && session.need !== 'dailies'
-                  ? session.need === 'energy'
-                    ? 'value'
-                    : 'reserve'
-                  : undefined
-              }
-              pulse={session?.pulse}
-            />
-          ))}
+          {cardResources.map((res) => {
+            const counter = bankCounterOf(res, resources);
+            const shown = counter && !hidden.has(`resource:${counter.id}`) ? counter : undefined;
+            return (
+              <EnergyControlRow
+                key={res.id}
+                game={game}
+                res={res}
+                snap={snaps.get(res.id)}
+                counter={shown}
+                counterSnap={shown ? snaps.get(shown.id) : undefined}
+                now={now}
+                localTz={state.settings.localTz}
+                setEnergy={actions.setEnergy}
+                note={reading?.resourceId === res.id ? reading.label : undefined}
+                need={
+                  session?.resourceId === res.id && session.need !== 'dailies'
+                    ? session.need === 'energy'
+                      ? 'value'
+                      : 'reserve'
+                    : undefined
+                }
+                pulse={session?.pulse}
+              />
+            );
+          })}
         </div>
       )}
       {!hidden.has('quick-spend') && <QuickSpendControls game={game} state={state} actions={actions} />}

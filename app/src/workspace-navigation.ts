@@ -109,7 +109,17 @@ export function navigateWorkspace(
     flushSync(update);
     if (switching) {
       // A new route restores its own scroll; one game's page replacing another starts at the top.
-      if (before.tab === 'home') window.scrollTo({ top: 0, behavior: 'instant' });
+      if (before.tab === 'home') {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        // One game to the next settles in rather than snapping. Opacity only,
+        // so it stays on the compositor and costs a phone nothing.
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          document.querySelector<HTMLElement>('.focus-workspace')?.animate?.([{ opacity: 0.4 }, { opacity: 1 }], {
+            duration: 160,
+            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          });
+        }
+      }
       focusHeading(originalFocus);
     }
     return;

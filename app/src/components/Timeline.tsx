@@ -402,7 +402,13 @@ const TimelineLane = memo(function TimelineLane({
                 const { left, width } = place(ev.start, ev.end, ws, we);
                 const at = DateTime.fromMillis(ev.start, { zone: localTz });
                 return (
-                  <span key={ev.id} className="tl-maint-label" style={{ left: pct(left + width / 2) }}>
+                  // The label reads away from now, so the now line never runs through it.
+                  <span
+                    key={ev.id}
+                    className="tl-maint-label"
+                    data-side={ev.start >= now ? 'after' : 'before'}
+                    style={{ left: pct(ev.start >= now ? left : left + width) }}
+                  >
                     Maintenance {at.toFormat('ccc HH:mm')}
                   </span>
                 );

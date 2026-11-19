@@ -1,6 +1,7 @@
 import type { AppState, Game, GameEvent, Resource } from './types';
 import type { ChecklistItem } from './checklist';
 import { measuredSnapshot, projectEnergy } from './energy';
+import { energyBank, type EnergyBank } from './bank';
 import { actBy, nextQuietWindow, type QuietWindow } from './quiet';
 import { effectiveResourceKind } from './tracking';
 import { buildUrgencyContext, type UrgencyContext } from './urgency';
@@ -44,6 +45,8 @@ export interface EnergyStep extends StepBase {
   full: boolean;
   value: number;
   cap: number;
+  /** What banks the bar's overflow: its reserve, or a counter crafted from it. */
+  bank: EnergyBank | null;
 }
 
 export interface TaskStep extends StepBase {
@@ -136,7 +139,8 @@ function energySteps(
 ): { steps: EnergyStep[]; week: TodayWeekItem[] } {
   const steps: EnergyStep[] = [];
   const week: TodayWeekItem[] = [];
-  const resources = (ctx.resourcesByGame.get(game.id) ?? [])
+  const all = ctx.resourcesByGame.get(game.id) ?? [];
+  const resources = all
     .filter(
       (res: Resource) => !res.deleted && effectiveResourceKind(res) === 'regen' && !hidden.has(`resource:${res.id}`),
     )
@@ -156,6 +160,7 @@ function energySteps(
         full: proj.isFull,
         value: proj.value,
         cap: res.cap,
+        bank: energyBank(res, proj, all, ctx.snaps, now, game),
         at,
         actBy: proj.isFull ? now : actBy(state.settings, at, now),
         done: false,

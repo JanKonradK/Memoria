@@ -43,7 +43,8 @@ it('keeps countdown ticks and sheet navigation out of unrelated views', async ()
   await act(async () => {
     vi.advanceTimersByTime(30_000);
   });
-  expect(screen.getByText(`Today time: ${Date.now()}`)).toBeInTheDocument();
+  // The clock ticks on the half-minute itself, the latest one passed.
+  expect(screen.getByText(`Today time: ${Date.now() - (Date.now() % 30_000)}`)).toBeInTheDocument();
   expect(views.shell).not.toHaveBeenCalled();
   vi.clearAllMocks();
 

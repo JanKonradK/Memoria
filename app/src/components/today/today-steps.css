@@ -644,3 +644,70 @@
     transition: none;
   }
 }
+
+/* The bar's bank under its pill: a hairline tube and the figure, the same
+   width as the pill so the pair reads as one reading. The stepper's own grid
+   is borrowed so the meter sits under the pill, not under the ± buttons. */
+.today-step-energy {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  align-items: center;
+  column-gap: 4px;
+  row-gap: 5px;
+}
+.today-step-energy .energy-value-stepper {
+  display: contents;
+}
+/* Placed, not flowed: on a phone the ± buttons leave the grid until focus. */
+.today-step-energy .energy-value-stepper > * {
+  grid-row: 1;
+}
+.today-step-energy .energy-value-stepper > :first-child {
+  grid-column: 1;
+}
+.today-step-energy .energy-value-box {
+  grid-column: 2;
+}
+.today-step-energy .energy-value-stepper > :last-child {
+  grid-column: 3;
+}
+.today-step-bank {
+  grid-row: 2;
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding-inline: 4px;
+}
+.today-step-bank-tube {
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-fill-3);
+}
+.today-step-bank-tube i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transform-origin: left;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+.today-step-bank-figure {
+  font-size: var(--text-label);
+  line-height: 1;
+  color: var(--color-muted);
+}
+.today-step-bank-figure b {
+  font-weight: 700;
+  color: var(--color-fg-soft);
+}
+.today-step-bank[data-full] .today-step-bank-figure b {
+  color: var(--color-warn-fg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .today-step-bank-tube i {
+    transition: none;
+  }
+}

@@ -205,6 +205,135 @@ export function ValueStepper({
   );
 }
 
+type BankTone = 'full' | 'max' | 'filling' | 'quiet';
+
+/**
+ * The bar's second row: what banks its overflow. Same grammar as the bar
+ * above it (name, stepper, tube, verdict) one size down, so the two read as a
+ * pair and never as two resources.
+ */
+function BankRow({
+  label,
+  owner,
+  value,
+  cap,
+  fill,
+  color,
+  step,
+  subtitle,
+  tone,
+  onStep,
+  onBeginEdit,
+  onDraft,
+  onCancel,
+  onEndEdit,
+  onCommit,
+}: {
+  label: string;
+  owner: string;
+  value: string;
+  cap: number;
+  fill: number;
+  color: string;
+  step: number;
+  subtitle: string;
+  tone: BankTone;
+  onStep: (delta: number) => void;
+  onBeginEdit: () => void;
+  onDraft: (text: string) => void;
+  onCancel: () => void;
+  onEndEdit: () => void;
+  onCommit?: () => void;
+}) {
+  return (
+    <div className="energy-reserve energy-bank" data-reserve>
+      <div className="energy-bank-line">
+        <span className="energy-bank-name">{label}</span>
+        <ValueStepper
+          value={value}
+          cap={cap}
+          color={color}
+          label={label}
+          ariaLabel={`${label} for ${owner}`}
+          placeholder="—"
+          valueClassName="text-body font-bold leading-none"
+          step={step}
+          onStep={onStep}
+          onBeginEdit={onBeginEdit}
+          onDraft={onDraft}
+          onCancel={onCancel}
+          onEndEdit={onEndEdit}
+          onCommit={onCommit}
+        />
+      </div>
+      <ProgressBar value={fill} color={color} className="energy-bank-tube" />
+      {subtitle && (
+        <div className="energy-bank-verdict text-meta tabular-nums" data-tone={tone}>
+          {subtitle}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export interface CounterBankProps {
+  res: Resource;
+  /** null until it has been read. */
+  value: number | null;
+  onCommit: (value: number) => void;
+}
+
+/** A crafted bank (Condensed Resin) under its bar. Enter commits, as the bar's own field does. */
+function CounterBank({ res, value, onCommit, owner, color }: CounterBankProps & { owner: string; color: string }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const edit = useRef({ dirty: false, cancelled: false });
+  const live = useRef(value ?? 0);
+  useEffect(() => {
+    live.current = value ?? 0;
+  }, [value]);
+  const commit = (next: number) => {
+    onCommit(clamp(Math.round(next), 0, res.cap));
+    setDraft(null);
+    edit.current.dirty = false;
+  };
+  const shown = draft ?? (value == null ? '' : String(value));
+  const maxed = value != null && value >= res.cap;
+  return (
+    <BankRow
+      label={res.name}
+      owner={owner}
+      value={shown}
+      cap={res.cap}
+      fill={value == null || res.cap <= 0 ? 0 : value / res.cap}
+      color={color}
+      step={1}
+      subtitle={value == null ? 'enter the current value' : maxed ? 'Max' : `room for ${res.cap - value}`}
+      tone={maxed ? 'max' : 'quiet'}
+      onStep={(delta) => commit((draft != null && draft !== '' ? intOr(draft, live.current) : live.current) + delta)}
+      onBeginEdit={() => {
+        edit.current = { dirty: false, cancelled: false };
+        setDraft(value == null ? '' : String(value));
+      }}
+      onDraft={(text) => {
+        edit.current.dirty = true;
+        setDraft(text);
+      }}
+      onCommit={() => commit(intOr(shown, live.current))}
+      onCancel={() => {
+        edit.current.cancelled = true;
+        setDraft(null);
+      }}
+      onEndEdit={() => {
+        const { cancelled, dirty } = edit.current;
+        if (!cancelled && dirty && draft != null && draft !== '' && intOr(draft, -1) !== live.current) {
+          commit(intOr(draft, live.current));
+        } else setDraft(null);
+        edit.current = { dirty: false, cancelled: false };
+      }}
+    />
+  );
+}
+
 /**
  * Resource row: energy and weekly stock show a bar. Only energy regenerates;
  * weekly stock shows its refill deadline. Counters use compact controls.
@@ -222,6 +351,7 @@ export const EnergyRow = memo(function EnergyRow({
   need,
   pulse,
   onTouched,
+  counter,
 }: {
   res: Resource;
   color: string;
@@ -239,6 +369,8 @@ export const EnergyRow = memo(function EnergyRow({
   pulse?: boolean;
   /** The player entered or confirmed a part of the reading. */
   onTouched?: (part: 'value' | 'reserve') => void;
+  /** A counter crafted from this bar (Condensed Resin), shown as the bar's second row. */
+  counter?: CounterBankProps;
 }) {
   const kind = effectiveResourceKind(res);
   const compact = kind === 'counter';
@@ -433,67 +565,44 @@ export const EnergyRow = memo(function EnergyRow({
           </div>
 
           {res.reserveCap > 0 && (
-            <>
-              {/* Backups and reserves are part of the reading, so they always show. */}
-              <div className="energy-reserve mt-2 border-t border-line-hairline pt-2" data-reserve>
-                <div className="mb-1 text-caption font-semibold text-dim">{reserveLabel}</div>
-                <div>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                      <ValueStepper
-                        value={reserveDraft ?? String(reserveValue)}
-                        cap={res.reserveCap}
-                        color={reserveAccent}
-                        label={reserveLabel}
-                        ariaLabel={`${reserveLabel} for ${res.name}`}
-                        valueClassName="text-body font-bold"
-                        // A 2,400 reserve moved by 1 is not a control; large ones move by 10.
-                        step={res.reserveCap >= 200 ? 10 : 1}
-                        onStep={reserveStep}
-                        onBeginEdit={() => {
-                          reserveEdit.current = { dirty: false, cancelled: false };
-                          setReserveDraft(String(reserveValue));
-                        }}
-                        onDraft={(text) => {
-                          reserveEdit.current.dirty = true;
-                          setReserveDraft(text);
-                        }}
-                        onCancel={() => {
-                          reserveEdit.current.cancelled = true;
-                          setReserveDraft(null);
-                        }}
-                        onEndEdit={() => {
-                          const edit = reserveEdit.current;
-                          if (!edit.cancelled && edit.dirty && reserveDraft != null && reserveDraft !== '') {
-                            const next = clamp(intOr(reserveDraft, reserveValue), 0, res.reserveCap);
-                            if (next !== liveRef.current.reserve) onCommit(liveRef.current.value, next);
-                          }
-                          // Looking at the reserve and leaving it as it is confirms it.
-                          if (!edit.cancelled) onTouched?.('reserve');
-                          setReserveDraft(null);
-                          reserveEdit.current = { dirty: false, cancelled: false };
-                        }}
-                      />
-                    </div>
-                    <ProgressBar value={reservePct / 100} color={reserveAccent} />
-                    {reserveSubtitle && (
-                      <div
-                        className={`mt-1 text-meta tabular-nums ${
-                          reserveValue >= res.reserveCap
-                            ? 'font-bold text-danger-fg'
-                            : proj.isFull
-                              ? 'text-ok-fg'
-                              : 'text-dim'
-                        }`}
-                      >
-                        {reserveSubtitle}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </>
+            <BankRow
+              label={reserveLabel}
+              owner={res.name}
+              value={reserveDraft ?? String(reserveValue)}
+              cap={res.reserveCap}
+              fill={reservePct / 100}
+              color={reserveAccent}
+              // A 2,400 reserve moved by 1 is not a control; large ones move by 10.
+              step={res.reserveCap >= 200 ? 10 : 1}
+              subtitle={reserveSubtitle}
+              tone={reserveValue >= res.reserveCap ? 'full' : proj.isFull ? 'filling' : 'quiet'}
+              onStep={reserveStep}
+              onBeginEdit={() => {
+                reserveEdit.current = { dirty: false, cancelled: false };
+                setReserveDraft(String(reserveValue));
+              }}
+              onDraft={(text) => {
+                reserveEdit.current.dirty = true;
+                setReserveDraft(text);
+              }}
+              onCancel={() => {
+                reserveEdit.current.cancelled = true;
+                setReserveDraft(null);
+              }}
+              onEndEdit={() => {
+                const edit = reserveEdit.current;
+                if (!edit.cancelled && edit.dirty && reserveDraft != null && reserveDraft !== '') {
+                  const next = clamp(intOr(reserveDraft, reserveValue), 0, res.reserveCap);
+                  if (next !== liveRef.current.reserve) onCommit(liveRef.current.value, next);
+                }
+                // Looking at the reserve and leaving it as it is confirms it.
+                if (!edit.cancelled) onTouched?.('reserve');
+                setReserveDraft(null);
+                reserveEdit.current = { dirty: false, cancelled: false };
+              }}
+            />
           )}
+          {res.reserveCap <= 0 && counter && <CounterBank owner={res.name} color={reserveAccent} {...counter} />}
         </>
       )}
 

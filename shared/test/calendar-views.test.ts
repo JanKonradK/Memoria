@@ -202,6 +202,20 @@ describe('month', () => {
     expect(bars.games[1]).toEqual(['a', 'c', 'b', 'nikke']);
     expect(bars.games[6]).toEqual(['nikke']);
     expect(bars.hidden).toEqual([1, 1, 1, 1, 1, 1, 1]);
+    // The long one runs straight through the week: hidden, but no day's news.
+    expect(bars.changes).toEqual([0, 0, 0, 0, 0, 0, 0]);
+
+    // A hidden one that starts and ends inside the week is news on both days.
+    const busy = packWeek(
+      [
+        event('one', { start: at(17, 9), end: at(19, 9), gameId: 'a' }),
+        event('two', { start: at(17, 9), end: at(19, 9), gameId: 'b' }),
+        event('three', { start: at(17, 9), end: at(19, 9), gameId: 'c' }),
+        event('four', { start: at(17, 10), end: at(19, 10), gameId: 'd' }),
+      ],
+      week,
+    );
+    expect(busy.changes).toEqual([0, 1, 0, 1, 0, 0, 0]);
     expect(bars.marks[2]!.map((item) => item.id)).toEqual(['down']);
 
     // With room, the long bar takes the first lane free all week.

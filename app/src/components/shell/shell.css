@@ -97,7 +97,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   padding: 7px 0 6px;
 }
 @media (hover: hover) {
@@ -171,6 +171,40 @@
   opacity: 0.45;
   filter: grayscale(1);
 }
+/* The game's bar and its bank as two hairlines under its face: the bar in
+   the game's colour, the bank in its second. A full bar brightens. */
+.rail-meters {
+  display: grid;
+  gap: 2px;
+  width: 34px;
+}
+.rail-meter {
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-fill-3);
+}
+.rail-meter i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--rail-ink);
+  opacity: 0.85;
+  transform-origin: left;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+.rail-meter-bank i {
+  background: var(--rail-ink-2, var(--rail-ink));
+  opacity: 0.7;
+}
+.rail-meter[data-full] i {
+  opacity: 1;
+}
+.rail-game[data-paused] .rail-meters {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
 /* Later reads plainly, under eight hours amber, under two rose; a paused game is quiet. */
 .rail-countdown {
   font-size: var(--text-caption);
@@ -202,7 +236,8 @@
 @media (prefers-reduced-motion: reduce) {
   .rail-view,
   .rail-game,
-  .rail-pin {
+  .rail-pin,
+  .rail-meter i {
     transition: none;
   }
   .rail-view:active:not(:disabled),
@@ -230,7 +265,7 @@
       max(6px, env(safe-area-inset-left));
     border-right: 0;
     border-top: 1px solid var(--color-line-hairline);
-    background: color-mix(in srgb, var(--color-surface-1) 96%, transparent);
+    background: var(--color-surface-1);
     overflow: hidden;
   }
   .rail-mark {
@@ -281,8 +316,17 @@
     scroll-snap-align: start;
   }
   .rail-game :is(.game-logo, [data-game-logo]) {
-    width: 36px !important;
-    height: 36px !important;
+    width: 34px !important;
+    height: 34px !important;
+  }
+  .rail-game {
+    gap: 3px;
+  }
+  .rail-meters {
+    width: 30px;
+  }
+  .rail-meter {
+    height: 2px;
   }
   .rail-countdown {
     font-size: 0.75rem;

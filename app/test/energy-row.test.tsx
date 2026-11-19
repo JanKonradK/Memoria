@@ -133,7 +133,7 @@ describe('EnergyRow reserve controls', () => {
     openReserve();
 
     const verdict = screen.getByText('FULL');
-    const summary = screen.getByText('Reserve TB Power', { selector: '[data-reserve] > div' });
+    const summary = screen.getByText('Reserve TB Power', { selector: '[data-reserve] .energy-bank-name' });
     // DOCUMENT_POSITION_FOLLOWING: the summary comes after the verdict.
     expect(verdict.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -346,5 +346,60 @@ describe('EnergyRow keyboard shortcuts', () => {
       'aria-keyshortcuts',
       'a s d f Enter Escape',
     );
+  });
+});
+
+describe('EnergyRow crafted bank', () => {
+  const resin: Resource = {
+    id: 'resin',
+    gameId: 'genshin',
+    name: 'Original Resin',
+    cap: 200,
+    regenMinutes: 8,
+    reserveCap: 0,
+    kind: 'regen',
+    sort: 0,
+    updatedAt: 1,
+  };
+  const condensed: Resource = {
+    ...resin,
+    id: 'condensed',
+    name: 'Condensed Resin',
+    cap: 5,
+    regenMinutes: 0,
+    kind: 'counter',
+  };
+
+  function renderPair(value: number | null, onCounter = vi.fn()) {
+    render(
+      <EnergyRow
+        res={resin}
+        color="#f2c879"
+        proj={{ ...projection, value: 137, precise: 137, isFull: false, reserve: null, reserveFullAt: null }}
+        now={now}
+        localTz="UTC"
+        onCommit={vi.fn()}
+        counter={{ res: condensed, value, onCommit: onCounter }}
+      />,
+    );
+    return onCounter;
+  }
+
+  it('shows the counter as the bar’s second row', () => {
+    renderPair(3);
+    const field = screen.getByRole('textbox', { name: 'Condensed Resin for Original Resin' });
+    expect(field).toHaveValue('3');
+    expect(screen.getByText('room for 2')).toBeInTheDocument();
+  });
+
+  it('steps and commits the counter, never the bar', () => {
+    const onCounter = renderPair(3);
+    fireEvent.click(screen.getByRole('button', { name: /Increase Condensed Resin/ }));
+    expect(onCounter).toHaveBeenCalledWith(4);
+  });
+
+  it('says Max once the counter is full', () => {
+    renderPair(5);
+    expect(screen.getByText('Max')).toBeInTheDocument();
   });
 });

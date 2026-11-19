@@ -7,7 +7,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react';
-import type { Game } from '@memoria/shared';
+import type { EnergyBank, Game } from '@memoria/shared';
 import { useAppUpdate } from '../../app-update';
 import { cloudSyncNow } from '../../cloud-sync';
 import { useMediaQuery, useNow, useReducedMotion } from '../../hooks';
@@ -17,7 +17,7 @@ import { useApp } from '../../store';
 import { syncNow } from '../../sync';
 import { useUI } from '../../ui-store';
 import { closeWorkspace, openGame } from '../../workspace-navigation';
-import { gameInk } from '../../game-color';
+import { gameInk, gameSupport } from '../../game-color';
 import { useGround } from '../../theme';
 import { GameLogo } from '../GameLogo';
 import { useIdentityColors } from '../roster';
@@ -98,6 +98,24 @@ const useTipSide = () => (useMediaQuery('(max-width: 767px)') ? 'top' : 'right')
 const typing = (target: EventTarget | null) =>
   target instanceof HTMLElement && Boolean(target.closest('input, textarea, select, [contenteditable]'));
 
+/** A game's bar and its bank, as the rail draws them. */
+export interface RailEnergy {
+  name: string;
+  value: number;
+  cap: number;
+  bank: EnergyBank | null;
+}
+
+const fraction = (value: number | null, cap: number) => (value == null || cap <= 0 ? 0 : Math.min(1, value / cap));
+
+/** "Original Resin 137 of 200, Condensed Resin 3 of 5": the meters, said. */
+export function railEnergyText(energy: RailEnergy): string {
+  const bar = `${energy.name} ${energy.value} of ${energy.cap}`;
+  const { bank } = energy;
+  if (!bank) return bar;
+  return `${bar}, ${bank.label} ${bank.value == null ? 'not read yet' : `${bank.value} of ${bank.cap}`}`;
+}
+
 /**
  * One game in the rail: its face and how long until it next needs the player.
  * Its name is the button's text (read, not shown) so nothing visible is left
@@ -111,9 +129,14 @@ function RailGame({
   now,
   current,
   shortcut,
+  energy,
+  support,
 }: {
   game: Game;
   ink: string;
+  /** The bar and its bank, drawn as two hairlines under the face. */
+  energy?: RailEnergy;
+  support: string;
   at?: number;
   label?: string;
   now: number;
@@ -126,6 +149,8 @@ function RailGame({
   const account = game.accountLabel?.trim();
   const name = account ? `${game.name}, ${account}` : game.name;
   const next = game.paused ? 'Paused' : label && countdown ? `${label} in ${countdown.long}` : '';
+  const reading = energy && !game.paused ? railEnergyText(energy) : '';
+  const described = [next, reading].filter(Boolean).join('. ');
   return (
     <Tooltip
       side={tipSide}
@@ -133,6 +158,17 @@ function RailGame({
         <>
           <span className="block font-semibold text-fg">{name}</span>
           {next && <span className="block">{next}</span>}
+          {energy && !game.paused && (
+            <span className="block numeral">
+              {energy.name} {energy.value}/{energy.cap}
+              {energy.bank && (
+                <>
+                  {' · '}
+                  {energy.bank.label} {energy.bank.value ?? '—'}/{energy.bank.cap}
+                </>
+              )}
+            </span>
+          )}
           {shortcut && <span className="block text-muted">Ctrl+{shortcut}</span>}
         </>
       }
@@ -143,21 +179,33 @@ function RailGame({
         data-rail-game={game.id}
         data-paused={game.paused || undefined}
         aria-current={current ? 'page' : undefined}
-        aria-describedby={next ? descriptionId : undefined}
+        aria-describedby={described ? descriptionId : undefined}
         aria-keyshortcuts={shortcut ? `Control+${shortcut}` : undefined}
         onClick={() => openGame(game.id)}
-        style={{ '--rail-ink': ink } as CSSProperties}
+        style={{ '--rail-ink': ink, '--rail-ink-2': support } as CSSProperties}
       >
         <span aria-hidden className="rail-pin" />
         {/* Under 44px a text coin is a monogram, which is what a rail can read. */}
         <GameLogo game={game} size={42} className="rail-game-logo" />
+        {energy && (
+          <span aria-hidden className="rail-meters" data-banked={energy.bank ? true : undefined}>
+            <span className="rail-meter" data-full={energy.value >= energy.cap || undefined}>
+              <i style={{ transform: `scaleX(${fraction(energy.value, energy.cap)})` }} />
+            </span>
+            {energy.bank && (
+              <span className="rail-meter rail-meter-bank" data-full={energy.bank.full || undefined}>
+                <i style={{ transform: `scaleX(${fraction(energy.bank.value, energy.bank.cap)})` }} />
+              </span>
+            )}
+          </span>
+        )}
         <span aria-hidden className="rail-countdown numeral" data-tone={game.paused ? 'paused' : countdown?.tone}>
           {game.paused ? '—' : (countdown?.short ?? '·')}
         </span>
         <span className="sr-only">{name}</span>
-        {next && (
+        {described && (
           <span id={descriptionId} hidden>
-            {next}
+            {described}
           </span>
         )}
       </button>
@@ -352,11 +400,18 @@ export function AppRail() {
       <div ref={gamesRef} className="rail-games" role="group" aria-label="Games">
         {games.map((game, index) => {
           const next = derived.entryById.get(game.id)?.next ?? null;
+          const { resource, projection, bank } = derived.primaryEnergy(game.id);
+          const energy =
+            resource && projection?.hasSnapshot
+              ? { name: resource.name, value: projection.value, cap: resource.cap, bank }
+              : undefined;
           return (
             <RailGame
               key={game.id}
               game={game}
               ink={gameInk(game, ground)}
+              support={gameSupport(game, ground)}
+              energy={energy}
               at={next?.at}
               label={next?.label}
               now={now}

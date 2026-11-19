@@ -3,7 +3,7 @@ import { DateTime } from 'luxon';
 import type { TodayPlan, TodayStep, TodayStepGroup, TodayWeekItem } from '@memoria/shared';
 import type { Derived } from '../../selectors';
 import { useMediaQuery } from '../../hooks';
-import { gameInk, legible } from '../../game-color';
+import { gameInk, gameSupport, legible } from '../../game-color';
 import { useGround, useInset } from '../../theme';
 import { useIdentityColors } from '../roster';
 import { GameLogo } from '../GameLogo';
@@ -116,7 +116,13 @@ export function TodaySteps({ derived, empty }: { derived: Derived; empty: ReactN
       const logo = { ...game, ...colors[game.id] };
       const ink = gameInk(logo, ground);
       // Checked on the inset well the energy figure sits in, the darker of the two grounds in light mode.
-      map.set(game.id, { game, logo, ink, text: legible(ink, inset, 4.5) });
+      map.set(game.id, {
+        game,
+        logo,
+        ink,
+        text: legible(ink, inset, 4.5),
+        support: legible(gameSupport(logo, ground), inset, 3),
+      });
     }
     return map;
   }, [colors, ground, inset, state.games]);
