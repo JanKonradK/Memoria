@@ -1,15 +1,17 @@
 import { expect, test } from '@playwright/test';
+import { addFromShell, showTodayGames } from './support';
 
 test('the dailies ring on Today ticks a game, and Undo takes it back', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  await page.getByRole('button', { name: 'Add a game' }).click();
+  await addFromShell(page, 'Add game');
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('combobox', { name: 'Server' }).click();
   await page.getByRole('option').nth(1).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await showTodayGames(page);
   const tick = page.getByRole('button', { name: 'Tick all Genshin Impact dailies' });
   await tick.click();
   const undo = page.getByRole('button', { name: 'Undo ticking Genshin Impact dailies' });
@@ -24,12 +26,13 @@ test('with every daily done and nothing capping before the reset, Today says all
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  await page.getByRole('button', { name: 'Add a game' }).click();
+  await addFromShell(page, 'Add game');
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('combobox', { name: 'Server' }).click();
   await page.getByRole('option', { name: /^Europe/ }).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await showTodayGames(page);
   const clear = page.locator('[data-all-clear]');
   await page.getByRole('button', { name: 'Tick all Genshin Impact dailies' }).click();
   const mobile = info.project.name !== 'desktop';

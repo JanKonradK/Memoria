@@ -231,6 +231,8 @@ describe('game page controls', () => {
 describe("Today's selected game", () => {
   it('gives the selected game an Open full page button in its heading', () => {
     useApp.setState({ state: roster(), loaded: true });
+    // The ranked games are Today's second view.
+    useUI.setState({ todayView: 'games' });
     show(<TodayPage now={NOW} />);
     fireEvent.click(screen.getByRole('button', { name: 'Review Testland', exact: true }));
     const bar = screen.getByLabelText('Testland tracking controls');

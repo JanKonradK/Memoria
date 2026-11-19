@@ -62,7 +62,7 @@ const row = (name: string) => screen.getByRole('button', { name: `Review ${name}
 
 beforeEach(() => {
   useApp.setState({ state: fixture(), loaded: true });
-  useUI.setState({ tab: 'today', sheet: null, focusedGameId: null, todayGameId: null });
+  useUI.setState({ tab: 'today', sheet: null, focusedGameId: null, todayGameId: null, todayView: 'games' });
 });
 
 it('lists every game in one list, soonest first, with paused games last', () => {
@@ -146,4 +146,36 @@ it('opens the selected game on its own page', () => {
   expect(useApp.getState().state.games.find((game) => game.id === useUI.getState().focusedGameId)?.name).toBe(
     'Can rest',
   );
+});
+
+it('opens on Steps: one list ordered by deadline, and the switch keeps the ranked games', () => {
+  useUI.setState({ todayView: 'steps' });
+  show(<TodayPage now={NOW} />);
+  const view = screen.getByRole('group', { name: 'Today view' });
+  expect(within(view).getByRole('button', { name: 'Steps' })).toHaveAttribute('aria-pressed', 'true');
+  // 195 of 200 at 8 minutes a point caps within the hour; 10 of 200 caps after a day.
+  const hour = screen.getByRole('region', { name: 'Within the hour' });
+  expect(within(hour).getByRole('button', { name: /^Spend Energy / })).toBeInTheDocument();
+  expect(screen.getAllByRole('button', { name: /^Spend Energy / })).toHaveLength(1);
+  expect(screen.getByRole('region', { name: 'This week' })).toHaveTextContent('Energy caps');
+  // Paused games have no steps.
+  expect(screen.queryByText(/Paused game/)).not.toBeInTheDocument();
+  fireEvent.click(within(view).getByRole('button', { name: 'Games' }));
+  expect(useUI.getState().todayView).toBe('games');
+  expect(screen.getByRole('list', { name: 'Games' })).toBeInTheDocument();
+});
+
+it('keeps a step in place while its value is typed, and commits through the store', () => {
+  useUI.setState({ todayView: 'steps' });
+  show(<TodayPage now={NOW} />);
+  const input = screen.getByLabelText('Energy current value');
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: '20' } });
+  // Still the same row while typing, even though 20 no longer caps within the day.
+  expect(screen.getByRole('region', { name: 'Within the hour' })).toContainElement(input);
+  fireEvent.keyDown(input, { key: 'Enter' });
+  const snap = useApp
+    .getState()
+    .state.snapshots.find((item) => item.resourceId === 'resource-Near cap' && item.value === 20);
+  expect(snap).toBeDefined();
 });

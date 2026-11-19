@@ -6,8 +6,15 @@ export function gameRow(page: Page, name: string): Locator {
   return page.getByRole('button', { name: new RegExp(`^(Open|Review) ${escaped}(, paused)?$`) });
 }
 
+/** Today opens on its Steps; the ranked games are its other view. */
+export async function showTodayGames(page: Page): Promise<void> {
+  const games = page.getByRole('group', { name: 'Today view' }).getByRole('button', { name: 'Games', exact: true });
+  if ((await games.count()) > 0 && (await games.getAttribute('aria-pressed')) !== 'true') await games.click();
+}
+
 /** Open a game's own page from Today, at any window size. */
 export async function openGame(page: Page, name: string): Promise<void> {
+  await showTodayGames(page);
   await gameRow(page, name).click();
   // A wide window puts the card beside the list first; its page is one more step.
   if ((page.viewportSize()?.width ?? 0) >= 900) await page.getByRole('button', { name: 'Open full page' }).click();

@@ -110,7 +110,7 @@ function StepBtn({ delta, onStep, label }: { delta: number; onStep: (d: number) 
  * 60 right now" is a fresh snapshot the projection needs, while the reserve has
  * nothing to timestamp and simply blurs.
  */
-function ValueStepper({
+export function ValueStepper({
   value,
   cap,
   color,
