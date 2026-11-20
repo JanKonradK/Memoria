@@ -570,7 +570,7 @@ export const PRESETS: GamePreset[] = [
       // leftover. A new key: the 1.5 migration deleted the old routine
       // ('nte-city-stamina') everywhere, and deleted routines stay deleted — by
       // key and by name, so the name differs from the old one too.
-      { key: 'nte-city-stamina-spend', name: 'Use City Stamina before the Monday refill', cadence: 'weekly' },
+      { key: 'nte-city-stamina-spend', name: 'City Stamina before the Monday refill', cadence: 'weekly' },
       // Tycoon Incentive Fund — 1,000,000 Fons per 14-day period. v1.3 turned
       // what was Pink Paws Heist's own payout into one shared pool: Pink Paws
       // Heist, Volley Star's Weekly Match and the Going, Going, Gone! display

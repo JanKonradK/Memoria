@@ -564,12 +564,6 @@
 .today-side .today-codes li {
   padding-inline: 0;
 }
-.today-side-hint {
-  margin: 0;
-  font-size: var(--text-meta);
-  line-height: 1.5;
-  color: var(--color-muted);
-}
 @media (max-width: 1099px) {
   .today-side {
     max-width: none;

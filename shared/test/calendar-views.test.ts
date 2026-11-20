@@ -82,10 +82,37 @@ describe('agenda', () => {
   });
 
   it('uses the home zone for the day boundary, not UTC', () => {
-    // 23:30 in Warsaw on the 18th is already the 19th in Tokyo.
+    // 23:30 in Warsaw on the 18th is already the 19th in Tokyo (with no small hours to fold back).
     const late = event('late', { end: at(18, 23, 30) });
-    expect(agendaDays([late], NOW, TZ).days[0]!.date).toBe('2026-11-18');
-    expect(agendaDays([late], NOW, 'Asia/Tokyo').days[0]!.date).toBe('2026-11-19');
+    expect(agendaDays([late], NOW, TZ, { morning: 0 }).days[0]!.date).toBe('2026-11-18');
+    expect(agendaDays([late], NOW, 'Asia/Tokyo', { morning: 0 }).days[0]!.date).toBe('2026-11-19');
+  });
+
+  it('lists an end in the small hours on the night before, after that day', () => {
+    const agenda = agendaDays(
+      [
+        event('friday 04:00', { end: at(20, 4) }),
+        event('thursday 22:00', { end: at(19, 22) }),
+        event('friday 10:00', { end: at(20, 10) }),
+      ],
+      NOW,
+      TZ,
+    );
+    expect(agenda.days.map((day) => [day.date, day.moments.map((moment) => moment.events[0]!.id)])).toEqual([
+      ['2026-11-19', ['thursday 22:00', 'friday 04:00']],
+      ['2026-11-20', ['friday 10:00']],
+    ]);
+    expect(agenda.days[0]!.moments.map((moment) => Boolean(moment.overnight))).toEqual([false, true]);
+    // The player's own morning, from quiet hours ending at 03:00, keeps a 04:00 end on its day.
+    expect(agendaDays([event('friday 04:00', { end: at(20, 4) })], NOW, TZ, { morning: 180 }).days[0]!.date).toBe(
+      '2026-11-20',
+    );
+  });
+
+  it('keeps a small-hours end on today once its night has begun', () => {
+    const night = at(20, 1);
+    const agenda = agendaDays([event('friday 04:00', { end: at(20, 4) })], night, TZ);
+    expect(agenda.days[0]!.date).toBe('2026-11-20');
   });
 
   it('keeps finished events behind Show finished, older ones in their own list', () => {
@@ -128,12 +155,14 @@ describe('ending soon', () => {
     const ids = Object.fromEntries(
       columns.map((column) => [column.bucket, column.moments.map((moment) => moment.events[0]!.id)]),
     );
+    // Thursday 03:00 is tonight; Monday 00:30 is Sunday night; 30 November 01:00 is the 29th's.
     expect(ids).toEqual({
-      today: ['today'],
-      week: ['thursday', 'sunday'],
-      next: ['monday', 'next sunday'],
-      later: ['december'],
+      today: ['today', 'thursday'],
+      week: ['sunday', 'monday'],
+      next: ['next sunday', 'december'],
+      later: [],
     });
+    expect(columns[0]!.moments.find((moment) => moment.events[0]!.id === 'thursday')!.overnight).toBe(true);
     expect(columns[1]!.from).toBe(at(19, 0));
     expect(columns[2]!.from).toBe(at(23, 0));
   });

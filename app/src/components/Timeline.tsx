@@ -1,7 +1,6 @@
 import { memo, useCallback, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { DateTime } from 'luxon';
-import { isPredictedWindow, packSpans, type Game, type GameEvent } from '@memoria/shared';
-import { Hint } from './Hint';
+import { isPredictedWindow, morningOf, packSpans, shownEnd, type Game, type GameEvent } from '@memoria/shared';
 import { useApp } from '../store';
 import { useElementWidth, useMediaQuery } from '../hooks';
 import { useUI } from '../ui-store';
@@ -20,6 +19,7 @@ import { SoonView } from './calendar/SoonView';
 import { PageBar, PageBarEnd, PageTitle } from './shell/PageBar';
 import { PinnedEvents } from './PinnedEvents';
 import { PinMark } from './EventPeek';
+import { NightMark } from './NightMark';
 import { gameServerLabel } from '../server-choice';
 import { assignGameInks, legible } from '../game-color';
 import { useGround } from '../theme';
@@ -113,6 +113,8 @@ interface BoardProps {
   we: number;
   trackPx: number;
   localTz: string;
+  /** When the player's day begins: a bar ending in the small hours stops at midnight. */
+  morning: number;
   compact: boolean;
   onOpenEvent: (event: GameEvent) => void;
   onToggleEvent: (event: GameEvent) => void;
@@ -139,14 +141,18 @@ const TimelineBar = memo(function TimelineBar({
   we,
   trackPx,
   localTz,
+  morning,
   compact,
   onOpenEvent,
   onToggleEvent,
 }: BoardProps & { ev: GameEvent }) {
-  const { left, width } = place(ev.start, ev.end, ws, we);
+  // An end in the small hours stops the bar at the midnight before: that night is the last chance.
+  const end = shownEnd(ev.end, now, localTz, morning);
+  const overnight = end < ev.end;
+  const { left, width } = place(ev.start, end, ws, we);
   const predicted = isPredictedWindow(ev);
   const stream = ev.type === 'livestream';
-  const countdown = barCountdown(ev, now, we, localTz);
+  const countdown = barCountdown(ev, now, we, localTz, morning);
   const description = scheduleText(ev, localTz);
   const open = (
     <button
@@ -183,7 +189,7 @@ const TimelineBar = memo(function TimelineBar({
 
   const barPx = (width / 100) * trackPx;
   const cutStart = ev.start < ws;
-  const cutEnd = ev.end > we;
+  const cutEnd = end > we;
   return (
     <div
       data-event-id={ev.id}
@@ -234,6 +240,7 @@ const TimelineBar = memo(function TimelineBar({
             className={`tl-left numeral ${barPx > 0 && barPx < COUNTDOWN_ROOM_PX ? 'sr-only' : ''}`}
             style={{ '--tl-tone': TONE[countdown.tone] } as CSSProperties}
           >
+            {overnight && !cutEnd && !predicted && !ev.done && <NightMark at={ev.end} tz={localTz} />}
             {predicted ? 'predicted' : countdown.label}
           </span>
         )}
@@ -283,7 +290,14 @@ type Row = { group: string; label?: string; events: GameEvent[] };
  * events that do not overlap share a row. Maintenance is not a row; it is
  * drawn across them.
  */
-function packGame(game: Game, events: GameEvent[], ws: number, we: number, trackPx: number): Row[] {
+function packGame(
+  game: Game,
+  events: GameEvent[],
+  ws: number,
+  we: number,
+  trackPx: number,
+  endOf: (ev: GameEvent) => number,
+): Row[] {
   const msPerPx = trackPx > 0 ? (we - ws) / trackPx : 0;
   const reach = (ev: GameEvent) => {
     const minPx = ev.type === 'livestream' && !isPredictedWindow(ev) ? 24 + ev.name.length * LABEL_CHAR_PX : MIN_BAR_PX;
@@ -304,7 +318,7 @@ function packGame(game: Game, events: GameEvent[], ws: number, we: number, track
     if (group.events.length === 0) continue;
     const spans = group.events.map((ev) => {
       const start = Math.max(ev.start, ws);
-      return { id: ev.id, start, end: Math.max(Math.min(ev.end, we), start + reach(ev)) };
+      return { id: ev.id, start, end: Math.max(Math.min(endOf(ev), we), start + reach(ev)) };
     });
     packSpans(spans, 0, ROW_GAP_PX * msPerPx).forEach((packed, index) =>
       rows.push({
@@ -335,16 +349,19 @@ const TimelineLane = memo(function TimelineLane({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { now, ws, we, trackPx, localTz, compact } = board;
+  const { now, ws, we, trackPx, localTz, morning, compact } = board;
   const server = gameServerLabel(game, now);
   const account = game.accountLabel?.trim();
   const countText = `${events.length} ${events.length === 1 ? 'event' : 'events'}`;
   const countLine = `${countText}${account ? ` · ${account}` : ''}`;
   const shownName = compact || game.name.length > LONG_NAME ? game.short || game.name : game.name;
-  const rows = useMemo(() => packGame(game, events, ws, we, trackPx), [game, events, ws, we, trackPx]);
+  const rows = useMemo(
+    () => packGame(game, events, ws, we, trackPx, (ev) => shownEnd(ev.end, now, localTz, morning)),
+    [game, events, ws, we, trackPx, now, localTz, morning],
+  );
   const maintenance = events.filter((ev) => ev.type === 'maintenance');
   const contentId = `timeline-lane-${game.id}`;
-  const summary = collapsedSummary(events, now, localTz, compact);
+  const summary = collapsedSummary(events, now, localTz, compact, morning);
   const groups = rows.reduce<{ key: string; label: string; rows: Row[] }[]>((list, row) => {
     const last = list.at(-1);
     if (last?.key === row.group) last.rows.push(row);
@@ -539,6 +556,7 @@ export function TimelinePage({ now }: { now: number }) {
   const openSheet = useUI((s) => s.openSheet);
   const ground = useGround();
   const localTz = state.settings.localTz;
+  const morning = morningOf(state.settings);
   const [trackRef, trackPx] = useElementWidth();
   const view = useUI((s) => s.timelineView) ?? 'lanes';
   const compact = useMediaQuery('(max-width: 767px)');
@@ -727,7 +745,6 @@ export function TimelinePage({ now }: { now: number }) {
         )}
       </div>
 
-      <Hint id="events" className="mt-3" />
       <PinnedEvents events={events} games={games} now={now} onOpen={peekEvent} />
 
       {games.length > 0 && games.every((game) => game.paused) ? null : view === 'month' ? (
@@ -736,6 +753,7 @@ export function TimelinePage({ now }: { now: number }) {
           events={events}
           now={now}
           localTz={state.settings.localTz}
+          morning={morning}
           showFinished={showFinished}
           onOpenEvent={peekEvent}
           onToggleEvent={toggleEvent}
@@ -746,6 +764,7 @@ export function TimelinePage({ now }: { now: number }) {
           events={events}
           now={now}
           localTz={state.settings.localTz}
+          morning={morning}
           showFinished={showFinished}
           onOpenEvent={peekEvent}
           onToggleEvent={toggleEvent}
@@ -756,6 +775,7 @@ export function TimelinePage({ now }: { now: number }) {
           events={events}
           now={now}
           localTz={localTz}
+          morning={morning}
           showFinished={showFinished}
           onOpenEvent={peekEvent}
           onToggleEvent={toggleEvent}
@@ -830,6 +850,7 @@ export function TimelinePage({ now }: { now: number }) {
                   we={we}
                   trackPx={trackPx}
                   localTz={localTz}
+                  morning={morning}
                   compact={compact}
                   onOpenEvent={peekEvent}
                   onToggleEvent={toggleEvent}
@@ -837,17 +858,8 @@ export function TimelinePage({ now }: { now: number }) {
               );
             })}
           </div>
-          {compact && (
-            <p className="tl-hint text-caption text-muted">
-              Swipe sideways to move through the weeks. Tap a bar to see it or tick it done.
-            </p>
-          )}
           {!compact && (
             <div className="tl-legend text-caption text-muted" aria-hidden>
-              <span>
-                <i className="tl-legend-tick" />
-                Hover a bar to tick it done
-              </span>
               <span>
                 <i className="tl-diamond" />
                 Livestream
@@ -860,7 +872,12 @@ export function TimelinePage({ now }: { now: number }) {
                 <i className="tl-legend-maint" />
                 Maintenance
               </span>
-              <span>Dashed end: runs past the range</span>
+              <span>
+                <svg viewBox="0 0 16 16" aria-hidden className="night-mark">
+                  <path d="M10.6 2.2a6 6 0 1 0 3.2 9.9A5 5 0 0 1 10.6 2.2Z" fill="currentColor" />
+                </svg>
+                Ends overnight
+              </span>
             </div>
           )}
           {pausedRows}

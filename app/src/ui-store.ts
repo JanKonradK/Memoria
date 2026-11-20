@@ -65,8 +65,6 @@ export type TimelineView = 'lanes' | 'agenda' | 'month' | 'soon';
 export const TIMELINE_VIEWS: readonly TimelineView[] = ['lanes', 'agenda', 'month', 'soon'];
 /** How much time the Calendar's timeline spans: a week, four weeks, or a season (nine weeks). */
 export type TimelineRange = 'week' | 'month' | 'season';
-export const HINT_KEYS = ['energy', 'tasks', 'events'] as const;
-export type HintKey = (typeof HINT_KEYS)[number];
 
 /**
  * The theme is a token re-point on the root element — see index.css. Nothing
@@ -126,6 +124,8 @@ export type SheetRoute =
   /** The quick view of an existing event; its editor is the `event` route. */
   | { kind: 'eventPeek'; eventId: string }
   | { kind: 'reminder' }
+  /** The guide: what each part of the app is, shown in miniature. */
+  | { kind: 'guide' }
   /** What a game added since the player last caught up. */
   | null;
 
@@ -159,10 +159,6 @@ interface UIStore {
   setTimelineView(view: TimelineView): void;
   setTimelineShowFinished(show: boolean): void;
   /** Set when first-run setup finishes: only a new install sees the hints. */
-  hintsArmed: boolean;
-  hintsSeen: Partial<Record<HintKey, true>>;
-  armHints(): void;
-  dismissHint(key: HintKey): void;
   setFocusedGameId(gameId: string | null): void;
   setTab(tab: Tab): void;
   /** The Settings pane shown beside its menu on wide windows. Session only. */
@@ -217,10 +213,6 @@ export const useUI = create<UIStore>()(
       setTimelineRange: (timelineRange) => set({ timelineRange }),
       setTimelineView: (timelineView) => set({ timelineView }),
       setTimelineShowFinished: (timelineShowFinished) => set({ timelineShowFinished }),
-      hintsArmed: false,
-      hintsSeen: {},
-      armHints: () => set({ hintsArmed: true, hintsSeen: {} }),
-      dismissHint: (key) => set((s) => ({ hintsSeen: { ...s.hintsSeen, [key]: true } })),
       setFocusedGameId: (focusedGameId) => set({ focusedGameId }),
       todayGameId: null,
       setTodayGameId: (todayGameId) => set({ todayGameId }),
@@ -273,8 +265,6 @@ export const useUI = create<UIStore>()(
         accents: state.accents,
         reserveOpen: state.reserveOpen,
         logoFlipped: state.logoFlipped,
-        hintsArmed: state.hintsArmed,
-        hintsSeen: state.hintsSeen,
         todayView: state.todayView,
       }),
       merge: (persisted, current) => {
@@ -318,14 +308,7 @@ export const useUI = create<UIStore>()(
                     .map((key) => [key, true as const]),
                 )
               : current.logoFlipped,
-          hintsArmed: stored.hintsArmed === true,
           todayView: stored.todayView === 'games' ? 'games' : 'steps',
-          hintsSeen:
-            stored.hintsSeen && typeof stored.hintsSeen === 'object'
-              ? Object.fromEntries(
-                  HINT_KEYS.filter((key) => stored.hintsSeen![key] === true).map((key) => [key, true as const]),
-                )
-              : {},
         };
       },
     },

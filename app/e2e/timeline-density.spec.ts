@@ -107,33 +107,32 @@ test('24 events remain reachable in the packed timeline with controls in the Cal
   await page.screenshot({ path: info.outputPath('24-reachable-rows.png') });
 });
 
-test('first-run hints appear in place, once, and can be shown again', async ({ page }, info) => {
-  test.skip(!['desktop', 'mobile-390'].includes(info.project.name), 'First-run hints at desktop and phone sizes');
+test('first run ends on the guide, and Settings opens it again', async ({ page }, info) => {
+  test.skip(!['desktop', 'mobile-390'].includes(info.project.name), 'The guide at desktop and phone sizes');
   await page.goto('/');
-  // Skipping setup opens no tour: the app is shown as it is.
   await page.getByRole('button', { name: 'Skip for now', exact: true }).click();
+  const guide = page.getByRole('dialog', { name: 'Guide' });
+  await expect(guide.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
+  for (const title of ['Bars', 'Your games', 'Overnight']) {
+    await guide.getByRole('button', { name: 'Next', exact: true }).click();
+    await expect(guide.getByRole('heading', { name: title, exact: true })).toBeVisible();
+  }
+  await page.screenshot({ path: info.outputPath('guide.png') });
+  await guide.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page
-    .getByRole('navigation', { name: 'Primary' })
-    .getByRole('button', { name: 'Calendar', exact: true })
-    .click();
-  const hint = page.locator('[data-hint="events"]');
-  await expect(hint).toContainText('Events live here');
-  await page.screenshot({ path: info.outputPath('events-hint.png') });
-  await hint.getByRole('button', { name: 'Got it', exact: true }).click();
-  await expect(hint).toHaveCount(0);
-  await page.reload();
+  // Nothing in the app explains itself in place: no tips wait on the Calendar.
   await page
     .getByRole('navigation', { name: 'Primary' })
     .getByRole('button', { name: 'Calendar', exact: true })
     .click();
   await expect(page.getByRole('radiogroup', { name: 'Event view' })).toBeVisible();
-  await expect(hint).toHaveCount(0);
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByRole('button', { name: 'Show hints again', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Got it' })).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page
     .getByRole('navigation', { name: 'Primary' })
-    .getByRole('button', { name: 'Calendar', exact: true })
+    .getByRole('button', { name: 'Settings', exact: true })
     .click();
-  await expect(hint).toBeVisible();
+  await page.getByRole('button', { name: 'Guide', exact: true }).click();
+  await expect(guide).toBeVisible();
 });

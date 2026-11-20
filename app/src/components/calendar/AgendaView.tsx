@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from 'react';
 import { DateTime } from 'luxon';
-import { agendaDays, type CalendarMoment, type Game, type GameEvent } from '@memoria/shared';
+import { agendaDays, lastPlayDay, type CalendarMoment, type Game, type GameEvent } from '@memoria/shared';
 import { endTone } from '../../util';
 import { PinMark } from '../EventPeek';
 import type { CalendarViewProps } from './types';
@@ -9,6 +9,7 @@ import {
   MomentMark,
   MomentText,
   MomentTick,
+  NightMark,
   clock,
   dayTitle,
   gameLabel,
@@ -29,6 +30,7 @@ export function AgendaView({
   events,
   now,
   localTz,
+  morning,
   showFinished,
   onOpenEvent,
   onToggleEvent,
@@ -44,11 +46,11 @@ export function AgendaView({
         events.filter((event) => calendar.gameOf(event)),
         now,
         localTz,
-        { showFinished },
+        { showFinished, morning },
       ),
     // Rows move on the minute, not on every tick of the clock.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [events, calendar, minute, localTz, showFinished],
+    [events, calendar, minute, localTz, morning, showFinished],
   );
 
   if (agenda.days.length === 0 && agenda.finished.length === 0)
@@ -90,6 +92,7 @@ export function AgendaView({
                     games={calendar}
                     now={now}
                     localTz={localTz}
+                    morning={morning}
                     open={open}
                     onFold={() => toggleFold(moment.key)}
                     onOpenEvent={onOpenEvent}
@@ -107,6 +110,7 @@ export function AgendaView({
                       games={calendar}
                       now={now}
                       localTz={localTz}
+                      morning={morning}
                       nested
                       onOpenEvent={onOpenEvent}
                       onToggleEvent={onToggleEvent}
@@ -133,6 +137,7 @@ export function AgendaView({
                 games={calendar}
                 now={now}
                 localTz={localTz}
+                morning={morning}
                 dated
                 onOpenEvent={onOpenEvent}
                 onToggleEvent={onToggleEvent}
@@ -151,6 +156,7 @@ function AgendaRow({
   games,
   now,
   localTz,
+  morning,
   open,
   onFold,
   nested = false,
@@ -163,6 +169,7 @@ function AgendaRow({
   games: CalendarGames;
   now: number;
   localTz: string;
+  morning: number;
   open?: boolean;
   onFold?: () => void;
   nested?: boolean;
@@ -183,17 +190,18 @@ function AgendaRow({
       : moment.kind === 'starts'
         ? 'var(--color-muted)'
         : 'var(--color-fg-soft)';
-  const detail = folded ? (
-    `and ${moment.events.length - 1} more ${game.short.trim() || game.name} events`
-  ) : moment.kind === 'down' ? (
-    `down until ${clock(lead.end, localTz)}`
-  ) : moment.kind === 'starts' ? (
-    <>
-      <EventKind game={game} event={lead} />, to {DateTime.fromMillis(lead.end, { zone: localTz }).toFormat('d LLL')}
-    </>
-  ) : (
-    <EventKind game={game} event={lead} />
-  );
+  // A coming event names its last day: the night before an end in the small hours.
+  const until = lastPlayDay(lead.end, now, localTz, morning).toFormat('d LLL');
+  const detail =
+    moment.kind === 'down' ? (
+      `until ${clock(lead.end, localTz)}`
+    ) : moment.kind === 'starts' && !folded ? (
+      <>
+        <EventKind game={game} event={lead} /> to {until}
+      </>
+    ) : (
+      <EventKind game={game} event={lead} />
+    );
   return (
     <li
       // One data-list-event per event: a coming event's start row is marked apart.
@@ -208,6 +216,7 @@ function AgendaRow({
       <button type="button" className="cal-row-main" onClick={() => onOpenEvent(lead)}>
         <span className="cal-when">
           <b style={{ color: tone }}>
+            {moment.overnight && <NightMark at={moment.at} tz={localTz} />}
             {dated ? DateTime.fromMillis(moment.at, { zone: localTz }).toFormat('d LLL') : clock(moment.at, localTz)}
           </b>{' '}
           <span>{dated ? clock(moment.at, localTz) : WHAT[moment.kind]}</span>

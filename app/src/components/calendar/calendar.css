@@ -43,6 +43,9 @@
 .cal-account {
   color: var(--color-fg-soft);
 }
+.cal-kind:not(:empty)::before {
+  content: ' · ';
+}
 .cal-tag {
   margin-inline-end: 0.35em;
   border: 1px solid var(--color-line-edge);

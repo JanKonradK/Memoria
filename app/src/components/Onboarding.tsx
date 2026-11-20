@@ -89,14 +89,14 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
       });
     }
     onComplete();
-    useUI.getState().armHints();
+    useUI.getState().openSheet({ kind: 'guide' });
   };
 
   const skip = () => {
     updateSettings({ localTz: detectLocalTz() });
     onComplete();
-    // The hints appear in place the first time each thing is on screen.
-    useUI.getState().armHints();
+    // The guide shows what each part is, once, before the app is used.
+    useUI.getState().openSheet({ kind: 'guide' });
   };
 
   return (
@@ -109,9 +109,8 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
         <>
           <h1 className="text-display font-black tracking-tight text-fg">Remind me before I lose something</h1>
           <p className="mt-2 max-w-2xl text-body text-muted">
-            An hour before each daily reset that still has dailies left. Before weeklies reset, one hour ahead for each
-            game that still owes them. Three hours before an event you have not finished ends, and two hours before a
-            bar caps. Nothing is sent for work you have ticked off.
+            Before a reset with work left, an unfinished event&rsquo;s end and a full bar. Never for what you have
+            ticked.
           </p>
           <div className="mt-6 max-w-2xl">
             <QuietHoursField />

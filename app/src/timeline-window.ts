@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 import type { Game } from '@memoria/shared';
-import { lastWeeklyReset, nextWeeklyReset } from '@memoria/shared';
+import { lastPlayDay, lastWeeklyReset, MORNING_MINUTES, nextWeeklyReset } from '@memoria/shared';
 
 /** The timeline shows one week back and three weeks ahead of today. */
 export const TIMELINE_BACK_DAYS = 7;
@@ -123,13 +123,15 @@ export function barCountdown(
   now: number,
   rangeEnd: number,
   localTz: string,
+  morning = MORNING_MINUTES,
 ): { label: string; tone: BarTone } {
   if (event.done) return { label: 'done', tone: 'ok' };
   if (event.end <= now) return { label: 'ended', tone: 'muted' };
   if (event.start > now) return { label: `in ${shortLeft(event.start - now)}`, tone: 'muted' };
   const left = event.end - now;
   if (event.end > rangeEnd && left >= 3 * DAY) {
-    return { label: `to ${DateTime.fromMillis(event.end, { zone: localTz }).toFormat('d LLL')}`, tone: 'muted' };
+    // The last day it can be played: the night before an end in the small hours.
+    return { label: `to ${lastPlayDay(event.end, now, localTz, morning).toFormat('d LLL')}`, tone: 'muted' };
   }
   return { label: shortLeft(left), tone: left < DAY ? 'rose' : left < 3 * DAY ? 'warn' : 'muted' };
 }
@@ -143,6 +145,7 @@ export function collapsedSummary(
   now: number,
   localTz: string,
   withTime = false,
+  morning = MORNING_MINUTES,
 ): string {
   const running = events
     .filter((e) => !e.done && e.start <= now && e.end > now && e.type !== 'maintenance' && e.type !== 'livestream')
@@ -153,9 +156,10 @@ export function collapsedSummary(
     return coming > 0 ? `${coming} coming, nothing running` : 'Nothing running';
   }
   const end = DateTime.fromMillis(first.end, { zone: localTz });
+  const lastDay = (at: number) => lastPlayDay(at, now, localTz, morning);
   const today = DateTime.fromMillis(now, { zone: localTz }).startOf('day');
-  const more = running.filter((e) => DateTime.fromMillis(e.end, { zone: localTz }).hasSame(end, 'day')).length - 1;
-  const days = Math.round(end.startOf('day').diff(today, 'days').days);
-  const when = days === 0 ? 'today' : days === 1 ? 'tomorrow' : end.toFormat('ccc d LLL');
+  const more = running.filter((e) => lastDay(e.end).hasSame(lastDay(first.end), 'day')).length - 1;
+  const days = Math.round(lastDay(first.end).diff(today, 'days').days);
+  const when = days === 0 ? 'today' : days === 1 ? 'tomorrow' : lastDay(first.end).toFormat('ccc d LLL');
   return `${first.name}${more > 0 ? ` and ${more} more end` : ' ends'} ${when}${withTime ? ` at ${end.toFormat('HH:mm')}` : ''}`;
 }

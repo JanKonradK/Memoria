@@ -81,11 +81,8 @@ test('Today fits more games and keeps compact summaries readable and actionable'
     await page.screenshot({ path: info.outputPath(`compact-roster-${theme}.png`) });
     const geometry = await cards.evaluateAll((nodes) => {
       const headerBottom = document.querySelector('header')!.getBoundingClientRect().bottom;
-      const dockTop =
-        innerWidth < 768
-          ? document.querySelector('nav[aria-label="Primary"]')!.getBoundingClientRect().top - 8
-          : innerHeight;
-      const boundary = dockTop;
+      // Nothing sits along the bottom: the rail is across the top or down the side.
+      const boundary = innerHeight;
       const rects = nodes.map((node) => node.getBoundingClientRect());
       return {
         visible: rects.filter((rect) => rect.top >= headerBottom && rect.bottom <= boundary + 1).length,

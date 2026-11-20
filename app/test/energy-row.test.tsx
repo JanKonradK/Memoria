@@ -106,7 +106,7 @@ describe('EnergyRow reserve controls', () => {
     renderRow({ proj: { ...projection, reserveFullAt: now + 35 * 60_000 } });
     openReserve();
 
-    expect(screen.getByText(/\+1 \/ 12m · full .* · in 35m/)).toBeInTheDocument();
+    expect(screen.getByText(/\+1 \/ 12m · full (\w{3} )?02:35$/)).toBeInTheDocument();
   });
 
   it('does not mark a full weekly refill as wasted regeneration', () => {
@@ -389,7 +389,6 @@ describe('EnergyRow crafted bank', () => {
     renderPair(3);
     const field = screen.getByRole('textbox', { name: 'Condensed Resin for Original Resin' });
     expect(field).toHaveValue('3');
-    expect(screen.getByText('room for 2')).toBeInTheDocument();
   });
 
   it('steps and commits the counter, never the bar', () => {

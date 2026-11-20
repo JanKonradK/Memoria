@@ -1,5 +1,5 @@
-/* The rail: the app's one navigation. A column down the left edge on a PC,
-   the dock along the bottom on a phone. Flat like the rest of the app; the
+/* The rail: the app's one navigation. A column down the left edge on a wide
+   screen, a bar across the top on a tall one. Flat like the rest of the app; the
    chosen place takes the pressed fill with an inset edge. */
 :root {
   --rail-w: 88px;
@@ -246,26 +246,78 @@
   }
 }
 
-@media (min-width: 768px) {
+/* Which edge the rail takes follows the screen's shape, not its width. A wide
+   screen is short on height, so the rail runs down the side; a tall one (a
+   phone or a tablet held upright) is short on width, so it runs along the top. */
+:root {
+  --nav-h: 0px;
+}
+@media (orientation: landscape) {
+  :root {
+    --rail-edge: calc(var(--rail-w) + env(safe-area-inset-left));
+  }
+  .app-rail {
+    width: var(--rail-edge);
+    padding-left: env(safe-area-inset-left);
+  }
   .app-frame {
-    padding-left: var(--rail-w);
+    padding-left: var(--rail-edge);
   }
 }
 
-/* The dock: the same rail along the bottom edge. Today and Calendar stay put;
-   the games scroll sideways, then Add and Settings. */
-@media (max-width: 767px) {
+/* A phone on its side: little height, so a slimmer rail without the mark. */
+@media (orientation: landscape) and (max-height: 500px) {
+  :root {
+    --rail-w: 68px;
+  }
   .app-rail {
-    inset: auto 0 0 0;
+    padding-top: 6px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom));
+  }
+  .rail-mark {
+    display: none;
+  }
+  .rail-view,
+  .rail-game {
+    width: 58px;
+  }
+  .rail-view {
+    min-height: 50px;
+    gap: 4px;
+  }
+  .rail-game {
+    padding: 5px 0 4px;
+  }
+  .rail-game :is(.game-logo, [data-game-logo]) {
+    width: 34px !important;
+    height: 34px !important;
+  }
+  .rail-pin {
+    top: 22px;
+    left: -5px;
+  }
+  .rail-badge {
+    right: 4px;
+  }
+}
+
+/* Upright: the same rail as a bar across the top. Today and Calendar stay put,
+   the games scroll sideways, then Settings. Page bars stick under it. */
+@media (orientation: portrait) {
+  :root {
+    --nav-h: calc(64px + env(safe-area-inset-top));
+  }
+  .app-rail {
+    position: sticky;
+    inset: 0 auto auto 0;
     width: auto;
-    height: var(--mobile-nav-h);
+    height: var(--nav-h);
+    box-sizing: border-box;
     flex-direction: row;
     gap: 0;
-    padding: 6px max(6px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom))
-      max(6px, env(safe-area-inset-left));
+    padding: env(safe-area-inset-top) max(6px, env(safe-area-inset-right)) 0 max(6px, env(safe-area-inset-left));
     border-right: 0;
-    border-top: 1px solid var(--color-line-hairline);
-    background: var(--color-surface-1);
+    border-bottom: 1px solid var(--color-line-hairline);
     overflow: hidden;
   }
   .rail-mark {
@@ -282,12 +334,13 @@
   }
   .rail-sep {
     width: 1px;
-    height: 36px;
+    height: 34px;
     margin: 0 4px;
   }
   .rail-games {
     flex: 1;
     min-width: 0;
+    height: 100%;
     flex-direction: row;
     overflow-x: auto;
     overscroll-behavior-x: contain;
@@ -299,31 +352,32 @@
     display: none;
   }
   .rail-view {
-    width: 60px;
-    min-height: 60px;
+    width: 58px;
+    min-height: 56px;
+    gap: 4px;
     font-size: 0.75rem;
   }
   .rail-add {
     flex: none;
-    width: 48px;
-    min-height: 60px;
+    width: 44px;
+    min-height: 56px;
     /* Clear of the fade at the strip's end once scrolled there. */
     margin: 0 20px 0 0;
   }
   .rail-game {
-    width: 54px;
-    padding: 4px 0;
+    width: 52px;
+    min-height: 56px;
+    gap: 3px;
+    padding: 3px 0;
+    justify-content: center;
     scroll-snap-align: start;
   }
   .rail-game :is(.game-logo, [data-game-logo]) {
-    width: 34px !important;
-    height: 34px !important;
-  }
-  .rail-game {
-    gap: 3px;
+    width: 32px !important;
+    height: 32px !important;
   }
   .rail-meters {
-    width: 30px;
+    width: 28px;
   }
   .rail-meter {
     height: 2px;
@@ -331,12 +385,14 @@
   .rail-countdown {
     font-size: 0.75rem;
   }
+  /* The open game is marked from the bar's bottom edge. */
   .rail-pin {
     left: 50%;
-    top: -6px;
+    top: auto;
+    bottom: -4px;
     width: 0;
     height: 3px;
-    border-radius: 0 0 3px 3px;
+    border-radius: 3px 3px 0 0;
     transform: translateX(-50%);
     transition: width var(--dur-base) var(--ease-out);
   }
@@ -344,44 +400,17 @@
     width: 22px;
     height: 3px;
   }
-  .rail-game {
-    min-height: 60px;
-    justify-content: center;
-  }
   .rail-badge {
-    top: 2px;
-    right: 6px;
+    top: 1px;
+    right: 3px;
   }
-  /* Settings keeps its place at the dock's end as an icon, so games get the room. */
   .rail-settings {
-    width: 48px;
-    min-height: 60px;
-  }
-  .rail-dot {
-    top: 6px;
-    right: 14px;
-  }
-}
-
-/* A phone on its side has little height to spare: the dock slims to match
-   --mobile-nav-h there. */
-@media (min-width: 540px) and (max-width: 767px) and (max-height: 500px) {
-  .app-rail {
-    padding-top: 4px;
-    padding-bottom: calc(4px + env(safe-area-inset-bottom));
-  }
-  .rail-view,
-  .rail-game,
-  .rail-add,
-  .rail-settings {
+    width: 44px;
     min-height: 56px;
   }
-  .rail-view {
-    gap: 3px;
-  }
-  .rail-game :is(.game-logo, [data-game-logo]) {
-    width: 32px !important;
-    height: 32px !important;
+  .rail-dot {
+    top: 8px;
+    right: 10px;
   }
 }
 
@@ -406,7 +435,7 @@
 }
 .page-bar {
   position: sticky;
-  top: 0;
+  top: var(--nav-h);
   z-index: 30;
   display: flex;
   flex-wrap: wrap;
@@ -445,6 +474,12 @@
   align-items: center;
   gap: 8px;
   margin-left: auto;
+}
+/* Under the top bar, which already keeps clear of the status bar. */
+@media (orientation: portrait) {
+  .page-bar {
+    padding-top: 10px;
+  }
 }
 @media (max-width: 767px) {
   .page-bar {

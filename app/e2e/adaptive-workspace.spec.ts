@@ -63,12 +63,12 @@ test('Today and game controls adapt while a PC window is resized', async ({ page
         (button) => button.offsetHeight > 0,
       );
       const rows = [...document.querySelectorAll('.today-priority-row')].map((row) => row.getBoundingClientRect());
-      // From 768px the rail stands at the left edge and the page takes all the rest.
+      // A wide window has the rail at the left edge and the page takes all the rest; a tall one has it across the top.
       const rail = document.querySelector('nav[aria-label="Primary"]')!.getBoundingClientRect();
       return {
         pageWidth: bounds.width,
         pageLeft: bounds.left,
-        railRight: innerWidth >= 768 ? rail.right : 0,
+        railRight: innerWidth > innerHeight ? rail.right : 0,
         controlsFit: buttons.every((button) => {
           const rect = button.getBoundingClientRect();
           return rect.left >= 0 && rect.right <= innerWidth + 1 && rect.bottom <= innerHeight;

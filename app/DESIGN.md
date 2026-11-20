@@ -6,7 +6,7 @@
 
 **Story:** Find the game that needs attention, update energy, tick tasks, then check what ends soon.
 
-**Material:** A graphite ground (an off-white one in light mode), hairline rules, no cards around content. Sections are told apart by spacing and a small label over a hairline. Rows have no fill at rest, a quiet fill under a hovering pointer, and a pressed fill with an inset edge when chosen. Floating things (sheets, menus, popovers, the phone dock) are the only raised surfaces.
+**Material:** A graphite ground (an off-white one in light mode), hairline rules, no cards around content. Sections are told apart by spacing and a small label over a hairline. Rows have no fill at rest, a quiet fill under a hovering pointer, and a pressed fill with an inset edge when chosen. Floating things (sheets, menus, popovers) are the only raised surfaces.
 
 **Colour:** A game's two logo colours identify it: its logo, its title, its energy meter and its timeline lane. Amber and red are reserved for deadlines and always come with their number. Gold marks a pinned event. The accent marks the selected route, focus, text selection, links and the one primary action; nothing else carries colour. Players choose a colour palette (Memoria, Catppuccin, Kanagawa, Rosé Pine, Gruvbox, Tokyo Night) and an accent within it in Settings → General; every palette is derived in `palettes.ts`, which lifts any colour below AA on its own surfaces.
 
@@ -22,7 +22,7 @@ Use the semantic tokens in `src/index.css`; no raw Tailwind palette colours. The
 
 ## Layout
 
-**The rail** is the app's one navigation: a column down the left edge on a PC, the dock along the bottom on a phone. Today and Calendar lead; then every game in the player's own order, its logo over two hairlines (its stamina bar in the game's colour, the bar's bank in its second) and how long until it next needs the player (rose under two hours, amber under eight); then Add game and Settings. The rail never re-sorts, so a game is always where the player left it. The open game is marked by a pin in its own colour. Ctrl+1 to Ctrl+9 open the first nine games. On a phone the games scroll sideways and the open one is kept in view. Today carries the number of steps left. Sync trouble and a Refresh retry appear in the rail only when something failed; a waiting update is a dot on Settings, and only a new major or minor version opens the full-screen update page.
+**The rail** is the app's one navigation. Its edge follows the screen's shape: a column down the left on a wide screen, where height is scarce, and a bar across the top on a tall one (a phone, an upright tablet), where width is. Today and Calendar lead; then every game in the player's own order, its logo over two hairlines (its stamina bar in the game's colour, the bar's bank in its second) and how long until it next needs the player (rose under two hours, amber under eight); then Add game and Settings. The rail never re-sorts, so a game is always where the player left it. The open game is marked by a pin in its own colour. Ctrl+1 to Ctrl+9 open the first nine games. Across the top the games scroll sideways and the open one is kept in view; page bars stick under it. Today carries the number of steps left. Sync trouble and a Refresh retry appear in the rail only when something failed; a waiting update is a dot on Settings, and only a new major or minor version opens the full-screen update page.
 
 There is no app-wide bar. **Each page has its own bar**: what the page is, its views, and its actions. Adding starts where the thing lives: a game from the rail, an event from the Calendar's bar or a game's Events tab, a reminder from Settings → Reminders.
 
@@ -38,7 +38,9 @@ There is no app-wide bar. **Each page has its own bar**: what the page is, its v
 
 Every value is entered by hand. A reading says how old it is ("Updated 13m ago"); a value seeded when a game was added reads "Starting estimate".
 
-First-run setup picks games and servers. After it, three hints appear once each, where they apply: energy, tasks, and the Calendar. There is no tour.
+First-run setup picks games and servers, then opens the guide: four cards, each a working miniature of a part of the app (Today, a bar and its reserve, the rail, an overnight end) over one line. Settings opens it again. Nothing in the app explains itself in place: no tips, no "Got it".
+
+**Words.** A label is the thing and its figures, never an instruction: "Original Resin 137/200", not "Spend Original Resin". Nothing repeats what a figure beside it already says. **An end in the small hours belongs to the night before**: before the player's morning (when their quiet hours end, else 09:00) it is listed on the previous day, its bar stops at that midnight, and a crescent marks its real time. Today asks for it by midnight.
 
 ## Motion
 

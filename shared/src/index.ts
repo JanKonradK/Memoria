@@ -29,5 +29,6 @@ export * from './history';
 export * from './servers';
 export * from './today-steps';
 export * from './calendar-views';
+export * from './play-day';
 export * from './timeline-pack';
 export * from './bank';

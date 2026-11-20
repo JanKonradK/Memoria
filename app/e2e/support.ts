@@ -156,3 +156,12 @@ export async function calendarAxe(page: Page, { all = false } = {}) {
   const { violations } = await new AxeBuilder({ page }).analyze();
   return all ? violations : violations.filter((issue) => ['serious', 'critical'].includes(issue.impact ?? ''));
 }
+
+/** First-run setup ends on the guide; it closes like any sheet and leaves the app as it is. */
+export async function closeGuide(page: Page): Promise<void> {
+  const guide = page.getByRole('dialog', { name: 'Guide' });
+  await expect(guide).toBeVisible();
+  await expect(guide.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+}

@@ -123,9 +123,6 @@ export function TodaySide({ state, now, games }: { state: AppState; now: number;
         </section>
       )}
       <TodayCodes games={state.games} now={now} />
-      <p className="today-side-hint">
-        Every step&rsquo;s tick and number works right here. The game&rsquo;s own page has the rest.
-      </p>
     </aside>
   );
 }

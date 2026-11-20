@@ -15,6 +15,7 @@ import { projectEnergy } from './energy';
 import { effectiveResourceKind } from './tracking';
 import { DateTime } from 'luxon';
 import { alarmFreeWindowAt, quietWindowAt } from './quiet';
+import { morningOf, playEnd } from './play-day';
 import { eventReward } from './event-reward';
 import { presetForGame } from './presets';
 import { PAID_PASSES } from './savings';
@@ -320,19 +321,21 @@ export function buildNotificationPlan(state: AppState, now: number): PlannedNoti
         let stop = start + 1;
         while (stop < ending.length && ending[stop]!.end - first.end < HOUR) stop++;
         const group = ending.slice(start, stop);
+        // An end in the small hours warns ahead of midnight, while the player is still up.
+        const last = playEnd(first.end, state.settings.localTz, morningOf(state.settings));
+        const overnight = last < first.end && last - eventLead * MINUTE > now;
+        const lead = overnight ? 'overnight' : `in ${formatLead(eventLead)}`;
         add(
           `event:${game.id}:${first.end}`,
           'event',
-          group.length === 1
-            ? `${title}: event ends in ${formatLead(eventLead)}`
-            : `${title}: ${group.length} events end in ${formatLead(eventLead)}`,
+          group.length === 1 ? `${title}: event ends ${lead}` : `${title}: ${group.length} events end ${lead}`,
           group
             .map((event) => {
               const reward = eventReward(event, game);
               return reward ? `${event.name} (${reward.label})` : event.name;
             })
             .join(', '),
-          first.end - eventLead * MINUTE,
+          (overnight ? last : first.end) - eventLead * MINUTE,
           game.id,
           first.end,
           group.map((event) => event.id),

@@ -21,9 +21,10 @@ test('phone roster opens full controls and keeps edits across navigation', async
   await expect(gameRow(page, 'Genshin Impact')).toBeVisible();
   const nav = page.getByRole('navigation', { name: 'Primary' });
   const box = await nav.boundingBox();
-  // The dock lies along the bottom edge, edge to edge; the safe area is padding inside it.
-  expect(box!.y + box!.height).toBeCloseTo(page.viewportSize()!.height, 0);
+  // Upright, the rail is a bar across the top, edge to edge; the safe area is padding inside it.
+  expect(box!.y).toBeCloseTo(0, 0);
   expect(box!.x).toBe(0);
+  expect(box!.width).toBe(page.viewportSize()!.width);
   for (const button of await nav.getByRole('button').all()) {
     const bounds = await button.boundingBox();
     expect(bounds!.height).toBeGreaterThanOrEqual(44);

@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { openGame, addFromShell, editFromQuickView } from './support';
+import { addFromShell, closeGuide, editFromQuickView, openGame } from './support';
 
 async function addGames(page: Page) {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
@@ -79,11 +79,11 @@ test('shared game focus and event editing work at every size', async ({ page }, 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
-test('skipping first-run setup persists and opens no tour', async ({ page }, testInfo) => {
+test('skipping first-run setup persists and shows the guide once', async ({ page }, testInfo) => {
   test.skip(!['desktop', 'mobile-390'].includes(testInfo.project.name), 'First run at desktop and phone sizes');
   await page.goto('/');
   await page.getByRole('button', { name: 'Skip for now', exact: true }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await closeGuide(page);
   await expect(page.getByRole('group', { name: 'Games shown' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Add a game' })).toBeVisible();
   await page.reload();

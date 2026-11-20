@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openSettings } from './support';
+import { closeGuide, openSettings } from './support';
 
 /** A Windows host whose reminder preference the page can read back. */
 async function withPcBridge(page: Page) {
@@ -46,9 +46,9 @@ test('first run on the PC offers reminders before creating the dashboard', async
   const quiet = page.getByRole('switch', { name: 'Quiet hours' });
   await expect(quiet).not.toBeChecked();
   await page.getByRole('button', { name: 'Not now' }).click();
-  // Setup ends on Today, with no tour in the way.
+  // Setup ends on Today, under the guide.
+  await closeGuide(page);
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(await page.evaluate(async () => (await window.memoriaDesktop!.presence!.get()).remindersOnPc)).toBe(false);
 });
 

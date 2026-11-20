@@ -73,7 +73,7 @@ export function ReminderSheet({ open }: { open: boolean }) {
       >
         <Field label="Message">
           <TextInput
-            placeholder="e.g. Spend starglitter before maintenance"
+            placeholder="e.g. Starglitter before maintenance"
             maxLength={20_000}
             value={message}
             onChange={(e) => setMessage(e.target.value)}

@@ -68,8 +68,11 @@ test('agenda lists each day’s moments, folds shared ends and keeps its control
     return window.scrollY;
   });
   expect(scrollPosition).toBeGreaterThan(0);
-  await nav.getByRole('button', { name: 'Settings', exact: true }).click();
-  await nav.getByRole('button', { name: 'Calendar', exact: true }).click();
+  // Tapped where they are: a click() would first scroll the sticky rail's button "into view", to the top.
+  for (const route of ['Settings', 'Calendar']) {
+    const box = (await nav.getByRole('button', { name: route, exact: true }).boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  }
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(scrollPosition, 0);
   await expect(views.getByRole('radio', { name: 'Agenda', exact: true })).toHaveAttribute('data-state', 'on');
 

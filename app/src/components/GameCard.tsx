@@ -1,5 +1,4 @@
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
-import { Hint } from './Hint';
 import { EventTags } from './EventTags';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref } from 'react';
 import type { AppState, ChecklistItem, EventProgress, Game, GameEvent, GameUrgency, Snapshot } from '@memoria/shared';
@@ -666,7 +665,6 @@ function ResourceControls({
     <>
       {cardResources.length > 0 && (
         <div data-section="resources" className="mt-3.5 space-y-3">
-          <Hint id="energy" />
           {cardResources.map((res) => {
             const counter = bankCounterOf(res, resources);
             const shown = counter && !hidden.has(`resource:${counter.id}`) ? counter : undefined;
@@ -895,7 +893,6 @@ function ChecklistControls({
   const groups = groupChecklist(checklist);
   return (
     <div data-section="tasks" className="mt-3.5">
-      <Hint id="tasks" className="mb-2" />
       {groups.map((group) => (
         <section
           key={group.cadence}

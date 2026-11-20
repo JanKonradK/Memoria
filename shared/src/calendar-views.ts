@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import { endsOvernight, lastPlayDay, MORNING_MINUTES, shownEnd } from './play-day';
 import type { GameEvent } from './types';
 
 /**
@@ -6,7 +7,8 @@ import type { GameEvent } from './types';
  * moment is something that happens to an event at one instant (it starts, it
  * ends, a livestream goes live, a server goes down), and several moments of one
  * game at one instant fold into a single row. Days are the player's own days,
- * in their home time zone, never the game server's.
+ * in their home time zone, never the game server's, and an end in the small
+ * hours belongs to the night before (see play-day.ts).
  */
 
 /** The fields these views read; callers get their own event type back. */
@@ -23,6 +25,13 @@ export interface CalendarMoment<E extends CalendarEvent = GameEvent> {
   gameId: string;
   /** The lead first, then the events folded under it. Never empty. */
   events: E[];
+  /** An end in the small hours, listed on the day before it. */
+  overnight?: boolean;
+}
+
+/** When the player's day begins (play-day.ts), and the moment to measure it from. */
+export interface PlayDayOptions {
+  morning?: number;
 }
 
 /** Fewer than this many same-game, same-instant moments stay as separate rows. */
@@ -137,7 +146,7 @@ export function agendaDays<E extends CalendarEvent>(
   events: readonly E[],
   now: number,
   tz: string,
-  { showFinished = false }: { showFinished?: boolean } = {},
+  { showFinished = false, morning = MORNING_MINUTES }: { showFinished?: boolean } & PlayDayOptions = {},
 ): Agenda<E> {
   const today = dayStart(now, tz);
   const items: { event: E; kind: MomentKind; at: number }[] = [];
@@ -163,12 +172,19 @@ export function agendaDays<E extends CalendarEvent>(
     items.push({ event, kind: 'ends', at: event.end });
   }
 
+  // An end in the small hours goes on the night before, after that day's own moments.
+  const placed = foldMoments(items).map((moment) => {
+    if (moment.kind !== 'ends' || !endsOvernight(moment.at, tz, morning))
+      return { moment, day: dayStart(moment.at, tz) };
+    const day = lastPlayDay(moment.at, now, tz, morning).toMillis();
+    return { moment: day < dayStart(moment.at, tz) ? { ...moment, overnight: true } : moment, day };
+  });
+  placed.sort((a, b) => a.day - b.day);
   const days: AgendaDay<E>[] = [];
-  for (const moment of foldMoments(items)) {
-    const date = dayKey(moment.at, tz);
+  for (const { moment, day } of placed) {
     const last = days.at(-1);
-    if (last?.date === date) last.moments.push(moment);
-    else days.push({ date, start: dayStart(moment.at, tz), moments: [moment] });
+    if (last?.start === day) last.moments.push(moment);
+    else days.push({ date: dayKey(day, tz), start: day, moments: [moment] });
   }
   older.sort((a, b) => b.end - a.end || compareEvents(a, b));
   return { days, finished: older, hiddenFinished };
@@ -196,7 +212,7 @@ export function soonColumns<E extends CalendarEvent>(
   events: readonly E[],
   now: number,
   tz: string,
-  { hideDone = false }: { hideDone?: boolean } = {},
+  { hideDone = false, morning = MORNING_MINUTES }: { hideDone?: boolean } & PlayDayOptions = {},
 ): SoonColumn<E>[] {
   const today = DateTime.fromMillis(now, { zone: tz }).startOf('day');
   const tomorrow = addDays(today.toMillis(), 1, tz);
@@ -210,21 +226,24 @@ export function soonColumns<E extends CalendarEvent>(
   };
   return SOON_BUCKETS.map((bucket) => {
     const [from, until] = bounds[bucket];
-    const inside = events.filter(
-      (event) =>
-        event.type !== 'livestream' &&
-        event.type !== 'maintenance' &&
-        event.end > now &&
-        event.end >= from &&
-        event.end < until &&
-        !(hideDone && event.done),
-    );
+    const first = bucket === 'today' ? today.toMillis() : from;
+    // By the last day it can be played, so a 04:00 end counts on the night before.
+    const inside = events.filter((event) => {
+      if (event.type === 'livestream' || event.type === 'maintenance' || event.end <= now) return false;
+      if (hideDone && event.done) return false;
+      const day = lastPlayDay(event.end, now, tz, morning).toMillis();
+      return day >= first && day < until;
+    });
     return {
       bucket,
-      from: bucket === 'today' ? today.toMillis() : from,
+      from: first,
       until,
       count: inside.length,
-      moments: foldMoments(inside.map((event) => ({ event, kind: 'ends' as const, at: event.end }))),
+      moments: foldMoments(inside.map((event) => ({ event, kind: 'ends' as const, at: event.end }))).map((moment) =>
+        endsOvernight(moment.at, tz, morning) && shownEnd(moment.at, now, tz, morning) !== moment.at
+          ? { ...moment, overnight: true }
+          : moment,
+      ),
     };
   });
 }
@@ -316,10 +335,14 @@ export function packWeek<E extends CalendarEvent>(
   events: readonly E[],
   week: Pick<MonthWeek, 'days' | 'end'>,
   lanes = 3,
+  play?: PlayDayOptions & { tz: string; now: number },
 ): PackedWeek<E> {
   const edges = [...week.days.map((day) => day.start), week.end];
   const ws = edges[0]!;
   const we = week.end;
+  // A bar stops at the end of the last day it can be played.
+  const endOf = (event: CalendarEvent) =>
+    play ? shownEnd(event.end, play.now, play.tz, play.morning ?? MORNING_MINUTES) : event.end;
   const marks: E[][] = Array.from({ length: 7 }, () => []);
   const windows = new Map<string, E[]>();
   for (const event of events) {
@@ -327,7 +350,7 @@ export function packWeek<E extends CalendarEvent>(
       if (event.start >= ws && event.start < we) marks[columnOf(event.start, edges)]!.push(event);
       continue;
     }
-    if (event.end <= ws || event.start >= we) continue;
+    if (endOf(event) <= ws || event.start >= we) continue;
     const key = foldable(event) ? `${event.gameId}:${event.start}:${event.end}` : `id:${event.id}`;
     windows.set(key, [...(windows.get(key) ?? []), event]);
   }
@@ -339,12 +362,13 @@ export function packWeek<E extends CalendarEvent>(
   }
   const spans = groups.map((group) => {
     const lead = group[0]!;
+    const end = endOf(lead);
     const from = columnOf(Math.max(lead.start, ws), edges);
-    const to = columnOf(Math.min(lead.end, we) - 1, edges) + 1;
+    const to = columnOf(Math.min(end, we) - 1, edges) + 1;
     // A bar that starts or ends this week says something about it; one that
     // runs straight through says the same thing every week, so it waits.
-    const through = lead.start < ws && lead.end > we;
-    return { group, lead, from, to: Math.max(to, from + 1), through };
+    const through = lead.start < ws && end > we;
+    return { group, lead, end, from, to: Math.max(to, from + 1), through };
   });
   spans.sort(
     (a, b) =>
@@ -359,17 +383,17 @@ export function packWeek<E extends CalendarEvent>(
   const hidden = [0, 0, 0, 0, 0, 0, 0];
   const changes = [0, 0, 0, 0, 0, 0, 0];
   const games: string[][] = Array.from({ length: 7 }, () => []);
-  for (const { group, lead, from, to } of spans) {
+  for (const { group, lead, end, from, to } of spans) {
     for (let day = from; day < to; day++) if (!games[day]!.includes(lead.gameId)) games[day]!.push(lead.gameId);
     const lane = taken.findIndex((row) => row.slice(from, to).every((used) => !used));
     if (lane < 0) {
       for (let day = from; day < to; day++) hidden[day]! += group.length;
       if (lead.start >= ws) changes[from]! += group.length;
-      if (lead.end <= we && (lead.start < ws || to - 1 !== from)) changes[to - 1]! += group.length;
+      if (end <= we && (lead.start < ws || to - 1 !== from)) changes[to - 1]! += group.length;
       continue;
     }
     for (let day = from; day < to; day++) taken[lane]![day] = true;
-    bars.push({ events: group, from, to, lane, clippedStart: lead.start < ws, clippedEnd: lead.end > we });
+    bars.push({ events: group, from, to, lane, clippedStart: lead.start < ws, clippedEnd: end > we });
   }
   bars.sort((a, b) => a.lane - b.lane || a.from - b.from);
   for (const list of marks) list.sort(compareEvents);
@@ -388,17 +412,25 @@ export interface DayDigest<E extends CalendarEvent = GameEvent> {
 }
 
 /** The month view's panel for one chosen day, starting at midnight `start`. */
-export function dayDigest<E extends CalendarEvent>(events: readonly E[], start: number, tz: string): DayDigest<E> {
+export function dayDigest<E extends CalendarEvent>(
+  events: readonly E[],
+  start: number,
+  tz: string,
+  play?: PlayDayOptions & { now: number },
+): DayDigest<E> {
   const end = addDays(start, 1, tz);
   const after = addDays(start, 2, tz);
   const timed = events.filter((event) => event.type !== 'livestream' && event.type !== 'maintenance');
+  const endOf = (event: CalendarEvent) =>
+    play ? shownEnd(event.end, play.now, tz, play.morning ?? MORNING_MINUTES) : event.end;
   return {
-    running: timed.filter((event) => event.start < end && event.end > start).length,
+    running: timed.filter((event) => event.start < end && endOf(event) > start).length,
+    // What ends on the day: an end in the small hours after it counts here.
     ends: foldMoments(
       timed
-        .filter((event) => event.end >= start && event.end < end)
+        .filter((event) => endOf(event) > start && endOf(event) <= end)
         .map((event) => ({ event, kind: 'ends' as const, at: event.end })),
-    ),
+    ).map((moment) => (moment.at >= end ? { ...moment, overnight: true } : moment)),
     marks: events
       .filter((event) => !timed.includes(event) && event.start >= start && event.start < end)
       .sort((a, b) => a.start - b.start || compareEvents(a, b)),

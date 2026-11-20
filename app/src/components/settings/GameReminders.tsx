@@ -116,7 +116,7 @@ export function GameReminders({
             maxLength={20_000}
             value={message}
             onChange={(event) => patch({ message: event.target.value, status: '' })}
-            placeholder="e.g. Claim rewards before reset"
+            placeholder="e.g. Rewards before reset"
             required
           />
         </Field>

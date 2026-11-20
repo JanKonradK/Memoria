@@ -37,7 +37,7 @@ test('month grid shows the month, today and the chosen day, and opens events', a
   const today = page.getByRole('button', { name: /^Wednesday 18 November, today, \d+ events/ });
   await expect(today).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('heading', { name: 'Wednesday 18 November', exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Ends today', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ends', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Starts tomorrow', exact: true })).toBeVisible();
   // Bars on a wide window, dots on a phone.
   if (phone) {
@@ -94,7 +94,6 @@ test('ending soon sorts what is left into four columns and ticks it off', async 
   for (const title of ['Today', 'By Sunday', 'Next week', 'Later'])
     await expect(page.getByRole('heading', { name: new RegExp(`^${title} \\d+$`) })).toBeVisible();
   const todayColumn = page.locator('[data-soon="today"]');
-  await expect(todayColumn.getByText('Before midnight')).toBeVisible();
   await expect(todayColumn.locator('.cal-prog-end').first()).toHaveText(/^\d\d:\d\d · \d+[hm]$/);
   await expect(page.getByRole('meter').first()).toBeVisible();
   await page.screenshot({ path: info.outputPath('soon.png') });
@@ -116,10 +115,7 @@ test('ending soon sorts what is left into four columns and ticks it off', async 
   await tick.click();
   await expect(tick).toHaveAttribute('aria-checked', 'true');
   await expect(item.locator('.cal-prog-end')).toHaveText('done');
-  const before = await page.locator('.cal-item').count();
-  await page.getByRole('switch', { name: 'Hide what is done' }).click();
-  await expect(page.locator('.cal-item')).toHaveCount(before - 1);
-  await page.getByRole('switch', { name: 'Hide what is done' }).click();
+  // Ticked here, it stays in place, marked, until the page is left.
   await page.locator('[data-done] .cal-item-main').first().click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.keyboard.press('Escape');

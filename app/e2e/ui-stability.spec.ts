@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { gameRow, openGame, openSettings, addFromShell, showTodayGames } from './support';
+import { addFromShell, closeGuide, gameRow, openGame, openSettings, showTodayGames } from './support';
 
 async function expectNoPageOverflow(page: Page) {
   const overflow = await page.evaluate(() => ({
@@ -116,13 +116,12 @@ test('first run sets up games, then shows hints in place, and fits the viewport'
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
   await page.getByRole('button', { name: 'Create dashboard' }).click();
-  // No tour over the app: hints wait where each thing is.
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  // Setup ends on the guide; closed, the app is all there is.
+  await closeGuide(page);
   await page
     .getByRole('navigation', { name: 'Primary' })
     .getByRole('button', { name: 'Calendar', exact: true })
     .click();
-  await expect(page.locator('[data-hint="events"]')).toBeVisible();
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
 });
@@ -343,22 +342,25 @@ test('the rail opens Add game as a sheet that takes focus and gives it back', as
   await expect(add).toBeFocused();
 });
 
-test('the phone dock holds 44px touch targets along the bottom edge and tracks each selected route', async ({
-  page,
-}) => {
-  test.skip(page.viewportSize()!.width >= 768, 'Phone dock');
+test('upright, the rail is a bar across the top with 44px targets that tracks each route', async ({ page }) => {
+  const viewport = page.viewportSize()!;
+  test.skip(viewport.width > viewport.height, 'The top bar is for tall screens');
   await addGenshin(page);
   const nav = page.getByRole('navigation', { name: 'Primary' });
-  const viewport = page.viewportSize()!;
   for (const route of ['Calendar', 'Today', 'Settings']) {
     await nav.getByRole('button', { name: route, exact: true }).click();
     const selected = nav.getByRole('button', { name: route, exact: true });
     await expect(selected).toHaveAttribute('aria-current', 'page');
-    // The dock runs edge to edge along the bottom; its safe-area padding sits inside it.
+    await expect(page.getByRole('heading', { level: 1, name: route, exact: true })).toBeVisible();
+    // The bar runs edge to edge along the top, and stays there as the page scrolls.
+    await page.evaluate(() => window.scrollTo({ top: 400, behavior: 'instant' }));
     const dock = (await nav.boundingBox())!;
     expect(dock.x).toBe(0);
     expect(dock.width).toBe(viewport.width);
-    expect(dock.y + dock.height).toBeCloseTo(viewport.height, 0);
+    expect(dock.y).toBeCloseTo(0, 0);
+    // The page's own bar sticks under it, never beneath it.
+    const bar = await page.locator('header.page-bar').evaluate((node) => node.getBoundingClientRect().top);
+    expect(bar).toBeGreaterThanOrEqual(dock.y + dock.height - 1);
     for (const button of await nav.getByRole('button').all()) {
       if (!(await button.isVisible())) continue;
       const box = (await button.boundingBox())!;
@@ -367,7 +369,7 @@ test('the phone dock holds 44px touch targets along the bottom edge and tracks e
       expect(box.y).toBeGreaterThanOrEqual(dock.y);
       expect(box.y + box.height).toBeLessThanOrEqual(dock.y + dock.height);
     }
-    // Only the chosen route is marked, and the page clears the dock at its end.
+    // Only the chosen route is marked.
     await expect(nav.locator('[aria-current="page"]')).toHaveCount(1);
     await expectNoPageOverflow(page);
   }

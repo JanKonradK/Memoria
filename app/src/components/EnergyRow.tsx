@@ -307,7 +307,7 @@ function CounterBank({ res, value, onCommit, owner, color }: CounterBankProps & 
       fill={value == null || res.cap <= 0 ? 0 : value / res.cap}
       color={color}
       step={1}
-      subtitle={value == null ? 'enter the current value' : maxed ? 'Max' : `room for ${res.cap - value}`}
+      subtitle={value == null ? 'not read yet' : maxed ? 'Max' : ''}
       tone={maxed ? 'max' : 'quiet'}
       onStep={(delta) => commit((draft != null && draft !== '' ? intOr(draft, live.current) : live.current) + delta)}
       onBeginEdit={() => {
@@ -344,7 +344,6 @@ export const EnergyRow = memo(function EnergyRow({
   reserveColor,
   proj,
   reserve,
-  now,
   localTz,
   onCommit,
   note,
@@ -358,6 +357,7 @@ export const EnergyRow = memo(function EnergyRow({
   reserveColor?: string;
   proj: EnergyProjection;
   reserve?: number;
+  /** Not read here: a new minute re-renders the row, so its clocks stay current. */
   now: number;
   localTz: string;
   onCommit: (value: number, reserve?: number) => void;
@@ -444,16 +444,15 @@ export const EnergyRow = memo(function EnergyRow({
   if (compact || kind === 'weekly') {
     if (kind === 'weekly' && proj.weeklyResetAt != null) {
       subtitle = `refills ${fmtClock(proj.weeklyResetAt, localTz)}`;
-      if (!proj.hasSnapshot) subtitle += ' · enter the current value';
-    } else if (!proj.hasSnapshot) subtitle = 'enter the current value';
+      if (!proj.hasSnapshot) subtitle += ' · not read yet';
+    } else if (!proj.hasSnapshot) subtitle = 'not read yet';
     // The bar says how much more fits; words only when it is maxed.
     else if (compact && res.cap > 0 && proj.value >= res.cap) subtitle = 'Max';
-  } else if (!proj.hasSnapshot) subtitle = 'enter the current value';
+  } else if (!proj.hasSnapshot) subtitle = 'not read yet';
   else if (proj.isFull && res.reserveCap > 0) subtitle = 'FULL';
   else if (proj.isFull) subtitle = `FULL${proj.overflow > 0 ? ` — ${proj.overflow} wasted` : ''}`;
   else if (proj.fullAt != null && proj.msToFull != null)
-    subtitle = `full ${fmtClock(proj.fullAt, localTz)} · in ${fmtDur(proj.msToFull)}`;
-  else subtitle = 'does not regenerate';
+    subtitle = `full ${fmtClock(proj.fullAt, localTz)} · ${fmtDur(proj.msToFull)}`;
 
   let reserveSubtitle = '';
   if (res.reserveCap > 0) {
@@ -461,7 +460,7 @@ export const EnergyRow = memo(function EnergyRow({
     else if (proj.isFull && proj.reserveFullAt != null) {
       const reserveRegenMinutes = effectiveReserveRegenMinutes(res);
       const reserveFullAt = proj.reserveFullAt;
-      reserveSubtitle = `+1 / ${reserveRegenMinutes}m · full ${fmtClock(reserveFullAt, localTz)} · in ${fmtDur(reserveFullAt - now)}`;
+      reserveSubtitle = `+1 / ${reserveRegenMinutes}m · full ${fmtClock(reserveFullAt, localTz)}`;
     }
   }
 

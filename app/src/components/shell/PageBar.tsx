@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 
 /**
- * Publishes the page bar's real height as --app-bar-h, so whatever sticks
- * below it (the Calendar's ruler) clears it exactly. The bar wraps on narrow
- * windows, so no constant would hold.
+ * Publishes where the page bar's bottom edge sticks as --app-bar-h, so whatever
+ * sticks below it (the Calendar's ruler) clears it exactly. The bar wraps on
+ * narrow windows and sits under the rail on a tall screen, so no constant would hold.
  */
 function useMeasuredBarHeight() {
   const ref = useRef<HTMLElement | null>(null);
@@ -13,13 +13,16 @@ function useMeasuredBarHeight() {
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
-    const measure = () => publish(node.getBoundingClientRect().height);
+    const measure = () =>
+      publish(node.getBoundingClientRect().height + (Number.parseFloat(getComputedStyle(node).top) || 0));
     measure();
-    if (typeof ResizeObserver === 'undefined') return () => publish(0);
-    const observer = new ResizeObserver(measure);
-    observer.observe(node);
+    // Turning the screen moves the rail without resizing the bar.
+    window.addEventListener('resize', measure);
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(node);
     return () => {
-      observer.disconnect();
+      window.removeEventListener('resize', measure);
+      observer?.disconnect();
       publish(0);
     };
   }, [publish]);

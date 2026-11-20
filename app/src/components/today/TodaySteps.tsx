@@ -67,7 +67,7 @@ function heldLayout(plan: TodayPlan, held: Layout | null): Layout {
 function groupTitle(group: TodayStepGroup, plan: TodayPlan, games: Map<string, StepGame>, zone: string, now: number) {
   if (group.kind === 'hour') return { title: 'Within the hour', sub: `by ${hhmm(now + 3_600_000, zone)}` };
   if (group.kind === 'evening') {
-    return { title: 'This evening', sub: `before quiet hours at ${hhmm(plan.quiet!.start, zone)}` };
+    return { title: 'This evening', sub: `by ${hhmm(plan.quiet!.start, zone)}` };
   }
   if (group.kind === 'later') {
     const last = group.steps.at(-1)!.at;
@@ -78,8 +78,8 @@ function groupTitle(group: TodayStepGroup, plan: TodayPlan, games: Map<string, S
   const cadence = tasks.every((item) => item === tasks[0]) ? tasks[0] : undefined;
   const names = group.gameIds.map((id) => games.get(id)?.game.short ?? '');
   return {
-    title: `Before the ${hhmm(group.at, zone)} reset`,
-    sub: `${listNames(names)} ${cadence ? cadenceNoun(cadence, 2) : 'tasks'}`,
+    title: `Reset ${hhmm(group.at, zone)}`,
+    sub: `${listNames(names)}${cadence ? ` ${cadenceNoun(cadence, 2)}` : ''}`,
   };
 }
 
@@ -226,7 +226,6 @@ export function TodaySteps({ derived, empty }: { derived: Derived; empty: ReactN
                 <h2 id="today-group-week" data-tone="calm">
                   This week
                 </h2>
-                <span>Nothing to do yet, just know it is coming</span>
               </div>
               <ul className="today-week-list">
                 {(weekOpen ? week : week.slice(0, WEEK_SHOWN)).map((item) => (
@@ -263,10 +262,7 @@ export function TodaySteps({ derived, empty }: { derived: Derived; empty: ReactN
                     {listNames([
                       ...layout.done
                         .slice(0, 2)
-                        .map(
-                          (step) =>
-                            `${games.get(step.gameId)?.game.short ?? ''} ${stepWhat(step).replace(/^Finish /, '')}`,
-                        ),
+                        .map((step) => `${games.get(step.gameId)?.game.short ?? ''} ${stepWhat(step)}`),
                       ...(layout.done.length > 2 ? [`${layout.done.length - 2} more`] : []),
                     ])}
                   </span>

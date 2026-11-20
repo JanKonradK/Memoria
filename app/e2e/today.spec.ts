@@ -212,11 +212,11 @@ test.describe('Steps', () => {
     await expect(groups.first()).toHaveText('Within the hour');
     const titles = await groups.allTextContents();
     expect(titles.indexOf('This evening')).toBeGreaterThan(0);
-    expect(titles.indexOf('Before the 03:00 reset')).toBeGreaterThan(titles.indexOf('This evening'));
+    expect(titles.indexOf('Reset 03:00')).toBeGreaterThan(titles.indexOf('This evening'));
     expect(titles.at(-1)).toBe('This week');
     // NIKKE's nine events ending together are one step.
-    await expect(page.getByRole('button', { name: /^Finish VOLT TRIP / })).toBeVisible();
-    await expect(page.getByText(/and 8 more NIKKE events|\+8 more end/)).toBeVisible();
+    await expect(page.getByRole('button', { name: /^VOLT TRIP / })).toBeVisible();
+    await expect(page.getByText(/ends · \+8/)).toBeVisible();
     await expect(page.getByRole('region', { name: 'The next 24 hours' }).getByRole('listitem').first()).toHaveText(
       /15:00: Crumble/,
     );

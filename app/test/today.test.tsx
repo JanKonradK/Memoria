@@ -155,8 +155,8 @@ it('opens on Steps: one list ordered by deadline, and the switch keeps the ranke
   expect(within(view).getByRole('button', { name: 'Steps' })).toHaveAttribute('aria-pressed', 'true');
   // 195 of 200 at 8 minutes a point caps within the hour; 10 of 200 caps after a day.
   const hour = screen.getByRole('region', { name: 'Within the hour' });
-  expect(within(hour).getByRole('button', { name: /^Spend Energy / })).toBeInTheDocument();
-  expect(screen.getAllByRole('button', { name: /^Spend Energy / })).toHaveLength(1);
+  expect(within(hour).getByRole('button', { name: /^Energy / })).toBeInTheDocument();
+  expect(screen.getAllByRole('button', { name: /^Energy / })).toHaveLength(1);
   expect(screen.getByRole('region', { name: 'This week' })).toHaveTextContent('Energy caps');
   // Paused games have no steps.
   expect(screen.queryByText(/Paused game/)).not.toBeInTheDocument();

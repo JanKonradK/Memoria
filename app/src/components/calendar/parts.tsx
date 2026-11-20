@@ -28,8 +28,13 @@ export function useCalendarGames(games: Game[]) {
   return useMemo(() => {
     const inks = assignGameInks(games, ground);
     const byId = new Map(games.map((game) => [game.id, game]));
+    // An account name only tells rows apart when the player tracks one game twice.
+    const kinds = new Map<string, number>();
+    for (const game of games) kinds.set(game.presetKey ?? game.id, (kinds.get(game.presetKey ?? game.id) ?? 0) + 1);
     return {
       byId,
+      /** The account's name where it tells two of one game apart, else nothing. */
+      account: (game: Game) => ((kinds.get(game.presetKey ?? game.id) ?? 0) > 1 ? game.accountLabel?.trim() || '' : ''),
       /** Bars, dots and progress fills. */
       ink: (gameId: string) => inks[gameId] ?? 'var(--color-fg-soft)',
       /** The game's name as text, held to AA on the ground. */
@@ -46,7 +51,10 @@ export function useCalendarGames(games: Game[]) {
 
 export type CalendarGames = ReturnType<typeof useCalendarGames>;
 
-/** What an event is, in lower case after the game: "event", "Weapon banner", "livestream". */
+/**
+ * What an event is, after the game: "Weapon banner", "cycle", "livestream". A
+ * plain event says nothing; it is what a row is unless told otherwise.
+ */
 export function EventKind({ game, event }: { game?: Game; event: GameEvent }) {
   const world = eventCategory(game, event) === 'miliastra' && (
     <span data-event-tag title="Miliastra Wonderland" className="cal-tag">
@@ -71,16 +79,16 @@ export function EventKind({ game, event }: { game?: Game; event: GameEvent }) {
   }
   const words: Record<GameEvent['type'], string> = {
     banner: 'banner',
-    event: 'event',
+    event: '',
     cycle: 'cycle',
-    custom: 'event',
+    custom: '',
     maintenance: 'maintenance',
     livestream: 'livestream',
   };
   return (
     <>
       {world}
-      {words[event.type]}
+      {words[event.type] || null}
     </>
   );
 }
@@ -99,6 +107,8 @@ export function shortLeft(ms: number): string {
 export function clock(at: number, tz: string): string {
   return DateTime.fromMillis(at, { zone: tz }).toFormat('HH:mm');
 }
+
+export { NightMark } from '../NightMark';
 
 /** A day's heading: Today, Tomorrow, or its weekday, with the date beside it. */
 export function dayTitle(start: number, now: number, tz: string): { title: string; date: string } {
@@ -176,7 +186,7 @@ export function MomentTick({
   );
 }
 
-/** A row's name and its "game · kind" line. */
+/** A row's name and its "game · kind" line; the kind is left out when there is none. */
 export function MomentText({
   name,
   game,
@@ -213,9 +223,9 @@ export function MomentText({
             </>
           )}
         </span>
-        {game.accountLabel?.trim() && <span className="cal-account"> {game.accountLabel.trim()}</span>}
-        {' · '}
-        {children}
+        {games.account(game) && <span className="cal-account"> {games.account(game)}</span>}
+        {/* The separator is drawn by CSS, so a row with nothing to add ends at the game. */}
+        <span className="cal-kind">{children}</span>
       </span>
     </span>
   );

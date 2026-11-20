@@ -91,8 +91,8 @@ function RailView({
   );
 }
 
-/** The dock lies along the bottom of a phone, so its tips rise above it. */
-const useTipSide = () => (useMediaQuery('(max-width: 767px)') ? 'top' : 'right');
+/** Upright, the rail is a bar across the top, so its tips drop below it. */
+const useTipSide = () => (useMediaQuery('(orientation: portrait)') ? 'bottom' : 'right');
 
 /** A text field keeps Ctrl+digit for itself. */
 const typing = (target: EventTarget | null) =>
@@ -298,10 +298,10 @@ function RefreshButton() {
 }
 
 /**
- * The app's one navigation. On a PC it is a rail down the left edge: Today and
- * Calendar, then every game in the player's own order with its next deadline,
- * then Add and Settings. On a phone the same rail lies along the bottom as the
- * dock, its games scrolling sideways. The rail never re-sorts, so a game is
+ * The app's one navigation. On a wide screen it is a rail down the left edge:
+ * Today and Calendar, then every game in the player's own order with its next
+ * deadline, then Add and Settings. On a tall screen (a phone, an upright
+ * tablet) the same rail runs across the top, its games scrolling sideways. The rail never re-sorts, so a game is
  * always where the player left it. Ctrl+1 to Ctrl+9 open the first nine games.
  */
 export function AppRail() {
@@ -344,7 +344,7 @@ export function AppRail() {
     return () => document.removeEventListener('keydown', jump);
   }, [order]);
 
-  // The dock scrolls its games sideways; the open game is kept in view.
+  // Across the top the games scroll sideways; the open game is kept in view.
   const gamesRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const strip = gamesRef.current;

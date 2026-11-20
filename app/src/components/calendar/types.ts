@@ -7,6 +7,8 @@ export interface CalendarViewProps {
   now: number;
   /** The player's home time zone (settings.localTz): every day boundary is drawn in it. */
   localTz: string;
+  /** When the player's day begins (play-day.ts): an end before it is the night before's. */
+  morning: number;
   /** The page bar's Show finished switch. */
   showFinished: boolean;
   onOpenEvent: (event: GameEvent) => void;

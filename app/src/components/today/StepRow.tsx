@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  endsOvernight,
+  morningOf,
   setEventProgress,
   type EnergyBank,
   type EnergyStep,
@@ -16,6 +18,7 @@ import { passSession } from '../../session-focus';
 import { openGame } from '../../workspace-navigation';
 import { ValueStepper } from '../EnergyRow';
 import { GameLogo } from '../GameLogo';
+import { NightMark } from '../NightMark';
 import { Tick } from '../primitives';
 import { cadenceNoun, countdown, hhmm, stepTone } from './step-format';
 
@@ -209,29 +212,26 @@ function EventControl({ step, ink }: { step: EventStep; ink: string }) {
   );
 }
 
-/** What the step asks for, in a few words. */
+/** What the step is: the thing itself, never an instruction. Its figures say the rest. */
 export function stepWhat(step: TodayStep): string {
-  if (step.kind === 'energy') return `Spend ${step.name}`;
-  if (step.kind === 'event') return `Finish ${step.event.name}`;
+  if (step.kind === 'energy') return step.name;
+  if (step.kind === 'event') return step.event.name;
   return step.item.name;
 }
 
-function stepWhy(step: TodayStep, group: TodayStepGroup, game: Game, zone: string, short: boolean): string {
+/**
+ * The few words after the game's name, only where the row's own figures do not
+ * already say it: the time sits at the row's end, the reset in its group's title.
+ */
+function stepWhy(step: TodayStep, group: TodayStepGroup): string {
   if (step.kind === 'energy') {
-    if (!step.full) return `full at ${hhmm(step.at, zone)}`;
+    if (!step.full) return '';
     const bank = step.bank;
     // A reserve still filling keeps what the bar cannot; once it is full too, nothing does.
-    if (bank?.kind === 'reserve' && !bank.full)
-      return short ? 'full, into reserve' : `full now, overflow goes to ${bank.label}`;
-    return 'full now, regen is going to waste';
+    return bank?.kind === 'reserve' && !bank.full ? `full → ${bank.label}` : 'full';
   }
-  if (step.kind === 'event') {
-    if (!step.more) return 'event ends';
-    return short ? `+${step.more} more end` : `event ends, and ${step.more} more ${game.short} events`;
-  }
-  const noun = cadenceNoun(step.item.cadence, 1);
-  // A reset group already names its reset; anywhere else the row says when.
-  return group.kind === 'reset' || short ? noun : `${noun}, resets ${hhmm(step.at, zone)}`;
+  if (step.kind === 'event') return step.more ? `ends · +${step.more}` : 'ends';
+  return group.kind === 'reset' ? '' : cadenceNoun(step.item.cadence, 1);
 }
 
 export function StepRow({
@@ -254,7 +254,7 @@ export function StepRow({
   compact: boolean;
 }) {
   const what = stepWhat(step);
-  const why = stepWhy(step, group, game.game, zone, compact);
+  const why = stepWhy(step, group);
   const left = step.at - now;
   const whenId = `today-step-when-${step.key}`;
   return (
@@ -272,7 +272,8 @@ export function StepRow({
         <span className="today-step-text">
           <span className="today-step-what">{what}</span>{' '}
           <span className="today-step-why">
-            <b style={{ color: game.text }}>{compact ? game.game.short : game.game.name}</b> · {why}
+            <b style={{ color: game.text }}>{compact ? game.game.short : game.game.name}</b>
+            {why && <> · {why}</>}
           </span>
         </span>
       </button>
@@ -287,7 +288,12 @@ export function StepRow({
       </span>
       <span id={whenId} className="today-step-when numeral" data-tone={stepTone(step, group, settings, now)}>
         <b>{step.done ? 'Done' : countdown(left)}</b>
-        <span>{hhmm(step.at, zone)}</span>
+        <span>
+          {step.kind === 'event' && !step.done && endsOvernight(step.at, zone, morningOf(settings)) && (
+            <NightMark at={step.at} tz={zone} />
+          )}
+          {hhmm(step.at, zone)}
+        </span>
       </span>
     </li>
   );

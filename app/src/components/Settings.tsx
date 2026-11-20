@@ -161,7 +161,7 @@ export function SettingsPage() {
       <PageBar>
         <PageTitle>Settings</PageTitle>
         <PageBarEnd>
-          <Btn onClick={() => useUI.getState().armHints()}>Show hints again</Btn>
+          <Btn onClick={() => useUI.getState().openSheet({ kind: 'guide' })}>Guide</Btn>
         </PageBarEnd>
       </PageBar>
       <div className="settings-shell">

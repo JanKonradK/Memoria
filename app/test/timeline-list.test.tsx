@@ -46,6 +46,7 @@ function props(events: GameEvent[]) {
     events,
     now: NOW,
     localTz: TZ,
+    morning: 9 * 60,
     showFinished: false,
     onOpenEvent: vi.fn(),
     onToggleEvent: vi.fn(),
@@ -69,7 +70,7 @@ describe('agenda', () => {
     expect(within(today).getByText('ends')).toBeInTheDocument();
     const tomorrow = screen.getByRole('region', { name: /Tomorrow\s+Thursday 19 November/ });
     expect(within(tomorrow).getByText('down')).toBeInTheDocument();
-    expect(within(tomorrow).getByText(/down until 15:00/)).toBeInTheDocument();
+    expect(within(tomorrow).getByText(/until 15:00/)).toBeInTheDocument();
     expect(within(tomorrow).getByText('starts')).toBeInTheDocument();
     expect(within(tomorrow).getByText(/to 8 Dec/)).toBeInTheDocument();
     const friday = screen.getByRole('region', { name: /Friday\s+20 November/ });
@@ -83,7 +84,6 @@ describe('agenda', () => {
     const options = props(['VOLT TRIP', 'Outpost', 'Login'].map((name) => event(name, { end })));
     render(<TimelineList {...options} />);
     expect(screen.getAllByRole('listitem')).toHaveLength(1);
-    expect(screen.getByText(/and 2 more NIKKE events/)).toBeInTheDocument();
     const more = screen.getByRole('button', { name: '+2 more NIKKE events ending 20:00' });
     expect(more).toHaveTextContent('+2');
     fireEvent.click(more);
@@ -96,7 +96,7 @@ describe('agenda', () => {
     const item = event('Spiral Abyss');
     const options = props([item]);
     const view = render(<TimelineList {...options} />);
-    fireEvent.click(screen.getByRole('button', { name: /^15:00 ends Spiral Abyss NIKKE · event/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^15:00 ends Spiral Abyss NIKKE$/ }));
     expect(options.onOpenEvent).toHaveBeenCalledExactlyOnceWith(item);
     const tick = screen.getByRole('checkbox', { name: 'Mark done: NIKKE event Spiral Abyss' });
     fireEvent.click(tick);
@@ -139,8 +139,19 @@ describe('agenda', () => {
     const late = event('Late', { end: Date.UTC(2026, 10, 18, 22, 30) });
     const view = render(<TimelineList {...props([late])} />);
     expect(screen.getByRole('region', { name: /Today/ })).toHaveTextContent('23:30');
-    view.rerender(<TimelineList {...props([late])} localTz="Asia/Tokyo" />);
+    view.rerender(<TimelineList {...props([late])} localTz="Asia/Tokyo" morning={0} />);
     expect(screen.getByRole('region', { name: /Thursday 19 November/ })).toHaveTextContent('07:30');
+  });
+
+  it('lists an end in the small hours on the night before, marked with a crescent', () => {
+    // 04:00 on Friday is over before the player wakes: Thursday night is the last chance.
+    const night = event('Night', { start: NOW - DAY, end: Date.UTC(2026, 10, 20, 3) });
+    const { container } = render(<TimelineList {...props([night])} />);
+    const thursday = screen.getByRole('region', { name: /Tomorrow\s+Thursday 19 November/ });
+    expect(thursday).toHaveTextContent('04:00');
+    expect(thursday).toHaveTextContent(/overnight, Friday 04:00/);
+    expect(container.querySelector('.night-mark')).not.toBeNull();
+    expect(screen.queryByRole('region', { name: /Friday/ })).not.toBeInTheDocument();
   });
 });
 
@@ -155,23 +166,23 @@ describe('ending soon', () => {
       event('Clash', { start: NOW + DAY, end: NOW + 20 * DAY }),
       event('Done one', { end: NOW + 2 * DAY, done: true }),
     ]);
-    render(<SoonView {...options} />);
+    const view = render(<SoonView {...options} showFinished />);
     const today = await screen.findByRole('region', { name: /Today\s*4/ });
-    expect(within(today).getByText('Before midnight')).toBeInTheDocument();
-    expect(within(today).getByRole('button', { name: /and 2 more NIKKE events at 20:00/ })).toBeInTheDocument();
+    expect(within(today).getByRole('button', { name: /\+2 more NIKKE events at 20:00/ })).toBeInTheDocument();
     expect(within(today).getByText('Character')).toBeInTheDocument();
     expect(within(today).getAllByText('20:00 · 6h')).toHaveLength(2);
     const week = screen.getByRole('region', { name: /By Sunday\s*2/ });
-    expect(within(week).getByText('Thursday 19 to Sunday 22 November')).toBeInTheDocument();
+    expect(within(week).getByText('19 – 22 Nov')).toBeInTheDocument();
     expect(within(week).getByText('Fri 14:00 · 2d 0h')).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /Next week\s*1/ })).toHaveTextContent('Sun 29 · 11d');
-    expect(screen.getByRole('region', { name: /Later\s*1/ })).toHaveTextContent('From Monday 30 November');
+    expect(screen.getByRole('region', { name: /Later\s*1/ })).toHaveTextContent('from 30 Nov');
     expect(screen.getByRole('meter', { name: 'Clash: time elapsed' })).toHaveAttribute('aria-valuenow', '0');
 
     fireEvent.click(within(today).getByRole('checkbox', { name: 'Mark done: all 3 NIKKE events ending 20:00' }));
     expect(options.onToggleEvent).toHaveBeenCalledTimes(3);
 
-    fireEvent.click(screen.getByRole('switch', { name: 'Hide what is done' }));
+    // The page bar's Show finished switch: off, ticked events leave the board.
+    view.rerender(<SoonView {...options} />);
     expect(screen.getByRole('region', { name: /By Sunday\s*1/ })).not.toHaveTextContent('Done one');
   });
 });
@@ -189,7 +200,7 @@ describe('month', () => {
     expect(today).toHaveAttribute('aria-pressed', 'true');
     expect(today).toHaveAttribute('aria-current', 'date');
     expect(screen.getByRole('heading', { name: 'Wednesday 18 November' })).toBeInTheDocument();
-    expect(screen.getByText('Today · 1 event running, 1 ends today')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Ends' })).toBeInTheDocument();
     const starts = screen.getByRole('heading', { name: 'Starts tomorrow' });
     expect(starts).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Thursday 19 November, 1 event, maintenance/ })).toBeInTheDocument();
@@ -200,7 +211,7 @@ describe('month', () => {
     // Arrow keys move the chosen day; Page Down turns the month.
     fireEvent.keyDown(today, { key: 'ArrowRight' });
     expect(screen.getByRole('heading', { name: 'Thursday 19 November' })).toBeInTheDocument();
-    expect(screen.getByText('Also that day')).toBeInTheDocument();
+    expect(screen.getByText('Also')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Next month' }));
     expect(screen.getByRole('heading', { name: 'December 2026' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Tuesday 1 December' })).toBeInTheDocument();

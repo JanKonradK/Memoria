@@ -3,6 +3,7 @@ import type { ChecklistItem } from './checklist';
 import { measuredSnapshot, projectEnergy } from './energy';
 import { energyBank, type EnergyBank } from './bank';
 import { actBy, nextQuietWindow, type QuietWindow } from './quiet';
+import { morningOf, playEnd } from './play-day';
 import { effectiveResourceKind } from './tracking';
 import { buildUrgencyContext, type UrgencyContext } from './urgency';
 
@@ -247,6 +248,8 @@ function eventSteps(
 }
 
 function eventStep(state: AppState, event: GameEvent, now: number, more: number, done: boolean): EventStep {
+  // An end in the small hours has to be met the evening before, by midnight.
+  const last = playEnd(event.end, state.settings.localTz, morningOf(state.settings));
   return {
     kind: 'event',
     key: `event:${event.id}`,
@@ -254,7 +257,7 @@ function eventStep(state: AppState, event: GameEvent, now: number, more: number,
     event,
     more,
     at: event.end,
-    actBy: actBy(state.settings, event.end, now),
+    actBy: Math.min(actBy(state.settings, event.end, now), last > now ? last : event.end),
     done,
   };
 }

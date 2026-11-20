@@ -1,6 +1,14 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { DateTime } from 'luxon';
-import { dayDigest, monthWeeks, packWeek, type CalendarMoment, type Game, type GameEvent } from '@memoria/shared';
+import {
+  dayDigest,
+  lastPlayDay,
+  monthWeeks,
+  packWeek,
+  type CalendarMoment,
+  type Game,
+  type GameEvent,
+} from '@memoria/shared';
 import { endTone } from '../../util';
 import { Btn, TOUCH_BUTTON } from '../ui';
 import type { CalendarViewProps } from './types';
@@ -9,6 +17,7 @@ import {
   MomentMark,
   MomentText,
   MomentTick,
+  NightMark,
   clock,
   gameLabel,
   useCalendarGames,
@@ -26,7 +35,7 @@ const KEY_STEPS: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowU
  * what ends that day and what starts the next; choosing a bar opens the event.
  * On a phone the bars become dots and the panel sits below the grid.
  */
-export function MonthBoard({ games, events, now, localTz, onOpenEvent, onToggleEvent }: CalendarViewProps) {
+export function MonthBoard({ games, events, now, localTz, morning, onOpenEvent, onToggleEvent }: CalendarViewProps) {
   const calendar = useCalendarGames(games);
   const headingId = useId();
   const gridRef = useRef<HTMLDivElement>(null);
@@ -37,12 +46,18 @@ export function MonthBoard({ games, events, now, localTz, onOpenEvent, onToggleE
 
   const shown = useMemo(() => events.filter((event) => calendar.gameOf(event)), [events, calendar]);
   const weeks = useMemo(() => monthWeeks(cursor.year, cursor.month, localTz), [cursor, localTz]);
-  const packed = useMemo(() => weeks.map((week) => packWeek(shown, week, LANES)), [weeks, shown]);
+  const minute = Math.floor(now / 60_000);
+  // Bars stop at the last day each event can be played.
+  const packed = useMemo(
+    () => weeks.map((week) => packWeek(shown, week, LANES, { tz: localTz, now, morning })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [weeks, shown, localTz, minute, morning],
+  );
   const selectedDay = DateTime.fromISO(selected, { zone: localTz });
   const digest = useMemo(
-    () => dayDigest(shown, selectedDay.toMillis(), localTz),
+    () => dayDigest(shown, selectedDay.toMillis(), localTz, { now, morning }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [shown, selected, localTz],
+    [shown, selected, localTz, minute, morning],
   );
 
   useEffect(() => {
@@ -80,7 +95,6 @@ export function MonthBoard({ games, events, now, localTz, onOpenEvent, onToggleE
   };
 
   const isToday = selected === todayIso;
-  const endCount = digest.ends.reduce((sum, moment) => sum + moment.events.length, 0);
   const tomorrowWord = isToday ? 'tomorrow' : 'the next day';
 
   return (
@@ -222,14 +236,9 @@ export function MonthBoard({ games, events, now, localTz, onOpenEvent, onToggleE
           <h2 id={`${headingId}-day`} className="cal-panel-title">
             {selectedDay.toFormat(selectedDay.year === cursor.year ? 'cccc d LLLL' : 'cccc d LLLL yyyy')}
           </h2>
-          <p className="cal-panel-sub">
-            {isToday && 'Today · '}
-            {digest.running} {digest.running === 1 ? 'event' : 'events'} running, {endCount}{' '}
-            {endCount === 1 ? 'ends' : 'end'} {isToday ? 'today' : 'that day'}
-          </p>
           {digest.marks.length > 0 && (
             <>
-              <h3 className="cal-label">{isToday ? 'Also today' : 'Also that day'}</h3>
+              <h3 className="cal-label">Also</h3>
               <ul className="cal-panel-list">
                 {digest.marks.map((event) => (
                   <PanelRow
@@ -245,6 +254,7 @@ export function MonthBoard({ games, events, now, localTz, onOpenEvent, onToggleE
                     games={calendar}
                     now={now}
                     localTz={localTz}
+                    morning={morning}
                     onOpenEvent={onOpenEvent}
                     onToggleEvent={onToggleEvent}
                   />
@@ -252,10 +262,8 @@ export function MonthBoard({ games, events, now, localTz, onOpenEvent, onToggleE
               </ul>
             </>
           )}
-          <h3 className="cal-label">{isToday ? 'Ends today' : 'Ends that day'}</h3>
-          {digest.ends.length === 0 ? (
-            <p className="cal-col-none">Nothing ends {isToday ? 'today' : 'that day'}.</p>
-          ) : (
+          {digest.ends.length > 0 && <h3 className="cal-label">Ends</h3>}
+          {digest.ends.length > 0 && (
             <ul className="cal-panel-list">
               {digest.ends.map((moment) => (
                 <PanelRow
@@ -265,16 +273,18 @@ export function MonthBoard({ games, events, now, localTz, onOpenEvent, onToggleE
                   games={calendar}
                   now={now}
                   localTz={localTz}
+                  morning={morning}
                   onOpenEvent={onOpenEvent}
                   onToggleEvent={onToggleEvent}
                 />
               ))}
             </ul>
           )}
-          <h3 className="cal-label">Starts {tomorrowWord}</h3>
-          {digest.startsNext.length === 0 ? (
-            <p className="cal-col-none">Nothing starts {tomorrowWord}.</p>
-          ) : (
+          {digest.startsNext.length > 0 && <h3 className="cal-label">Starts {tomorrowWord}</h3>}
+          {digest.ends.length + digest.startsNext.length + digest.marks.length === 0 && (
+            <p className="cal-col-none">Nothing ends or starts.</p>
+          )}
+          {digest.startsNext.length > 0 && (
             <ul className="cal-panel-list">
               {digest.startsNext.map((moment) => (
                 <PanelRow
@@ -284,6 +294,7 @@ export function MonthBoard({ games, events, now, localTz, onOpenEvent, onToggleE
                   games={calendar}
                   now={now}
                   localTz={localTz}
+                  morning={morning}
                   onOpenEvent={onOpenEvent}
                   onToggleEvent={onToggleEvent}
                 />
@@ -302,6 +313,7 @@ function PanelRow({
   games,
   now,
   localTz,
+  morning,
   onOpenEvent,
   onToggleEvent,
 }: {
@@ -310,6 +322,7 @@ function PanelRow({
   games: CalendarGames;
   now: number;
   localTz: string;
+  morning: number;
   onOpenEvent: (event: GameEvent) => void;
   onToggleEvent: (event: GameEvent) => void;
 }) {
@@ -332,13 +345,13 @@ function PanelRow({
           <MomentMark event={lead} game={game} games={games} size={28} />
           <MomentText name={lead.name} game={game} games={games} done={moment.kind === 'ends' && done} short>
             {more > 0 ? (
-              `and ${more} more ${game.short.trim() || game.name} events`
+              `+${more} more`
             ) : moment.kind === 'down' ? (
-              `down until ${clock(lead.end, localTz)}`
+              `until ${clock(lead.end, localTz)}`
             ) : moment.kind === 'starts' ? (
               <>
-                <EventKind game={game} event={lead} />, until{' '}
-                {DateTime.fromMillis(lead.end, { zone: localTz }).toFormat('d LLL')}
+                <EventKind game={game} event={lead} /> to{' '}
+                {lastPlayDay(lead.end, now, localTz, morning).toFormat('d LLL')}
               </>
             ) : (
               <EventKind game={game} event={lead} />
@@ -346,6 +359,7 @@ function PanelRow({
           </MomentText>
         </button>
         <span className="cal-panel-time" style={{ color: tone }}>
+          {moment.overnight && <NightMark at={moment.at} tz={localTz} />}
           {clock(moment.at, localTz)}
         </span>
         {moment.kind === 'ends' && (
