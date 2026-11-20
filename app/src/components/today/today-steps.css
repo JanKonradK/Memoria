@@ -360,7 +360,7 @@
 .today-step-energy .energy-step {
   width: 34px;
   height: 34px;
-  border-radius: 10px;
+  border-radius: 999px;
   visibility: hidden;
 }
 .today-step:hover .today-step-energy .energy-step,

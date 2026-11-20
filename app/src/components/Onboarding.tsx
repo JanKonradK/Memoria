@@ -14,6 +14,8 @@ import { HomeTimeZoneField } from './HomeTimeZoneField';
 import { ServerSelect } from './ServerSelect';
 import { QuietHoursField } from './settings/QuietHoursField';
 import { Btn, NumInput, TextInput } from './ui';
+import { DetailRow, LookPicker } from './settings/LookPicker';
+import '../settings.css';
 
 type Account = { key: number; pick: ServerPick | null; nickname: string; energy: string };
 
@@ -41,10 +43,12 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
   const updateSettings = useApp((store) => store.updateSettings);
   const [detectedTz] = useState(detectLocalTz);
   const [homeTzChoice, setHomeTzChoice] = useState(SYSTEM_TIMEZONE_VALUE);
-  const [step, setStep] = useState<'pick' | 'setup' | 'remind'>('pick');
+  const [step, setStep] = useState<'pick' | 'setup' | 'look' | 'remind'>('pick');
   const onPc = usePresence((store) => store.presence != null);
   const canRemind = isNativeApp || onPc;
-  const steps = canRemind ? 3 : 2;
+  const steps = canRemind ? 4 : 3;
+  const stepNumber = { pick: 1, setup: 2, look: 3, remind: 4 }[step];
+  const afterLook = canRemind ? () => setStep('remind') : () => finish();
   const [selected, setSelected] = useState<string[]>([]);
   const [accounts, setAccounts] = useState<Record<string, Account[]>>({});
   const nextKey = useRef(0);
@@ -102,7 +106,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
   return (
     <main className="onboarding">
       <p className="onboarding-step text-meta text-muted" aria-live="polite">
-        Step {step === 'pick' ? 1 : step === 'setup' ? 2 : 3} of {steps}
+        Step {stepNumber} of {steps}
       </p>
 
       {step === 'remind' ? (
@@ -120,6 +124,33 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
               Turn on reminders
             </Btn>
             <Btn onClick={() => void finishWithReminders(false)}>Not now</Btn>
+            <Btn onClick={() => setStep('look')}>Back</Btn>
+          </div>
+        </>
+      ) : step === 'look' ? (
+        <>
+          <h1 className="text-display font-black tracking-tight text-fg">Pick a look</h1>
+          <p className="say mt-2 max-w-2xl text-body text-muted">
+            How Memoria draws itself. Your colours stay; change either any time in Settings.
+          </p>
+          <div className="onboarding-looks settings-rows mt-6">
+            <LookPicker />
+            <DetailRow />
+          </div>
+          <div className="onboarding-actions">
+            <Btn kind="primary" onClick={afterLook}>
+              {canRemind ? 'Next' : 'Create dashboard'}
+            </Btn>
+            <Btn
+              onClick={() => {
+                const ui = useUI.getState();
+                ui.setLook('classic');
+                ui.setDetail('elaborate');
+                afterLook();
+              }}
+            >
+              Skip
+            </Btn>
             <Btn onClick={() => setStep('setup')}>Back</Btn>
           </div>
         </>
@@ -326,8 +357,8 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
           )}
 
           <div className="onboarding-actions">
-            <Btn kind="primary" disabled={Boolean(missing)} onClick={canRemind ? () => setStep('remind') : finish}>
-              {canRemind ? 'Next' : 'Create dashboard'}
+            <Btn kind="primary" disabled={Boolean(missing)} onClick={() => setStep('look')}>
+              Next
             </Btn>
             <Btn onClick={() => setStep('pick')}>Back</Btn>
           </div>

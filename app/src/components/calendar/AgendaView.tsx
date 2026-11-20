@@ -4,6 +4,7 @@ import { agendaDays, lastPlayDay, type CalendarMoment, type Game, type GameEvent
 import { endTone } from '../../util';
 import { PinMark } from '../EventPeek';
 import type { CalendarViewProps } from './types';
+import { SwipeRow } from '../../swipe-row';
 import {
   EventKind,
   MomentMark,
@@ -13,6 +14,7 @@ import {
   clock,
   dayTitle,
   gameLabel,
+  momentSwipes,
   useCalendarGames,
   type CalendarGames,
 } from './parts';
@@ -202,8 +204,13 @@ function AgendaRow({
     ) : (
       <EventKind game={game} event={lead} />
     );
+  const swipes = moment.kind === 'ends' ? momentSwipes(moment, onToggleEvent) : { right: null, left: null };
   return (
-    <li
+    <SwipeRow
+      as="li"
+      right={swipes.right}
+      left={swipes.left}
+      ink={games.ink(game.id)}
       // One data-list-event per event: a coming event's start row is marked apart.
       data-list-event={folded || moment.kind === 'starts' ? undefined : lead.id}
       data-list-start={!folded && moment.kind === 'starts' ? lead.id : undefined}
@@ -252,6 +259,6 @@ function AgendaRow({
       ) : (
         <span aria-hidden />
       )}
-    </li>
+    </SwipeRow>
   );
 }

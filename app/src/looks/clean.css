@@ -1,0 +1,118 @@
+/* The clean look. Loaded on demand by looks.ts; see looks.css for how looks work. */
+
+/* ── Clean: flat tonal fills, no lines, bold rounded type ───────────────── */
+
+@scope ([data-look='clean']) to ([data-look]:not([data-look='clean'])) {
+  :scope {
+    --display-weight: 800;
+    --display-tracking: -0.035em;
+    --radius-ui-sm: 14px;
+    --radius-ui-md: 22px;
+    --radius-ui-lg: 28px;
+    --icon-stroke: 2;
+    --dock-fill: var(--color-surface-1);
+    --dock-blur: none;
+    --dock-edge: transparent;
+    --dock-radius: 28px;
+    --dock-pill: var(--color-fg);
+    --dock-pill-fg: var(--color-fg-invert);
+    --rail-fill: var(--color-surface-0);
+    --rail-edge: transparent;
+    --place-current-fill: var(--color-fg);
+    --place-current-edge: transparent;
+    --place-current-fg: var(--color-fg-invert);
+  }
+  .page-bar,
+  .settings-row,
+  .settings-group,
+  .view-switch {
+    border-color: transparent;
+  }
+  :is(.page-title h1, .look-preview-h1) {
+    font-size: 1.75rem;
+  }
+  :is(.today-steps-rule h2, .look-rule-label, .tab-label, .look-preview-h2) {
+    font-size: var(--text-meta);
+    font-weight: 700;
+    color: var(--color-muted);
+  }
+  .today-steps-rule::after,
+  .look-rule-line,
+  .tab-label::after {
+    display: none;
+  }
+  :is(.today-step, .look-row) {
+    margin-bottom: 6px;
+    border-radius: 22px;
+    background: var(--color-surface-1);
+  }
+  @media (hover: hover) {
+    :is(.today-step, .look-row):hover {
+      background: var(--color-surface-2);
+    }
+  }
+  .today-step-what {
+    font-weight: 700;
+  }
+  .today-step-when b {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .today-step-when:is([data-tone='rose'], [data-tone='danger']) b {
+    justify-self: end;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: var(--color-rose);
+    color: var(--color-fg-invert);
+  }
+  .meter {
+    min-height: 6px;
+    background: var(--color-fill-3);
+  }
+  .meter > .meter-fill {
+    background-image: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--meter-ink) 55%, var(--color-fg)),
+      var(--meter-ink)
+    ) !important;
+  }
+  .rail-meter {
+    height: 4px;
+  }
+  /* The coin is the game's colour, its name in the ink that reads on it. */
+  .game-logo-ring {
+    opacity: 0;
+  }
+  .game-logo-coin {
+    inset: 0;
+  }
+  .game-logo-face {
+    background: var(--logo-a, var(--color-surface-2));
+    color: var(--logo-on-a, var(--color-fg-invert));
+    box-shadow: none;
+  }
+  .game-logo-back {
+    background: var(--logo-b, var(--color-surface-2));
+    color: var(--logo-on-b, var(--color-fg-invert));
+  }
+  .view-switch {
+    border-radius: 999px;
+    background: var(--color-surface-1);
+  }
+  .view-switch button {
+    border-radius: 999px;
+    font-weight: 700;
+  }
+  .view-switch button:is([aria-pressed='true'], [aria-selected='true']) {
+    background: var(--color-fg);
+    color: var(--color-fg-invert);
+  }
+  .settings-group {
+    padding: 4px 12px;
+    border-radius: 22px;
+    background: var(--color-surface-1);
+  }
+  .settings-row {
+    border-bottom: 0;
+  }
+}

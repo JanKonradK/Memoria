@@ -5,7 +5,7 @@ import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { m } from 'motion/react';
 import { gameRim, gameTitleInk, mix } from '../game-color';
-import { useReducedMotion } from '../hooks';
+import { useMediaQuery, useReducedMotion } from '../hooks';
 import { duration, easing } from '../motion';
 import { useGround } from '../theme';
 
@@ -361,6 +361,10 @@ export function Tooltip({
   content: ReactNode;
   side?: 'top' | 'right' | 'bottom' | 'left';
 }) {
+  // A tip is a hover thing. On a touch screen a tap would flash it for a moment
+  // over the thing being opened, so there the control stands alone.
+  const hover = useMediaQuery('(hover: hover) and (pointer: fine)');
+  if (!hover) return children;
   return (
     <TooltipPrimitive.Root>
       <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>

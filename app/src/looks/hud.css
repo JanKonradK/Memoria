@@ -1,0 +1,146 @@
+/* The hud look. Loaded on demand by looks.ts; see looks.css for how looks work. */
+
+/* ── Soft HUD: dot-grid ground, glow only on what is live ───────────────── */
+
+@scope ([data-look='hud']) to ([data-look]:not([data-look='hud'])) {
+  :scope {
+    --ground-image: radial-gradient(
+      circle at 1px 1px,
+      color-mix(in srgb, var(--color-accent) 16%, transparent) 1px,
+      transparent 1.4px
+    );
+    --ground-size: 16px 16px;
+    --font-figure: 'Share Tech Mono', ui-monospace, monospace;
+    --font-label: 'Share Tech Mono', ui-monospace, monospace;
+    --label-case: uppercase;
+    --label-tracking: 0.16em;
+    --display-weight: 800;
+    --icon-stroke: 1.5;
+    --dock-fill: color-mix(in srgb, var(--color-surface-0) 82%, transparent);
+    --dock-edge: color-mix(in srgb, var(--color-accent) 22%, var(--color-line));
+    --dock-pill: color-mix(in srgb, var(--color-accent) 16%, transparent);
+    --dock-pill-edge: color-mix(in srgb, var(--color-accent) 55%, transparent);
+    --dock-pill-fg: var(--color-accent-fg);
+    --dock-radius: 22px;
+    --dock-shadow:
+      0 0 0 1px color-mix(in srgb, var(--color-accent) 6%, transparent), 0 16px 36px -14px rgb(0 0 0 / 0.7);
+    --place-current-fill: color-mix(in srgb, var(--color-accent) 14%, transparent);
+    --place-current-edge: color-mix(in srgb, var(--color-accent) 50%, transparent);
+  }
+  .page-bar {
+    background: color-mix(in srgb, var(--color-surface-0) 88%, transparent);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-bottom-color: color-mix(in srgb, var(--color-accent) 16%, var(--color-line-hairline));
+  }
+  :is(.today-steps-rule h2, .look-rule-label, .tab-label, .look-preview-h2) {
+    font-size: var(--text-caption);
+    font-weight: 400;
+    color: var(--color-muted);
+  }
+  :is(.today-steps-rule h2, .look-preview-h2)[data-tone='rose'] {
+    color: var(--color-rose);
+    text-shadow: 0 0 12px color-mix(in srgb, var(--color-rose) 60%, transparent);
+  }
+  :is(.today-steps-rule h2, .look-preview-h2)[data-tone='warn'] {
+    color: var(--color-warn-fg);
+  }
+  .today-steps-rule::after,
+  .look-rule-line,
+  .tab-label::after {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 45%, transparent), transparent);
+  }
+  .today-steps-group:has(h2[data-tone='rose']) .today-steps-rule::after {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--color-rose) 55%, transparent), transparent);
+  }
+  :is(.today-step, .look-row) {
+    margin-bottom: 6px;
+    background: color-mix(in srgb, var(--color-fg) 3.5%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-fg) 7%, transparent);
+  }
+  .today-step:is([data-tone='rose'], [data-tone='danger']) {
+    background: color-mix(in srgb, var(--step-ink) 8%, transparent);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--step-ink) 50%, transparent),
+      0 0 22px -8px color-mix(in srgb, var(--step-ink) 60%, transparent);
+  }
+  .today-step-when b {
+    font-weight: 400;
+    font-size: 1.0625rem;
+  }
+  .today-step-when:is([data-tone='rose'], [data-tone='danger']) b {
+    text-shadow: 0 0 10px color-mix(in srgb, currentColor 65%, transparent);
+  }
+  /* Segmented bars in the game's colour, lit from within. */
+  .meter {
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--color-fg) 8%, transparent);
+    -webkit-mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px);
+    mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px);
+    min-height: 5px;
+  }
+  .meter > .meter-fill,
+  .meter > i {
+    border-radius: 0;
+  }
+  .meter > .meter-fill {
+    box-shadow: 0 0 8px var(--meter-ink);
+  }
+  .rail-meter {
+    -webkit-mask: repeating-linear-gradient(90deg, #000 0 4px, transparent 4px 5px);
+    mask: repeating-linear-gradient(90deg, #000 0 4px, transparent 4px 5px);
+    border-radius: 0;
+  }
+  .rail-countdown {
+    font-weight: 400;
+    font-size: 0.875rem;
+  }
+  .rail-countdown[data-tone='now'] {
+    text-shadow: 0 0 10px color-mix(in srgb, var(--color-rose) 70%, transparent);
+  }
+  .rail-game[aria-current='page'] .game-logo-ring {
+    filter: drop-shadow(0 0 5px var(--rail-ink));
+  }
+  .game-logo-face {
+    background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface-0));
+  }
+  .rail-label,
+  .view-switch button {
+    font-family: var(--font-label);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .view-switch {
+    background: transparent;
+    border-color: color-mix(in srgb, var(--color-accent) 22%, var(--color-line));
+  }
+  .view-switch button:is([aria-pressed='true'], [aria-selected='true']) {
+    background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 50%, transparent);
+    color: var(--color-accent-fg);
+  }
+  .settings-row {
+    border-bottom-color: color-mix(in srgb, var(--color-accent) 10%, var(--color-line-hairline));
+  }
+}
+
+/* ── Light mode adjustments ─────────────────────────────────────────────── */
+
+@scope (:root[data-theme='light'][data-look='hud'], :root[data-theme='light'] [data-look='hud']) to ([data-look]:not([data-look='hud'])) {
+  :scope {
+    --ground-image: radial-gradient(
+      circle at 1px 1px,
+      color-mix(in srgb, var(--color-fg) 12%, transparent) 1px,
+      transparent 1.4px
+    );
+    --dock-shadow: 0 14px 30px -16px rgb(20 24 40 / 0.35);
+  }
+  .today-step:is([data-tone='rose'], [data-tone='danger']) {
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--step-ink) 55%, transparent),
+      0 6px 18px -10px color-mix(in srgb, var(--step-ink) 55%, transparent);
+  }
+  .meter > .meter-fill {
+    box-shadow: none;
+  }
+}

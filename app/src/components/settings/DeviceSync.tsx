@@ -12,6 +12,7 @@ import {
 } from '../../lan-sync';
 import { scanPairingCode } from '../../native';
 import { Btn, Field, TextInput, TOUCH_BUTTON } from '../ui';
+import { Ago } from '../Ago';
 
 type Devices = {
   error?: string;
@@ -156,16 +157,7 @@ function PairingQr({ addresses, code, fingerprint }: { addresses: string[]; code
   );
 }
 
-function ago(at: number, now: number): string {
-  const minutes = Math.round((now - at) / 60_000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} h ago`;
-  return new Date(at).toLocaleDateString();
-}
-
-type DeviceRow = { key: string; name: string; detail: string; live: boolean; action?: ReactNode };
+type DeviceRow = { key: string; name: string; detail: ReactNode; live: boolean; action?: ReactNode };
 
 /** Every device on this sync, like a browser's list of signed-in sessions. */
 function DeviceList({ rows }: { rows: DeviceRow[] }) {
@@ -397,11 +389,13 @@ function DesktopConnection() {
                     key: device.id,
                     name: device.name,
                     live,
-                    detail: live
-                      ? 'Connected'
-                      : device.lastSeenAt
-                        ? `Last synced ${ago(device.lastSeenAt, now)}`
-                        : 'Not synced since Memoria started',
+                    detail: live ? (
+                      'Connected'
+                    ) : device.lastSeenAt ? (
+                      <Ago at={device.lastSeenAt} now={now} verb="Last synced" />
+                    ) : (
+                      'Not synced since Memoria started'
+                    ),
                     action: (
                       <Btn
                         className={TOUCH_BUTTON}
@@ -692,11 +686,13 @@ function PhoneConnection() {
                     key: peer.id,
                     name: peer.name,
                     live,
-                    detail: live
-                      ? 'Connected'
-                      : peer.lastSeenAt
-                        ? `Last synced ${ago(peer.lastSeenAt, Date.now())}`
-                        : 'Not synced lately',
+                    detail: live ? (
+                      'Connected'
+                    ) : peer.lastSeenAt ? (
+                      <Ago at={peer.lastSeenAt} now={Date.now()} verb="Last synced" />
+                    ) : (
+                      'Not synced lately'
+                    ),
                   };
                 }),
             ]}

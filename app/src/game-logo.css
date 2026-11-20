@@ -32,6 +32,11 @@
   z-index: 1;
   transform-style: preserve-3d;
 }
+/* A small coin is mostly name: it grows over the ring's inner edge, leaving
+   the ring a thin band, so the short name has every pixel it can get. */
+.game-logo[data-small] .game-logo-coin {
+  inset: 8%;
+}
 .game-logo-coin[data-flipped] {
   transform: rotateY(180deg);
 }

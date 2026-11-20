@@ -43,10 +43,10 @@ test("browser Back and Forward use the same workspace and focus path as the rail
   await page.goForward();
   await expect(heading).toBeFocused();
   const today = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true });
-  await expect(today).toHaveAttribute('aria-keyshortcuts', 'Alt+ArrowLeft');
+  await expect(today).toHaveAttribute('aria-keyshortcuts', 'Alt+3 Alt+ArrowLeft');
   await today.click();
   await expect(card).toBeFocused();
-  await expect(today).not.toHaveAttribute('aria-keyshortcuts');
+  await expect(today).toHaveAttribute('aria-keyshortcuts', 'Alt+3');
   await page.goForward();
   await expect(heading).toBeFocused();
   await page.keyboard.press('Alt+ArrowLeft');

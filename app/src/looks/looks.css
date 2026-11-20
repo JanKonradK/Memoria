@@ -1,0 +1,192 @@
+/* Looks: the app's form, chosen in Settings → Appearance (see looks.ts).
+
+   Every look lives in an @scope block rooted at [data-look='…']. On <html> it
+   styles the app; on a Settings preview card it styles only that card. A
+   scope's rules win over unscoped ones of equal specificity, and the nearer
+   scope root wins when two match, so a Clean preview inside a HUD app is Clean.
+
+   A look never names a colour. It mixes the palette's tokens, so every look
+   works under every palette, theme and accent. The game's own colour arrives
+   per element (--step-ink, --meter-ink, --rail-ink, --logo-a/--logo-b) and is
+   mixed where it is used.
+
+   Classic is the stylesheet itself and has no block here. Each other look's
+   rules are its own file beside this one (instrument.css, hud.css…), loaded
+   with its faces when the look is used or previewed (looks.ts). The intro
+   covers the app while the first one arrives. */
+
+/* ── Every look starts from Classic's values ───────────────────────────────
+   Set on each [data-look] element, so a preview card of one look inside an
+   app wearing another inherits nothing from it. A look's own :scope wins over
+   this (a scoped rule beats an unscoped one of equal specificity). */
+[data-look] {
+  --font-display: var(--font-body);
+  --display-weight: 700;
+  --display-tracking: -0.01em;
+  --display-case: none;
+  --font-figure: var(--font-body);
+  --font-label: var(--font-body);
+  --label-case: none;
+  --label-tracking: normal;
+  --ground-image: none;
+  --ground-size: auto;
+  --ground-fixed: none;
+  --radius-ui-sm: 12px;
+  --radius-ui-md: 20px;
+  --radius-ui-lg: 28px;
+  --radius-ui-xl: 36px;
+  --radius-ui-card: 36px;
+  --icon-stroke: 1.6;
+  --rail-fill: color-mix(in srgb, var(--color-surface-1) 55%, var(--color-surface-0));
+  --rail-edge: var(--color-line-hairline);
+  --dock-fill: color-mix(in srgb, var(--color-surface-1) 86%, transparent);
+  --dock-edge: var(--color-line);
+  --dock-blur: blur(18px) saturate(1.25);
+  --dock-radius: 26px;
+  --dock-shadow: 0 14px 34px -14px rgb(0 0 0 / 0.6), 0 2px 8px -2px rgb(0 0 0 / 0.28);
+  --dock-pill: color-mix(in srgb, var(--color-accent) 24%, transparent);
+  --dock-pill-edge: transparent;
+  --dock-pill-fg: var(--color-fg);
+  --dock-pill-radius: 999px;
+  --place-current-fill: var(--color-fill-3);
+  --place-current-edge: var(--color-line-edge);
+  --place-current-fg: var(--color-fg);
+}
+:root[data-theme='light'] [data-look],
+:root[data-theme='light'][data-look] {
+  --dock-shadow: 0 14px 30px -16px rgb(20 24 40 / 0.35), 0 2px 8px -3px rgb(20 24 40 / 0.16);
+}
+
+/* ── Shared hooks every look reads ──────────────────────────────────────── */
+
+body {
+  background-image: var(--ground-image, none);
+  background-size: var(--ground-size, auto);
+  background-position: var(--ground-position, 0 0);
+}
+/* A still, fixed backdrop (Glass's aurora, Neon's horizon), painted once.
+   Never `background-attachment: fixed`, which makes phones re-paint on scroll. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--ground-fixed, none);
+}
+body {
+  isolation: isolate;
+}
+/* Page titles, section labels and figures take the look's faces. */
+.page-title h1,
+.look-preview-h1,
+.settings-pane-heading h2,
+.settings-heading h1 {
+  font-family: var(--font-display, inherit);
+  font-weight: var(--display-weight, 700);
+  letter-spacing: var(--display-tracking, -0.01em);
+  text-transform: var(--display-case, none);
+}
+.today-steps-rule h2,
+.look-rule-label,
+.tab-label,
+.look-preview-h2,
+.settings-group-heading h3 {
+  font-family: var(--font-label, inherit);
+  text-transform: var(--label-case, none);
+  letter-spacing: var(--label-tracking, normal);
+}
+.today-step-when b,
+.rail-countdown,
+.today-step-bank-figure,
+.today-step-energy .energy-value-box input,
+.game-card-value {
+  font-family: var(--font-figure, inherit);
+}
+
+/* On a phone the time column is narrow; a look's wider figures widen it
+   rather than run off the screen. */
+@media (max-width: 767px) {
+  [data-look]:not([data-look='classic']) .today-step {
+    grid-template-columns: minmax(0, 1fr) auto minmax(52px, max-content);
+  }
+}
+
+/* A look change cross-fades (looks.ts), and only that. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 180ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+/* ── Minimal: the facts and the controls, nothing that explains them ──────
+   Hidden text stays in the accessibility tree: what Minimal drops from the
+   screen a screen reader still reads, and a place's name is still its name. */
+[data-detail='minimal'] .say,
+[data-detail='minimal'] :is(.rail-places, .rail-foot) .rail-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (orientation: portrait) {
+  :root[data-detail='minimal'] {
+    --dock-tabs-h: 52px;
+  }
+  [data-detail='minimal'] :is(.rail-places, .rail-foot) .rail-view {
+    justify-content: center;
+    padding-top: 0;
+  }
+  [data-detail='minimal'] :is(.rail-places, .rail-foot) .rail-view::before {
+    top: 50%;
+    transform: translate(-50%, -50%) scaleX(0.6);
+  }
+  [data-detail='minimal'] :is(.rail-places, .rail-foot) .rail-view[aria-current='page']::before {
+    transform: translate(-50%, -50%);
+  }
+  [data-detail='minimal']
+    :is(.rail-places, .rail-foot)
+    .rail-place-games[aria-expanded='true']:not([aria-current='page'])::before {
+    transform: translate(-50%, -50%) scaleX(0.82);
+  }
+  [data-detail='minimal'] .rail-badge {
+    top: 4px;
+  }
+}
+/* Down the side the places are icons too, so the rail narrows. */
+@media (orientation: landscape) {
+  :root[data-detail='minimal'] {
+    --rail-w: 72px;
+  }
+  [data-detail='minimal'] :is(.rail-places, .rail-foot) .rail-view {
+    width: 56px;
+    min-height: 48px;
+  }
+  [data-detail='minimal'] .rail-game {
+    width: 60px;
+  }
+}
+
+/* A game's task and event rows wear the look's row (look-row): where a look
+   fills or outlines its rows, the row's content gets room off the edge. */
+[data-look]:not([data-look='classic']) .look-row {
+  border-radius: var(--radius-ui-md);
+}
+[data-look]:not([data-look='classic']) .look-row > :is(.game-task-row, .game-events-row) {
+  padding-inline: 10px;
+}
+/* A row of a button and its tick (a linked task, an event): the button keeps
+   its own 6px, so the row adds the rest and every name starts on one line. */
+[data-look]:not([data-look='classic']) .look-row > .flex {
+  padding-inline: 4px;
+}
+[data-look]:not([data-look='classic']) .look-row.quests-row {
+  padding: 4px 8px;
+}

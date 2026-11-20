@@ -9,17 +9,17 @@ import { gameShellVars, useGround, useSurfaces } from '../theme';
 import { useIdentityColors } from './roster';
 import { Btn, Page, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
 import { Pill } from './primitives';
-import { GameContext } from './GameContext';
+import { GameNotesEditor } from './GameContext';
 import { GameLogo } from './GameLogo';
 import { LaunchButton } from './GameLaunch';
 import { GameEvents } from './GameEvents';
 import { AttentionIndicator } from './AttentionIndicator';
 import { PageBar, PageBarEnd } from './shell/PageBar';
-import { closeWorkspace, recordWorkspaceHistory } from '../workspace-navigation';
+import { closeWorkspace, openGame, recordWorkspaceHistory } from '../workspace-navigation';
 import { titleStyle } from '../fonts';
 import { gameTitleInk } from '../game-color';
 import { localResetLabel } from '../util';
-import { gameServerLabel } from '../server-choice';
+import { gameServerLabel, presetKeyOf } from '../server-choice';
 import { useCatchUpUnread } from '../catch-up-status';
 import { gameTabAvailable } from './game-tabs/availability';
 import './game-tabs/game-tabs.css';
@@ -34,6 +34,7 @@ const TAB_LABEL: Record<GameTab, string> = {
   pulls: 'Pulls',
   quests: 'Quests',
   news: 'News',
+  notes: 'Notes',
 };
 
 /** The game's name, where it plays, and its reset, beside its coin. */
@@ -63,12 +64,55 @@ function GameIdentity({ game, now, urgent }: { game: Game; now: number; urgent: 
           )}
           {urgent && <AttentionIndicator />}
         </div>
+        <GameAccounts game={game} now={now} />
       </div>
     </div>
   );
 }
 
-/** Track, Events, Pulls, Quests and News: everything about one game, one tab at a time. */
+/** Two games are the same game when they share a preset, or for a custom game, a name. */
+const sameGameKey = (game: Game) => presetKeyOf(game) ?? `custom:${game.name.trim().toLowerCase()}`;
+
+/**
+ * The same game on other servers or under other nicknames, as a sideways strip
+ * of its accounts. One account has no strip.
+ */
+function GameAccounts({ game, now }: { game: Game; now: number }) {
+  const games = useApp((s) => s.state.games);
+  const key = sameGameKey(game);
+  const accounts = games
+    .filter((other) => !other.deleted && sameGameKey(other) === key)
+    .sort((a, b) => a.sort - b.sort);
+  const strip = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    strip.current
+      ?.querySelector<HTMLElement>('[aria-pressed="true"]')
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [game.id]);
+  if (accounts.length < 2) return null;
+  return (
+    <div ref={strip} className="game-accounts" role="group" aria-label={`${game.name} accounts`}>
+      {accounts.map((account) => {
+        const server = gameServerLabel(account, now);
+        const name = account.accountLabel?.trim();
+        return (
+          <button
+            key={account.id}
+            type="button"
+            className="game-account"
+            aria-pressed={account.id === game.id}
+            onClick={() => account.id !== game.id && openGame(account.id)}
+          >
+            <span className="game-account-server">{server}</span>
+            {name && <span className="game-account-name">{name}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Track, Events, Pulls, Quests, News and Notes: everything about one game, one tab at a time. */
 function GameTabs({
   game,
   tabs,
@@ -76,13 +120,17 @@ function GameTabs({
   eventCount,
 }: {
   game: Game;
-  tabs: GameTab[];
+  tabs: readonly GameTab[];
   current: GameTab;
   eventCount: number;
 }) {
   const setGameTab = useUI((s) => s.setGameTab);
   const { unread } = useCatchUpUnread(game);
   const refs = useRef(new Map<GameTab, HTMLButtonElement>());
+  // On a narrow screen the strip scrolls sideways; the open tab is kept in view.
+  useEffect(() => {
+    refs.current.get(current)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [current]);
   const move = (event: KeyboardEvent<HTMLDivElement>) => {
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
     if (!step && event.key !== 'Home' && event.key !== 'End') return;
@@ -168,10 +216,20 @@ export function GamePage({ now }: { now: number }) {
     if (workspaceId) recordWorkspaceHistory(workspaceId);
   }, [workspaceId]);
 
+  // The swipe steps through the tabs this game shows, so it is told which they are.
+  const tabs = focusedEntry
+    ? GAME_TABS.filter((tab) => gameTabAvailable(focusedEntry.game, tab, { state, now }))
+    : GAME_TABS;
+  const tabKey = tabs.join(' ');
+  const setGameTabs = useUI((s) => s.setGameTabs);
+  useEffect(() => {
+    setGameTabs(tabKey.split(' ') as GameTab[]);
+  }, [setGameTabs, tabKey]);
+  const direction = useUI((s) => s.gameTabDirection);
+
   // Without a game there is no page. The shell sends this route back to Today.
   if (!focusedEntry) return null;
   const game = { ...focusedEntry.game, ...(identityColors[focusedEntry.game.id] ?? {}) };
-  const tabs = GAME_TABS.filter((tab) => gameTabAvailable(game, tab, { state, now }));
   const tab = tabs.includes(gameTab) ? gameTab : 'track';
   const eventCount = state.events.filter(
     (event) => event.gameId === game.id && !event.deleted && !event.done && event.end > now,
@@ -208,7 +266,14 @@ export function GamePage({ now }: { now: number }) {
             </Tooltip>
           </PageBarEnd>
         </PageBar>
-        <div role="tabpanel" id="game-tab-panel" aria-labelledby={`game-tab-${tab}`} className="game-tab-panel">
+        <div
+          key={`${game.id}:${tab}`}
+          role="tabpanel"
+          id="game-tab-panel"
+          aria-labelledby={`game-tab-${tab}`}
+          className="game-tab-panel tab-enter"
+          data-direction={direction}
+        >
           {tab === 'track' && (
             <GameControlsView
               entry={focusedEntry}
@@ -221,10 +286,14 @@ export function GamePage({ now }: { now: number }) {
               split
               columns={threeColumns ? 3 : twoColumns ? 2 : 1}
               onOpenEvent={openGameEvent}
-              aside={<GameContext game={focusedEntry.game} />}
             />
           )}
           {tab === 'events' && <GameEvents game={focusedEntry.game} now={now} />}
+          {tab === 'notes' && (
+            <section className="game-notes-tab" aria-label={`${game.name} notes`}>
+              <GameNotesEditor game={focusedEntry.game} grow />
+            </section>
+          )}
           <Suspense fallback={<p className="py-8 text-center text-meta text-muted">Loading…</p>}>
             {tab === 'pulls' && <GamePulls game={focusedEntry.game} />}
             {tab === 'quests' && <GameQuests game={focusedEntry.game} />}

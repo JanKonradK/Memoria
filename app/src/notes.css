@@ -1,0 +1,88 @@
+/* Notes: every game's notes, each under its own name. On a phone one column;
+   wider screens fill with as many columns as fit a comfortable line. */
+.notes-search {
+  width: min(18rem, 100%);
+}
+@media (max-width: 767px) {
+  .notes-page .page-bar-end {
+    flex-basis: 100%;
+  }
+  .notes-search {
+    width: 100%;
+  }
+}
+.notes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+  gap: clamp(1.25rem, 2.5vw, 2rem);
+  align-items: start;
+}
+.notes-game {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.notes-game-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.notes-game-name {
+  margin: 0;
+  font-size: var(--text-body);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.notes-game-account {
+  margin: 2px 0 0;
+  font-size: var(--text-label);
+  color: var(--color-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.notes-game-open,
+.notes-empty-add {
+  flex: none;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius-ui-full, 999px);
+  background: var(--color-fill-2);
+  color: var(--color-fg-soft);
+  font-size: var(--text-meta);
+  font-weight: 600;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .notes-game-open:hover,
+  .notes-empty-add:hover {
+    background: var(--color-fill-3);
+    color: var(--color-fg);
+  }
+}
+@media (pointer: coarse) {
+  .notes-game-open,
+  .notes-empty-add {
+    min-height: 44px;
+  }
+}
+.notes-empty {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+/* A game's own Notes tab: one roomy box that grows with the screen. */
+.game-notes-tab {
+  max-width: 64rem;
+}
+.game-notes[data-grow] {
+  min-height: max(16rem, calc(100dvh - var(--app-bar-h, 0px) - var(--dock-h, 0px) - 6rem));
+}

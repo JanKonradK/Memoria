@@ -10,6 +10,7 @@ import {
   paletteVars,
   surfacesOf,
 } from './palettes';
+import { applyLook, DEFAULT_DETAIL, DEFAULT_LOOK, isDetail, isLookId, type Detail, type LookId } from './looks';
 
 export const UI_STORAGE_KEY = 'memoria-ui';
 /**
@@ -39,11 +40,11 @@ export function migrateLegacyUiStorage(): void {
 
 migrateLegacyUiStorage();
 
-/** The rail's places. `home` is one game's page; `timeline` is the Calendar. */
-export type Tab = 'today' | 'home' | 'timeline' | 'settings';
-/** A game page's own tabs. Pulls, Quests and News (Catch up) live inside each game. */
-export type GameTab = 'track' | 'events' | 'pulls' | 'quests' | 'news';
-export const GAME_TABS: readonly GameTab[] = ['track', 'events', 'pulls', 'quests', 'news'];
+/** The rail's places. `home` is one game's page; `timeline` is the Calendar; `notes` every game's notes. */
+export type Tab = 'today' | 'home' | 'timeline' | 'notes' | 'settings';
+/** A game page's own tabs. Pulls, Quests, News (Catch up) and Notes live inside each game. */
+export type GameTab = 'track' | 'events' | 'pulls' | 'quests' | 'news' | 'notes';
+export const GAME_TABS: readonly GameTab[] = ['track', 'events', 'pulls', 'quests', 'news', 'notes'];
 /** Today as one ordered list of steps across games, or as the ranked games. */
 export type TodayView = 'steps' | 'games';
 export type Theme = 'dark' | 'light';
@@ -115,7 +116,8 @@ export function applyTheme(theme: Theme, palette: string = DEFAULT_PALETTE, acce
 
 export type GameEditorSection = 'game' | 'resets' | 'resources' | 'spend' | 'tasks' | 'reminders' | 'events';
 
-export type SettingsSection = 'games' | 'general' | 'reminders' | 'sync' | 'device' | 'updates' | 'data' | 'activity';
+export type SettingsSection =
+  'games' | 'general' | 'appearance' | 'reminders' | 'sync' | 'device' | 'updates' | 'data' | 'activity';
 
 export type SheetRoute =
   | { kind: 'game'; gameId: string; section?: GameEditorSection }
@@ -140,7 +142,12 @@ interface UIStore {
   focusedGameId: string | null;
   /** The tab open on a game's page. Session only; opening another game keeps it. */
   gameTab: GameTab;
-  setGameTab(tab: GameTab): void;
+  /** Which way the game's page moved last, for its entrance: a swipe can say, else the tab order does. */
+  gameTabDirection: 1 | -1;
+  setGameTab(tab: GameTab, direction?: 1 | -1): void;
+  /** The open game's tabs, in order, as its page shows them. The swipe steps through these. */
+  gameTabs: readonly GameTab[];
+  setGameTabs(tabs: readonly GameTab[]): void;
   /** Steps or Games on Today. Remembered on this device. */
   todayView: TodayView;
   setTodayView(view: TodayView): void;
@@ -160,6 +167,8 @@ interface UIStore {
   setTimelineShowFinished(show: boolean): void;
   /** Set when first-run setup finishes: only a new install sees the hints. */
   setFocusedGameId(gameId: string | null): void;
+  /** The last game whose page was open, for a swipe from Today towards Games. Session only. */
+  lastGameId: string | null;
   setTab(tab: Tab): void;
   /** The Settings pane shown beside its menu on wide windows. Session only. */
   settingsSection: SettingsSection;
@@ -185,6 +194,21 @@ interface UIStore {
   accents: Partial<Record<string, string>>;
   setPalette(palette: string): void;
   setAccent(accent: string): void;
+  /** The app's form (looks.ts). Remembered on this device. */
+  look: LookId;
+  setLook(look: LookId): void;
+  /** Elaborate shows the words; Minimal only the facts and controls. Remembered on this device. */
+  detail: Detail;
+  setDetail(detail: Detail): void;
+  /** Vibration on touch: swipes, scrubs and ticks. Remembered on this device. */
+  vibration: boolean;
+  setVibration(on: boolean): void;
+  /** The dock's game shelf, on a tall screen. Opens with a game's page, closes with any other place. Session only. */
+  shelfOpen: boolean;
+  setShelfOpen(open: boolean): void;
+  /** The side rail's game list, on a wide screen. Open unless folded away. Remembered on this device. */
+  railGamesOpen: boolean;
+  setRailGamesOpen(open: boolean): void;
 }
 
 export const useUI = create<UIStore>()(
@@ -204,7 +228,14 @@ export const useUI = create<UIStore>()(
       theme: resolveTheme('system'),
       focusedGameId: null,
       gameTab: 'track',
-      setGameTab: (gameTab) => set({ gameTab }),
+      gameTabDirection: 1,
+      setGameTab: (gameTab, direction) =>
+        set((current) => ({
+          gameTab,
+          gameTabDirection: direction ?? (GAME_TABS.indexOf(gameTab) >= GAME_TABS.indexOf(current.gameTab) ? 1 : -1),
+        })),
+      gameTabs: GAME_TABS,
+      setGameTabs: (gameTabs) => set({ gameTabs }),
       todayView: 'steps',
       setTodayView: (todayView) => set({ todayView }),
       timelineView: null,
@@ -220,13 +251,17 @@ export const useUI = create<UIStore>()(
       setTimelineRange: (timelineRange) => set({ timelineRange }),
       setTimelineView: (timelineView) => set({ timelineView }),
       setTimelineShowFinished: (timelineShowFinished) => set({ timelineShowFinished }),
-      setFocusedGameId: (focusedGameId) => set({ focusedGameId }),
+      setFocusedGameId: (focusedGameId) =>
+        set(focusedGameId ? { focusedGameId, lastGameId: focusedGameId } : { focusedGameId }),
+      lastGameId: null,
       todayGameId: null,
       setTodayGameId: (todayGameId) => set({ todayGameId }),
-      setTab: (tab) => set(tab === 'settings' ? { tab, settingsPicked: false } : { tab }),
+      setTab: (tab) =>
+        set({ tab, shelfOpen: tab === 'home', ...(tab === 'settings' ? { settingsPicked: false } : {}) }),
       settingsSection: 'games',
       settingsPicked: false,
-      openSettings: (settingsSection) => set({ tab: 'settings', settingsSection, settingsPicked: true }),
+      openSettings: (settingsSection) =>
+        set({ tab: 'settings', settingsSection, settingsPicked: true, shelfOpen: false }),
       closeSettingsSection: () => set({ settingsPicked: false }),
       openSheet: (sheet) => set({ sheet }),
       closeSheet: () => set({ sheet: null }),
@@ -259,6 +294,22 @@ export const useUI = create<UIStore>()(
         applyTheme(theme, palette, accent);
         set({ accents });
       },
+      look: DEFAULT_LOOK,
+      setLook: (look) => {
+        applyLook(look, get().detail, true);
+        set({ look });
+      },
+      detail: DEFAULT_DETAIL,
+      setDetail: (detail) => {
+        applyLook(get().look, detail);
+        set({ detail });
+      },
+      vibration: true,
+      setVibration: (vibration) => set({ vibration }),
+      shelfOpen: false,
+      setShelfOpen: (shelfOpen) => set({ shelfOpen }),
+      railGamesOpen: true,
+      setRailGamesOpen: (railGamesOpen) => set({ railGamesOpen }),
       toggleTheme: () => get().setTheme(get().theme === 'dark' ? 'light' : 'dark'),
     }),
     {
@@ -275,6 +326,10 @@ export const useUI = create<UIStore>()(
         reserveOpen: state.reserveOpen,
         logoFlipped: state.logoFlipped,
         todayView: state.todayView,
+        look: state.look,
+        detail: state.detail,
+        vibration: state.vibration,
+        railGamesOpen: state.railGamesOpen,
       }),
       merge: (persisted, current) => {
         // Rebuilt from a whitelist rather than spread over the defaults. This
@@ -318,6 +373,10 @@ export const useUI = create<UIStore>()(
                 )
               : current.logoFlipped,
           todayView: stored.todayView === 'games' ? 'games' : 'steps',
+          look: isLookId(stored.look) ? stored.look : DEFAULT_LOOK,
+          detail: isDetail(stored.detail) ? stored.detail : DEFAULT_DETAIL,
+          railGamesOpen: stored.railGamesOpen !== false,
+          vibration: stored.vibration !== false,
         };
       },
     },

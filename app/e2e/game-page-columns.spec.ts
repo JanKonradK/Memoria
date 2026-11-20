@@ -20,7 +20,9 @@ async function stored(page: Page) {
   );
 }
 
-test('a game page lays out energy, tasks, and events with notes side by side', async ({ page }, info) => {
+test('a game page lays out energy, tasks and events side by side, with notes on their own tab', async ({
+  page,
+}, info) => {
   test.skip(!['desktop', 'mobile-390'].includes(info.project.name), 'One wide and one phone layout');
   const now = Date.parse('2026-11-05T12:00:00Z');
   await page.clock.setFixedTime(new Date(now));
@@ -53,10 +55,25 @@ test('a game page lays out energy, tasks, and events with notes side by side', a
   await page.getByRole('button', { name: 'Today', exact: true }).click();
   await openGame(page, zzz.name);
 
-  const context = page.getByRole('complementary', { name: `${zzz.name} notes` });
-  // Livestreams live in the News tab, not beside the tracking.
-  await expect(context.getByRole('region', { name: 'Last livestream' })).toHaveCount(0);
-  const notes = context.getByRole('textbox', { name: 'Notes' });
+  // Livestreams live in the News tab and notes in their own, not beside the tracking.
+  await expect(page.getByRole('region', { name: 'Last livestream' })).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: `${zzz.name} notes` })).toHaveCount(0);
+
+  const track = (await page.locator('.focus-track').boundingBox())!;
+  const tasks = (await page.locator('.game-track-tasks').boundingBox())!;
+  const events = (await page.locator('.focus-events').boundingBox())!;
+  if (info.project.name === 'desktop') {
+    // Energy, then tasks, then events.
+    expect(track.x + track.width).toBeLessThanOrEqual(tasks.x + 1);
+    expect(tasks.x + tasks.width).toBeLessThanOrEqual(events.x + 1);
+  } else {
+    // One column: energy, then tasks, then events.
+    expect(track.y).toBeLessThan(tasks.y);
+    expect(tasks.y).toBeLessThan(events.y);
+  }
+
+  await page.getByRole('tab', { name: 'Notes', exact: true }).click();
+  const notes = page.getByRole('textbox', { name: `${zzz.name} notes` });
   await notes.fill('Save pulls for Severian.');
   await notes.blur();
   await expect
@@ -65,21 +82,6 @@ test('a game page lays out energy, tasks, and events with notes side by side', a
   // The legacy game now carries its preset, so its logo can draw the artwork.
   expect((await stored(page)).games.find((game) => game.id === 'legacy')?.presetKey).toBe('hsr');
 
-  const track = (await page.locator('.focus-track').boundingBox())!;
-  const tasks = (await page.locator('.game-track-tasks').boundingBox())!;
-  const side = (await page.locator('.focus-context').boundingBox())!;
-  const events = (await page.locator('.focus-events').boundingBox())!;
-  if (info.project.name === 'desktop') {
-    // Energy, then tasks, then events above the notes.
-    expect(track.x + track.width).toBeLessThanOrEqual(tasks.x + 1);
-    expect(tasks.x + tasks.width).toBeLessThanOrEqual(events.x + 1);
-    expect(Math.abs(side.x - events.x)).toBeLessThanOrEqual(1);
-    expect(events.y).toBeLessThan(side.y);
-  } else {
-    // One column: events come before the notes (F6).
-    expect(track.y).toBeLessThan(events.y);
-    expect(events.y).toBeLessThan(side.y);
-  }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath('game-page.png') });
 });

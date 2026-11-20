@@ -8,6 +8,7 @@ import { servedByLauncher } from '../launcher';
 import { syncNow } from '../sync';
 import { deviceSyncAvailable, DeviceSync } from './settings/DeviceSync';
 import { PaletteSettings } from './settings/PaletteSettings';
+import { DetailRow, LookPicker, VibrationRow } from './settings/LookPicker';
 import { SettingRow, SettingsGroup } from './settings/SettingRow';
 import { usePresence } from '../presence';
 import { APP_VERSION, displayVersion, updateTarget, useAppUpdate } from '../app-update';
@@ -138,6 +139,7 @@ export function SettingsPage() {
   const sections: Array<{ key: SettingsSection; label: string; badge?: ReactNode }> = [
     { key: 'games', label: 'Games', badge: <span className="numeral">{games.length}</span> },
     { key: 'general', label: 'General' },
+    { key: 'appearance', label: 'Appearance' },
     { key: 'reminders', label: 'Reminders' },
     { key: 'sync', label: 'Device sync', badge: syncBadge },
   ];
@@ -248,6 +250,14 @@ export function SettingsPage() {
                     onChange={(value) => updateSettings({ localTz: resolveHomeTimeZone(value) })}
                   />
                 </SettingRow>
+              </div>
+            </SettingsPane>
+
+            <SettingsPane {...pane('appearance')}>
+              <div className="settings-rows">
+                <LookPicker />
+                <DetailRow />
+                <VibrationRow />
                 <ThemeRow />
                 <PaletteSettings />
               </div>
@@ -265,7 +275,7 @@ export function SettingsPage() {
                 {!isNativeApp && (
                   <SettingsGroup title="Shared-folder sync">
                     <div className="settings-note space-y-3">
-                      <p className="aside text-meta text-muted">
+                      <p className="say aside text-meta text-muted">
                         One file in a synced folder, such as Google Drive or OneDrive, shared by every device.
                       </p>
                       {!cloudSupported && (
@@ -298,7 +308,7 @@ export function SettingsPage() {
                               Use existing file…
                             </Btn>
                           </div>
-                          <p className="aside text-label text-muted">
+                          <p className="say aside text-label text-muted">
                             Create <code className="text-fg-soft">{CLOUD_FILE_SUGGESTED_NAME}</code> on the first
                             device. Pick it on the others.
                           </p>

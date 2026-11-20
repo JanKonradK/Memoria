@@ -101,7 +101,7 @@ export function RemindersPane() {
       <DeviceNotifications />
       <PcReminders />
       {!isNativeApp && !presence && (
-        <p className="settings-note text-body text-muted">
+        <p className="say settings-note text-body text-muted">
           Reminders ring on the Android and Windows apps, with these settings.
         </p>
       )}

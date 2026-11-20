@@ -12,7 +12,18 @@ import {
 import { endTone } from '../../util';
 import { PinMark } from '../EventPeek';
 import type { CalendarViewProps } from './types';
-import { EventKind, MomentMark, MomentText, MomentTick, NightMark, clock, shortLeft, useCalendarGames } from './parts';
+import {
+  EventKind,
+  MomentMark,
+  MomentText,
+  MomentTick,
+  NightMark,
+  clock,
+  momentSwipes,
+  shortLeft,
+  useCalendarGames,
+} from './parts';
+import { SwipeRow } from '../../swipe-row';
 
 /** Later is a glance at what is far off; the rest of it is one press away. */
 const LATER_SHOWN = 6;
@@ -198,8 +209,13 @@ function SoonItem({
   const folded = moment.events.length > 1;
   const done = moment.events.every((event) => event.done);
   const share = done ? 1 : elapsedShare(lead, now);
+  const swipes = momentSwipes(moment, onToggleEvent);
   return (
-    <li
+    <SwipeRow
+      as="li"
+      right={swipes.right}
+      left={swipes.left}
+      ink={calendar.ink(game.id)}
       className="cal-item"
       data-soon-event={lead.id}
       data-done={done || undefined}
@@ -267,6 +283,6 @@ function SoonItem({
           )}
         </>
       )}
-    </li>
+    </SwipeRow>
   );
 }

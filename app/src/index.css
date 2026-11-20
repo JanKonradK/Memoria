@@ -96,11 +96,11 @@
 
   /* ── Radius ────────────────────────────────────────────────────────────────
      Six related curves. Nested controls use smaller corners than their containers. */
-  --radius-ui-sm: 10px;
-  --radius-ui-md: 16px;
-  --radius-ui-lg: 24px;
-  --radius-ui-xl: 32px;
-  --radius-ui-card: 32px;
+  --radius-ui-sm: 12px;
+  --radius-ui-md: 20px;
+  --radius-ui-lg: 28px;
+  --radius-ui-xl: 36px;
+  --radius-ui-card: 36px;
   --radius-ui-full: 999px;
 
   --lane-bar-h: 2.25rem;
@@ -502,8 +502,9 @@ html {
     --text-meta--line-height: 1.375rem;
     --text-label: 0.875rem;
     --text-label--line-height: 1.25rem;
-    /* What content must clear at its end: the home indicator. The rail is never at the bottom. */
-    --mobile-nav-h: env(safe-area-inset-bottom, 0px);
+    /* What content must clear at its end: the home indicator, unless the
+       frame already clears the bottom dock and it (upright, see shell.css). */
+    --mobile-nav-h: var(--dock-clear, env(safe-area-inset-bottom, 0px));
   }
   html {
     scroll-padding-top: calc(var(--app-bar-h) + 1rem);
@@ -1382,4 +1383,62 @@ input[type='number'] {
   margin-inline-end: 0.25em;
   vertical-align: -0.05em;
   color: var(--color-accent);
+}
+
+/* A bar that sets its value when dragged along (scrub.ts). Its drawn size is
+   unchanged; the hit area grows to a thumb's height around it. */
+[data-scrub] {
+  touch-action: pan-y;
+}
+.energy-scrub {
+  position: relative;
+  padding-block: 10px;
+  margin-block: -10px;
+}
+@media (pointer: fine) {
+  .energy-scrub {
+    cursor: ew-resize;
+  }
+}
+[data-scrubbing] .meter-fill {
+  transition: none;
+}
+.energy-scrub .meter {
+  transition: scale var(--dur-fast) var(--ease-out);
+}
+.energy-scrub[data-scrubbing] .meter {
+  scale: 1 1.75;
+}
+@media (prefers-reduced-motion: reduce) {
+  .energy-scrub .meter {
+    transition: none;
+  }
+}
+
+/* A game's tab, or the next game, slides in from the side it was swiped from. */
+.tab-enter[data-direction='1'] {
+  animation: pageEnterForward var(--dur-base) var(--ease-out);
+}
+.tab-enter[data-direction='-1'] {
+  animation: pageEnterBack var(--dur-base) var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tab-enter[data-direction] {
+    animation: none;
+  }
+}
+
+/* An age beside its sync mark: "13m", "Now" (components/Ago.tsx). */
+.ago {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ago-mark {
+  width: 0.95em;
+  height: 0.95em;
+  flex: none;
+  opacity: 0.8;
 }

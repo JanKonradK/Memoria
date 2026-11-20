@@ -31,6 +31,7 @@ import { useElementWidth } from '../hooks';
 import { uid } from '../util';
 import { Btn, Field, NumInput, Segmented, Select, TextInput, Toggle } from './ui';
 import { ChartTip, fmt, niceMax, tickLabel, ticks } from './chart';
+import { Ago } from './Ago';
 
 /**
  * Savings planner: one card per account. The player types in their balance;
@@ -55,11 +56,6 @@ const STATUS: Record<GoalPlan['status'], { label: (plan: GoalPlan) => string; to
   short: { label: (plan) => `Short by about ${fmt(plan.shortfall)} pulls`, tone: 'danger' },
   past: { label: () => 'Ended', tone: 'muted' },
 };
-
-function ago(at: number, now: number): string {
-  const days = Math.floor((now - at) / DAY);
-  return days <= 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`;
-}
 
 /** Each game's banners that have not ended yet, soonest first. */
 export function useOpenBanners(now: number): Map<string, GameEvent[]> {
@@ -145,7 +141,7 @@ export function GameSavingsPanel({
         customCost={!meta?.pullCost}
         pullCost={pullCost}
         onSave={save}
-        entered={stored ? ago(stored.takenAt, now) : null}
+        entered={stored ? stored.takenAt : null}
       />
 
       {error && (
@@ -228,7 +224,8 @@ function BalanceForm({
   currency: string;
   customCost: boolean;
   pullCost: number;
-  entered: string | null;
+  /** When the saved amount was entered. */
+  entered: number | null;
   onSave: (next: GameSavings) => void;
 }) {
   const [amount, setAmount] = useState(String(savings.currency));
@@ -262,7 +259,9 @@ function BalanceForm({
         <Btn type="submit" kind="primary" className="whitespace-nowrap">
           Save balance
         </Btn>
-        <span className="text-caption text-dim">{entered ? `Entered ${entered}` : 'Not entered yet'}</span>
+        <span className="text-caption text-dim">
+          {entered != null ? <Ago at={entered} now={Date.now()} verb="Entered" /> : 'Not entered yet'}
+        </span>
       </div>
     </form>
   );

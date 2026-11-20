@@ -1,7 +1,8 @@
-import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
 import type { Game } from '@memoria/shared';
 import { prefersReducedMotion } from '../flip';
 import { titleStyle } from '../fonts';
+import { contrast } from '../game-color';
 import { LOGO_ART } from '../game-logo-art';
 import { RING_A, RING_B } from '../game-logo-ring';
 import { logoRing } from '../game-logo-colors';
@@ -14,6 +15,44 @@ type LogoGame = Pick<Game, 'name' | 'short' | 'color' | 'color2' | 'color3' | 't
 /** The coin sits inside the ring: its disc in the artwork's 1024 box, and that disc as a share of the logo. */
 const COIN_BOX = '116 116 792 792';
 const COIN_SHARE = 792 / 1024;
+
+/** Near-black or white, whichever reads better on a coin filled with `fill`. */
+function inkOn(fill: string): string {
+  return contrast(fill, '#0b0b0d') >= contrast(fill, '#ffffff') ? '#0b0b0d' : '#ffffff';
+}
+
+/**
+ * The full names on large coins' fronts: a third of the logo artwork, kept off
+ * the startup path because a list draws only small coins. Fetched the first
+ * time a large preset coin is drawn; until then its front shows the short name.
+ */
+let fronts: Record<string, string> | null = null;
+let frontsRequested = false;
+const frontsListeners = new Set<() => void>();
+function requestFronts() {
+  if (frontsRequested) return;
+  frontsRequested = true;
+  void import('../game-logo-fronts')
+    .then((module) => {
+      fronts = module.LOGO_FRONTS;
+      frontsListeners.forEach((listener) => listener());
+    })
+    .catch(() => {
+      frontsRequested = false;
+    });
+}
+function useLogoFronts(wanted: boolean): Record<string, string> | null {
+  useEffect(() => {
+    if (wanted) requestFronts();
+  }, [wanted]);
+  return useSyncExternalStore(
+    (listener) => {
+      frontsListeners.add(listener);
+      return () => frontsListeners.delete(listener);
+    },
+    () => fronts,
+  );
+}
 
 const TOSS_MS = 1100;
 /** Each coin's leap toward you, while it is in the air. */
@@ -180,27 +219,27 @@ export function GameLogo({
   const [ringA, ringB] = logoRing(game);
   const art = game.presetKey ? LOGO_ART[game.presetKey] : undefined;
   const coin = size * COIN_SHARE;
-  // Any name set small enough to fit a list-sized coin is unreadable, so a small
-  // text coin is a monogram: the short name's first letter, large, on both faces.
-  const monogram = size < 44;
+  // A full name set small enough to fit a list-sized coin is unreadable, so a
+  // small coin shows the short name (ZZZ, NTE, WuWa) on both faces.
+  const small = size < 44;
+  const loadedFronts = useLogoFronts(Boolean(art) && !small);
   const lines = (which: 'front' | 'back'): string[] =>
-    monogram
-      ? [Array.from(game.short.trim() || game.name.trim())[0] ?? '?']
-      : which === 'front'
-        ? logoLines(game.name)
-        : [game.short];
+    small ? [game.short.trim() || game.name.trim() || '?'] : which === 'front' ? logoLines(game.name) : [game.short];
   const face = (which: 'front' | 'back') => (
     <span className={`game-logo-face game-logo-${which}`}>
       {art ? (
-        <svg viewBox={COIN_BOX} className="game-logo-art">
-          <path d={art[which]} fill="currentColor" />
+        <svg viewBox={small ? art.backBox : COIN_BOX} className="game-logo-art">
+          <path
+            d={which === 'front' && !small ? (loadedFronts?.[game.presetKey!] ?? art.back) : art.back}
+            fill="currentColor"
+          />
         </svg>
       ) : (
         <FaceText
           lines={lines(which)}
           font={game.titleFont}
           room={coin * 0.82}
-          size={coin * (monogram ? 0.62 : which === 'front' ? 0.24 : 0.34)}
+          size={coin * (small ? 0.4 : which === 'front' ? 0.24 : 0.34)}
         />
       )}
     </span>
@@ -218,11 +257,26 @@ export function GameLogo({
       </span>
     </>
   );
-  const style = { width: size, height: size, '--logo-size': `${size}px` } as CSSProperties;
+  const style = {
+    width: size,
+    height: size,
+    '--logo-size': `${size}px`,
+    // For looks that paint the coin in the game's colours (Clean) or glow them.
+    '--logo-a': ringA,
+    '--logo-b': ringB,
+    '--logo-on-a': inkOn(ringA),
+    '--logo-on-b': inkOn(ringB),
+  } as CSSProperties;
 
   if (!flippable)
     return (
-      <span data-game-logo className={`game-logo ${className}`} style={style} aria-hidden>
+      <span
+        data-game-logo
+        data-small={small || undefined}
+        className={`game-logo ${className}`}
+        style={style}
+        aria-hidden
+      >
         {body}
       </span>
     );
@@ -230,6 +284,7 @@ export function GameLogo({
     <button
       type="button"
       data-game-logo
+      data-small={small || undefined}
       className={`game-logo game-logo-button ${className}`}
       style={style}
       aria-pressed={flipped}

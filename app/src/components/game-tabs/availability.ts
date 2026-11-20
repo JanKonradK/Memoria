@@ -27,7 +27,7 @@ const QUEST_CATALOGS = new Set(
 );
 
 /**
- * Which of a game's tabs it has anything for. Track and Events always exist.
+ * Which of a game's tabs it has anything for. Track, Events and Notes always exist.
  * Pulls needs version history or pity rules, Quests a researched catalog, and
  * News version notes or a livestream on the calendar.
  */
@@ -36,7 +36,7 @@ export function gameTabAvailable(
   tab: GameTab,
   { state, now }: { state: Pick<AppState, 'events'>; now: number },
 ): boolean {
-  if (tab === 'track' || tab === 'events') return true;
+  if (tab === 'track' || tab === 'events' || tab === 'notes') return true;
   const preset = game.presetKey ?? presetForGame(game)?.key;
   if (tab === 'pulls') return !!preset && (VERSION_HISTORY_GAMES.includes(preset) || pityRulesFor(preset).length > 0);
   if (tab === 'quests') return !!preset && QUEST_CATALOGS.has(preset);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   endsOvernight,
   morningOf,
@@ -13,6 +13,8 @@ import {
 } from '@memoria/shared';
 import { useApp } from '../../store';
 import { haptic } from '../../hooks';
+import { useScrub } from '../../scrub';
+import { SwipeRow, type SwipeAction } from '../../swipe-row';
 import { clamp, intOr } from '../../util';
 import { passSession } from '../../session-focus';
 import { openGame } from '../../workspace-navigation';
@@ -50,7 +52,7 @@ export function BankMeter({ bank, color, owner }: { bank: EnergyBank; color: str
   const figure = bank.value == null ? '—' : compactCount(bank.value);
   return (
     <span className="today-step-bank" data-full={bank.full || undefined} title={`${bank.label} for ${owner}`}>
-      <span aria-hidden className="today-step-bank-tube">
+      <span aria-hidden className="today-step-bank-tube meter" style={{ '--meter-ink': color } as CSSProperties}>
         <i style={{ transform: `scaleX(${fill})`, background: color }} />
       </span>
       <span aria-hidden className="today-step-bank-figure numeral">
@@ -85,8 +87,18 @@ function EnergyControl({ step, game, ink, bankInk }: { step: EnergyStep; game: G
     setDraft(null);
     edit.current.dirty = false;
   };
+  // Dragging sideways across the reading moves it: the row's width is the whole bar.
+  const scrub = useScrub({
+    cap: step.cap,
+    value: step.value,
+    mode: 'relative',
+    measure: (zone) => zone.closest<HTMLElement>('.today-step'),
+    onDraft: (value) => setDraft(String(value)),
+    onCommit: (value) => commit(value),
+    onCancel: () => setDraft(null),
+  });
   return (
-    <span className="today-step-energy">
+    <span className="today-step-energy" {...scrub}>
       <ValueStepper
         value={shown}
         cap={step.cap}
@@ -212,6 +224,54 @@ function EventControl({ step, ink }: { step: EventStep; ink: string }) {
   );
 }
 
+/** The swipes a step answers: right completes, left takes back. Energy has neither; it scrubs. */
+function useStepSwipes(step: TodayStep): { right: SwipeAction | null; left: SwipeAction | null } {
+  const setTaskDone = useApp((store) => store.setTaskDone);
+  const setTaskCount = useApp((store) => store.setTaskCount);
+  const restartTaskTimer = useApp((store) => store.restartTaskTimer);
+  const advanceTaskTimer = useApp((store) => store.advanceTaskTimer);
+  const upsertEvent = useApp((store) => store.upsertEvent);
+  if (step.kind === 'energy') return { right: null, left: null };
+  if (step.kind === 'event') {
+    const { event } = step;
+    const done = event.done === true;
+    const set = (to: 'done' | 'none') => () =>
+      upsertEvent({ id: event.id, gameId: event.gameId, ...setEventProgress(to) });
+    return {
+      right: done ? null : { label: 'Done', run: set('done') },
+      left: done ? { label: 'Not done', run: set('none') } : null,
+    };
+  }
+  const { item } = step;
+  if (item.mode === 'count') {
+    return {
+      right: item.done
+        ? null
+        : {
+            label: '+1',
+            run: () => setTaskCount(item.taskId, item.periodKey, Math.min(item.countTarget, item.countDone + 1)),
+          },
+      left:
+        item.countDone > 0
+          ? { label: '−1', run: () => setTaskCount(item.taskId, item.periodKey, Math.max(0, item.countDone - 1)) }
+          : null,
+    };
+  }
+  if (item.mode === 'timer') {
+    const stepped = item.timerRunning && item.timerStepMinutes != null;
+    return {
+      right: stepped
+        ? { label: 'Sooner', run: () => advanceTaskTimer(item.taskId, item.periodKey, item.timerStepMinutes ?? 0) }
+        : { label: item.done ? 'Resend' : 'Collect', run: () => restartTaskTimer(item.taskId, item.periodKey) },
+      left: null,
+    };
+  }
+  return {
+    right: item.done ? null : { label: 'Done', run: () => setTaskDone(item.taskId, item.periodKey, true) },
+    left: item.done ? { label: 'Not done', run: () => setTaskDone(item.taskId, item.periodKey, false) } : null,
+  };
+}
+
 /** What the step is: the thing itself, never an instruction. Its figures say the rest. */
 export function stepWhat(step: TodayStep): string {
   if (step.kind === 'energy') return step.name;
@@ -258,8 +318,21 @@ export function StepRow({
   const why = stepWhy(step, group, compact);
   const left = step.at - now;
   const whenId = `today-step-when-${step.key}`;
+  const tone = stepTone(step, group, settings, now);
+  const swipes = useStepSwipes(step);
   return (
-    <li className="today-step" data-step={step.key} data-kind={step.kind} data-done={step.done || undefined}>
+    <SwipeRow
+      as="li"
+      right={swipes.right}
+      left={swipes.left}
+      ink={game.ink}
+      className="today-step"
+      data-step={step.key}
+      data-kind={step.kind}
+      data-done={step.done || undefined}
+      data-tone={step.done ? undefined : tone}
+      style={{ '--step-ink': game.ink } as CSSProperties}
+    >
       <span className="today-step-idx numeral" aria-hidden>
         {index}
       </span>
@@ -287,7 +360,7 @@ export function StepRow({
           <EventControl step={step} ink={game.ink} />
         )}
       </span>
-      <span id={whenId} className="today-step-when numeral" data-tone={stepTone(step, group, settings, now)}>
+      <span id={whenId} className="today-step-when numeral" data-tone={tone}>
         <b>{step.done ? 'Done' : countdown(left)}</b>
         <span>
           {step.kind === 'event' && !step.done && endsOvernight(step.at, zone, morningOf(settings)) && (
@@ -296,6 +369,6 @@ export function StepRow({
           {hhmm(step.at, zone)}
         </span>
       </span>
-    </li>
+    </SwipeRow>
   );
 }

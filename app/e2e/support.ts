@@ -64,15 +64,32 @@ export async function openSettings(page: Page, section: string): Promise<void> {
 }
 
 /**
+ * Add game from the rail. Its button sits in the game list, which the dock
+ * keeps behind Games (raised as a shelf), so Games is pressed first when the
+ * list is folded. With no games yet, Games itself opens Add game. Returns the
+ * control that opened the sheet, which gets focus back when it closes.
+ */
+export async function addGameFromRail(page: Page): Promise<Locator> {
+  const nav = page.getByRole('navigation', { name: 'Primary' });
+  const games = nav.getByRole('button', { name: 'Games', exact: true });
+  const expanded = await games.getAttribute('aria-expanded');
+  if (expanded === null) {
+    await games.click();
+    return games;
+  }
+  if (expanded === 'false') await games.click();
+  const add = nav.getByRole('button', { name: 'Add game', exact: true });
+  await add.click();
+  return add;
+}
+
+/**
  * Adding now starts where the thing lives: a game from the rail, an event from
  * the Calendar (or the open game's Events tab), a reminder from Settings.
  */
 export async function addFromShell(page: Page, item: 'Add game' | 'Event' | 'Reminder'): Promise<void> {
   if (item === 'Add game') {
-    await page
-      .getByRole('navigation', { name: 'Primary' })
-      .getByRole('button', { name: 'Add game', exact: true })
-      .click();
+    await addGameFromRail(page);
     return;
   }
   if (item === 'Reminder') {

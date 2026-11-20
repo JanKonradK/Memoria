@@ -27,6 +27,7 @@ import { Btn, ConfirmAction, Field, Select, TextArea, TextInput } from './ui';
 import { ProgressBar, Tick } from './primitives';
 import '../history.css';
 import '../quests.css';
+import { SwipeRow } from '../swipe-row';
 
 const catalogs = import.meta.glob<{ default: unknown }>('../data/quests/*.json');
 
@@ -373,8 +374,13 @@ function QuestRow({
     ]);
 
   return (
-    <li id={`quest-${line.id}`} className="quests-row" data-status={progress.status}>
-      <div className="quests-row-head">
+    <li id={`quest-${line.id}`} className="quests-row look-row" data-status={progress.status}>
+      <SwipeRow
+        className="quests-row-head"
+        ink={ink}
+        right={finished ? null : { label: 'Done', run: finishAll }}
+        left={finished || progress.status === 'started' ? { label: 'Clear', run: clearAll } : null}
+      >
         <button
           type="button"
           className="group quests-tick"
@@ -400,7 +406,7 @@ function QuestRow({
             {meta.join(' · ')}
           </span>
         </button>
-      </div>
+      </SwipeRow>
       {open && (
         <div id={panelId} className="quests-panel">
           {line.summary && <p className="text-body text-fg-soft">{line.summary}</p>}
@@ -444,8 +450,19 @@ function QuestRow({
               const state = marks.get(questMarkId(game.id, line.id, part.id));
               const covered = own === 'done' || own === 'skipped';
               const shown = covered ? own : state;
+              const partDone = shown === 'done' || shown === 'skipped';
+              const mark = (to: QuestState | null) => () =>
+                setQuestMarks(game.id, [{ questId: line.id, partId: part.id, state: to }]);
               return (
-                <li key={part.id} className="quests-part" data-state={shown ?? 'open'}>
+                <SwipeRow
+                  as="li"
+                  key={part.id}
+                  className="quests-part"
+                  data-state={shown ?? 'open'}
+                  ink={ink}
+                  right={covered || partDone ? null : { label: 'Done', run: mark('done') }}
+                  left={covered || !shown ? null : { label: 'Clear', run: mark(null) }}
+                >
                   <button
                     type="button"
                     className="group quests-tick"
@@ -479,7 +496,7 @@ function QuestRow({
                       </p>
                     )}
                   </div>
-                </li>
+                </SwipeRow>
               );
             })}
           </ol>

@@ -53,7 +53,9 @@ test('Activity undoes dailies, keeps a later note and restores a deleted game', 
   await expect(gameRow(page, 'Genshin Impact')).toBeVisible();
   await openGame(page, 'Genshin Impact');
   await expect(page.getByRole('button', { name: 'Tick all dailies for Genshin Impact', exact: true })).toBeVisible();
-  await expect(page.getByText('Keep my later note')).toBeVisible();
+  // Notes have a tab of their own.
+  await page.getByRole('tab', { name: 'Notes', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: 'Genshin Impact notes' })).toHaveValue(/Keep my later note/);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
   expect(overflow).toBe(false);
 });

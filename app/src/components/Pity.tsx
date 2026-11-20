@@ -293,7 +293,7 @@ function FiveStarForm({
           />
         </div>
       )}
-      <p id={`pity-help-${rule.id}`} className="text-caption text-dim sm:col-span-3">
+      <p id={`pity-help-${rule.id}`} className="say text-caption text-dim sm:col-span-3">
         {track.count > value
           ? `${track.count - value} pulls after it stay counted toward the next 5★.`
           : 'Pity starts again from zero.'}

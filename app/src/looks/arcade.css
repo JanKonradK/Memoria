@@ -1,0 +1,131 @@
+/* The arcade look. Loaded on demand by looks.ts; see looks.css for how looks work. */
+
+/* ── Arcade: stepped corners, blocky meters, pixel figures ──────────────── */
+
+@scope ([data-look='arcade']) to ([data-look]:not([data-look='arcade'])) {
+  :scope {
+    --font-display: 'Pixelify Sans', var(--font-body);
+    --display-weight: 700;
+    --display-tracking: 0.01em;
+    --font-figure: 'Pixelify Sans', var(--font-body);
+    --font-label: 'Pixelify Sans', var(--font-body);
+    --label-case: uppercase;
+    --label-tracking: 0.08em;
+    --radius-ui-sm: 0px;
+    --radius-ui-md: 0px;
+    --radius-ui-lg: 0px;
+    --radius-ui-xl: 0px;
+    --radius-ui-card: 0px;
+    --icon-stroke: 2;
+    --step: 6px;
+    --dock-fill: var(--color-surface-1);
+    --dock-blur: none;
+    --dock-edge: var(--color-fg-soft);
+    --dock-radius: 0px;
+    --dock-pill: var(--color-accent);
+    --dock-pill-fg: var(--color-on-accent);
+    --dock-pill-radius: 0px;
+    --dock-shadow: 4px 4px 0 0 rgb(0 0 0 / 0.55);
+    --place-current-fill: var(--color-accent);
+    --place-current-edge: transparent;
+    --place-current-fg: var(--color-on-accent);
+  }
+  /* Corners stepped like a sprite: clipped inside the box, never from its hit area. */
+  .today-step,
+  .look-row,
+  .view-switch,
+  .settings-group {
+    clip-path: polygon(
+      0 var(--step),
+      var(--step) var(--step),
+      var(--step) 0,
+      calc(100% - var(--step)) 0,
+      calc(100% - var(--step)) var(--step),
+      100% var(--step),
+      100% calc(100% - var(--step)),
+      calc(100% - var(--step)) calc(100% - var(--step)),
+      calc(100% - var(--step)) 100%,
+      var(--step) 100%,
+      var(--step) calc(100% - var(--step)),
+      0 calc(100% - var(--step))
+    );
+  }
+  :is(.today-step, .look-row) {
+    margin-bottom: 6px;
+    background: var(--color-surface-1);
+    box-shadow: inset 0 0 0 2px var(--color-line-strong);
+  }
+  .today-step:is([data-tone='rose'], [data-tone='danger']) {
+    box-shadow: inset 0 0 0 2px var(--step-ink);
+  }
+  :is(.today-steps-rule h2, .look-rule-label, .tab-label, .look-preview-h2) {
+    font-weight: 700;
+    font-size: var(--text-meta);
+  }
+  .today-steps-rule::after,
+  .look-rule-line,
+  .tab-label::after {
+    height: 4px;
+    background: repeating-linear-gradient(90deg, var(--color-line-strong) 0 4px, transparent 4px 8px);
+  }
+  .today-step-when b {
+    font-weight: 700;
+    font-size: 1rem;
+  }
+  .today-step-when:is([data-tone='rose'], [data-tone='danger']) b {
+    justify-self: end;
+    padding: 0 6px;
+    background: var(--color-rose);
+    color: var(--color-fg-invert);
+  }
+  .meter {
+    min-height: 8px;
+    border-radius: 0;
+    background: var(--color-fill-2);
+    box-shadow: inset 0 0 0 1px var(--color-line-strong);
+    -webkit-mask: repeating-linear-gradient(90deg, #000 0 8px, transparent 8px 10px);
+    mask: repeating-linear-gradient(90deg, #000 0 8px, transparent 8px 10px);
+  }
+  .meter > .meter-fill,
+  .meter > i,
+  .rail-meter,
+  .rail-meter i {
+    border-radius: 0;
+  }
+  .rail-meter {
+    height: 4px;
+  }
+  .rail-label,
+  .view-switch button,
+  .rail-countdown {
+    font-family: var(--font-label);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .view-switch {
+    border: 0;
+    background: var(--color-fill-2);
+  }
+  .view-switch button:is([aria-pressed='true'], [aria-selected='true']) {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+  /* The coin becomes an octagon, the shape of a menu token. */
+  .game-logo,
+  .game-logo-face {
+    border-radius: 0;
+    clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%);
+  }
+  .game-logo-face {
+    box-shadow: none;
+  }
+  .settings-row {
+    border-bottom: 2px dotted var(--color-line-strong);
+  }
+}
+
+@scope (:root[data-theme='light'][data-look='arcade'], :root[data-theme='light'] [data-look='arcade']) to ([data-look]:not([data-look='arcade'])) {
+  :scope {
+    --dock-shadow: 4px 4px 0 0 color-mix(in srgb, var(--color-fg) 25%, transparent);
+  }
+}

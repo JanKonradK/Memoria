@@ -24,7 +24,7 @@ export function SettingRow({
         <p id={id} className="text-body font-semibold text-fg">
           {label}
         </p>
-        {hint && <p className="aside text-meta text-muted">{hint}</p>}
+        {hint && <p className="say aside text-meta text-muted">{hint}</p>}
       </div>
       <div className="settings-row-control">{children}</div>
     </div>

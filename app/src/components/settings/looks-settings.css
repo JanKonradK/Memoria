@@ -1,0 +1,177 @@
+/* Settings → Appearance: a card per look, each a working miniature of Today
+   and the dock drawn under that look (the look's own rules reach inside, see
+   looks/looks.css). */
+.look-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+.look-option {
+  display: grid;
+  gap: 2px;
+  padding: 6px 6px 10px;
+  border-radius: 22px;
+  text-align: left;
+  color: var(--color-fg);
+  box-shadow: inset 0 0 0 1px var(--color-line);
+  transition:
+    box-shadow var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .look-option:hover {
+    background: var(--color-fill-1);
+  }
+}
+.look-option:active {
+  transform: scale(0.985);
+}
+.look-option[data-state='on'] {
+  background: var(--color-fill-2);
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+.look-option-name {
+  margin-top: 6px;
+  padding-inline: 6px;
+  font-size: var(--text-meta);
+  font-weight: 650;
+}
+.look-option-blurb {
+  padding-inline: 6px;
+  font-size: var(--text-caption);
+  line-height: 1.3;
+  color: var(--color-muted);
+}
+
+/* The miniature: its own ground, a title, a rule, two steps, then the dock. */
+.look-preview {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 196px;
+  overflow: hidden;
+  border-radius: 16px;
+  font-family: var(--font-body);
+  color: var(--color-fg);
+  background:
+    var(--ground-image, none) 0 0 / var(--ground-size, auto),
+    var(--ground-fixed, var(--color-surface-0));
+  background-color: var(--color-surface-0);
+  box-shadow: inset 0 0 0 1px var(--color-line-hairline);
+  pointer-events: none;
+}
+.look-preview-page {
+  flex: 1;
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding: 12px 10px 0;
+}
+.look-preview-title {
+  display: block;
+}
+.look-preview-h1 {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 1.125rem;
+  line-height: 1.1;
+  color: var(--color-fg);
+}
+.look-preview-rule {
+  margin: 0 0 1px !important;
+}
+.look-preview-h2 {
+  font-size: 0.6875rem !important;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--color-fg-soft);
+}
+.look-preview-h2[data-tone='rose'] {
+  color: var(--color-rose);
+}
+.look-preview .today-step.look-preview-step {
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  width: 100%;
+  max-width: 100%;
+  gap: 8px;
+  min-height: 0;
+  margin: 0 0 4px;
+  padding: 6px 8px;
+  border-radius: var(--radius-ui-sm);
+}
+.look-preview-text {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.look-preview .today-step-what {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  line-height: 1.1;
+}
+.look-preview .today-step-when {
+  min-width: 0;
+  white-space: nowrap;
+}
+.look-preview-meter {
+  position: relative;
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-fill-3);
+}
+.look-preview-meter > .meter-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transform-origin: left;
+}
+.look-preview .today-step-when b {
+  font-size: 0.75rem;
+}
+
+/* The dock, floating at the miniature's foot, Today chosen. */
+.look-preview-dock {
+  display: flex;
+  justify-content: space-around;
+  margin: 0 8px 8px;
+  padding: 6px 4px;
+  border: 1px solid var(--dock-edge);
+  border-radius: calc(var(--dock-radius) * 0.6);
+  background: var(--dock-fill);
+  box-shadow: var(--dock-shadow);
+}
+.look-preview-place {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 20px;
+  border-radius: var(--dock-pill-radius);
+  color: var(--color-muted);
+}
+.look-preview-place svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: var(--icon-stroke);
+}
+.look-preview-place[data-current] {
+  background: var(--dock-pill);
+  box-shadow: inset 0 0 0 1px var(--dock-pill-edge);
+  color: var(--dock-pill-fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .look-option {
+    transition: none;
+  }
+  .look-option:active {
+    transform: none;
+  }
+}

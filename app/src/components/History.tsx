@@ -264,7 +264,7 @@ function PullsComparison({ games }: { games: GameMeta[] }) {
       <SectionTitle>
         <span id="history-pulls">Free pulls per version</span>
       </SectionTitle>
-      <p className="-mt-1 mb-3 text-caption text-dim">Free currency ÷ the cost of one pull.</p>
+      <p className="say -mt-1 mb-3 text-caption text-dim">Free currency ÷ the cost of one pull.</p>
       <Legend items={series.map((s) => ({ label: s.game.short, color: s.game.ink, line: true }))} />
       <div ref={ref} className="history-chart" style={{ height }}>
         {width > 0 && (

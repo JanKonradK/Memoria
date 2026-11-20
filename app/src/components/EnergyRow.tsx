@@ -1,8 +1,9 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { EnergyProjection, Resource } from '@memoria/shared';
 import { effectiveReserveRegenMinutes, effectiveResourceKind } from '@memoria/shared';
 import { clamp, fmtClock, fmtDur, intOr } from '../util';
 import { ProgressBar } from './primitives';
+import { useScrub } from '../scrub';
 
 const ENERGY_STEP_KEYS: Readonly<Record<string, number>> = {
   a: -10,
@@ -362,7 +363,7 @@ export const EnergyRow = memo(function EnergyRow({
   localTz: string;
   onCommit: (value: number, reserve?: number) => void;
   /** Small text at the end of the status line, only when the reading needs a look. */
-  note?: string;
+  note?: ReactNode;
   /** In a running game's session, the part of this row to bring forward. */
   need?: 'value' | 'reserve';
   /** A minute into the session and still owed: the part pulses. */
@@ -419,7 +420,28 @@ export const EnergyRow = memo(function EnergyRow({
     reserveEdit.current.dirty = false;
   };
 
-  const pct = res.cap > 0 ? Math.min(100, (proj.precise / res.cap) * 100) : 0;
+  // Dragging along the bar sets the reading: the pill shows it live, letting go commits.
+  const [scrubbed, setScrubbed] = useState<number | null>(null);
+  const scrub = useScrub({
+    cap: res.cap,
+    value: proj.hasSnapshot ? proj.value : 0,
+    mode: 'absolute',
+    measure: (zone) => zone.querySelector<HTMLElement>('.meter') ?? zone,
+    onDraft: (value) => {
+      setScrubbed(value);
+      setDraft(String(value));
+    },
+    onCommit: (value) => {
+      setScrubbed(null);
+      commit(value);
+    },
+    onCancel: () => {
+      setScrubbed(null);
+      setDraft(null);
+    },
+  });
+
+  const pct = res.cap > 0 ? Math.min(100, ((scrubbed ?? proj.precise) / res.cap) * 100) : 0;
   const reserveValue = reserve ?? 0;
   const reservePct = res.reserveCap > 0 ? Math.min(100, (reserveValue / res.reserveCap) * 100) : 0;
   const reserveAccent = reserveColor ?? color;
@@ -519,7 +541,9 @@ export const EnergyRow = memo(function EnergyRow({
 
       {!compact && (
         <>
-          <ProgressBar value={pct / 100} color={color} />
+          <div className="energy-scrub" {...scrub}>
+            <ProgressBar value={pct / 100} color={color} />
+          </div>
 
           {/* The resource's own verdict, directly under its own tube. It used to
               be printed after the whole reserve block, so an open reserve read

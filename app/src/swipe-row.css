@@ -1,0 +1,92 @@
+/* A row that completes on a swipe right and takes back on a swipe left.
+   At rest it is the row and nothing else: no stacking context, no clip. While a
+   finger drags it, its content slides (the `translate` property, so a child's
+   own `transform`, like a press scale, is left alone) and the action grows in
+   the space it leaves, never under the text. */
+.swipe-row {
+  position: relative;
+  touch-action: pan-y;
+}
+.swipe-row[data-swiping] {
+  overflow: clip;
+}
+.swipe-row[data-swiping] > :not(.swipe-reveal) {
+  translate: var(--swipe-x, 0px) 0;
+}
+.swipe-row[data-swipe-release] > :not(.swipe-reveal) {
+  transition: translate 220ms var(--ease-out);
+}
+
+.swipe-reveal {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  z-index: 0;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  border-radius: var(--row-radius, var(--radius-ui-md));
+  font-size: var(--text-label);
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.swipe-row[data-swiping] .swipe-reveal {
+  display: flex;
+}
+.swipe-reveal[data-for='right'] {
+  left: 0;
+  width: max(0px, var(--swipe-x, 0px));
+  padding-left: 14px;
+  justify-content: flex-start;
+  background: color-mix(in srgb, var(--swipe-ink, var(--color-ok)) 22%, transparent);
+  color: color-mix(in srgb, var(--swipe-ink, var(--color-ok)) 70%, var(--color-fg));
+}
+.swipe-reveal[data-for='left'] {
+  right: 0;
+  width: max(0px, calc(-1 * var(--swipe-x, 0px)));
+  padding-right: 14px;
+  justify-content: flex-end;
+  background: var(--color-fill-3);
+  color: var(--color-fg-soft);
+}
+/* Only the side being pulled shows. */
+.swipe-row:not([data-side='right']) .swipe-reveal[data-for='right'],
+.swipe-row:not([data-side='left']) .swipe-reveal[data-for='left'] {
+  display: none;
+}
+.swipe-reveal svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  transition: scale 160ms var(--ease-out);
+}
+/* The word is drawn, not written, so it is never read as the row's text. */
+.swipe-reveal b::before {
+  content: attr(data-label);
+}
+.swipe-reveal b {
+  opacity: 0;
+  transition: opacity 120ms var(--ease-out);
+}
+/* Past the point: letting go acts. The icon grows and the word appears. */
+.swipe-row[data-armed] .swipe-reveal svg {
+  scale: 1.2;
+}
+.swipe-row[data-armed] .swipe-reveal b {
+  opacity: 1;
+}
+.swipe-row[data-armed] .swipe-reveal[data-for='right'] {
+  background: color-mix(in srgb, var(--swipe-ink, var(--color-ok)) 38%, transparent);
+}
+:root[data-detail='minimal'] .swipe-reveal b {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .swipe-row[data-swipe-release] > :not(.swipe-reveal),
+  .swipe-reveal svg,
+  .swipe-reveal b {
+    transition: none;
+  }
+}

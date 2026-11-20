@@ -47,7 +47,7 @@ export function PageTitle({ children, sub }: { children: ReactNode; sub?: ReactN
   return (
     <div className="page-title">
       <h1 tabIndex={-1}>{children}</h1>
-      {sub && <span className="page-title-sub">{sub}</span>}
+      {sub && <span className="page-title-sub say">{sub}</span>}
     </div>
   );
 }

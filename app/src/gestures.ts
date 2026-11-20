@@ -1,4 +1,5 @@
 import { useRef, type PointerEvent as ReactPointerEvent } from 'react';
+import { GAME_TABS, type GameTab } from './ui-store';
 
 /**
  * Drag sideways to change tab.
@@ -30,6 +31,19 @@ const AXIS_LOCK_PX = 10;
 const INTERACTIVE = 'button, [role="button"], a, input, textarea, select, label, [contenteditable]';
 
 type Axis = 'undecided' | 'horizontal' | 'vertical';
+
+/**
+ * A row or a bar that took a sideways drag for itself: a row swiped to complete,
+ * a bar scrubbed to a value. The page swipe lets that pointer go. A row claims
+ * only a direction it has an action for, so the other way still changes page.
+ */
+let claimed: number | null = null;
+export function claimPointer(id: number): void {
+  claimed = id;
+}
+export function releasePointer(id: number): void {
+  if (claimed === id) claimed = null;
+}
 
 /** The page follows a third of the drag, up to this far: enough to feel, not to read as a slide. */
 const FOLLOW_MAX_PX = 48;
@@ -78,8 +92,10 @@ export function useTabSwipe(onSwipe: (direction: 1 | -1) => void) {
       if (target.closest(INTERACTIVE)) return;
       // Anything that scrolls sideways already means something by a sideways
       // drag: the timeline ruler, a page bar's tabs, the dock's games.
+      // Only a real sideways scroller: content mid-slide (a tab entering) also
+      // overflows for a moment, and must not swallow the next swipe.
       for (let node: HTMLElement | null = target; node; node = node.parentElement) {
-        if (node.scrollWidth > node.clientWidth + 1) return;
+        if (node.scrollWidth > node.clientWidth + 1 && /auto|scroll/.test(getComputedStyle(node).overflowX)) return;
       }
       start.current = { x: event.clientX, y: event.clientY, at: event.timeStamp, id: event.pointerId };
       axis.current = 'undecided';
@@ -89,6 +105,10 @@ export function useTabSwipe(onSwipe: (direction: 1 | -1) => void) {
     onPointerMove: (event: ReactPointerEvent) => {
       const origin = start.current;
       if (!origin || event.pointerId !== origin.id) return;
+      if (claimed === origin.id) {
+        cancel();
+        return;
+      }
       const dx = event.clientX - origin.x;
       const dy = event.clientY - origin.y;
 
@@ -109,7 +129,7 @@ export function useTabSwipe(onSwipe: (direction: 1 | -1) => void) {
       const origin = start.current;
       const resolved = axis.current;
       cancel();
-      if (!origin || event.pointerId !== origin.id || resolved !== 'horizontal') return;
+      if (!origin || event.pointerId !== origin.id || resolved !== 'horizontal' || claimed === origin.id) return;
       const dx = event.clientX - origin.x;
       const elapsed = Math.max(1, event.timeStamp - origin.at);
       const committed = Math.abs(dx) > COMMIT_PX || Math.abs(dx) / elapsed > COMMIT_VELOCITY;
@@ -120,4 +140,27 @@ export function useTabSwipe(onSwipe: (direction: 1 | -1) => void) {
 
     onPointerCancel: cancel,
   };
+}
+
+/**
+ * Where a swipe on a game's page goes: the next of its tabs, else the next
+ * game (forward lands on its first tab, back on its last: Notes, which every
+ * game has), else off the games to the dock's neighbouring place.
+ */
+export function nextGameStop(
+  tabs: readonly GameTab[],
+  current: GameTab,
+  gameIds: readonly string[],
+  gameId: string | null,
+  towards: 1 | -1,
+): { kind: 'tab'; tab: GameTab } | { kind: 'game'; gameId: string; tab: GameTab } | { kind: 'place' } {
+  const shown = tabs.length ? tabs : GAME_TABS;
+  const at = Math.max(0, shown.indexOf(current));
+  const tab = shown[at + towards];
+  if (tab) return { kind: 'tab', tab };
+  const next = gameIds[gameIds.indexOf(gameId ?? '') + towards];
+  if (gameId && gameIds.includes(gameId) && next) {
+    return { kind: 'game', gameId: next, tab: towards === 1 ? 'track' : 'notes' };
+  }
+  return { kind: 'place' };
 }

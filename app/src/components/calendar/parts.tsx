@@ -8,6 +8,7 @@ import { useGround } from '../../theme';
 import { useIdentityColors } from '../roster';
 import { GameLogo } from '../GameLogo';
 import { Tick } from '../primitives';
+import type { SwipeAction } from '../../swipe-row';
 import './calendar.css';
 
 const BANNER_LABELS = { character: 'Character', weapon: 'Weapon', support: 'Support', memory: 'Memory' } as const;
@@ -147,6 +148,34 @@ export function MomentMark({
       </span>
     );
   return <GameLogo game={games.visual(game)} size={size} className="shrink-0" />;
+}
+
+/** A moment's swipes: right marks every event in it done, left takes them all back. */
+export function momentSwipes(
+  moment: CalendarMoment,
+  onToggleEvent: (event: GameEvent) => void,
+): { right: SwipeAction | null; left: SwipeAction | null } {
+  const all = moment.events;
+  const anyDone = all.some((event) => event.done);
+  const allDone = all.every((event) => event.done);
+  return {
+    right: allDone
+      ? null
+      : {
+          label: 'Done',
+          run: () => {
+            for (const event of all) if (!event.done) onToggleEvent(event);
+          },
+        },
+    left: anyDone
+      ? {
+          label: 'Not done',
+          run: () => {
+            for (const event of all) if (event.done) onToggleEvent(event);
+          },
+        }
+      : null,
+  };
 }
 
 /**

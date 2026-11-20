@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openSettings, showTodayGames } from './support';
+import { openSettings, showTodayGames, addGameFromRail } from './support';
 import AxeBuilder from '@axe-core/playwright';
 import { emptyState, PRESETS, type AppState } from '@memoria/shared';
 import { makeEvent, makeGame, makeResource, makeSnapshot, makeTask } from '../../shared/test/helpers';
@@ -29,10 +29,7 @@ async function merge(page: Page, state: AppState) {
 }
 
 async function addGenshin(page: Page) {
-  await page
-    .getByRole('navigation', { name: 'Primary' })
-    .getByRole('button', { name: 'Add game', exact: true })
-    .click();
+  await addGameFromRail(page);
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   // No server is chosen for you: pick the game's first one.
   await page.getByRole('combobox', { name: 'Server' }).click();

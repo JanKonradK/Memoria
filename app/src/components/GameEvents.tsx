@@ -2,13 +2,16 @@ import '../today.css';
 import './game-tabs/game-tabs.css';
 import { useState } from 'react';
 import { DateTime } from 'luxon';
-import type { Game } from '@memoria/shared';
+import { setEventProgress, type Game } from '@memoria/shared';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { sortTimelineEvents } from '../timeline-sort';
 import { groupGameEvents } from '../event-category';
 import { calendarSchedule } from '../event-schedule';
 import { fmtDur } from '../util';
+import { SwipeRow } from '../swipe-row';
+import { gameInk } from '../game-color';
+import { useGround } from '../theme';
 import { EventTags } from './EventTags';
 import { CalendarBehindNote } from './CalendarBehind';
 import { Btn, Segmented, TextInput, TOUCH_BUTTON } from './ui';
@@ -29,6 +32,9 @@ export function GameEvents({
   titled?: boolean;
 }) {
   const state = useApp((store) => store.state);
+  const upsertEvent = useApp((store) => store.upsertEvent);
+  const minimal = useUI((store) => store.detail === 'minimal');
+  const ground = useGround();
   const openSheet = useUI((store) => store.openSheet);
   const openEvent = (eventId?: string) => {
     if (onBeforeOpen && !onBeforeOpen()) return;
@@ -101,10 +107,21 @@ export function GameEvents({
                     : event.done || event.end <= now
                       ? `Ended ${DateTime.fromMillis(event.end, { zone }).toFormat('d LLL yyyy')}`
                       : event.start > now
-                        ? `Starts in ${fmtDur(event.start - now)}`
-                        : `Ends in ${fmtDur(event.end - now)}`;
+                        ? `${minimal ? 'in' : 'Starts in'} ${fmtDur(event.start - now)}`
+                        : minimal
+                          ? fmtDur(event.end - now)
+                          : `Ends in ${fmtDur(event.end - now)}`;
+                  const mark = (to: 'done' | 'none') => () =>
+                    upsertEvent({ id: event.id, gameId: event.gameId, ...setEventProgress(to) });
                   return (
-                    <li key={event.id}>
+                    <SwipeRow
+                      as="li"
+                      key={event.id}
+                      className="look-row"
+                      ink={gameInk(game, ground)}
+                      right={event.done ? null : { label: 'Done', run: mark('done') }}
+                      left={event.done ? { label: 'Not done', run: mark('none') } : null}
+                    >
                       <button type="button" className="game-events-row" onClick={() => openEvent(event.id)}>
                         <span className="min-w-0">
                           <span
@@ -165,7 +182,7 @@ export function GameEvents({
                           />
                         </svg>
                       </button>
-                    </li>
+                    </SwipeRow>
                   );
                 })}
               </ul>

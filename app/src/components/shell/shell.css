@@ -1,8 +1,10 @@
-/* The rail: the app's one navigation. A column down the left edge on a wide
-   screen, a bar across the top on a tall one. Flat like the rest of the app; the
-   chosen place takes the pressed fill with an inset edge. */
+/* The rail: the app's one navigation, in one order everywhere — Calendar,
+   Games, Today, Notes, Settings. A column down the left edge on a wide screen,
+   a dock floating over the bottom edge on a tall one. The look (src/looks)
+   re-points the tokens below; the shapes and behaviour live here. */
 :root {
   --rail-w: 88px;
+  /* The dock's and rail's look tokens (--dock-*, --rail-fill…) are in looks/looks.css. */
 }
 
 .app-rail {
@@ -15,8 +17,8 @@
   align-items: center;
   gap: 2px;
   padding: 12px 0 12px;
-  background: color-mix(in srgb, var(--color-surface-1) 55%, var(--color-surface-0));
-  border-right: 1px solid var(--color-line-hairline);
+  background: var(--rail-fill);
+  border-right: 1px solid var(--rail-edge);
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -24,25 +26,69 @@
   display: none;
 }
 .rail-mark {
+  order: 0;
   display: grid;
   place-items: center;
   width: 48px;
   height: 44px;
   margin-bottom: 6px;
 }
-.rail-views,
-.rail-games,
-.rail-end {
+/* Down the side: the places, then the game list, then sync trouble and
+   Settings pushed to the rail's foot. */
+.rail-places,
+.rail-foot {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
 }
-.rail-end {
-  margin-top: auto;
+.rail-status {
+  display: contents;
+}
+.rail-shelf {
+  margin-bottom: auto;
+}
+.rail-foot {
   padding-top: 10px;
 }
-.rail-sep {
+
+/* The game list folds away under Games: rows collapse from their full height
+   to none, the list fading as it goes. */
+.rail-shelf {
+  display: grid;
+  /* minmax(0, …): a bare fr track would keep its content's height as a floor. */
+  grid-template-rows: minmax(0, 0fr);
+  flex: none;
+  width: 100%;
+  transition: grid-template-rows var(--dur-base) var(--ease-out);
+}
+.app-rail[data-shelf] .rail-shelf {
+  grid-template-rows: minmax(0, 1fr);
+}
+.rail-games {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  /* Folded, it leaves the page once it has finished folding. */
+  visibility: hidden;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    visibility 0s linear var(--dur-base);
+}
+.app-rail[data-shelf] .rail-games {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    visibility 0s;
+}
+/* A hairline above the list, inside it, so it folds with it. */
+.rail-games::before {
+  content: '';
   flex: none;
   width: 40px;
   height: 1px;
@@ -76,8 +122,9 @@
 .rail-icon {
   width: 22px;
   height: 22px;
+  stroke-width: var(--icon-stroke);
 }
-/* Add and Settings are icons; their names are read and shown as tips. */
+/* Add is an icon; its name is read and shown as a tip. */
 .rail-icon-only {
   width: 44px;
   min-height: 44px;
@@ -118,6 +165,12 @@
 }
 .rail-view[aria-current='page'],
 .rail-game[aria-current='page'] {
+  background: var(--place-current-fill);
+  box-shadow: inset 0 0 0 1px var(--place-current-edge);
+  color: var(--place-current-fg, var(--color-fg));
+}
+/* A game is chosen with a quiet fill: its logo and countdown keep their own colours. */
+.rail-game[aria-current='page'] {
   background: var(--color-fill-3);
   box-shadow: inset 0 0 0 1px var(--color-line-edge);
   color: var(--color-fg);
@@ -145,6 +198,11 @@
   height: 7px;
   border-radius: 999px;
   background: var(--color-accent);
+}
+/* A game needs the player within two hours: the countdown's own rose. */
+.rail-dot-urgent {
+  background: var(--color-rose);
+  box-shadow: 0 0 0 2px var(--dock-fill-solid, var(--color-surface-1));
 }
 /* The open game's own colour marks it from the rail's edge. */
 .rail-pin {
@@ -182,7 +240,7 @@
   position: relative;
   height: 3px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--meter-radius, 999px);
   background: var(--color-fill-3);
 }
 .rail-meter i {
@@ -237,7 +295,9 @@
   .rail-view,
   .rail-game,
   .rail-pin,
-  .rail-meter i {
+  .rail-meter i,
+  .rail-shelf,
+  .rail-games {
     transition: none;
   }
   .rail-view:active:not(:disabled),
@@ -248,20 +308,20 @@
 
 /* Which edge the rail takes follows the screen's shape, not its width. A wide
    screen is short on height, so the rail runs down the side; a tall one (a
-   phone or a tablet held upright) is short on width, so it runs along the top. */
+   phone or a tablet held upright) is short on width, so it docks at the bottom. */
 :root {
   --nav-h: 0px;
 }
 @media (orientation: landscape) {
   :root {
-    --rail-edge: calc(var(--rail-w) + env(safe-area-inset-left));
+    --rail-edge-w: calc(var(--rail-w) + env(safe-area-inset-left));
   }
   .app-rail {
-    width: var(--rail-edge);
+    width: var(--rail-edge-w);
     padding-left: env(safe-area-inset-left);
   }
   .app-frame {
-    padding-left: var(--rail-edge);
+    padding-left: var(--rail-edge-w);
   }
 }
 
@@ -301,83 +361,122 @@
   }
 }
 
-/* Upright: the same rail as a bar across the top. Today and Calendar stay put,
-   the games scroll sideways, then Settings. Page bars stick under it. */
+/* Upright: the rail is a dock floating over the bottom edge, where a thumb
+   rests: five places in equal columns, each name under its icon, the chosen
+   one in a pill. Games raises the shelf of game logos out of the dock's top,
+   as one object with it. The shelf covers the page rather than pushing it;
+   pages pad their end so nothing hides behind either. */
 @media (orientation: portrait) {
   :root {
-    --nav-h: calc(64px + env(safe-area-inset-top));
+    --dock-gap: 10px;
+    --dock-tabs-h: 62px;
+    --dock-shelf-h: 70px;
+    --dock-h: calc(var(--dock-tabs-h) + var(--dock-gap) + env(safe-area-inset-bottom));
+    /* The frame already clears the dock and the home indicator. */
+    --dock-clear: 0px;
+    scroll-padding-bottom: calc(var(--dock-h) + 1rem);
+  }
+  .app-frame {
+    padding-bottom: calc(var(--dock-h) + 10px);
+  }
+  .app-frame:has(> .app-rail[data-shelf]) {
+    padding-bottom: calc(var(--dock-h) + var(--dock-shelf-h) + 10px);
+  }
+  .app-frame .app-toasts {
+    bottom: calc(var(--dock-h) + 0.75rem);
+    transition: bottom var(--dur-base) var(--ease-out);
+  }
+  .app-frame:has(> .app-rail[data-shelf]) .app-toasts {
+    bottom: calc(var(--dock-h) + var(--dock-shelf-h) + 0.75rem);
   }
   .app-rail {
-    position: sticky;
-    inset: 0 auto auto 0;
+    inset: auto calc(var(--dock-gap) + env(safe-area-inset-right)) calc(var(--dock-gap) + env(safe-area-inset-bottom))
+      calc(var(--dock-gap) + env(safe-area-inset-left));
     width: auto;
-    height: var(--nav-h);
-    box-sizing: border-box;
-    flex-direction: row;
+    max-width: 600px;
+    margin-inline: auto;
+    height: auto;
+    align-items: stretch;
     gap: 0;
-    padding: env(safe-area-inset-top) max(6px, env(safe-area-inset-right)) 0 max(6px, env(safe-area-inset-left));
-    border-right: 0;
-    border-bottom: 1px solid var(--color-line-hairline);
+    padding: 0;
+    border: 1px solid var(--dock-edge);
+    border-radius: var(--dock-radius);
+    background: var(--dock-fill);
+    -webkit-backdrop-filter: var(--dock-blur);
+    backdrop-filter: var(--dock-blur);
+    box-shadow: var(--dock-shadow);
     overflow: hidden;
+    contain: layout paint;
+    /* The shelf over the row of places; Settings (and any sync trouble) is
+       the row's last column, so the five places share it equally. */
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 1fr);
+    grid-template-areas:
+      'shelf shelf'
+      'places foot';
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .app-rail {
+      background: var(--color-surface-1);
+    }
   }
   .rail-mark {
     display: none;
   }
-  .rail-views,
-  .rail-end {
-    flex-direction: row;
-    flex: none;
-  }
-  .rail-end {
-    margin: 0;
-    padding: 0;
-  }
-  .rail-sep {
-    width: 1px;
-    height: 34px;
-    margin: 0 4px;
+  .rail-shelf {
+    grid-area: shelf;
   }
   .rail-games {
-    flex: 1;
-    min-width: 0;
-    height: 100%;
     flex-direction: row;
+    align-items: center;
+    gap: 2px;
+    height: var(--dock-shelf-h);
+    padding: 0 8px;
     overflow-x: auto;
+    overflow-y: hidden;
     overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
+    scroll-padding-inline: 8px;
     scrollbar-width: none;
-    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--dock-edge) 70%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 8px, #000 calc(100% - 22px), transparent);
+    transform: translateY(10px);
+    transition:
+      opacity var(--dur-fast) var(--ease-out),
+      transform var(--dur-base) var(--ease-out),
+      visibility 0s linear var(--dur-base);
+  }
+  .app-rail[data-shelf] .rail-games {
+    transform: none;
+    transition:
+      opacity var(--dur-fast) var(--ease-out),
+      transform var(--dur-base) var(--ease-out),
+      visibility 0s;
   }
   .rail-games::-webkit-scrollbar {
     display: none;
   }
-  .rail-view {
-    width: 58px;
-    min-height: 56px;
-    gap: 4px;
-    font-size: 0.75rem;
-  }
-  .rail-add {
-    flex: none;
-    width: 44px;
-    min-height: 56px;
-    /* Clear of the fade at the strip's end once scrolled there. */
-    margin: 0 20px 0 0;
+  .rail-games::before {
+    display: none;
   }
   .rail-game {
-    width: 52px;
-    min-height: 56px;
+    width: 56px;
+    min-height: 60px;
     gap: 3px;
-    padding: 3px 0;
+    padding: 4px 0;
     justify-content: center;
     scroll-snap-align: start;
   }
+  .rail-game[aria-current='page'] {
+    background: var(--color-fill-2);
+    box-shadow: none;
+  }
   .rail-game :is(.game-logo, [data-game-logo]) {
-    width: 32px !important;
-    height: 32px !important;
+    width: 36px !important;
+    height: 36px !important;
   }
   .rail-meters {
-    width: 28px;
+    width: 30px;
   }
   .rail-meter {
     height: 2px;
@@ -385,32 +484,127 @@
   .rail-countdown {
     font-size: 0.75rem;
   }
-  /* The open game is marked from the bar's bottom edge. */
+  /* The open game is marked along the shelf's top edge, in its colour. */
   .rail-pin {
     left: 50%;
-    top: auto;
-    bottom: -4px;
+    top: 0;
     width: 0;
     height: 3px;
-    border-radius: 3px 3px 0 0;
+    border-radius: 0 0 3px 3px;
     transform: translateX(-50%);
     transition: width var(--dur-base) var(--ease-out);
   }
   .rail-game[aria-current='page'] .rail-pin {
-    width: 22px;
+    width: 24px;
     height: 3px;
   }
-  .rail-badge {
-    top: 1px;
-    right: 3px;
+  .rail-add {
+    flex: none;
+    width: 48px;
+    min-height: 52px;
+    margin: 0 16px 0 2px;
+    border-radius: var(--radius-ui-full, 999px);
   }
-  .rail-settings {
-    width: 44px;
-    min-height: 56px;
+
+  .rail-places,
+  .rail-foot {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0;
+    height: var(--dock-tabs-h);
+    padding: 0;
+  }
+  .rail-places {
+    grid-area: places;
+  }
+  .rail-foot {
+    grid-area: foot;
+  }
+  .rail-shelf {
+    margin-bottom: 0;
+  }
+  :is(.rail-places, .rail-foot) .rail-view {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+    justify-content: flex-start;
+    gap: 5px;
+    padding-top: 9px;
+    border-radius: 0;
+    font-size: 0.75rem;
+  }
+  :is(.rail-places, .rail-foot) .rail-view .rail-icon {
+    position: relative;
+    z-index: 1;
+  }
+  :is(.rail-places, .rail-foot) .rail-view::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    width: min(58px, calc(100% - 8px));
+    height: 32px;
+    border-radius: var(--dock-pill-radius);
+    background: var(--dock-pill);
+    box-shadow: inset 0 0 0 1px var(--dock-pill-edge);
+    transform: translateX(-50%) scaleX(0.6);
+    opacity: 0;
+    transition:
+      transform var(--dur-base) var(--ease-out),
+      opacity var(--dur-fast) var(--ease-out);
+  }
+  :is(.rail-places, .rail-foot) .rail-view[aria-current='page'],
+  :is(.rail-places, .rail-foot) .rail-place-games[aria-expanded='true'] {
+    background: none;
+    box-shadow: none;
+    color: var(--color-fg);
+  }
+  /* The icon sits on the pill and takes its ink; the name below stays on the dock. */
+  :is(.rail-places, .rail-foot) .rail-view[aria-current='page'] .rail-icon {
+    color: var(--dock-pill-fg);
+  }
+  :is(.rail-places, .rail-foot) .rail-view[aria-current='page']::before {
+    transform: translateX(-50%);
+    opacity: 1;
+  }
+  /* An open shelf over another page lights Games without taking the place. */
+  :is(.rail-places, .rail-foot) .rail-place-games[aria-expanded='true']:not([aria-current='page'])::before {
+    transform: translateX(-50%) scaleX(0.82);
+    opacity: 0.45;
+  }
+  :is(.rail-places, .rail-foot) .rail-view:active:not(:disabled) {
+    transform: none;
+  }
+  :is(.rail-places, .rail-foot) .rail-view:active:not(:disabled)::before {
+    opacity: 0.6;
+    transform: translateX(-50%) scaleX(0.92);
+  }
+  @media (hover: hover) {
+    :is(.rail-places, .rail-foot) .rail-view:hover {
+      background: none;
+    }
+  }
+  .rail-badge {
+    top: 2px;
+    right: auto;
+    left: calc(50% + 8px);
+    z-index: 2;
   }
   .rail-dot {
-    top: 8px;
-    right: 10px;
+    top: 7px;
+    right: auto;
+    left: calc(50% + 9px);
+    z-index: 2;
+  }
+}
+/* A short phone keeps the dock lower. */
+@media (orientation: portrait) and (max-height: 640px) {
+  :root {
+    --dock-tabs-h: 56px;
+    --dock-shelf-h: 64px;
+    --dock-gap: 8px;
   }
 }
 
@@ -474,12 +668,6 @@
   align-items: center;
   gap: 8px;
   margin-left: auto;
-}
-/* Under the top bar, which already keeps clear of the status bar. */
-@media (orientation: portrait) {
-  .page-bar {
-    padding-top: 10px;
-  }
 }
 @media (max-width: 767px) {
   .page-bar {
@@ -685,5 +873,14 @@
   }
   .today-side {
     max-width: 480px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-shelf,
+  .rail-games,
+  .app-rail[data-shelf] .rail-games,
+  .app-frame .app-toasts {
+    transition: none;
   }
 }

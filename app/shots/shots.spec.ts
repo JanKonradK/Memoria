@@ -140,7 +140,7 @@ test('every screen', async ({ page }, info) => {
   await scrollShot('02-today-games');
   await ui(page, "ui.getState().setTodayView('steps');");
 
-  const tabs = ['track', 'events', 'pulls', 'quests', 'news'];
+  const tabs = ['track', 'events', 'pulls', 'quests', 'news', 'notes'];
   for (const [index, key] of ['genshin', 'hsr', 'nte'].entries()) {
     await ui(page, `nav.openGame(games.find((g) => g.presetKey === '${key}').id);`);
     for (const tab of index === 0 ? tabs : ['track']) {
@@ -156,7 +156,10 @@ test('every screen', async ({ page }, info) => {
     await scrollShot(`20-calendar-${view}`);
   }
 
-  for (const section of ['games', 'general', 'reminders', 'sync', 'data', 'activity']) {
+  await ui(page, "ui.getState().setTab('notes');");
+  await scrollShot('25-notes');
+
+  for (const section of ['games', 'general', 'appearance', 'reminders', 'sync', 'data', 'activity']) {
     await ui(page, `ui.getState().openSettings('${section}');`);
     await scrollShot(`30-settings-${section}`);
   }
@@ -198,4 +201,46 @@ test('every screen', async ({ page }, info) => {
   await shot('50-empty');
 
   writeFileSync(join(dir, 'findings.json'), JSON.stringify(findings, null, 1));
+});
+
+/** Each look on Today, a game's page and Settings → Appearance, with the dock's shelf open. */
+test('every look', async ({ page }, info) => {
+  const dir = join(OUT, info.project.name, 'looks');
+  mkdirSync(dir, { recursive: true });
+  const touch = Boolean(info.project.use.hasTouch);
+  const findings: Finding[] = [];
+  const shot = async (screen: string) => {
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(150);
+    await page.screenshot({ path: join(dir, `${screen}.png`) });
+    findings.push(...(await measure(page, screen, touch)));
+  };
+  await seed(page);
+  const looks = ['classic', 'instrument', 'hud', 'clean', 'glass', 'arcade', 'paper', 'neon'];
+  for (const look of looks) {
+    await ui(
+      page,
+      `ui.getState().setLook('${look}'); ui.getState().setTab('today'); ui.getState().setTodayView('steps');`,
+    );
+    await shot(`${look}-today`);
+    await ui(page, `nav.openGame(games.find((g) => g.presetKey === 'hsr').id); ui.getState().setGameTab('track');`);
+    await shot(`${look}-game`);
+    // Further down the Track tab: the task lists and the event list beside them.
+    await page.evaluate(() =>
+      document.querySelector('.game-track-tasks')?.scrollIntoView({ block: 'start', behavior: 'instant' }),
+    );
+    await shot(`${look}-game-tasks`);
+    await ui(
+      page,
+      `nav.openGame(games.find((g) => g.presetKey === 'genshin').id); ui.getState().setGameTab('events');`,
+    );
+    await shot(`${look}-events`);
+  }
+  await ui(page, "ui.getState().setLook('hud'); ui.getState().setDetail('minimal'); ui.getState().setTab('today');");
+  await shot('minimal-hud-today');
+  await ui(page, "ui.getState().setDetail('elaborate'); ui.getState().openSettings('appearance');");
+  await shot('appearance');
+  await page.evaluate(() => window.scrollTo({ top: innerHeight * 0.8, behavior: 'instant' }));
+  await shot('appearance--2');
+  writeFileSync(join(dir, 'findings.json'), JSON.stringify(findings, null, 2));
 });

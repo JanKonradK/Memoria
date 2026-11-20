@@ -1,0 +1,163 @@
+/* The instrument look. Loaded on demand by looks.ts; see looks.css for how looks work. */
+
+/* ── Instrument: a monochrome readout, one red live dot ─────────────────── */
+
+@scope ([data-look='instrument']) to ([data-look]:not([data-look='instrument'])) {
+  :scope {
+    --font-display: 'Doto', 'Space Mono', monospace;
+    --display-weight: 800;
+    --display-tracking: 0.02em;
+    --display-case: uppercase;
+    --font-figure: 'Doto', 'Space Mono', monospace;
+    --font-label: 'Space Mono', ui-monospace, monospace;
+    --label-case: uppercase;
+    --label-tracking: 0.14em;
+    --radius-ui-sm: 10px;
+    --radius-ui-md: 16px;
+    --radius-ui-lg: 20px;
+    --radius-ui-xl: 24px;
+    --radius-ui-card: 24px;
+    --icon-stroke: 1.5;
+    --dock-fill: var(--color-surface-0);
+    --dock-blur: none;
+    --dock-edge: var(--color-line-edge);
+    --dock-radius: 18px;
+    --dock-pill: var(--color-fg);
+    --dock-pill-fg: var(--color-fg-invert);
+    --dock-pill-radius: 10px;
+    --rail-fill: var(--color-surface-0);
+    --place-current-fill: var(--color-fg);
+    --place-current-edge: transparent;
+    --place-current-fg: var(--color-fg-invert);
+  }
+  :is(.page-title h1, .look-preview-h1) {
+    font-size: 1.75rem;
+  }
+  :is(.today-steps-rule h2, .look-rule-label, .tab-label, .look-preview-h2) {
+    font-size: var(--text-caption);
+    font-weight: 700;
+    color: var(--color-fg);
+  }
+  :is(.today-steps-rule h2, .look-preview-h2)[data-tone] {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-fg);
+  }
+  :is(.today-steps-rule h2, .look-preview-h2)[data-tone='rose']::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--color-danger);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger) 20%, transparent);
+  }
+  .today-steps-rule::after,
+  .look-rule-line,
+  .tab-label::after {
+    background: none;
+    border-top: 1px dashed var(--color-line-strong);
+    height: 0;
+  }
+  :is(.today-step, .look-row) {
+    margin-bottom: 6px;
+    background: var(--color-surface-1);
+  }
+  .today-step-why,
+  .today-step-when span,
+  .settings-row-text p,
+  .page-title-sub {
+    font-family: var(--font-label);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .today-step-why b {
+    color: var(--color-fg-soft) !important;
+  }
+  .today-step-when b {
+    font-size: 1.0625rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--color-fg);
+  }
+  .today-step-when span {
+    letter-spacing: 0.02em;
+  }
+  .today-step-when:is([data-tone='rose'], [data-tone='danger']) b {
+    color: var(--color-danger-fg);
+  }
+  .today-step-when[data-tone='warn'] b {
+    color: var(--color-fg);
+  }
+  .meter {
+    background: var(--color-fill-3);
+    border-radius: 0;
+  }
+  .meter > .meter-fill,
+  .meter > i {
+    background: var(--color-fg) !important;
+    border-radius: 0;
+  }
+  .rail-meter,
+  .rail-meter i {
+    border-radius: 0;
+  }
+  .rail-meter i {
+    background: var(--color-fg);
+  }
+  .rail-countdown {
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: var(--color-fg);
+  }
+  .rail-countdown[data-tone='soon'] {
+    color: var(--color-fg);
+  }
+  .rail-countdown[data-tone='now'] {
+    color: var(--color-danger-fg);
+  }
+  .rail-label {
+    font-family: var(--font-label);
+    font-size: 0.625rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .rail-badge {
+    border-radius: 4px;
+    background: var(--color-danger);
+    color: #fff;
+    font-family: var(--font-label);
+  }
+  /* The logo keeps the game's colour only in a thin tick of its ring. */
+  .game-logo-ring {
+    filter: grayscale(1) contrast(0.9) brightness(1.15);
+    opacity: 0.85;
+  }
+  .game-logo-face {
+    background: var(--color-surface-1);
+    box-shadow: inset 0 0 0 1px var(--color-line-strong);
+  }
+  .view-switch {
+    border-radius: 10px;
+    background: transparent;
+    border-style: dashed;
+  }
+  .view-switch button {
+    font-family: var(--font-label);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-radius: 6px;
+  }
+  .view-switch button:is([aria-pressed='true'], [aria-selected='true']) {
+    background: var(--color-fg);
+    color: var(--color-fg-invert);
+  }
+  .page-bar {
+    border-bottom-style: dashed;
+  }
+  .settings-row {
+    border-bottom-style: dashed;
+  }
+}

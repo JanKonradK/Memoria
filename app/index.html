@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" data-look="classic" data-detail="elaborate">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -39,6 +39,9 @@
           choice === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : choice;
         const mode = theme === 'light' ? 'light' : 'dark';
         document.documentElement.dataset.theme = mode;
+        // The look and the detail level, written by applyLook in looks.ts.
+        if (/^[a-z]{1,16}$/.test(saved.look)) document.documentElement.dataset.look = saved.look;
+        if (saved.detail === 'minimal') document.documentElement.dataset.detail = 'minimal';
         let ground = mode === 'light' ? '#f6f7f9' : null;
         // A chosen colour palette, written by applyTheme in ui-store.ts.
         const paint = JSON.parse(localStorage.getItem('memoria-paint') || '{}')?.[mode];

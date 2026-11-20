@@ -39,15 +39,14 @@ afterEach(() => useApp.setState({ load: originalLoad, state: emptyState() }));
 
 const renderRail = (node: ReactElement = <AppRail />) => render(<TooltipProvider>{node}</TooltipProvider>);
 
-it('leads with Today and Calendar, ends with Settings, and adds a game from the rail', () => {
+it('runs Calendar, Games, Today, Notes, then the games, ends with Settings, and adds a game from the rail', () => {
   useUI.setState({ tab: 'today' });
   renderRail();
   const nav = screen.getByRole('navigation', { name: 'Primary' });
   const names = within(nav)
     .getAllByRole('button')
     .map((button) => button.getAttribute('aria-label') ?? button.textContent);
-  expect(names[0]).toBe('Today');
-  expect(names[1]).toBe('Calendar');
+  expect(names.slice(0, 4)).toEqual(['Calendar', 'Games', 'Today', 'Notes']);
   expect(names.at(-1)).toBe('Settings');
   expect(names).toContain('Add game');
   // Pulls and Quests live inside each game now.

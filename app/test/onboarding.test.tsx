@@ -49,6 +49,8 @@ describe('Onboarding energy entry', () => {
   it('seeds every regen resource at zero when the energy field is left blank', () => {
     render(<Onboarding onComplete={vi.fn()} />);
     selectGenshin();
+    fireEvent.click(screen.getByRole('button', { name: 'Next', exact: true }));
+    // The look step keeps Classic unless a look is picked.
     fireEvent.click(screen.getByRole('button', { name: 'Create dashboard' }));
 
     const state = useApp.getState().state;
@@ -68,6 +70,8 @@ describe('Onboarding energy entry', () => {
     render(<Onboarding onComplete={vi.fn()} />);
     selectGenshin();
     fireEvent.change(screen.getByLabelText(/current Original Resin/i), { target: { value: '84' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Next', exact: true }));
+    // The look step keeps Classic unless a look is picked.
     fireEvent.click(screen.getByRole('button', { name: 'Create dashboard' }));
 
     const state = useApp.getState().state;
@@ -83,6 +87,8 @@ describe('Onboarding energy entry', () => {
     render(<Onboarding onComplete={vi.fn()} />);
     selectGenshin();
     fireEvent.change(screen.getByLabelText(/current Original Resin/i), { target: { value: '   ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Next', exact: true }));
+    // The look step keeps Classic unless a look is picked.
     fireEvent.click(screen.getByRole('button', { name: 'Create dashboard' }));
 
     const state = useApp.getState().state;
@@ -105,6 +111,8 @@ describe('Onboarding energy entry', () => {
     render(<Onboarding onComplete={vi.fn()} />);
     selectGenshin('America');
     fireEvent.change(screen.getByLabelText(/nickname/i), { target: { value: ' Main ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Next', exact: true }));
+    // The look step keeps Classic unless a look is picked.
     fireEvent.click(screen.getByRole('button', { name: 'Create dashboard' }));
 
     const game = useApp.getState().state.games.find((g) => !g.deleted)!;
@@ -117,16 +125,18 @@ describe('Onboarding energy entry', () => {
     render(<Onboarding onComplete={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: /Genshin Impact/ }));
     fireEvent.click(screen.getByRole('button', { name: /^Next/ }));
-    expect(screen.getByRole('button', { name: 'Create dashboard' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Next', exact: true })).toBeDisabled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Add a Genshin Impact account on TW, HK, MO' }));
     fireEvent.click(screen.getByRole('button', { name: 'Add a Genshin Impact account on Europe' }));
     fireEvent.click(screen.getByRole('button', { name: 'Add a Genshin Impact account on Europe, 1 added' }));
     fireEvent.click(screen.getByRole('button', { name: 'Add a Genshin Impact account on any other server' }));
     // The "other" account has no server yet, so it holds the dashboard back.
-    expect(screen.getByRole('button', { name: 'Create dashboard' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Next', exact: true })).toBeDisabled();
     fireEvent.keyDown(screen.getByRole('combobox', { name: 'Genshin Impact account 4 server' }), { key: 'Enter' });
     fireEvent.click(screen.getByRole('option', { name: 'Japan (UTC+9)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next', exact: true }));
+    // The look step keeps Classic unless a look is picked.
     fireEvent.click(screen.getByRole('button', { name: 'Create dashboard' }));
 
     const games = useApp.getState().state.games.filter((g) => !g.deleted);

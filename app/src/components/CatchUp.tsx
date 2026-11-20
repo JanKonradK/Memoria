@@ -150,7 +150,7 @@ function VersionBody({ digest, summary = true }: { digest: VersionDigest; summar
         </details>
       )}
       {!codesLive && codes}
-      <p className="catch-up-sources aside text-caption text-muted">
+      <p className="catch-up-sources say aside text-caption text-muted">
         Checked {day(digest.reviewed)} from{' '}
         {digest.sources.map((source, index) => (
           <span key={source.url}>

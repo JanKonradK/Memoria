@@ -30,6 +30,10 @@ const ICON = {
   today: 'M5 3.5h10M5 3.5v13l5-3 5 3v-13M7.5 8l1.8 1.8 3.4-3.3',
   calendar:
     'M3 6.5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2V15a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 8.5h14M7 2.5V6M13 2.5V6M6.5 12h4M6.5 14.5h7',
+  notes:
+    'M5.5 2.5h6L15 6v9.5a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 4 15.5v-11.5a1.5 1.5 0 0 1 1.5-1.5zM11.5 2.5V6H15M7 10h6M7 13h4',
+  games:
+    'M6.5 6.5h7a4.5 4.5 0 0 1 4.5 4.5v.6a2.9 2.9 0 0 1-5 2L11.8 12H8.2L7 13.6a2.9 2.9 0 0 1-5-2V11a4.5 4.5 0 0 1 4.5-4.5zM6.5 8.8v3.4M4.8 10.5h3.4M13.2 9.6h.01M14.8 11.4h.01',
   add: 'M10 4v12M4 10h12',
   settings:
     'M10 7.4a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 0 0 0-5.2M10 2.5v2.2M10 15.3v2.2M2.5 10h2.2M15.3 10h2.2M4.7 4.7l1.6 1.6M13.7 13.7l1.6 1.6M4.7 15.3l1.6-1.6M13.7 6.3l1.6-1.6',
@@ -91,8 +95,8 @@ function RailView({
   );
 }
 
-/** Upright, the rail is a bar across the top, so its tips drop below it. */
-const useTipSide = () => (useMediaQuery('(orientation: portrait)') ? 'bottom' : 'right');
+/** Upright, the rail is a dock along the bottom, so its tips rise above it. */
+const useTipSide = () => (useMediaQuery('(orientation: portrait)') ? 'top' : 'right');
 
 /** A text field keeps Ctrl+digit for itself. */
 const typing = (target: EventTarget | null) =>
@@ -298,11 +302,13 @@ function RefreshButton() {
 }
 
 /**
- * The app's one navigation. On a wide screen it is a rail down the left edge:
- * Today and Calendar, then every game in the player's own order with its next
- * deadline, then Add and Settings. On a tall screen (a phone, an upright
- * tablet) the same rail runs across the top, its games scrolling sideways. The rail never re-sorts, so a game is
- * always where the player left it. Ctrl+1 to Ctrl+9 open the first nine games.
+ * The app's one navigation, in one order everywhere: Calendar, Games, Today,
+ * Notes, Settings. On a wide screen it is a rail down the left edge, with every
+ * game listed under the places (Games folds the list away). On a tall screen
+ * (a phone, an upright tablet) it is a dock floating over the bottom edge,
+ * under the thumb, and Games raises the shelf of game logos over it. The games
+ * never re-sort, so a game is always where the player left it. Ctrl+1 to
+ * Ctrl+9 open the first nine games; Alt+1 to Alt+5 the five places.
  */
 export function AppRail() {
   const now = useNow(30_000);
@@ -319,6 +325,11 @@ export function AppRail() {
   const ground = useGround();
   const reducedMotion = useReducedMotion();
   const tipSide = useTipSide();
+  const upright = useMediaQuery('(orientation: portrait)');
+  const shelfOpen = useUI((s) => s.shelfOpen);
+  const setShelfOpen = useUI((s) => s.setShelfOpen);
+  const railGamesOpen = useUI((s) => s.railGamesOpen);
+  const setRailGamesOpen = useUI((s) => s.setRailGamesOpen);
   const identity = useIdentityColors(derived.state.games);
   const games = derived.state.games
     .filter((game) => !game.deleted)
@@ -344,6 +355,46 @@ export function AppRail() {
     return () => document.removeEventListener('keydown', jump);
   }, [order]);
 
+  // Glass glows with the first two games' colours, behind everything.
+  const aurora = games
+    .slice(0, 2)
+    .map((game) => gameInk(game, ground))
+    .join(' ');
+  useEffect(() => {
+    const root = document.documentElement;
+    const [a, b] = aurora.split(' ');
+    for (const [name, value] of [
+      ['--aurora-a', a],
+      ['--aurora-b', b],
+    ] as const) {
+      if (value) root.style.setProperty(name, value);
+      else root.style.removeProperty(name);
+    }
+  }, [aurora]);
+
+  // Alt+1..5 open the five places, in the dock's order.
+  useEffect(() => {
+    const place = (event: KeyboardEvent) => {
+      if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.repeat) return;
+      if (!/^[1-5]$/.test(event.key) || event.defaultPrevented || typing(event.target)) return;
+      if (useUI.getState().sheet || document.querySelector('[role="dialog"], [role="alertdialog"]')) return;
+      event.preventDefault();
+      const ui = useUI.getState();
+      const which = Number(event.key);
+      if (which === 1) ui.setTab('timeline');
+      else if (which === 2) {
+        const id = ui.lastGameId ?? order.split(' ')[0];
+        if (id) openGame(id);
+      } else if (which === 3) {
+        if (ui.tab === 'home') closeWorkspace();
+        else ui.setTab('today');
+      } else if (which === 4) ui.setTab('notes');
+      else ui.setTab('settings');
+    };
+    document.addEventListener('keydown', place);
+    return () => document.removeEventListener('keydown', place);
+  }, [order]);
+
   // Across the top the games scroll sideways; the open game is kept in view.
   const gamesRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -363,18 +414,61 @@ export function AppRail() {
     if (target !== strip.scrollLeft) strip.scrollTo({ left: target, behavior: reducedMotion ? 'instant' : 'smooth' });
   }, [currentGame, order, reducedMotion]);
 
+  // On a tall screen Games raises the shelf over the dock; on a wide one it
+  // folds the rail's list. A game's own page opens the shelf with it.
+  const shelfShown = upright ? shelfOpen : railGamesOpen;
+  const toggleGames = () => {
+    if (games.length === 0) return openSheet({ kind: 'addGame' });
+    if (upright) setShelfOpen(!shelfOpen);
+    else setRailGamesOpen(!railGamesOpen);
+  };
+  const urgent = games.filter((game) => {
+    const next = derived.entryById.get(game.id)?.next;
+    return !game.paused && next != null && railCountdown(next.at - now).tone === 'now';
+  }).length;
+
   return (
-    <nav aria-label="Primary" className="app-rail">
+    <nav aria-label="Primary" className="app-rail" data-shelf={shelfShown || undefined}>
       <span className="rail-mark" aria-hidden>
         <Logo className="[&>svg]:h-9 [&>svg]:w-9" />
       </span>
-      <div className="rail-views">
+      <div className="rail-places">
         <RailView
+          className="rail-place rail-place-calendar"
+          label="Calendar"
+          icon={ICON.calendar}
+          current={tab === 'timeline'}
+          onClick={() => setTab('timeline')}
+          keyShortcuts="Alt+1"
+        />
+        <RailView
+          className="rail-place rail-place-games"
+          label="Games"
+          icon={ICON.games}
+          current={tab === 'home'}
+          aria-expanded={games.length > 0 ? shelfShown : undefined}
+          aria-controls={games.length > 0 ? 'rail-shelf' : undefined}
+          keyShortcuts="Alt+2"
+          describedBy={urgent > 0 ? 'rail-games-urgent' : undefined}
+          onClick={toggleGames}
+          badge={
+            urgent > 0 ? (
+              <>
+                <span aria-hidden className="rail-dot rail-dot-urgent" />
+                <span id="rail-games-urgent" hidden>
+                  {urgent === 1 ? '1 game needs you within two hours' : `${urgent} games need you within two hours`}
+                </span>
+              </>
+            ) : undefined
+          }
+        />
+        <RailView
+          className="rail-place rail-place-today"
           label="Today"
           icon={ICON.today}
           current={tab === 'today'}
           onClick={() => (tab === 'home' ? closeWorkspace() : setTab('today'))}
-          keyShortcuts={tab === 'home' ? 'Alt+ArrowLeft' : undefined}
+          keyShortcuts={tab === 'home' ? 'Alt+3 Alt+ArrowLeft' : 'Alt+3'}
           describedBy={open > 0 ? 'rail-today-left' : undefined}
           badge={
             open > 0 ? (
@@ -390,55 +484,59 @@ export function AppRail() {
           }
         />
         <RailView
-          label="Calendar"
-          icon={ICON.calendar}
-          current={tab === 'timeline'}
-          onClick={() => setTab('timeline')}
+          className="rail-place rail-place-notes"
+          label="Notes"
+          icon={ICON.notes}
+          current={tab === 'notes'}
+          onClick={() => setTab('notes')}
+          keyShortcuts="Alt+4"
         />
       </div>
-      <span aria-hidden className="rail-sep" />
-      <div ref={gamesRef} className="rail-games" role="group" aria-label="Games">
-        {games.map((game, index) => {
-          const next = derived.entryById.get(game.id)?.next ?? null;
-          const { resource, projection, bank } = derived.primaryEnergy(game.id);
-          const energy =
-            resource && projection?.hasSnapshot
-              ? { name: resource.name, value: projection.value, cap: resource.cap, bank }
-              : undefined;
-          return (
-            <RailGame
-              key={game.id}
-              game={game}
-              ink={gameInk(game, ground)}
-              support={gameSupport(game, ground)}
-              energy={energy}
-              at={next?.at}
-              label={next?.label}
-              now={now}
-              current={currentGame === game.id}
-              shortcut={index < 9 ? index + 1 : undefined}
+      <div id="rail-shelf" className="rail-shelf" inert={!shelfShown}>
+        <div ref={gamesRef} className="rail-games" role="group" aria-label="Games">
+          {games.map((game, index) => {
+            const next = derived.entryById.get(game.id)?.next ?? null;
+            const { resource, projection, bank } = derived.primaryEnergy(game.id);
+            const energy =
+              resource && projection?.hasSnapshot
+                ? { name: resource.name, value: projection.value, cap: resource.cap, bank }
+                : undefined;
+            return (
+              <RailGame
+                key={game.id}
+                game={game}
+                ink={gameInk(game, ground)}
+                support={gameSupport(game, ground)}
+                energy={energy}
+                at={next?.at}
+                label={next?.label}
+                now={now}
+                current={currentGame === game.id}
+                shortcut={index < 9 ? index + 1 : undefined}
+              />
+            );
+          })}
+          <Tooltip content="Add game" side={tipSide}>
+            <RailView
+              className="rail-icon-only rail-add"
+              label="Add game"
+              icon={ICON.add}
+              current={false}
+              onClick={() => openSheet({ kind: 'addGame' })}
             />
-          );
-        })}
-        <Tooltip content="Add game" side={tipSide}>
-          <RailView
-            className="rail-icon-only rail-add"
-            label="Add game"
-            icon={ICON.add}
-            current={false}
-            onClick={() => openSheet({ kind: 'addGame' })}
-          />
-        </Tooltip>
+          </Tooltip>
+        </div>
       </div>
-      <div className="rail-end">
+      <div className="rail-foot">
         <SyncAttention />
         {(needsRefresh || lanTrouble) && <RefreshButton />}
         <Tooltip content={updateWaiting ? 'Settings · Update available' : 'Settings'} side={tipSide}>
           <RailView
-            className="rail-icon-only rail-settings"
+            className="rail-place rail-place-settings rail-settings"
             label="Settings"
             icon={ICON.settings}
             current={tab === 'settings'}
+            keyShortcuts="Alt+5"
             describedBy={updateWaiting ? 'rail-update' : undefined}
             onClick={() => setTab('settings')}
             badge={

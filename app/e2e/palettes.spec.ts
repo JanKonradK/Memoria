@@ -8,7 +8,7 @@ const rootVar = (name: string) => (page: import('@playwright/test').Page) =>
 test('a colour palette and accent apply at once, survive a reload and pass axe', async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
   await page.goto('/');
-  await openSettings(page, 'General');
+  await openSettings(page, 'Appearance');
 
   const palettes = page.getByRole('radiogroup', { name: 'Colour palette' });
   await palettes.getByRole('radio', { name: /Catppuccin/ }).click();
@@ -37,7 +37,7 @@ test('a colour palette and accent apply at once, survive a reload and pass axe',
   expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
 
   // Back to Memoria: its surfaces come from the stylesheet again.
-  await openSettings(page, 'General');
+  await openSettings(page, 'Appearance');
   await page
     .getByRole('radiogroup', { name: 'Colour palette' })
     .getByRole('radio', { name: /Memoria/ })

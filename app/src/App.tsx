@@ -12,22 +12,21 @@ import { applyPwaUpdate } from './pwa';
 import { initAppUpdates } from './app-update';
 import { UpdateScreen } from './components/UpdateScreen';
 import { servedByLauncher } from './launcher';
-import { closeWorkspace, initWorkspaceHistory } from './workspace-navigation';
+import { closeWorkspace, initWorkspaceHistory, openGame } from './workspace-navigation';
 import { initDesktopHost } from './desktop-host';
 import { dismissLaunchNotice, initGameLaunch, useGameLaunch } from './game-launch';
 import { initPresence } from './presence';
 import { initHomeWidget } from './home-widget';
 import { easing, duration } from './motion';
-import { useTabSwipe } from './gestures';
+import { nextGameStop, useTabSwipe } from './gestures';
 import { AppRail } from './components/shell/AppRail';
 import { Onboarding } from './components/Onboarding';
 import { Btn } from './components/ui';
 import { splashDone } from './splash';
 
-/** The rail's order, top to bottom: Today, then Calendar, then Settings. */
-const TAB_ORDER = ['today', 'timeline', 'settings'] as const;
-/** A game's page sits just past Today: forward from it, and before Calendar. */
-const tabRank = (tab: Tab) => (tab === 'home' ? 0.5 : TAB_ORDER.indexOf(tab));
+/** The dock's order, left to right; `home` is a game's page, the Games place. */
+const TAB_ORDER: readonly Tab[] = ['timeline', 'home', 'today', 'notes', 'settings'];
+const tabRank = (tab: Tab) => TAB_ORDER.indexOf(tab);
 
 const ONBOARDING_KEY = 'memoria-onboarding';
 /** The key this flag shipped under before the rename; still honoured on read. */
@@ -73,6 +72,7 @@ const toastMotion = {
 
 const TodayRoute = lazy(() => import('./components/Today').then((module) => ({ default: module.TodayRoute })));
 const TimelinePage = lazy(() => import('./components/Timeline').then((module) => ({ default: module.TimelinePage })));
+const NotesPage = lazy(() => import('./components/Notes').then((module) => ({ default: module.NotesPage })));
 const SettingsPage = lazy(() => import('./components/Settings').then((module) => ({ default: module.SettingsPage })));
 const GameDetailSheet = lazy(() =>
   import('./components/GameDetail').then((module) => ({ default: module.GameDetailSheet })),
@@ -208,13 +208,39 @@ export default function App() {
   const direction = nav.tab === tab ? nav.direction : 1;
 
   const swipe = useTabSwipe((towards) => {
+    // On a game's page a swipe steps through its tabs, then on to the next game.
     if (tab === 'home') {
-      if (towards === 1) setTab('timeline');
-      else closeWorkspace();
-      return;
+      const ui = useUI.getState();
+      const live = useApp
+        .getState()
+        .state.games.filter((game) => !game.deleted)
+        .sort((a, b) => a.sort - b.sort);
+      const step = nextGameStop(
+        ui.gameTabs,
+        ui.gameTab,
+        live.map((game) => game.id),
+        ui.focusedGameId,
+        towards,
+      );
+      if (step.kind === 'tab') return ui.setGameTab(step.tab, towards);
+      if (step.kind === 'game') {
+        ui.setGameTab(step.tab, towards);
+        return openGame(step.gameId);
+      }
     }
-    const next = TAB_ORDER[TAB_ORDER.indexOf(tab) + towards];
-    if (next) setTab(next);
+    let next = TAB_ORDER[TAB_ORDER.indexOf(tab) + towards];
+    if (next === 'home') {
+      // The Games place is the last game that was open, else the first one.
+      const ui = useUI.getState();
+      const { games } = useApp.getState().state;
+      const live = games.filter((game) => !game.deleted).sort((a, b) => a.sort - b.sort);
+      const id = live.find((game) => game.id === ui.lastGameId)?.id ?? live[0]?.id;
+      if (id) return openGame(id);
+      next = TAB_ORDER[TAB_ORDER.indexOf('home') + towards];
+    }
+    if (!next) return;
+    if (tab === 'home' && next === 'today') closeWorkspace();
+    else setTab(next);
   });
 
   // The game page is the only thing on the internal `home` route. A deleted
@@ -409,7 +435,7 @@ export default function App() {
             The exit slide is what this gives up; the direction still reads. */}
         <Suspense fallback={<div className="px-5 py-12 text-center text-body text-dim">Loading view…</div>}>
           <PageFrame key={tab} tab={tab} direction={direction} positions={pagePositions}>
-            {tab === 'settings' ? <SettingsPage /> : <LivePage tab={tab} />}
+            {tab === 'settings' ? <SettingsPage /> : tab === 'notes' ? <NotesPage /> : <LivePage tab={tab} />}
           </PageFrame>
           {/* Commits with the page, once its lazy chunk has arrived. */}
           <SplashDone />

@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { addFromShell, closeGuide, gameRow, openGame, openSettings, showTodayGames } from './support';
+import { addFromShell, addGameFromRail, closeGuide, gameRow, openGame, openSettings, showTodayGames } from './support';
 
 async function expectNoPageOverflow(page: Page) {
   const overflow = await page.evaluate(() => ({
@@ -109,12 +109,19 @@ test('first run sets up games, then shows hints in place, and fits the viewport'
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: /^Next/ }).click();
   await expect(page.getByRole('heading', { name: 'Where do you play?' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Create dashboard' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Next', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: 'Add a Genshin Impact account on Europe' }).click();
   await page.getByRole('button', { name: 'Add a Genshin Impact account on Asia' }).click();
   await page.getByLabel('Genshin Impact account 1 nickname').fill('Main');
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  // Then a look, with Classic and Elaborate chosen; a choice here is the app's from then on.
+  await expect(page.getByRole('heading', { name: 'Pick a look' })).toBeVisible();
+  await expect(page.getByRole('radio', { name: /Classic/ })).toHaveAttribute('aria-checked', 'true');
+  await page.getByRole('radio', { name: /Clean/ }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-look', 'clean');
+  await expectNoPageOverflow(page);
   await page.getByRole('button', { name: 'Create dashboard' }).click();
   // Setup ends on the guide; closed, the app is all there is.
   await closeGuide(page);
@@ -233,7 +240,7 @@ test('tabs, timeline controls, and settings fit after adding a game', async ({ p
   await expect(page.getByRole('dialog', { name: 'New event' })).toBeVisible();
   await page.keyboard.press('Escape');
 
-  await openSettings(page, 'General');
+  await openSettings(page, 'Appearance');
   // The theme follows the device until one is chosen, and then stays chosen.
   const theme = page.getByRole('radiogroup', { name: 'Theme' });
   await expect(theme.getByRole('radio', { name: 'Device', exact: true })).toBeChecked();
@@ -332,8 +339,7 @@ test('tabs cross-slide without spilling the page sideways', async ({ page }) => 
 
 test('the rail opens Add game as a sheet that takes focus and gives it back', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  const add = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Add game', exact: true });
-  await add.click();
+  const add = await addGameFromRail(page);
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
   await expect.poll(() => dialog.evaluate((node) => node.contains(document.activeElement))).toBe(true);
@@ -342,25 +348,35 @@ test('the rail opens Add game as a sheet that takes focus and gives it back', as
   await expect(add).toBeFocused();
 });
 
-test('upright, the rail is a bar across the top with 44px targets that tracks each route', async ({ page }) => {
+test('upright, the rail is a dock along the bottom with 44px targets that tracks each route', async ({ page }) => {
   const viewport = page.viewportSize()!;
-  test.skip(viewport.width > viewport.height, 'The top bar is for tall screens');
+  test.skip(viewport.width > viewport.height, 'The bottom dock is for tall screens');
   await addGenshin(page);
   const nav = page.getByRole('navigation', { name: 'Primary' });
-  for (const route of ['Calendar', 'Today', 'Settings']) {
+  for (const route of ['Calendar', 'Notes', 'Today', 'Settings']) {
     await nav.getByRole('button', { name: route, exact: true }).click();
     const selected = nav.getByRole('button', { name: route, exact: true });
     await expect(selected).toHaveAttribute('aria-current', 'page');
     await expect(page.getByRole('heading', { level: 1, name: route, exact: true })).toBeVisible();
-    // The bar runs edge to edge along the top, and stays there as the page scrolls.
+    // The dock floats over the bottom edge, clear of every side, and stays there as the page scrolls.
     await page.evaluate(() => window.scrollTo({ top: 400, behavior: 'instant' }));
     const dock = (await nav.boundingBox())!;
-    expect(dock.x).toBe(0);
-    expect(dock.width).toBe(viewport.width);
-    expect(dock.y).toBeCloseTo(0, 0);
-    // The page's own bar sticks under it, never beneath it.
-    const bar = await page.locator('header.page-bar').evaluate((node) => node.getBoundingClientRect().top);
-    expect(bar).toBeGreaterThanOrEqual(dock.y + dock.height - 1);
+    expect(dock.x).toBeGreaterThanOrEqual(6);
+    expect(dock.x + dock.width).toBeLessThanOrEqual(viewport.width - 6);
+    expect(Math.abs(dock.x - (viewport.width - dock.x - dock.width))).toBeLessThanOrEqual(1);
+    expect(viewport.height - (dock.y + dock.height)).toBeGreaterThanOrEqual(6);
+    expect(viewport.height - (dock.y + dock.height)).toBeLessThanOrEqual(40);
+    // The page's own bar sticks to the top, clear of the dock.
+    const bar = await page.locator('header.page-bar').evaluate((node) => node.getBoundingClientRect());
+    expect(bar.top).toBeCloseTo(0, 0);
+    expect(bar.bottom).toBeLessThanOrEqual(dock.y);
+    // The page's end scrolls clear of the dock.
+    await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+    const end = await page
+      .locator('main .app-page')
+      .last()
+      .evaluate((node) => node.getBoundingClientRect().bottom);
+    expect(end).toBeLessThanOrEqual(dock.y + 1);
     for (const button of await nav.getByRole('button').all()) {
       if (!(await button.isVisible())) continue;
       const box = (await button.boundingBox())!;
@@ -373,8 +389,14 @@ test('upright, the rail is a bar across the top with 44px targets that tracks ea
     await expect(nav.locator('[aria-current="page"]')).toHaveCount(1);
     await expectNoPageOverflow(page);
   }
-  // On a game's page its own button is marked, not Today.
+  // Games raises the shelf; on a game's page its own button is marked, not Today, and the shelf stays up.
+  const games = nav.getByRole('button', { name: 'Games', exact: true });
+  await expect(games).toHaveAttribute('aria-expanded', 'false');
+  await games.click();
+  await expect(games).toHaveAttribute('aria-expanded', 'true');
   await nav.getByRole('button', { name: /^Genshin Impact/ }).click();
+  await expect(games).toHaveAttribute('aria-current', 'page');
+  await expect(games).toHaveAttribute('aria-expanded', 'true');
   await expect(nav.getByRole('button', { name: /^Genshin Impact/ })).toHaveAttribute('aria-current', 'page');
   await expect(nav.getByRole('button', { name: 'Today', exact: true })).not.toHaveAttribute('aria-current');
 });

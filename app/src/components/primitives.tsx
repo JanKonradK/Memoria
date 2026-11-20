@@ -292,11 +292,12 @@ export function ReactorTube({
     <div
       {...props}
       aria-hidden="true"
-      className={`relative mt-1.5 overflow-hidden rounded-ui-full bg-fill-3 ${className}`}
-      style={{ height, ...style }}
+      data-full={value >= 1 || undefined}
+      className={`meter relative mt-1.5 overflow-hidden rounded-ui-full bg-fill-3 ${className}`}
+      style={{ height, '--meter-ink': tone, ...style } as CSSProperties}
     >
       <div
-        className="h-full w-full origin-left rounded-ui-full transition-transform duration-(--dur-slow) ease-(--ease-out) motion-reduce:transition-none"
+        className="meter-fill h-full w-full origin-left rounded-ui-full transition-transform duration-(--dur-slow) ease-(--ease-out) motion-reduce:transition-none"
         style={{ transform: `scaleX(${Math.max(0, Math.min(1, value))})`, background: tone, ...fillStyle }}
       />
     </div>

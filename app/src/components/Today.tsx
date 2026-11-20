@@ -27,6 +27,7 @@ import { ProgressBar } from './primitives';
 import { Btn, Page, Tooltip, TOUCH_BUTTON } from './ui';
 import { PageBar, PageBarEnd, PageTitle } from './shell/PageBar';
 import { TodaySteps } from './today/TodaySteps';
+import { Ago } from './Ago';
 import '../today.css';
 
 const URGENT_MS = 2 * 60 * 60_000;
@@ -54,9 +55,9 @@ function PriorityRow({
   const ground = useGround();
   const colors = useIdentityColors(derived.state.games)[game.id] ?? game;
   const { resource, projection } = derived.primaryEnergy(game.id);
-  const source = readingSource(resource ? derived.snaps.get(resource.id) : undefined, now);
-  const known = Boolean(resource && projection?.hasSnapshot);
   const snap = resource ? derived.snaps.get(resource.id) : undefined;
+  const source = readingSource(snap, now);
+  const known = Boolean(resource && projection?.hasSnapshot);
   const stale =
     source?.kind === 'estimate' ||
     (snap != null && now - (snap.provenance?.observedAt ?? snap.takenAt) > STALE_READING_MS);
@@ -148,14 +149,17 @@ function PriorityRow({
                 {known ? <TickNumber value={projection!.value} /> : '—'}
                 <span className="text-muted">/{resource.cap}</span>
               </span>
-              {known && source && stale && (
-                <Tooltip
-                  content={
-                    source.kind === 'estimate'
-                      ? 'Starting guess. Enter the real value on the card.'
-                      : `Entered ${source.age}`
-                  }
-                >
+              {known && source && stale && snap && source.kind !== 'estimate' && (
+                <Ago
+                  mark
+                  at={snap.provenance?.observedAt ?? snap.takenAt}
+                  now={now}
+                  verb="Entered"
+                  className="today-row-source numeral text-caption"
+                />
+              )}
+              {known && source && stale && source.kind === 'estimate' && (
+                <Tooltip content="Starting guess. Enter the real value on the card.">
                   <span className="today-row-source numeral text-caption">{source.shortAge}</span>
                 </Tooltip>
               )}

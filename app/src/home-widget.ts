@@ -111,7 +111,7 @@ async function coinImage(game: Game): Promise<string> {
   draw.arc(half, half, half, 0, Math.PI * 2);
   draw.fill();
   draw.fillStyle = '#f4f4f6';
-  const { LOGO_ART } = await import('./game-logo-art');
+  const [{ LOGO_ART }, { LOGO_FRONTS }] = await Promise.all([import('./game-logo-art'), import('./game-logo-fronts')]);
   // Games added before presets were linked still match theirs by name.
   const artKey = game.presetKey ?? presetForGame(game)?.key;
   const art = artKey ? LOGO_ART[artKey] : undefined;
@@ -119,7 +119,7 @@ async function coinImage(game: Game): Promise<string> {
     // The artwork's coin is the disc at 116..908 in its 1024 box.
     draw.scale(COIN_PX / 792, COIN_PX / 792);
     draw.translate(-116, -116);
-    draw.fill(new Path2D(back ? art.back : art.front));
+    draw.fill(new Path2D(back ? art.back : (LOGO_FRONTS[artKey!] ?? art.back)));
   } else {
     const text = game.short;
     draw.font = `bold ${Math.round(COIN_PX * 0.3)}px sans-serif`;

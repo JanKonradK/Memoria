@@ -1,9 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeGame } from '../../shared/test/helpers';
 import { GameLogo, logoKey, logoLines } from '../src/components/GameLogo';
 import { logoRing } from '../src/game-logo-colors';
 import { LOGO_ART } from '../src/game-logo-art';
+import { LOGO_FRONTS } from '../src/game-logo-fronts';
 import { useUI } from '../src/ui-store';
 
 const genshin = makeGame({ id: 'eu', name: 'Genshin Impact', short: 'Genshin', presetKey: 'genshin' });
@@ -81,10 +82,21 @@ describe('GameLogo', () => {
     expect(fills).toEqual(['#e8c77a', '#2f4078']);
   });
 
-  it("carries a preset's outlined full name on the front and short name on the back", () => {
+  it("carries a preset's outlined full name on the front and short name on the back", async () => {
     const { container } = render(<GameLogo game={genshin} />);
-    expect(container.querySelector('.game-logo-front path')).toHaveAttribute('d', LOGO_ART.genshin!.front);
     expect(container.querySelector('.game-logo-back path')).toHaveAttribute('d', LOGO_ART.genshin!.back);
+    // The full names arrive after the first draw; the front shows the short name until then.
+    await waitFor(() =>
+      expect(container.querySelector('.game-logo-front path')).toHaveAttribute('d', LOGO_FRONTS.genshin!),
+    );
+  });
+
+  it('shows the short name, zoomed to fill it, on both faces of a small coin', () => {
+    const { container } = render(<GameLogo game={genshin} size={36} />);
+    for (const face of ['front', 'back']) {
+      expect(container.querySelector(`.game-logo-${face} path`)).toHaveAttribute('d', LOGO_ART.genshin!.back);
+      expect(container.querySelector(`.game-logo-${face} svg`)).toHaveAttribute('viewBox', LOGO_ART.genshin!.backBox);
+    }
   });
 
   it('sets a custom game in text: two lines in front, its short name behind', () => {

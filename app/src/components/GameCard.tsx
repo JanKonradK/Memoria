@@ -37,6 +37,8 @@ import { gameServerLabel } from '../server-choice';
 import { groupGameEvents } from '../event-category';
 import { calendarSchedule } from '../event-schedule';
 import { readingSource } from '../reading-source';
+import { SwipeRow, type SwipeAction } from '../swipe-row';
+import { Ago } from './Ago';
 import { LaunchButton } from './GameLaunch';
 import { useCatchUpUnread } from '../catch-up-status';
 import { openGame } from '../workspace-navigation';
@@ -112,9 +114,9 @@ function TaskName({ children, tone, core }: { children: string; tone: TaskTone; 
  */
 function BandRule({ label, children }: { label: string; children?: ReactNode }) {
   return (
-    <div className="mt-3 flex items-center gap-2 first:mt-0">
-      <span className="shrink-0 text-meta font-semibold text-muted">{label}</span>
-      <span aria-hidden className="h-px min-w-4 flex-1 bg-line-hairline" />
+    <div className="look-rule mt-3 flex items-center gap-2 first:mt-0">
+      <span className="look-rule-label shrink-0 text-meta font-semibold text-muted">{label}</span>
+      <span aria-hidden className="look-rule-line h-px min-w-4 flex-1 bg-line-hairline" />
       {children}
     </div>
   );
@@ -517,7 +519,13 @@ export function EventStrip({
               if (!onSetProgress) return open;
               const progress = eventProgress(ev);
               return (
-                <div key={ev.id}>
+                <SwipeRow
+                  key={ev.id}
+                  className="look-row"
+                  ink={gameInk(game, ground)}
+                  right={progress === 'done' ? null : { label: 'Done', run: () => onSetProgress(ev, 'done') }}
+                  left={progress === 'none' ? null : { label: 'Not done', run: () => onSetProgress(ev, 'none') }}
+                >
                   <div className="flex items-center gap-1">
                     {open}
                     <button
@@ -532,7 +540,7 @@ export function EventStrip({
                       <EventTick ticked={eventPartsDone(ev)} total={EVENT_STEPS} color={gameInk(game, ground)} />
                     </button>
                   </div>
-                </div>
+                </SwipeRow>
               );
             })}
           </div>
@@ -576,7 +584,7 @@ function EnergyControlRow({
   localTz: string;
   setEnergy: GameControlActions['setEnergy'];
   /** When the reading was entered, only when it needs a look. */
-  note?: string;
+  note?: ReactNode;
   need?: 'value' | 'reserve';
   pulse?: boolean;
 }) {
@@ -644,7 +652,7 @@ function ResourceControls({
   snaps: Map<string, Snapshot>;
   now: number;
   actions: GameControlActions;
-  reading?: { resourceId: string; label: string };
+  reading?: { resourceId: string; label: ReactNode };
   /** A running game's next step, on the bar it starts with. */
   session?: { resourceId: string; need: SessionNeed; pulse: boolean };
 }) {
@@ -766,6 +774,58 @@ function TaskControl({
   actions: GameControlActions;
   color: string;
   showDeadline?: boolean;
+}) {
+  // Swipe right completes, left takes back; the row's own tap stays as it was.
+  const stepped = item.mode === 'timer' && item.timerRunning && item.timerStepMinutes != null;
+  const right: SwipeAction | null =
+    item.mode === 'timer'
+      ? stepped
+        ? {
+            label: 'Sooner',
+            run: () => actions.advanceTaskTimer(item.taskId, item.periodKey, item.timerStepMinutes ?? 0),
+          }
+        : { label: item.done ? 'Resend' : 'Collect', run: () => actions.restartTaskTimer(item.taskId, item.periodKey) }
+      : item.done
+        ? null
+        : item.mode === 'count'
+          ? {
+              label: '+1',
+              run: () =>
+                actions.setTaskCount(item.taskId, item.periodKey, Math.min(item.countTarget, item.countDone + 1)),
+            }
+          : { label: 'Done', run: () => actions.setTaskDone(item.taskId, item.periodKey, true) };
+  const left: SwipeAction | null =
+    item.mode === 'timer'
+      ? null
+      : item.mode === 'count'
+        ? item.countDone > 0
+          ? {
+              label: '−1',
+              run: () => actions.setTaskCount(item.taskId, item.periodKey, Math.max(0, item.countDone - 1)),
+            }
+          : null
+        : item.done
+          ? { label: 'Not done', run: () => actions.setTaskDone(item.taskId, item.periodKey, false) }
+          : null;
+  return (
+    <SwipeRow right={right} left={left} ink={tickColor} className="look-row game-task-swipe">
+      <TaskRowFor item={item} now={now} actions={actions} color={tickColor} showDeadline={showDeadline} />
+    </SwipeRow>
+  );
+}
+
+function TaskRowFor({
+  item,
+  now,
+  actions,
+  color: tickColor,
+  showDeadline,
+}: {
+  item: ChecklistItem;
+  now: number;
+  actions: GameControlActions;
+  color: string;
+  showDeadline: boolean;
 }) {
   return item.mode === 'timer' ? (
     <TimerTaskRow
@@ -1237,7 +1297,13 @@ export function GameControlsView({
     mainResource && !game.paused && stale
       ? {
           resourceId: mainResource.id,
-          label: !source ? 'No reading yet' : source.kind === 'estimate' ? source.label : `Updated ${source.age}`,
+          label: !source ? (
+            'No reading yet'
+          ) : source.kind === 'estimate' ? (
+            source.label
+          ) : (
+            <Ago at={mainSnap!.provenance?.observedAt ?? mainSnap!.takenAt} now={now} verb="Updated" />
+          ),
         }
       : undefined;
   const session = useSession((store) => store.session);

@@ -1,0 +1,125 @@
+/* The paper look. Loaded on demand by looks.ts; see looks.css for how looks work. */
+
+/* ── Paper: serif headings, ink rules ──────────────────────────────────── */
+
+@scope ([data-look='paper']) to ([data-look]:not([data-look='paper'])) {
+  :scope {
+    --font-display: 'Fraunces', Georgia, serif;
+    --display-weight: 600;
+    --display-tracking: -0.01em;
+    --font-label: 'Fraunces', Georgia, serif;
+    --label-tracking: 0;
+    --radius-ui-sm: 6px;
+    --radius-ui-md: 8px;
+    --radius-ui-lg: 12px;
+    --radius-ui-xl: 14px;
+    --radius-ui-card: 16px;
+    --icon-stroke: 1.4;
+    --ground-image: repeating-linear-gradient(
+      0deg,
+      transparent 0 31px,
+      color-mix(in srgb, var(--color-fg) 3%, transparent) 31px 32px
+    );
+    --dock-fill: var(--color-surface-0);
+    --dock-blur: none;
+    --dock-edge: var(--color-fg-soft);
+    --dock-radius: 14px;
+    --dock-pill: transparent;
+    --dock-pill-edge: transparent;
+    --dock-pill-fg: var(--color-fg);
+    --dock-shadow: 0 10px 26px -18px rgb(0 0 0 / 0.55);
+    --place-current-fill: transparent;
+    --place-current-edge: transparent;
+  }
+  :is(.page-title h1, .look-preview-h1) {
+    font-size: 1.875rem;
+  }
+  .page-bar {
+    border-bottom: 2px solid var(--color-fg);
+  }
+  :is(.today-steps-rule h2, .look-rule-label, .tab-label, .look-preview-h2) {
+    font-size: 1.125rem;
+    font-style: italic;
+    font-weight: 400;
+    color: var(--color-fg);
+  }
+  :is(.today-steps-rule h2, .look-preview-h2)[data-tone='rose'] {
+    color: var(--color-rose);
+  }
+  .today-steps-rule::after,
+  .look-rule-line,
+  .tab-label::after {
+    background: var(--color-fg);
+    opacity: 0.55;
+  }
+  :is(.today-step, .look-row) {
+    border-radius: 0;
+    border-bottom: 1px solid var(--color-line);
+  }
+  .today-step:is([data-tone='rose'], [data-tone='danger']) .today-step-when b {
+    font-style: italic;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+  .today-step-why b {
+    font-style: italic;
+    font-weight: 500;
+  }
+  .meter {
+    min-height: 3px;
+    border-radius: 0;
+    background: color-mix(in srgb, var(--color-fg) 14%, transparent);
+  }
+  .meter > .meter-fill {
+    border-radius: 0;
+    background: var(--color-fg) !important;
+    box-shadow: inset -6px 0 0 var(--meter-ink);
+  }
+  /* The current place is underlined in ink, like a chosen word. */
+  :is(.rail-places, .rail-foot) .rail-view[aria-current='page']::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 8px;
+    width: 22px;
+    height: 2px;
+    background: var(--color-fg);
+    transform: translateX(-50%);
+  }
+  @media (orientation: landscape) {
+    .rail-view[aria-current='page'] {
+      box-shadow: inset 2px 0 0 var(--color-fg);
+    }
+  }
+  .look-preview-place[data-current] {
+    border-radius: 0;
+    box-shadow: inset 0 -2px 0 var(--color-fg);
+  }
+  .game-logo-ring {
+    filter: saturate(0.75);
+  }
+  .game-logo-face {
+    box-shadow: inset 0 0 0 1px var(--color-fg-soft);
+  }
+  .view-switch {
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--color-line-strong);
+    border-radius: 0;
+  }
+  .view-switch button {
+    border-radius: 0;
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+  }
+  .view-switch button:is([aria-pressed='true'], [aria-selected='true']) {
+    background: transparent;
+    box-shadow: inset 0 -2px 0 var(--color-fg);
+    font-style: italic;
+  }
+  .aside {
+    font-family: var(--font-display);
+    font-weight: 400;
+  }
+}
