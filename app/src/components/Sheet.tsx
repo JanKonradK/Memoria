@@ -10,7 +10,7 @@ function CloseButton() {
     <DialogPrimitive.Close asChild>
       <button
         type="button"
-        className="flex h-11 w-11 items-center justify-center rounded-ui-full bg-fill-2 text-muted ring-1 ring-line-hairline transition hover:bg-fill-3 hover:text-fg-soft sm:h-9 sm:w-9"
+        className="flex h-11 w-11 items-center justify-center rounded-ui-full bg-fill-2 text-muted ring-1 ring-line-hairline transition hover:bg-fill-3 hover:text-fg-soft fine:h-9 fine:w-9"
         aria-label="Close"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -173,6 +173,13 @@ export function Sheet({
                     forceMount
                     ref={dialogRef}
                     aria-describedby={undefined}
+                    tabIndex={-1}
+                    // The sheet itself takes focus, not its close button: a ring on X greets
+                    // nobody. Tab still reaches X first.
+                    onOpenAutoFocus={(event) => {
+                      event.preventDefault();
+                      dialogRef.current?.focus({ preventScroll: true });
+                    }}
                     className="glass gold-hairline relative flex max-h-[85dvh] w-full flex-col rounded-ui-card shadow-float outline-none"
                   >
                     <div
@@ -209,6 +216,13 @@ export function Sheet({
                     forceMount
                     ref={dialogRef}
                     aria-describedby={undefined}
+                    tabIndex={-1}
+                    // The sheet itself takes focus, not its close button: a ring on X greets
+                    // nobody. Tab still reaches X first.
+                    onOpenAutoFocus={(event) => {
+                      event.preventDefault();
+                      dialogRef.current?.focus({ preventScroll: true });
+                    }}
                     className="glass gold-hairline relative flex max-h-[90dvh] w-full flex-col rounded-t-ui-card shadow-float outline-none"
                   >
                     <div

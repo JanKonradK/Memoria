@@ -367,7 +367,7 @@ function Income({
             <label className="flex min-h-11 flex-wrap items-center gap-2 text-meta text-fg-soft">
               Days left on it
               <NumInput
-                className="!min-h-11 !w-20 sm:!min-h-8 sm:!py-1"
+                className="!min-h-11 !w-20 fine:!min-h-8 fine:!py-1"
                 min={0}
                 max={180}
                 value={daysLeft == null ? '' : String(daysLeft)}

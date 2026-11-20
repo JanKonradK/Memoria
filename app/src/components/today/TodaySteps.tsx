@@ -1,6 +1,15 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { DateTime } from 'luxon';
-import type { TodayPlan, TodayStep, TodayStepGroup, TodayWeekItem } from '@memoria/shared';
+import {
+  endsOvernight,
+  lastPlayDay,
+  morningOf,
+  type TodayPlan,
+  type TodayStep,
+  type TodayStepGroup,
+  type TodayWeekItem,
+} from '@memoria/shared';
+import { NightMark } from '../NightMark';
 import type { Derived } from '../../selectors';
 import { useMediaQuery } from '../../hooks';
 import { gameInk, gameSupport, legible } from '../../game-color';
@@ -83,7 +92,21 @@ function groupTitle(group: TodayStepGroup, plan: TodayPlan, games: Map<string, S
   };
 }
 
-function WeekRow({ item, game, now, zone }: { item: TodayWeekItem; game: StepGame; now: number; zone: string }) {
+function WeekRow({
+  item,
+  game,
+  now,
+  zone,
+  morning,
+}: {
+  item: TodayWeekItem;
+  game: StepGame;
+  now: number;
+  zone: string;
+  morning: number;
+}) {
+  // An event ending in the small hours shows the night before, as the calendar does.
+  const overnight = item.kind === 'event' && endsOvernight(item.at, zone, morning);
   const what =
     item.kind === 'cap'
       ? `${item.name} caps`
@@ -96,7 +119,16 @@ function WeekRow({ item, game, now, zone }: { item: TodayWeekItem; game: StepGam
       <span className="min-w-0 truncate">
         <b style={{ color: game.text }}>{game.game.short}</b> · {what}
       </span>
-      <span className="today-week-at numeral">{weekWhen(item.at, now, zone)}</span>
+      <span className="today-week-at numeral">
+        {overnight ? (
+          <>
+            {lastPlayDay(item.at, now, zone, morning).toFormat('ccc')} <NightMark at={item.at} tz={zone} />
+            {hhmm(item.at, zone)}
+          </>
+        ) : (
+          weekWhen(item.at, now, zone)
+        )}
+      </span>
     </li>
   );
 }
@@ -229,7 +261,14 @@ export function TodaySteps({ derived, empty }: { derived: Derived; empty: ReactN
               </div>
               <ul className="today-week-list">
                 {(weekOpen ? week : week.slice(0, WEEK_SHOWN)).map((item) => (
-                  <WeekRow key={item.key} item={item} game={games.get(item.gameId)!} now={now} zone={zone} />
+                  <WeekRow
+                    key={item.key}
+                    item={item}
+                    game={games.get(item.gameId)!}
+                    now={now}
+                    zone={zone}
+                    morning={morningOf(state.settings)}
+                  />
                 ))}
               </ul>
               {week.length > WEEK_SHOWN && (

@@ -45,7 +45,7 @@ test('shared game focus and event editing work at every size', async ({ page }, 
   await page.screenshot({ path: testInfo.outputPath('game-page.png') });
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   // Opening a game never filters the Calendar (F4): every game's logo stays pressed.
-  if (page.viewportSize()!.width < 768) await page.getByRole('button', { name: 'Choose games', exact: true }).click();
+  if (page.viewportSize()!.width < 1024) await page.getByRole('button', { name: 'Choose games', exact: true }).click();
   const shown = page.getByRole('group', { name: 'Games shown' }).getByRole('button');
   await expect(shown).toHaveCount(3);
   for (const toggle of await shown.all()) await expect(toggle).toHaveAttribute('aria-pressed', 'true');

@@ -18,6 +18,14 @@ import { Btn, Field, Segmented, Select, TextArea, TextInput, Toggle } from './ui
 
 const DAY = 86_400_000;
 const TYPES: EventType[] = ['banner', 'event', 'cycle', 'maintenance', 'livestream', 'custom'];
+const TYPE_NAMES: Record<EventType, string> = {
+  banner: 'Banner',
+  event: 'Event',
+  cycle: 'Endgame cycle',
+  maintenance: 'Maintenance',
+  livestream: 'Livestream',
+  custom: 'Other',
+};
 
 /** Add/edit an event from anywhere (Timeline, dashboard). */
 export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?: string; gameId?: string }) {
@@ -222,7 +230,7 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
               <Select value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as EventType })}>
                 {TYPES.map((t) => (
                   <option key={t} value={t}>
-                    {t}
+                    {TYPE_NAMES[t]}
                   </option>
                 ))}
               </Select>
@@ -328,7 +336,7 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
           <Toggle
             checked={draft.notify}
             onChange={(v) => setDraft({ ...draft, notify: v })}
-            label="Count toward next action"
+            label="On Today and in reminders"
           />
           <div>
             <span aria-hidden className="mb-1 block text-meta font-medium text-muted">

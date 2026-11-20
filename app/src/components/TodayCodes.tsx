@@ -49,7 +49,7 @@ export function TodayCodes({ games, now }: { games: Game[]; now: number }) {
                 target="_blank"
                 rel="noreferrer"
                 aria-label={`Redeem ${code}`}
-                className="min-h-11 shrink-0 content-center px-1 text-meta font-semibold text-accent-fg underline underline-offset-4 sm:min-h-8"
+                className="min-h-11 shrink-0 content-center px-1 text-meta font-semibold text-accent-fg underline underline-offset-4 fine:min-h-8"
               >
                 Redeem
               </a>

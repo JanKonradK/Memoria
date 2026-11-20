@@ -149,6 +149,8 @@
   font-size: var(--text-meta);
 }
 .today-row-what {
+  /* Its own track: a fresh reading has no age, and the label must not fall into that 44px slot. */
+  grid-column: 4;
   justify-self: end;
   max-width: 100%;
   color: var(--color-muted);

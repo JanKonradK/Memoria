@@ -42,8 +42,7 @@ export function selectTodayAgenda(order: GameUrgency[], events: GameEvent[], now
       if (action.kind === 'energy_full') {
         if (!full.gameIds.includes(game.id)) full.gameIds.push(game.id);
         full.count += 1;
-        full.label =
-          full.count === 1 ? action.label.replace(/ is FULL$/, ' is full') : `${full.count} energy bars full`;
+        full.label = full.count === 1 ? action.label : `${full.count} bars full`;
       } else if (action.kind === 'energy_soon') {
         items.push({
           kind: 'energy',

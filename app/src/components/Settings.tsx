@@ -55,6 +55,8 @@ export function SettingsPage() {
   const openSheet = useUI((state) => state.openSheet);
   const requestedSection = useUI((state) => state.settingsSection);
   const openSettings = useUI((state) => state.openSettings);
+  const picked = useUI((state) => state.settingsPicked);
+  const closeSection = useUI((state) => state.closeSettingsSection);
   const split = useMediaQuery('(min-width: 900px)');
   const presence = usePresence((store) => store.presence);
   const update = useAppUpdate();
@@ -149,25 +151,36 @@ export function SettingsPage() {
   sections.push({ key: 'data', label: 'Data' }, { key: 'activity', label: 'Activity' });
   const active = sections.some((section) => section.key === requestedSection) ? requestedSection : 'games';
   // A wide window shows one pane beside the menu; a narrow one is one page of every section.
+  // A narrow screen is a menu, then one section at a time, like the phone's own settings.
+  const menu = !split && !picked;
   const pane = (key: SettingsSection) => ({
     id: key,
     title: sections.find((section) => section.key === key)?.label ?? '',
-    hidden: split && key !== active,
+    hidden: menu || key !== active,
+    titled: split,
   });
+  const activeLabel = sections.find((section) => section.key === active)?.label ?? 'Settings';
   const syncAvailable = deviceSyncAvailable();
 
   return (
     <Page className="settings-page">
       <PageBar>
-        <PageTitle>Settings</PageTitle>
+        {!split && !menu && (
+          <button type="button" className="settings-back" onClick={closeSection} aria-label="Back to Settings">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+              <path d="m12.5 4.5-5.5 5.5 5.5 5.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )}
+        <PageTitle>{split || menu ? 'Settings' : activeLabel}</PageTitle>
         <PageBarEnd>
           <Btn onClick={() => useUI.getState().openSheet({ kind: 'guide' })}>Guide</Btn>
         </PageBarEnd>
       </PageBar>
       <div className="settings-shell">
         <div className="settings-layout">
-          {split && (
-            <nav className="settings-nav" aria-label="Settings sections">
+          {(split || menu) && (
+            <nav className={`settings-nav ${menu ? 'settings-menu' : ''}`} aria-label="Settings sections">
               <ul>
                 {sections.map((section) => (
                   <li key={section.key}>
@@ -180,6 +193,18 @@ export function SettingsPage() {
                       <span className="min-w-0 truncate text-body font-semibold">{section.label}</span>
                       {section.badge !== undefined && (
                         <span className="settings-nav-badge truncate text-caption">{section.badge}</span>
+                      )}
+                      {menu && (
+                        <svg
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          aria-hidden
+                          className="settings-menu-chevron"
+                        >
+                          <path d="m7.5 4.5 5.5 5.5-5.5 5.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
                       )}
                     </button>
                   </li>
@@ -391,7 +416,7 @@ export function SettingsPage() {
                     <Btn className={TOUCH_BUTTON} onClick={exportJson}>
                       Export backup
                     </Btn>
-                    <label className="focus-ring-group btn-compact flex min-h-11 cursor-pointer items-center rounded-ui-md bg-fill-2 px-3 py-1 text-caption font-semibold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 sm:min-h-8">
+                    <label className="focus-ring-group btn-compact flex min-h-11 cursor-pointer items-center rounded-ui-md bg-fill-2 px-3 py-1 text-caption font-semibold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 fine:min-h-8">
                       Import backup
                       {/* sr-only, never `hidden`: display:none drops the input out of the
                           tab order and the wrapping label is not focusable. */}
@@ -494,26 +519,38 @@ function SettingsPane({
   id,
   title,
   hidden,
+  titled,
   action,
   children,
 }: {
   id: SettingsSection;
   title: string;
   hidden: boolean;
+  /** Beside the menu the pane names itself; alone, the page bar already does. */
+  titled: boolean;
   /** A control for the whole section, at the end of its heading. */
   action?: ReactNode;
   children: ReactNode;
 }) {
   if (hidden) return null;
   return (
-    <section id={`settings-pane-${id}`} className="settings-pane min-w-0" aria-labelledby={`settings-${id}-heading`}>
-      <div className="settings-pane-heading">
-        <h2 id={`settings-${id}-heading`} className="font-semibold text-fg-soft">
-          {title}
-        </h2>
-        <span aria-hidden />
-        {action}
-      </div>
+    <section
+      id={`settings-pane-${id}`}
+      className="settings-pane min-w-0"
+      aria-labelledby={titled ? `settings-${id}-heading` : undefined}
+      aria-label={titled ? undefined : title}
+    >
+      {titled ? (
+        <div className="settings-pane-heading">
+          <h2 id={`settings-${id}-heading`} className="font-semibold text-fg-soft">
+            {title}
+          </h2>
+          <span aria-hidden />
+          {action}
+        </div>
+      ) : (
+        action && <div className="settings-pane-actions">{action}</div>
+      )}
       {children}
     </section>
   );

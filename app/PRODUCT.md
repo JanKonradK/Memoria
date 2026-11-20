@@ -63,7 +63,7 @@ Three things a neighbouring tracker could not truthfully claim:
 
 ### Version 2.0 input and navigation
 
-A rail is the navigation: Today, Calendar, every game in the player's order, Add game and Settings (the bottom dock on a phone).
+A rail is the navigation: Today, Calendar, every game in the player's order, Add game and Settings (a bar across the top on a phone or an upright tablet).
 Today is the default page. Its Steps view is one ordered to-do list across games, with what is lost first leading; with quiet hours set it marks what must happen before they begin. Its Games view ranks the games.
 Each game's page holds Track (the complete controls), Events, Pulls, Quests and News. News gathers what its recent versions added, its livestreams and codes. Calendar shows every game's events as a timeline, an agenda, a month and what ends soon.
 Pulls holds each game's savings and pity, and Version history: the free currency of every version since launch, with the limited banners of each phase. Quests is a companion to each game's story: main-story acts, world-quest series and character stories from a researched catalog, each part ticked done or partly done, with the characters involved, plus the events running now and quest lines the player adds. Quest progress is per account and syncs.

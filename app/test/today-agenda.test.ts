@@ -15,17 +15,17 @@ function entry(id: string, actions: Array<Omit<NextAction, 'gameId'>>, paused = 
 it('lists the next two days across games, soonest first, with shared resets on one line', () => {
   const order = [
     entry('a', [
-      { kind: 'energy_full', at: NOW, label: 'Resin is FULL' },
+      { kind: 'energy_full', at: NOW, label: 'Resin full' },
       { kind: 'daily', at: NOW + 15 * HOUR, label: 'Dailies resets' },
       { kind: 'daily', at: NOW + 15 * HOUR, label: 'Expeditions resets' },
     ]),
     entry('b', [
-      { kind: 'energy_full', at: NOW, label: 'Pixels is FULL' },
+      { kind: 'energy_full', at: NOW, label: 'Pixels full' },
       { kind: 'energy_soon', at: NOW + 3 * HOUR, label: 'Power caps' },
       { kind: 'daily', at: NOW + 15 * HOUR, label: 'Check-in resets' },
       { kind: 'weekly', at: NOW + 30 * HOUR, label: 'Bosses resets' },
     ]),
-    entry('paused', [{ kind: 'energy_full', at: NOW, label: 'X is FULL' }], true),
+    entry('paused', [{ kind: 'energy_full', at: NOW, label: 'X full' }], true),
   ];
   const events = [
     makeEvent({ id: 'ends', gameId: 'a', name: 'Ends soon', start: NOW - HOUR, end: NOW + 5 * HOUR }),
@@ -47,6 +47,6 @@ it('lists the next two days across games, soonest first, with shared resets on o
     `reset:weekly:${NOW + 30 * HOUR}`,
     'end:later',
   ]);
-  expect(items[0]).toMatchObject({ label: '2 energy bars full', gameIds: ['a', 'b'], full: true });
+  expect(items[0]).toMatchObject({ label: '2 bars full', gameIds: ['a', 'b'], full: true });
   expect(items[4]).toMatchObject({ gameIds: ['a', 'b'], left: 3, cadence: 'daily' });
 });

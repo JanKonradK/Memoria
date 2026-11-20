@@ -103,8 +103,8 @@ export function ServerChip({
  * touch height above `sm` rather than each field spelling the same two
  * overrides out.
  */
-export const COMPACT_INPUT = 'sm:!min-h-8 sm:!py-1';
-export const TOUCH_BUTTON = '!min-h-11 sm:!min-h-8';
+export const COMPACT_INPUT = 'fine:!min-h-8 fine:!py-1';
+export const TOUCH_BUTTON = '!min-h-11 fine:!min-h-8';
 
 export function Field({ label, children, className = '' }: { label: string; children: ReactNode; className?: string }) {
   return (
@@ -116,7 +116,7 @@ export function Field({ label, children, className = '' }: { label: string; chil
 }
 
 const inputCls =
-  'ui-input min-h-11 w-full rounded-ui-lg bg-fill-2 px-3 py-2 text-body text-fg ring-1 ring-line-edge outline-none placeholder:text-muted focus:bg-fill-3 transition sm:min-h-9';
+  'ui-input min-h-11 w-full rounded-ui-lg bg-fill-2 px-3 py-2 text-body text-fg ring-1 ring-line-edge outline-none placeholder:text-muted focus:bg-fill-3 transition fine:min-h-9';
 
 export function TextInput(props: React.ComponentProps<'input'>) {
   return <input {...props} className={`${inputCls} ${props.className ?? ''}`} />;
@@ -237,7 +237,7 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
                     value={toRadixValue(option.value)}
                     disabled={option.disabled}
                     textValue={typeof option.label === 'string' ? option.label : undefined}
-                    className="relative flex min-h-11 cursor-default select-none items-center rounded-ui-md px-3 py-2 pr-8 text-body text-fg-soft [overflow-wrap:anywhere] outline-none transition data-[disabled]:opacity-40 data-[highlighted]:bg-fill-3 data-[state=checked]:bg-fill-4 data-[state=checked]:font-semibold sm:min-h-9 sm:py-1.5"
+                    className="relative flex min-h-11 cursor-default select-none items-center rounded-ui-md px-3 py-2 pr-8 text-body text-fg-soft [overflow-wrap:anywhere] outline-none transition data-[disabled]:opacity-40 data-[highlighted]:bg-fill-3 data-[state=checked]:bg-fill-4 data-[state=checked]:font-semibold fine:min-h-9 fine:py-1.5"
                   >
                     <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
                     <SelectPrimitive.ItemIndicator className="absolute right-2 text-accent">
@@ -279,7 +279,7 @@ export function Toggle({
 }) {
   const id = useId();
   return (
-    <label htmlFor={id} className={`flex min-h-11 items-center gap-2 text-body text-fg-soft sm:min-h-9 ${className}`}>
+    <label htmlFor={id} className={`flex min-h-11 items-center gap-2 text-body text-fg-soft fine:min-h-9 ${className}`}>
       <SwitchPrimitive.Root
         id={id}
         checked={checked}

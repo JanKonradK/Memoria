@@ -175,8 +175,21 @@ function GameQuests({ game, ink }: { game: Game; ink: string }) {
           <h2 className="text-lead font-semibold text-fg">Story progress</h2>
           {lines.length > 0 && (
             <p className="text-meta text-muted">
-              {totals.done} of {totals.lines} quest lines finished · {totals.started} in progress · {totals.partsDone}{' '}
-              of {totals.parts} parts
+              <span className="numeral">
+                {totals.done}/{totals.lines}
+              </span>{' '}
+              lines
+              {totals.started > 0 && (
+                <>
+                  {' · '}
+                  <span className="numeral">{totals.started}</span> started
+                </>
+              )}
+              {' · '}
+              <span className="numeral">
+                {totals.partsDone}/{totals.parts}
+              </span>{' '}
+              parts
             </p>
           )}
         </div>

@@ -86,7 +86,7 @@ for (const kind of ['Event', 'Reminder'] as const) {
 test('game settings protect unfinished tasks and reminders through dismissal and event navigation', async ({
   page,
 }) => {
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openSettings(page, 'Games');
   await page.getByRole('button', { name: 'Game settings for Genshin Impact', exact: true }).click();
   const editor = page.getByRole('dialog', { name: 'Genshin Impact', exact: true });
   let prompts = 0;

@@ -94,13 +94,8 @@ export function GameEvents({
               <ul className="game-events-list">
                 {group.events.map((event) => {
                   const calendar = calendarSchedule(event);
-                  const status = event.done
-                    ? 'Done'
-                    : event.end <= now
-                      ? 'Ended'
-                      : event.start > now
-                        ? 'Upcoming'
-                        : 'Active';
+                  // Running or coming is said by its countdown; only an end needs a word.
+                  const status = event.done ? 'Done' : event.end <= now ? 'Ended' : '';
                   const when = calendar
                     ? `${calendar.label} (${calendar.zone})`
                     : event.done || event.end <= now
@@ -117,18 +112,37 @@ export function GameEvents({
                           >
                             <span className="sr-only">Edit {game.name} event:</span> {event.name}
                           </span>
-                          <span
-                            className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 aside text-label text-muted"
-                            aria-hidden
-                          >
-                            <span>{event.type}</span>
-                            <EventTags game={game} event={event} />
-                            <span>{status}</span>
-                            {event.dailyTouch && <span>Daily check-in</span>}
-                            {!event.notify && <span>Next actions off</span>}
-                          </span>
+                          {(status || event.dailyTouch || event.type !== 'event') && (
+                            <span
+                              className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-label text-muted"
+                              aria-hidden
+                            >
+                              <EventTags game={game} event={event} />
+                              {status && <span>{status}</span>}
+                              {event.dailyTouch && <span>Daily check-in</span>}
+                            </span>
+                          )}
                         </span>
-                        <span className="game-events-when numeral" aria-hidden>
+                        <span className="game-events-when numeral inline-flex items-center gap-1.5" aria-hidden>
+                          {!event.notify && (
+                            <span title="Not on Today or in reminders" className="inline-flex items-center">
+                              <svg
+                                viewBox="0 0 20 20"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.6"
+                                className="h-4 w-4"
+                                aria-hidden
+                              >
+                                <path
+                                  d="M5.5 8.5a4.5 4.5 0 0 1 7.6-3.2M14.5 8.5c0 4 1.5 5.5 1.5 5.5H6M8.5 16.5a1.7 1.7 0 0 0 3 0M3.5 3.5l13 13"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                              <span className="sr-only">Not on Today or in reminders</span>
+                            </span>
+                          )}
                           {calendar ? (
                             when
                           ) : (

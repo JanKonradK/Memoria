@@ -40,11 +40,7 @@ export function AlarmFreeTimes() {
     save(windows.map((window) => (window.id === id ? { ...window, ...patch } : window)));
 
   return (
-    <SettingRow
-      label="No-alarm times"
-      hint="When no alarm should ring, such as at work or while you sleep. An alarm that falls inside one of these still arrives, as a silent notification. A time that ends before it starts runs past midnight."
-      control="below"
-    >
+    <SettingRow label="No-alarm times" hint="Alarms inside these arrive silently." control="below">
       {windows.length > 0 && (
         <ul className="w-full max-w-xl divide-y divide-line-hairline" aria-label="No-alarm times">
           {windows.map((window) => {
@@ -53,7 +49,7 @@ export function AlarmFreeTimes() {
               <li key={window.id} className={`flex flex-col gap-2 py-3 ${initial.has(window.id) ? '' : 'row-arrive'}`}>
                 <div className="flex flex-wrap items-center gap-2">
                   <TextInput
-                    className="!min-h-11 min-w-0 flex-1 basis-32 sm:!min-h-8 sm:!py-1"
+                    className="!min-h-11 min-w-0 flex-1 basis-32 fine:!min-h-8 fine:!py-1"
                     aria-label={`Name of ${name}`}
                     maxLength={40}
                     value={window.label}
@@ -63,7 +59,7 @@ export function AlarmFreeTimes() {
                   <TextInput
                     type="time"
                     step={900}
-                    className="!min-h-11 !w-28 sm:!min-h-8 sm:!py-1"
+                    className="!min-h-11 !w-28 fine:!min-h-8 fine:!py-1"
                     aria-label={`${name} starts`}
                     value={toClock(window.start)}
                     onChange={(e) => {
@@ -75,7 +71,7 @@ export function AlarmFreeTimes() {
                   <TextInput
                     type="time"
                     step={900}
-                    className="!min-h-11 !w-28 sm:!min-h-8 sm:!py-1"
+                    className="!min-h-11 !w-28 fine:!min-h-8 fine:!py-1"
                     aria-label={`${name} ends`}
                     value={toClock(window.end)}
                     onChange={(e) => {
@@ -101,7 +97,7 @@ export function AlarmFreeTimes() {
                               days: on ? window.days.filter((item) => item !== day) : [...window.days, day].sort(),
                             })
                           }
-                          className={`grid size-11 place-items-center rounded-ui-full text-caption font-semibold ring-1 transition sm:size-8 ${
+                          className={`grid size-11 place-items-center rounded-ui-full text-caption font-semibold ring-1 transition fine:size-8 ${
                             on
                               ? 'bg-accent text-on-accent ring-line-edge'
                               : 'bg-fill-2 text-fg-soft ring-line-hairline hover:bg-fill-3'

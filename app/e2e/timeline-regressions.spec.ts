@@ -115,7 +115,7 @@ test('today is raised in the ruler, the now line runs through it, and Today brin
 
 test('a bar is ticked done from the keyboard and fades in place', async ({ page }, info) => {
   test.skip(
-    info.project.name === 'android-s23' || (page.viewportSize()?.width ?? 0) < 768,
+    info.project.name === 'android-s23' || (page.viewportSize()?.width ?? 0) < 1024,
     'Phones tick from the quick view',
   );
   const now = Date.now();

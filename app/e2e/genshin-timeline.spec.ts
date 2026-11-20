@@ -102,8 +102,8 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
   ).toHaveCount(1);
   // These notices now print exact times, so the rows count down instead of showing calendar dates.
   // Overflowing Favor starts 23 days out, past the timeline's three weeks ahead.
-  // A phone shows one week, before these start; a wider window shows four.
-  if (page.viewportSize()!.width >= 768)
+  // A phone or tablet shows one week, before these start; a PC shows four.
+  if (page.viewportSize()!.width >= 1024)
     for (const key of ['snowball']) {
       const event = state.events.find((event) => event.sourceKey === `seed:genshin:7.1-${key}`)!;
       await expect(page.locator(`[data-event-id="${event.id}"] [data-event-countdown]`)).toHaveText(/^in \d+d/);

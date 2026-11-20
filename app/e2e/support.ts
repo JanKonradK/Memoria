@@ -53,15 +53,14 @@ export async function editFromQuickView(page: Page): Promise<void> {
   await expect(page.getByRole('dialog', { name: 'Edit event' })).toBeVisible();
 }
 
-/** Open one Settings section. A wide window shows one beside a menu; a narrow one shows them all. */
+/** Open one Settings section: from the menu beside it on a wide window, or the menu page on a narrow one. */
 export async function openSettings(page: Page, section: string): Promise<void> {
   await page
     .getByRole('navigation', { name: 'Primary' })
     .getByRole('button', { name: 'Settings', exact: true })
     .click();
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
-  if ((page.viewportSize()?.width ?? 0) >= 900)
-    await page.getByRole('navigation', { name: 'Settings sections' }).getByRole('button', { name: section }).click();
+  await page.getByRole('navigation', { name: 'Settings sections' }).getByRole('button', { name: section }).click();
 }
 
 /**

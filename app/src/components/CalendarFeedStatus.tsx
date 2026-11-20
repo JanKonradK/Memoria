@@ -13,7 +13,7 @@ export function CalendarFeedStatus() {
     <Tooltip content={error}>
       <button
         type="button"
-        className="min-h-11 text-meta text-accent-fg underline underline-offset-4 sm:min-h-8"
+        className="min-h-11 text-meta text-accent-fg underline underline-offset-4 fine:min-h-8"
         onClick={() => void refreshRemoteFeed()}
       >
         Events not updated · Retry

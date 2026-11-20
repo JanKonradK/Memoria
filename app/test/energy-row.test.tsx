@@ -132,7 +132,7 @@ describe('EnergyRow reserve controls', () => {
     renderRow();
     openReserve();
 
-    const verdict = screen.getByText('FULL');
+    const verdict = screen.getByText('Full');
     const summary = screen.getByText('Reserve TB Power', { selector: '[data-reserve] .energy-bank-name' });
     // DOCUMENT_POSITION_FOLLOWING: the summary comes after the verdict.
     expect(verdict.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

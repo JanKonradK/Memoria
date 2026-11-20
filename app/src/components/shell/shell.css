@@ -527,9 +527,13 @@
   background: var(--color-surface-2);
   color: var(--color-fg);
 }
+@media (pointer: coarse) {
+  .view-switch button {
+    min-height: 44px;
+  }
+}
 @media (max-width: 767px) {
   .view-switch button {
-    min-height: 40px;
     padding: 0 11px;
   }
 }
@@ -624,7 +628,9 @@
 .focus-workspace {
   padding-top: 0;
 }
-@media (max-width: 767px) {
+/* Until name, tabs and actions fit on one line: the game and its actions on
+   the first row, the tabs across the second, never an action alone on a row. */
+@media (max-width: 1099px) {
   .game-bar {
     min-height: 0;
     padding-bottom: 0;
@@ -632,10 +638,6 @@
   }
   .game-bar-id {
     flex: 1;
-  }
-  .game-bar .game-bar-logo {
-    width: 44px !important;
-    height: 44px !important;
   }
   .game-bar .page-bar-end {
     order: 2;
@@ -656,5 +658,32 @@
     left: 12px;
     right: 12px;
     bottom: 0;
+  }
+}
+@media (max-width: 767px) {
+  .game-bar-id {
+    gap: 10px;
+  }
+  .game-bar .game-bar-logo {
+    width: 40px !important;
+    height: 40px !important;
+  }
+  .game-bar-title {
+    font-size: 1.25rem;
+  }
+  .game-bar-meta {
+    margin-top: 3px;
+  }
+}
+
+/* A very wide screen: pages keep a readable width and centre in the space
+   beside the rail. The Calendar's lanes use every pixel, so it stays full. */
+@media (min-width: 1900px) {
+  .app-page:not(.timeline-page) {
+    max-width: 1760px;
+    margin-inline: auto;
+  }
+  .today-side {
+    max-width: 480px;
   }
 }

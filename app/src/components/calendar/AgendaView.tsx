@@ -216,10 +216,17 @@ function AgendaRow({
       <button type="button" className="cal-row-main" onClick={() => onOpenEvent(lead)}>
         <span className="cal-when">
           <b style={{ color: tone }}>
-            {moment.overnight && <NightMark at={moment.at} tz={localTz} />}
             {dated ? DateTime.fromMillis(moment.at, { zone: localTz }).toFormat('d LLL') : clock(moment.at, localTz)}
           </b>{' '}
-          <span>{dated ? clock(moment.at, localTz) : WHAT[moment.kind]}</span>
+          <span>
+            {dated ? clock(moment.at, localTz) : WHAT[moment.kind]}
+            {moment.overnight && (
+              <>
+                {' '}
+                <NightMark at={moment.at} tz={localTz} />
+              </>
+            )}
+          </span>
         </span>{' '}
         <MomentMark event={lead} game={game} games={games} />
         <MomentText

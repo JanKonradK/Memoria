@@ -88,10 +88,13 @@ export function GamePityPanel({ game, ink, tz }: { game: Game; ink: string; tz: 
           />
         ))}
       </div>
-      <p className="mt-4 text-caption text-dim">
-        Hard pity and 50/50 odds are the game’s published rules. “About” figures use the community-measured soft-pity
-        curve. Memoria does not read your in-game history: record pulls here as you make them.
-      </p>
+      <details className="pulls-about mt-4">
+        <summary>About these figures</summary>
+        <p>
+          Hard pity and 50/50 odds are the game’s published rules. “About” figures use the community-measured soft-pity
+          curve. Memoria does not read your in-game history: record pulls here as you make them.
+        </p>
+      </details>
     </div>
   );
 }

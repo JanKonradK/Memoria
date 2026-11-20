@@ -94,6 +94,12 @@ function PriorityRow({
     .filter(Boolean)
     .join('. ');
 
+  // The account's name only tells rows apart when one game is tracked twice.
+  const twinned = useApp(
+    (store) =>
+      store.state.games.filter((item) => !item.deleted && (item.presetKey ?? item.id) === (game.presetKey ?? game.id))
+        .length > 1,
+  );
   return (
     <li className="today-priority-item">
       <button
@@ -113,7 +119,7 @@ function PriorityRow({
         <span className="today-row-name">
           <span className="sr-only">{desktop ? 'Review' : 'Open'}</span>{' '}
           <span className="today-row-title text-body font-semibold text-fg">{game.name}</span>
-          {game.accountLabel && (
+          {game.accountLabel && twinned && (
             <>
               {' '}
               <span className="today-row-account aside truncate text-meta">{game.accountLabel}</span>

@@ -339,7 +339,7 @@
   height: 0.5rem;
   border-radius: 999px;
 }
-@media (min-width: 640px) {
+@media (min-width: 640px) and (pointer: fine) {
   .pulls-switch-item {
     min-height: 2.25rem;
   }
@@ -432,4 +432,26 @@
   .savings-balance-save {
     grid-column: auto;
   }
+}
+
+/* Method notes: one quiet line until opened. */
+.pulls-about {
+  font-size: var(--text-caption);
+  color: var(--color-dim);
+}
+.pulls-about summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--color-muted);
+}
+@media (pointer: fine) {
+  .pulls-about summary {
+    min-height: 28px;
+  }
+}
+.pulls-about p {
+  max-width: 70ch;
+  margin: 0.25rem 0 0;
 }

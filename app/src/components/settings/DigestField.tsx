@@ -14,8 +14,8 @@ export function DigestField() {
       label="Evening digest"
       hint={
         on
-          ? `At ${toClock(at)}, one notification lists the dailies still open in every game. The reminders before each reset still come.`
-          : 'Off. One notification a day listing what is still open, on top of the reminders before each reset.'
+          ? `One notification at ${toClock(at)} with what is still open.`
+          : 'Off: one notification a day with what is still open.'
       }
     >
       <div className="flex flex-wrap items-center gap-2">
@@ -28,7 +28,7 @@ export function DigestField() {
           <TextInput
             type="time"
             step={900}
-            className="!min-h-11 !w-28 sm:!min-h-8 sm:!py-1"
+            className="!min-h-11 !w-28 fine:!min-h-8 fine:!py-1"
             aria-label="Evening digest time"
             value={toClock(at)}
             onChange={(e) => {

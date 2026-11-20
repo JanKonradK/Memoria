@@ -142,7 +142,7 @@ function ColorSlot({
             setTyped(null);
             onChange(event.target.value);
           }}
-          className="h-11 w-11 shrink-0 cursor-pointer rounded-ui-sm bg-transparent sm:h-8 sm:w-8"
+          className="h-11 w-11 shrink-0 cursor-pointer rounded-ui-sm bg-transparent fine:h-8 fine:w-8"
         />
         <input
           type="text"
@@ -150,7 +150,7 @@ function ColorSlot({
           aria-labelledby={labelId}
           spellCheck={false}
           autoComplete="off"
-          className="numeral min-h-11 min-w-0 flex-1 bg-transparent px-1 text-body text-fg outline-none sm:min-h-8"
+          className="numeral min-h-11 min-w-0 flex-1 bg-transparent px-1 text-body text-fg outline-none fine:min-h-8"
           onChange={(event) => {
             const next = event.target.value;
             setTyped(next);
@@ -386,7 +386,7 @@ export function GameEditor({
                 <div>
                   <span className={FIELD_LABEL}>Card artwork</span>
                   <div className="flex flex-wrap gap-2">
-                    <label className="btn-compact inline-flex min-h-11 w-fit cursor-pointer items-center justify-center rounded-ui-md bg-fill-2 px-3 py-1 text-caption font-semibold text-fg-soft ring-1 ring-line-hairline sm:min-h-8">
+                    <label className="btn-compact inline-flex min-h-11 w-fit cursor-pointer items-center justify-center rounded-ui-md bg-fill-2 px-3 py-1 text-caption font-semibold text-fg-soft ring-1 ring-line-hairline fine:min-h-8">
                       {game.image ? 'Replace image' : 'Choose image'}
                       <input
                         type="file"
@@ -447,7 +447,7 @@ export function GameEditor({
                 checked={game.paused}
                 onChange={(value) => updateGame(game.id, { paused: value })}
                 label="Pause tracking"
-                className="sm:!min-h-8"
+                className="fine:!min-h-8"
               />
               {dangerControls}
             </section>

@@ -22,8 +22,12 @@ export function EventTags({
   availableWidth?: number;
 }) {
   const kind = eventBannerKind(event);
+  // A plain event needs no label: it is what a row is unless told otherwise.
   const labels = [
     ...(eventCategory(game, event) === 'miliastra' ? [{ text: 'MW', title: 'Miliastra Wonderland' }] : []),
+    ...(event.type === 'cycle' ? [{ text: 'Cycle', title: 'Endgame cycle' }] : []),
+    ...(event.type === 'livestream' ? [{ text: 'Live', title: 'Livestream' }] : []),
+    ...(event.type === 'maintenance' ? [{ text: 'Maint.', title: 'Maintenance' }] : []),
     ...(event.type === 'banner'
       ? [
           {

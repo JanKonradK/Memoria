@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from 'react';
 import { DateTime } from 'luxon';
 import type { CalendarMoment, Game, GameEvent } from '@memoria/shared';
 import { assignGameInks, gameTitleInk, type GameColors } from '../../game-color';
+import { eventTitle } from '../../util';
 import { eventBannerKind, eventCategory } from '../../event-category';
 import { useGround } from '../../theme';
 import { useIdentityColors } from '../roster';
@@ -210,7 +211,7 @@ export function MomentText({
     <span className="cal-text">
       <span className={`cal-name ${done ? 'cal-name-done' : ''}`}>
         {pinned}
-        {name}
+        {typeof name === 'string' ? eventTitle(name) : name}
       </span>{' '}
       <span className="cal-sub">
         <span className="cal-game" style={{ color: games.text(game) }}>

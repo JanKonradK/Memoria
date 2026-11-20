@@ -163,6 +163,13 @@ interface UIStore {
   setTab(tab: Tab): void;
   /** The Settings pane shown beside its menu on wide windows. Session only. */
   settingsSection: SettingsSection;
+  /**
+   * A section was asked for by name (Device sync from a sync warning, say).
+   * On a narrow screen Settings opens on its menu unless one was.
+   */
+  settingsPicked: boolean;
+  /** Back to the menu on a narrow screen. */
+  closeSettingsSection(): void;
   openSettings(section: SettingsSection): void;
   openSheet(sheet: NonNullable<SheetRoute>): void;
   closeSheet(): void;
@@ -216,9 +223,11 @@ export const useUI = create<UIStore>()(
       setFocusedGameId: (focusedGameId) => set({ focusedGameId }),
       todayGameId: null,
       setTodayGameId: (todayGameId) => set({ todayGameId }),
-      setTab: (tab) => set({ tab }),
+      setTab: (tab) => set(tab === 'settings' ? { tab, settingsPicked: false } : { tab }),
       settingsSection: 'games',
-      openSettings: (settingsSection) => set({ tab: 'settings', settingsSection }),
+      settingsPicked: false,
+      openSettings: (settingsSection) => set({ tab: 'settings', settingsSection, settingsPicked: true }),
+      closeSettingsSection: () => set({ settingsPicked: false }),
       openSheet: (sheet) => set({ sheet }),
       closeSheet: () => set({ sheet: null }),
       setReserveOpen: (id, open) =>

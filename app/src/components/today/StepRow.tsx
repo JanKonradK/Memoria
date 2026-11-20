@@ -223,12 +223,13 @@ export function stepWhat(step: TodayStep): string {
  * The few words after the game's name, only where the row's own figures do not
  * already say it: the time sits at the row's end, the reset in its group's title.
  */
-function stepWhy(step: TodayStep, group: TodayStepGroup): string {
+function stepWhy(step: TodayStep, group: TodayStepGroup, compact: boolean): string {
   if (step.kind === 'energy') {
     if (!step.full) return '';
     const bank = step.bank;
     // A reserve still filling keeps what the bar cannot; once it is full too, nothing does.
-    return bank?.kind === 'reserve' && !bank.full ? `full → ${bank.label}` : 'full';
+    // A phone has no room for the reserve's name: its meter under the value shows it filling.
+    return bank?.kind === 'reserve' && !bank.full && !compact ? `full → ${bank.label}` : 'full';
   }
   if (step.kind === 'event') return step.more ? `ends · +${step.more}` : 'ends';
   return group.kind === 'reset' ? '' : cadenceNoun(step.item.cadence, 1);
@@ -254,7 +255,7 @@ export function StepRow({
   compact: boolean;
 }) {
   const what = stepWhat(step);
-  const why = stepWhy(step, group);
+  const why = stepWhy(step, group, compact);
   const left = step.at - now;
   const whenId = `today-step-when-${step.key}`;
   return (

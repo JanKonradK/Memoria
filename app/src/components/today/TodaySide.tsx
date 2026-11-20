@@ -41,7 +41,7 @@ function SideRow({
         <span className="min-w-0">
           <span className="today-side-name">
             {diamond && <span className="today-side-diamond" style={{ background: game.ink }} aria-hidden />}
-            {event.name}
+            {event.name.replace(/\s*—\s*predicted window/i, '')}
           </span>
           <span className="today-side-sub">{sub}</span>
         </span>

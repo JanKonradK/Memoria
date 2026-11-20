@@ -48,7 +48,7 @@ export function GameRosterRow({ game, colors, localTz }: { game: Game; colors: G
       <label className="settings-roster-field settings-roster-nickname">
         <span className="text-label text-muted">Nickname</span>
         <TextInput
-          className="!min-h-11 sm:!min-h-9 sm:!py-1"
+          className="!min-h-11 fine:!min-h-9 fine:!py-1"
           value={nickname}
           placeholder="None"
           aria-label={`Nickname for ${game.name}`}
@@ -67,7 +67,7 @@ export function GameRosterRow({ game, colors, localTz }: { game: Game; colors: G
       <label className="settings-roster-field settings-roster-server">
         <span className="text-label text-muted">Server</span>
         <ServerSelect
-          className="!min-h-11 sm:!min-h-9 sm:!py-1"
+          className="!min-h-11 fine:!min-h-9 fine:!py-1"
           aria-label={`Server for ${label}`}
           game={game}
           value={{ server: game.server, tz: game.tz }}
@@ -75,7 +75,7 @@ export function GameRosterRow({ game, colors, localTz }: { game: Game; colors: G
         />
       </label>
       <Btn
-        className="settings-roster-edit !min-h-11 sm:!min-h-9"
+        className="settings-roster-edit !min-h-11 fine:!min-h-9"
         aria-label={`Game settings for ${label}`}
         onClick={() => openSheet({ kind: 'game', gameId: game.id })}
       >

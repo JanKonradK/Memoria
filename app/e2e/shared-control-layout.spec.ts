@@ -26,8 +26,8 @@ test('long game choices fit the viewport and backup import has visible keyboard 
     .getByRole('navigation', { name: 'Primary' })
     .getByRole('button', { name: 'Calendar', exact: true })
     .click();
-  // A phone keeps the game filter behind one button in the bar; a wider window shows it inline.
-  if (page.viewportSize()!.width < 768) {
+  // A phone or upright tablet keeps the game filter behind one button in the bar; a PC shows it inline.
+  if (page.viewportSize()!.width < 1024) {
     const choose = page.getByRole('button', { name: 'Choose games', exact: true });
     await choose.click();
     await expect(choose).toHaveAttribute('aria-expanded', 'true');

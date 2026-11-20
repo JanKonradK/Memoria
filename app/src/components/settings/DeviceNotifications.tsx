@@ -23,8 +23,8 @@ export function DeviceNotifications() {
         label="Reminders on this device"
         hint={
           enabled
-            ? `${scheduled} scheduled for the next 7 days: an hour before each daily reset with dailies left, before weeklies and unfinished events run out, and before a bar caps.`
-            : 'An hour before each daily reset with dailies left, before weeklies and unfinished events run out, and before a bar caps.'
+            ? `${scheduled} scheduled for the next 7 days.`
+            : 'Before resets with work left, unfinished event ends and full bars.'
         }
       >
         <Btn

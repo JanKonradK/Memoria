@@ -24,7 +24,7 @@ function PcReminders() {
     <div className="min-w-0">
       <SettingRow
         label="Reminders on this PC"
-        hint="An hour before each daily reset with dailies left, before weeklies and unfinished events run out, and before a bar caps. If phone reminders are also on, both devices alert."
+        hint="Before resets with work left, unfinished event ends and full bars."
       >
         <Toggle
           ariaLabel="Reminders on this PC"
@@ -65,10 +65,7 @@ function CustomReminders() {
     .map((item) => ({ item, next: nextReminderAt(item, now, zone) }))
     .sort((a, b) => (a.next ?? Infinity) - (b.next ?? Infinity));
   return (
-    <SettingRow
-      label="Your reminders"
-      hint="Anything else you want to hear about, once or on repeat: a pass running out, a shop reset, a login on another app."
-    >
+    <SettingRow label="Your reminders" hint="Anything else, once or on repeat.">
       <Btn onClick={() => openSheet({ kind: 'reminder' })}>New reminder</Btn>
       {reminders.length > 0 && (
         <ul className="mt-3 w-full divide-y divide-line-hairline">
@@ -105,7 +102,7 @@ export function RemindersPane() {
       <PcReminders />
       {!isNativeApp && !presence && (
         <p className="settings-note text-body text-muted">
-          Reminders arrive through the Android app or the Windows app. The settings below are shared with them.
+          Reminders ring on the Android and Windows apps, with these settings.
         </p>
       )}
       <ReminderStyles />

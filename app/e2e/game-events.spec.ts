@@ -52,11 +52,11 @@ test('a game page adds, renames, changes behavior, and deletes finished events f
   await expect(dialog.getByRole('combobox', { name: 'Game', exact: true })).toContainText('Genshin Impact');
   await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('My personal window');
   await dialog.getByRole('combobox', { name: 'Type', exact: true }).click();
-  await page.getByRole('option', { name: 'banner', exact: true }).click();
+  await page.getByRole('option', { name: 'Banner', exact: true }).click();
   await dialog.getByRole('combobox', { name: 'Banner tag', exact: true }).click();
   await page.getByRole('option', { name: 'Character banner', exact: true }).click();
   await dialog.getByRole('switch', { name: 'Daily check-in' }).click();
-  await dialog.getByRole('switch', { name: 'Count toward next action' }).click();
+  await dialog.getByRole('switch', { name: 'On Today and in reminders' }).click();
   await dialog.getByRole('button', { name: 'Add event', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await chooseFromEdit(page, 'Genshin Impact', 'Manage events');
@@ -65,12 +65,12 @@ test('a game page adds, renames, changes behavior, and deletes finished events f
   await panel.getByRole('searchbox', { name: 'Find event' }).fill('My personal window');
   const row = panel.getByRole('button', { name: 'Edit Genshin Impact event: My personal window', exact: true });
   await expect(row).toContainText('Daily check-in');
-  await expect(row).toContainText('Next actions off');
+  await expect(row.locator('[title="Not on Today or in reminders"]')).toBeVisible();
   await row.click();
   dialog = page.getByRole('dialog', { name: 'Edit event' });
   await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('My renamed cycle');
   await dialog.getByRole('combobox', { name: 'Type', exact: true }).click();
-  await page.getByRole('option', { name: 'cycle', exact: true }).click();
+  await page.getByRole('option', { name: 'Endgame cycle', exact: true }).click();
   await dialog.getByRole('radiogroup', { name: 'Status' }).getByRole('radio', { name: 'Done', exact: true }).click();
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(dialog).toHaveCount(0);

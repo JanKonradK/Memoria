@@ -77,7 +77,7 @@ export function Disclosure({
           aria-expanded={open}
           aria-controls={panelId}
           aria-label={triggerLabel}
-          className={`group/disclosure flex min-h-11 w-full items-center gap-3 text-left sm:min-h-9 ${triggerClassName}`}
+          className={`group/disclosure flex min-h-11 w-full items-center gap-3 text-left fine:min-h-9 ${triggerClassName}`}
         >
           <span className="min-w-0 flex-1">{title}</span>
           {summary && <span className="shrink-0 text-right">{summary}</span>}

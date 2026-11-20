@@ -89,7 +89,7 @@ export function EditorTabs<T extends string>({
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(tab.id)}
             onKeyDown={onKeyDown}
-            className="relative flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-ui-md px-1.5 text-meta font-semibold text-muted transition-colors duration-(--dur-fast) hover:text-fg-soft aria-selected:text-fg sm:min-h-8 sm:flex-none sm:px-3"
+            className="relative flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-ui-md px-1.5 text-meta font-semibold text-muted transition-colors duration-(--dur-fast) hover:text-fg-soft aria-selected:text-fg fine:min-h-8 sm:flex-none sm:px-3"
           >
             {selected && (
               <m.span

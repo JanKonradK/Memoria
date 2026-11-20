@@ -48,7 +48,7 @@ const STALE_READING_MS = 12 * 60 * 60_000;
 /** A session the PC never saw end stops leading the page after this long. */
 const SESSION_MAX_MS = 8 * 60 * 60_000;
 const MENU_ITEM =
-  'flex min-h-11 cursor-pointer items-center rounded-ui-sm px-3 text-body text-fg-soft outline-none transition-colors data-[highlighted]:bg-fill-2 data-[highlighted]:text-fg sm:min-h-9';
+  'flex min-h-11 cursor-pointer items-center rounded-ui-sm px-3 text-body text-fg-soft outline-none transition-colors data-[highlighted]:bg-fill-2 data-[highlighted]:text-fg fine:min-h-9';
 const CADENCE_LABEL = { daily: 'Daily', custom: 'Cycle', weekly: 'Weekly', monthly: 'Monthly' } as const;
 
 /** Undone tasks escalate as their reset approaches: amber < 2h, pulsing red < 20 min. */
@@ -57,7 +57,7 @@ const TASK_WARN_MS = 120 * 60_000;
 
 /** Shared geometry for every task row, so the three modes read as one list. */
 const TASK_ROW =
-  'game-task-row group flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-1 text-left transition duration-(--dur-fast) hover:bg-fill-2 md:min-h-8';
+  'game-task-row group flex min-h-11 w-full items-center gap-2 rounded-ui-md px-1.5 py-1 text-left transition duration-(--dur-fast) hover:bg-fill-2 fine:min-h-8';
 
 type TaskTone = 'done' | 'waiting' | 'idle' | 'warn' | 'danger';
 
@@ -484,12 +484,9 @@ export function EventStrip({
                   key={ev.id}
                   type="button"
                   onClick={() => onOpenEvent(ev.id, game.id)}
-                  className={`flex min-h-11 w-full min-w-0 items-start gap-2 rounded-ui-md px-1.5 py-2 text-left text-body transition hover:bg-fill-2 md:min-h-8 md:items-center md:py-0.5`}
+                  className={`flex min-h-11 w-full min-w-0 items-start gap-2 rounded-ui-md px-1.5 py-2 text-left text-body transition hover:bg-fill-2 fine:min-h-8 fine:items-center fine:py-0.5`}
                 >
                   <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 md:flex-nowrap">
-                    {ev.type !== 'banner' && (
-                      <Pill>{ev.type === 'cycle' || ev.type === 'livestream' ? ev.type : 'event'}</Pill>
-                    )}
                     <EventTags game={game} event={ev} />
                     {ev.dailyTouch && <Pill variant="warn">daily</Pill>}
                     {ev.pinned && <PinMark className="h-3.5 w-3.5" />}
@@ -530,7 +527,7 @@ export function EventStrip({
                       aria-label={`${ev.name}: done`}
                       title={`${EVENT_PROGRESS_LABEL[progress]}. Tap for ${EVENT_PROGRESS_LABEL[nextEventProgress(ev)].toLowerCase()}.`}
                       onClick={() => onSetProgress(ev, nextEventProgress(ev))}
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-md transition hover:bg-fill-2 md:h-8 md:w-8"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-md transition hover:bg-fill-2 fine:h-8 fine:w-8"
                     >
                       <EventTick ticked={eventPartsDone(ev)} total={EVENT_STEPS} color={gameInk(game, ground)} />
                     </button>
@@ -716,7 +713,7 @@ function QuickSpendControls({ game, state, actions }: { game: Game; state: AppSt
               <button
                 type="button"
                 onClick={() => actions.adjustEnergy(primaryEnergy.id, chip.delta)}
-                className="min-h-11 rounded-ui-lg bg-fill-2 px-3 py-2 text-meta font-semibold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 hover:text-fg sm:min-h-8 sm:py-1"
+                className="min-h-11 rounded-ui-lg bg-fill-2 px-3 py-2 text-meta font-semibold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 hover:text-fg fine:min-h-8 fine:py-1"
               >
                 {chip.label}{' '}
                 <span className="tabular-nums text-dim">{chip.delta > 0 ? `+${chip.delta}` : chip.delta}</span>
@@ -840,7 +837,7 @@ function LinkedTaskRow({
         (opened ? (
           <button
             type="button"
-            className="min-h-11 shrink-0 rounded-ui-sm px-2 text-caption font-semibold text-fg hover:bg-fill-2 sm:min-h-8"
+            className="min-h-11 shrink-0 rounded-ui-sm px-2 text-caption font-semibold text-fg hover:bg-fill-2 fine:min-h-8"
             onClick={done}
           >
             Mark done
@@ -850,7 +847,7 @@ function LinkedTaskRow({
             href={item.link}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-ui-sm text-accent-fg hover:bg-fill-2 sm:min-h-8 sm:min-w-8"
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-ui-sm text-accent-fg hover:bg-fill-2 fine:min-h-8 fine:min-w-8"
             aria-label={`Open ${item.name}`}
             title={`Open ${item.name}`}
             onClick={() => setOpened(true)}

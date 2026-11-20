@@ -155,7 +155,7 @@ test('game dashboard and editor remain usable at narrow widths', async ({ page }
   await expectNoPageOverflow(page);
 
   // Tracking rules live in Settings; the card Edit button changes its layout.
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openSettings(page, 'Games');
   await page.getByRole('button', { name: 'Game settings for Genshin Impact' }).click();
   const dialog = page.getByRole('dialog', { name: 'Genshin Impact' });
   await expect(dialog).toBeVisible();

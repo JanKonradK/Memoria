@@ -18,7 +18,8 @@ Use the semantic tokens in `src/index.css`; no raw Tailwind palette colours. The
 
 - Desktop body 16px, metadata 14px, labels and captions 13px. Phone body 17px, metadata 15px, labels 14px, captions 13px. Keep text scaling enabled.
 - Text contrast meets WCAG AA. Decorative colour never carries body text.
-- Touch targets are at least 44px; desktop controls may be denser.
+- Density follows the pointer, not the width: a finger gets 44px targets on a screen of any size (a tablet is not a small PC); only a mouse gets compact controls, through the `fine:` variant and `(pointer: fine)` queries.
+- A very wide window keeps pages at a readable 1760px, centred beside the rail; the Calendar keeps every pixel.
 
 ## Layout
 
@@ -32,9 +33,9 @@ There is no app-wide bar. **Each page has its own bar**: what the page is, its v
 
 **A stamina bar and its bank are one instrument.** The bank is whatever holds what the bar cannot: its own reserve (Reserved Trailblaze Power, Backup Battery Charge, Waveplate Crystals, Photo Paper Supply) or a counter crafted from it, paired by name (Condensed Resin with Original Resin). On a game's page the bank is the bar's second row, the same name, stepper, tube and verdict one size down, hung from the bar on a rule; a paired counter is not shown again on its own. Today's step and the rail show it read-only.
 
-**The Calendar** shows the same events four ways: Timeline, Agenda, Month and Ending soon, under one bar with the game filter (a logo per game), the range (Week, 4 weeks, Season), Today, Show finished and Event. The Timeline packs events that do not overlap into shared rows, banners in their own, with a now line, the countdown inside each bar, and a tick on hover or focus. Maintenance is a hatched band, a livestream a diamond, a predicted window a dashed outline. A busy game folds to one line. The Agenda groups events by day; the Month grid packs bars per week with a panel for the chosen day; Ending soon puts unfinished events in columns by when they end. New feed events go straight onto the calendar; a failed download offers a retry, and a game whose calendar is behind says so on its lane. Choosing an event opens its quick view, not the editor. A month cell's "+N more" counts only hidden events that start or end that day; one running straight through is in the day's panel. Maintenance labels read away from the now line, which runs under the bars.
+**The Calendar** shows the same events four ways: Timeline, Agenda, Month and Ending soon, under one bar with the game filter (a logo per game), the range (Week, 4 weeks, Season), Today, Show finished and Event. The Timeline packs events that do not overlap into shared rows, banners in their own, with a now line, the countdown inside each bar, and a tick on hover or focus. Maintenance is a hatched band, a livestream a diamond, a predicted window a dashed outline. A busy game folds to one line. On a narrow window or an upright touch screen the Calendar stacks each game's name above its lanes and folds its tools behind the bar. The Agenda groups events by day; the Month grid packs bars per week with a panel for the chosen day; Ending soon puts unfinished events in columns by when they end. New feed events go straight onto the calendar; a failed download offers a retry, and a game whose calendar is behind says so on its lane. Choosing an event opens its quick view, not the editor. A month cell's "+N more" counts only hidden events that start or end that day; one running straight through is in the day's panel. Maintenance labels read away from the now line, which runs under the bars.
 
-**Settings** has a menu beside one section from 900px and every section on one page below that. Game edits save as they are made.
+**Settings** has a menu beside one section from 900px; below that it is a menu, then one section per page with a back arrow, like a phone's own settings. Game edits save as they are made.
 
 Every value is entered by hand. A reading says how old it is ("Updated 13m ago"); a value seeded when a game was added reads "Starting estimate".
 
@@ -50,4 +51,4 @@ The one piece of motion that is not a change of state is the intro, and it earns
 
 ## Validation
 
-Run `npm run check` and the relevant Playwright specs. Inspect desktop, phone, small phone and light mode for overflow, focus, touch targets, contrast and preserved edits. A design change does not change storage or sync.
+Run `npm run check` and the relevant Playwright specs. `npm -w app run shots` draws every page, sheet and state at phone, small phone, phone on its side, the owner's tablet (1095×1750) upright and on its side, a small tablet, PC, 1440p and light mode into `app/build/shots`, with a findings report (overflow, small touch targets, clipped text); look at all of them before calling a layout done. A design change does not change storage or sync.

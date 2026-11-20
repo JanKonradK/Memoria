@@ -65,11 +65,7 @@ export function ReminderStyles() {
 
   return (
     <div className="min-w-0">
-      <SettingRow
-        label="How reminders arrive"
-        hint="Silent waits in the list, Gentle chimes softly, Standard pops up, Alarm rings like an alarm clock until you snooze or dismiss it. Each kind can differ."
-        control="below"
-      >
+      <SettingRow label="How reminders arrive" hint="Alarm rings until you snooze or dismiss it." control="below">
         <ul className="w-full divide-y divide-line-hairline">
           {NOTIFICATION_KINDS.map((kind) => {
             const style = notificationStyle(settings, kind);
@@ -98,7 +94,7 @@ export function ReminderStyles() {
           })}
         </ul>
       </SettingRow>
-      <SettingRow label="Alarm ring" hint="What alarm-style reminders play until you answer them.">
+      <SettingRow label="Alarm ring">
         <div className="flex flex-wrap items-center gap-2">
           <Select
             aria-label="Alarm ring"

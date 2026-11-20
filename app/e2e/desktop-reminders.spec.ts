@@ -42,7 +42,7 @@ test('PC reminders use the native preference bridge and show the two-device hint
   await openSettings(page, 'Reminders');
   const toggle = page.getByRole('switch', { name: 'Reminders on this PC', exact: true });
   await expect(toggle).not.toBeChecked();
-  await expect(page.getByText('If phone reminders are also on, both devices alert.')).toBeVisible();
+  await expect(page.getByText('Before resets with work left, unfinished event ends and full bars.')).toBeVisible();
   await toggle.click();
   await expect(toggle).toBeChecked();
   expect(await page.evaluate(async () => (await window.memoriaDesktop!.presence!.get()).remindersOnPc)).toBe(true);

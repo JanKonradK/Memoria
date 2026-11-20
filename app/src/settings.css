@@ -380,3 +380,48 @@
     height: 2.75rem;
   }
 }
+
+/* A narrow screen: the sections as a menu, each one a page of its own. */
+.settings-menu ul {
+  gap: 0;
+}
+.settings-menu .settings-nav-item {
+  min-height: 3.5rem;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-line-hairline);
+  padding-inline: 0.25rem;
+}
+.settings-menu .settings-nav-badge {
+  margin-inline-start: auto;
+}
+.settings-menu-chevron {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--color-muted);
+}
+.settings-back {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-inline-start: -10px;
+  margin-inline-end: -10px;
+  border-radius: var(--radius-ui-full);
+  color: var(--color-fg-soft);
+}
+.settings-back svg {
+  width: 22px;
+  height: 22px;
+}
+@media (hover: hover) {
+  .settings-back:hover {
+    background: var(--color-fill-2);
+  }
+}
+.settings-pane-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}

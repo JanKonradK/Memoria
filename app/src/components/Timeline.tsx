@@ -94,6 +94,9 @@ function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; 
   );
 }
 
+/** When the Calendar stacks: a narrow window, or a tablet held upright. Matches timeline.css. */
+const STACKED = '(max-width: 1023px), (orientation: portrait) and (pointer: coarse)';
+
 /** Where a span sits on the track, as percentages, clipped to the range. */
 function place(start: number, end: number, ws: number, we: number) {
   const span = we - ws;
@@ -226,7 +229,6 @@ const TimelineBar = memo(function TimelineBar({
         {predicted && stream && <span aria-hidden className="tl-diamond" />}
         <span className="tl-name">
           <EventTags game={game} event={ev} inherit availableWidth={barPx - 70} />
-          {ev.type === 'cycle' && barPx > 160 && <span className="tl-tag">Cycle ·</span>}
           {ev.pinned && <PinMark className="h-3.5 w-3.5 shrink-0" />}
           <span data-event-title className="min-w-0 truncate">
             {ev.name.replace(/\s*—\s*predicted window/i, '')}
@@ -559,7 +561,8 @@ export function TimelinePage({ now }: { now: number }) {
   const morning = morningOf(state.settings);
   const [trackRef, trackPx] = useElementWidth();
   const view = useUI((s) => s.timelineView) ?? 'lanes';
-  const compact = useMediaQuery('(max-width: 767px)');
+  // Narrow windows and upright touch screens stack names above their lanes and fold the bar's tools.
+  const compact = useMediaQuery(STACKED);
   const showFinished = useUI((s) => s.timelineShowFinished);
   const setShowFinished = useUI((s) => s.setTimelineShowFinished);
   const hidden = useUI((s) => s.timelineHiddenGameIds);
@@ -676,7 +679,7 @@ export function TimelinePage({ now }: { now: number }) {
       >
         <path d="M10 4v12M4 10h12" />
       </svg>
-      {!compact && 'Event'}
+      {!compact && <span className="calendar-add-label">Event</span>}
     </Btn>
   );
 

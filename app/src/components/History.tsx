@@ -91,10 +91,13 @@ export function GamePullsView({ game }: { game: Game }) {
           />
           <GamePityPanel game={game} ink={ink} tz={state.settings.localTz} />
         </div>
-        <p className="mt-6 text-caption text-dim">
-          Free income is the currency per day of the game’s last six finished versions, from Version history: what the
-          game gives out, not what you will collect. Enter your balance again whenever you pull or top up.
-        </p>
+        <details className="pulls-about mt-6">
+          <summary>About free income</summary>
+          <p>
+            The currency per day of the game’s last six finished versions, from Version history: what the game gives
+            out, not what you will collect. Enter your balance again whenever you pull or top up.
+          </p>
+        </details>
       </section>
       {preset && VERSION_HISTORY_GAMES.includes(preset) && (
         <section className="mt-10" aria-labelledby="pulls-version-history">
@@ -102,8 +105,7 @@ export function GamePullsView({ game }: { game: Game }) {
             Version history
           </h2>
           <p className="mb-5 max-w-3xl text-meta text-muted">
-            Free premium currency each version gave a player who spends nothing, from the first version on: no monthly
-            pass, no paid battle pass, no top-ups. Free limited pull tickets count at the cost of one pull.
+            Free currency per version, for a player who spends nothing.
           </p>
           <HistoryView {...loaded} focus={preset} />
         </section>
@@ -188,7 +190,7 @@ function HistoryView({ history, error, focus }: { history: VersionHistory | null
                 type="button"
                 aria-pressed={selected.has(game.key)}
                 onClick={() => toggle(game.key)}
-                className="history-chip min-h-11 rounded-ui-full border px-3 text-meta font-semibold sm:min-h-9"
+                className="history-chip min-h-11 rounded-ui-full border px-3 text-meta font-semibold fine:min-h-9"
               >
                 <span aria-hidden className="history-chip-dot" style={{ background: game.ink }} />
                 {game.short}
@@ -212,10 +214,13 @@ function HistoryView({ history, error, focus }: { history: VersionHistory | null
       )}
 
       {own && (
-        <p className="mt-6 text-caption text-dim">
-          Totals are community estimates unless marked official, checked {history!.reviewed}. Event and banner counts
-          start from {shortDate(history!.archiveSince)}, when Memoria began keeping its feed.
-        </p>
+        <details className="pulls-about mt-6">
+          <summary>About these totals</summary>
+          <p>
+            Community estimates unless marked official, checked {history!.reviewed}. Event and banner counts start from{' '}
+            {shortDate(history!.archiveSince)}, when Memoria began keeping its feed.
+          </p>
+        </details>
       )}
     </>
   );
@@ -259,9 +264,7 @@ function PullsComparison({ games }: { games: GameMeta[] }) {
       <SectionTitle>
         <span id="history-pulls">Free pulls per version</span>
       </SectionTitle>
-      <p className="-mt-1 mb-3 text-caption text-dim">
-        Each game's free currency divided by the cost of one pull, so games with different currencies compare fairly.
-      </p>
+      <p className="-mt-1 mb-3 text-caption text-dim">Free currency ÷ the cost of one pull.</p>
       <Legend items={series.map((s) => ({ label: s.game.short, color: s.game.ink, line: true }))} />
       <div ref={ref} className="history-chart" style={{ height }}>
         {width > 0 && (
@@ -390,7 +393,12 @@ function GameHistory({ game }: { game: GameMeta }) {
         {table ? 'Hide table' : 'Show table'}
       </button>
       {table && <VersionTable game={game} />}
-      {game.methodology && <p className="mt-3 text-caption text-dim">{game.methodology}</p>}
+      {game.methodology && (
+        <details className="pulls-about mt-3">
+          <summary>How this is counted</summary>
+          <p>{game.methodology}</p>
+        </details>
+      )}
     </section>
   );
 }

@@ -114,3 +114,8 @@ export function luminance(hex: string): number | null {
   const blue = rgb & 255;
   return (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
 }
+
+/** An event's name as shown: a predicted window says so by its dashed outline and "Predicted" line, not in its name. */
+export function eventTitle(name: string): string {
+  return name.replace(/\s*—\s*predicted window/i, '');
+}

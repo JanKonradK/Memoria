@@ -20,8 +20,8 @@ export function QuietHoursField() {
       label="Quiet hours"
       hint={
         on
-          ? `Reminders that fall between ${toClock(start)} and ${toClock(end)} arrive at ${toClock((start + 1439) % 1440)} instead. None are dropped.`
-          : 'Off. Reminders arrive at any hour, including the one before a night-time reset.'
+          ? `Reminders due inside them arrive at ${toClock((start + 1439) % 1440)} instead.`
+          : 'Off: reminders arrive at any hour.'
       }
     >
       <div className="flex flex-wrap items-center gap-2">
@@ -31,7 +31,7 @@ export function QuietHoursField() {
             <TextInput
               type="time"
               step={900}
-              className="!min-h-11 !w-28 sm:!min-h-8 sm:!py-1"
+              className="!min-h-11 !w-28 fine:!min-h-8 fine:!py-1"
               aria-label="Quiet hours start"
               value={toClock(start)}
               onChange={(e) => {
@@ -43,7 +43,7 @@ export function QuietHoursField() {
             <TextInput
               type="time"
               step={900}
-              className="!min-h-11 !w-28 sm:!min-h-8 sm:!py-1"
+              className="!min-h-11 !w-28 fine:!min-h-8 fine:!py-1"
               aria-label="Quiet hours end"
               value={toClock(end)}
               onChange={(e) => {

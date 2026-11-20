@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { openSettings } from './support';
 
 test('game tracking controls keep energy, task, reset and reminder edits', async ({ page }, info) => {
   test.skip(!['android-s23', 'mobile-320', 'desktop'].includes(info.project.name), 'Tracking editor sizes');
@@ -14,7 +15,7 @@ test('game tracking controls keep energy, task, reset and reminder edits', async
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   const openEditor = async () => {
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await openSettings(page, 'Games');
     await page.getByRole('button', { name: 'Game settings for Genshin Impact', exact: true }).click();
   };
   await openEditor();

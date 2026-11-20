@@ -58,11 +58,11 @@ test('quiet hours are off by default and move reminders rather than drop them', 
   await openSettings(page, 'Reminders');
   const quiet = page.getByRole('switch', { name: 'Quiet hours' });
   await expect(quiet).not.toBeChecked();
-  await expect(page.getByText('Off. Reminders arrive at any hour')).toBeVisible();
+  await expect(page.getByText('Off: reminders arrive at any hour.')).toBeVisible();
   await quiet.click();
   await expect(quiet).toBeChecked();
   await page.getByLabel('Quiet hours start').fill('01:00');
-  await expect(page.getByText('arrive at 00:59 instead. None are dropped.')).toBeVisible();
+  await expect(page.getByText('arrive at 00:59 instead.', { exact: false })).toBeVisible();
   await page.evaluate(async () => {
     const path = '/src/store.ts';
     const { flushPersist } = await import(path);

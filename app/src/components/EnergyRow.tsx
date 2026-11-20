@@ -93,7 +93,7 @@ function StepBtn({ delta, onStep, label }: { delta: number; onStep: (d: number) 
         if (e.detail === 0 || !press || (!press.stepped && !press.cancelled)) onStep(delta);
         gesture.current = null;
       }}
-      className="energy-step energy-row-control flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-full bg-fill-2 text-meta font-bold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 active:scale-90 md:h-8 md:w-8"
+      className="energy-step energy-row-control flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-full bg-fill-2 text-meta font-bold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 active:scale-90 fine:h-8 fine:w-8"
       aria-label={`${delta > 0 ? 'Increase' : 'Decrease'} ${label} by ${Math.abs(delta)}`}
     >
       {delta > 0 ? `+${delta}` : delta}
@@ -154,7 +154,7 @@ export function ValueStepper({
       <StepBtn delta={-step} onStep={onStep} label={label} />
       {/* One pill: editable value + "/ cap" together inside the same box. */}
       <span
-        className="energy-value-box focus-ring-group flex h-11 cursor-text items-center rounded-ui-full bg-fill-2 px-2.5 ring-1 ring-line-hairline transition focus-within:bg-fill-3 md:h-8"
+        className="energy-value-box focus-ring-group flex h-11 cursor-text items-center rounded-ui-full bg-fill-2 px-2.5 ring-1 ring-line-hairline transition focus-within:bg-fill-3 fine:h-8"
         onMouseDown={(e) => {
           if (e.target !== inputRef.current) {
             e.preventDefault();
@@ -449,14 +449,14 @@ export const EnergyRow = memo(function EnergyRow({
     // The bar says how much more fits; words only when it is maxed.
     else if (compact && res.cap > 0 && proj.value >= res.cap) subtitle = 'Max';
   } else if (!proj.hasSnapshot) subtitle = 'not read yet';
-  else if (proj.isFull && res.reserveCap > 0) subtitle = 'FULL';
-  else if (proj.isFull) subtitle = `FULL${proj.overflow > 0 ? ` — ${proj.overflow} wasted` : ''}`;
+  else if (proj.isFull && res.reserveCap > 0) subtitle = 'Full';
+  else if (proj.isFull) subtitle = `Full${proj.overflow > 0 ? ` · ${proj.overflow} wasted` : ''}`;
   else if (proj.fullAt != null && proj.msToFull != null)
     subtitle = `full ${fmtClock(proj.fullAt, localTz)} · ${fmtDur(proj.msToFull)}`;
 
   let reserveSubtitle = '';
   if (res.reserveCap > 0) {
-    if (reserveValue >= res.reserveCap) reserveSubtitle = 'FULL';
+    if (reserveValue >= res.reserveCap) reserveSubtitle = 'Full';
     else if (proj.isFull && proj.reserveFullAt != null) {
       const reserveRegenMinutes = effectiveReserveRegenMinutes(res);
       const reserveFullAt = proj.reserveFullAt;
@@ -544,7 +544,7 @@ export const EnergyRow = memo(function EnergyRow({
             {kind === 'regen' && (
               <button
                 type="button"
-                className="energy-spent energy-row-control -my-3 min-h-11 rounded-ui-md px-1 text-label font-semibold text-fg-soft underline-offset-4 hover:text-fg hover:underline sm:my-0 sm:min-h-6"
+                className="energy-spent energy-row-control -my-3 min-h-11 rounded-ui-md px-1 text-label font-semibold text-fg-soft underline-offset-4 hover:text-fg hover:underline sm:my-0 fine:min-h-6"
                 title="Long-press or right-click: full"
                 aria-label={`Spent all ${res.name}`}
                 onClick={() => commit(0)}

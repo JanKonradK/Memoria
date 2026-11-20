@@ -51,7 +51,7 @@ export function gameActions(state: AppState, game: Game, now: number, ctx?: Urge
     const proj = projectEnergy(res, measuredSnapshot(res, context.snaps.get(res.id)), now, game);
     if (!proj.hasSnapshot) continue;
     if (proj.isFull) {
-      actions.push({ kind: 'energy_full', gameId: game.id, at: now, label: `${res.name} is FULL` });
+      actions.push({ kind: 'energy_full', gameId: game.id, at: now, label: `${res.name} full` });
     } else if (proj.fullAt != null) {
       actions.push({ kind: 'energy_soon', gameId: game.id, at: proj.fullAt, label: `${res.name} caps` });
     }

@@ -1,4 +1,8 @@
+import { DateTime } from 'luxon';
 import {
+  endsOvernight,
+  lastPlayDay,
+  morningOf,
   eventReward,
   EVENT_PROGRESS_LABEL,
   eventProgress,
@@ -14,6 +18,7 @@ import { endTone, fmtDur } from '../util';
 import { gameInk } from '../game-color';
 import { useGround } from '../theme';
 import { EventTags } from './EventTags';
+import { NightMark } from './NightMark';
 import { GameLogo } from './GameLogo';
 import { useIdentityColors } from './roster';
 import { Sheet } from './Sheet';
@@ -73,6 +78,7 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
   const calendar = calendarSchedule(event);
   const upcoming = event.start > now;
   const ended = event.end <= now;
+  const zone = state.settings.localTz;
   const remaining = upcoming ? event.start - now : event.end - now;
 
   return (
@@ -119,9 +125,8 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
               {game.name}
             </p>
             <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-muted">
-              <span className="aside">{event.type}</span>
               <EventTags game={game} event={event} />
-              {event.dailyTouch && <span className="aside">daily check-in</span>}
+              {event.dailyTouch && <span>Daily check-in</span>}
             </p>
           </div>
         </div>
@@ -135,7 +140,17 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
           </span>
           <span className="text-meta text-muted">
             {ended ? '' : upcoming ? 'until it starts' : 'left'}
-            {calendar ? ` · ${calendar.label}` : ''}
+            {calendar ? (
+              ` · ${calendar.label}`
+            ) : !ended ? (
+              <>
+                {' · '}
+                {/* The last day it can be played: the night before an end in the small hours. */}
+                {lastPlayDay(event.end, now, zone, morningOf(state.settings)).toFormat('ccc d LLL')}{' '}
+                {endsOvernight(event.end, zone, morningOf(state.settings)) && <NightMark at={event.end} tz={zone} />}
+                {DateTime.fromMillis(event.end, { zone }).toFormat('HH:mm')}
+              </>
+            ) : null}
           </span>
         </p>
 

@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 
+/* Density follows the pointer, not the width: a mouse gets compact controls
+   from 640px, a finger keeps 44px targets on a tablet of any size. */
+@custom-variant fine (@media (width >= 40rem) and (pointer: fine));
+
 /* Quiet workspace surfaces. See app/DESIGN.md. */
 @theme {
   /* Flat surface levels separate the canvas, panels, and floating controls. */
@@ -481,7 +485,7 @@ html {
 .shell-control:disabled {
   opacity: 0.6;
 }
-@media (min-width: 640px) {
+@media (min-width: 640px) and (pointer: fine) {
   .shell-control {
     min-height: 36px;
     min-width: 36px;

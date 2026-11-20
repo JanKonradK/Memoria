@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { createLanSync, createStateAccess } from './pc-stand-in/pc-sync-stand-in.mjs';
 import * as core from '../../desktop/dist/shared-core.mjs';
 import AxeBuilder from '@axe-core/playwright';
-import { gameRow, openGame, showTodayGames } from './support';
+import { gameRow, openGame, openSettings, showTodayGames } from './support';
 
 for (const method of ['scan', 'manual']) {
   test(`Android ${method} pairing merges PC and phone edits and recovers after an outage`, async ({ page }, info) => {
@@ -134,7 +134,7 @@ for (const method of ['scan', 'manual']) {
       const energy = page.getByLabel('Original Resin current value');
       await energy.fill('77');
       await energy.press('Enter');
-      await page.getByRole('button', { name: 'Settings', exact: true }).click();
+      await openSettings(page, 'Device sync');
       await page.getByText('Connection options', { exact: true }).click();
       await page.getByRole('button', { name: 'Check connection', exact: true }).click();
       await expect(page.getByText(/Cannot reach your PC/).first()).toBeVisible();

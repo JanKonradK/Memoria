@@ -69,7 +69,7 @@ export function PinnedEvents({ events, games, now, onOpen }: PinnedEventsProps) 
               type="button"
               data-pinned-chip={event.id}
               onClick={() => onOpen(event)}
-              className="pinned-chip inline-flex min-h-11 min-w-0 max-w-full items-center gap-2 px-3 text-meta md:min-h-8"
+              className="pinned-chip inline-flex min-h-11 min-w-0 max-w-full items-center gap-2 px-3 text-meta fine:min-h-8"
             >
               <span className="shrink-0 font-semibold" style={{ color: gameTitleInk(colors, ground, 4.5) }} aria-hidden>
                 {game.short}

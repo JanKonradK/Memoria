@@ -77,8 +77,18 @@ test('Today and game controls adapt while a PC window is resized', async ({ page
         rowsInside: rows.every((row) => row.left >= 0 && row.right <= innerWidth + 1),
       };
     });
-    expect(geometry.pageLeft).toBe(geometry.railRight);
-    expect(geometry.pageWidth).toBe(viewport.width - geometry.railRight);
+    if (viewport.width >= 1900) {
+      // A very wide window keeps a readable page, centred beside the rail.
+      expect(geometry.pageWidth).toBeLessThanOrEqual(1760);
+      expect(
+        Math.abs(
+          geometry.pageLeft - geometry.railRight - (viewport.width - geometry.railRight - geometry.pageWidth) / 2,
+        ),
+      ).toBeLessThan(2);
+    } else {
+      expect(geometry.pageLeft).toBe(geometry.railRight);
+      expect(geometry.pageWidth).toBe(viewport.width - geometry.railRight);
+    }
     expect(geometry.controlsFit).toBe(true);
     // One ranked column at every width, so fill levels and countdowns compare down the list.
     expect(geometry.priorityColumns).toBe(1);

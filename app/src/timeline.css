@@ -197,8 +197,8 @@
 }
 .calendar-game-toggle {
   display: grid;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   place-items: center;
   border-radius: 999px;
   transition:
@@ -209,6 +209,12 @@
 .calendar-game-toggle[aria-pressed='false'] {
   opacity: 0.32;
   filter: grayscale(1);
+}
+@media (pointer: fine) {
+  .calendar-game-toggle {
+    width: 36px;
+    height: 36px;
+  }
 }
 @media (hover: hover) {
   .calendar-game-toggle:hover {
@@ -272,7 +278,8 @@
 .calendar-tool:active {
   scale: 0.96;
 }
-@media (max-width: 767px) {
+/* The folded bar: phones and upright tablets (Timeline's STACKED query). */
+@media (max-width: 1023px), (orientation: portrait) and (pointer: coarse) {
   .calendar-bar .page-bar-end {
     gap: 4px;
   }
@@ -553,6 +560,16 @@
   top: 4px;
   height: 24px;
 }
+/* A finger needs a taller bar than a pointer: rows grow, the bars with them. */
+@media (pointer: coarse) {
+  .tl-board {
+    --tl-row: 40px;
+  }
+  .tl-bar {
+    top: 4px;
+    height: 32px;
+  }
+}
 .tl-open {
   position: absolute;
   inset: 0;
@@ -832,6 +849,12 @@
   top: 3px;
   height: 26px;
 }
+@media (pointer: coarse) {
+  .tl-board[data-compact] .tl-bar {
+    top: 4px;
+    height: 32px;
+  }
+}
 .tl-board[data-compact] .tl-face {
   gap: 5px;
   padding: 0 7px;
@@ -855,5 +878,12 @@
   .tl-face,
   .tl-tick {
     transition: none;
+  }
+}
+
+/* Between phone and PC the bar is crowded: Add keeps its plus and loses its word. */
+@media (min-width: 1024px) and (max-width: 1199px) and (pointer: fine) {
+  .calendar-add-label {
+    display: none;
   }
 }

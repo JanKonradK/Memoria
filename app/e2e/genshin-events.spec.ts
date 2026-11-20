@@ -89,7 +89,7 @@ test('Genshin keeps complete Teyvat, Wonderland and banner groups through editin
   const dialog = page.getByRole('dialog', { name: 'Edit event' });
   await expect(dialog.getByRole('combobox', { name: 'Genshin world' })).toContainText('Miliastra Wonderland');
   await dialog.getByRole('combobox', { name: 'Type', exact: true }).click();
-  await page.getByRole('option', { name: 'event', exact: true }).click();
+  await page.getByRole('option', { name: 'Event', exact: true }).click();
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(mw.getByRole('button', { name: /Personal cosmetic draw/ })).toBeVisible();
@@ -99,5 +99,5 @@ test('Genshin keeps complete Teyvat, Wonderland and banner groups through editin
   await manager.getByRole('searchbox', { name: 'Find event' }).fill('Personal cosmetic');
   await expect(manager.getByRole('heading', { level: 3 })).toHaveText(/^Miliastra Wonderland\s*1$/);
   await manager.getByRole('button', { name: 'Edit Genshin Impact event: Personal cosmetic draw', exact: true }).click();
-  await expect(dialog.getByRole('combobox', { name: 'Type', exact: true })).toContainText('event');
+  await expect(dialog.getByRole('combobox', { name: 'Type', exact: true })).toContainText('Event');
 });
