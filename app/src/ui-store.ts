@@ -10,6 +10,9 @@ import {
   paletteVars,
   surfacesOf,
 } from './palettes';
+import type { NoteSort } from '@memoria/shared';
+import { isGlyphId, isLogoStyle, type GlyphId, type LogoStyle } from './game-glyphs';
+import { DEFAULT_ICON_SET, isIconSet, type IconSet } from './icon-sets';
 import { applyLook, DEFAULT_DETAIL, DEFAULT_LOOK, isDetail, isLookId, type Detail, type LookId } from './looks';
 
 export const UI_STORAGE_KEY = 'memoria-ui';
@@ -209,7 +212,47 @@ interface UIStore {
   /** The side rail's game list, on a wide screen. Open unless folded away. Remembered on this device. */
   railGamesOpen: boolean;
   setRailGamesOpen(open: boolean): void;
+  /** The places' icon set (nav-icons.tsx). Remembered on this device. */
+  iconSet: IconSet;
+  setIconSet(set: IconSet): void;
+  /** How game icons are drawn unless a game has its own choice. Remembered on this device. */
+  logoStyle: LogoStyle;
+  setLogoStyle(style: LogoStyle): void;
+  /** A game's own icon choice, by logoKey: a style, and the symbol when it is Symbol. */
+  gameIcons: Record<string, GameIconChoice>;
+  setGameIcon(key: string, choice: GameIconChoice | null): void;
+  /** How the Notes page lays notes out. Remembered on this device. */
+  notesView: NotesView;
+  setNotesView(patch: Partial<NotesView>): void;
+  /** A short notice with an Undo, over the dock. Session only. */
+  undoNotice: UndoNotice | null;
+  showUndo(text: string, undo: () => void): void;
+  dismissUndo(): void;
 }
+
+export interface NotesView {
+  /** Each game's notes under its name, or one wall of every note. */
+  group: 'game' | 'wall';
+  sort: NoteSort;
+  /** Compact clips each note to a few lines until it is opened. */
+  density: 'comfortable' | 'compact';
+  /** All notes, general ones (no game), or one game's. */
+  filter: string;
+}
+export const DEFAULT_NOTES_VIEW: NotesView = { group: 'game', sort: 'manual', density: 'comfortable', filter: 'all' };
+
+export interface GameIconChoice {
+  style?: LogoStyle;
+  glyph?: GlyphId;
+}
+
+export interface UndoNotice {
+  id: number;
+  text: string;
+  undo: () => void;
+}
+let undoTimer: ReturnType<typeof setTimeout> | undefined;
+let undoSeq = 0;
 
 export const useUI = create<UIStore>()(
   persist(
@@ -310,6 +353,32 @@ export const useUI = create<UIStore>()(
       setShelfOpen: (shelfOpen) => set({ shelfOpen }),
       railGamesOpen: true,
       setRailGamesOpen: (railGamesOpen) => set({ railGamesOpen }),
+      iconSet: DEFAULT_ICON_SET,
+      setIconSet: (iconSet) => set({ iconSet }),
+      logoStyle: 'coin',
+      setLogoStyle: (logoStyle) => set({ logoStyle }),
+      gameIcons: {},
+      setGameIcon: (key, choice) => {
+        const next = { ...get().gameIcons };
+        if (choice && (choice.style || choice.glyph)) next[key] = choice;
+        else delete next[key];
+        set({ gameIcons: next });
+      },
+      notesView: DEFAULT_NOTES_VIEW,
+      setNotesView: (patch) => set({ notesView: { ...get().notesView, ...patch } }),
+      undoNotice: null,
+      showUndo: (text, undo) => {
+        clearTimeout(undoTimer);
+        const id = ++undoSeq;
+        set({ undoNotice: { id, text, undo } });
+        undoTimer = setTimeout(() => {
+          if (get().undoNotice?.id === id) set({ undoNotice: null });
+        }, 7000);
+      },
+      dismissUndo: () => {
+        clearTimeout(undoTimer);
+        set({ undoNotice: null });
+      },
       toggleTheme: () => get().setTheme(get().theme === 'dark' ? 'light' : 'dark'),
     }),
     {
@@ -330,6 +399,10 @@ export const useUI = create<UIStore>()(
         detail: state.detail,
         vibration: state.vibration,
         railGamesOpen: state.railGamesOpen,
+        notesView: state.notesView,
+        iconSet: state.iconSet,
+        logoStyle: state.logoStyle,
+        gameIcons: state.gameIcons,
       }),
       merge: (persisted, current) => {
         // Rebuilt from a whitelist rather than spread over the defaults. This
@@ -377,8 +450,39 @@ export const useUI = create<UIStore>()(
           detail: isDetail(stored.detail) ? stored.detail : DEFAULT_DETAIL,
           railGamesOpen: stored.railGamesOpen !== false,
           vibration: stored.vibration !== false,
+          notesView: readNotesView(stored.notesView),
+          iconSet: isIconSet(stored.iconSet) ? stored.iconSet : DEFAULT_ICON_SET,
+          logoStyle: isLogoStyle(stored.logoStyle) ? stored.logoStyle : 'coin',
+          gameIcons: readGameIcons(stored.gameIcons),
         };
       },
     },
   ),
 );
+
+/** A stored Notes layout, each field checked, so an old or odd value falls back to the default. */
+function readNotesView(raw: unknown): NotesView {
+  const stored = (raw && typeof raw === 'object' ? raw : {}) as Partial<NotesView>;
+  return {
+    group: stored.group === 'wall' ? 'wall' : 'game',
+    sort: stored.sort === 'edited' || stored.sort === 'title' ? stored.sort : 'manual',
+    density: stored.density === 'compact' ? 'compact' : 'comfortable',
+    filter: typeof stored.filter === 'string' && stored.filter ? stored.filter : 'all',
+  };
+}
+
+/** Stored game icon choices, each checked; anything unknown is dropped. */
+function readGameIcons(raw: unknown): Record<string, GameIconChoice> {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<string, GameIconChoice> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!value || typeof value !== 'object') continue;
+    const { style, glyph } = value as GameIconChoice;
+    const choice: GameIconChoice = {
+      ...(isLogoStyle(style) ? { style } : {}),
+      ...(isGlyphId(glyph) ? { glyph } : {}),
+    };
+    if (choice.style || choice.glyph) out[key] = choice;
+  }
+  return out;
+}

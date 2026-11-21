@@ -22,40 +22,10 @@ import { useGround } from '../../theme';
 import { GameLogo } from '../GameLogo';
 import { useIdentityColors } from '../roster';
 import { Logo } from '../Logo';
+import { NavIcon, type NavGlyph } from '../../nav-icons';
 import { Tooltip } from '../ui';
 import { railCountdown } from './rail-countdown';
 import './shell.css';
-
-const ICON = {
-  today: 'M5 3.5h10M5 3.5v13l5-3 5 3v-13M7.5 8l1.8 1.8 3.4-3.3',
-  calendar:
-    'M3 6.5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2V15a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 8.5h14M7 2.5V6M13 2.5V6M6.5 12h4M6.5 14.5h7',
-  notes:
-    'M5.5 2.5h6L15 6v9.5a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 4 15.5v-11.5a1.5 1.5 0 0 1 1.5-1.5zM11.5 2.5V6H15M7 10h6M7 13h4',
-  games:
-    'M6.5 6.5h7a4.5 4.5 0 0 1 4.5 4.5v.6a2.9 2.9 0 0 1-5 2L11.8 12H8.2L7 13.6a2.9 2.9 0 0 1-5-2V11a4.5 4.5 0 0 1 4.5-4.5zM6.5 8.8v3.4M4.8 10.5h3.4M13.2 9.6h.01M14.8 11.4h.01',
-  add: 'M10 4v12M4 10h12',
-  settings:
-    'M10 7.4a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 0 0 0-5.2M10 2.5v2.2M10 15.3v2.2M2.5 10h2.2M15.3 10h2.2M4.7 4.7l1.6 1.6M13.7 13.7l1.6 1.6M4.7 15.3l1.6-1.6M13.7 6.3l1.6-1.6',
-  refresh: 'M16.25 6.25V2.5m0 3.75H12.5M15.2 5.15A7 7 0 1 0 17 11',
-} as const;
-
-function Icon({ d }: { d: string }) {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-      className="rail-icon"
-    >
-      <path d={d} />
-    </svg>
-  );
-}
 
 /** A route in the rail. Extra props come from a Tooltip wrapped around it. */
 function RailView({
@@ -71,7 +41,7 @@ function RailView({
 }: {
   className?: string;
   label: string;
-  icon: string;
+  icon: NavGlyph;
   current: boolean;
   badge?: ReactNode;
   describedBy?: string;
@@ -88,12 +58,18 @@ function RailView({
       aria-keyshortcuts={keyShortcuts}
       onClick={onClick}
     >
-      <Icon d={icon} />
+      <NavIcon glyph={icon} className="rail-icon" />
       <span className="rail-label">{label}</span>
       {badge}
     </button>
   );
 }
+
+type Place = 'calendar' | 'games' | 'today' | 'notes' | 'settings';
+/** Upright, Today sits in the middle of the dock, under the thumb. */
+const DOCK_ORDER: readonly Place[] = ['calendar', 'games', 'today', 'notes', 'settings'];
+/** Down a wide screen's side Today leads; Games comes last so its list opens beneath it. */
+const RAIL_ORDER: readonly Place[] = ['today', 'calendar', 'notes', 'games', 'settings'];
 
 /** Upright, the rail is a dock along the bottom, so its tips rise above it. */
 const useTipSide = () => (useMediaQuery('(orientation: portrait)') ? 'top' : 'right');
@@ -284,31 +260,22 @@ function RefreshButton() {
       aria-label="Refresh data"
       aria-busy={refreshing}
     >
-      <svg
-        viewBox="0 0 20 20"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden
-        className={`rail-icon ${refreshing && !reducedMotion ? 'loader-spin' : ''}`}
-      >
-        <path d={ICON.refresh} />
-      </svg>
+      <NavIcon glyph="refresh" className={`rail-icon ${refreshing && !reducedMotion ? 'loader-spin' : ''}`} />
       <span className="rail-label">{refreshing ? 'Refreshing' : 'Refresh'}</span>
     </button>
   );
 }
 
 /**
- * The app's one navigation, in one order everywhere: Calendar, Games, Today,
- * Notes, Settings. On a wide screen it is a rail down the left edge, with every
- * game listed under the places (Games folds the list away). On a tall screen
+ * The app's one navigation. On a wide screen it is a rail down the left edge:
+ * Today, Calendar, Notes, then Games with every game listed under it (Games
+ * folds the list away), and Settings at the foot. On a tall screen
  * (a phone, an upright tablet) it is a dock floating over the bottom edge,
- * under the thumb, and Games raises the shelf of game logos over it. The games
+ * under the thumb, in the order Calendar, Games, Today, Notes, Settings, and
+ * Games raises the shelf of game logos over it. The games
  * never re-sort, so a game is always where the player left it. Ctrl+1 to
- * Ctrl+9 open the first nine games; Alt+1 to Alt+5 the five places.
+ * Ctrl+9 open the first nine games; Alt+1 to Alt+5 the five places, in the
+ * order shown.
  */
 export function AppRail() {
   const now = useNow(30_000);
@@ -326,6 +293,8 @@ export function AppRail() {
   const reducedMotion = useReducedMotion();
   const tipSide = useTipSide();
   const upright = useMediaQuery('(orientation: portrait)');
+  const placeOrder = upright ? DOCK_ORDER : RAIL_ORDER;
+  const altKey = (place: Place) => `Alt+${placeOrder.indexOf(place) + 1}`;
   const shelfOpen = useUI((s) => s.shelfOpen);
   const setShelfOpen = useUI((s) => s.setShelfOpen);
   const railGamesOpen = useUI((s) => s.railGamesOpen);
@@ -372,28 +341,28 @@ export function AppRail() {
     }
   }, [aurora]);
 
-  // Alt+1..5 open the five places, in the dock's order.
+  // Alt+1..5 open the five places, in the order they are shown.
   useEffect(() => {
-    const place = (event: KeyboardEvent) => {
+    const go = (event: KeyboardEvent) => {
       if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.repeat) return;
       if (!/^[1-5]$/.test(event.key) || event.defaultPrevented || typing(event.target)) return;
       if (useUI.getState().sheet || document.querySelector('[role="dialog"], [role="alertdialog"]')) return;
       event.preventDefault();
       const ui = useUI.getState();
-      const which = Number(event.key);
-      if (which === 1) ui.setTab('timeline');
-      else if (which === 2) {
+      const place = placeOrder[Number(event.key) - 1];
+      if (place === 'calendar') ui.setTab('timeline');
+      else if (place === 'games') {
         const id = ui.lastGameId ?? order.split(' ')[0];
         if (id) openGame(id);
-      } else if (which === 3) {
+      } else if (place === 'today') {
         if (ui.tab === 'home') closeWorkspace();
         else ui.setTab('today');
-      } else if (which === 4) ui.setTab('notes');
+      } else if (place === 'notes') ui.setTab('notes');
       else ui.setTab('settings');
     };
-    document.addEventListener('keydown', place);
-    return () => document.removeEventListener('keydown', place);
-  }, [order]);
+    document.addEventListener('keydown', go);
+    return () => document.removeEventListener('keydown', go);
+  }, [order, placeOrder]);
 
   // Across the top the games scroll sideways; the open game is kept in view.
   const gamesRef = useRef<HTMLDivElement>(null);
@@ -427,70 +396,88 @@ export function AppRail() {
     return !game.paused && next != null && railCountdown(next.at - now).tone === 'now';
   }).length;
 
+  // Upright, the dock puts Today under the thumb in the middle; down a PC's
+  // side Today leads and Games sits last, with its list opening under it.
+  const placeButtons: Record<Exclude<Place, 'settings'>, ReactNode> = {
+    calendar: (
+      <RailView
+        key="calendar"
+        className="rail-place rail-place-calendar"
+        label="Calendar"
+        icon="calendar"
+        current={tab === 'timeline'}
+        onClick={() => setTab('timeline')}
+        keyShortcuts={altKey('calendar')}
+      />
+    ),
+    games: (
+      <RailView
+        key="games"
+        className="rail-place rail-place-games"
+        label="Games"
+        icon="games"
+        current={tab === 'home'}
+        aria-expanded={games.length > 0 ? shelfShown : undefined}
+        aria-controls={games.length > 0 ? 'rail-shelf' : undefined}
+        keyShortcuts={altKey('games')}
+        describedBy={urgent > 0 ? 'rail-games-urgent' : undefined}
+        onClick={toggleGames}
+        badge={
+          urgent > 0 ? (
+            <>
+              <span aria-hidden className="rail-dot rail-dot-urgent" />
+              <span id="rail-games-urgent" hidden>
+                {urgent === 1 ? '1 game needs you within two hours' : `${urgent} games need you within two hours`}
+              </span>
+            </>
+          ) : undefined
+        }
+      />
+    ),
+    today: (
+      <RailView
+        key="today"
+        className="rail-place rail-place-today"
+        label="Today"
+        icon="today"
+        current={tab === 'today'}
+        onClick={() => (tab === 'home' ? closeWorkspace() : setTab('today'))}
+        keyShortcuts={tab === 'home' ? `${altKey('today')} Alt+ArrowLeft` : altKey('today')}
+        describedBy={open > 0 ? 'rail-today-left' : undefined}
+        badge={
+          open > 0 ? (
+            <>
+              <span aria-hidden className="rail-badge numeral">
+                {open}
+              </span>
+              <span id="rail-today-left" hidden>
+                {open} left today
+              </span>
+            </>
+          ) : undefined
+        }
+      />
+    ),
+    notes: (
+      <RailView
+        key="notes"
+        className="rail-place rail-place-notes"
+        label="Notes"
+        icon="notes"
+        current={tab === 'notes'}
+        onClick={() => setTab('notes')}
+        keyShortcuts={altKey('notes')}
+      />
+    ),
+  };
+
   return (
     <nav aria-label="Primary" className="app-rail" data-shelf={shelfShown || undefined}>
       <span className="rail-mark" aria-hidden>
-        <Logo className="[&>svg]:h-9 [&>svg]:w-9" />
+        <Logo className="[&>svg]:h-[30px] [&>svg]:w-[30px]" />
       </span>
       <div className="rail-places">
-        <RailView
-          className="rail-place rail-place-calendar"
-          label="Calendar"
-          icon={ICON.calendar}
-          current={tab === 'timeline'}
-          onClick={() => setTab('timeline')}
-          keyShortcuts="Alt+1"
-        />
-        <RailView
-          className="rail-place rail-place-games"
-          label="Games"
-          icon={ICON.games}
-          current={tab === 'home'}
-          aria-expanded={games.length > 0 ? shelfShown : undefined}
-          aria-controls={games.length > 0 ? 'rail-shelf' : undefined}
-          keyShortcuts="Alt+2"
-          describedBy={urgent > 0 ? 'rail-games-urgent' : undefined}
-          onClick={toggleGames}
-          badge={
-            urgent > 0 ? (
-              <>
-                <span aria-hidden className="rail-dot rail-dot-urgent" />
-                <span id="rail-games-urgent" hidden>
-                  {urgent === 1 ? '1 game needs you within two hours' : `${urgent} games need you within two hours`}
-                </span>
-              </>
-            ) : undefined
-          }
-        />
-        <RailView
-          className="rail-place rail-place-today"
-          label="Today"
-          icon={ICON.today}
-          current={tab === 'today'}
-          onClick={() => (tab === 'home' ? closeWorkspace() : setTab('today'))}
-          keyShortcuts={tab === 'home' ? 'Alt+3 Alt+ArrowLeft' : 'Alt+3'}
-          describedBy={open > 0 ? 'rail-today-left' : undefined}
-          badge={
-            open > 0 ? (
-              <>
-                <span aria-hidden className="rail-badge numeral">
-                  {open}
-                </span>
-                <span id="rail-today-left" hidden>
-                  {open} left today
-                </span>
-              </>
-            ) : undefined
-          }
-        />
-        <RailView
-          className="rail-place rail-place-notes"
-          label="Notes"
-          icon={ICON.notes}
-          current={tab === 'notes'}
-          onClick={() => setTab('notes')}
-          keyShortcuts="Alt+4"
-        />
+        {placeOrder.filter((place) => place !== 'settings').map((place) => placeButtons[place])}
       </div>
       <div id="rail-shelf" className="rail-shelf" inert={!shelfShown}>
         <div ref={gamesRef} className="rail-games" role="group" aria-label="Games">
@@ -520,7 +507,7 @@ export function AppRail() {
             <RailView
               className="rail-icon-only rail-add"
               label="Add game"
-              icon={ICON.add}
+              icon="add"
               current={false}
               onClick={() => openSheet({ kind: 'addGame' })}
             />
@@ -534,9 +521,9 @@ export function AppRail() {
           <RailView
             className="rail-place rail-place-settings rail-settings"
             label="Settings"
-            icon={ICON.settings}
+            icon="settings"
             current={tab === 'settings'}
-            keyShortcuts="Alt+5"
+            keyShortcuts={altKey('settings')}
             describedBy={updateWaiting ? 'rail-update' : undefined}
             onClick={() => setTab('settings')}
             badge={

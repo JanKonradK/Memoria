@@ -32,3 +32,5 @@ export * from './calendar-views';
 export * from './play-day';
 export * from './timeline-pack';
 export * from './bank';
+export * from './notes';
+export * from './get-ahead';

@@ -1,15 +1,18 @@
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { DateTime } from 'luxon';
 import {
   dayDigest,
+  dayKey,
+  foldMoments,
+  isWork,
   lastPlayDay,
   monthWeeks,
-  packWeek,
   type CalendarMoment,
   type Game,
   type GameEvent,
 } from '@memoria/shared';
 import { endTone } from '../../util';
+import { SwipeRow } from '../../swipe-row';
 import { Btn, TOUCH_BUTTON } from '../ui';
 import type { CalendarViewProps } from './types';
 import {
@@ -19,21 +22,34 @@ import {
   MomentTick,
   NightMark,
   clock,
-  gameLabel,
+  momentSwipes,
+  shortLeft,
   useCalendarGames,
   type CalendarGames,
 } from './parts';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const LANES = 3;
 const KEY_STEPS: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
+/** Names a cell lists before it counts the rest. */
+const CELL_NAMES = 3;
+/** Rows of Still running before the rest fold away. */
+const RUNNING_SHOWN = 6;
+
+interface DayCell {
+  /** What ends on the day (its last playable day), soonest first. */
+  ends: GameEvent[];
+  starts: GameEvent[];
+  down: boolean;
+  live?: GameEvent;
+}
 
 /**
- * A month of the player's days, Monday first. Events are bars in their game's
- * colour, three lanes a week with the rest counted per day; maintenance is a
- * hatched mark on its day. Choosing a day fills the panel beside the grid with
- * what ends that day and what starts the next; choosing a bar opens the event.
- * On a phone the bars become dots and the panel sits below the grid.
+ * A month of deadlines, Monday first. Each day lists what ends on it (its last
+ * playable day, so a 04:00 end is the night before), names first and the rest
+ * counted, with what starts as dots underneath. A day's ground warms with how
+ * much unfinished work ends on it, so the busy days stand out. Choosing a day
+ * fills the panel: what ends, what starts, what else happens, and what is still
+ * running that could be done on it. On a phone the names become dots.
  */
 export function MonthBoard({ games, events, now, localTz, morning, onOpenEvent, onToggleEvent }: CalendarViewProps) {
   const calendar = useCalendarGames(games);
@@ -43,22 +59,92 @@ export function MonthBoard({ games, events, now, localTz, morning, onOpenEvent, 
   const todayIso = DateTime.fromMillis(now, { zone: localTz }).toISODate()!;
   const [selected, setSelected] = useState(todayIso);
   const [cursor, setCursor] = useState<DateTime>(() => DateTime.fromISO(todayIso, { zone: localTz }).startOf('month'));
+  const minute = Math.floor(now / 60_000);
+  const hour = Math.floor(minute / 60);
 
   const shown = useMemo(() => events.filter((event) => calendar.gameOf(event)), [events, calendar]);
   const weeks = useMemo(() => monthWeeks(cursor.year, cursor.month, localTz), [cursor, localTz]);
-  const minute = Math.floor(now / 60_000);
-  // Bars stop at the last day each event can be played.
-  const packed = useMemo(
-    () => weeks.map((week) => packWeek(shown, week, LANES, { tz: localTz, now, morning })),
+
+  // Every day's endings, starts and marks, keyed by ISO date.
+  const days = useMemo(() => {
+    const map = new Map<string, DayCell>();
+    const cell = (date: string) => {
+      let found = map.get(date);
+      if (!found) map.set(date, (found = { ends: [], starts: [], down: false }));
+      return found;
+    };
+    for (const event of shown) {
+      if (event.type === 'maintenance') cell(dayKey(event.start, localTz)).down = true;
+      else if (event.type === 'livestream') cell(dayKey(event.start, localTz)).live ??= event;
+      else {
+        cell(lastPlayDay(event.end, now, localTz, morning).toISODate()!).ends.push(event);
+        cell(dayKey(event.start, localTz)).starts.push(event);
+      }
+    }
+    for (const day of map.values()) {
+      day.ends.sort((a, b) => Number(Boolean(a.done)) - Number(Boolean(b.done)) || a.end - b.end);
+      day.starts.sort((a, b) => a.start - b.start);
+    }
+    return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [weeks, shown, localTz, minute, morning],
-  );
+  }, [shown, localTz, morning, hour]);
+
+  // The month in one line: how much ends in it, how much is left, and its busiest day ahead.
+  const summary = useMemo(() => {
+    let total = 0;
+    let left = 0;
+    let busiest: { date: string; left: number } | null = null;
+    for (const week of weeks)
+      for (const day of week.days) {
+        if (!day.inMonth) continue;
+        const work = (days.get(day.date)?.ends ?? []).filter(isWork);
+        total += work.length;
+        const open = work.filter((event) => !event.done && event.end > now).length;
+        left += open;
+        if (day.date >= todayIso && open > 1 && (!busiest || open > busiest.left))
+          busiest = { date: day.date, left: open };
+      }
+    return { total, left, busiest };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weeks, days, todayIso, minute]);
+
   const selectedDay = DateTime.fromISO(selected, { zone: localTz });
+  const selectedStart = selectedDay.toMillis();
+  const selectedEnd = selectedDay.plus({ days: 1 }).toMillis();
   const digest = useMemo(
-    () => dayDigest(shown, selectedDay.toMillis(), localTz, { now, morning }),
+    () => dayDigest(shown, selectedStart, localTz, { now, morning }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [shown, selected, localTz, minute, morning],
   );
+  const starts = useMemo(
+    () =>
+      foldMoments(
+        shown
+          .filter((event) => isTimed(event) && event.start >= selectedStart && event.start < selectedEnd)
+          .map((event) => ({ event, kind: 'starts' as const, at: event.start })),
+      ),
+    [shown, selectedStart, selectedEnd],
+  );
+  // Open on the day, not ending on it, not done: what could be done then.
+  const running = useMemo(
+    () =>
+      selected < todayIso
+        ? []
+        : shown
+            .filter(
+              (event) =>
+                isWork(event) &&
+                !event.done &&
+                // What starts on the day is listed under Starts.
+                event.start < selectedStart &&
+                event.end > Math.max(selectedStart, now) &&
+                lastPlayDay(event.end, now, localTz, morning).toISODate()! > selected,
+            )
+            .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || a.end - b.end),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shown, selected, todayIso, localTz, morning, minute],
+  );
+  const [allRunning, setAllRunning] = useState(false);
 
   useEffect(() => {
     if (!focusNext.current) return;
@@ -77,6 +163,7 @@ export function MonthBoard({ games, events, now, localTz, morning, onOpenEvent, 
   };
   const choose = (iso: string, focus: boolean) => {
     setSelected(iso);
+    setAllRunning(false);
     if (!weeks.some((week) => week.days.some((day) => day.date === iso)))
       setCursor(DateTime.fromISO(iso, { zone: localTz }).startOf('month'));
     if (focus) focusNext.current = iso;
@@ -95,7 +182,8 @@ export function MonthBoard({ games, events, now, localTz, morning, onOpenEvent, 
   };
 
   const isToday = selected === todayIso;
-  const tomorrowWord = isToday ? 'tomorrow' : 'the next day';
+  const rowProps = { games: calendar, now, localTz, morning, onOpenEvent, onToggleEvent };
+  const runningShown = allRunning ? running : running.slice(0, RUNNING_SHOWN);
 
   return (
     <div className="cal-month">
@@ -132,6 +220,24 @@ export function MonthBoard({ games, events, now, localTz, morning, onOpenEvent, 
         >
           Today
         </Btn>
+        <p className="cal-month-summary">
+          {summary.total === 0 ? (
+            'Nothing ends this month'
+          ) : (
+            <>
+              <b className="numeral">{summary.total}</b> end · <b className="numeral">{summary.left}</b> left
+              {summary.busiest && (
+                <span className="cal-month-busiest">
+                  {' · busiest '}
+                  <button type="button" className="cal-month-jump" onClick={() => choose(summary.busiest!.date, true)}>
+                    {DateTime.fromISO(summary.busiest.date, { zone: localTz }).toFormat('ccc d')} (
+                    {summary.busiest.left})
+                  </button>
+                </span>
+              )}
+            </>
+          )}
+        </p>
       </div>
 
       <div className="cal-month-body">
@@ -141,169 +247,180 @@ export function MonthBoard({ games, events, now, localTz, morning, onOpenEvent, 
               <span key={name}>{name}</span>
             ))}
           </div>
-          {weeks.map((week, index) => {
-            const { bars, hidden, changes, marks, games: dayGames } = packed[index]!;
-            return (
-              <div key={week.start} className="cal-week">
-                <div className="cal-cells">
-                  {week.days.map((day, column) => {
-                    const count =
-                      bars
-                        .filter((bar) => bar.from <= column && column < bar.to)
-                        .reduce((sum, bar) => sum + bar.events.length, 0) + hidden[column]!;
-                    const down = marks[column]!.some((event) => event.type === 'maintenance');
-                    const live = marks[column]!.find((event) => event.type === 'livestream');
-                    const today = day.date === todayIso;
-                    const date = DateTime.fromMillis(day.start, { zone: localTz });
-                    // The cell shows its number; the rest of its name is for screen readers.
-                    const rest = [
-                      date.toFormat('LLLL'),
-                      today && 'today',
-                      `${count} ${count === 1 ? 'event' : 'events'}`,
-                      down && 'maintenance',
-                      live && 'livestream',
-                    ]
-                      .filter(Boolean)
-                      .join(', ');
-                    return (
-                      <button
-                        key={day.date}
-                        type="button"
-                        data-date={day.date}
-                        className={`cal-cell ${day.inMonth ? '' : 'cal-cell-out'} ${day.weekend ? 'cal-cell-we' : ''} ${today ? 'cal-cell-today' : ''}`}
-                        aria-pressed={day.date === selected}
-                        aria-current={today ? 'date' : undefined}
-                        tabIndex={day.date === selected ? 0 : -1}
-                        onClick={() => choose(day.date, false)}
-                        onKeyDown={(event) => onCellKey(event, day.date)}
-                      >
-                        <span className="sr-only">{date.toFormat('cccc')}</span>{' '}
-                        <span className="cal-cell-n">{day.day}</span> <span className="sr-only">{rest}</span>
-                        <span className="cal-cell-marks" aria-hidden>
-                          {live && <i className="cal-diamond" style={{ background: calendar.ink(live.gameId) }} />}
-                          {down && <i className="cal-hatch" title="Maintenance" />}
-                        </span>
-                        {changes[column]! > 0 && (
-                          <span className="cal-cell-more" aria-hidden>
-                            +{changes[column]} more
-                          </span>
+          {weeks.map((week) => (
+            <div key={week.start} className="cal-week">
+              {week.days.map((day) => {
+                const info = days.get(day.date);
+                const ends = info?.ends ?? [];
+                const open = ends.filter((event) => isWork(event) && !event.done && event.end > now).length;
+                const today = day.date === todayIso;
+                const past = day.date < todayIso;
+                const date = DateTime.fromMillis(day.start, { zone: localTz });
+                const startCount = info?.starts.length ?? 0;
+                const rest = [
+                  date.toFormat('LLLL'),
+                  today && 'today',
+                  ends.length > 0 &&
+                    `${ends.length} ${ends.length === 1 ? 'ends' : 'end'}${open ? `, ${open} not done` : ''}`,
+                  startCount > 0 && `${startCount} ${startCount === 1 ? 'starts' : 'start'}`,
+                  info?.down && 'maintenance',
+                  info?.live && 'livestream',
+                ]
+                  .filter(Boolean)
+                  .join(', ');
+                const startGames = [...new Set((info?.starts ?? []).map((event) => event.gameId))];
+                return (
+                  <button
+                    key={day.date}
+                    type="button"
+                    data-date={day.date}
+                    data-load={past ? undefined : Math.min(3, open) || undefined}
+                    data-past={past || undefined}
+                    className={`cal-cell ${day.inMonth ? '' : 'cal-cell-out'} ${day.weekend ? 'cal-cell-we' : ''} ${today ? 'cal-cell-today' : ''}`}
+                    aria-pressed={day.date === selected}
+                    aria-current={today ? 'date' : undefined}
+                    tabIndex={day.date === selected ? 0 : -1}
+                    onClick={() => choose(day.date, false)}
+                    onKeyDown={(event) => onCellKey(event, day.date)}
+                  >
+                    <span className="cal-cell-head">
+                      <span className="sr-only">{date.toFormat('cccc')}</span>{' '}
+                      <span className="cal-cell-n">{day.day}</span> <span className="sr-only">{rest}</span>
+                      <span className="cal-cell-marks" aria-hidden>
+                        {info?.live && (
+                          <i className="cal-diamond" style={{ background: calendar.ink(info.live.gameId) }} />
                         )}
-                        <span className="cal-dots" aria-hidden>
-                          {dayGames[column]!.slice(0, 4).map((gameId) => (
-                            <i key={gameId} style={{ background: calendar.ink(gameId) }} />
-                          ))}
+                        {info?.down && <i className="cal-hatch" />}
+                      </span>
+                    </span>
+                    <span className="cal-ends" aria-hidden>
+                      {ends.slice(0, CELL_NAMES).map((event) => (
+                        <span
+                          key={event.id}
+                          className="cal-end"
+                          data-done={event.done || undefined}
+                          data-banner={event.type === 'banner' || undefined}
+                          style={{ ['--end-ink' as string]: calendar.ink(event.gameId) }}
+                        >
+                          {event.name}
                         </span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="cal-lanes">
-                  {bars.map((bar) => {
-                    const lead = bar.events[0]!;
-                    const game = calendar.gameOf(lead)!;
-                    const more = bar.events.length - 1;
-                    const range = `${DateTime.fromMillis(lead.start, { zone: localTz }).toFormat('d LLL HH:mm')} to ${DateTime.fromMillis(lead.end, { zone: localTz }).toFormat('d LLL HH:mm')}`;
-                    return (
-                      <button
-                        key={`${lead.id}:${week.start}`}
-                        type="button"
-                        data-month-event={lead.id}
-                        className={`cal-bar ${bar.clippedStart ? 'cal-bar-cl' : ''} ${bar.clippedEnd ? 'cal-bar-cr' : ''} ${bar.events.every((event) => event.done || event.end <= now) ? 'cal-bar-over' : ''}`}
-                        style={{
-                          left: `calc(${(bar.from / 7) * 100}% + 3px)`,
-                          width: `calc(${((bar.to - bar.from) / 7) * 100}% - 6px)`,
-                          top: bar.lane * 22,
-                          ['--bar-ink' as string]: calendar.ink(game.id),
-                        }}
-                        title={`${lead.name}${more ? ` and ${more} more` : ''} · ${game.name} · ${range}`}
-                        onClick={() => onOpenEvent(lead)}
-                      >
-                        {lead.name}
-                        {more > 0 && <span className="cal-bar-more"> +{more}</span>}
-                        <span className="sr-only">
-                          , {gameLabel(game)}, {range}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+                      ))}
+                      {ends.length > CELL_NAMES && <span className="cal-end-more">+{ends.length - CELL_NAMES}</span>}
+                    </span>
+                    {startCount > 0 && (
+                      <span className="cal-starts" aria-hidden>
+                        <svg viewBox="0 0 10 10" className="cal-starts-mark">
+                          <path d="M3 2.2v5.6L7.6 5z" fill="currentColor" />
+                        </svg>
+                        {startCount}
+                        {startGames.slice(0, 4).map((gameId) => (
+                          <i key={gameId} style={{ background: calendar.ink(gameId) }} />
+                        ))}
+                      </span>
+                    )}
+                    <span className="cal-dots" aria-hidden>
+                      {[...new Set(ends.map((event) => event.gameId))].slice(0, 4).map((gameId) => (
+                        <i key={gameId} style={{ background: calendar.ink(gameId) }} />
+                      ))}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+          <p className="cal-month-key" aria-hidden>
+            <span className="cal-key-swatch" data-load="1" />
+            <span className="cal-key-swatch" data-load="2" />
+            <span className="cal-key-swatch" data-load="3" />
+            unfinished events ending that day
+          </p>
         </section>
 
         <aside className="cal-panel" aria-labelledby={`${headingId}-day`}>
           <h2 id={`${headingId}-day`} className="cal-panel-title">
+            {isToday ? 'Today · ' : ''}
             {selectedDay.toFormat(selectedDay.year === cursor.year ? 'cccc d LLLL' : 'cccc d LLLL yyyy')}
           </h2>
-          {digest.marks.length > 0 && (
-            <>
-              <h3 className="cal-label">Also</h3>
-              <ul className="cal-panel-list">
-                {digest.marks.map((event) => (
-                  <PanelRow
-                    key={event.id}
-                    moment={{
-                      key: event.id,
-                      kind: event.type === 'livestream' ? 'live' : 'down',
-                      at: event.start,
-                      gameId: event.gameId,
-                      events: [event],
-                    }}
-                    game={calendar.gameOf(event)!}
-                    games={calendar}
-                    now={now}
-                    localTz={localTz}
-                    morning={morning}
-                    onOpenEvent={onOpenEvent}
-                    onToggleEvent={onToggleEvent}
-                  />
-                ))}
-              </ul>
-            </>
+          <PanelSection title="Ends" count={digest.ends.length}>
+            {digest.ends.map((moment) => (
+              <PanelRow key={moment.key} moment={moment} game={calendar.gameOf(moment.events[0]!)!} {...rowProps} />
+            ))}
+          </PanelSection>
+          <PanelSection title="Starts" count={starts.length}>
+            {starts.map((moment) => (
+              <PanelRow key={moment.key} moment={moment} game={calendar.gameOf(moment.events[0]!)!} {...rowProps} />
+            ))}
+          </PanelSection>
+          <PanelSection title="Also" count={digest.marks.length}>
+            {digest.marks.map((event) => (
+              <PanelRow
+                key={event.id}
+                moment={{
+                  key: event.id,
+                  kind: event.type === 'livestream' ? 'live' : 'down',
+                  at: event.start,
+                  gameId: event.gameId,
+                  events: [event],
+                }}
+                game={calendar.gameOf(event)!}
+                {...rowProps}
+              />
+            ))}
+          </PanelSection>
+          {digest.ends.length + starts.length + digest.marks.length === 0 && (
+            <p className="cal-col-none">Nothing ends or starts{isToday ? ' today' : ''}.</p>
           )}
-          {digest.ends.length > 0 && <h3 className="cal-label">Ends</h3>}
-          {digest.ends.length > 0 && (
-            <ul className="cal-panel-list">
-              {digest.ends.map((moment) => (
-                <PanelRow
-                  key={moment.key}
-                  moment={moment}
-                  game={calendar.gameOf(moment.events[0]!)!}
-                  games={calendar}
-                  now={now}
-                  localTz={localTz}
-                  morning={morning}
-                  onOpenEvent={onOpenEvent}
-                  onToggleEvent={onToggleEvent}
-                />
-              ))}
-            </ul>
-          )}
-          {digest.startsNext.length > 0 && <h3 className="cal-label">Starts {tomorrowWord}</h3>}
-          {digest.ends.length + digest.startsNext.length + digest.marks.length === 0 && (
-            <p className="cal-col-none">Nothing ends or starts.</p>
-          )}
-          {digest.startsNext.length > 0 && (
-            <ul className="cal-panel-list">
-              {digest.startsNext.map((moment) => (
-                <PanelRow
-                  key={moment.key}
-                  moment={moment}
-                  game={calendar.gameOf(moment.events[0]!)!}
-                  games={calendar}
-                  now={now}
-                  localTz={localTz}
-                  morning={morning}
-                  onOpenEvent={onOpenEvent}
-                  onToggleEvent={onToggleEvent}
-                />
-              ))}
-            </ul>
+          <PanelSection title={isToday ? 'Running now' : 'Still running'} count={running.length} hint="ends later">
+            {runningShown.map((event) => (
+              <PanelRow
+                key={event.id}
+                moment={{ key: `run:${event.id}`, kind: 'ends', at: event.end, gameId: event.gameId, events: [event] }}
+                game={calendar.gameOf(event)!}
+                running
+                {...rowProps}
+              />
+            ))}
+          </PanelSection>
+          {running.length > RUNNING_SHOWN && (
+            <button
+              type="button"
+              className="cal-fold"
+              aria-expanded={allRunning}
+              onClick={() => setAllRunning(!allRunning)}
+            >
+              {allRunning ? 'Show fewer' : `Show all ${running.length}`}
+            </button>
           )}
         </aside>
       </div>
     </div>
+  );
+}
+
+function isTimed(event: GameEvent): boolean {
+  return event.type !== 'livestream' && event.type !== 'maintenance';
+}
+
+function PanelSection({
+  title,
+  count,
+  hint,
+  children,
+}: {
+  title: string;
+  count: number;
+  hint?: string;
+  children: ReactNode;
+}) {
+  if (count === 0) return null;
+  return (
+    <>
+      <h3 className="cal-label">
+        {title} <span className="cal-label-count numeral">{count}</span>
+        {hint && <span className="cal-label-hint say">{hint}</span>}
+      </h3>
+      <ul className="cal-panel-list">{children}</ul>
+    </>
   );
 }
 
@@ -314,6 +431,7 @@ function PanelRow({
   now,
   localTz,
   morning,
+  running = false,
   onOpenEvent,
   onToggleEvent,
 }: {
@@ -323,6 +441,8 @@ function PanelRow({
   now: number;
   localTz: string;
   morning: number;
+  /** Open on the day but ending later: its time is its last day and how long is left. */
+  running?: boolean;
   onOpenEvent: (event: GameEvent) => void;
   onToggleEvent: (event: GameEvent) => void;
 }) {
@@ -330,6 +450,7 @@ function PanelRow({
   const lead = moment.events[0]!;
   const more = moment.events.length - 1;
   const done = moment.events.every((event) => event.done);
+  const tickable = moment.kind === 'ends';
   const tone =
     moment.kind === 'ends'
       ? done
@@ -338,12 +459,21 @@ function PanelRow({
       : moment.kind === 'starts'
         ? 'var(--color-muted)'
         : 'var(--color-fg-soft)';
+  const swipes = tickable ? momentSwipes(moment, onToggleEvent) : { right: null, left: null };
   return (
-    <li className="cal-panel-row" data-panel-event={lead.id} data-done={done || undefined}>
+    <SwipeRow
+      as="li"
+      className="cal-panel-row"
+      right={swipes.right}
+      left={swipes.left}
+      ink={games.ink(game.id)}
+      data-panel-event={lead.id}
+      data-done={done || undefined}
+    >
       <div className="cal-panel-top">
         <button type="button" className="cal-item-main" onClick={() => onOpenEvent(lead)}>
           <MomentMark event={lead} game={game} games={games} size={28} />
-          <MomentText name={lead.name} game={game} games={games} done={moment.kind === 'ends' && done} short>
+          <MomentText name={lead.name} game={game} games={games} done={tickable && done} short>
             {more > 0 ? (
               `+${more} more`
             ) : moment.kind === 'down' ? (
@@ -359,12 +489,18 @@ function PanelRow({
           </MomentText>
         </button>
         <span className="cal-panel-time" style={{ color: tone }}>
-          {moment.overnight && <NightMark at={moment.at} tz={localTz} />}
-          {clock(moment.at, localTz)}
+          {running ? (
+            <>
+              {lastPlayDay(lead.end, now, localTz, morning).toFormat('ccc d')} · {shortLeft(lead.end - now)}
+            </>
+          ) : (
+            <>
+              {moment.overnight && <NightMark at={moment.at} tz={localTz} />}
+              {clock(moment.at, localTz)}
+            </>
+          )}
         </span>
-        {moment.kind === 'ends' && (
-          <MomentTick moment={moment} game={game} tz={localTz} onToggleEvent={onToggleEvent} />
-        )}
+        {tickable && <MomentTick moment={moment} game={game} tz={localTz} onToggleEvent={onToggleEvent} />}
       </div>
       {more > 0 && (
         <>
@@ -376,11 +512,9 @@ function PanelRow({
               {moment.events.map((event) => (
                 <li key={event.id} className="cal-fold-row" data-done={event.done || undefined}>
                   <button type="button" className="cal-fold-name" onClick={() => onOpenEvent(event)}>
-                    <span className={`cal-name ${moment.kind === 'ends' && event.done ? 'cal-name-done' : ''}`}>
-                      {event.name}
-                    </span>
+                    <span className={`cal-name ${tickable && event.done ? 'cal-name-done' : ''}`}>{event.name}</span>
                   </button>
-                  {moment.kind === 'ends' && (
+                  {tickable && (
                     <MomentTick
                       moment={{ ...moment, key: event.id, events: [event] }}
                       game={game}
@@ -394,6 +528,6 @@ function PanelRow({
           )}
         </>
       )}
-    </li>
+    </SwipeRow>
   );
 }

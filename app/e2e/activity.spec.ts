@@ -20,7 +20,7 @@ test('Activity undoes dailies, keeps a later note and restores a deleted game', 
   await page.evaluate(async () => {
     const path = '/src/store.ts';
     const { useApp } = await import(path);
-    useApp.getState().updateGame(useApp.getState().state.games[0].id, { notes: 'Keep my later note' });
+    useApp.getState().saveNote({ gameId: useApp.getState().state.games[0].id, body: 'Keep my later note' });
   });
   await openSettings(page, 'Activity');
   const action = page.getByRole('group', { name: 'Complete dailies: Genshin Impact', exact: true });
@@ -30,7 +30,12 @@ test('Activity undoes dailies, keeps a later note and restores a deleted game', 
     const path = '/src/store.ts';
     const { useApp, flushPersist } = await import(path);
     const state = useApp.getState().state;
-    if (state.games[0].notes !== 'Keep my later note') throw new Error('Lost later note');
+    if (
+      !state.notes.some(
+        (note: { body: string; deleted?: boolean }) => note.body === 'Keep my later note' && !note.deleted,
+      )
+    )
+      throw new Error('Lost later note');
     if (state.completions.some((row: { done: boolean; deleted?: boolean }) => row.done && !row.deleted))
       throw new Error('Dailies still done');
     useApp.getState().deleteGame(state.games[0].id);
@@ -55,7 +60,7 @@ test('Activity undoes dailies, keeps a later note and restores a deleted game', 
   await expect(page.getByRole('button', { name: 'Tick all dailies for Genshin Impact', exact: true })).toBeVisible();
   // Notes have a tab of their own.
   await page.getByRole('tab', { name: 'Notes', exact: true }).click();
-  await expect(page.getByRole('textbox', { name: 'Genshin Impact notes' })).toHaveValue(/Keep my later note/);
+  await expect(page.getByRole('list', { name: 'Genshin Impact notes' })).toContainText('Keep my later note');
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
   expect(overflow).toBe(false);
 });

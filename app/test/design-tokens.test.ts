@@ -267,6 +267,10 @@ describe('depth is tonal, not cast', () => {
       'components/AddMenu.tsx',
       // The game page's Edit menu, the same kind of dropdown.
       'components/GameCard.tsx',
+      // A note's menu (pin, colour, move, delete), the same kind of dropdown.
+      'components/notes/NoteCard.tsx',
+      // The symbol picker for a game's icon, the same kind of dropdown.
+      'components/settings/IconPicker.tsx',
       'components/TimelineTools.tsx',
       'components/UserGuide.tsx',
     ]);

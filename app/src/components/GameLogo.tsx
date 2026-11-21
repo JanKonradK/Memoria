@@ -7,6 +7,7 @@ import { LOGO_ART } from '../game-logo-art';
 import { RING_A, RING_B } from '../game-logo-ring';
 import { logoRing } from '../game-logo-colors';
 import { useUI } from '../ui-store';
+import { GAME_GLYPHS, type GlyphId, type LogoStyle } from '../game-glyphs';
 import '../game-logo.css';
 
 type LogoGame = Pick<Game, 'name' | 'short' | 'color' | 'color2' | 'color3' | 'titleFont'> &
@@ -194,6 +195,8 @@ export function GameLogo({
   size = 56,
   flippable = false,
   className = '',
+  variant,
+  glyph: glyphOverride,
 }: {
   game: LogoGame;
   /** Rendered diameter in CSS pixels. */
@@ -201,8 +204,14 @@ export function GameLogo({
   /** Lets this logo be pressed to turn the coin. */
   flippable?: boolean;
   className?: string;
+  /** Draws this style whatever the player chose (Settings' previews). */
+  variant?: LogoStyle;
+  glyph?: GlyphId;
 }) {
   const key = logoKey(game);
+  const choice = useUI((ui) => ui.gameIcons[key]);
+  const defaultStyle = useUI((ui) => ui.logoStyle);
+  const logoStyle = variant ?? choice?.style ?? defaultStyle;
   const flipped = useUI((ui) => Boolean(ui.logoFlipped[key]));
   const flipLogo = useUI((ui) => ui.flipLogo);
   const coinRef = useRef<HTMLSpanElement>(null);
@@ -268,6 +277,18 @@ export function GameLogo({
     '--logo-on-b': inkOn(ringB),
   } as CSSProperties;
 
+  if (logoStyle !== 'coin')
+    return (
+      <AltLogo
+        game={game}
+        size={size}
+        className={className}
+        logoStyle={logoStyle}
+        glyph={glyphOverride ?? choice?.glyph ?? 'star'}
+        art={art}
+        vars={style}
+      />
+    );
   if (!flippable)
     return (
       <span
@@ -293,5 +314,57 @@ export function GameLogo({
     >
       {body}
     </button>
+  );
+}
+
+/**
+ * A game's icon in a style the player chose instead of the coin: a soft-cornered
+ * badge with its short name, its initial on a disc, or a symbol on a disc, all
+ * in the game's two colours. Decorative, like a plain coin.
+ */
+function AltLogo({
+  game,
+  size,
+  className,
+  logoStyle,
+  glyph,
+  art,
+  vars,
+}: {
+  game: LogoGame;
+  size: number;
+  className: string;
+  logoStyle: Exclude<LogoStyle, 'coin'>;
+  glyph: GlyphId;
+  art: { back: string; backBox: string } | undefined;
+  vars: CSSProperties;
+}) {
+  const short = game.short.trim() || game.name.trim() || '?';
+  const initial = (game.name.trim() || short).charAt(0).toUpperCase();
+  return (
+    <span
+      data-game-logo
+      data-logo-style={logoStyle}
+      data-small={size < 44 || undefined}
+      className={`game-logo game-logo-alt ${className}`}
+      style={vars}
+      aria-hidden
+    >
+      {logoStyle === 'symbol' ? (
+        <svg viewBox="0 0 24 24" className="game-logo-glyph">
+          <path d={GAME_GLYPHS[glyph].d} fill="currentColor" fillRule="evenodd" />
+        </svg>
+      ) : logoStyle === 'monogram' ? (
+        <span className="game-logo-initial" style={{ ...titleStyle(game.titleFont), fontSize: size * 0.52 }}>
+          {initial}
+        </span>
+      ) : art ? (
+        <svg viewBox={art.backBox} className="game-logo-badge-art">
+          <path d={art.back} fill="currentColor" />
+        </svg>
+      ) : (
+        <FaceText lines={[short]} font={game.titleFont} room={size * 0.78} size={size * 0.36} />
+      )}
+    </span>
   );
 }

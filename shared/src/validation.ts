@@ -295,6 +295,17 @@ const settings = z.object({
   fieldUpdatedAt: z.record(z.string(), syncClock).optional(),
 });
 
+const note = z.object({
+  ...syncable,
+  id,
+  gameId: id.nullable(),
+  title: z.string().max(300),
+  body: longText,
+  color: z.enum(['game', 'red', 'amber', 'green', 'blue', 'violet', 'pink']).optional(),
+  pinned: z.boolean().optional(),
+  sort: finite,
+});
+
 export const APP_STATE_COLLECTION_LIMITS = {
   games: 100,
   resources: 1_000,
@@ -307,6 +318,7 @@ export const APP_STATE_COLLECTION_LIMITS = {
   reminders: 5_000,
   questMarks: 40_000,
   customQuests: 2_000,
+  notes: 2_000,
 } as const;
 
 export const AppStateSchema = z.object({
@@ -322,6 +334,7 @@ export const AppStateSchema = z.object({
   reminders: z.array(reminder).max(APP_STATE_COLLECTION_LIMITS.reminders),
   questMarks: z.array(questMark).max(APP_STATE_COLLECTION_LIMITS.questMarks).default([]),
   customQuests: z.array(customQuest).max(APP_STATE_COLLECTION_LIMITS.customQuests).default([]),
+  notes: z.array(note).max(APP_STATE_COLLECTION_LIMITS.notes).default([]),
   settings,
 });
 

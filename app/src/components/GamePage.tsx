@@ -9,7 +9,7 @@ import { gameShellVars, useGround, useSurfaces } from '../theme';
 import { useIdentityColors } from './roster';
 import { Btn, Page, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
 import { Pill } from './primitives';
-import { GameNotesEditor } from './GameContext';
+import { GameNotes } from './Notes';
 import { GameLogo } from './GameLogo';
 import { LaunchButton } from './GameLaunch';
 import { GameEvents } from './GameEvents';
@@ -289,11 +289,7 @@ export function GamePage({ now }: { now: number }) {
             />
           )}
           {tab === 'events' && <GameEvents game={focusedEntry.game} now={now} />}
-          {tab === 'notes' && (
-            <section className="game-notes-tab" aria-label={`${game.name} notes`}>
-              <GameNotesEditor game={focusedEntry.game} grow />
-            </section>
-          )}
+          {tab === 'notes' && <GameNotes game={game} />}
           <Suspense fallback={<p className="py-8 text-center text-meta text-muted">Loading…</p>}>
             {tab === 'pulls' && <GamePulls game={focusedEntry.game} />}
             {tab === 'quests' && <GameQuests game={focusedEntry.game} />}

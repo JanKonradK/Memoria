@@ -188,7 +188,7 @@ describe('ending soon', () => {
 });
 
 describe('month', () => {
-  it('draws the month in Monday-first weeks with bars, today and a panel for the chosen day', async () => {
+  it('draws the month in Monday-first weeks with what ends, today and a panel for the chosen day', async () => {
     const options = props([
       event('VOLT TRIP', { end: NOW + 6 * HOUR }),
       event('FLIGHT D-DAY', { start: NOW + DAY, end: NOW + 8 * DAY }),
@@ -199,24 +199,26 @@ describe('month', () => {
     const today = screen.getByRole('button', { name: /^Wednesday 18 November, today/ });
     expect(today).toHaveAttribute('aria-pressed', 'true');
     expect(today).toHaveAttribute('aria-current', 'date');
-    expect(screen.getByRole('heading', { name: 'Wednesday 18 November' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Ends' })).toBeInTheDocument();
-    const starts = screen.getByRole('heading', { name: 'Starts tomorrow' });
-    expect(starts).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Thursday 19 November, 1 event, maintenance/ })).toBeInTheDocument();
-
-    fireEvent.click(screen.getAllByRole('button', { name: /^FLIGHT D-DAY, NIKKE, 19 Nov/ })[0]!);
-    expect(options.onOpenEvent).toHaveBeenCalledWith(expect.objectContaining({ name: 'FLIGHT D-DAY' }));
+    expect(screen.getByRole('heading', { name: 'Today · Wednesday 18 November' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Ends 1/ })).toBeInTheDocument();
+    expect(screen.getByText('VOLT TRIP', { selector: '.cal-end' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Thursday 19 November, 1 starts, maintenance/ })).toBeInTheDocument();
 
     // Arrow keys move the chosen day; Page Down turns the month.
     fireEvent.keyDown(today, { key: 'ArrowRight' });
     expect(screen.getByRole('heading', { name: 'Thursday 19 November' })).toBeInTheDocument();
-    expect(screen.getByText('Also')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Starts 1/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Also 1/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^FLIGHT D-DAY/ }));
+    expect(options.onOpenEvent).toHaveBeenCalledWith(expect.objectContaining({ name: 'FLIGHT D-DAY' }));
+    // A day with nothing ending still offers what is running.
+    fireEvent.keyDown(screen.getByRole('button', { name: /^Thursday 19 November/ }), { key: 'ArrowRight' });
+    expect(screen.getByRole('heading', { name: /^Still running 1/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Next month' }));
     expect(screen.getByRole('heading', { name: 'December 2026' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Tuesday 1 December' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Today' }));
     expect(screen.getByRole('heading', { name: 'November 2026' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Wednesday 18 November' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Today · Wednesday 18 November' })).toBeInTheDocument();
   });
 });

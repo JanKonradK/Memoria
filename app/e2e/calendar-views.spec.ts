@@ -34,17 +34,17 @@ test('month grid shows the month, today and the chosen day, and opens events', a
   await openView(page, 'Month');
   const phone = page.viewportSize()!.width < 640;
   await expect(page.getByRole('heading', { name: 'November 2026', exact: true })).toBeVisible();
-  const today = page.getByRole('button', { name: /^Wednesday 18 November, today, \d+ events/ });
+  const today = page.getByRole('button', { name: /^Wednesday 18 November, today/ });
   await expect(today).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByRole('heading', { name: 'Wednesday 18 November', exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Ends', exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Starts tomorrow', exact: true })).toBeVisible();
-  // Bars on a wide window, dots on a phone.
+  await expect(page.getByRole('heading', { name: 'Today · Wednesday 18 November', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Ends \d+$/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Running now \d+/ })).toBeVisible();
+  // What ends is named on a wide window, dotted on a phone.
   if (phone) {
-    await expect(page.locator('.cal-bar').first()).toBeHidden();
+    await expect(page.locator('.cal-end').first()).toBeHidden();
     await expect(page.locator('.cal-dots i').first()).toBeVisible();
   } else {
-    await expect(page.locator('.cal-bar').first()).toBeVisible();
+    await expect(page.locator('.cal-end').first()).toBeVisible();
   }
   for (const name of ['Previous month', 'Next month', 'Today']) {
     const box = (await page.locator('.cal-month-nav').getByRole('button', { name, exact: true }).boundingBox())!;
@@ -69,8 +69,7 @@ test('month grid shows the month, today and the chosen day, and opens events', a
   await expect(page.getByRole('heading', { name: 'November 2026', exact: true })).toBeVisible();
 
   // A day is chosen with a click, and a row in its panel opens the quick view.
-  // Bars lie over the lower part of a day; its number is always free to press.
-  await page.getByRole('button', { name: /^Thursday 19 November/ }).click({ position: { x: 16, y: 14 } });
+  await page.getByRole('button', { name: /^Thursday 19 November/ }).click();
   await expect(page.getByRole('heading', { name: 'Thursday 19 November', exact: true })).toBeVisible();
   const row = page.locator('.cal-panel .cal-item-main').first();
   const name = (await row.locator('.cal-name').textContent())!;
@@ -78,11 +77,6 @@ test('month grid shows the month, today and the chosen day, and opens events', a
   await expect(page.getByRole('dialog', { name })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  if (!phone) {
-    await page.locator('.cal-bar').first().click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-    await page.keyboard.press('Escape');
-  }
   await page.emulateMedia({ colorScheme: 'light' });
   await page.screenshot({ path: info.outputPath('month-light.png'), fullPage: true });
   await fitsAndPasses(page, '.cal-month');

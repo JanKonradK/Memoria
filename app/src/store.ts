@@ -22,6 +22,7 @@ import type {
   GamePreset,
   RemoteEventImportResult,
   CustomQuest,
+  Note,
   NotificationStyle,
   QuestState,
   Reminder,
@@ -32,7 +33,14 @@ import type {
   QuickChip,
   Task,
 } from '@memoria/shared';
-import { collapseSourceTwins, CUSTOM_QUEST_PREFIX, questMarkId, sourceEventId } from '@memoria/shared';
+import {
+  adoptGameNotes,
+  collapseSourceTwins,
+  CUSTOM_QUEST_PREFIX,
+  nextNoteSort,
+  questMarkId,
+  sourceEventId,
+} from '@memoria/shared';
 import {
   completionId,
   assertStateCapacity,
@@ -663,6 +671,11 @@ export interface AppStore {
   /** Sets or clears (null) marks on quests and quest parts; one mark and many take the same path. */
   setQuestMarks(gameId: string, marks: { questId: string; partId?: string; state: QuestState | null }[]): void;
   saveCustomQuest(quest: Omit<CustomQuest, 'updatedAt' | 'id'> & { id?: string }): string;
+  /** Creates a note, or changes the fields given of an existing one. Returns its id. */
+  saveNote(note: Partial<Omit<Note, 'updatedAt'>>): string;
+  deleteNote(id: string): void;
+  /** Brings a deleted note back, as it was. */
+  restoreNote(id: string): void;
   deleteCustomQuest(id: string): void;
   /** Record catch-up digests as read for a game preset, on every device. */
   markCatchUpRead(presetKey: string, keys: string[]): void;
@@ -730,6 +743,8 @@ export const useApp = create<AppStore>((set, get) => ({
         history = checkpoint(history, next, 'Daily checkpoint', now(), uid());
       set({ state: next, history, loaded: true, loadError: '' });
       if (raw !== undefined || editedWhileLoading) persist(next);
+      // Each game's old single notes box becomes a note of its own (notes.ts).
+      if (get().state.games.some((game) => game.notes)) get().batch((state) => adoptGameNotes(state, now()), 'Notes');
       const seedPlan = planSeedImport(get().state, now());
       if (seedPlan.length > 0) get().batch((state) => applySeedPlan(state, seedPlan), 'Feed import');
     } catch (error) {
@@ -1044,6 +1059,7 @@ export const useApp = create<AppStore>((set, get) => ({
       reminders: tombstone(s.reminders, (reminder) => reminder.gameId === id),
       questMarks: tombstone(s.questMarks, (mark) => mark.gameId === id),
       customQuests: tombstone(s.customQuests, (quest) => quest.gameId === id),
+      notes: tombstone(s.notes, (note) => note.gameId === id),
     }));
   },
 
@@ -1483,6 +1499,50 @@ export const useApp = create<AppStore>((set, get) => ({
       };
     });
     return id;
+  },
+
+  saveNote(patch) {
+    const id = patch.id ?? uid();
+    get().mutate((s) => {
+      const existing = s.notes.find((note) => note.id === id);
+      const row: Note = existing
+        ? { ...existing, ...patch, id, updatedAt: now() }
+        : {
+            gameId: null,
+            title: '',
+            body: '',
+            sort: nextNoteSort(s.notes),
+            ...patch,
+            id,
+            updatedAt: now(),
+          };
+      // Saving what is already there (a blur with no edit) changes nothing.
+      const same = (Object.keys(patch) as (keyof typeof patch)[]).every((key) =>
+        Object.is(existing?.[key], patch[key]),
+      );
+      if (existing && !existing.deleted && same) return s;
+      return { ...s, notes: existing ? s.notes.map((note) => (note.id === id ? row : note)) : [...s.notes, row] };
+    });
+    return id;
+  },
+
+  deleteNote(id) {
+    get().mutate((s) =>
+      s.notes.some((note) => note.id === id && !note.deleted)
+        ? { ...s, notes: tombstone(s.notes, (note) => note.id === id) }
+        : s,
+    );
+  },
+
+  restoreNote(id) {
+    get().mutate((s) =>
+      s.notes.some((note) => note.id === id && note.deleted)
+        ? {
+            ...s,
+            notes: s.notes.map((note) => (note.id === id ? { ...note, deleted: false, updatedAt: now() } : note)),
+          }
+        : s,
+    );
   },
 
   deleteCustomQuest(id) {

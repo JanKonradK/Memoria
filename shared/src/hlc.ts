@@ -13,6 +13,7 @@ export const RECORD_COLLECTIONS = [
   'reminders',
   'questMarks',
   'customQuests',
+  'notes',
 ] as const;
 export const UNKNOWN_DEVICE = 'Unknown device';
 export function legacyHlc(at = 0): Hlc {

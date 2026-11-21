@@ -8,6 +8,7 @@ import { useApp } from '../../store';
 import { useGround } from '../../theme';
 import { useUI } from '../../ui-store';
 import { GameLogo } from '../GameLogo';
+import { NavIcon } from '../../nav-icons';
 import { useIdentityColors } from '../roster';
 import { Segmented, Toggle } from '../ui';
 import { useMediaQuery } from '../../hooks';
@@ -16,13 +17,7 @@ import { SettingRow } from './SettingRow';
 import '../today/today-steps.css';
 import './looks-settings.css';
 
-const PLACE_ICONS = [
-  'M3 6.5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2V15a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 8.5h14',
-  'M6.5 6.5h7a4.5 4.5 0 0 1 4.5 4.5v.6a2.9 2.9 0 0 1-5 2L11.8 12H8.2L7 13.6a2.9 2.9 0 0 1-5-2V11a4.5 4.5 0 0 1 4.5-4.5z',
-  'M5 3.5h10M5 3.5v13l5-3 5 3v-13',
-  'M5.5 2.5h6L15 6v9.5a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 4 15.5v-11.5a1.5 1.5 0 0 1 1.5-1.5z',
-  'M10 7.4a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 0 0 0-5.2M10 2.5v2.2M10 15.3v2.2M2.5 10h2.2M15.3 10h2.2',
-];
+const PLACE_ICONS = ['calendar', 'games', 'today', 'notes', 'settings'] as const;
 
 /** Stand-ins when there are no games yet, so every card still shows a row. */
 const SAMPLE: Pick<Game, 'name' | 'short' | 'color' | 'color2' | 'color3' | 'titleFont'>[] = [
@@ -78,11 +73,9 @@ function LookPreview({ look, games }: { look: LookId; games: { logo: (typeof SAM
         </span>
       </span>
       <span className="look-preview-dock">
-        {PLACE_ICONS.map((d, index) => (
-          <span key={d} className="look-preview-place" data-current={index === 2 || undefined}>
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-              <path d={d} />
-            </svg>
+        {PLACE_ICONS.map((glyph, index) => (
+          <span key={glyph} className="look-preview-place" data-current={index === 2 || undefined}>
+            <NavIcon glyph={glyph} />
           </span>
         ))}
       </span>

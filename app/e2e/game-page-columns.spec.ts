@@ -73,12 +73,17 @@ test('a game page lays out energy, tasks and events side by side, with notes on 
   }
 
   await page.getByRole('tab', { name: 'Notes', exact: true }).click();
-  const notes = page.getByRole('textbox', { name: `${zzz.name} notes` });
-  await notes.fill('Save pulls for Severian.');
-  await notes.blur();
+  await page.getByRole('button', { name: 'New note', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Note', exact: true }).fill('Save pulls for Severian.');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(page.getByRole('list', { name: `${zzz.name} notes` })).toContainText('Save pulls for Severian.');
   await expect
-    .poll(async () => (await stored(page)).games.find((game) => game.name === zzz.name)?.notes)
-    .toBe('Save pulls for Severian.');
+    .poll(async () => {
+      const state = await stored(page);
+      const game = state.games.find((item) => item.name === zzz.name);
+      return state.notes?.some((note) => note.gameId === game?.id && note.body === 'Save pulls for Severian.');
+    })
+    .toBe(true);
   // The legacy game now carries its preset, so its logo can draw the artwork.
   expect((await stored(page)).games.find((game) => game.id === 'legacy')?.presetKey).toBe('hsr');
 

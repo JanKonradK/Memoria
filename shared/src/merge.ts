@@ -187,6 +187,7 @@ const ROWS = {
   reminders: AppStateSchema.shape.reminders.element,
   questMarks: AppStateSchema.shape.questMarks.unwrap().element,
   customQuests: AppStateSchema.shape.customQuests.unwrap().element,
+  notes: AppStateSchema.shape.notes.unwrap().element,
 } as const;
 
 function parseRow<T>(schema: ZodType, candidate: unknown): T | null {
@@ -347,6 +348,11 @@ function normalizeCustomQuest(raw: unknown): AppState['customQuests'][number] | 
   return record ? parseRow(ROWS.customQuests, record) : null;
 }
 
+function normalizeNote(raw: unknown): AppState['notes'][number] | null {
+  const record = syncableRecord(raw);
+  return record ? parseRow(ROWS.notes, record) : null;
+}
+
 function salvageRows<T>(raw: unknown, limit: number, normalize: (row: unknown) => T | null): T[] {
   if (!Array.isArray(raw)) return [];
   const rows: T[] = [];
@@ -393,6 +399,7 @@ export function mergeState(a: AppState, b: AppState): AppState {
     reminders: mergeById(left.reminders, right.reminders),
     questMarks: mergeById(left.questMarks, right.questMarks),
     customQuests: mergeById(left.customQuests, right.customQuests),
+    notes: mergeById(left.notes, right.notes),
     settings: mergeSettings(left.settings, right.settings),
   };
   // Normalization salvages oversized imports by truncating collections. A sync
@@ -607,6 +614,7 @@ export function normalizeState(raw: unknown): AppState {
     reminders: salvageRows(r.reminders, APP_STATE_COLLECTION_LIMITS.reminders, normalizeReminder),
     questMarks: salvageRows(r.questMarks, APP_STATE_COLLECTION_LIMITS.questMarks, normalizeQuestMark),
     customQuests: salvageRows(r.customQuests, APP_STATE_COLLECTION_LIMITS.customQuests, normalizeCustomQuest),
+    notes: salvageRows(r.notes, APP_STATE_COLLECTION_LIMITS.notes, normalizeNote),
     settings: normalizeSettings(r.settings),
   };
 }
@@ -644,6 +652,7 @@ export function compactState(
     reminders: live(state.reminders),
     questMarks: live(state.questMarks),
     customQuests: live(state.customQuests),
+    notes: live(state.notes),
   };
   return pruneCompletions(compacted, completionsBefore);
 }

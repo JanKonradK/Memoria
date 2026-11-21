@@ -9,6 +9,7 @@ import { syncNow } from '../sync';
 import { deviceSyncAvailable, DeviceSync } from './settings/DeviceSync';
 import { PaletteSettings } from './settings/PaletteSettings';
 import { DetailRow, LookPicker, VibrationRow } from './settings/LookPicker';
+import { GameIconsRow, IconSetRow } from './settings/IconPicker';
 import { SettingRow, SettingsGroup } from './settings/SettingRow';
 import { usePresence } from '../presence';
 import { APP_VERSION, displayVersion, updateTarget, useAppUpdate } from '../app-update';
@@ -256,6 +257,8 @@ export function SettingsPage() {
             <SettingsPane {...pane('appearance')}>
               <div className="settings-rows">
                 <LookPicker />
+                <IconSetRow />
+                <GameIconsRow />
                 <DetailRow />
                 <VibrationRow />
                 <ThemeRow />

@@ -24,6 +24,7 @@ import {
   useCalendarGames,
 } from './parts';
 import { SwipeRow } from '../../swipe-row';
+import { SoonAhead } from './SoonAhead';
 
 /** Later is a glance at what is far off; the rest of it is one press away. */
 const LATER_SHOWN = 6;
@@ -119,14 +120,38 @@ export function SoonBoard({
       return next;
     });
 
+  // An empty column folds to a slim note, so the others get its room.
+  const template = columns
+    .map((column) => (column.moments.length === 0 ? 'minmax(8.5rem, 0.4fr)' : 'minmax(0, 1fr)'))
+    .join(' ');
+  const jumpToDay = (start: number) => {
+    const column = columns.find((item) => start >= item.from && start < item.until) ?? columns.at(-1)!;
+    const node = document.getElementById(`${headingId}-${column.bucket}`)?.closest('section');
+    if (!node) return;
+    node.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    node.dataset.flash = '';
+    window.setTimeout(() => delete node.dataset.flash, 900);
+  };
+
   return (
     <div className="cal-soon">
-      <div className="cal-board">
+      <SoonAhead
+        events={events.filter((event) => showFinished || !event.done || kept.has(event.id))}
+        now={now}
+        localTz={localTz}
+        morning={morning}
+        calendar={calendar}
+        onOpenEvent={onOpenEvent}
+        onToggleEvent={onToggleEvent}
+        onJumpToDay={jumpToDay}
+      />
+      <div className="cal-board" style={{ ['--soon-cols' as string]: template }}>
         {columns.map((column) => (
           <section
             key={column.bucket}
             className="cal-col"
             data-soon={column.bucket}
+            data-empty={column.moments.length === 0 || undefined}
             aria-labelledby={`${headingId}-${column.bucket}`}
           >
             <h2 id={`${headingId}-${column.bucket}`} className="cal-col-head" style={{ color: TONES[column.bucket] }}>
@@ -140,9 +165,7 @@ export function SoonBoard({
               </p>
             )}
             {column.moments.length === 0 ? (
-              <p className="cal-col-none" aria-label="Nothing">
-                —
-              </p>
+              <p className="cal-col-none">{column.bucket === 'today' ? 'Nothing ends today.' : 'Nothing ends.'}</p>
             ) : (
               <ul className="cal-items">
                 {(column.bucket === 'later' && !allLater ? column.moments.slice(0, LATER_SHOWN) : column.moments).map(

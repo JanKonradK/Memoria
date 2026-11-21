@@ -341,6 +341,26 @@ export interface CustomQuest extends Syncable {
   notes?: string;
 }
 
+/** A note's tint. `game` takes the colour of the game it belongs to. */
+export type NoteColor = 'game' | 'red' | 'amber' | 'green' | 'blue' | 'violet' | 'pink';
+export const NOTE_COLORS: readonly NoteColor[] = ['game', 'red', 'amber', 'green', 'blue', 'violet', 'pink'];
+
+/**
+ * One of the player's notes. A note belongs to a game, or to none. Its body is
+ * plain text; a line written "- [ ] x" or "- [x] x" is a checklist item.
+ */
+export interface Note extends Syncable {
+  id: string;
+  /** The game it is about; null for a note of its own. */
+  gameId: string | null;
+  title: string;
+  body: string;
+  color?: NoteColor;
+  pinned?: boolean;
+  /** The player's own order: higher first. New notes take the highest. */
+  sort: number;
+}
+
 export type SettingsField =
   | 'quietStart'
   | 'quietEnd'
@@ -445,6 +465,7 @@ export interface AppState {
   reminders: Reminder[];
   questMarks: QuestMark[];
   customQuests: CustomQuest[];
+  notes: Note[];
   settings: Settings;
 }
 
@@ -473,6 +494,7 @@ export function emptyState(): AppState {
     reminders: [],
     questMarks: [],
     customQuests: [],
+    notes: [],
     settings: {
       ...DEFAULT_SETTINGS,
       localTz: detectLocalTz(),

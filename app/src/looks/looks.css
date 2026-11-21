@@ -163,14 +163,31 @@ body {
 /* Down the side the places are icons too, so the rail narrows. */
 @media (orientation: landscape) {
   :root[data-detail='minimal'] {
-    --rail-w: 72px;
+    --rail-w: 68px;
   }
   [data-detail='minimal'] :is(.rail-places, .rail-foot) .rail-view {
     width: 56px;
-    min-height: 48px;
+    min-height: 40px;
+    justify-content: center;
+    padding-top: 0;
+  }
+  [data-detail='minimal'] :is(.rail-places, .rail-foot) .rail-view .rail-icon {
+    margin-top: 0;
+  }
+  [data-detail='minimal'] :is(.rail-places, .rail-foot) .rail-view::before {
+    top: 50%;
+    height: 34px;
+    transform: translate(-50%, -50%) scaleX(0.6);
+  }
+  [data-detail='minimal'] :is(.rail-places, .rail-foot) .rail-view[aria-current='page']::before,
+  [data-detail='minimal'] :is(.rail-places, .rail-foot) .rail-view:hover::before {
+    transform: translate(-50%, -50%);
+  }
+  [data-detail='minimal'] :is(.rail-places, .rail-foot) .rail-badge {
+    top: -2px;
   }
   [data-detail='minimal'] .rail-game {
-    width: 60px;
+    width: 58px;
   }
 }
 

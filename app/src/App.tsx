@@ -253,6 +253,7 @@ export default function App() {
   const online = useOnline();
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const launchNotice = useGameLaunch((s) => s.notice);
+  const undoNotice = useUI((s) => s.undoNotice);
   useEffect(() => {
     if (!launchNotice || launchNotice.tone === 'error') return;
     const timer = window.setTimeout(dismissLaunchNotice, 6000);
@@ -457,6 +458,30 @@ export default function App() {
               aria-live="polite"
             >
               Offline. Changes are saved on this device.
+            </m.div>
+          )}
+          {undoNotice && (
+            <m.div
+              key={`undo-${undoNotice.id}`}
+              variants={toastMotion}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="pointer-events-auto flex w-full items-center gap-2 rounded-ui-xl bg-popover/95 px-4 py-2 text-meta font-semibold text-fg-soft shadow-float ring-1 ring-line-strong backdrop-blur-md"
+              role="status"
+              aria-live="polite"
+            >
+              <span className="min-w-0 flex-1">{undoNotice.text}</span>
+              <button
+                type="button"
+                className="min-h-9 rounded-ui-md bg-accent/15 px-3 py-1 text-accent-fg ring-1 ring-accent/25"
+                onClick={() => {
+                  undoNotice.undo();
+                  useUI.getState().dismissUndo();
+                }}
+              >
+                Undo
+              </button>
             </m.div>
           )}
           {launchNotice && (

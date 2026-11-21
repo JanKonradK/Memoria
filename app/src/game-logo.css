@@ -76,3 +76,40 @@
     animation: none;
   }
 }
+
+/* The other icon styles (Settings → Appearance → Game icons): a tile or a disc
+   in the game's two colours, its mark in whichever ink reads on them. */
+.game-logo-alt {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: linear-gradient(140deg, var(--logo-a) 0%, color-mix(in oklab, var(--logo-a) 55%, var(--logo-b)) 100%);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--logo-b) 45%, transparent);
+  color: var(--logo-on-a);
+}
+.game-logo-alt[data-logo-style='badge'] {
+  border-radius: 30%;
+}
+.game-logo-alt[data-logo-style='monogram'] {
+  background: var(--logo-a);
+  box-shadow: inset 0 0 0 calc(var(--logo-size) * 0.06) var(--logo-b);
+}
+.game-logo-glyph {
+  width: 66%;
+  height: 66%;
+}
+.game-logo-badge-art {
+  width: 80%;
+  height: 80%;
+}
+.game-logo-initial {
+  line-height: 1;
+  font-weight: 800;
+  padding: 0;
+}
+.game-logo-alt .game-logo-name {
+  color: inherit;
+}
