@@ -41,7 +41,7 @@ notify = { version = "8", default-features = false }
 [target.'cfg(windows)'.dependencies]
 # The same WebView2 bindings Tauri uses, for trimming memory while hidden.
 webview2-com = "0.39"
-windows-core = "0.62"
+windows-core = "0.100"
 winreg = "0.56"
 tauri-winrt-notification = "0.8"
 # The WinRT bindings the toast crate already uses, to read whether Windows lets Memoria's toasts through.
