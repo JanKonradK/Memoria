@@ -1,6 +1,6 @@
 [package]
 name = "memoria"
-version = "0.5.0"
+version = "0.6.0"
 description = "Memoria for Windows"
 edition = "2024"
 publish = false
@@ -44,15 +44,27 @@ webview2-com = "0.39"
 windows-core = "0.62"
 winreg = "0.56"
 tauri-winrt-notification = "0.8"
-# The WinRT bindings the toast crate already uses, to read whether Windows lets Memoria's toasts through.
-windows = { version = "0.62", features = ["UI_Notifications"] }
+# The WinRT bindings the toast crate already uses: whether Windows lets Memoria's toasts
+# through, and the built-in OCR engine that reads screenshots for live numbers.
+windows = { version = "0.62", features = [
+  "Foundation",
+  "Foundation_Collections",
+  "Globalization",
+  "Graphics_Imaging",
+  "Media_Ocr",
+  "Storage",
+  "Storage_Streams",
+  "UI_Notifications",
+] }
 windows-sys = { version = "0.61", features = [
   "Win32_Foundation",
+  "Win32_Graphics_Gdi",
   "Win32_System_Diagnostics_ToolHelp",
   "Win32_System_Registry",
   "Win32_System_Threading",
   "Win32_Security",
   "Win32_Security_Cryptography",
+  "Win32_UI_Input_KeyboardAndMouse",
   "Win32_UI_Shell",
   "Win32_UI_WindowsAndMessaging",
 ] }
