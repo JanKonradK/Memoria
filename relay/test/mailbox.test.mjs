@@ -1,5 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CALL_TIMEOUT_MS, COLLECT_TIMEOUT_MS, Mailbox, NO_ANSWER, OFFLINE, PC_FRESH_MS } from '../src/mailbox.mjs';
+import {
+  BUSY,
+  CALL_TIMEOUT_MS,
+  COLLECT_TIMEOUT_MS,
+  MAX_WAITING,
+  Mailbox,
+  NO_ANSWER,
+  OFFLINE,
+  PC_FRESH_MS,
+} from '../src/mailbox.mjs';
+import { Room } from '../src/index.mjs';
 
 describe('relay mailbox', () => {
   let clock;
@@ -50,5 +60,90 @@ describe('relay mailbox', () => {
     expect(box.reply('id-1', 200, {})).toBe(false);
     clock += PC_FRESH_MS + 1;
     expect(await box.call('/hello', {})).toEqual(OFFLINE);
+  });
+});
+
+describe('relay mailbox limits', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('holds at most four calls and refuses the fifth before reading it', async () => {
+    expect(MAX_WAITING).toBe(4);
+    const box = new Mailbox({ now: () => 1_000_000 });
+    void box.next();
+    const calls = Array.from({ length: MAX_WAITING }, () => box.call('/sync', {}));
+    expect(box.refusal()).toEqual(BUSY);
+    expect(await box.call('/sync', {})).toEqual(BUSY);
+    await vi.advanceTimersByTimeAsync(CALL_TIMEOUT_MS);
+    expect(await Promise.all(calls)).toEqual(calls.map(() => NO_ANSWER));
+    expect(box.refusal()).toBeNull();
+  });
+});
+
+describe('relay room ownership', () => {
+  const room = 'a'.repeat(32);
+  const token = 'b'.repeat(64);
+  const owner = 'c'.repeat(64);
+  const hex = (buffer) => [...new Uint8Array(buffer)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  const sha = async (text) => hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
+  const storage = () => {
+    const values = new Map();
+    return { values, get: async (key) => values.get(key), put: async (key, value) => void values.set(key, value) };
+  };
+  const reply = (headers) =>
+    new Request(`https://relay.test/v1/rooms/${room}/reply/missing`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...headers },
+      body: JSON.stringify({ status: 200, body: null }),
+    });
+  const both = { authorization: `Bearer ${token}`, 'x-memoria-owner': owner };
+
+  it('needs both the bearer token and the owner secret, even to claim an empty room', async () => {
+    const state = { storage: storage() };
+    const relay = new Room(state);
+    // A caller with only a token cannot claim an unclaimed room.
+    expect((await relay.fetch(reply({ authorization: `Bearer ${token}` }))).status).toBe(403);
+    expect((await relay.fetch(reply({ 'x-memoria-owner': owner }))).status).toBe(403);
+    expect((await relay.fetch(reply({ ...both, 'x-memoria-owner': 'short' }))).status).toBe(403);
+    expect(state.storage.values.size).toBe(0);
+    // The first full pair claims it; the reply itself has nothing waiting.
+    expect((await relay.fetch(reply(both))).status).toBe(410);
+    expect(state.storage.values.get('owner')).toBe(await sha(`${token}:${owner}`));
+    expect((await relay.fetch(reply(both))).status).toBe(410);
+    // After that, a different secret with the right token, or the reverse, is refused.
+    expect((await relay.fetch(reply({ ...both, 'x-memoria-owner': 'd'.repeat(64) }))).status).toBe(403);
+    expect((await relay.fetch(reply({ ...both, authorization: `Bearer ${'d'.repeat(64)}` }))).status).toBe(403);
+  });
+
+  it('moves a room claimed by token alone to the token and owner pair', async () => {
+    const state = { storage: storage() };
+    await state.storage.put('owner', await sha(token));
+    const relay = new Room(state);
+    expect((await relay.fetch(reply({ authorization: `Bearer ${token}` }))).status).toBe(403);
+    expect((await relay.fetch(reply(both))).status).toBe(410);
+    expect(state.storage.values.get('owner')).toBe(await sha(`${token}:${owner}`));
+    // A stranger's pair never takes over a token-only claim it does not hold.
+    const other = { storage: storage() };
+    await other.storage.put('owner', await sha('e'.repeat(64)));
+    expect((await new Room(other).fetch(reply(both))).status).toBe(403);
+  });
+
+  it('turns away a call to an offline PC or an oversized call without reading its body', async () => {
+    const relay = new Room({ storage: storage() });
+    const call = (headers = {}) =>
+      new Request(`https://relay.test/v1/rooms/${room}/call`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...headers },
+        body: new ReadableStream({
+          pull() {
+            throw new Error('The body must not be read.');
+          },
+        }),
+        duplex: 'half',
+      });
+    expect(await (await relay.fetch(call())).json()).toEqual(OFFLINE);
+    relay.mailbox.pcSeenAt = Date.now();
+    const large = await (await relay.fetch(call({ 'content-length': String(8_388_609) }))).json();
+    expect(large.status).toBe(413);
   });
 });

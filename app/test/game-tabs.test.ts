@@ -13,12 +13,13 @@ describe('game tabs', () => {
     expect([...VERSION_HISTORY_GAMES].sort()).toEqual(covered);
   });
 
-  it('always offers Track and Events, and the rest only where there is something to show', () => {
+  it('always offers Track, Events, Codes, Notes and Pulls, and the rest only where there is something to show', () => {
     const state = emptyState();
     const own = makeGame({ id: 'own', name: 'My own game', presetKey: undefined });
-    for (const tab of ['track', 'events'] as const) expect(gameTabAvailable(own, tab, { state, now: NOW })).toBe(true);
-    for (const tab of ['pulls', 'quests', 'news'] as const)
-      expect(gameTabAvailable(own, tab, { state, now: NOW })).toBe(false);
+    // Pulls holds Savings, which any game can use, so a custom game has it too.
+    for (const tab of ['track', 'events', 'codes', 'notes', 'pulls'] as const)
+      expect(gameTabAvailable(own, tab, { state, now: NOW })).toBe(true);
+    for (const tab of ['quests', 'news'] as const) expect(gameTabAvailable(own, tab, { state, now: NOW })).toBe(false);
 
     const preset = makeGame({ id: 'gi', name: genshin.name, presetKey: genshin.key });
     for (const tab of ['pulls', 'quests', 'news'] as const)

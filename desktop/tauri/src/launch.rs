@@ -11,6 +11,8 @@ use std::sync::Mutex;
 
 use serde_json::{json, Value};
 
+use crate::locks::Locked;
+
 /// A program, or a shortcut to one. Scripts and documents are not launch targets.
 pub const LAUNCH_EXTENSIONS: [&str; 3] = ["exe", "lnk", "url"];
 const MAX_TARGETS: usize = 200;
@@ -67,7 +69,7 @@ impl GameLaunch {
 
     /// File names only. The card needs a label, not the layout of the player's disk.
     pub fn list(&self) -> Value {
-        let targets = self.targets.lock().unwrap();
+        let targets = self.targets.locked();
         let names: serde_json::Map<String, Value> = targets
             .iter()
             .map(|(id, path)| (id.clone(), json!(file_name(path))))
@@ -85,7 +87,7 @@ impl GameLaunch {
             return Err("Choose a program (.exe) or a shortcut (.lnk, .url).".into());
         }
         {
-            let mut targets = self.targets.lock().unwrap();
+            let mut targets = self.targets.locked();
             if !targets.contains_key(game_id) && targets.len() >= MAX_TARGETS {
                 return Err("Remove a launch target before adding another.".into());
             }
@@ -97,7 +99,7 @@ impl GameLaunch {
 
     pub fn clear(&self, game_id: &str) -> Result<Value, String> {
         {
-            let mut targets = self.targets.lock().unwrap();
+            let mut targets = self.targets.locked();
             if targets.remove(game_id).is_some() {
                 self.save(&targets)?;
             }
@@ -107,7 +109,7 @@ impl GameLaunch {
 
     pub fn start(&self, game_id: &str) -> Result<Value, String> {
         let path = valid_id(game_id)
-            .then(|| self.targets.lock().unwrap().get(game_id).cloned())
+            .then(|| self.targets.locked().get(game_id).cloned())
             .flatten();
         let Some(path) = path else {
             return Err("Choose what starts this game first.".into());

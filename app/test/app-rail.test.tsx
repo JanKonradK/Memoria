@@ -8,6 +8,7 @@ import { emptyState } from '@memoria/shared';
 import { useApp } from '../src/store';
 import { makeGame } from '../../shared/test/helpers';
 import { useUI } from '../src/ui-store';
+import { serverRegionLabel } from '../src/server-region';
 import { syncNow } from '../src/sync';
 import { cloudSyncNow } from '../src/cloud-sync';
 import { syncLanNow, useLanSync } from '../src/lan-sync';
@@ -185,4 +186,54 @@ it('floors rail countdowns like Today and tones them by how soon they come', () 
   expect(railCountdown(9 * 60 * minute)).toMatchObject({ short: '9h', tone: 'later' });
   expect(railCountdown(3 * 24 * 60 * minute)).toMatchObject({ short: '3d', tone: 'later' });
   expect(railCountdown(0)).toMatchObject({ short: 'now', tone: 'now' });
+});
+
+it('keeps Alt+1..5 on Today, Calendar, Notes, Games and Settings even when the dock reorders', () => {
+  // Upright: the dock shows Calendar, Games, Today, Notes, Settings.
+  const fallback = window.matchMedia;
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    ...fallback(query),
+    matches: query === '(orientation: portrait)' || fallback(query).matches,
+  }));
+  try {
+    withGames();
+    useUI.setState({ lastGameId: null });
+    renderRail();
+    const nav = within(screen.getByRole('navigation', { name: 'Primary' }));
+    expect(nav.getByRole('button', { name: 'Calendar' })).toHaveAttribute('aria-keyshortcuts', 'Alt+2');
+    expect(nav.getByRole('button', { name: 'Notes' })).toHaveAttribute('aria-keyshortcuts', 'Alt+3');
+    expect(nav.getByRole('button', { name: 'Settings' })).toHaveAttribute('aria-keyshortcuts', 'Alt+5');
+    fireEvent.keyDown(document, { key: '2', altKey: true });
+    expect(useUI.getState().tab).toBe('timeline');
+    fireEvent.keyDown(document, { key: '3', altKey: true });
+    expect(useUI.getState().tab).toBe('notes');
+    fireEvent.keyDown(document, { key: '4', altKey: true });
+    expect(useUI.getState()).toMatchObject({ tab: 'home', focusedGameId: 'first' });
+    fireEvent.keyDown(document, { key: '5', altKey: true });
+    expect(useUI.getState().tab).toBe('settings');
+    fireEvent.keyDown(document, { key: '1', altKey: true });
+    expect(useUI.getState().tab).toBe('today');
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+it('tags two accounts of one game on their coins, and only then', () => {
+  const state = emptyState();
+  state.games = [
+    makeGame({ id: 'main', name: 'Genshin Impact', presetKey: 'genshin', accountLabel: 'Main', sort: 0 }),
+    makeGame({ id: 'alt', name: 'Genshin Impact', presetKey: 'genshin', tz: 'Etc/GMT+5', sort: 1 }),
+    makeGame({ id: 'solo', name: 'Honkai: Star Rail', presetKey: 'hsr', accountLabel: 'Only', sort: 2 }),
+  ];
+  useApp.setState({ state });
+  renderRail();
+  const games = within(screen.getByRole('group', { name: 'Games' }));
+  const region = serverRegionLabel('Etc/GMT+5', Date.now());
+  const main = games.getByRole('button', { name: 'Genshin Impact, Main' });
+  const alt = games.getByRole('button', { name: `Genshin Impact, ${region}` });
+  expect(main.querySelector('.rail-game-tag')).toHaveTextContent('Main');
+  expect(alt.querySelector('.rail-game-tag')).toHaveTextContent(region);
+  // A game tracked once keeps its label in its name but needs no tag.
+  const solo = games.getByRole('button', { name: 'Honkai: Star Rail, Only' });
+  expect(solo.querySelector('.rail-game-tag')).toBeNull();
 });

@@ -236,8 +236,17 @@ test.describe('Steps', () => {
       before,
     );
     await resin.press('Enter');
-    // Ten Resin takes over a day to fill, so once entered it leaves the steps for the week.
-    await expect(resin).toHaveCount(0);
+    // Order stays paused until the user leaves the list or clicks Re-sort now, then Resin moves to Other bars.
+    const resort = page.getByRole('button', { name: /Order paused/ });
+    if ((await resort.count()) > 0) await resort.click();
+    await expect(
+      page
+        .locator('.today-steps-group:not(.today-steps-other)')
+        .getByLabel('Original Resin current value', { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole('region', { name: 'Other bars' }).getByLabel('Original Resin current value', { exact: true }),
+    ).toBeVisible();
     await expect(page.getByRole('listitem').filter({ hasText: 'Original Resin caps' })).toBeVisible();
 
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

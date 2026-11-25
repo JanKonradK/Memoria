@@ -25,19 +25,30 @@ export function prefersReducedMotion(): boolean {
 export function useFlip<T extends HTMLElement>(
   selector: string,
   keyOf: (node: HTMLElement) => string | null,
+  /**
+   * The rows' order, as one string. Given, a commit that keeps it (a clock tick)
+   * measures nothing, so a ticking list does not force a layout every minute.
+   */
+  orderKey?: string,
 ): RefObject<T | null> {
   const ref = useRef<T | null>(null);
   // Resting positions from the last commit. Empty before the list first appears.
   const settled = useRef(new Map<string, Point>());
   const running = useRef(new WeakMap<HTMLElement, Animation>());
+  // The order and the list measured last, to know when a commit changed neither.
+  const measured = useRef<{ orderKey: string; container: HTMLElement } | null>(null);
 
   useLayoutEffect(() => {
     const previous = settled.current;
     const container = ref.current;
     if (!container) {
       settled.current = new Map();
+      measured.current = null;
       return;
     }
+    if (orderKey !== undefined && measured.current?.orderKey === orderKey && measured.current.container === container)
+      return;
+    measured.current = orderKey === undefined ? null : { orderKey, container };
     const keyed = Array.from(container.querySelectorAll<HTMLElement>(selector)).flatMap((node) => {
       const key = keyOf(node);
       return key == null ? [] : [{ node, key }];

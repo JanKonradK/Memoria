@@ -22,11 +22,11 @@ import { useApp, type CloudStatus } from './store';
  * else's problem by design.
  *
  * CONVERGENCE. Nothing here resolves conflicts, because mergeState already does:
- * last write wins per ROW on `updatedAt`, with soft-delete tombstones. Two
- * devices editing different games while both offline both land. Two devices
- * editing the SAME row keeps the later one. That is the same rule the launcher
- * sync and backup import run on, so a document that has been through this file
- * is not special in any way.
+ * it merges per field using HLC clocks, with soft-delete tombstones and deterministic
+ * tie-breaking. Two devices editing different games while both offline both land.
+ * Two devices editing the SAME field keep the causally newer write. That is the same
+ * rule the launcher sync and backup import run on, so a document that has been through
+ * this file is not special in any way.
  *
  * WHAT THIS CANNOT DO. If two devices write the file while the provider's client
  * has not reconciled them, the provider — not Memoria — may keep both as

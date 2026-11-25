@@ -77,7 +77,7 @@ test('a game page catches up in its News tab, which marks versions read and stay
     /^https:\/\//,
   );
   // A section nobody has checked never reads as "none".
-  await expect(news.getByText('Not reviewed yet.').first()).toBeVisible();
+  await expect(news.getByText('No summary yet for this version.').first()).toBeVisible();
   // Expired codes stay folded away.
   await expect(news.getByRole('button', { name: 'Copy HourofRuin', exact: true })).toBeHidden();
   expect(

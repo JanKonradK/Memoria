@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { DateTime } from 'luxon';
 import {
   addPulls,
@@ -19,7 +19,8 @@ import {
 import { useApp } from '../store';
 import { useElementWidth } from '../hooks';
 import { uid } from '../util';
-import { Btn, Field, NumInput, Segmented, TextInput } from './ui';
+import { Btn, Field, NumInput, Segmented, TextInput, TOUCH_BUTTON } from './ui';
+import { gachaSummaryText, importGachaFile, scanPcGacha, type GachaImportOutcome } from '../connectors';
 import { ChartTip, fmt } from './chart';
 
 /**
@@ -64,13 +65,15 @@ export function GamePityPanel({ game, ink, tz }: { game: Game; ink: string; tz: 
       <div className="pulls-panel">
         <h2 className="pulls-panel-heading text-lead font-semibold text-fg">Pity</h2>
         <p className="text-meta text-muted">
-          Pity tracking covers Genshin Impact, Honkai: Star Rail, Zenless Zone Zero and Wuthering Waves.
+          Pity counting covers Genshin Impact, Honkai: Star Rail, Zenless Zone Zero and Wuthering Waves. For any other
+          game, use Savings beside this to track your currency, pull cost and banner goals.
         </p>
       </div>
     );
   return (
     <div className="pulls-panel">
       <h2 className="pulls-panel-heading text-lead font-semibold text-fg">Pity</h2>
+      <PullImportBar game={game} />
       {error && (
         <p role="alert" className="mt-2 text-meta text-danger-fg">
           {error}
@@ -92,9 +95,128 @@ export function GamePityPanel({ game, ink, tz }: { game: Game; ink: string; tz: 
         <summary>About these figures</summary>
         <p>
           Hard pity and 50/50 odds are the game’s published rules. “About” figures use the community-measured soft-pity
-          curve. Memoria does not read your in-game history: record pulls here as you make them.
+          curve. Record pulls here as you make them, or fill the counts in from your history: import a UIGF v4 or
+          pull-history JSON file, or, in the Windows app, read it from the game on this PC. An import rebuilds only the
+          banners it covers and keeps 5★s you logged by hand before its first pull.
         </p>
       </details>
+    </div>
+  );
+}
+
+const MAX_HISTORY_BYTES = 30_000_000;
+
+type ImportStatus = { tone: 'ok' | 'error'; text: string; folderMissing?: boolean } | null;
+
+/** Fills pity from a pull-history export, or from the game on this PC in the Windows app. */
+function PullImportBar({ game }: { game: Game }) {
+  const inputId = useId();
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<ImportStatus>(null);
+  const [pick, setPick] = useState<{ text: string; uids: string[]; uid: string } | null>(null);
+  const pcScan = Boolean(window.memoriaDesktop?.connectors);
+
+  const report = (outcome: GachaImportOutcome) => {
+    if (outcome.kind === 'imported') setStatus({ tone: 'ok', text: gachaSummaryText(outcome.summary) });
+    else if (outcome.kind === 'error')
+      setStatus({ tone: 'error', text: outcome.message, folderMissing: outcome.folderMissing });
+    else if (outcome.kind === 'cancelled') setStatus(null);
+  };
+
+  const readFile = (file: File | undefined) => {
+    if (!file) return;
+    setStatus(null);
+    setPick(null);
+    if (file.size > MAX_HISTORY_BYTES) {
+      setStatus({ tone: 'error', text: 'That file is over 30 MB.' });
+      return;
+    }
+    void file
+      .text()
+      .then((text) => {
+        const outcome = importGachaFile(game, text);
+        if (outcome.kind === 'pick-uid') {
+          setPick({ text, uids: outcome.availableUids, uid: outcome.availableUids[0]! });
+          return;
+        }
+        report(outcome);
+      })
+      .catch(() => setStatus({ tone: 'error', text: 'That file could not be read.' }));
+  };
+
+  const scan = (pickFolder: boolean) => {
+    setStatus(null);
+    setPick(null);
+    setBusy(true);
+    void scanPcGacha(game, pickFolder)
+      .then(report)
+      .finally(() => setBusy(false));
+  };
+
+  return (
+    <div className="mt-2 space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          id={inputId}
+          type="file"
+          accept="application/json,.json"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = '';
+            readFile(file);
+          }}
+        />
+        <label
+          htmlFor={inputId}
+          className={`btn-compact inline-flex min-h-8 cursor-pointer items-center rounded-ui-md bg-fill-2 px-3 py-1 text-caption font-semibold text-fg-soft ring-1 ring-line-hairline hover:bg-fill-3 ${TOUCH_BUTTON}`}
+        >
+          Import UIGF / JSON…
+        </label>
+        {pcScan && (
+          <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => scan(false)}>
+            {busy ? 'Reading…' : 'Read from PC game'}
+          </Btn>
+        )}
+        {pcScan && status?.folderMissing && (
+          <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => scan(true)}>
+            Choose game folder…
+          </Btn>
+        )}
+      </div>
+      {pick && (
+        <div role="group" aria-label="Choose an account to import" className="flex flex-wrap items-center gap-2">
+          <span className="text-meta text-muted">This file holds several accounts.</span>
+          <Segmented
+            ariaLabel="Account to import"
+            options={pick.uids.map((uid) => ({ value: uid, label: uid }))}
+            value={pick.uid}
+            onChange={(uid) => setPick({ ...pick, uid })}
+          />
+          <Btn
+            kind="primary"
+            className={TOUCH_BUTTON}
+            onClick={() => {
+              const outcome = importGachaFile(game, pick.text, pick.uid);
+              setPick(null);
+              report(outcome);
+            }}
+          >
+            Import selected account
+          </Btn>
+          <Btn className={TOUCH_BUTTON} onClick={() => setPick(null)}>
+            Cancel
+          </Btn>
+        </div>
+      )}
+      {status && (
+        <p
+          role={status.tone === 'error' ? 'alert' : 'status'}
+          className={`text-meta ${status.tone === 'error' ? 'text-danger-fg' : 'text-fg-soft'}`}
+        >
+          {status.text}
+        </p>
+      )}
     </div>
   );
 }

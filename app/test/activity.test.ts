@@ -64,21 +64,25 @@ it('restores a deleted game with its tasks, readings, events and completions, th
     expect(restored[key].filter((row) => !row.deleted)).toHaveLength(original[key].length);
   expect(latestSnapshots(restored.snapshots).size).toBeGreaterThan(0);
 });
-it('saves state and history together; a failed write preserves both old copies', async () => {
+it('saves state and history separately; a failed write preserves both old copies', async () => {
   const gameId = useApp.getState().addBlankGame('Original');
   await flushPersist();
   const original = disk.get('memoria-state');
+  const originalHistory = disk.get('memoria-history');
   useApp.getState().updateGame(gameId, { name: 'Updated' });
   vi.mocked(idbSet).mockRejectedValueOnce(new Error('disk full'));
   await expect(flushPersist()).rejects.toThrow('disk full');
   expect(disk.get('memoria-state')).toEqual(original);
+  expect(disk.get('memoria-history')).toEqual(originalHistory);
   await flushPersist();
-  const saved = disk.get('memoria-state') as { localHistory: ReturnType<typeof useApp.getState>['history'] };
-  expect(saved.localHistory.journal.at(-1)?.changes[0]?.after?.name).toBe('Updated');
+  const saved = disk.get('memoria-state') as Record<string, unknown>;
+  const savedHistory = disk.get('memoria-history') as ReturnType<typeof useApp.getState>['history'];
+  expect(saved.localHistory).toBeUndefined();
+  expect(savedHistory.journal.at(-1)?.changes[0]?.after?.name).toBe('Updated');
   expect(normalizeState(saved).games[0]?.name).toBe('Updated');
   expect(JSON.stringify(useApp.getState().state)).not.toContain('localHistory');
 });
-it('journals migrations, sync arrivals and feed imports, with automatic checkpoints', async () => {
+it('journals migrations, sync arrivals and feed imports, without Creating Before sync checkpoints', async () => {
   useApp.getState().addGameFromPreset(PRESETS[0]!, {});
   await flushPersist();
   const legacy = { ...useApp.getState().state, schemaVersion: 9 };
@@ -96,9 +100,9 @@ it('journals migrations, sync arrivals and feed imports, with automatic checkpoi
   };
   useApp.getState().replaceState(mergeState(useApp.getState().state, remote));
   expect(useApp.getState().history.journal.at(-1)?.label).toBe('Sync arrivals');
-  expect(useApp.getState().history.checkpoints.map((item) => item.label)).toEqual(
-    expect.arrayContaining(['Before migration', 'Before sync', 'Daily checkpoint']),
-  );
+  const labels = useApp.getState().history.checkpoints.map((item) => item.label);
+  expect(labels).toEqual(expect.arrayContaining(['Before migration', 'Daily checkpoint']));
+  expect(labels).not.toContain('Before sync');
 });
 it('refuses an old sync peer but still imports an old backup file', () => {
   const old = { ...emptyState(), schemaVersion: 9 };

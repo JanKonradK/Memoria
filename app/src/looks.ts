@@ -97,6 +97,11 @@ export function loadLookFaces(look: LookId): Promise<unknown> {
 /** The look the page should end up wearing, so a slow stylesheet never overrides a later choice. */
 let wanted: LookId | null = null;
 
+/** Settles once the look the page is wearing (or about to wear) has its stylesheet and faces. */
+export function activeLookReady(): Promise<unknown> {
+  return requested.get(wanted ?? 'classic') ?? Promise.resolve();
+}
+
 /**
  * Puts a look and a detail level on the page. A look change cross-fades where
  * the browser can, and is instant under reduced motion.

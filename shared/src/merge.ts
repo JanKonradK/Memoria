@@ -32,6 +32,7 @@ import {
   APP_STATE_COLLECTION_LIMITS,
   AppStateSchema,
   FUTURE_CLOCK_SKEW_TOLERANCE_MS,
+  GameCodeSchema,
   GameLayoutItemSchema,
   ObservationProvenanceSchema,
   RemoteFeedVersionSchema,
@@ -195,6 +196,20 @@ function parseRow<T>(schema: ZodType, candidate: unknown): T | null {
   return parsed.success ? (parsed.data as T) : null;
 }
 
+/** Valid entries of an optional list, first occurrence of each id, capped at `max`. */
+function salvageById<T extends { id: string }>(list: unknown[], schema: ZodType<T>, max: number): T[] {
+  const seen = new Set<string>();
+  const kept: T[] = [];
+  for (const item of list) {
+    if (kept.length >= max) break;
+    const parsed = schema.safeParse(item);
+    if (!parsed.success || seen.has(parsed.data.id)) continue;
+    seen.add(parsed.data.id);
+    kept.push(parsed.data);
+  }
+  return kept;
+}
+
 /**
  * Reset numbers are safe to clamp because their nearest legal value preserves
  * the user's intent. Other malformed fields drop only this game; accepting them
@@ -213,16 +228,11 @@ function normalizeGame(raw: unknown): AppState['games'][number] | null {
     tz: isZone(record.tz) ? record.tz : 'UTC',
   };
   if ('image' in game && !isSafeGameImage(game.image)) delete game.image;
-  // A damaged optional layout must not discard the game and its tracking data.
-  if (Array.isArray(game.cardLayout)) {
-    const seen = new Set<string>();
-    game.cardLayout = game.cardLayout.slice(0, 2000).flatMap((item) => {
-      const parsed = GameLayoutItemSchema.safeParse(item);
-      if (!parsed.success || seen.has(parsed.data.id)) return [];
-      seen.add(parsed.data.id);
-      return [parsed.data];
-    });
-  } else delete game.cardLayout;
+  // A damaged optional list entry must not discard the game and its tracking data.
+  if (Array.isArray(game.cardLayout)) game.cardLayout = salvageById(game.cardLayout, GameLayoutItemSchema, 2000);
+  else delete game.cardLayout;
+  if (Array.isArray(game.codes)) game.codes = salvageById(game.codes, GameCodeSchema, 200);
+  else delete game.codes;
   // A damaged savings plan is dropped on its own; the game and its tracking survive.
   if ('savings' in game) {
     const savings = GameSavingsSchema.safeParse(game.savings);

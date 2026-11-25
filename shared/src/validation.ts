@@ -91,6 +91,20 @@ export const GameLayoutItemSchema = z.object({
   hidden: z.boolean().optional(),
 });
 
+export const GameCodeSchema = z.object({
+  id,
+  code: z.string().trim().min(1).max(80),
+  rewards: z.string().max(200).optional(),
+  expiresAt: timestamp.optional(),
+  redeemUrl: z
+    .string()
+    .max(500)
+    .refine((v) => v.startsWith('https://'), 'Redeem links must use https://.')
+    .optional(),
+  redeemed: z.boolean().optional(),
+  addedAt: timestamp,
+});
+
 const game = z.object({
   ...syncable,
   id,
@@ -121,6 +135,7 @@ const game = z.object({
   cardLayout: z.array(GameLayoutItemSchema).max(2000).optional(),
   savings: GameSavingsSchema.optional(),
   pity: GamePitySchema.optional(),
+  codes: z.array(GameCodeSchema).max(200).optional(),
 });
 
 const resource = z.object({

@@ -9,6 +9,7 @@ import { initNative, isNativeApp } from './native';
 import { accentFor, applyTheme, useUI } from './ui-store';
 import { isDesktopApp } from './desktop-host';
 import { applyLook } from './looks';
+import { applyBrand, pickBrand } from './brand';
 import { holdThemeColor, initSplash } from './splash';
 import { initScreenScale } from './screen-scale';
 import './index.css';
@@ -46,9 +47,12 @@ const loadMotionFeatures = () => import('./motion-features').then((module) => mo
 // Before first paint: a theme applied inside React would flash the dark ground
 // on a light-theme load, and that flash is the whole reason this runs here.
 {
-  const { theme, palette, accents, look, detail } = useUI.getState();
+  const ui = useUI.getState();
+  const { theme, palette, accents, look, detail } = ui;
   applyTheme(theme, palette, accentFor(accents, palette));
   applyLook(look, detail);
+  // The backdrop and the intro's mark colour; the pre-paint script restored both already.
+  applyBrand(pickBrand(ui));
 }
 // The intro in index.html is already playing; this arranges its exit.
 // A touch screen draws at its own scale before anything lays out.

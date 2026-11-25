@@ -30,7 +30,7 @@
     --place-current-edge: transparent;
     --place-current-fg: var(--color-fg-invert);
   }
-  :is(.page-title h1, .look-preview-h1) {
+  .page-title h1 {
     font-size: 1.75rem;
   }
   :is(.today-steps-rule h2, .look-rule-label, .tab-label, .look-preview-h2) {
@@ -108,8 +108,14 @@
   }
   .rail-countdown {
     font-size: 0.9375rem;
-    font-weight: 800;
+    font-weight: 700;
     color: var(--color-fg);
+  }
+  /* Doto's dot matrix needs size to read; the small figures take its plain mono sibling. */
+  .today-step-bank-figure,
+  .today-step-energy .energy-value-box input,
+  .rail-countdown {
+    font-family: 'Space Mono', ui-monospace, monospace;
   }
   .rail-countdown[data-tone='soon'] {
     color: var(--color-fg);

@@ -1,11 +1,13 @@
 import {
   effectiveCountTarget,
+  emptyHistory,
   emptyState,
   latestSnapshots,
   mergeState,
   PRESETS,
   projectEnergy,
   safeParseAppState,
+  TOMBSTONE_RETENTION_MS,
 } from '@memoria/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -22,7 +24,7 @@ vi.mock('idb-keyval', () => ({
   keys: vi.fn(async () => [...idb.keys()]),
 }));
 
-import { flushPersist, useApp } from '../src/store';
+import { closeTabSyncForTest, flushPersist, useApp } from '../src/store';
 import { get as idbGet, set as idbSet } from 'idb-keyval';
 import { SEED_UPDATED } from '../src/data/seed-events';
 
@@ -30,6 +32,7 @@ const IDB_KEY = 'memoria-state';
 
 /** Drop everything the module-level store holds so nothing leaks between tests. */
 async function freshStore(): Promise<void> {
+  closeTabSyncForTest();
   await flushPersist();
   idb.clear();
   useApp.setState({ state: emptyState(), loaded: false, loadError: '', syncStatus: 'idle', syncError: '' });
@@ -87,7 +90,18 @@ it('skips storage, subscribers, and sync for unchanged mutations but still saves
 
     useApp.getState().addBlankGame('Saved game');
     await flushPersist();
-    expect(idbSet).toHaveBeenCalledTimes(1);
+    expect(idbSet).toHaveBeenCalledTimes(2);
+    expect(idbSet).toHaveBeenNthCalledWith(
+      1,
+      IDB_KEY,
+      expect.objectContaining({ games: useApp.getState().state.games }),
+    );
+    expect((idb.get(IDB_KEY) as Record<string, unknown>).localHistory).toBeUndefined();
+    expect(idbSet).toHaveBeenNthCalledWith(
+      2,
+      'memoria-history',
+      expect.objectContaining({ journal: useApp.getState().history.journal }),
+    );
     expect(subscriber).toHaveBeenCalledTimes(1);
     expect(announce).toHaveBeenCalledTimes(1);
     expect(idb.get(IDB_KEY)).toEqual(expect.objectContaining({ games: useApp.getState().state.games }));
@@ -859,6 +873,37 @@ describe('adjustEnergy', () => {
     useApp.getState().adjustEnergy('missing-resource', 5);
     expect(useApp.getState().state.snapshots).toHaveLength(before);
   });
+
+  it('preserves fractional regeneration phase when adjusting a partial bar', () => {
+    const { resourceId } = addGameWithResource(100, 8, 0);
+    writeEnergy(resourceId, 50);
+    vi.advanceTimersByTime(14 * 60_000); // +1 full point (51) and 6m into the next (2m from 52)
+    useApp.getState().adjustEnergy(resourceId, -10);
+    const snap1 = latestSnapshots(useApp.getState().state.snapshots).get(resourceId)!;
+    expect(snap1.value).toBe(41);
+    vi.advanceTimersByTime(2 * 60_000);
+    const s1 = useApp.getState().state;
+    const res = s1.resources.find((r) => r.id === resourceId)!;
+    const game = s1.games.find((g) => g.id === res.gameId);
+    expect(projectEnergy(res, snap1, Date.now(), game).value).toBe(42);
+
+    vi.advanceTimersByTime(10_000);
+    useApp.getState().adjustEnergy(resourceId, -5);
+    const snap2 = latestSnapshots(useApp.getState().state.snapshots).get(resourceId)!;
+    expect(snap2.value).toBe(37);
+    expect(snap2.takenAt).toBeGreaterThan(snap1.takenAt);
+  });
+
+  it('does not backdate takenAt when spending from a full bar', () => {
+    const { resourceId } = addGameWithResource(100, 8, 0);
+    writeEnergy(resourceId, 100);
+    vi.advanceTimersByTime(6 * 60_000);
+    const before = Date.now();
+    useApp.getState().adjustEnergy(resourceId, -20);
+    const snap = latestSnapshots(useApp.getState().state.snapshots).get(resourceId)!;
+    expect(snap.value).toBe(80);
+    expect(snap.takenAt).toBe(before);
+  });
 });
 
 describe('setTaskCount', () => {
@@ -1162,5 +1207,98 @@ describe('per-game tracking customization', () => {
     const deleted = useApp.getState().state.reminders[0];
     useApp.getState().updateReminder(reminder.id, { message: 'Stale edit', at: reminder.at });
     expect(useApp.getState().state.reminders[0]).toEqual(deleted);
+  });
+});
+
+describe('Wave 1 storage, preset anchors, compaction and cross-tab sync', () => {
+  it('migrates embedded localHistory out of memoria-state into memoria-history and clears both', async () => {
+    useApp.getState().addBlankGame('Legacy owner');
+    await flushPersist();
+    const state = useApp.getState().state;
+    const legacyHistory = { ...emptyHistory('legacy'), journal: useApp.getState().history.journal };
+    idb.set(IDB_KEY, { ...state, localHistory: legacyHistory });
+    idb.delete('memoria-history');
+
+    await useApp.getState().load();
+    await flushPersist();
+
+    expect((idb.get(IDB_KEY) as Record<string, unknown>).localHistory).toBeUndefined();
+    expect((idb.get('memoria-history') as { journal: unknown[] }).journal.length).toBeGreaterThan(0);
+
+    await useApp.getState().clearLocalData();
+    expect(idb.has(IDB_KEY)).toBe(false);
+    expect(idb.has('memoria-history')).toBe(false);
+  });
+
+  it('anchors nte-tycoon-fund to 2026-11-09T04:00:00Z on addGameFromPreset', () => {
+    const nte = PRESETS.find((p) => p.key === 'nte')!;
+    const gameId = useApp.getState().addGameFromPreset(nte, {});
+    const fund = useApp
+      .getState()
+      .state.tasks.find((t) => t.gameId === gameId && t.presetTaskKey === 'nte-tycoon-fund')!;
+    expect(fund.anchorAt).toBe(Date.UTC(2026, 10, 9, 4));
+  });
+
+  it('compacts tombstones older than retention while keeping recent tombstones on load', async () => {
+    useApp.getState().addBlankGame('Active');
+    await flushPersist();
+    const t = Date.now();
+    const baseGame = useApp.getState().state.games[0]!;
+    const agedTombstone = {
+      ...baseGame,
+      id: 'old-tombstone',
+      deleted: true,
+      updatedAt: t - TOMBSTONE_RETENTION_MS - 1_000,
+    };
+    const recentTombstone = {
+      ...baseGame,
+      id: 'recent-tombstone',
+      deleted: true,
+      updatedAt: t - 10_000,
+    };
+    idb.set(IDB_KEY, {
+      ...useApp.getState().state,
+      games: [baseGame, agedTombstone, recentTombstone],
+    });
+
+    await useApp.getState().load();
+    const ids = useApp.getState().state.games.map((g) => g.id);
+    expect(ids).toContain('recent-tombstone');
+    expect(ids).not.toContain('old-tombstone');
+  });
+
+  it('merges cross-tab BroadcastChannel saved updates without re-broadcasting', async () => {
+    vi.useRealTimers();
+    const listener = vi.fn();
+    const other = new BroadcastChannel('memoria-state');
+    other.addEventListener('message', (event) => listener(event.data));
+    try {
+      const remoteGameId = useApp.getState().addBlankGame('Local copy');
+      await flushPersist();
+      await vi.waitFor(() => expect(listener).toHaveBeenCalledTimes(1));
+      const updated = {
+        ...useApp.getState().state,
+        games: useApp
+          .getState()
+          .state.games.map((g) =>
+            g.id === remoteGameId
+              ? { ...g, name: 'Remote tab edit', hlc: { wall: Date.now() + 50_000, counter: 0, device: 'other-tab' } }
+              : g,
+          ),
+      };
+      idb.set(IDB_KEY, updated);
+      listener.mockClear();
+      other.postMessage({ type: 'saved', sender: 'other-tab' });
+
+      await vi.waitFor(() => {
+        expect(useApp.getState().state.games.find((g) => g.id === remoteGameId)?.name).toBe('Remote tab edit');
+      });
+      await flushPersist();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(listener).not.toHaveBeenCalled();
+    } finally {
+      other.close();
+      closeTabSyncForTest();
+    }
   });
 });

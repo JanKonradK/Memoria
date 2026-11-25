@@ -2,6 +2,7 @@ import { nextReminderAt } from '@memoria/shared';
 import { isNativeApp } from '../../native';
 import { setPresence, usePresence } from '../../presence';
 import { useApp } from '../../store';
+import { useShallow } from 'zustand/react/shallow';
 import { useUI } from '../../ui-store';
 import { fmtDateTimeLocalInput } from '../../util';
 import { Btn, ConfirmDelete, Toggle } from '../ui';
@@ -54,7 +55,9 @@ function PcReminders() {
 
 /** Every custom reminder, across games, with its next time. */
 function CustomReminders() {
-  const state = useApp((s) => s.state);
+  const state = useApp(
+    useShallow((s) => ({ games: s.state.games, reminders: s.state.reminders, settings: s.state.settings })),
+  );
   const deleteReminder = useApp((s) => s.deleteReminder);
   const openSheet = useUI((s) => s.openSheet);
   const zone = state.settings.localTz;

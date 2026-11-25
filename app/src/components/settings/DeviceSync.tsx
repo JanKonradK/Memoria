@@ -60,8 +60,8 @@ function RelaySetup({
       <summary>Sync away from home</summary>
       <div className="space-y-3 pb-3">
         <p>
-          Deploy the Memoria relay to your own free Cloudflare account (see relay/README.md), then paste its address
-          here. Paired phones pick it up on their next sync. The relay only carries encrypted data it cannot read.
+          Paste your personal Memoria relay address to keep paired phones syncing away from home. Phones pick it up on
+          their next sync, and all data stays end-to-end encrypted.
         </p>
         <form
           className="flex flex-wrap items-end gap-2"
@@ -76,7 +76,7 @@ function RelaySetup({
               inputMode="url"
               autoComplete="off"
               spellCheck={false}
-              placeholder="https://memoria-relay.you.workers.dev"
+              placeholder="https://relay.example.com"
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
             />
@@ -729,6 +729,11 @@ function PhoneConnection() {
       {(error || (!connection.choice && connection.error)) && (
         <p role="alert" className="text-body text-danger-fg">
           {error || connection.error}
+        </p>
+      )}
+      {connection.keyStorageWarning && (
+        <p role="alert" className="text-body text-danger-fg">
+          {connection.keyStorageWarning}
         </p>
       )}
     </>

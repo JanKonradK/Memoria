@@ -23,7 +23,32 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- A screenshot shared from the gallery or a game, for live numbers. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+
         </activity>
+
+        <!-- HoYoLAB's own sign-in for live numbers. Not exported: only Memoria opens it. -->
+        <activity
+            android:name=".HoyolabLoginActivity"
+            android:exported="false"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|uiMode"
+            android:excludeFromRecents="true"
+            android:label="Sign in to HoYoLAB"
+            android:theme="@android:style/Theme.Material.Light.DarkActionBar" />
+
+        <!-- SKPORT's own sign-in for Endfield live numbers. Not exported: only Memoria opens it. -->
+        <activity
+            android:name=".SkportLoginActivity"
+            android:exported="false"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|uiMode"
+            android:excludeFromRecents="true"
+            android:label="Sign in to SKPORT"
+            android:theme="@android:style/Theme.Material.Light.DarkActionBar" />
 
         <activity
             android:name=".PairingCaptureActivity"
@@ -45,10 +70,13 @@
         </receiver>
 
         <!-- Alarm-style reminders ring like a clock app's alarm: full screen over
-             the lock screen, on a loop, until dismissed or snoozed. -->
+             the lock screen, on a loop, until dismissed or snoozed. Direct Boot
+             aware, with the alarm list in device-protected storage, so alarms
+             still ring after a reboot before the phone is first unlocked. -->
         <activity
             android:name=".AlarmActivity"
             android:exported="false"
+            android:directBootAware="true"
             android:excludeFromRecents="true"
             android:launchMode="singleInstance"
             android:taskAffinity=""
@@ -57,12 +85,15 @@
         <service
             android:name=".AlarmService"
             android:exported="false"
+            android:directBootAware="true"
             android:foregroundServiceType="mediaPlayback" />
 
         <receiver
             android:name=".AlarmReceiver"
-            android:exported="false">
+            android:exported="false"
+            android:directBootAware="true">
             <intent-filter>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.TIME_SET" />

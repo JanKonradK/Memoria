@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { emptyState } from '@memoria/shared';
 import { afterEach, expect, it } from 'vitest';
 import { makeGame } from '../../shared/test/helpers';
+import { ConfirmHost } from '../src/components/ConfirmDialog';
 import { createReminderDraft, GameReminders } from '../src/components/settings/GameReminders';
 import { ReminderSheet } from '../src/components/ReminderSheet';
 import { useApp } from '../src/store';
@@ -115,4 +116,29 @@ it('does not move an existing reminder when a timezone sync arrives during editi
   expect(useApp.getState().state.reminders[0]).toEqual(
     expect.objectContaining({ message: 'Same time, new message', at }),
   );
+});
+
+it('asks in the app before Cancel throws away an edited reminder', async () => {
+  useApp.setState({ state: { ...emptyState(), games: [game] } });
+  useApp.getState().addReminder('Claim rewards', Date.now() + 3_600_000, game.id);
+  render(
+    <>
+      <Editor />
+      <ConfirmHost />
+    </>,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Edit reminder Claim rewards' }));
+  fireEvent.change(screen.getByLabelText('Reminder message'), { target: { value: 'Claim all rewards' } });
+
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  let question = await screen.findByRole('alertdialog', { name: 'Discard your unsaved changes?' });
+  fireEvent.click(within(question).getByRole('button', { name: 'Keep editing' }));
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+  expect(screen.getByLabelText('Reminder message')).toHaveValue('Claim all rewards');
+
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  question = await screen.findByRole('alertdialog', { name: 'Discard your unsaved changes?' });
+  fireEvent.click(within(question).getByRole('button', { name: 'Discard' }));
+  await waitFor(() => expect(screen.getByLabelText('Reminder message')).toHaveValue(''));
+  expect(useApp.getState().state.reminders[0]?.message).toBe('Claim rewards');
 });

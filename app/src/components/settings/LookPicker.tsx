@@ -14,6 +14,8 @@ import { Segmented, Toggle } from '../ui';
 import { useMediaQuery } from '../../hooks';
 import { buzz } from '../../haptics';
 import { SettingRow } from './SettingRow';
+import { ProBadge, ProNotice, useProGate } from './MarkPicker';
+import { tierForLook } from '../../entitlements';
 import '../today/today-steps.css';
 import './looks-settings.css';
 
@@ -96,6 +98,7 @@ export function LookPicker() {
     .slice(0, 2)
     .map((game) => ({ ...game, ...(identity[game.id] ?? {}) }));
   const picked = [...live, ...SAMPLE].slice(0, 2).map((logo) => ({ logo, ink: gameInk(logo, ground) }));
+  const gate = useProGate();
 
   // The cards draw every look, so every look's faces are wanted here.
   useEffect(() => {
@@ -104,23 +107,34 @@ export function LookPicker() {
 
   return (
     <SettingRow label="Look" control="below">
-      <ToggleGroupPrimitive.Root
-        type="single"
-        value={look}
-        onValueChange={(next) => {
-          if (next) setLook(next as LookId);
-        }}
-        aria-label="Look"
-        className="look-grid"
-      >
-        {LOOKS.map((candidate) => (
-          <ToggleGroupPrimitive.Item key={candidate.id} value={candidate.id} className="look-option">
-            <LookPreview look={candidate.id} games={picked} />
-            <span className="look-option-name">{candidate.name}</span>
-            <span className="look-option-blurb say">{candidate.blurb}</span>
-          </ToggleGroupPrimitive.Item>
-        ))}
-      </ToggleGroupPrimitive.Root>
+      <div className="brand-picker">
+        <ToggleGroupPrimitive.Root
+          type="single"
+          value={look}
+          onValueChange={(next) => {
+            if (next) gate.choose(tierForLook(next as LookId), () => setLook(next as LookId));
+          }}
+          aria-label="Look"
+          className="look-grid"
+        >
+          {LOOKS.map((candidate) => (
+            <ToggleGroupPrimitive.Item
+              key={candidate.id}
+              value={candidate.id}
+              className="look-option"
+              {...gate.itemProps(tierForLook(candidate.id))}
+            >
+              <LookPreview look={candidate.id} games={picked} />
+              <span className="look-option-name">
+                {candidate.name}
+                <ProBadge tier={tierForLook(candidate.id)} />
+              </span>
+              <span className="look-option-blurb say">{candidate.blurb}</span>
+            </ToggleGroupPrimitive.Item>
+          ))}
+        </ToggleGroupPrimitive.Root>
+        <ProNotice id={gate.noticeId} shown={gate.notice} />
+      </div>
     </SettingRow>
   );
 }

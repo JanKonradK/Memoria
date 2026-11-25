@@ -7,7 +7,7 @@
 //!
 //! QuickJS is not thread-safe, so one thread owns the engine and every read
 //! and merge queues through it. That queue is also what serializes writes to
-//! the state file.
+//! the state file and to history.json, the PC's local undo history beside it.
 
 use std::path::PathBuf;
 use std::sync::mpsc;
@@ -56,11 +56,13 @@ pub struct Core {
 
 impl Core {
     /// `changes` hears about every write, so open windows pull right away.
+    /// Local history lives in `history.json` beside the state file.
     pub fn start(state_file: PathBuf, changes: broadcast::Sender<()>) -> Self {
         let (jobs, inbox) = mpsc::channel::<Job>();
+        let history_file = history_file(&state_file);
         thread::Builder::new()
             .name("memoria-core".into())
-            .spawn(move || run(state_file, inbox, changes))
+            .spawn(move || run(state_file, history_file, inbox, changes))
             .expect("start the data thread");
         Self { jobs }
     }
@@ -95,11 +97,16 @@ impl Core {
     }
 }
 
+/// The PC's local history, kept beside the state so the state stays small.
+pub fn history_file(state_file: &std::path::Path) -> PathBuf {
+    state_file.with_file_name("history.json")
+}
+
 fn stopped() -> CoreError {
     CoreError::new(500, "The local data service stopped. Restart Memoria.")
 }
 
-fn run(state_file: PathBuf, inbox: mpsc::Receiver<Job>, changes: broadcast::Sender<()>) {
+fn run(state_file: PathBuf, history_file: PathBuf, inbox: mpsc::Receiver<Job>, changes: broadcast::Sender<()>) {
     let runtime = Runtime::new().expect("start QuickJS");
     // An 8 MB document and its parsed copies stay far below this.
     runtime.set_memory_limit(512 * 1024 * 1024);
@@ -131,11 +138,12 @@ fn run(state_file: PathBuf, inbox: mpsc::Receiver<Job>, changes: broadcast::Send
     for job in inbox {
         match job {
             Job::Read(reply) => {
-                let result = store::read_raw(&state_file).and_then(|raw| call_read(&context, raw));
+                // A legacy state.json may still carry its history; read() strips it.
+                let result = store::read_raw_state(&state_file).and_then(|raw| call_read(&context, raw));
                 let _ = reply.send(result);
             }
             Job::NotificationPlan(now, reply) => {
-                let result = store::read_raw(&state_file).and_then(|raw| {
+                let result = store::read_raw_state(&state_file).and_then(|raw| {
                     context.with(|ctx| {
                         let core: Object = ctx.globals().get("MemoriaCore").map_err(|_| exception(&ctx))?;
                         let plan: Function = core.get("notificationPlan").map_err(|_| exception(&ctx))?;
@@ -146,27 +154,39 @@ fn run(state_file: PathBuf, inbox: mpsc::Receiver<Job>, changes: broadcast::Send
             }
             Job::Merge(body, authorized, reply) => {
                 let result = (|| {
-                    let raw = store::read_raw(&state_file)?;
+                    let raw_state = store::read_raw_state(&state_file)?;
+                    // Local history never blocks a sync: a damaged file starts a new one.
+                    let raw_history = store::read_raw(&history_file).unwrap_or_else(|error| {
+                        eprintln!("Local history unreadable, starting a new one: {}", error.message);
+                        None
+                    });
                     if !authorized() {
                         return Err(CoreError::new(
                             401,
                             "This device is no longer connected. Pair it again.",
                         ));
                     }
-                    let (json, changed) = call_merge(&context, raw, body)?;
-                    let outgoing = call_read(&context, Some(json.clone()))?;
-                    if outgoing.len() > MAX_STATE_BYTES - 100 {
+                    let merged = call_merge(&context, raw_state, raw_history, body)?;
+                    if merged.state_json.len() > MAX_STATE_BYTES - 100 {
                         return Err(CoreError::new(
                             413,
                             "Combined data exceeds the 8 MB sync limit. Export a backup and reduce old data.",
                         ));
                     }
-                    if changed {
-                        store::write_atomic(&state_file, json.as_bytes())
-                            .map_err(|error| CoreError::new(500, format!("The PC could not save data: {error}")))?;
+                    let save = |file: &PathBuf, json: &str| {
+                        store::write_atomic(file, json.as_bytes())
+                            .map_err(|error| CoreError::new(500, format!("The PC could not save data: {error}")))
+                    };
+                    // History first: when a legacy state.json gives up its history,
+                    // a crash between the two writes must not lose it.
+                    if merged.history_changed {
+                        save(&history_file, &merged.history_json)?;
+                    }
+                    if merged.changed {
+                        save(&state_file, &merged.state_json)?;
                         let _ = changes.send(());
                     }
-                    Ok(outgoing)
+                    Ok(merged.state_json)
                 })();
                 let _ = reply.send(result);
             }
@@ -192,11 +212,26 @@ fn call_read(context: &Context, raw: Option<String>) -> Result<String, CoreError
     })
 }
 
-fn call_merge(context: &Context, raw: Option<String>, body: String) -> Result<(String, bool), CoreError> {
+/// What one merge produced. `state_json` never carries local history.
+struct Merged {
+    state_json: String,
+    history_json: String,
+    changed: bool,
+    history_changed: bool,
+}
+
+fn call_merge(
+    context: &Context,
+    raw_state: Option<String>,
+    raw_history: Option<String>,
+    body: String,
+) -> Result<Merged, CoreError> {
     context.with(|ctx| {
         let core: Object = ctx.globals().get("MemoriaCore").map_err(|_| exception(&ctx))?;
         let merge: Function = core.get("merge").map_err(|_| exception(&ctx))?;
-        let result: Object = merge.call((raw, body)).map_err(|_| exception(&ctx))?;
+        let result: Object = merge
+            .call((raw_state, raw_history, body))
+            .map_err(|_| exception(&ctx))?;
         let status: u16 = result.get("status").map_err(|_| exception(&ctx))?;
         if status != 200 {
             let message: String = result
@@ -204,9 +239,12 @@ fn call_merge(context: &Context, raw: Option<String>, body: String) -> Result<(S
                 .unwrap_or_else(|_| "The data could not be merged.".into());
             return Err(CoreError::new(status, message));
         }
-        let json: String = result.get("json").map_err(|_| exception(&ctx))?;
-        let changed: bool = result.get("changed").map_err(|_| exception(&ctx))?;
-        Ok((json, changed))
+        Ok(Merged {
+            state_json: result.get("stateJson").map_err(|_| exception(&ctx))?,
+            history_json: result.get("historyJson").map_err(|_| exception(&ctx))?,
+            changed: result.get("changed").map_err(|_| exception(&ctx))?,
+            history_changed: result.get("historyChanged").map_err(|_| exception(&ctx))?,
+        })
     })
 }
 
@@ -244,6 +282,64 @@ mod tests {
         let saved: serde_json::Value = serde_json::from_slice(&std::fs::read(&file).unwrap()).unwrap();
         assert_eq!(saved["games"][0]["id"], "g1");
         assert!(heard.try_recv().is_ok());
+        // Local history goes to its own file and never into the state.
+        assert!(saved.get("localHistory").is_none());
+        assert!(merged.get("localHistory").is_none());
+        let history: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(history_file(&file)).unwrap()).unwrap();
+        assert_eq!(history["checkpoints"][0]["label"], "Daily checkpoint");
+        assert_eq!(history["journal"].as_array().unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn recovers_an_oversized_legacy_state_with_history_inside() {
+        let file = scratch("legacy");
+        let core = Core::start(file.clone(), broadcast::channel(4).0);
+        let mut state: serde_json::Value = serde_json::from_str(&core.read().await.unwrap()).unwrap();
+        // An older version kept up to 16 MB of history inside state.json.
+        let padding = "x".repeat(2_000_000);
+        let checkpoints: Vec<serde_json::Value> = (0..6)
+            .map(|i| {
+                serde_json::json!({
+                    "id": format!("c{i}"), "at": i, "label": "Before sync", "state": { "padding": padding }
+                })
+            })
+            .collect();
+        state["localHistory"] = serde_json::json!({
+            "deviceId": "PC core",
+            "journal": [{ "id": "old", "at": 1, "label": "Edit: Old", "changes": [] }],
+            "checkpoints": checkpoints,
+        });
+        store::write_json(&file, &state).unwrap();
+        let size = std::fs::metadata(&file).unwrap().len();
+        assert!(size > store::MAX_RAW_BYTES, "{size}");
+        assert!(store::read_raw(&file).is_err());
+
+        // Reads still work, and never show the history.
+        let read: serde_json::Value = serde_json::from_str(&core.read().await.unwrap()).unwrap();
+        assert!(read.get("localHistory").is_none());
+
+        // The next sync splits the file into a small state and a bounded history.
+        let mut incoming = read.clone();
+        incoming["reminders"] = serde_json::json!([{
+            "id": "r1", "gameId": null, "message": "Hi", "at": 100, "updatedAt": 1
+        }]);
+        core.merge(serde_json::json!({ "state": incoming }).to_string(), || true)
+            .await
+            .unwrap();
+        let saved = std::fs::read(&file).unwrap();
+        assert!(saved.len() < MAX_STATE_BYTES);
+        let saved: serde_json::Value = serde_json::from_slice(&saved).unwrap();
+        assert!(saved.get("localHistory").is_none());
+        assert_eq!(saved["reminders"][0]["id"], "r1");
+        let history = std::fs::read(history_file(&file)).unwrap();
+        assert!(history.len() < 4_200_000, "{}", history.len());
+        let history: serde_json::Value = serde_json::from_slice(&history).unwrap();
+        assert_eq!(history["journal"][0]["id"], "old");
+        assert!(history["checkpoints"].as_array().unwrap().len() <= 6);
+        // Both files are back within the normal read limit.
+        assert!(store::read_raw(&history_file(&file)).is_ok());
+        assert!(store::read_raw(&file).is_ok());
     }
 
     #[tokio::test]

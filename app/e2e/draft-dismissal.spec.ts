@@ -18,24 +18,17 @@ test.beforeEach(async ({ page }, info) => {
 
 for (const kind of ['Event', 'Reminder'] as const) {
   test(`${kind} keeps its draft when dismissal is rejected`, async ({ page }, info) => {
+    const confirm = page.getByRole('alertdialog', { name: 'Discard your unsaved changes?' });
     const open = async () => {
       await addFromShell(page, kind);
       await expect(page.getByRole('dialog')).toBeVisible();
     };
     await open();
     // An untouched editor closes without an unnecessary prompt.
-    let prompts = 0;
-    let discard = false;
-    page.on('dialog', async (dialog) => {
-      prompts++;
-      expect(dialog.message()).toBe('Discard your unsaved changes?');
-      if (discard) await dialog.accept();
-      else await dialog.dismiss();
-    });
     await page.keyboard.press('Escape');
+    await expect(confirm).toHaveCount(0);
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.locator('[data-layer=sheet]')).toHaveCount(0);
-    expect(prompts).toBe(0);
     await open();
     const field = page.getByLabel(kind === 'Event' ? 'Name' : 'Message', { exact: true });
     await field.fill('Keep this draft');
@@ -50,11 +43,15 @@ for (const kind of ['Event', 'Reminder'] as const) {
     }
     // Android Back is routed through this same Escape event.
     await page.keyboard.press('Escape');
+    await expect(confirm).toBeVisible();
+    await confirm.getByRole('button', { name: 'Keep editing', exact: true }).click();
+    await expect(confirm).toHaveCount(0);
     await expect(field).toHaveValue('Keep this draft');
-    expect(prompts).toBe(1);
     await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(confirm).toBeVisible();
+    await confirm.getByRole('button', { name: 'Keep editing', exact: true }).click();
+    await expect(confirm).toHaveCount(0);
     await expect(field).toHaveValue('Keep this draft');
-    expect(prompts).toBe(2);
     if (info.project.name === 'android-s23') {
       const dialog = page.getByRole('dialog');
       const box = (await dialog.boundingBox())!;
@@ -62,20 +59,23 @@ for (const kind of ['Event', 'Reminder'] as const) {
       await page.mouse.down();
       await page.mouse.move(box.x + box.width / 2, box.y + 180, { steps: 8 });
       await page.mouse.up();
+      await expect(confirm).toBeVisible();
+      await confirm.getByRole('button', { name: 'Keep editing', exact: true }).click();
+      await expect(confirm).toHaveCount(0);
       await expect(field).toHaveValue('Keep this draft');
       await expect.poll(async () => (await dialog.boundingBox())!.y).toBeCloseTo(box.y, 0);
-      expect(prompts).toBe(3);
     }
     // Save commits without asking to discard.
-    const beforeSave = prompts;
     await page.getByRole('button', { name: kind === 'Event' ? 'Add event' : 'Add reminder', exact: true }).click();
+    await expect(confirm).toHaveCount(0);
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.locator('[data-layer=sheet]')).toHaveCount(0);
-    expect(prompts).toBe(beforeSave);
     await open();
     await field.fill('Discard this draft');
-    discard = true;
     await page.getByRole('button', { name: kind === 'Event' ? 'Cancel' : 'Close', exact: true }).click();
+    await expect(confirm).toBeVisible();
+    await confirm.getByRole('button', { name: 'Discard', exact: true }).click();
+    await expect(confirm).toHaveCount(0);
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.locator('[data-layer=sheet]')).toHaveCount(0);
     await open();
@@ -89,37 +89,38 @@ test('game settings protect unfinished tasks and reminders through dismissal and
   await openSettings(page, 'Games');
   await page.getByRole('button', { name: 'Game settings for Genshin Impact', exact: true }).click();
   const editor = page.getByRole('dialog', { name: 'Genshin Impact', exact: true });
-  let prompts = 0;
-  page.on('dialog', async (dialog) => {
-    prompts++;
-    expect(dialog.message()).toBe('Discard your unsaved changes?');
-    await dialog.dismiss();
-  });
+  const confirm = page.getByRole('alertdialog', { name: 'Discard your unsaved changes?' });
 
   await editor.getByRole('tab', { name: 'Tasks', exact: true }).click();
   const taskName = editor.getByLabel('New task name');
   await taskName.fill('Keep this routine');
   await editor.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(confirm).toBeVisible();
+  await confirm.getByRole('button', { name: 'Keep editing', exact: true }).click();
+  await expect(confirm).toHaveCount(0);
   await expect(taskName).toHaveValue('Keep this routine');
-  expect(prompts).toBe(1);
   await editor.getByRole('button', { name: 'Add task', exact: true }).click();
 
   await editor.getByRole('tab', { name: 'Reminders', exact: true }).click();
   await editor.getByLabel('Reminder message').fill('Keep this reminder');
   await page.keyboard.press('Escape');
+  await expect(confirm).toBeVisible();
+  await confirm.getByRole('button', { name: 'Keep editing', exact: true }).click();
+  await expect(confirm).toHaveCount(0);
   await expect(editor.getByLabel('Reminder message')).toHaveValue('Keep this reminder');
-  expect(prompts).toBe(2);
   await editor.getByRole('tab', { name: 'Events', exact: true }).click();
   await editor.getByRole('button', { name: 'Add event', exact: true }).click();
+  await expect(confirm).toBeVisible();
+  await confirm.getByRole('button', { name: 'Keep editing', exact: true }).click();
+  await expect(confirm).toHaveCount(0);
   await expect(editor).toBeVisible();
-  expect(prompts).toBe(3);
 
   await editor.getByRole('tab', { name: 'Reminders', exact: true }).click();
   await expect(editor.getByLabel('Reminder message')).toHaveValue('Keep this reminder');
   await editor.getByRole('button', { name: 'Add reminder', exact: true }).click();
   await editor.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(confirm).toHaveCount(0);
   await expect(editor).toHaveCount(0);
-  expect(prompts).toBe(3);
 });
 
 test('event and reminder forms save from Enter and explain invalid dates', async ({ page }) => {

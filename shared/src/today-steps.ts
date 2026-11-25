@@ -48,6 +48,8 @@ export interface EnergyStep extends StepBase {
   cap: number;
   /** What banks the bar's overflow: its reserve, or a counter crafted from it. */
   bank: EnergyBank | null;
+  /** Never read: no reading to project from, so the value is a placeholder. */
+  unmeasured?: boolean;
 }
 
 export interface TaskStep extends StepBase {
@@ -105,6 +107,11 @@ export interface TodayPlan {
   done: TodayStep[];
   week: TodayWeekItem[];
   marks: TodayMark[];
+  /**
+   * Every other bar of an active game: never read, or not capping within the
+   * day. Shown so each bar can be entered from Today; never counted as a step.
+   */
+  otherBars: EnergyStep[];
   /** The quiet hours the evening group runs up to, when they start within the day. */
   quiet: QuietWindow | null;
   open: number;
@@ -137,9 +144,10 @@ function energySteps(
   now: number,
   ctx: UrgencyContext,
   hidden: Set<string>,
-): { steps: EnergyStep[]; week: TodayWeekItem[] } {
+): { steps: EnergyStep[]; week: TodayWeekItem[]; other: EnergyStep[] } {
   const steps: EnergyStep[] = [];
   const week: TodayWeekItem[] = [];
+  const other: EnergyStep[] = [];
   const all = ctx.resourcesByGame.get(game.id) ?? [];
   const resources = all
     .filter(
@@ -148,8 +156,25 @@ function energySteps(
     .sort((a, b) => a.sort - b.sort);
   for (const res of resources) {
     const proj = projectEnergy(res, measuredSnapshot(res, ctx.snaps.get(res.id)), now, game);
-    if (!proj.hasSnapshot) continue;
-    const at = proj.isFull ? now : proj.fullAt;
+    const at = proj.hasSnapshot ? (proj.isFull ? now : proj.fullAt) : null;
+    if (at == null || at - now > HORIZON) {
+      const later = at ?? now + HORIZON + 1;
+      other.push({
+        kind: 'energy',
+        key: `energy:${res.id}`,
+        gameId: game.id,
+        resourceId: res.id,
+        name: res.name,
+        full: false,
+        value: proj.hasSnapshot ? proj.value : 0,
+        cap: res.cap,
+        bank: proj.hasSnapshot ? energyBank(res, proj, all, ctx.snaps, now, game) : null,
+        at: later,
+        actBy: later,
+        done: false,
+        ...(proj.hasSnapshot ? {} : { unmeasured: true }),
+      });
+    }
     if (at == null) continue;
     if (at - now <= HORIZON) {
       steps.push({
@@ -170,7 +195,7 @@ function energySteps(
       week.push({ key: `cap:${res.id}`, kind: 'cap', gameId: game.id, at, left: 1, name: res.name });
     }
   }
-  return { steps, week };
+  return { steps, week, other };
 }
 
 function taskSteps(
@@ -301,13 +326,12 @@ export function todaySteps(state: AppState, now: number, ctx?: UrgencyContext): 
   const sortOf = new Map(games.map((game) => [game.id, game.sort]));
   const all: TodayStep[] = [];
   const week: TodayWeekItem[] = [];
+  const otherBars: EnergyStep[] = [];
   for (const game of games) {
     const hidden = hiddenOnCard(game);
-    for (const part of [
-      energySteps(state, game, now, context, hidden),
-      taskSteps(state, game, now, context, hidden),
-      eventSteps(state, game, now, context),
-    ]) {
+    const energy = energySteps(state, game, now, context, hidden);
+    otherBars.push(...energy.other);
+    for (const part of [energy, taskSteps(state, game, now, context, hidden), eventSteps(state, game, now, context)]) {
       all.push(...part.steps);
       week.push(...part.week);
     }
@@ -354,6 +378,7 @@ export function todaySteps(state: AppState, now: number, ctx?: UrgencyContext): 
       now,
       until,
     ),
+    otherBars: otherBars.sort((a, b) => (sortOf.get(a.gameId) ?? 0) - (sortOf.get(b.gameId) ?? 0)),
     quiet,
     open,
     total: all.length,

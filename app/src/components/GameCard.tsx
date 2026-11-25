@@ -15,7 +15,6 @@ import {
   nextEventProgress,
   projectEnergy,
   resolveGameLayout,
-  setEventProgress,
 } from '@memoria/shared';
 import { useDerived } from '../selectors';
 import { useApp, type AppStore } from '../store';
@@ -43,6 +42,8 @@ import { LaunchButton } from './GameLaunch';
 import { useCatchUpUnread } from '../catch-up-status';
 import { openGame } from '../workspace-navigation';
 import { passSession, sessionNeed, sessionResource, useSession, type SessionNeed } from '../session-focus';
+import { useConnectors } from '../connectors-state';
+import { CheckInFailureNote, useCheckInClaim } from './CheckInClaim';
 
 const CADENCE_ORDER = ['daily', 'custom', 'weekly', 'monthly'] as const;
 /** A reading older than this shows when it was taken. */
@@ -219,7 +220,17 @@ function useCompletionSweep(done: boolean): {
 }
 
 /** An event's tick: a plain circle for one part, a ring of sectors that fill as its parts are ticked. */
-function EventTick({ ticked, total, color }: { ticked: number; total: number; color: string }) {
+export function EventTick({
+  ticked,
+  total,
+  color,
+  className,
+}: {
+  ticked: number;
+  total: number;
+  color: string;
+  className?: string;
+}) {
   const done = ticked >= total;
   const { sweep, checkEnter, end } = useCompletionSweep(done);
   return (
@@ -231,6 +242,7 @@ function EventTick({ ticked, total, color }: { ticked: number; total: number; co
       sweep={sweep}
       checkEnter={checkEnter}
       onSweepEnd={end}
+      className={className}
     />
   );
 }
@@ -762,6 +774,16 @@ function groupChecklist(checklist: ChecklistItem[]): Array<{
   }).filter((group) => group.items.length > 0);
 }
 
+/** Records a reversible task reset or timer restart under an Undo toast. */
+function runWithUndo(label: string, run: () => void): void {
+  const before = useApp.getState?.()?.history?.journal?.at(-1)?.id;
+  run();
+  const actionId = useApp.getState?.()?.history?.journal?.at(-1)?.id;
+  if (actionId && actionId !== before) {
+    useUI.getState().showUndo(label, () => useApp.getState().undoActivity(actionId));
+  }
+}
+
 function TaskControl({
   item,
   now,
@@ -784,7 +806,13 @@ function TaskControl({
             label: 'Sooner',
             run: () => actions.advanceTaskTimer(item.taskId, item.periodKey, item.timerStepMinutes ?? 0),
           }
-        : { label: item.done ? 'Resend' : 'Collect', run: () => actions.restartTaskTimer(item.taskId, item.periodKey) }
+        : {
+            label: item.done ? 'Resend' : 'Collect',
+            run: () =>
+              runWithUndo(item.done ? `${item.name} restarted` : `${item.name} timer started`, () =>
+                actions.restartTaskTimer(item.taskId, item.periodKey),
+              ),
+          }
       : item.done
         ? null
         : item.mode === 'count'
@@ -832,20 +860,24 @@ function TaskRowFor({
       item={item}
       color={tickColor}
       now={now}
-      onRestart={() => actions.restartTaskTimer(item.taskId, item.periodKey)}
+      onRestart={() =>
+        runWithUndo(item.done ? `${item.name} restarted` : `${item.name} timer started`, () =>
+          actions.restartTaskTimer(item.taskId, item.periodKey),
+        )
+      }
       onAdvance={() => actions.advanceTaskTimer(item.taskId, item.periodKey, item.timerStepMinutes ?? 0)}
     />
   ) : item.mode === 'count' ? (
     <CountTaskRow
       item={item}
       color={tickColor}
-      onAdvance={() =>
-        actions.setTaskCount(
-          item.taskId,
-          item.periodKey,
-          item.done ? 0 : Math.min(item.countTarget, item.countDone + 1),
-        )
-      }
+      onAdvance={() => {
+        if (item.done) {
+          runWithUndo(`${item.name} reset`, () => actions.setTaskCount(item.taskId, item.periodKey, 0));
+        } else {
+          actions.setTaskCount(item.taskId, item.periodKey, Math.min(item.countTarget, item.countDone + 1));
+        }
+      }}
     />
   ) : item.link ? (
     <LinkedTaskRow item={item} color={tickColor} now={now} showDeadline={showDeadline} actions={actions} />
@@ -862,7 +894,9 @@ function TaskRowFor({
 
 /**
  * A task done on another site, like a HoYoLAB check-in: Open goes there, and
- * coming back offers Mark done, so the common answer is one tap.
+ * coming back offers Mark done, so the common answer is one tap. A HoYoLAB
+ * check-in on a linked game is claimed right here instead; if that fails, the
+ * reason shows and Open is back as the fallback.
  */
 function LinkedTaskRow({
   item,
@@ -878,12 +912,13 @@ function LinkedTaskRow({
   actions: GameControlActions;
 }) {
   const [opened, setOpened] = useState(false);
+  const checkIn = useCheckInClaim(item, actions.setTaskDone);
   const done = () => {
     actions.setTaskDone(item.taskId, item.periodKey, true);
     setOpened(false);
   };
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex flex-wrap items-center gap-1">
       <div className="min-w-0 flex-1">
         <TaskRow
           item={item}
@@ -893,7 +928,20 @@ function LinkedTaskRow({
           onToggle={() => actions.setTaskDone(item.taskId, item.periodKey, !item.done)}
         />
       </div>
+      {!item.done && checkIn.available && (
+        <button
+          type="button"
+          className="min-h-11 shrink-0 rounded-ui-sm px-2 text-caption font-semibold text-accent-fg hover:bg-fill-2 disabled:opacity-60 fine:min-h-8"
+          aria-label={checkIn.busy ? `Claiming ${item.name}` : `Claim ${item.name}`}
+          aria-busy={checkIn.busy}
+          disabled={checkIn.busy}
+          onClick={checkIn.claim}
+        >
+          {checkIn.busy ? 'Claiming…' : checkIn.failure ? 'Retry' : 'Claim'}
+        </button>
+      )}
       {!item.done &&
+        (!checkIn.available || checkIn.failure) &&
         (opened ? (
           <button
             type="button"
@@ -921,6 +969,7 @@ function LinkedTaskRow({
             </svg>
           </a>
         ))}
+      {checkIn.failure && !item.done && <CheckInFailureNote failure={checkIn.failure} className="basis-full pl-1" />}
     </div>
   );
 }
@@ -966,12 +1015,13 @@ function ChecklistControls({
               group.cadence !== 'daily' ? undefined : canUndo ? (
                 <button
                   type="button"
-                  className="-my-1.5 shrink-0 rounded-ui-sm px-2 py-1.5 text-caption font-semibold hover:bg-fill-2 focus-visible:bg-fill-2"
+                  className="-my-2.5 inline-flex min-h-11 shrink-0 items-center rounded-ui-sm px-2 py-1.5 text-caption font-semibold hover:bg-fill-2 focus-visible:bg-fill-2 fine:-my-1.5 fine:min-h-0"
                   style={{ color: actionInk }}
                   aria-label={`Undo completing dailies for ${game.name}`}
                   onClick={() => {
                     undoActivity(completedAction);
                     setCompletedAction(undefined);
+                    useUI.getState().dismissUndo();
                   }}
                 >
                   Undo
@@ -979,18 +1029,25 @@ function ChecklistControls({
               ) : canComplete ? (
                 <button
                   type="button"
-                  className="-my-1.5 inline-flex shrink-0 items-center rounded-ui-sm px-2 py-1.5 hover:bg-fill-2 focus-visible:bg-fill-2"
+                  className="-my-2.5 inline-flex min-h-11 shrink-0 items-center gap-1 rounded-ui-sm px-2 py-1.5 text-caption font-semibold hover:bg-fill-2 focus-visible:bg-fill-2 fine:-my-1.5 fine:min-h-0"
                   style={{ color: actionInk }}
                   aria-label={`Tick all dailies for ${game.name}`}
                   title="Tick all dailies"
                   onClick={() => {
                     passSession(game.id, 'energy', 'reserve');
-                    setCompletedAction(completeDailies(game.id));
+                    const actionId = completeDailies(game.id);
+                    setCompletedAction(actionId);
+                    if (actionId)
+                      useUI.getState().showUndo(`${game.name} dailies ticked`, () => {
+                        undoActivity(actionId);
+                        setCompletedAction(undefined);
+                      });
                   }}
                 >
                   <svg viewBox="0 0 20 20" aria-hidden className="icon h-4 w-4" fill="none" stroke="currentColor">
                     <path d="m2.5 10.5 3 3 6.5-7M9.5 13l.5.5 6.5-7" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
+                  <span aria-hidden>Tick all</span>
                 </button>
               ) : undefined
             }
@@ -1131,6 +1188,8 @@ function GameControlsHeader({
       <div className="game-card-actions flex shrink-0 items-center gap-2" aria-label={`${game.name} tracking controls`}>
         {actions}
         <CatchUpButton game={game} />
+        <LiveRefreshButton game={game} />
+        <SnipReadingButton game={game} />
         {/* One Edit control for the game's settings and its events. Compact cards keep their title shortcut. */}
         <DropdownMenuPrimitive.Root>
           <Tooltip content={`Edit ${game.name} settings or events`}>
@@ -1176,6 +1235,96 @@ function GameControlsHeader({
         {actionsEnd}
       </div>
     </div>
+  );
+}
+
+/**
+ * Reads a linked game's live numbers through HoYoLAB or SKPORT. Only shows
+ * once the connector says the game is linked.
+ */
+function LiveRefreshButton({ game }: { game: Game }) {
+  const provider = useConnectors((store) =>
+    store.status?.hoyolab.gameLinks[game.id] ? 'hoyolab' : store.status?.skport?.gameLinks[game.id] ? 'skport' : null,
+  );
+  const busy = useConnectors((store) => Boolean(store.busy[`refresh:${game.id}`]));
+  const waiting = useConnectors((store) => {
+    const until = store.status?.hoyolab.backoffUntilMs;
+    return provider === 'hoyolab' && until != null && until > Date.now();
+  });
+  const [failure, setFailure] = useState('');
+  if (!provider || game.paused) return null;
+  const name = provider === 'skport' ? 'SKPORT' : 'HoYoLAB';
+  const refresh = () => {
+    setFailure('');
+    // The connectors load on the first press, never with Today.
+    void import('../connectors')
+      .then(({ refreshHoyolab, refreshSkport }) =>
+        provider === 'skport' ? refreshSkport(game.id) : refreshHoyolab(game.id),
+      )
+      .catch(() => undefined)
+      .then((applied) => {
+        if (applied === undefined) setFailure(useConnectors.getState().notice?.text ?? `${name} could not be read.`);
+      });
+  };
+  return (
+    <Tooltip content={failure || (waiting ? `${name} asked Memoria to wait` : `Read live numbers from ${name}`)}>
+      <Btn
+        type="button"
+        className={`relative inline-flex shrink-0 items-center gap-2 ${TOUCH_BUTTON}`}
+        aria-label={`Refresh live numbers for ${game.name}`}
+        aria-busy={busy || undefined}
+        disabled={busy || waiting}
+        onClick={refresh}
+      >
+        <svg
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          className={`icon h-4 w-4 ${busy ? 'motion-safe:animate-spin' : ''}`}
+          aria-hidden
+        >
+          <path d="M15.5 8a6 6 0 0 0-10.6-2.3M4.5 12a6 6 0 0 0 10.6 2.3" strokeLinecap="round" />
+          <path d="M4.6 3v3h3M15.4 17v-3h-3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        {failure && <span aria-hidden className="catch-up-dot" />}
+        <span role="status" className="sr-only">
+          {failure}
+        </span>
+      </Btn>
+    </Tooltip>
+  );
+}
+
+/** Drags a region of the screen to read in, in the Windows app. Every game can use it, whatever its numbers look like. */
+function SnipReadingButton({ game }: { game: Game }) {
+  const busy = useConnectors((store) => Boolean(store.busy.capture));
+  if (game.paused || !window.memoriaDesktop?.connectors?.screenshot?.capture) return null;
+  // A plain title, not a Tooltip: the shortcut hint should not show twice.
+  return (
+    <Btn
+      type="button"
+      className={`inline-flex shrink-0 items-center gap-2 ${TOUCH_BUTTON}`}
+      aria-label="Snip screenshot reading"
+      title="Snip screenshot reading (Shift+S)"
+      aria-busy={busy || undefined}
+      disabled={busy}
+      onClick={() =>
+        void import('../connectors').then(
+          ({ captureScreenshot }) => captureScreenshot('snip'),
+          () => undefined,
+        )
+      }
+    >
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" className="icon h-4 w-4" aria-hidden>
+        <path
+          d="M3 7V4.5A1.5 1.5 0 0 1 4.5 3H7M13 3h2.5A1.5 1.5 0 0 1 17 4.5V7M17 13v2.5a1.5 1.5 0 0 1-1.5 1.5H13M7 17H4.5A1.5 1.5 0 0 1 3 15.5V13"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path d="M7.5 10h5M10 7.5v5" strokeLinecap="round" />
+      </svg>
+    </Btn>
   );
 }
 
@@ -1287,14 +1436,16 @@ export function GameControlsView({
   const { resource: mainResource } = derived.primaryEnergy(game.id);
   const mainSnap = mainResource ? derived.snaps.get(mainResource.id) : undefined;
   const source = readingSource(mainSnap, now);
-  // When the reading was taken only shows when it is worth doubting.
+  // When the reading was taken only shows when it is worth doubting, or when
+  // it was read for the player (an account or a screenshot), so they can see where it came from.
   const stale =
     !mainSnap ||
     !source ||
     source.kind === 'estimate' ||
     now - (mainSnap.provenance?.observedAt ?? mainSnap.takenAt) > STALE_READING_MS;
+  const readFor = source?.kind === 'account' || source?.kind === 'screenshot';
   const reading =
-    mainResource && !game.paused && stale
+    mainResource && !game.paused && (stale || readFor)
       ? {
           resourceId: mainResource.id,
           label: !source ? (
@@ -1302,7 +1453,17 @@ export function GameControlsView({
           ) : source.kind === 'estimate' ? (
             source.label
           ) : (
-            <Ago at={mainSnap!.provenance?.observedAt ?? mainSnap!.takenAt} now={now} verb="Updated" />
+            <Ago
+              at={mainSnap!.provenance?.observedAt ?? mainSnap!.takenAt}
+              now={now}
+              verb={
+                source.kind === 'account'
+                  ? `Read from ${source.provider ?? 'your account'}`
+                  : source.kind === 'screenshot'
+                    ? 'Read from a screenshot'
+                    : 'Updated'
+              }
+            />
           ),
         }
       : undefined;
@@ -1345,7 +1506,7 @@ export function GameControlsView({
   const tasks = <ChecklistControls game={visualGame} checklist={checklist} now={now} actions={sessionActions} />;
   const focus = layout === 'focus';
   const setProgress = (event: GameEvent, progress: EventProgress) =>
-    useApp.getState().upsertEvent({ id: event.id, gameId: event.gameId, ...setEventProgress(progress) });
+    useApp.getState().setEventProgress(event.id, progress);
   const events = !game.paused && !hidden.has('events') && (
     <EventStrip
       game={visualGame}

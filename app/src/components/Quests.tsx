@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
   availableQuests,
   CatalogQuestSchema,
@@ -133,33 +133,49 @@ function GameQuests({ game, ink }: { game: Game; ink: string }) {
   const [adding, setAdding] = useState(false);
   const title = game.accountLabel ? `${game.name} · ${game.accountLabel}` : game.name;
   const kinds = QUEST_KINDS.filter((k) => lines.some((line) => line.kind === k));
-  const totals = questTotals(lines, game.id, index);
-  const started = lines.filter((line) => questProgress(line, game.id, index).status === 'started');
-  const next = availableQuests(lines, game.id, index).slice(0, 4);
+  const totals = useMemo(() => questTotals(lines, game.id, index), [lines, game.id, index]);
+  const started = useMemo(
+    () => lines.filter((line) => questProgress(line, game.id, index).status === 'started'),
+    [lines, game.id, index],
+  );
+  const next = useMemo(() => availableQuests(lines, game.id, index).slice(0, 4), [lines, game.id, index]);
+  const titleById = useMemo(() => new Map(lines.map((line) => [line.id, line.title])), [lines]);
+  // Typing stays quick on a long catalog: the list catches up a beat behind the field.
+  const search = useDeferredValue(query);
 
-  const shown = lines.filter((line) => {
-    if (kind === 'mine' ? !line.custom : kind !== 'all' && line.kind !== kind) return false;
-    const progress = questProgress(line, game.id, index).status;
-    if (status === 'open' && (progress === 'done' || progress === 'skipped')) return false;
-    if (status === 'started' && progress !== 'started') return false;
-    if (status === 'done' && progress !== 'done' && progress !== 'skipped') return false;
-    return questMatches(line, query);
-  });
-  const groups: { name: string; lines: QuestLine[] }[] = [];
-  for (const line of shown) {
-    const name = line.custom ? 'Added by you' : `${KIND_LABELS[line.kind]}${line.series ? ` · ${line.series}` : ''}`;
-    const last = groups.at(-1);
-    if (last?.name === name) last.lines.push(line);
-    else groups.push({ name, lines: [line] });
-  }
-  const toggle = (id: string) =>
-    setOpen((current) => {
-      const nextOpen = new Set(current);
-      if (nextOpen.has(id)) nextOpen.delete(id);
-      else nextOpen.add(id);
-      return nextOpen;
-    });
-  const reveal = (id: string) => {
+  const shown = useMemo(
+    () =>
+      lines.filter((line) => {
+        if (kind === 'mine' ? !line.custom : kind !== 'all' && line.kind !== kind) return false;
+        const progress = questProgress(line, game.id, index).status;
+        if (status === 'open' && (progress === 'done' || progress === 'skipped')) return false;
+        if (status === 'started' && progress !== 'started') return false;
+        if (status === 'done' && progress !== 'done' && progress !== 'skipped') return false;
+        return questMatches(line, search);
+      }),
+    [lines, kind, status, search, game.id, index],
+  );
+  const groups = useMemo(() => {
+    const grouped: { name: string; lines: QuestLine[] }[] = [];
+    for (const line of shown) {
+      const name = line.custom ? 'Added by you' : `${KIND_LABELS[line.kind]}${line.series ? ` · ${line.series}` : ''}`;
+      const last = grouped.at(-1);
+      if (last?.name === name) last.lines.push(line);
+      else grouped.push({ name, lines: [line] });
+    }
+    return grouped;
+  }, [shown]);
+  const toggle = useCallback(
+    (id: string) =>
+      setOpen((current) => {
+        const nextOpen = new Set(current);
+        if (nextOpen.has(id)) nextOpen.delete(id);
+        else nextOpen.add(id);
+        return nextOpen;
+      }),
+    [],
+  );
+  const reveal = useCallback((id: string) => {
     setKind('all');
     setStatus('all');
     setQuery('');
@@ -167,7 +183,7 @@ function GameQuests({ game, ink }: { game: Game; ink: string }) {
     requestAnimationFrame(() =>
       document.getElementById(`quest-${id}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }),
     );
-  };
+  }, []);
 
   return (
     <section aria-label={`${title} quests`}>
@@ -311,9 +327,9 @@ function GameQuests({ game, ink }: { game: Game; ink: string }) {
                 ink={ink}
                 marks={index}
                 open={open.has(line.id)}
-                onToggle={() => toggle(line.id)}
-                onFind={(name) => setQuery(name)}
-                titleOf={(id) => lines.find((other) => other.id === id)?.title ?? id}
+                onToggle={toggle}
+                onFind={setQuery}
+                titleById={titleById}
                 onReveal={reveal}
               />
             ))}
@@ -335,7 +351,8 @@ function stateLabel(state: QuestState | undefined): string {
   return state === 'done' ? 'done' : state === 'partial' ? 'partly done' : state === 'skipped' ? 'skipped' : 'not done';
 }
 
-function QuestRow({
+/** Memoised: a tick on one row, or a keystroke in the search, leaves the others be. */
+const QuestRow = memo(function QuestRow({
   line,
   game,
   ink,
@@ -343,7 +360,7 @@ function QuestRow({
   open,
   onToggle,
   onFind,
-  titleOf,
+  titleById,
   onReveal,
 }: {
   line: QuestLine;
@@ -351,9 +368,9 @@ function QuestRow({
   ink: string;
   marks: Map<string, QuestState>;
   open: boolean;
-  onToggle: () => void;
+  onToggle: (id: string) => void;
   onFind: (name: string) => void;
-  titleOf: (id: string) => string;
+  titleById: ReadonlyMap<string, string>;
   onReveal: (id: string) => void;
 }) {
   const setQuestMarks = useApp((s) => s.setQuestMarks);
@@ -396,7 +413,7 @@ function QuestRow({
           className="quests-row-title"
           aria-expanded={open}
           aria-controls={panelId}
-          onClick={onToggle}
+          onClick={() => onToggle(line.id)}
         >
           <span className={`text-body font-medium ${finished ? 'text-muted line-through decoration-1' : 'text-fg'}`}>
             {line.title}
@@ -424,7 +441,7 @@ function QuestRow({
                 <span key={id}>
                   {i > 0 && ', '}
                   <button type="button" className="quests-link" onClick={() => onReveal(id)}>
-                    {titleOf(id)}
+                    {titleById.get(id) ?? id}
                   </button>
                 </span>
               ))}
@@ -526,12 +543,13 @@ function QuestRow({
       )}
     </li>
   );
-}
+});
 
 /** The game's events running now, with their parts, so event quests sit next to the story. */
 function EventsNow({ game, ink }: { game: Game; ink: string }) {
   const events = useApp((s) => s.state.events);
-  const upsertEvent = useApp((s) => s.upsertEvent);
+  const toggleEventDone = useApp((s) => s.toggleEventDone);
+  const setEventPartsDone = useApp((s) => s.setEventPartsDone);
   const now = useNow(60_000);
   const live = events
     .filter(
@@ -560,7 +578,7 @@ function EventsNow({ game, ink }: { game: Game; ink: string }) {
                   role="checkbox"
                   aria-checked={event.done ? 'true' : partsDone ? 'mixed' : 'false'}
                   aria-label={`${event.name}: ${event.done ? 'done' : 'not done'}`}
-                  onClick={() => upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done })}
+                  onClick={() => toggleEventDone(event.id)}
                 >
                   <Tick
                     color={ink}
@@ -584,20 +602,13 @@ function EventsNow({ game, ink }: { game: Game; ink: string }) {
                     <Btn
                       aria-label={`One part fewer for ${event.name}`}
                       disabled={partsDone === 0}
-                      onClick={() => upsertEvent({ id: event.id, gameId: event.gameId, partsDone: partsDone - 1 })}
+                      onClick={() => setEventPartsDone(event.id, partsDone - 1)}
                     >
                       −
                     </Btn>
                     <Btn
                       aria-label={`One more part done for ${event.name}`}
-                      onClick={() =>
-                        upsertEvent({
-                          id: event.id,
-                          gameId: event.gameId,
-                          partsDone: partsDone + 1,
-                          ...(partsDone + 1 >= parts ? { done: true } : {}),
-                        })
-                      }
+                      onClick={() => setEventPartsDone(event.id, partsDone + 1)}
                     >
                       +
                     </Btn>

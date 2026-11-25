@@ -1,9 +1,20 @@
-import { Children, isValidElement, useId, useState, type ReactElement, type ReactNode } from 'react';
+import {
+  Children,
+  isValidElement,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type RefObject,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import * as SelectPrimitive from '@radix-ui/react-select';
 import * as SwitchPrimitive from '@radix-ui/react-switch';
 import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
-import { m } from 'motion/react';
 import { gameRim, gameTitleInk, mix } from '../game-color';
 import { useMediaQuery, useReducedMotion } from '../hooks';
 import { duration, easing } from '../motion';
@@ -295,6 +306,67 @@ export function Toggle({
   );
 }
 
+/**
+ * The selected-option plate shared by `Segmented` and the editor's tab strip.
+ * Measured from the selected control and slid there with a CSS transform, so
+ * neither control needs the motion library's layout animations. It appears in
+ * place, and slides only from the second position on.
+ */
+export function useSlidingIndicator(
+  containerRef: RefObject<HTMLElement | null>,
+  selected: string,
+  selectedKey: string,
+  reduced: boolean,
+): CSSProperties {
+  const [box, setBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [placed, setPlaced] = useState(false);
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const measure = () => {
+      const node = container.querySelector<HTMLElement>(selected);
+      if (!node) {
+        setBox(null);
+        return;
+      }
+      // The control's padding box, inside any border it keeps for its own states.
+      const next = {
+        x: node.offsetLeft + node.clientLeft,
+        y: node.offsetTop + node.clientTop,
+        w: node.clientWidth,
+        h: node.clientHeight,
+      };
+      setBox((prev) =>
+        prev && prev.x === next.x && prev.y === next.y && prev.w === next.w && prev.h === next.h ? prev : next,
+      );
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    for (const child of Array.from(container.children)) observer.observe(child);
+    return () => observer.disconnect();
+  }, [containerRef, selected, selectedKey]);
+  useEffect(() => {
+    if (!box || placed) return;
+    const frame = requestAnimationFrame(() => setPlaced(true));
+    return () => cancelAnimationFrame(frame);
+  }, [box, placed]);
+  const motion = `${duration.base}s cubic-bezier(${easing.out.join(', ')})`;
+  return box
+    ? {
+        width: box.w,
+        height: box.h,
+        transform: `translate(${box.x}px, ${box.y}px)`,
+        transition: placed && !reduced ? `transform ${motion}, width ${motion}, height ${motion}` : 'none',
+      }
+    : { display: 'none' };
+}
+
+/** The plate itself: drawn once behind the options, then slid between them. */
+export const INDICATOR_CLASS =
+  'pointer-events-none absolute left-0 top-0 rounded-ui-md border border-line-strong bg-surface-2';
+
 export function Segmented<T extends string>({
   options,
   value,
@@ -311,8 +383,9 @@ export function Segmented<T extends string>({
   onChange: (value: T) => void;
   ariaLabel: string;
 }) {
-  const indicatorLayoutId = `${useId()}-segmented-indicator`;
   const reducedMotion = useReducedMotion();
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const indicator = useSlidingIndicator(rootRef, '[data-state="on"]', value, reducedMotion);
 
   return (
     <ToggleGroupPrimitive.Root
@@ -321,9 +394,11 @@ export function Segmented<T extends string>({
       onValueChange={(next) => {
         if (next) onChange(next as T);
       }}
-      className="ui-segmented inline-flex rounded-ui-md border border-line-hairline bg-inset p-[3px]"
+      ref={rootRef}
+      className="ui-segmented relative inline-flex rounded-ui-md border border-line-hairline bg-inset p-[3px]"
       aria-label={ariaLabel}
     >
+      <span aria-hidden className={INDICATOR_CLASS} style={indicator} />
       {options.map((option) => {
         return (
           <ToggleGroupPrimitive.Item
@@ -332,15 +407,6 @@ export function Segmented<T extends string>({
             disabled={option.disabled}
             className="relative min-h-8 rounded-ui-md border border-transparent px-3 text-meta font-semibold text-muted transition-colors hover:text-fg-soft disabled:cursor-default disabled:hover:text-muted data-[state=on]:text-fg"
           >
-            {option.value === value && (
-              <m.span
-                aria-hidden
-                className="pointer-events-none absolute inset-0 rounded-ui-md border border-line-strong bg-surface-2"
-                layoutId={indicatorLayoutId}
-                initial={false}
-                transition={reducedMotion ? { duration: 0 } : { duration: duration.base, ease: easing.out }}
-              />
-            )}
             <span className="relative z-10">{option.label}</span>
           </ToggleGroupPrimitive.Item>
         );

@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { redemptionCodeStatus } from '@memoria/shared';
+import { useCopyCode } from '../codes';
 import type { RedemptionCodes as CodeSet } from '../data/catch-up';
 import { useNow } from '../hooks';
 import { Btn } from './ui';
@@ -9,15 +9,7 @@ import '../today.css';
 export function LivestreamCodes({ redemption, gameName }: { redemption: CodeSet; gameName: string }) {
   const now = useNow(30_000);
   const status = redemptionCodeStatus(redemption.expiresAt, now);
-  const [message, setMessage] = useState('');
-  const copy = async (code: string) => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setMessage(`Copied ${code}`);
-    } catch {
-      setMessage(`Could not copy ${code}`);
-    }
-  };
+  const { copied, message, copy } = useCopyCode();
   return (
     <section aria-label={`${gameName} reward codes`} className="mt-5 border-t border-line pt-4">
       <div className="today-group-rule">
@@ -51,8 +43,13 @@ export function LivestreamCodes({ redemption, gameName }: { redemption: CodeSet;
                 <p className="aside mt-1 text-meta text-muted">{rewards}</p>
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <Btn onClick={() => void copy(code)} aria-label={`Copy ${code}`} disabled={status === 'expired'}>
-                  Copy
+                <Btn
+                  className="min-w-16"
+                  onClick={() => void copy(code)}
+                  aria-label={`Copy ${code}`}
+                  disabled={status === 'expired'}
+                >
+                  {copied === code ? 'Copied' : 'Copy'}
                 </Btn>
                 {redeemUrl && (
                   <a

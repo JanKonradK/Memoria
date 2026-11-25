@@ -1,7 +1,8 @@
-import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import { emptyState, SERVER_TZ_OPTIONS, type Game } from '@memoria/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGameDraft } from '../src/components/game-detail/useGameDraft';
+import { ConfirmHost } from '../src/components/ConfirmDialog';
 import { GameDetailSheet } from '../src/components/GameDetail';
 import { useApp } from '../src/store';
 import { useUI } from '../src/ui-store';
@@ -40,9 +41,23 @@ function renderDetail(currentGame: Game = game) {
     updateGame,
   });
   useUI.setState({ sheet: { kind: 'game', gameId: currentGame.id } });
-  render(<GameDetailSheet gameId={currentGame.id} open />);
+  render(
+    <>
+      <GameDetailSheet gameId={currentGame.id} open />
+      <ConfirmHost />
+    </>,
+  );
   return updateGame;
 }
+
+/** The discard question, answered: Keep editing or Discard. */
+async function answerDiscard(answer: 'Keep editing' | 'Discard') {
+  const question = await screen.findByRole('alertdialog', { name: 'Discard your unsaved changes?' });
+  fireEvent.click(within(question).getByRole('button', { name: answer }));
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+}
+
+const noQuestion = () => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -66,79 +81,81 @@ describe('GameDetail drafts and server', () => {
     ['Tasks', 'New task name'],
     ['Quick spend', 'Label, e.g. Domain'],
     ['Reminders', 'Reminder message'],
-  ])('keeps an unsaved %s draft when Done is rejected', (tab, label) => {
+  ])('keeps an unsaved %s draft when Done is rejected', async (tab, label) => {
     renderDetail();
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
     // Quick spends are a section of the Energy tab.
     fireEvent.click(screen.getByRole('tab', { name: tab === 'Quick spend' ? 'Energy' : tab }));
     const input = tab === 'Quick spend' ? screen.getByPlaceholderText(label) : screen.getByLabelText(label);
     fireEvent.change(input, { target: { value: 'Keep this draft' } });
 
     fireEvent.click(screen.getByRole('button', { name: 'Done', exact: true }));
+    await answerDiscard('Keep editing');
 
-    expect(confirm).toHaveBeenCalledWith('Discard your unsaved changes?');
     expect(useUI.getState().sheet).toEqual({ kind: 'game', gameId: game.id });
     expect(input).toHaveValue('Keep this draft');
-    confirm.mockRestore();
   });
 
-  it('keeps a reminder draft when Escape or an event replacement is rejected', () => {
+  it('closes once a discard is confirmed', async () => {
     renderDetail();
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    fireEvent.click(screen.getByRole('tab', { name: 'Reminders' }));
+    fireEvent.change(screen.getByLabelText('Reminder message'), { target: { value: 'Throw this away' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Done', exact: true }));
+    await answerDiscard('Discard');
+    expect(useUI.getState().sheet).toBeNull();
+  });
+
+  it('keeps a reminder draft when Escape or an event replacement is rejected', async () => {
+    renderDetail();
     fireEvent.click(screen.getByRole('tab', { name: 'Reminders' }));
     fireEvent.change(screen.getByLabelText('Reminder message'), { target: { value: 'Keep this reminder' } });
 
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(confirm).toHaveBeenCalledOnce();
+    await answerDiscard('Keep editing');
     expect(useUI.getState().sheet).toEqual({ kind: 'game', gameId: game.id });
 
     fireEvent.click(screen.getByRole('tab', { name: 'Events' }));
     fireEvent.click(screen.getByRole('button', { name: 'Add event' }));
-    expect(confirm).toHaveBeenCalledTimes(2);
+    await answerDiscard('Keep editing');
     expect(useUI.getState().sheet).toEqual({ kind: 'game', gameId: game.id });
     fireEvent.click(screen.getByRole('tab', { name: 'Reminders' }));
     expect(screen.getByLabelText('Reminder message')).toHaveValue('Keep this reminder');
-    confirm.mockRestore();
   });
 
   it('closes after adding a reminder without asking to discard saved changes', () => {
     renderDetail();
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
     fireEvent.click(screen.getByRole('tab', { name: 'Reminders' }));
     fireEvent.change(screen.getByLabelText('Reminder message'), { target: { value: 'Saved reminder' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add reminder', exact: true }));
     fireEvent.click(screen.getByRole('button', { name: 'Done', exact: true }));
 
-    expect(confirm).not.toHaveBeenCalled();
+    noQuestion();
     expect(useUI.getState().sheet).toBeNull();
     expect(useApp.getState().state.reminders).toEqual([
       expect.objectContaining({ message: 'Saved reminder', gameId: game.id }),
     ]);
-    confirm.mockRestore();
   });
 
-  it('protects reminder edits when another reminder is selected and clears the guard after saving', () => {
+  it('protects reminder edits when another reminder is selected and clears the guard after saving', async () => {
     renderDetail();
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
     act(() => {
       useApp.getState().addReminder('First reminder', Date.now() + 3_600_000, game.id);
       useApp.getState().addReminder('Second reminder', Date.now() + 7_200_000, game.id);
     });
     fireEvent.click(screen.getByRole('tab', { name: 'Reminders' }));
     fireEvent.click(screen.getByRole('button', { name: 'Edit reminder First reminder' }));
-    expect(confirm).not.toHaveBeenCalled();
+    noQuestion();
     fireEvent.change(screen.getByLabelText('Reminder message'), { target: { value: 'First reminder edited' } });
     fireEvent.click(screen.getByRole('button', { name: 'Edit reminder Second reminder' }));
-    expect(confirm).toHaveBeenCalledOnce();
+    await answerDiscard('Keep editing');
     expect(screen.getByLabelText('Reminder message')).toHaveValue('First reminder edited');
     fireEvent.click(screen.getByRole('button', { name: 'Save reminder', exact: true }));
     fireEvent.click(screen.getByRole('button', { name: 'Edit reminder Second reminder' }));
+    noQuestion();
     fireEvent.click(screen.getByRole('button', { name: 'Done', exact: true }));
 
-    expect(confirm).toHaveBeenCalledOnce();
+    noQuestion();
     expect(useUI.getState().sheet).toBeNull();
     expect(useApp.getState().state.reminders[0]?.message).toBe('First reminder edited');
-    confirm.mockRestore();
   });
 
   it('commits the nickname through the 300ms debounce', () => {

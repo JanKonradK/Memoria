@@ -48,7 +48,7 @@ const DeviceKey = registerPlugin<{
 }>('DeviceKey');
 
 let persisting = Promise.resolve();
-/** Writes the pairing with its key sealed. Falls back to the plain key only if the Keystore fails. */
+/** Writes the pairing with its key sealed. Refuses to store plaintext secrets if the Keystore fails. */
 function persistPair(next: Pair) {
   // The public key is derived from the secret on load, so it is not stored.
   const { secret, host, hosts, fingerprint, deviceId, relay } = next;
@@ -56,14 +56,22 @@ function persistPair(next: Pair) {
   persisting = persisting
     .catch(() => undefined)
     .then(async () => {
-      let stored: Record<string, unknown>;
       try {
-        stored = { ...rest, sealedSecret: (await DeviceKey.seal({ value: secret })).sealed };
+        const stored = { ...rest, sealedSecret: (await DeviceKey.seal({ value: secret })).sealed };
+        // A pairing replaced or forgotten meanwhile must not be written back.
+        if (pair?.secret === secret) {
+          localStorage.setItem(PAIR_KEY, JSON.stringify(stored));
+          useLanSync.setState({ keyStorageWarning: '' });
+        }
       } catch {
-        stored = { ...rest, secret };
+        if (pair?.secret === secret) {
+          localStorage.removeItem(PAIR_KEY);
+          useLanSync.setState({
+            keyStorageWarning:
+              'Android Keystore could not lock your sync key, so pairing was not saved to this device. Check your screen lock settings and pair again.',
+          });
+        }
       }
-      // A pairing replaced or forgotten meanwhile must not be written back.
-      if (pair?.secret === secret) localStorage.setItem(PAIR_KEY, JSON.stringify(stored));
     });
   return persisting;
 }
@@ -77,6 +85,7 @@ export const useLanSync = create<{
   status: LanStatus;
   host: string;
   error: string;
+  keyStorageWarning: string;
   lastSyncAt: number | null;
   choice: FirstSyncChoice | null;
   /** This device's id on the PC, to pick it out of `peers`. */
@@ -89,6 +98,7 @@ export const useLanSync = create<{
   status: 'off',
   host: '',
   error: '',
+  keyStorageWarning: '',
   lastSyncAt: null,
   choice: null,
   deviceId: '',
@@ -425,7 +435,15 @@ export async function disconnectLanSync(): Promise<void> {
   clearTimeout(debounce);
   localStorage.removeItem(PAIR_KEY);
   clearFirstSync();
-  useLanSync.setState({ host: '', lastSyncAt: null, deviceId: '', pcName: '', peers: [], route: null });
+  useLanSync.setState({
+    host: '',
+    keyStorageWarning: '',
+    lastSyncAt: null,
+    deviceId: '',
+    pcName: '',
+    peers: [],
+    route: null,
+  });
   setStatus('off');
   // Forget locally immediately even when the PC is off. Its Settings can revoke
   // the old device if this best-effort request cannot reach it.

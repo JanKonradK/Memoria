@@ -61,6 +61,8 @@ const required = [
   ['desktop/memoria.ico', 'desktop/memoria.ico'],
   ['desktop/Install-Shortcut.ps1', 'desktop/Install-Shortcut.ps1'],
   ['desktop/Install-Lock.ps1', 'desktop/Install-Lock.ps1'],
+  // The Browser Connect helper, loaded unpacked from the install folder.
+  ['desktop/browser-helper', 'desktop/browser-helper'],
 ];
 for (const [source] of [...required, ['desktop/dist/core.js']]) {
   if (!existsSync(join(root, source))) fail(`missing ${source} — run "npm run build" before packaging`);

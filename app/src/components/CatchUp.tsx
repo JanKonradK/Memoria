@@ -14,6 +14,7 @@ import {
 import { useNow } from '../hooks';
 import { lastAiredStream, nextBroadcast } from '../catch-up-status';
 import { useApp } from '../store';
+import { useShallow } from 'zustand/react/shallow';
 import { fmtDur } from '../util';
 import { LivestreamCodes } from './LivestreamCodes';
 import { Btn, Segmented, TOUCH_BUTTON } from './ui';
@@ -43,7 +44,7 @@ function SectionBlock<T>({
             ? 'None this version.'
             : section.state === 'partial'
               ? 'None confirmed yet.'
-              : 'Not reviewed yet.'}
+              : 'No summary yet for this version.'}
         </p>
       )}
     </section>
@@ -231,7 +232,7 @@ function Version({ digest, unread, lead }: { digest: VersionDigest; unread: bool
   );
 }
 
-function NextStream({ state, game, now }: { state: AppState; game: Game; now: number }) {
+function NextStream({ state, game, now }: { state: Pick<AppState, 'events' | 'settings'>; game: Game; now: number }) {
   const next = nextBroadcast(state, game.id, now);
   if (!next) return null;
   const zone = state.settings.localTz;
@@ -273,7 +274,7 @@ function LastStream({ presetKey, now }: { presetKey: string | undefined; now: nu
  * beside its livestreams and the codes that still work.
  */
 export function CatchUpView({ game, now }: { game: Game; now: number }) {
-  const state = useApp((store) => store.state);
+  const state = useApp(useShallow((s) => ({ events: s.state.events, settings: s.state.settings })));
   const markRead = useApp((store) => store.markCatchUpRead);
   const preset = presetForGame(game)?.key;
   const digests = useMemo(() => digestsForGame(preset), [preset]);

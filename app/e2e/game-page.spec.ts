@@ -32,16 +32,23 @@ test("a game's page keeps its actions in its bar and its tracking in columns", a
   const width = page.viewportSize()?.width ?? 0;
   const tasksBox = await page.locator('[data-section="tasks"]').first().boundingBox();
   const sideBox = await page.locator('.game-track-side').boundingBox();
-  if (width >= 1280) {
-    // Energy, tasks, then events and notes: three columns from the same top.
-    expect(tasksBox!.x).toBeGreaterThan(resourcesBox!.x + resourcesBox!.width - 1);
+  if (width >= 900) {
+    // Energy stacks above tasks on the left; events take the right column from the same top.
+    expect(tasksBox!.y).toBeGreaterThan(resourcesBox!.y);
+    expect(sideBox!.x).toBeGreaterThan(resourcesBox!.x + resourcesBox!.width - 1);
     expect(sideBox!.x).toBeGreaterThan(tasksBox!.x + tasksBox!.width - 1);
-    expect(Math.abs(tasksBox!.y - resourcesBox!.y)).toBeLessThanOrEqual(24);
+    expect(Math.abs(sideBox!.y - resourcesBox!.y)).toBeLessThanOrEqual(24);
   } else {
     // A phone reads energy, then tasks, then events.
     expect(tasksBox!.y).toBeGreaterThan(resourcesBox!.y);
     expect(sideBox!.y).toBeGreaterThan(tasksBox!.y);
   }
+
+  // Codes live on their own tab with the official portal link and + Add.
+  await page.getByRole('tab', { name: /^Codes/ }).click();
+  await expect(page.getByRole('link', { name: /Official redeem page/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Add codes for Genshin Impact', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 test('an event can be ticked off and taken back on its page', async ({ page }) => {

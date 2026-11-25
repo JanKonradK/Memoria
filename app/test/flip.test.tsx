@@ -127,3 +127,28 @@ it('animates nothing when the page scrolls between commits', () => {
   view.rerender(<List order={['a', 'b', 'c']} />);
   expect(glides).toEqual([]);
 });
+
+function KeyedList({ order, tick }: { order: string[]; tick: number }) {
+  const listRef = useFlip<HTMLUListElement>('[data-key]', (node) => node.dataset.key ?? null, order.join('|'));
+  return (
+    <ul ref={listRef} data-tick={tick}>
+      {order.map((key) => (
+        <li key={key} data-key={key}>
+          {key}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+it('measures nothing when an order key is given and unchanged, and glides when it changes', () => {
+  stubAnimate();
+  const view = render(<KeyedList order={['a', 'b', 'c']} tick={0} />);
+  const measure = vi.mocked(HTMLElement.prototype.getBoundingClientRect);
+  measure.mockClear();
+  view.rerender(<KeyedList order={['a', 'b', 'c']} tick={1} />);
+  expect(measure).not.toHaveBeenCalled();
+  view.rerender(<KeyedList order={['b', 'a', 'c']} tick={2} />);
+  expect(measure).toHaveBeenCalled();
+  expect(glides.map((glide) => glide.key).sort()).toEqual(['a', 'b']);
+});

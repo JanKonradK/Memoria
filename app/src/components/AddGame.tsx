@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import type { Game, GamePreset } from '@memoria/shared';
 import { PRESETS, presetForGame } from '@memoria/shared';
 import { resolveGameIdentityColors } from '../game-color';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import '../surfaces.css';
-import type { ServerPick } from '../server-choice';
+import { gameServers, type ServerPick } from '../server-choice';
 import { intOr } from '../util';
 import { GameLogo } from './GameLogo';
 import { ServerSelect } from './ServerSelect';
@@ -29,6 +29,33 @@ export function AddGameSheet({ open }: { open: boolean }) {
   const [accountLabel, setAccountLabel] = useState('');
   const [short, setShort] = useState('');
   const [energy, setEnergyInput] = useState('');
+
+  /** Clears every field, so one game's choices never carry into the next. */
+  const resetForm = () => {
+    setServer(null);
+    setCaps({});
+    setAccountLabel('');
+    setShort('');
+    setEnergyInput('');
+  };
+  /** A game with one server needs no choice: it is picked for the player. */
+  const onlyServer = (game: { name: string; short: string; presetKey?: string }): ServerPick | null => {
+    const servers = gameServers(game);
+    return servers.length === 1 ? { server: servers[0]!.id, tz: servers[0]!.tz } : null;
+  };
+  // Only what the player typed or changed is worth asking about; opening a
+  // game to look at it is not.
+  const dirty = Boolean(
+    accountLabel.trim() ||
+    energy.trim() ||
+    Object.keys(caps).length > 0 ||
+    customName.trim() ||
+    (sourceGame && short.trim() && short.trim() !== sourceGame.short),
+  );
+  const submit = (commit: () => void) => (event: FormEvent) => {
+    event.preventDefault();
+    commit();
+  };
 
   const identityColors = resolveGameIdentityColors(games.filter((game) => !game.deleted));
   const trackedPresetGames = games.flatMap((game) => {
@@ -92,7 +119,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
       open={open}
       onClose={close}
       wide
-      dirty={Boolean(picked || sourceGame || customName.trim())}
+      dirty={dirty}
       title={sourceGame ? `Add ${sourceGame.name} account` : picked ? `Add ${picked.name}` : 'Add a game'}
     >
       {!picked && !sourceGame ? (
@@ -108,9 +135,10 @@ export function AddGameSheet({ open }: { open: boolean }) {
                       key={game.id}
                       type="button"
                       onClick={() => {
+                        resetForm();
                         setSourceGame(game);
                         setSourcePreset(preset);
-                        setServer(null);
+                        setServer(onlyServer(game));
                         setShort(game.short);
                       }}
                       className="surface-row flex min-h-11 w-full items-center gap-3 text-left"
@@ -135,8 +163,9 @@ export function AddGameSheet({ open }: { open: boolean }) {
                 key={p.key}
                 type="button"
                 onClick={() => {
+                  resetForm();
                   setPicked(p);
-                  setServer(null);
+                  setServer(onlyServer({ ...p, presetKey: p.key }));
                 }}
                 className="surface-row flex min-h-11 w-full items-center gap-3 text-left"
               >
@@ -162,7 +191,7 @@ export function AddGameSheet({ open }: { open: boolean }) {
           </div>
         </>
       ) : sourceGame && sourcePreset ? (
-        <>
+        <form onSubmit={submit(confirmAccount)}>
           <div className="space-y-3">
             <Field label="Nickname">
               <TextInput
@@ -186,23 +215,20 @@ export function AddGameSheet({ open }: { open: boolean }) {
           <div className="mt-5 flex gap-2">
             <Btn
               onClick={() => {
+                resetForm();
                 setSourceGame(null);
                 setSourcePreset(null);
-                setServer(null);
-                setAccountLabel('');
-                setShort('');
-                setEnergyInput('');
               }}
             >
               ← Back
             </Btn>
-            <Btn kind="primary" disabled={!server} onClick={confirmAccount}>
+            <Btn kind="primary" type="submit" disabled={!server}>
               Add account
             </Btn>
           </div>
-        </>
+        </form>
       ) : picked ? (
-        <>
+        <form onSubmit={submit(confirm)}>
           {picked.notes && (
             <p className="surface-notice surface-notice-warn mb-4 text-meta text-warn-fg">{picked.notes}</p>
           )}
@@ -237,18 +263,17 @@ export function AddGameSheet({ open }: { open: boolean }) {
           <div className="mt-5 flex gap-2">
             <Btn
               onClick={() => {
+                resetForm();
                 setPicked(null);
-                setAccountLabel('');
-                setEnergyInput('');
               }}
             >
               ← Back
             </Btn>
-            <Btn kind="primary" disabled={!server} onClick={confirm}>
+            <Btn kind="primary" type="submit" disabled={!server}>
               Add {picked.short}
             </Btn>
           </div>
-        </>
+        </form>
       ) : null}
     </Sheet>
   );

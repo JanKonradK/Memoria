@@ -109,19 +109,14 @@ test('first run sets up games, then shows hints in place, and fits the viewport'
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: /^Next/ }).click();
   await expect(page.getByRole('heading', { name: 'Where do you play?' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Next', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Create dashboard', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: 'Add a Genshin Impact account on Europe' }).click();
   await page.getByRole('button', { name: 'Add a Genshin Impact account on Asia' }).click();
   await page.getByLabel('Genshin Impact account 1 nickname').fill('Main');
   await expectNoPageOverflow(page);
   await expectNoSeriousAccessibilityViolations(page);
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
-  // Then a look, with Classic and Elaborate chosen; a choice here is the app's from then on.
-  await expect(page.getByRole('heading', { name: 'Pick a look' })).toBeVisible();
-  await expect(page.getByRole('radio', { name: /Classic/ })).toHaveAttribute('aria-checked', 'true');
-  await page.getByRole('radio', { name: /Clean/ }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-look', 'clean');
-  await expectNoPageOverflow(page);
+  // No look step: a first run is for games; looks wait in Settings.
+  await expect(page.getByText('Step 2 of 2')).toBeVisible();
   await page.getByRole('button', { name: 'Create dashboard' }).click();
   // Setup ends on the guide; closed, the app is all there is.
   await closeGuide(page);
@@ -399,4 +394,13 @@ test('upright, the rail is a dock along the bottom with 44px targets that tracks
   await expect(games).toHaveAttribute('aria-expanded', 'true');
   await expect(nav.getByRole('button', { name: /^Genshin Impact/ })).toHaveAttribute('aria-current', 'page');
   await expect(nav.getByRole('button', { name: 'Today', exact: true })).not.toHaveAttribute('aria-current');
+});
+
+test('? opens the keyboard shortcuts', async ({ page }) => {
+  await page.keyboard.press('Shift+Slash');
+  const sheet = page.getByRole('dialog', { name: 'Keyboard shortcuts' });
+  await expect(sheet).toBeVisible();
+  await expect(sheet.getByRole('heading', { name: 'Navigation' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(sheet).toHaveCount(0);
 });

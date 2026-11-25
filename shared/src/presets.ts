@@ -99,6 +99,13 @@ export interface PresetTask {
    * game-wide window (Parametric Transformer).
    */
   timelineLinked?: boolean;
+  /**
+   * For cadence "custom": a known start of one game-wide cycle (UTC epoch ms),
+   * so a new task lines up with the game's own clock instead of the day it is
+   * added. Only set from a verified, documented date; without it the cycle
+   * counts from the day the task is created.
+   */
+  anchorAt?: number;
 }
 
 export interface GamePreset {
@@ -577,21 +584,23 @@ export const PRESETS: GamePreset[] = [
       // cases all draw from the same million, and it stops paying once they
       // total it. Permanent, so it is not seeded in the Timeline, and its
       // period runs on a game-wide clock this app cannot read — the interval
-      // counts from the day the task is added, so anchor it once against the
-      // in-game timer (periods run Monday to Monday; one began 2026-11-09).
-      // timelineLinked is off for the same reason: with it on, the token match
-      // would chase any event with "Fons" in the name.
+      // counts from anchorAt: periods run Monday to Monday, and one began
+      // Monday 2026-11-09 05:00 server time (Etc/GMT-1, so 04:00 UTC); the
+      // Gold Clash event (2026-11-23 05:00 to 2026-12-07 04:59) matches the
+      // next period exactly. timelineLinked is off for the same reason: with it
+      // on, the token match would chase any event with "Fons" in the name.
       {
         key: 'nte-tycoon-fund',
         name: 'Tycoon Incentive Fund (1M Fons)',
         cadence: 'custom',
         intervalDays: 14,
         timelineLinked: false,
+        anchorAt: Date.UTC(2026, 10, 9, 4), // 2026-11-09 05:00 UTC+1
       },
       { key: 'nte-warp-exchange', name: 'Lost / Warp Exchange + Arc Selection', cadence: 'monthly' },
     ],
     notes:
-      "City Stamina has no regeneration: it refills to your cap every Monday 05:00, and the cap rises with City Tycoon level (100 up to 700) — set yours. It has no reserve, so use it before Monday. Since 1.5, excess Character Pixels (cap 240, 360 with Dream Weaver's Knot) to Photo Paper Supply (2,400). The Tycoon Incentive Fund runs Monday-to-Monday 14-day periods (one began 2026-11-09); anchor that task once.",
+      "City Stamina has no regeneration: it refills to your cap every Monday 05:00, and the cap rises with City Tycoon level (100 up to 700) — set yours. It has no reserve, so use it before Monday. Since 1.5, excess Character Pixels (cap 240, 360 with Dream Weaver's Knot) to Photo Paper Supply (2,400). The Tycoon Incentive Fund runs Monday-to-Monday 14-day periods (anchored to 2026-11-09).",
     // Best guess — verify in Task Manager while NTE runs and edit if needed.
     processNames: ['NTE'],
   },
@@ -885,6 +894,15 @@ export const PRESETS: GamePreset[] = [
     processNames: [],
   },
 ];
+
+/**
+ * Where a task made from this preset routine starts its cycle: the routine's
+ * verified game-wide anchor when it has one, otherwise `at` (the moment the
+ * task is created).
+ */
+export function presetTaskAnchor(task: Pick<PresetTask, 'anchorAt'>, at: number): number {
+  return typeof task.anchorAt === 'number' && Number.isFinite(task.anchorAt) ? task.anchorAt : at;
+}
 
 /** The page a preset task is done on, by its preset task key. */
 let taskLinks: Map<string, string> | undefined;

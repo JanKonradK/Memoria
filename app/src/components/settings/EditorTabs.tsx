@@ -1,7 +1,8 @@
-import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { m } from 'motion/react';
 import { useReducedMotion } from '../../hooks';
 import { duration, easing } from '../../motion';
+import { INDICATOR_CLASS, useSlidingIndicator } from '../ui';
 
 /**
  * The game editor's tab strip.
@@ -17,7 +18,7 @@ import { duration, easing } from '../../motion';
  * Lifted from `Segmented` in ui.tsx rather than reusing it: a segmented control
  * is a radiogroup — it picks a VALUE — and a tablist reveals a REGION. The two
  * share a look and an indicator, and nothing else. The shared part is the
- * `layoutId` indicator, which is copied deliberately so the two controls slide
+ * sliding indicator (`useSlidingIndicator`), so the two controls slide
  * identically.
  */
 export type EditorTab<T extends string> = { id: T; label: string };
@@ -39,7 +40,8 @@ export function EditorTabs<T extends string>({
   className?: string;
 }) {
   const reducedMotion = useReducedMotion();
-  const indicatorLayoutId = `${useId()}-editor-tab-indicator`;
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const indicator = useSlidingIndicator(listRef, '[aria-selected="true"]', value, reducedMotion);
   const buttons = useRef(new Map<T, HTMLButtonElement | null>());
 
   // Automatic activation: the arrow keys move focus AND selection together,
@@ -68,10 +70,12 @@ export function EditorTabs<T extends string>({
 
   return (
     <div
+      ref={listRef}
       role="tablist"
       aria-label={ariaLabel}
-      className={`-mx-1 flex gap-0.5 overflow-x-auto border-b border-line-hairline bg-panel px-1 pb-2 sm:gap-1 ${className}`}
+      className={`relative -mx-1 flex gap-0.5 overflow-x-auto border-b border-line-hairline bg-panel px-1 pb-2 sm:gap-1 ${className}`}
     >
+      <span aria-hidden className={INDICATOR_CLASS} style={indicator} />
       {tabs.map((tab) => {
         const selected = tab.id === value;
         return (
@@ -91,15 +95,6 @@ export function EditorTabs<T extends string>({
             onKeyDown={onKeyDown}
             className="relative flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-ui-md px-1.5 text-meta font-semibold text-muted transition-colors duration-(--dur-fast) hover:text-fg-soft aria-selected:text-fg fine:min-h-8 sm:flex-none sm:px-3"
           >
-            {selected && (
-              <m.span
-                aria-hidden
-                className="pointer-events-none absolute inset-0 rounded-ui-md border border-line-strong bg-surface-2"
-                layoutId={indicatorLayoutId}
-                initial={false}
-                transition={reducedMotion ? { duration: 0 } : { duration: duration.base, ease: easing.out }}
-              />
-            )}
             <span className="relative z-10">{tab.label}</span>
           </button>
         );

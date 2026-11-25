@@ -121,41 +121,41 @@ describe('re-entrancy', () => {
   });
 });
 
-describe('conflict handling', () => {
-  it('pulls, merges and retries when another window wrote first', async () => {
-    let conflicted = false;
-    const fetchMock = vi.fn(async (url: string) => {
-      if (String(url).endsWith('/api/sync')) {
-        if (conflicted) return { ok: true, status: 200, json: async () => ({ state: emptyState(), version: 3 }) };
-        conflicted = true;
-        return { ok: false, status: 409, json: async () => ({ error: 'sync_conflict_retry' }) };
-      }
-      return { ok: true, status: 200, json: async () => ({ state: emptyState(), version: 2 }) };
+describe('single-POST HLC sync', () => {
+  it('posts state without version and merges the launcher reply', async () => {
+    let postedBody: Record<string, unknown> | undefined;
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      postedBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return { ok: true, status: 200, json: async () => ({ state: emptyState(), version: 3 }) };
     });
     vi.stubGlobal('fetch', fetchMock);
 
     await syncNow();
 
-    expect(fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/api/state'))).toHaveLength(1);
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/api/sync'))).toHaveLength(1);
+    expect(postedBody).toBeDefined();
+    expect('version' in postedBody!).toBe(false);
     expect(useApp.getState().syncStatus).toBe('ok');
   });
 
-  it('gives up after three conflicted attempts rather than looping forever', async () => {
-    const fetchMock = vi.fn(async (url: string) =>
-      String(url).endsWith('/api/sync')
-        ? { ok: false, status: 409, json: async () => ({ error: 'sync_conflict_retry' }) }
-        : { ok: true, status: 200, json: async () => ({ state: emptyState(), version: 1 }) },
-    );
-    vi.stubGlobal('fetch', fetchMock);
+  it('queues a follow-up sync when local edits arrive while a request is in flight', async () => {
+    vi.useFakeTimers();
+    try {
+      const { mock, release } = deferredFetch();
+      vi.stubGlobal('fetch', mock);
 
-    await syncNow();
+      const running = syncNow();
+      useApp.getState().updateSettings({ sleepHours: 6 });
+      release();
+      await running;
+      await vi.advanceTimersByTimeAsync(350);
 
-    const posts = fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/api/sync'));
-    expect(posts).toHaveLength(3);
-    expect(useApp.getState()).toMatchObject({
-      syncStatus: 'error',
-      syncError: 'Sync remained conflicted after three attempts.',
-    });
+      const posts = mock.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === 'POST');
+      expect(posts).toHaveLength(2);
+      expect(useApp.getState().syncStatus).toBe('ok');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -179,20 +179,23 @@ describe('launcher errors', () => {
     expect(useApp.getState().syncError).toMatch(/invalid data|Update Memoria/i);
   });
 
-  it('does not retry a write after conflict recovery returns invalid data', async () => {
+  it('records HTTP error status when the launcher returns a non-JSON failure', async () => {
     const local = useApp.getState().state;
-    const fetchMock = vi.fn(async (url: string) =>
-      url.endsWith('/api/sync')
-        ? { ok: false, status: 409, json: async () => ({ error: 'sync_conflict_retry' }) }
-        : { ok: true, status: 200, json: async () => ({ state: { settings: {} }, version: 5 }) },
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: false,
+        status: 503,
+        json: async () => {
+          throw new Error('not json');
+        },
+      })),
     );
-    vi.stubGlobal('fetch', fetchMock);
 
     await syncNow();
 
-    expect(fetchMock.mock.calls.filter(([url]) => url.endsWith('/api/sync'))).toHaveLength(1);
     expect(useApp.getState().state).toBe(local);
-    expect(useApp.getState().syncStatus).toBe('error');
+    expect(useApp.getState()).toMatchObject({ syncStatus: 'error', syncError: 'HTTP 503' });
   });
 
   it('surfaces the launcher JSON error instead of only the status code', async () => {

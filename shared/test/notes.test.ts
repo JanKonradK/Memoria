@@ -86,6 +86,13 @@ describe('notes', () => {
     expect(toggleChecklistLine(body, 0)).toBe(body);
   });
 
+  it('reads checklist lines written with Windows line endings', () => {
+    const body = 'Shopping\r\n- [ ] Resin\r\n- [x] Crowns\r\n';
+    expect(checklistCount(body)).toEqual({ done: 1, total: 2 });
+    expect(noteLines(body)[1]).toEqual({ line: 1, done: false, text: 'Resin' });
+    expect(toggleChecklistLine(body, 1)).toBe('Shopping\r\n- [x] Resin\r\n- [x] Crowns\r\n');
+  });
+
   it('sorts pinned first, then by the chosen order', () => {
     const notes = [
       note({ id: 'a', title: 'Beta', sort: 1, updatedAt: 30 }),

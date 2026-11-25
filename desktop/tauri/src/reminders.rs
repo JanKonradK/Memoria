@@ -13,6 +13,8 @@ const MINUTE: i64 = 60_000;
 const HORIZON: i64 = 24 * 60 * MINUTE;
 const STALE: i64 = 5 * MINUTE;
 const KEEP_FIRED: i64 = 7 * HORIZON;
+/** How soon a failed plan is retried. */
+const RETRY: i64 = 15_000;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Notice {
@@ -44,6 +46,8 @@ struct Schedule {
     fired: HashMap<u32, i64>,
     horizon: i64,
     last_clock: Option<Clock>,
+    /// Planning attempts that failed in a row; 0 while plans are current.
+    failures: u32,
 }
 
 impl Schedule {
@@ -61,6 +65,16 @@ impl Schedule {
     fn replace(&mut self, plan: Vec<Notice>, now: i64) {
         self.plan = plan;
         self.horizon = now + HORIZON;
+        self.failures = 0;
+    }
+
+    /// A failed rebuild keeps the last good plan, whose past entries still
+    /// expire as usual, rather than silently dropping every reminder, and
+    /// tries again shortly. Returns how many attempts have failed in a row.
+    fn planning_failed(&mut self, now: i64) -> u32 {
+        self.failures = self.failures.saturating_add(1);
+        self.horizon = now + RETRY;
+        self.failures
     }
 
     fn take_due(&mut self, now: i64) -> Vec<Notice> {
@@ -116,9 +130,14 @@ pub fn start(
                     match core.notification_plan(now).await {
                         Ok(plan) => schedule.replace(plan, now),
                         Err(error) => {
-                            eprintln!("Reminder planning failed: {}", error.message);
-                            schedule.plan.clear();
-                            schedule.horizon = now + MINUTE;
+                            let failures = schedule.planning_failed(now);
+                            eprintln!(
+                                "Reminder planning failed ({failures} in a row): {}. Keeping the last plan \
+                                 ({} reminders) and retrying in {} s.",
+                                error.message,
+                                schedule.plan.len(),
+                                RETRY / 1000
+                            );
                         }
                     }
                 }
@@ -243,5 +262,21 @@ mod tests {
         assert_eq!(schedule.horizon, 500 + HORIZON);
         assert_eq!(schedule.wait(schedule.horizon - 10), Duration::from_millis(10));
         assert_eq!(schedule.wait(500), Duration::from_secs(60));
+    }
+
+    #[test]
+    fn a_failed_rebuild_keeps_the_last_plan_and_retries_soon() {
+        let mut schedule = Schedule::default();
+        schedule.replace(vec![notice(1, 1000), notice(2, 100_000)], 0);
+        assert_eq!(schedule.planning_failed(500), 1);
+        assert_eq!(schedule.planning_failed(600), 2);
+        assert_eq!(schedule.plan.len(), 2);
+        assert_eq!(schedule.horizon, 600 + RETRY);
+        assert_eq!(schedule.wait(600), Duration::from_millis(400));
+        // Known reminders still fire while planning is down.
+        assert_eq!(schedule.take_due(1000)[0].id, 1);
+        assert_eq!(schedule.wait(1000), Duration::from_millis((600 + RETRY - 1000) as u64));
+        schedule.replace(vec![notice(2, 100_000)], 20_000);
+        assert_eq!(schedule.failures, 0);
     }
 }

@@ -19,6 +19,22 @@ function woff2Only() {
   };
 }
 
+/** A game's quest catalog: loaded when its Quests tab opens. */
+const QUEST_CATALOG = /src[\\/]data[\\/]quests[\\/][^\\/]+\.json$/;
+/** The event archive: loaded when History or an old month opens. */
+const FEED_ARCHIVE = /src[\\/]data[\\/]feed[\\/](?:archive[\\/][^\\/]+|history)\.json$/;
+
+/**
+ * Named so the service worker can tell them apart: these lazy data chunks stay
+ * out of the install-time precache and are cached the first time they are read.
+ */
+function chunkFileName(chunk: { facadeModuleId?: string | null; moduleIds?: readonly string[] }): string {
+  const ids = [chunk.facadeModuleId ?? '', ...(chunk.moduleIds ?? [])];
+  if (ids.some((id) => QUEST_CATALOG.test(id))) return 'assets/catalog-[name]-[hash].js';
+  if (ids.some((id) => FEED_ARCHIVE.test(id))) return 'assets/archive-[name]-[hash].js';
+  return 'assets/[name]-[hash].js';
+}
+
 export default defineConfig(() => {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string };
 
@@ -33,10 +49,13 @@ export default defineConfig(() => {
       chunkSizeWarningLimit: 350,
       rolldownOptions: {
         output: {
+          chunkFileNames: chunkFileName,
           codeSplitting: {
             groups: [
               { name: 'react', test: /node_modules[\\/](?:react(?:-dom)?|scheduler)[\\/]/ },
               { name: 'luxon', test: /node_modules[\\/]luxon[\\/]/ },
+              // The current event facts: on the first screen, but kept out of the UI chunk.
+              { name: 'seed-feed', test: /src[\\/]data[\\/]feed[\\/]current\.json/ },
             ],
             // Keep Motion's dynamically imported feature set separate from
             // the initial page; do not collect all Motion modules in a group.
@@ -79,7 +98,23 @@ export default defineConfig(() => {
           // requested, so precaching it would cost weight for nothing.
           globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,webmanifest,woff2}'],
           // cyrillic-ext arrives with Black Ops One; same reasoning.
-          globIgnores: ['**/*-{devanagari,vietnamese,cyrillic,cyrillic-ext,hebrew,thai,greek,greek-ext}-*'],
+          // Quest catalogs and the event archive are only read when their tab opens:
+          // they are cached then (below), not downloaded at install.
+          globIgnores: [
+            '**/*-{devanagari,vietnamese,cyrillic,cyrillic-ext,hebrew,thai,greek,greek-ext}-*',
+            '**/assets/catalog-*',
+            '**/assets/archive-*',
+          ],
+          runtimeCaching: [
+            {
+              urlPattern: /\/assets\/(?:catalog|archive)-.*\.js$/,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'memoria-catalogs',
+                expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 60 },
+              },
+            },
+          ],
           navigateFallback: '/index.html',
           navigateFallbackDenylist: [/^\/api\//],
         },

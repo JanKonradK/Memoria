@@ -32,6 +32,7 @@ import { uid } from '../util';
 import { Btn, Field, NumInput, Segmented, Select, TextInput, Toggle } from './ui';
 import { ChartTip, fmt, niceMax, tickLabel, ticks } from './chart';
 import { Ago } from './Ago';
+import { confirmDialog } from './ConfirmDialog';
 
 /**
  * Savings planner: one card per account. The player types in their balance;
@@ -199,9 +200,14 @@ export function GameSavingsPanel({
       {stored && (
         <div className="mt-3 flex justify-end">
           <Btn
-            onClick={() => {
-              if (window.confirm(`Clear the balance, passes and goals saved for ${game.name}?`))
-                updateGame(game.id, { savings: undefined });
+            onClick={async () => {
+              const clear = await confirmDialog({
+                title: `Clear savings for ${game.name}?`,
+                description: 'The balance, passes and goals saved here are removed.',
+                confirmLabel: 'Clear savings',
+                danger: true,
+              });
+              if (clear) updateGame(game.id, { savings: undefined });
             }}
           >
             Clear savings

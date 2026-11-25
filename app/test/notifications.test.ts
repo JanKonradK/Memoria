@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   registerActionTypes: vi.fn(),
   completeDailies: vi.fn(),
   upsertEvent: vi.fn(),
+  setEventProgress: vi.fn(),
   addListener: vi.fn(),
   remove: vi.fn(),
   unsubscribe: vi.fn(),
@@ -47,6 +48,7 @@ vi.mock('../src/store', () => ({
       loaded: true,
       completeDailies: mocks.completeDailies,
       upsertEvent: mocks.upsertEvent,
+      setEventProgress: mocks.setEventProgress,
     }),
     subscribe: (callback: typeof mocks.change) => {
       mocks.change = callback;
@@ -251,8 +253,8 @@ describe('native notification lifecycle', () => {
       actionId: 'events-done',
       notification: { extra: { memoria: true, gameId: 'game', eventIds: ['open', 'ticked', 'gone'] } },
     });
-    expect(mocks.upsertEvent).toHaveBeenCalledOnce();
-    expect(mocks.upsertEvent).toHaveBeenCalledWith({ id: 'open', gameId: 'game', done: true });
+    expect(mocks.setEventProgress).toHaveBeenCalledOnce();
+    expect(mocks.setEventProgress).toHaveBeenCalledWith('open', 'done');
     cleanup();
     mocks.action?.({ notification: { extra: { memoria: true } } });
     await vi.advanceTimersByTimeAsync(2000);

@@ -1,31 +1,43 @@
 // Generates the vector half of the Memoria mark from the shared geometry:
-//   app/public/favicon.svg          — the bare mark, transparent behind it
-//   app/src/components/mark-path.ts — the same outline for the in-app logo
+//   app/public/favicon.svg          — the layered mark on its black tile
+//   app/src/components/mark-path.ts — the mark's outlines for the in-app logo
+//   app/index.html                  — the intro's mask and its stage's shape
 // Run: npm run icons (which also regenerates the PNG/ICO app icons).
 //
-// The favicon and the logo stay backgroundless on purpose. The squircle belongs
-// to the APP ICON (taskbar, home screen, install prompt), where the tile is the
-// product; a tab strip or a dark nav rail wants the mark alone so it sits on
-// whatever is behind it.
+// The favicon is the app icon in miniature: black squircle, gold rim, the two
+// ribbons with the shadow where one crosses the other, and the shards. The
+// in-app logo and the intro take the flat silhouette (MARK_PATH) and colour it
+// themselves; the separate layers are exported for anything that wants depth.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { markAspect, markPath } from './mobius.mjs';
+import { bandBounds, fitMark, markAspect, markLayers, outlinePath } from './mobius.mjs';
 
 const app = join(import.meta.dirname, '..');
 
-// White-led, matching draw-icon.mjs. The mark reads white first and gold
-// second; gold only arrives as the form falls away.
+// Ivory, champagne, warm gold, deep gold: the same stops as draw-icon.mjs and
+// the intro in index.html, at the same places.
 const GOLD_STOPS = [
   { offset: '0', color: '#ffffff' },
-  { offset: '.62', color: '#fffaed' },
-  { offset: '1', color: '#e8b45a' },
+  { offset: '.42', color: '#fff6dc' },
+  { offset: '.8', color: '#e8b45a' },
+  { offset: '1', color: '#c99138' },
 ];
+// The ramp's run across and down the mark, as in draw-icon.mjs.
+const LIGHT = { x: 0.38, y: 0.62 };
+const UMBER = '#6e4512';
+const EMBER = '#f6cb74';
+/** Opacity and ember warmth per shard tier, matching draw-icon.mjs. */
+const TIER_LIGHT = {
+  1: { warm: 0, alpha: 1 },
+  2: { warm: 0.18, alpha: 0.94 },
+  3: { warm: 0.34, alpha: 0.82 },
+  4: { warm: 0.5, alpha: 0.68 },
+};
 
-// The logo box is derived from the mark's own aspect instead of a hand-picked
-// 44 × 24. A box of any other shape leaves slack on one axis, and slack is what
-// lets a "centred" mark still look off-centre — markPath can only centre within
-// the box it is given. Zero padding for the same reason: padding shrinks the
-// drawing area on both axes equally, which re-introduces the mismatch.
+// The logo box is derived from the mark's own aspect (body plus every shard)
+// instead of a hand-picked width. A box of any other shape leaves slack on one
+// axis, and slack is what lets a "centred" mark still look off-centre —
+// markLayers can only centre within the box it is given.
 const LOGO_HEIGHT = 24;
 // A sliver of padding, because the Catmull-Rom CONTROL points sit a shade
 // outside the curve they describe on the tightest turns. The fill never reaches
@@ -35,52 +47,163 @@ const LOGO_HEIGHT = 24;
 const LOGO_PADDING = 0.25;
 const LOGO_WIDTH = Number((markAspect() * (LOGO_HEIGHT - LOGO_PADDING * 2) + LOGO_PADDING * 2).toFixed(2));
 
-const faviconPath = markPath({ width: 64, height: 64, padding: 5, precision: 1 });
-const logoPath = markPath({
-  width: LOGO_WIDTH,
-  height: LOGO_HEIGHT,
-  padding: LOGO_PADDING,
-  precision: 2,
-});
+const logo = markLayers({ width: LOGO_WIDTH, height: LOGO_HEIGHT, padding: LOGO_PADDING, precision: 2 });
+const logoPath = [logo.body, ...logo.shards.map((shard) => shard.d)].join(' ');
 
-const favicon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Memoria">
+// --- favicon -----------------------------------------------------------------
+
+const ICON = 64;
+// The same optical fit as the large PNG icons in draw-icon.mjs.
+const FIT = 0.84;
+const padding = (ICON * (1 - FIT)) / 2;
+const favicon = markLayers({ width: ICON, height: ICON, padding, precision: 2 });
+const { scale, place } = fitMark({ width: ICON, height: ICON, padding });
+const bounds = bandBounds();
+const [corner] = place([{ x: bounds.minX, y: bounds.maxY }]);
+const [crossing] = place([{ x: 0, y: 0 }]);
+const box = { left: corner.x, top: corner.y, width: bounds.width * scale, height: bounds.height * scale };
+const f2 = (v) => Number(v.toFixed(2));
+
+// A linear gradient whose value at a point is LIGHT.x across the mark's box
+// plus LIGHT.y down it: the gradient vector is that direction, scaled so it
+// spans exactly 0 → 1.
+const dx = LIGHT.x / box.width;
+const dy = LIGHT.y / box.height;
+const norm = dx * dx + dy * dy;
+const goldVector = { x1: box.left, y1: box.top, x2: box.left + dx / norm, y2: box.top + dy / norm };
+
+/** The tile: a superellipse, the shape every platform's app icon actually is. */
+function squircle(radius, exponent = 4.4, points = 48) {
+  const outline = [];
+  for (let i = 0; i < points; i++) {
+    const a = (i / points) * Math.PI * 2;
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    outline.push({
+      x: ICON / 2 + radius * Math.sign(c) * Math.abs(c) ** (2 / exponent),
+      y: ICON / 2 + radius * Math.sign(s) * Math.abs(s) ** (2 / exponent),
+      sharp: false,
+    });
+  }
+  return outlinePath(outline, 2);
+}
+const shell = ICON / 2 - ICON * 0.012;
+
+const tierGroups = [1, 2, 3, 4]
+  .map((tier) => {
+    const shards = favicon.shards.filter((shard) => shard.tier === tier);
+    if (!shards.length) return '';
+    const { warm, alpha } = TIER_LIGHT[tier];
+    const d = shards.map((shard) => shard.d).join(' ');
+    const ember = warm ? `\n    <path fill="${EMBER}" fill-opacity="${warm}" d="${d}" />` : '';
+    return `  <g opacity="${alpha}">\n    <path fill="url(#gold)" d="${d}" />${ember}\n  </g>`;
+  })
+  .filter(Boolean)
+  .join('\n');
+
+const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${ICON} ${ICON}" role="img" aria-label="Memoria">
   <!-- Generated by app/scripts/gen-mark.mjs — edit the geometry in mobius.mjs. -->
-  <!-- An infinity sign with a piece missing where it crosses itself: the loop's
-       beginning/end, and the under-strand of the crossing, in one gap. -->
+  <!-- A wide infinity sign whose lower half has shattered: its upper arches
+       stand as an M, the two ribbons crossing over and under at the centre,
+       and the lost bowls drift below as shards in four tiers. -->
   <defs>
-    <linearGradient id="void-gold" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="gold" gradientUnits="userSpaceOnUse" x1="${f2(goldVector.x1)}" y1="${f2(goldVector.y1)}" x2="${f2(goldVector.x2)}" y2="${f2(goldVector.y2)}">
 ${GOLD_STOPS.map((s) => `      <stop offset="${s.offset}" stop-color="${s.color}" />`).join('\n')}
     </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e8b45a" stop-opacity=".42" />
+      <stop offset="1" stop-color="#e8b45a" stop-opacity=".16" />
+    </linearGradient>
+    <radialGradient id="dive" gradientUnits="userSpaceOnUse" cx="${f2(crossing.x)}" cy="${f2(crossing.y)}" r="${f2(scale * 0.44)}">
+      <stop offset="0" stop-color="${UMBER}" stop-opacity=".16" />
+      <stop offset=".5" stop-color="${UMBER}" stop-opacity=".06" />
+      <stop offset="1" stop-color="${UMBER}" stop-opacity="0" />
+    </radialGradient>
+    <clipPath id="under"><path d="${favicon.underStrand}" /></clipPath>
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="${f2(scale * 0.007)}" /></filter>
+    <filter id="sheen" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="${f2(scale * 0.016)}" /></filter>
   </defs>
-  <path fill="url(#void-gold)" d="${faviconPath}" />
+  <path fill="#000" d="${squircle(shell)}" />
+  <path fill="none" stroke="url(#rim)" stroke-width=".7" d="${squircle(shell - 0.35)}" />
+  <path fill="url(#gold)" d="${favicon.underStrand}" />
+  <g clip-path="url(#under)">
+    <rect x="0" y="0" width="${ICON}" height="${ICON}" fill="url(#dive)" />
+    <path fill="${UMBER}" fill-opacity=".42" filter="url(#soft)" d="${favicon.crossShadow}" />
+  </g>
+  <path fill="url(#gold)" d="${favicon.overStrand}" />
+  <path fill="#fff" fill-opacity=".6" filter="url(#sheen)" d="${favicon.sheens.join(' ')}" />
+${tierGroups}
 </svg>
 `;
 
+// --- mark-path.ts ------------------------------------------------------------
+
+const quote = (d) => `'${d}'`;
 const module = `// GENERATED by app/scripts/gen-mark.mjs — do not edit by hand.
-// The Memoria mark: an infinity sign on a lemniscate of Bernoulli, with the piece at the
-// crossing removed (see app/scripts/mobius.mjs for the geometry and why).
+// The Memoria mark: a wide infinity sign whose lower half has shattered — its upper arches
+// stand as an M, its two ribbons cross over and under at the centre, and the lost bowls
+// drift below as shards (see app/scripts/mobius.mjs for the geometry and why).
+// Every path is fitted to the same ${LOGO_WIDTH} × ${LOGO_HEIGHT} box, so the layers stack exactly.
 // Regenerate with \`npm run icons\`.
 
-/** Outline of the mark, fitted exactly to its own ${LOGO_WIDTH} × ${LOGO_HEIGHT} bounding box. */
+/** One shard: its outline, how far it has drifted (1 = primary … 4 = finest), and its side. */
+export interface MarkShard {
+  readonly d: string;
+  readonly tier: 1 | 2 | 3 | 4;
+  readonly side: -1 | 1;
+}
+
+/** The whole silhouette for a flat fill: the body, then one closed subpath per shard. */
 export const MARK_PATH =
-  '${logoPath}';
+  ${quote(logoPath)};
+
+/** Both ribbons as one outline, without the seams where they cross. */
+export const MARK_BODY_PATH =
+  ${quote(logo.body)};
+
+/** The left ribbon, which passes OVER at the crossing. */
+export const MARK_OVER_PATH =
+  ${quote(logo.overStrand)};
+
+/** The right ribbon, which passes UNDER at the crossing. */
+export const MARK_UNDER_PATH =
+  ${quote(logo.underStrand)};
+
+/** The shadow the over ribbon casts on the under ribbon; draw it between them, clipped to the under ribbon. */
+export const MARK_CROSS_SHADOW_PATH =
+  ${quote(logo.crossShadow)};
+
+/** The shards, largest tier first within each side. */
+export const MARK_SHARDS: readonly MarkShard[] = [
+${logo.shards.map((shard) => `  { d: ${quote(shard.d)}, tier: ${shard.tier}, side: ${shard.side} },`).join('\n')}
+];
 
 export const MARK_WIDTH = ${LOGO_WIDTH};
 export const MARK_HEIGHT = ${LOGO_HEIGHT};
 `;
 
-writeFileSync(join(app, 'public', 'favicon.svg'), favicon);
+writeFileSync(join(app, 'public', 'favicon.svg'), faviconSvg);
 writeFileSync(join(app, 'src', 'components', 'mark-path.ts'), module);
 
-// The intro in index.html masks its mark with the same outline. It has to be
-// inline there: the splash paints before any stylesheet or script arrives.
+// --- index.html --------------------------------------------------------------
+//
+// The intro masks its mark with the same silhouette. It has to be inline there:
+// the splash paints before any stylesheet or script arrives. Only the mask and
+// the stage's size and shape are touched.
 const indexPath = join(app, 'index.html');
 const splashMask = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${LOGO_WIDTH} ${LOGO_HEIGHT}'%3E%3Cpath d='${logoPath}'/%3E%3C/svg%3E")`;
 const index = readFileSync(indexPath, 'utf8');
-const masked = index.replace(/--splash-mark: url\("[^"]*"\);/, `--splash-mark: ${splashMask};`);
+const masked = index.replace(/--splash-mark: url\("[^"]*"\);/, () => `--splash-mark: ${splashMask};`);
 if (masked === index && !index.includes(splashMask)) throw new Error('index.html has no --splash-mark to update');
-writeFileSync(
-  indexPath,
-  masked.replace(/aspect-ratio: [\d.]+ \/ 24;/, `aspect-ratio: ${LOGO_WIDTH} / ${LOGO_HEIGHT};`),
+const stage = /(\n\s*\.splash-stage \{)([^}]*)(\})/;
+if (!stage.test(masked)) throw new Error('index.html has no .splash-stage rule to update');
+const staged = masked.replace(stage, (_, open, body, close) => {
+  const next = body
+    .replace(/width: [^;]+;/, 'width: clamp(132px, 36vmin, 216px);')
+    .replace(/aspect-ratio: [^;]+;/, `aspect-ratio: ${LOGO_WIDTH} / ${LOGO_HEIGHT};`);
+  return `${open}${next}${close}`;
+});
+writeFileSync(indexPath, staged);
+console.log(
+  `favicon.svg (${faviconSvg.length} chars) and mark-path.ts (${logoPath.length} chars, ${logo.shards.length} shards) written; mark ${LOGO_WIDTH} × ${LOGO_HEIGHT}`,
 );
-console.log(`favicon.svg (${faviconPath.length} chars) and mark-path.ts (${logoPath.length} chars) written`);

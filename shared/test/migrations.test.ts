@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { projectEnergy } from '../src/energy';
-import { migrateState, seedMissingRegenSnapshots } from '../src/migrations';
+import { CONTENT_NORMALIZERS, migrateState, normalizeContent, seedMissingRegenSnapshots } from '../src/migrations';
 import { normalizeState } from '../src/merge';
 import { CURRENT_SCHEMA_VERSION, type AppState } from '../src/types';
 import { safeParseAppState } from '../src/validation';
@@ -312,5 +312,37 @@ describe('NTE corrections', () => {
 
   it('upgrades every device identically', () => {
     expect(migrateState(nte())).toEqual(migrateState(nte()));
+  });
+});
+
+describe('content normalizers', () => {
+  it('run on current documents without a schema bump, and leave untouched input as is', () => {
+    const current = makeState();
+    expect(current.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(CURRENT_SCHEMA_VERSION).toBe(13);
+    expect(migrateState(current)).toBe(current);
+    expect(normalizeContent(current)).toBe(current);
+    expect(normalizeContent(null)).toBeNull();
+  });
+  it('are idempotent and deterministic', () => {
+    // A stand-in fix shaped like a real one: rename a shipped row once, stamped from the row itself.
+    const rename = (raw: unknown) => {
+      const state = raw as AppState;
+      if (!state.games.some((game) => game.name === 'Old')) return raw;
+      return {
+        ...state,
+        games: state.games.map((game) =>
+          game.name === 'Old' ? { ...game, name: 'New', updatedAt: game.updatedAt + 1 } : game,
+        ),
+      };
+    };
+    const raw = makeState({ games: [makeGame({ name: 'Old', updatedAt: 5 })] });
+    const once = normalizeContent(raw, [rename]);
+    expect(normalizeContent(once, [rename])).toBe(once);
+    expect(normalizeContent(raw, [rename])).toEqual(once);
+    for (const normalize of CONTENT_NORMALIZERS) {
+      const first = normalizeState(normalize(makeState()));
+      expect(normalizeState(normalize(first))).toEqual(first);
+    }
   });
 });

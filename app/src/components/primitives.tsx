@@ -1,11 +1,12 @@
 import type { CSSProperties, HTMLAttributes, ReactNode } from 'react';
 
-export type PillVariant = 'neutral' | 'muted' | 'warn' | 'paused';
+export type PillVariant = 'neutral' | 'muted' | 'warn' | 'danger' | 'paused';
 
 const PILL_VARIANTS: Record<PillVariant, string> = {
   neutral: 'bg-fill-2 text-muted',
   muted: 'bg-fill-3 text-muted',
   warn: 'bg-warn/10 text-warn-fg',
+  danger: 'bg-danger/10 text-danger-fg',
   paused: 'bg-fill-3 text-muted',
 };
 
@@ -137,8 +138,12 @@ export function Tick({
         {completed && (
           <g className={checkEnter === 'none' ? undefined : checkEnter === 'burst' ? 'check-burst' : 'check-pop'}>
             <circle cx="10" cy="10" r="9" fill={color} />
+            {/* pathLength 1 lets the burst draw the check in one stroke, in step
+                with the disc, whatever the path's real length. */}
             <path
               d="M6 10.5L8.8 13.2 14 7"
+              pathLength={1}
+              className={checkEnter === 'burst' ? 'check-stroke' : undefined}
               fill="none"
               stroke="var(--color-surface-0)"
               strokeWidth="2.4"
@@ -180,7 +185,9 @@ export function Tick({
       {sweep && (
         <span className="pointer-events-none absolute inset-0" aria-hidden>
           <span
-            className="nova-wave absolute inset-0 rounded-ui-full ring-2 ring-ok"
+            className="nova-wave absolute inset-0 rounded-ui-full"
+            // The echo wears the game's own colour, like the disc it rings.
+            style={{ '--tick-color': color } as CSSProperties}
             // The longest-running piece owns the completion callback, so the
             // sweep state clears exactly once rather than per element.
             onAnimationEnd={onSweepEnd}

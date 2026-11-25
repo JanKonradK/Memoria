@@ -20,7 +20,7 @@ async function stored(page: Page) {
   );
 }
 
-test('a game page lays out energy, tasks and events side by side, with notes on their own tab', async ({
+test('a game page lays out energy and tasks beside events, with codes and notes on their own tabs', async ({
   page,
 }, info) => {
   test.skip(!['desktop', 'mobile-390'].includes(info.project.name), 'One wide and one phone layout');
@@ -63,14 +63,20 @@ test('a game page lays out energy, tasks and events side by side, with notes on 
   const tasks = (await page.locator('.game-track-tasks').boundingBox())!;
   const events = (await page.locator('.focus-events').boundingBox())!;
   if (info.project.name === 'desktop') {
-    // Energy, then tasks, then events.
-    expect(track.x + track.width).toBeLessThanOrEqual(tasks.x + 1);
+    // Energy above tasks on the left; both strictly left of events.
+    expect(track.y).toBeLessThan(tasks.y);
+    expect(track.x + track.width).toBeLessThanOrEqual(events.x + 1);
     expect(tasks.x + tasks.width).toBeLessThanOrEqual(events.x + 1);
   } else {
     // One column: energy, then tasks, then events.
     expect(track.y).toBeLessThan(tasks.y);
     expect(tasks.y).toBeLessThan(events.y);
   }
+
+  await page.getByRole('tab', { name: /^Codes/ }).click();
+  await expect(page.getByRole('button', { name: `Add codes for ${zzz.name}`, exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByRole('tab', { name: 'Track', exact: true }).click();
 
   await page.getByRole('tab', { name: 'Notes', exact: true }).click();
   await page.getByRole('button', { name: 'New note', exact: true }).click();

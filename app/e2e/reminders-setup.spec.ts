@@ -36,13 +36,12 @@ test('first run on the PC offers reminders before creating the dashboard', async
   await withPcBridge(page);
   await page.addInitScript(() => localStorage.removeItem('memoria-onboarding'));
   await page.goto('/');
-  await expect(page.getByText('Step 1 of 4')).toBeVisible();
+  await expect(page.getByText('Step 1 of 3')).toBeVisible();
   await page.getByRole('button', { name: /Genshin Impact/ }).click();
   await page.getByRole('button', { name: /^Next/ }).click();
   await page.getByRole('button', { name: 'Add a Genshin Impact account on Europe' }).click();
+  // Looks wait for Settings: setup goes straight on to reminders.
   await page.getByRole('button', { name: 'Next', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Pick a look' })).toBeVisible();
-  await page.getByRole('button', { name: 'Skip', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Remind me before I lose something' })).toBeVisible();
   // Quiet hours start off, so a 02:00 reminder before a 03:00 reset is not held back.
   const quiet = page.getByRole('switch', { name: 'Quiet hours' });

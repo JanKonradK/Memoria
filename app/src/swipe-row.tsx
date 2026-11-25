@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useRef,
   type CSSProperties,
   type HTMLAttributes,
@@ -90,28 +91,68 @@ export function SwipeRow({
   const drag = useRef<Drag | null>(null);
 
   const setX = (node: HTMLElement, x: number) => node.style.setProperty('--swipe-x', `${x}px`);
+  const clearSwipe = (node: HTMLElement) => {
+    delete node.dataset.swiping;
+    delete node.dataset.swipeRelease;
+    delete node.dataset.side;
+    delete node.dataset.armed;
+    node.style.removeProperty('--swipe-x');
+  };
+
+  // A settle still running from the last swipe, and the click it swallows. A new
+  // drag stops the settle, so its late end never wipes the row out mid-drag.
+  const settleGen = useRef(0);
+  const stopSettle = useRef<(() => void) | null>(null);
+  const stopSwallow = useRef<(() => void) | null>(null);
+  useEffect(
+    () => () => {
+      stopSettle.current?.();
+      stopSwallow.current?.();
+    },
+    [],
+  );
 
   const settle = (node: HTMLElement) => {
+    stopSettle.current?.();
+    const gen = ++settleGen.current;
     node.dataset.swipeRelease = '';
     delete node.dataset.armed;
     setX(node, 0);
-    const done = () => {
-      delete node.dataset.swiping;
-      delete node.dataset.swipeRelease;
-      delete node.dataset.side;
-      node.style.removeProperty('--swipe-x');
+    let timer = 0;
+    const stop = () => {
+      node.removeEventListener('transitionend', onEnd);
+      window.clearTimeout(timer);
+      if (stopSettle.current === stop) stopSettle.current = null;
     };
-    node.addEventListener('transitionend', done, { once: true });
-    window.setTimeout(done, 320);
+    const done = () => {
+      stop();
+      if (gen === settleGen.current) clearSwipe(node);
+    };
+    // The slide is the content's `translate`; the icon's scale and the word's fade end too.
+    function onEnd(event: TransitionEvent) {
+      if (event.propertyName === 'translate') done();
+    }
+    node.addEventListener('transitionend', onEnd);
+    timer = window.setTimeout(done, 320);
+    stopSettle.current = stop;
   };
 
   const swallowClick = () => {
-    const stop = (event: Event) => {
+    stopSwallow.current?.();
+    let timer = 0;
+    const stop = () => {
+      window.removeEventListener('click', swallow, { capture: true });
+      window.clearTimeout(timer);
+      if (stopSwallow.current === stop) stopSwallow.current = null;
+    };
+    function swallow(event: Event) {
       event.stopPropagation();
       event.preventDefault();
-    };
-    window.addEventListener('click', stop, { capture: true, once: true });
-    window.setTimeout(() => window.removeEventListener('click', stop, { capture: true }), 400);
+      stop();
+    }
+    window.addEventListener('click', swallow, { capture: true });
+    timer = window.setTimeout(stop, 400);
+    stopSwallow.current = stop;
   };
 
   const onPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
@@ -121,6 +162,13 @@ export function SwipeRow({
     taken.add(event.nativeEvent);
     const node = ref.current;
     if (!node) return;
+    // A new finger on a row still settling: end that settle now, so its late
+    // timer never wipes the row out under this drag.
+    if (stopSettle.current) {
+      stopSettle.current();
+      settleGen.current += 1;
+      clearSwipe(node);
+    }
     drag.current = {
       id: event.pointerId,
       x: event.clientX,

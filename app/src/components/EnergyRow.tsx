@@ -4,6 +4,11 @@ import { effectiveReserveRegenMinutes, effectiveResourceKind } from '@memoria/sh
 import { clamp, fmtClock, fmtDur, intOr } from '../util';
 import { ProgressBar } from './primitives';
 import { useScrub } from '../scrub';
+import { useApp } from '../store';
+import { useUI } from '../ui-store';
+
+/** Names the keys the value field answers; shown on hover. */
+export const ENERGY_KEYS_HINT = 'Type a value, or use A (−10), S (−1), D (+1), F (+10)';
 
 const ENERGY_STEP_KEYS: Readonly<Record<string, number>> = {
   a: -10,
@@ -124,6 +129,7 @@ export function ValueStepper({
   onDraft,
   onEndEdit,
   onCommit,
+  onCommitNext,
   onCancel,
   step = 1,
 }: {
@@ -146,6 +152,11 @@ export function ValueStepper({
   onEndEdit: () => void;
   /** Enter. Omitted where the blur that follows already commits. */
   onCommit?: () => void;
+  /**
+   * Enter in a list of readings: commit, then move to the next field (Shift:
+   * the previous) instead of dropping focus to the page.
+   */
+  onCommitNext?: (reverse: boolean) => void;
   /** Escape: throw the draft away without writing it. */
   onCancel: () => void;
 }) {
@@ -155,6 +166,7 @@ export function ValueStepper({
       <StepBtn delta={-step} onStep={onStep} label={label} />
       {/* One pill: editable value + "/ cap" together inside the same box. */}
       <span
+        title={ENERGY_KEYS_HINT}
         className="energy-value-box focus-ring-group flex h-11 cursor-text items-center rounded-ui-full bg-fill-2 px-2.5 ring-1 ring-line-hairline transition focus-within:bg-fill-3 fine:h-8"
         onMouseDown={(e) => {
           if (e.target !== inputRef.current) {
@@ -185,18 +197,25 @@ export function ValueStepper({
               return;
             }
             if (e.key === 'Enter') {
-              onCommit?.();
-              inputRef.current?.blur();
+              if (onCommitNext) {
+                e.preventDefault();
+                onCommit?.();
+                onCommitNext(e.shiftKey);
+              } else {
+                onCommit?.();
+                inputRef.current?.blur();
+              }
             }
             if (e.key === 'Escape') {
               onCancel();
               inputRef.current?.blur();
             }
           }}
-          className={`energy-value-input bg-transparent text-right tabular-nums outline-none ${valueClassName}`}
+          className={`energy-value-input min-h-11 bg-transparent text-right fine:min-h-8 tabular-nums outline-none ${valueClassName}`}
           // Room for four digits whatever the value, so every currency on a page lines up.
           style={{ color, width: `${Math.max(4, value.length) + 0.5}ch` }}
           aria-label={ariaLabel}
+          title={ENERGY_KEYS_HINT}
           aria-keyshortcuts="a s d f Enter Escape"
         />
         <span className="inline-block min-w-[6ch] pl-1 text-left text-label tabular-nums text-dim">/ {cap}</span>
@@ -207,6 +226,9 @@ export function ValueStepper({
 }
 
 type BankTone = 'full' | 'max' | 'filling' | 'quiet';
+
+const QUICK_SET =
+  'min-h-11 min-w-11 rounded-ui-md px-1.5 text-label font-semibold text-fg-soft underline-offset-4 hover:text-fg hover:underline fine:min-h-6 fine:min-w-0';
 
 /**
  * The bar's second row: what banks its overflow. Same grammar as the bar
@@ -375,6 +397,20 @@ export const EnergyRow = memo(function EnergyRow({
 }) {
   const kind = effectiveResourceKind(res);
   const compact = kind === 'counter';
+  // The pulse only runs while the row is on screen; offscreen it would burn frames for nobody.
+  const rowRef = useRef<HTMLDivElement>(null);
+  const pulsing = Boolean(need && pulse);
+  const [onScreen, setOnScreen] = useState(true);
+  useEffect(() => {
+    const node = rowRef.current;
+    if (!pulsing || !node || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(([entry]) => setOnScreen(entry?.isIntersecting ?? true));
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      setOnScreen(true);
+    };
+  }, [pulsing]);
   const [draft, setDraft] = useState<string | null>(null);
   const [reserveDraft, setReserveDraft] = useState<string | null>(null);
   const liveRef = useRef({ value: proj.value, reserve: reserve ?? 0 });
@@ -397,6 +433,14 @@ export const EnergyRow = memo(function EnergyRow({
     onTouched?.('value');
     setDraft(null);
     mainEdit.current.dirty = false;
+  };
+
+  // A one-tap reading throws away the old one; the toast brings it back.
+  const commitWithUndo = (value: number, text: string) => {
+    const before = useApp.getState().history.journal.at(-1)?.id;
+    commit(value);
+    const id = useApp.getState().history.journal.at(-1)?.id;
+    if (id && id !== before) useUI.getState().showUndo(text, () => useApp.getState().undoActivity(id));
   };
 
   const step = (d: number) => {
@@ -487,7 +531,13 @@ export const EnergyRow = memo(function EnergyRow({
   }
 
   return (
-    <div className="group/row" data-energy-row data-need={need} data-pulse={(need && pulse) || undefined}>
+    <div
+      ref={rowRef}
+      className="group/row"
+      data-energy-row
+      data-need={need}
+      data-pulse={(pulsing && onScreen) || undefined}
+    >
       {/* Name and stepper share one line; a long name wraps rather than pushing the stepper down. */}
       <div className="energy-row-line flex items-center gap-x-2 gap-y-1.5">
         <span className="flex min-w-0 flex-1 items-center">
@@ -566,19 +616,24 @@ export const EnergyRow = memo(function EnergyRow({
               {subtitle}
             </span>
             {kind === 'regen' && (
-              <button
-                type="button"
-                className="energy-spent energy-row-control -my-3 min-h-11 rounded-ui-md px-1 text-label font-semibold text-fg-soft underline-offset-4 hover:text-fg hover:underline sm:my-0 fine:min-h-6"
-                title="Long-press or right-click: full"
-                aria-label={`Spent all ${res.name}`}
-                onClick={() => commit(0)}
-                onContextMenu={(event) => {
-                  event.preventDefault();
-                  commit(res.cap);
-                }}
-              >
-                Spent all
-              </button>
+              <span className="energy-quick-set -my-3 inline-flex items-center gap-1 sm:my-0">
+                <button
+                  type="button"
+                  className={QUICK_SET}
+                  aria-label={`Spent all ${res.name}`}
+                  onClick={() => commitWithUndo(0, `${res.name} set to 0`)}
+                >
+                  Spent all
+                </button>
+                <button
+                  type="button"
+                  className={QUICK_SET}
+                  aria-label={`${res.name} full`}
+                  onClick={() => commitWithUndo(res.cap, `${res.name} set to full`)}
+                >
+                  Full
+                </button>
+              </span>
             )}
             {note && (
               <span data-reading-status className="ml-auto text-label tabular-nums text-muted">

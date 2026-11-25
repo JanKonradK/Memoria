@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   endsOvernight,
+  EVENT_STEPS,
+  eventPartsDone,
   morningOf,
-  setEventProgress,
   type EnergyBank,
   type EnergyStep,
   type EventStep,
@@ -12,6 +13,7 @@ import {
   type TodayStepGroup,
 } from '@memoria/shared';
 import { useApp } from '../../store';
+import { useUI } from '../../ui-store';
 import { haptic } from '../../hooks';
 import { useScrub } from '../../scrub';
 import { SwipeRow, type SwipeAction } from '../../swipe-row';
@@ -19,9 +21,11 @@ import { clamp, intOr } from '../../util';
 import { passSession } from '../../session-focus';
 import { openGame } from '../../workspace-navigation';
 import { ValueStepper } from '../EnergyRow';
+import { EventTick } from '../GameCard';
 import { GameLogo } from '../GameLogo';
 import { NightMark } from '../NightMark';
-import { Tick } from '../primitives';
+import { Pill, Tick } from '../primitives';
+import { useCheckInClaim } from '../CheckInClaim';
 import { cadenceNoun, countdown, hhmm, stepTone } from './step-format';
 
 export interface StepGame {
@@ -33,6 +37,29 @@ export interface StepGame {
   text: string;
   /** The game's second colour, for what banks its bar. */
   support: string;
+  /** Which account this is, where the roster holds the game more than once; else empty. */
+  account: string;
+}
+
+/** The game's name with its account, for a screen reader or a tooltip: "Genshin Impact (EU)". */
+export function gameWithAccount(game: StepGame, short = false): string {
+  const name = short ? game.game.short : game.game.name;
+  return game.account ? `${name} (${game.account})` : name;
+}
+
+/**
+ * Enter in a reading moves to the next reading in the list (Shift: the one
+ * before), the way a form moves through its fields. At either end it stays put
+ * and selects the figure again, ready for a correction.
+ */
+export function focusNextReading(from: HTMLElement | null, reverse: boolean): void {
+  const list = from?.closest('.today-steps');
+  if (!from || !list) return;
+  const inputs = [...list.querySelectorAll<HTMLInputElement>('.energy-value-input')];
+  const at = inputs.indexOf(from as HTMLInputElement);
+  const next = inputs[at + (reverse ? -1 : 1)] ?? (from as HTMLInputElement);
+  if (next !== from) next.focus();
+  next.select();
 }
 
 /** 1,240 → 1.2k: a reserve's figure has to fit under the pill. */
@@ -79,7 +106,8 @@ function EnergyControl({ step, game, ink, bankInk }: { step: EnergyStep; game: G
   useEffect(() => {
     live.current = step.value;
   }, [step.value]);
-  const shown = draft ?? String(step.value);
+  const shown = draft ?? (step.unmeasured ? '' : String(step.value));
+  const field = useRef<HTMLSpanElement>(null);
   // Without a reserve figure the store carries the projected reserve over, so it is kept.
   const commit = (value: number) => {
     setEnergy(step.resourceId, clamp(Math.round(value), 0, step.cap));
@@ -98,9 +126,10 @@ function EnergyControl({ step, game, ink, bankInk }: { step: EnergyStep; game: G
     onCancel: () => setDraft(null),
   });
   return (
-    <span className="today-step-energy" {...scrub}>
+    <span ref={field} className="today-step-energy" {...scrub}>
       <ValueStepper
         value={shown}
+        placeholder={step.unmeasured ? '—' : undefined}
         cap={step.cap}
         color={ink}
         label={step.name}
@@ -109,13 +138,20 @@ function EnergyControl({ step, game, ink, bankInk }: { step: EnergyStep; game: G
         onStep={(delta) => commit((draft != null && draft !== '' ? intOr(draft, live.current) : live.current) + delta)}
         onBeginEdit={() => {
           edit.current = { dirty: false, cancelled: false };
-          setDraft(String(live.current));
+          setDraft(step.unmeasured ? '' : String(live.current));
         }}
         onDraft={(text) => {
           edit.current.dirty = true;
           setDraft(text);
         }}
-        onCommit={() => commit(intOr(shown, live.current))}
+        onCommit={() => {
+          // An empty field on a bar never read has nothing to save.
+          if (step.unmeasured && shown === '') setDraft(null);
+          else commit(intOr(shown, live.current));
+        }}
+        onCommitNext={(reverse) =>
+          focusNextReading(field.current?.querySelector<HTMLElement>('.energy-value-input') ?? null, reverse)
+        }
         onCancel={() => {
           edit.current.cancelled = true;
           setDraft(null);
@@ -133,12 +169,26 @@ function EnergyControl({ step, game, ink, bankInk }: { step: EnergyStep; game: G
   );
 }
 
+/**
+ * Records a reversible task reset or timer restart under an Undo toast,
+ * matching the card's batch-action Undo affordance.
+ */
+function runWithUndo(label: string, run: () => void): void {
+  const before = useApp.getState?.()?.history?.journal?.at(-1)?.id;
+  run();
+  const actionId = useApp.getState?.()?.history?.journal?.at(-1)?.id;
+  if (actionId && actionId !== before) {
+    useUI.getState().showUndo(label, () => useApp.getState().undoActivity(actionId));
+  }
+}
+
 function TaskControl({ step, ink, what, now }: { step: TaskStep; ink: string; what: string; now: number }) {
   const setTaskDone = useApp((store) => store.setTaskDone);
   const setTaskCount = useApp((store) => store.setTaskCount);
   const restartTaskTimer = useApp((store) => store.restartTaskTimer);
   const advanceTaskTimer = useApp((store) => store.advanceTaskTimer);
   const { item } = step;
+  const checkIn = useCheckInClaim(item, setTaskDone);
   if (item.mode === 'count') {
     return (
       <span className="today-step-count">
@@ -151,7 +201,11 @@ function TaskControl({ step, ink, what, now }: { step: TaskStep; ink: string; wh
           aria-label={`${what}: ${item.countDone} of ${item.countTarget} done${item.done ? ', complete — press to reset' : ', press to mark one more'}`}
           onClick={() => {
             haptic();
-            setTaskCount(item.taskId, item.periodKey, item.done ? 0 : Math.min(item.countTarget, item.countDone + 1));
+            if (item.done) {
+              runWithUndo(`${what} reset`, () => setTaskCount(item.taskId, item.periodKey, 0));
+            } else {
+              setTaskCount(item.taskId, item.periodKey, Math.min(item.countTarget, item.countDone + 1));
+            }
           }}
         >
           <Tick
@@ -177,7 +231,11 @@ function TaskControl({ step, ink, what, now }: { step: TaskStep; ink: string; wh
         onClick={() => {
           haptic();
           if (stepped) advanceTaskTimer(item.taskId, item.periodKey, item.timerStepMinutes ?? 0);
-          else restartTaskTimer(item.taskId, item.periodKey);
+          else {
+            runWithUndo(item.done ? `${what} restarted` : `${what} timer started`, () =>
+              restartTaskTimer(item.taskId, item.periodKey),
+            );
+          }
         }}
       >
         <Tick
@@ -187,6 +245,43 @@ function TaskControl({ step, ink, what, now }: { step: TaskStep; ink: string; wh
           className="today-tick-face"
         />
       </button>
+    );
+  }
+  if (item.link && checkIn.available) {
+    // A linked HoYoLAB check-in: the tick claims it; a failure says why and offers the page.
+    return (
+      <span className="today-step-count">
+        {checkIn.failure && (
+          <>
+            <Pill variant={checkIn.failure.tone}>{checkIn.failure.label}</Pill>
+            <span role="status" className="sr-only">
+              {checkIn.failure.message}
+            </span>
+            <a
+              href={item.link}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Open ${what}`}
+              className="min-h-11 content-center px-1 text-meta font-semibold text-accent-fg underline underline-offset-4 fine:min-h-8"
+            >
+              Open ↗
+            </a>
+          </>
+        )}
+        <button
+          type="button"
+          className="today-step-tick"
+          aria-label={checkIn.busy ? `Claiming ${what}` : `Claim ${what}`}
+          aria-busy={checkIn.busy}
+          disabled={checkIn.busy}
+          onClick={() => {
+            haptic();
+            checkIn.claim();
+          }}
+        >
+          <Tick checked={false} color={ink} className="today-tick-face" />
+        </button>
+      </span>
     );
   }
   return (
@@ -206,7 +301,7 @@ function TaskControl({ step, ink, what, now }: { step: TaskStep; ink: string; wh
 }
 
 function EventControl({ step, ink }: { step: EventStep; ink: string }) {
-  const upsertEvent = useApp((store) => store.upsertEvent);
+  const toggleEventDone = useApp((store) => store.toggleEventDone);
   const done = step.event.done === true;
   return (
     <button
@@ -216,10 +311,11 @@ function EventControl({ step, ink }: { step: EventStep; ink: string }) {
       aria-pressed={done}
       onClick={() => {
         haptic();
-        upsertEvent({ id: step.event.id, gameId: step.event.gameId, ...setEventProgress(done ? 'none' : 'done') });
+        toggleEventDone(step.event.id);
       }}
     >
-      <Tick checked={done} color={ink} className="today-tick-face" />
+      {/* Partly done shows as a part-filled ring; a tap still means done, or not done. */}
+      <EventTick ticked={eventPartsDone(step.event)} total={EVENT_STEPS} color={ink} className="today-tick-face" />
     </button>
   );
 }
@@ -230,13 +326,12 @@ function useStepSwipes(step: TodayStep): { right: SwipeAction | null; left: Swip
   const setTaskCount = useApp((store) => store.setTaskCount);
   const restartTaskTimer = useApp((store) => store.restartTaskTimer);
   const advanceTaskTimer = useApp((store) => store.advanceTaskTimer);
-  const upsertEvent = useApp((store) => store.upsertEvent);
+  const setEventProgress = useApp((store) => store.setEventProgress);
   if (step.kind === 'energy') return { right: null, left: null };
   if (step.kind === 'event') {
     const { event } = step;
     const done = event.done === true;
-    const set = (to: 'done' | 'none') => () =>
-      upsertEvent({ id: event.id, gameId: event.gameId, ...setEventProgress(to) });
+    const set = (to: 'done' | 'none') => () => setEventProgress(event.id, to);
     return {
       right: done ? null : { label: 'Done', run: set('done') },
       left: done ? { label: 'Not done', run: set('none') } : null,
@@ -262,7 +357,13 @@ function useStepSwipes(step: TodayStep): { right: SwipeAction | null; left: Swip
     return {
       right: stepped
         ? { label: 'Sooner', run: () => advanceTaskTimer(item.taskId, item.periodKey, item.timerStepMinutes ?? 0) }
-        : { label: item.done ? 'Resend' : 'Collect', run: () => restartTaskTimer(item.taskId, item.periodKey) },
+        : {
+            label: item.done ? 'Resend' : 'Collect',
+            run: () =>
+              runWithUndo(item.done ? `${item.name} restarted` : `${item.name} timer started`, () =>
+                restartTaskTimer(item.taskId, item.periodKey),
+              ),
+          },
       left: null,
     };
   }
@@ -285,6 +386,7 @@ export function stepWhat(step: TodayStep): string {
  */
 function stepWhy(step: TodayStep, group: TodayStepGroup, compact: boolean): string {
   if (step.kind === 'energy') {
+    if (step.unmeasured) return 'not read yet';
     if (!step.full) return '';
     const bank = step.bank;
     // A reserve still filling keeps what the bar cannot; once it is full too, nothing does.
@@ -320,6 +422,7 @@ export function StepRow({
   const whenId = `today-step-when-${step.key}`;
   const tone = stepTone(step, group, settings, now);
   const swipes = useStepSwipes(step);
+  const unmeasured = step.kind === 'energy' && step.unmeasured === true;
   return (
     <SwipeRow
       as="li"
@@ -347,6 +450,12 @@ export function StepRow({
           <span className="today-step-what">{what}</span>{' '}
           <span className="today-step-why">
             <b style={{ color: game.text }}>{compact ? game.game.short : game.game.name}</b>
+            {game.account && (
+              <>
+                {' · '}
+                <span className="today-step-account">{game.account}</span>
+              </>
+            )}
             {why && <> · {why}</>}
           </span>
         </span>
@@ -361,13 +470,20 @@ export function StepRow({
         )}
       </span>
       <span id={whenId} className="today-step-when numeral" data-tone={tone}>
-        <b>{step.done ? 'Done' : countdown(left)}</b>
-        <span>
-          {step.kind === 'event' && !step.done && endsOvernight(step.at, zone, morningOf(settings)) && (
-            <NightMark at={step.at} tz={zone} />
-          )}
-          {hhmm(step.at, zone)}
-        </span>
+        {unmeasured ? (
+          // A bar never read has no cap to count down to; it asks for a reading.
+          <b className="today-step-ask">Enter reading</b>
+        ) : (
+          <>
+            <b>{step.done ? 'Done' : countdown(left)}</b>
+            <span>
+              {step.kind === 'event' && !step.done && endsOvernight(step.at, zone, morningOf(settings)) && (
+                <NightMark at={step.at} tz={zone} />
+              )}
+              {hhmm(step.at, zone)}
+            </span>
+          </>
+        )}
       </span>
     </SwipeRow>
   );

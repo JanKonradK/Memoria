@@ -21,16 +21,19 @@ import { gameTitleInk } from '../game-color';
 import { localResetLabel } from '../util';
 import { gameServerLabel, presetKeyOf } from '../server-choice';
 import { useCatchUpUnread } from '../catch-up-status';
+import { useActiveCodeCount } from '../codes';
 import { gameTabAvailable } from './game-tabs/availability';
 import './game-tabs/game-tabs.css';
 
 const GamePulls = lazy(() => import('./game-tabs/GamePulls').then((module) => ({ default: module.GamePulls })));
 const GameQuests = lazy(() => import('./game-tabs/GameQuests').then((module) => ({ default: module.GameQuests })));
 const GameNews = lazy(() => import('./game-tabs/GameNews').then((module) => ({ default: module.GameNews })));
+const GameCodes = lazy(() => import('./GameCodes').then((module) => ({ default: module.GameCodes })));
 
 const TAB_LABEL: Record<GameTab, string> = {
   track: 'Track',
   events: 'Events',
+  codes: 'Codes',
   pulls: 'Pulls',
   quests: 'Quests',
   news: 'News',
@@ -112,17 +115,19 @@ function GameAccounts({ game, now }: { game: Game; now: number }) {
   );
 }
 
-/** Track, Events, Pulls, Quests, News and Notes: everything about one game, one tab at a time. */
+/** Track, Events, Codes, Pulls, Quests, News and Notes: everything about one game, one tab at a time. */
 function GameTabs({
   game,
   tabs,
   current,
   eventCount,
+  codeCount,
 }: {
   game: Game;
   tabs: readonly GameTab[];
   current: GameTab;
   eventCount: number;
+  codeCount: number;
 }) {
   const setGameTab = useUI((s) => s.setGameTab);
   const { unread } = useCatchUpUnread(game);
@@ -165,6 +170,7 @@ function GameTabs({
         >
           {TAB_LABEL[tab]}
           {tab === 'events' && eventCount > 0 && <span className="game-tab-count numeral">{eventCount}</span>}
+          {tab === 'codes' && codeCount > 0 && <span className="game-tab-count numeral">{codeCount}</span>}
           {tab === 'news' && unread > 0 && (
             <>
               <span aria-hidden className="game-tab-new" />
@@ -204,7 +210,6 @@ export function GamePage({ now }: { now: number }) {
   const openSheet = useUI((s) => s.openSheet);
   const openGameEvent = useCallback((eventId: string) => openSheet({ kind: 'eventPeek', eventId }), [openSheet]);
   const twoColumns = useMediaQuery('(min-width: 900px)');
-  const threeColumns = useMediaQuery('(min-width: 1280px)');
   const focusedGameId = useUI((s) => s.focusedGameId);
   const gameTab = useUI((s) => s.gameTab);
   const focusedEntry = focusedGameId ? entryById.get(focusedGameId) : undefined;
@@ -226,6 +231,7 @@ export function GamePage({ now }: { now: number }) {
     setGameTabs(tabKey.split(' ') as GameTab[]);
   }, [setGameTabs, tabKey]);
   const direction = useUI((s) => s.gameTabDirection);
+  const codeCount = useActiveCodeCount(focusedEntry?.game, now);
 
   // Without a game there is no page. The shell sends this route back to Today.
   if (!focusedEntry) return null;
@@ -246,7 +252,7 @@ export function GamePage({ now }: { now: number }) {
       >
         <PageBar className="game-bar">
           <GameIdentity game={game} now={now} urgent={urgent} />
-          <GameTabs game={game} tabs={tabs} current={tab} eventCount={eventCount} />
+          <GameTabs game={game} tabs={tabs} current={tab} eventCount={eventCount} codeCount={codeCount} />
           <PageBarEnd>
             <LaunchButton game={game} />
             <Tooltip content={`Edit ${game.name}`}>
@@ -284,7 +290,7 @@ export function GamePage({ now }: { now: number }) {
               layout="focus"
               heading={false}
               split
-              columns={threeColumns ? 3 : twoColumns ? 2 : 1}
+              columns={twoColumns ? 2 : 1}
               onOpenEvent={openGameEvent}
             />
           )}
@@ -294,6 +300,7 @@ export function GamePage({ now }: { now: number }) {
             {tab === 'pulls' && <GamePulls game={focusedEntry.game} />}
             {tab === 'quests' && <GameQuests game={focusedEntry.game} />}
             {tab === 'news' && <GameNews game={focusedEntry.game} now={now} />}
+            {tab === 'codes' && <GameCodes game={focusedEntry.game} now={now} />}
           </Suspense>
         </div>
       </section>

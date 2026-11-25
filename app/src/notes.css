@@ -135,6 +135,7 @@
 .notes-wall {
   display: grid;
   align-items: start;
+  min-width: 0;
 }
 .notes-wall-column {
   display: flex;
@@ -562,9 +563,13 @@
 }
 
 /* A game's own Notes tab. */
+/* One column that may shrink below its widest card, so a long word or a
+   card's footer never pushes a phone page sideways. */
 .game-notes-tab {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
+  min-width: 0;
 }
 .game-notes-bar {
   display: flex;

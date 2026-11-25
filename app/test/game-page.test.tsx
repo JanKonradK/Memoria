@@ -56,10 +56,14 @@ function GamePageControls({
   layout,
   actionsEnd,
   split,
+  columns,
+  aside,
 }: {
   layout?: 'card' | 'focus';
   actionsEnd?: ReactNode;
   split?: boolean;
+  columns?: 1 | 2 | 3;
+  aside?: ReactNode;
 }) {
   const state = useApp((store) => store.state);
   const entry: GameUrgency = { game, next: null, actions: [] };
@@ -73,8 +77,8 @@ function GamePageControls({
       onOpenEvent={() => {}}
       actionsEnd={actionsEnd}
       split={split}
-      columns={split ? 3 : 1}
-      aside={split ? <aside aria-label="Notes" /> : undefined}
+      columns={columns ?? (split ? 2 : 1)}
+      aside={aside}
     />
   );
 }
@@ -163,16 +167,16 @@ describe('game page controls', () => {
     expect(within(left!).queryByRole('region', { name: /events for/ })).not.toBeInTheDocument();
   });
 
-  it("gives energy, tasks, and events with the notes a column each on the game's own page", () => {
+  it("gives energy and tasks on the left and events on the right in a 2-column split on the game's own page", () => {
     useApp.setState({ state: roster([event('Open window')]) });
-    const { container } = show(<GamePageControls layout="focus" split />);
+    const { container } = show(<GamePageControls layout="focus" split columns={2} />);
     const grid = container.querySelector<HTMLElement>('.game-track-grid');
-    expect(grid).toHaveAttribute('data-cols', '3');
+    expect(grid).toHaveAttribute('data-cols', '2');
     const [energy, tasks, side] = Array.from(grid!.children) as HTMLElement[];
     expect(energy!.querySelector('[data-section="resources"]')).not.toBeNull();
     expect(tasks!.querySelector('[data-section="tasks"]')).not.toBeNull();
     expect(within(side!).getByRole('region', { name: 'Testland events' })).toBeInTheDocument();
-    expect(within(side!).getByRole('complementary', { name: 'Notes' })).toBeInTheDocument();
+    expect(within(side!).queryByRole('complementary')).not.toBeInTheDocument();
   });
 
   it('steps an event through partly done and done in the store, then takes it back', () => {

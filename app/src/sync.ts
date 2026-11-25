@@ -8,12 +8,11 @@ const SYNC_WARNING_BYTES = MAX_SYNC_BYTES * 0.95;
 
 let syncing: Promise<void> | null = null;
 let syncAgain = false;
-let serverVersion: number | null = null;
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-/** Conflict recovery and successful writes accept the same launcher envelope. */
+/** Merge the launcher's latest document into local state. */
 async function mergeResponse(response: Response, sent?: AppState): Promise<boolean> {
-  const data = (await response.json()) as { state: unknown; version?: number } | null;
+  const data = (await response.json()) as { state: unknown } | null;
   const remote = data?.state;
   assertSyncProtocol(remote);
   // Repairing a damaged response can hide missing remote rows, then push that
@@ -22,12 +21,10 @@ async function mergeResponse(response: Response, sent?: AppState): Promise<boole
     throw new Error('The desktop launcher returned invalid data. Update Memoria and try again. Local edits were kept.');
   const local = useApp.getState().state;
   useApp.getState().replaceState(mergeState(local, normalizeState(remote)));
-  serverVersion = typeof data?.version === 'number' ? data.version : serverVersion;
   return sent !== undefined && local !== sent;
 }
 
 export function resetSyncState(): void {
-  serverVersion = null;
   syncAgain = false;
   clearTimeout(debounceTimer);
   debounceTimer = undefined;
@@ -58,38 +55,27 @@ export async function syncNow(): Promise<void> {
   let success = false;
   store.setSyncStatus('syncing');
   try {
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const sent = useApp.getState().state;
-      const res = await launcherFetch('/api/sync', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ state: sent, version: serverVersion }),
-        signal: AbortSignal.timeout(30_000),
-      });
-      if (res.status === 409) {
-        // Another app window wrote first. Pull its document, merge, retry.
-        if (attempt >= 2) throw new Error('Sync remained conflicted after three attempts.');
-        const latest = await launcherFetch('/api/state', { signal: AbortSignal.timeout(30_000) });
-        if (!latest.ok) throw new Error(`HTTP ${latest.status}`);
-        await mergeResponse(latest);
-        continue;
+    const sent = useApp.getState().state;
+    const res = await launcherFetch('/api/sync', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ state: sent }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!res.ok) {
+      let message = `HTTP ${res.status}`;
+      try {
+        const body = (await res.json()) as { error?: unknown };
+        if (typeof body.error === 'string') message = body.error;
+      } catch {
+        // The status remains useful when the launcher did not return JSON.
       }
-      if (!res.ok) {
-        let message = `HTTP ${res.status}`;
-        try {
-          const body = (await res.json()) as { error?: unknown };
-          if (typeof body.error === 'string') message = body.error;
-        } catch {
-          // The status remains useful when the launcher did not return JSON.
-        }
-        throw new Error(message);
-      }
-      const editedDuringRequest = await mergeResponse(res, sent);
-      syncAgain ||= editedDuringRequest;
-      useApp.getState().setSyncStatus('ok');
-      success = true;
-      return;
+      throw new Error(message);
     }
+    const editedDuringRequest = await mergeResponse(res, sent);
+    syncAgain ||= editedDuringRequest;
+    useApp.getState().setSyncStatus('ok');
+    success = true;
   } catch (e) {
     useApp.getState().setSyncStatus('error', e instanceof Error ? e.message : String(e));
   } finally {

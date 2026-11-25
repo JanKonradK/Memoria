@@ -14,10 +14,10 @@ import type { Derived } from '../../selectors';
 import { useMediaQuery } from '../../hooks';
 import { gameInk, gameSupport, legible } from '../../game-color';
 import { useGround, useInset } from '../../theme';
-import { useIdentityColors } from '../roster';
+import { gameAccountTag, useIdentityColors } from '../roster';
 import { GameLogo } from '../GameLogo';
 import { DayStrip } from './DayStrip';
-import { StepRow, stepWhat, type StepGame } from './StepRow';
+import { gameWithAccount, StepRow, stepWhat, type StepGame } from './StepRow';
 import { TodaySide } from './TodaySide';
 import { cadenceNoun, groupTone, hhmm, listNames, weekWhen } from './step-format';
 import './today-steps.css';
@@ -28,6 +28,8 @@ const FOLD_SHOWN = 4;
 const WEEK_SHOWN = 6;
 /** Finished rows have no reset of their own to name. */
 const DONE_GROUP: TodayStepGroup = { key: 'done', kind: 'reset', at: 0, steps: [], gameIds: [] };
+/** Other bars are not due within the day: the calm group, with no reset to name. */
+const OTHER_GROUP: TodayStepGroup = { key: 'other-bars', kind: 'later', at: 0, steps: [], gameIds: [] };
 
 interface Layout {
   groups: Array<{ group: TodayStepGroup; steps: TodayStep[] }>;
@@ -73,6 +75,14 @@ function heldLayout(plan: TodayPlan, held: Layout | null): Layout {
   return { groups: groups.filter((item) => item.steps.length > 0), done };
 }
 
+/** The rows' order and membership, to tell whether a held list has fallen behind the live one. */
+function layoutOrder(layout: Layout): string {
+  return [
+    ...layout.groups.map(({ group, steps }) => `${group.key}:${steps.map((step) => step.key).join(',')}`),
+    `done:${layout.done.map((step) => step.key).join(',')}`,
+  ].join('|');
+}
+
 function groupTitle(group: TodayStepGroup, plan: TodayPlan, games: Map<string, StepGame>, zone: string, now: number) {
   if (group.kind === 'hour') return { title: 'Within the hour', sub: `by ${hhmm(now + 3_600_000, zone)}` };
   if (group.kind === 'evening') {
@@ -85,7 +95,10 @@ function groupTitle(group: TodayStepGroup, plan: TodayPlan, games: Map<string, S
   }
   const tasks = group.steps.flatMap((step) => (step.kind === 'task' ? [step.item.cadence] : []));
   const cadence = tasks.every((item) => item === tasks[0]) ? tasks[0] : undefined;
-  const names = group.gameIds.map((id) => games.get(id)?.game.short ?? '');
+  const names = group.gameIds.map((id) => {
+    const game = games.get(id);
+    return game ? gameWithAccount(game, true) : '';
+  });
   return {
     title: `Reset ${hhmm(group.at, zone)}`,
     sub: `${listNames(names)}${cadence ? ` ${cadenceNoun(cadence, 2)}` : ''}`,
@@ -117,7 +130,8 @@ function WeekRow({
     <li className="today-week-row">
       <GameLogo game={game.logo} size={28} />
       <span className="min-w-0 truncate">
-        <b style={{ color: game.text }}>{game.game.short}</b> · {what}
+        <b style={{ color: game.text }}>{game.game.short}</b>
+        {game.account && <> · {game.account}</>} · {what}
       </span>
       <span className="today-week-at numeral">
         {overnight ? (
@@ -154,6 +168,7 @@ export function TodaySteps({ derived, empty }: { derived: Derived; empty: ReactN
         ink,
         text: legible(ink, inset, 4.5),
         support: legible(gameSupport(logo, ground), inset, 3),
+        account: gameAccountTag(game, state.games),
       });
     }
     return map;
@@ -167,6 +182,9 @@ export function TodaySteps({ derived, empty }: { derived: Derived; empty: ReactN
     if (!inside.current.focus && !inside.current.pointer) setHeld(null);
   };
   const layout = heldLayout(plan, held);
+  // The live order moved on while the list was held: say so, and offer it.
+  const orderPending = held !== null && layoutOrder(layout) !== layoutOrder(layoutOf(plan));
+  const otherBars = plan.otherBars.filter((step) => games.has(step.gameId));
 
   const [unfolded, setUnfolded] = useState<ReadonlySet<string>>(new Set());
   const [doneOpen, setDoneOpen] = useState(false);
@@ -203,6 +221,13 @@ export function TodaySteps({ derived, empty }: { derived: Derived; empty: ReactN
             release();
           }}
         >
+          {orderPending && (
+            <div className="today-steps-paused" role="status" aria-live="polite">
+              <button type="button" onClick={() => setHeld(null)}>
+                Order paused · <span>Re-sort now</span>
+              </button>
+            </div>
+          )}
           {layout.groups.length === 0 && empty}
           {layout.groups.map(({ group, steps }, at) => {
             const { title, sub } = groupTitle(group, plan, games, zone, now);
@@ -252,6 +277,34 @@ export function TodaySteps({ derived, empty }: { derived: Derived; empty: ReactN
             );
           })}
 
+          {otherBars.length > 0 && (
+            <section className="today-steps-group today-steps-other" aria-labelledby="today-group-other-bars">
+              <div className="today-steps-rule">
+                <h2 id="today-group-other-bars" data-tone="calm">
+                  Other bars
+                </h2>
+              </div>
+              <ul className="today-steps-list">
+                {otherBars.map((step) => {
+                  const game = games.get(step.gameId)!;
+                  return (
+                    <StepRow
+                      key={step.key}
+                      step={step}
+                      group={OTHER_GROUP}
+                      index={0}
+                      game={game}
+                      now={now}
+                      zone={zone}
+                      settings={state.settings}
+                      compact={compact}
+                    />
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+
           {week.length > 0 && (
             <section className="today-steps-group" aria-labelledby="today-group-week">
               <div className="today-steps-rule">
@@ -299,9 +352,10 @@ export function TodaySteps({ derived, empty }: { derived: Derived; empty: ReactN
                     {' '}
                     ·{' '}
                     {listNames([
-                      ...layout.done
-                        .slice(0, 2)
-                        .map((step) => `${games.get(step.gameId)?.game.short ?? ''} ${stepWhat(step)}`),
+                      ...layout.done.slice(0, 2).map((step) => {
+                        const game = games.get(step.gameId);
+                        return `${game ? gameWithAccount(game, true) : ''} ${stepWhat(step)}`;
+                      }),
                       ...(layout.done.length > 2 ? [`${layout.done.length - 2} more`] : []),
                     ])}
                   </span>

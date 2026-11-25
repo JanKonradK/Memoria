@@ -159,7 +159,12 @@ pub async fn fetch_latest_release(since: Option<&str>, paths: &Paths) -> Result<
         })
         .map(read_release)
         .collect();
-    releases.sort_by(|a, b| compare_versions(b["version"].as_str().unwrap(), a["version"].as_str().unwrap()));
+    releases.sort_by(|a, b| {
+        compare_versions(
+            b["version"].as_str().unwrap_or(""),
+            a["version"].as_str().unwrap_or(""),
+        )
+    });
     let Some(latest) = releases.first().cloned() else {
         return Ok(None);
     };
@@ -190,7 +195,7 @@ pub async fn fetch_latest_release(since: Option<&str>, paths: &Paths) -> Result<
     }
     let newer: Vec<&Value> = releases
         .iter()
-        .filter(|r| since.is_none_or(|since| compare_versions(r["version"].as_str().unwrap(), since).is_gt()))
+        .filter(|r| since.is_none_or(|since| compare_versions(r["version"].as_str().unwrap_or(""), since).is_gt()))
         .collect();
     let changes: Vec<Value> = (if newer.is_empty() { vec![&latest] } else { newer })
         .into_iter()
@@ -290,7 +295,7 @@ fn extract_zip(zip: &Path, destination: &Path) -> Result<(), String> {
     if tar.status().is_ok_and(|s| s.success()) {
         return Ok(());
     }
-    let quote = |p: &Path| format!("'{}'", p.display().to_string().replace('\'', "''"));
+    let quote = |p: &Path| crate::firewall::powershell_quote(&p.display().to_string());
     let mut shell = Command::new("powershell");
     shell.args(["-NoProfile", "-NonInteractive", "-Command"]).arg(format!(
         "Expand-Archive -LiteralPath {} -DestinationPath {} -Force",

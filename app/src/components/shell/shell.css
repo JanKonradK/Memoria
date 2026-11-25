@@ -21,6 +21,13 @@
   border-right: 1px solid var(--rail-edge);
   overflow-y: auto;
   scrollbar-width: none;
+  /* Its own layer in a look's cross-fade, so the dock never fades with the page. */
+  view-transition-name: app-rail;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-rail {
+    view-transition-name: none;
+  }
 }
 .app-rail::-webkit-scrollbar {
   display: none;
@@ -32,6 +39,15 @@
   width: 48px;
   height: 44px;
   margin-bottom: 6px;
+}
+/* The open mark keeps its own wide aspect (22px tall is about 37px wide, with
+   room either side in the slot); on a tile it is a square. */
+.rail-mark .brand-mark {
+  width: auto;
+  height: 22px;
+}
+.rail-mark .brand-mark:not([data-backing='bare']) {
+  height: 32px;
 }
 /* Down the side: the places, then the game list, then sync trouble and
    Settings pushed to the rail's foot. */
@@ -244,11 +260,46 @@
 .rail-game-logo {
   transition:
     opacity var(--dur-fast) var(--ease-out),
-    filter var(--dur-fast) var(--ease-out);
+    filter var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+/* Under a pointer the coin leans forward a touch: this one is about to open. */
+@media (hover: hover) {
+  .rail-game:hover .rail-game-logo {
+    transform: scale(1.05);
+  }
 }
 .rail-game[data-paused] .rail-game-logo {
   opacity: 0.45;
   filter: grayscale(1);
+}
+/* Two accounts of one game: a small tag on the coin's lower edge tells them apart. */
+.rail-game-face {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.rail-game-tag {
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  max-width: calc(100% + 14px);
+  padding: 0 5px;
+  overflow: hidden;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: var(--color-popover, var(--color-surface-1));
+  box-shadow:
+    0 0 0 1px var(--rail-ink),
+    0 1px 3px rgb(0 0 0 / 0.25);
+  color: var(--color-fg);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 14px;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
 }
 /* The game's bar and its bank as two hairlines under its face: the bar in
    the game's colour, the bank in its second. A full bar brightens. */
@@ -322,8 +373,12 @@
     transition: none;
   }
   .rail-view:active:not(:disabled),
-  .rail-game:active {
+  .rail-game:active,
+  .rail-game:hover .rail-game-logo {
     transform: none;
+  }
+  .rail-game-logo {
+    transition: none;
   }
 }
 
@@ -357,6 +412,12 @@
     width: 40px;
     height: 36px;
     margin-bottom: 10px;
+  }
+  .rail-mark .brand-mark {
+    height: 21px;
+  }
+  .rail-mark .brand-mark:not([data-backing='bare']) {
+    height: 30px;
   }
   .rail-places {
     gap: 4px;
@@ -771,8 +832,30 @@
   min-height: 68px;
   margin: 0 calc(-1 * var(--page-gutter)) 20px;
   padding: max(10px, env(safe-area-inset-top)) var(--page-gutter) 10px;
-  background: var(--color-surface-0);
+  /* A backdrop may deepen the ground (looks.css); the bar follows it. */
+  background: var(--backdrop-ground, var(--color-surface-0));
   border-bottom: 1px solid var(--color-line-hairline);
+}
+/* Under a mouse the bar is a pane of the ground: content scrolling beneath it
+   stays faintly legible, so the player keeps their place. Touch screens keep
+   the solid ground, because a blur behind a sticky bar is recomputed on every
+   scroll frame, and so does anyone who asked for less transparency. A look
+   that styles its own bar (Glass, Soft HUD) still wins: its rules are scoped. */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  @media (pointer: fine) {
+    .page-bar {
+      background: color-mix(in srgb, var(--backdrop-ground, var(--color-surface-0)) 86%, transparent);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+    }
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .page-bar {
+    background: var(--backdrop-ground, var(--color-surface-0));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 .page-title {
   display: flex;
@@ -836,7 +919,11 @@
   white-space: nowrap;
   transition:
     background-color var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out);
+    color var(--dur-fast) var(--ease-out),
+    scale var(--dur-fast) var(--ease-out);
+}
+.view-switch button:active {
+  scale: 0.96;
 }
 @media (hover: hover) {
   .view-switch button:hover {
@@ -925,7 +1012,10 @@
   color: var(--color-fg);
   background: var(--color-fill-3);
 }
-.game-tab[aria-selected='true']::after {
+/* The chosen tab's underline in the game's colour. It is always there, folded
+   to nothing, so choosing a tab draws it out from the middle rather than
+   switching it on. */
+.game-tab::after {
   content: '';
   position: absolute;
   left: 14px;
@@ -934,6 +1024,16 @@
   height: 2px;
   border-radius: 1px;
   background: var(--game-ink, var(--color-accent));
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+}
+.game-tab[aria-selected='true']::after {
+  opacity: 1;
+  transform: scaleX(1);
 }
 .game-tab-count {
   font-size: var(--text-caption);
@@ -975,7 +1075,7 @@
     border-radius: 0;
     background: transparent !important;
   }
-  .game-tab[aria-selected='true']::after {
+  .game-tab::after {
     left: 12px;
     right: 12px;
     bottom: 0;
@@ -1013,7 +1113,22 @@
   .rail-shelf,
   .rail-games,
   .app-rail[data-shelf] .rail-games,
-  .app-frame .app-toasts {
+  .app-frame .app-toasts,
+  .game-tab::after,
+  .view-switch button {
     transition: none;
+  }
+  .view-switch button:active {
+    scale: none;
+  }
+}
+
+/* Last, so it outlasts the dock's own blur above. A blur behind the dock is
+   recomputed on every scroll frame; touch screens get the solid tint. */
+@media (pointer: coarse) {
+  .app-rail,
+  .rail-shelf {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }

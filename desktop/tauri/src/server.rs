@@ -28,6 +28,7 @@ use tokio_stream::StreamExt;
 use crate::core::{Core, MAX_STATE_BYTES};
 use crate::lan::{self, Lan};
 use crate::update;
+use crate::locks::Locked;
 
 /// The window's commands are granted to these origins only (capabilities/main.json); keep them in step.
 pub const PORTS: [u16; 3] = [17817, 17818, 17819];
@@ -45,6 +46,23 @@ pub struct Server {
     pub update_paths: update::Paths,
     policy: String,
     calendar: Mutex<Option<(Instant, Value)>>,
+    /// Attached once Tauri has built the app, so the browser helper can reach the connectors.
+    app: Mutex<Option<tauri::AppHandle>>,
+}
+
+/// The browser helper's request body is small: a provider, a code and a few cookies.
+const MAX_BROWSER_CONNECT_BYTES: usize = 16 * 1024;
+pub const BROWSER_CONNECT_PATH: &str = "/api/browser-connect";
+
+/// A browser extension's own origin, and nothing else: no web page, file or opaque origin.
+pub fn extension_origin(origin: &str) -> bool {
+    let Some(host) = ["chrome-extension://", "moz-extension://", "edge-extension://"]
+        .iter()
+        .find_map(|scheme| origin.strip_prefix(scheme))
+    else {
+        return false;
+    };
+    !host.is_empty() && host.len() <= 128 && host.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'.')
 }
 
 /// Binds the first free port in the fixed list, always in the same order.
@@ -118,7 +136,12 @@ impl Server {
             update_paths,
             policy,
             calendar: Mutex::new(None),
+            app: Mutex::new(None),
         })
+    }
+
+    pub fn set_app(&self, handle: tauri::AppHandle) {
+        *self.app.locked() = Some(handle);
     }
 
     pub fn origin(&self) -> String {
@@ -161,6 +184,14 @@ impl Server {
         let Some(path) = percent_decode(request.uri().path()) else {
             return self.error(400, "Malformed request URL.");
         };
+        if let Some(response) = snip_page(&path) {
+            return response;
+        }
+        // The browser helper has no bearer token: it proves itself with the
+        // one-time code Memoria shows, from an extension origin only.
+        if path == BROWSER_CONNECT_PATH {
+            return self.browser_connect(request).await;
+        }
         let is_api = path == "/api" || path.starts_with("/api/");
         if !is_api {
             return self.serve_file(&path);
@@ -245,6 +276,91 @@ impl Server {
         }
     }
 
+    async fn browser_connect(&self, request: Request) -> Response {
+        let origin = request
+            .headers()
+            .get(header::ORIGIN)
+            .and_then(|v| v.to_str().ok())
+            .filter(|o| extension_origin(o))
+            .map(str::to_string);
+        let Some(origin) = origin else {
+            return self.error(403, "Only the Memoria Browser Connect helper may call this.");
+        };
+        let mut response = match *request.method() {
+            Method::OPTIONS => StatusCode::NO_CONTENT.into_response(),
+            Method::POST => self.browser_connect_post(request).await,
+            _ => self.error(405, "Use POST."),
+        };
+        let headers = response.headers_mut();
+        if let Ok(origin) = HeaderValue::from_str(&origin) {
+            headers.insert(header::ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+        }
+        headers.insert(header::ACCESS_CONTROL_ALLOW_METHODS, HeaderValue::from_static("POST, OPTIONS"));
+        headers.insert(header::ACCESS_CONTROL_ALLOW_HEADERS, HeaderValue::from_static("content-type"));
+        headers.insert(header::ACCESS_CONTROL_MAX_AGE, HeaderValue::from_static("60"));
+        headers.insert(header::ACCESS_CONTROL_EXPOSE_HEADERS, HeaderValue::from_static("x-memoria"));
+        headers.insert(header::VARY, HeaderValue::from_static("Origin"));
+        response
+    }
+
+    async fn browser_connect_post(&self, request: Request) -> Response {
+        use crate::connectors::browser::{self, BrowserProvider};
+        use tauri::Manager;
+        let headers = request.headers().clone();
+        let body = match lan::read_json(&headers, request.into_body(), MAX_BROWSER_CONNECT_BYTES).await {
+            Ok(body) => body,
+            Err(error) => return self.error(error.status, &error.message),
+        };
+        let Some(provider) = body["provider"].as_str().and_then(BrowserProvider::parse) else {
+            return self.error(400, "Choose HoYoLAB or SKPORT.");
+        };
+        let Some(app) = self.app.locked().clone() else {
+            return self.error(503, "Memoria is still starting. Try again in a moment.");
+        };
+        let state = app.state::<crate::App>();
+        let manager = &state.connectors;
+        if let Err(message) = manager.verify_and_consume_handoff(provider, body["code"].as_str().unwrap_or("")) {
+            return self.error(401, message);
+        }
+        let Some(raw) = browser::cookies_text(&body["cookies"]) else {
+            return self.error(400, "No cookies were sent.");
+        };
+        drop(body);
+        let outcome = match provider {
+            BrowserProvider::Hoyolab => match browser::parse_hoyolab_input(&raw) {
+                Ok(cookies) => browser::connect_hoyolab(manager, cookies).await,
+                Err(error) => Err(error),
+            },
+            BrowserProvider::Skport => match browser::parse_skport_input(&raw) {
+                Ok((account, cred)) => browser::connect_skport(manager, account, cred).await,
+                Err(error) => Err(error),
+            },
+        };
+        drop(raw);
+        let status = manager.status();
+        let mut event = status.clone();
+        if let Err(error) = &outcome {
+            event["error"] = json!(error);
+        }
+        crate::emit(&app, "memoria:connector-status", event);
+        match outcome {
+            Ok(roles) => {
+                let focus = app.clone();
+                let _ = app.run_on_main_thread(move || crate::focus_window(&focus));
+                self.json(
+                    200,
+                    &json!({
+                        "ok": true,
+                        "provider": provider.key(),
+                        "maskedUid": status[provider.key()]["maskedUid"],
+                        "rolesCount": roles,
+                    }),
+                )
+            }
+            Err(error) => self.error(422, &error),
+        }
+    }
+
     /// A ping whenever the state file changes, so open windows pull right away.
     fn events(&self) -> Response {
         let first = tokio_stream::once(Ok::<_, Infallible>(Event::default().retry(Duration::from_secs(2))));
@@ -263,7 +379,7 @@ impl Server {
     }
 
     async fn calendar(&self) -> Response {
-        let cached = self.calendar.lock().unwrap().clone();
+        let cached = self.calendar.locked().clone();
         if let Some((at, payload)) = cached.filter(|(at, _)| at.elapsed() < Duration::from_secs(15 * 60)) {
             let _ = at;
             return self.json(200, &payload);
@@ -290,7 +406,7 @@ impl Server {
         .await;
         match fetched {
             Some(payload) => {
-                *self.calendar.lock().unwrap() = Some((Instant::now(), payload.clone()));
+                *self.calendar.locked() = Some((Instant::now(), payload.clone()));
                 self.json(200, &payload)
             }
             None => self.error(502, unavailable),
@@ -348,10 +464,37 @@ async fn handle(State(server): State<Arc<Server>>, request: Request) -> Response
     ] {
         headers.insert(name, HeaderValue::from_static(value));
     }
-    if let Ok(policy) = HeaderValue::from_str(&server.policy) {
+    // A route with its own, narrower policy (the snip page) keeps it.
+    if !headers.contains_key("content-security-policy")
+        && let Ok(policy) = HeaderValue::from_str(&server.policy)
+    {
         headers.insert("content-security-policy", policy);
     }
     response
+}
+
+/// The snip window's page: static, no secrets, and a policy that allows its
+/// own script, the frozen screen as a data URL and Tauri's IPC. Nothing else.
+const SNIP_POLICY: &str = "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://ipc.localhost ipc:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+
+fn snip_page(path: &str) -> Option<Response> {
+    let (body, content_type) = match path {
+        crate::connectors::capture::SNIP_PATH => (include_str!("snip.html"), "text/html; charset=utf-8"),
+        crate::connectors::capture::SNIP_SCRIPT_PATH => (include_str!("snip.js"), "text/javascript; charset=utf-8"),
+        _ => return None,
+    };
+    Some(
+        (
+            StatusCode::OK,
+            [
+                (header::CONTENT_TYPE, content_type),
+                (header::CACHE_CONTROL, "no-store"),
+                (header::HeaderName::from_static("content-security-policy"), SNIP_POLICY),
+            ],
+            body,
+        )
+            .into_response(),
+    )
 }
 
 fn mime(file: &Path) -> &'static str {
@@ -408,6 +551,18 @@ mod tests {
     }
 
     #[test]
+    fn snip_page_has_its_own_narrow_policy() {
+        let page = snip_page(crate::connectors::capture::SNIP_PATH).unwrap();
+        let policy = page.headers()["content-security-policy"].to_str().unwrap();
+        assert!(policy.contains("img-src 'self' data:") && policy.contains("script-src 'self'"));
+        assert!(!policy.contains("unsafe-eval") && !policy.contains("blob:"));
+        assert_eq!(page.headers()[header::CONTENT_TYPE], "text/html; charset=utf-8");
+        assert!(snip_page(crate::connectors::capture::SNIP_SCRIPT_PATH).is_some());
+        assert!(snip_page("/__memoria-snip.css").is_none());
+        assert!(snip_page("/").is_none());
+    }
+
+    #[test]
     fn decodes_paths() {
         assert_eq!(percent_decode("/a%20b").as_deref(), Some("/a b"));
         assert_eq!(percent_decode("/%zz"), None);
@@ -443,6 +598,80 @@ mod tests {
         );
         server.clone().serve(listener);
         (server, format!("http://127.0.0.1:{port}"))
+    }
+
+    #[test]
+    fn browser_connect_accepts_extension_origins_only() {
+        assert!(extension_origin("chrome-extension://abcdefghijklmnopabcdefghijklmnop"));
+        assert!(extension_origin("moz-extension://1b2c3d4e-0000-4000-8000-123456789abc"));
+        assert!(extension_origin("edge-extension://abc"));
+        for bad in [
+            "",
+            "null",
+            "http://127.0.0.1:17817",
+            "https://www.hoyolab.com",
+            "file://",
+            "chrome-extension://",
+            "chrome-extension://abc def",
+            "chrome-extension://abc/evil",
+            "xchrome-extension://abc",
+        ] {
+            assert!(!extension_origin(bad), "{bad}");
+        }
+    }
+
+    #[tokio::test]
+    async fn browser_connect_needs_an_extension_and_a_live_app() {
+        let dir = std::env::temp_dir().join(format!("memoria-server-browser-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let (_server, base) = test_server(&dir).await;
+        let client = reqwest::Client::new();
+        let url = format!("{base}{BROWSER_CONNECT_PATH}");
+        let body = json!({ "provider": "hoyolab", "code": "ABCDEF", "cookies": "ltuid_v2=1" });
+        for origin in [None, Some("https://www.hoyolab.com"), Some("null"), Some("http://127.0.0.1:1")] {
+            let mut request = client.post(&url).json(&body);
+            if let Some(origin) = origin {
+                request = request.header("origin", origin);
+            }
+            let response = request.send().await.unwrap();
+            assert_eq!(response.status(), 403);
+            assert!(response.headers().get("access-control-allow-origin").is_none());
+        }
+        let extension = "chrome-extension://abcdefghijklmnop";
+        let preflight = client
+            .request(Method::OPTIONS, &url)
+            .header("origin", extension)
+            .header("access-control-request-method", "POST")
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(preflight.status(), 204);
+        assert_eq!(preflight.headers()["access-control-allow-origin"], extension);
+        assert_eq!(preflight.headers()["access-control-allow-methods"], "POST, OPTIONS");
+        assert_eq!(preflight.headers()["access-control-allow-headers"], "content-type");
+        assert_eq!(preflight.headers()["vary"], "Origin");
+        // Without a running app there are no connectors to hand the cookies to.
+        let early = client.post(&url).header("origin", extension).json(&body).send().await.unwrap();
+        assert_eq!(early.status(), 503);
+        assert_eq!(early.headers()["access-control-allow-origin"], extension);
+        let unknown = client
+            .post(&url)
+            .header("origin", extension)
+            .json(&json!({ "provider": "other" }))
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(unknown.status(), 400);
+        let text = client
+            .post(&url)
+            .header("origin", extension)
+            .header("content-type", "text/plain")
+            .body("{}")
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(text.status(), 415);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[tokio::test]

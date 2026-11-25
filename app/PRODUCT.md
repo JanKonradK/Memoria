@@ -14,10 +14,11 @@ they sleep, dailies missed before a server reset, a banner or endgame window
 closing unnoticed.
 
 The primary user is a multi-game player on **PC and phone**, checking in one to
-a few times a day around actual play sessions. The confirmed reference roster is
-Genshin Impact, Honkai: Star Rail, Zenless Zone Zero, Wuthering Waves, Neverness
-to Everness, Love and Deepspace, Umamusume: Pretty Derby, Goddess of Victory:
-NIKKE, Arknights: Endfield and Dokkan — nine of which ship as editable presets.
+a few times a day around actual play sessions. The shipped preset roster covers
+ten games: Genshin Impact, Honkai: Star Rail, Zenless Zone Zero, Wuthering
+Waves, Neverness to Everness, Love and Deepspace, Umamusume: Pretty Derby,
+Goddess of Victory: NIKKE, Arknights: Endfield and CookieRun: Crumble — alongside
+custom games and multiple accounts per game.
 
 Nine is not five with four appended. It broke assumptions the first five shared:
 that every server runs a HoYo/Kuro offset (Endfield puts Europe on UTC-5 and
@@ -65,12 +66,12 @@ Three things a neighbouring tracker could not truthfully claim:
 
 A rail is the navigation, in one order: Calendar, Games, Today, Notes, Settings. On a PC it runs down the left with every game listed under the places; on a phone or an upright tablet it is a dock floating over the bottom edge, and Games raises a shelf of game logos. Settings → Appearance picks a look (eight of them, each working with every palette) and Elaborate or Minimal detail.
 Today is the default page. Its Steps view is one ordered to-do list across games, with what is lost first leading; with quiet hours set it marks what must happen before they begin. Its Games view ranks the games.
-Each game's page holds Track (the complete controls), Events, Pulls, Quests and News. News gathers what its recent versions added, its livestreams and codes. Calendar shows every game's events as a timeline, an agenda, a month and what ends soon.
-Pulls holds each game's savings and pity, and Version history: the free currency of every version since launch, with the limited banners of each phase. Quests is a companion to each game's story: main-story acts, world-quest series and character stories from a researched catalog, each part ticked done or partly done, with the characters involved, plus the events running now and quest lines the player adds. Quest progress is per account and syncs.
+Each game's page holds Track (the complete controls, laid out in two balanced columns on wide screens), Events, Codes, Pulls, Quests, News and Notes. Codes shows both feed codes and your own saved codes with one-tap claiming when linked to HoYoLAB; News gathers what its recent versions added and livestreams; Notes collects pinned or checklist notes for that game. Calendar shows every game's events as a timeline, an agenda, a month and what ends soon.
+Pulls holds each game's savings, banner goals and (for Genshin, HSR, ZZZ and WuWa) pity and pull history, plus Version history: the free currency of every version since launch, with the limited banners of each phase. Custom games also use Pulls for savings, pull cost and goals. Quests is a companion to each game's story: main-story acts, world-quest series and character stories from a researched catalog, each part ticked done or partly done, with the characters involved, plus the events running now and quest lines the player adds. Quest progress is per account and syncs.
 
-Manual entry is the only input, for every game. Memoria does not read accounts, screenshots or game windows.
+Manual entry remains the full offline-first baseline for every game. Optional per-device **Connections** (**Settings → Connections**) add opt-in live numbers from **HoYoLAB** (Genshin Impact, Honkai: Star Rail, Zenless Zone Zero — Real-Time Notes, endgame cycles and one-tap daily check-in/code claiming) and **SKPORT** (Arknights: Endfield) through an isolated webview, the **Memoria Browser Connect** extension or pasted cookies sealed locally with Windows DPAPI or Android Keystore (never placed in `state.json`, backups or sync), read-only local pull-history cache scans and UIGF v4 / WuWa JSON imports on **Pulls**, and local multi-region, multi-field screenshot reading (`Bars & reserves`, `Tasks & dailies`, `Endgame cycles` and `Savings` in one pass via Windows OCR or Android Share). Memoria never opens or hooks game processes, reads game memory, or saves a screenshot reading without user confirmation.
 
-Each energy value shows when it was entered. Current energy remains an estimate.
+Each energy value shows its source and age when useful ("Account", "Screenshot", "Manual" or "Starting estimate"). Projected energy remains an estimate between readings.
 Device sync status and game data freshness are separate facts.
 
 The public calendar can update separately from app releases. Feed validation protects local changes and deleted events.
@@ -113,8 +114,9 @@ current UI behavior.
   checks. Design work must survive `npm run check`.
 - **All domain maths lives in `shared/`** — energy projection, reset periods,
   urgency, merge. The app layer presents; it does not compute.
-- Cards must **not re-sort themselves** while the user is entering values; an
-  explicit "Sort by urgency" affordance appears instead.
+- Steps and cards must **not re-sort themselves** while the user is entering
+  values; an explicit `"Order paused · Re-sort now"` pill appears instead, and
+  `Enter` / `Shift+Enter` moves focus between visible step inputs.
 - Preset values are best-effort and explicitly fallible; the NTE preset is
   marked as needing verification. The UI must never present preset numbers as
   authoritative.
@@ -131,8 +133,10 @@ world are all open.
 Current state, recorded as incumbent evidence rather than as commitment:
 
 - The product is named **Memoria** (renamed from TechnoGG → Techno's Library →
-  Void → Memoria). The mark is a Möbius band with a gap where it crosses itself,
-  on a gold-on-black icon.
+  Void → Memoria). The mark is a wide infinity-to-M ribbon surrounded by faceted
+  shards, with selectable colours, shadings, backing tiles and app backdrops in
+  **Settings → Appearance** (including a non-blocking **Preview Store locks**
+  switch for planned Pro finishes).
 - The interface voice is terse, second-person and unceremonious ("what am I
   about to waste"), with lowercase status phrases like "sleep safe".
 - **Per-game identity is a product feature, not decoration**: every game carries
@@ -147,7 +151,7 @@ Current state, recorded as incumbent evidence rather than as commitment:
 - A bundled seed event feed at
   [app/src/data/seed-events.ts](src/data/seed-events.ts) carrying current-patch
   events, including entries explicitly flagged "TBC — verify in-game".
-- Five game presets in [shared/src/presets.ts](../shared/src/presets.ts).
+- Ten game presets in [shared/src/presets.ts](../shared/src/presets.ts).
 
 **No** testimonials, user counts, reviews, press, pricing, benchmarks or
 customer logos exist. Future work must not fabricate any of them.

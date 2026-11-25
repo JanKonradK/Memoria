@@ -1,4 +1,14 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FocusEvent,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { AnimatePresence, m } from 'motion/react';
 import { flushPersist, useApp } from './store';
 import { initCloudSync } from './cloud-sync';
@@ -20,9 +30,10 @@ import { initHomeWidget } from './home-widget';
 import { easing, duration } from './motion';
 import { nextGameStop, useTabSwipe } from './gestures';
 import { AppRail } from './components/shell/AppRail';
-import { Onboarding } from './components/Onboarding';
 import { Btn } from './components/ui';
+import { confirmDialog, ConfirmHost } from './components/ConfirmDialog';
 import { splashDone } from './splash';
+import { isNativeApp } from './native';
 
 /** The dock's order, left to right; `home` is a game's page, the Games place. */
 const TAB_ORDER: readonly Tab[] = ['timeline', 'home', 'today', 'notes', 'settings'];
@@ -70,6 +81,47 @@ const toastMotion = {
   },
 };
 
+/**
+ * Pointing at a toast or tabbing into it holds it open; it lets go once both
+ * the pointer and focus have left.
+ */
+const holdWhileUsed = (hold: (held: boolean) => void) => ({
+  onMouseEnter: () => hold(true),
+  onMouseLeave: (event: { currentTarget: HTMLElement }) =>
+    event.currentTarget.contains(document.activeElement) || hold(false),
+  onFocus: () => hold(true),
+  onBlur: (event: FocusEvent<HTMLElement>) =>
+    event.currentTarget.contains(event.relatedTarget as Node | null) ||
+    event.currentTarget.matches(':hover') ||
+    hold(false),
+});
+
+/** A connector or capture warning raised outside Settings: a snip, Shift+S, the global shortcut. */
+type ConnectorToast = { id: number; tone?: 'warn' | 'error'; text: string };
+
+/** Settings shows the same notice inline, so it is never repeated over it. */
+function useConnectorToast(tab: Tab) {
+  const [notice, setNotice] = useState<ConnectorToast | null>(null);
+  const [held, setHeld] = useState(false);
+  if (tab === 'settings' && notice) setNotice(null);
+  useEffect(() => {
+    const show = ({ detail, timeStamp }: Event & { detail?: ConnectorToast }) => {
+      if (typeof detail?.text !== 'string' || useUI.getState().tab === 'settings') return;
+      setHeld(false);
+      setNotice({ ...detail, id: timeStamp });
+    };
+    window.addEventListener('memoria:connector-notice', show);
+    return () => window.removeEventListener('memoria:connector-notice', show);
+  }, []);
+  useEffect(() => {
+    if (!notice || held) return;
+    const timer = window.setTimeout(() => setNotice(null), 6000);
+    return () => window.clearTimeout(timer);
+  }, [notice, held]);
+  return [notice, setNotice, setHeld] as const;
+}
+
+const Onboarding = lazy(() => import('./components/Onboarding').then((module) => ({ default: module.Onboarding })));
 const TodayRoute = lazy(() => import('./components/Today').then((module) => ({ default: module.TodayRoute })));
 const TimelinePage = lazy(() => import('./components/Timeline').then((module) => ({ default: module.TimelinePage })));
 const NotesPage = lazy(() => import('./components/Notes').then((module) => ({ default: module.NotesPage })));
@@ -84,6 +136,53 @@ const Guide = lazy(() => import('./components/Guide').then((module) => ({ defaul
 const ReminderSheet = lazy(() =>
   import('./components/ReminderSheet').then((module) => ({ default: module.ReminderSheet })),
 );
+const ScreenshotConfirm = lazy(() =>
+  import('./components/ScreenshotConfirm').then((module) => ({ default: module.ScreenshotConfirm })),
+);
+const ShortcutsSheet = lazy(() =>
+  import('./components/ShortcutsSheet').then((module) => ({ default: module.ShortcutsSheet })),
+);
+
+/** Where a typed `?` is text, not a request for the shortcuts. */
+function typingInto(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return target.isContentEditable || Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
+}
+
+/** `?` anywhere outside a field opens the keyboard shortcuts, unless a dialog already has the screen. */
+function useShortcutsKey() {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== '?' || event.ctrlKey || event.metaKey || event.altKey || event.defaultPrevented) return;
+      if (typingInto(event.target) || useUI.getState().sheet) return;
+      if (document.querySelector('[role="dialog"], [role="alertdialog"]')) return;
+      event.preventDefault();
+      useUI.getState().openSheet({ kind: 'shortcuts' });
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+}
+
+/**
+ * Shift+S starts a screen snip in the Windows app, outside fields and open
+ * dialogs. The connectors load only when it is pressed, never at startup.
+ */
+function useSnipKey() {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== 's' || !event.shiftKey || event.repeat || event.defaultPrevented) return;
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (!window.memoriaDesktop?.connectors?.screenshot?.capture) return;
+      if (typingInto(event.target) || useUI.getState().sheet) return;
+      if (document.querySelector('[role="dialog"], [role="alertdialog"]')) return;
+      event.preventDefault();
+      void import('./connectors').then(({ captureScreenshot }) => captureScreenshot('snip'));
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+}
 
 type PagePosition = { page: number; board: number };
 
@@ -177,13 +276,44 @@ function AppSheets() {
           {sheet.kind === 'eventPeek' && <EventPeek key={`peek-${sheet.eventId}`} open eventId={sheet.eventId} />}
           {sheet.kind === 'reminder' && <ReminderSheet key="reminder" open />}
           {sheet.kind === 'guide' && <Guide key="guide" open />}
+          {sheet.kind === 'shortcuts' && <ShortcutsSheet key="shortcuts" open />}
         </Suspense>
       )}
     </AnimatePresence>
   );
 }
 
+/**
+ * The screenshot confirmation sheet. Its module, and the connectors behind it,
+ * load only once a screenshot is first waiting, so they stay off the startup path.
+ */
+function ScreenshotConfirmHost() {
+  const [wanted, setWanted] = useState(false);
+  useEffect(() => {
+    if (wanted) return;
+    const want = () => setWanted(true);
+    window.addEventListener('memoria:pending-screenshot', want);
+    return () => window.removeEventListener('memoria:pending-screenshot', want);
+  }, [wanted]);
+  if (!wanted) return null;
+  return (
+    <Suspense fallback={null}>
+      <ScreenshotConfirm />
+    </Suspense>
+  );
+}
+
+/** One confirm host for every screen: recovery, setup and the app itself. */
 export default function App() {
+  return (
+    <>
+      <AppScreens />
+      <ConfirmHost />
+    </>
+  );
+}
+
+function AppScreens() {
   const load = useApp((s) => s.load);
   const loaded = useApp((s) => s.loaded);
   const hasGames = useApp((s) => s.state.games.some((game) => !game.deleted));
@@ -254,6 +384,7 @@ export default function App() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const launchNotice = useGameLaunch((s) => s.notice);
   const undoNotice = useUI((s) => s.undoNotice);
+  const [connectorNotice, setConnectorNotice, holdConnectorNotice] = useConnectorToast(tab);
   useEffect(() => {
     if (!launchNotice || launchNotice.tone === 'error') return;
     const timer = window.setTimeout(dismissLaunchNotice, 6000);
@@ -270,6 +401,8 @@ export default function App() {
   }, [load]);
 
   useEffect(initWorkspaceHistory, []);
+  useShortcutsKey();
+  useSnipKey();
   useEffect(initDesktopHost, []);
   useEffect(initGameLaunch, []);
 
@@ -297,6 +430,20 @@ export default function App() {
     // — which is the only way a second machine ever sees this document.
     initCloudSync();
     initLanSync();
+  }, [loaded]);
+
+  useEffect(() => {
+    // Live numbers are a native feature; a browser never loads the module.
+    if (!loaded || (!window.memoriaDesktop?.connectors && !isNativeApp)) return;
+    let stop: (() => void) | undefined;
+    let active = true;
+    void import('./connectors').then(({ initConnectors }) => {
+      if (active) stop = initConnectors();
+    });
+    return () => {
+      active = false;
+      stop?.();
+    };
   }, [loaded]);
 
   useEffect(() => {
@@ -336,8 +483,14 @@ export default function App() {
             </Btn>
             <Btn
               kind="danger"
-              onClick={() => {
-                if (window.confirm('Delete all Memoria data on this device and start fresh?')) {
+              onClick={async () => {
+                const clear = await confirmDialog({
+                  title: 'Delete all Memoria data on this device and start fresh?',
+                  description: 'Synced and exported copies are kept.',
+                  confirmLabel: 'Clear local data',
+                  danger: true,
+                });
+                if (clear) {
                   void disconnectLanSync()
                     .then(clearLocalData)
                     .then(() => {
@@ -363,9 +516,11 @@ export default function App() {
     );
   }
 
+  // First-run setup is its own chunk: only a fresh install ever downloads it.
+  // The intro stays until it has drawn.
   if (setup && !hasGames)
     return (
-      <>
+      <Suspense fallback={null}>
         <SplashDone />
         <Onboarding
           onComplete={() => {
@@ -373,7 +528,7 @@ export default function App() {
             setSetup(false);
           }}
         />
-      </>
+      </Suspense>
     );
 
   return (
@@ -470,6 +625,7 @@ export default function App() {
               className="pointer-events-auto flex w-full items-center gap-2 rounded-ui-xl bg-popover/95 px-4 py-2 text-meta font-semibold text-fg-soft shadow-float ring-1 ring-line-strong backdrop-blur-md"
               role="status"
               aria-live="polite"
+              {...holdWhileUsed((held) => (held ? useUI.getState().pauseUndo() : useUI.getState().resumeUndo()))}
             >
               <span className="min-w-0 flex-1">{undoNotice.text}</span>
               <button
@@ -502,6 +658,25 @@ export default function App() {
               </button>
             </m.div>
           )}
+          {connectorNotice && (
+            <m.div
+              key={`connector-${connectorNotice.id}`}
+              variants={toastMotion}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className={`pointer-events-auto flex w-full items-center gap-2 rounded-ui-xl bg-popover/95 px-4 py-2 text-meta font-semibold shadow-float ring-1 backdrop-blur-md ${
+                connectorNotice.tone === 'error' ? 'text-danger-fg ring-danger/25' : 'text-warn-fg ring-warn/25'
+              }`}
+              role={connectorNotice.tone === 'error' ? 'alert' : 'status'}
+              {...holdWhileUsed(holdConnectorNotice)}
+            >
+              <span className="min-w-0 flex-1">{connectorNotice.text}</span>
+              <button type="button" onClick={() => setConnectorNotice(null)} className="min-h-9 px-2">
+                Dismiss
+              </button>
+            </m.div>
+          )}
           {updateAvailable && (
             <m.div
               key="update"
@@ -530,6 +705,7 @@ export default function App() {
       </div>
 
       <AppSheets />
+      <ScreenshotConfirmHost />
       <UpdateScreen />
     </div>
   );

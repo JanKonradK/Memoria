@@ -10,6 +10,7 @@ import {
   type Game,
 } from '@memoria/shared';
 import { useApp } from '../store';
+import { useShallow } from 'zustand/react/shallow';
 import { useElementWidth, useNow } from '../hooks';
 import { useGround } from '../theme';
 import { assignGameInks } from '../game-color';
@@ -66,7 +67,7 @@ export function useHistory(): { history: VersionHistory | null; error: string } 
  */
 export function GamePullsView({ game }: { game: Game }) {
   const loaded = useHistory();
-  const state = useApp((s) => s.state);
+  const state = useApp(useShallow((s) => ({ games: s.state.games, settings: s.state.settings })));
   const ground = useGround();
   const now = useNow(60_000);
   const games = useMemo(() => rosterGames(state.games), [state.games]);

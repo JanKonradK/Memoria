@@ -1,7 +1,9 @@
 import { useId, useRef, type Dispatch, type SetStateAction } from 'react';
 import type { Game, Reminder } from '@memoria/shared';
 import { useApp } from '../../store';
+import { useShallow } from 'zustand/react/shallow';
 import { fmtDateTimeLocalInput, parseDateTimeLocalInput } from '../../util';
+import { confirmDiscard } from '../Sheet';
 import { Btn, COMPACT_INPUT, ConfirmDelete, Field, TextInput } from '../ui';
 
 export type ReminderDraft = {
@@ -31,7 +33,7 @@ export function GameReminders({
   draft: ReminderDraft;
   setDraft: Dispatch<SetStateAction<ReminderDraft>>;
 }) {
-  const state = useApp((store) => store.state);
+  const state = useApp(useShallow((s) => ({ reminders: s.state.reminders, settings: s.state.settings })));
   const addReminder = useApp((store) => store.addReminder);
   const updateReminder = useApp((store) => store.updateReminder);
   const deleteReminder = useApp((store) => store.deleteReminder);
@@ -44,12 +46,14 @@ export function GameReminders({
     .sort((a, b) => a.at - b.at);
   const at = parseDateTimeLocalInput(when, zone);
   const unavailable = Boolean(editing && !reminders.some((reminder) => reminder.id === editing));
-  const canDiscard = () => !reminderDraftChanged(draft) || window.confirm('Discard your unsaved changes?');
+  // Synchronous when there is nothing to lose, so a clean switch lands at once.
+  const canDiscard = (): boolean | Promise<boolean> => !reminderDraftChanged(draft) || confirmDiscard();
   const clear = () => {
     patch({ editing: null, message: '', saved: { message: '', when } });
   };
-  const edit = (reminder: Reminder) => {
-    if (!canDiscard()) return;
+  const edit = async (reminder: Reminder) => {
+    const discard = canDiscard();
+    if (discard !== true && !(await discard)) return;
     const nextZone = state.settings.localTz;
     const nextWhen = fmtDateTimeLocalInput(reminder.at, nextZone);
     patch({
@@ -145,7 +149,7 @@ export function GameReminders({
               Add as new reminder
             </Btn>
           )}
-          {editing && <Btn onClick={() => canDiscard() && clear()}>Cancel</Btn>}
+          {editing && <Btn onClick={async () => (await canDiscard()) && clear()}>Cancel</Btn>}
         </div>
         <p role="status" className="text-label text-muted empty:hidden sm:col-span-2">
           {status}

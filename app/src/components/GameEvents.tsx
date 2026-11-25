@@ -2,8 +2,9 @@ import '../today.css';
 import './game-tabs/game-tabs.css';
 import { useState } from 'react';
 import { DateTime } from 'luxon';
-import { setEventProgress, type Game } from '@memoria/shared';
+import type { Game } from '@memoria/shared';
 import { useApp } from '../store';
+import { useShallow } from 'zustand/react/shallow';
 import { useUI } from '../ui-store';
 import { sortTimelineEvents } from '../timeline-sort';
 import { groupGameEvents } from '../event-category';
@@ -26,18 +27,20 @@ export function GameEvents({
 }: {
   game: Game;
   now: number;
-  onBeforeOpen?: () => boolean;
+  onBeforeOpen?: () => boolean | Promise<boolean>;
   className?: string;
   /** Show the Events heading; a game's Events tab already names it. */
   titled?: boolean;
 }) {
-  const state = useApp((store) => store.state);
-  const upsertEvent = useApp((store) => store.upsertEvent);
+  const state = useApp(useShallow((s) => ({ events: s.state.events, settings: s.state.settings })));
+  const setProgress = useApp((store) => store.setEventProgress);
   const minimal = useUI((store) => store.detail === 'minimal');
   const ground = useGround();
   const openSheet = useUI((store) => store.openSheet);
-  const openEvent = (eventId?: string) => {
-    if (onBeforeOpen && !onBeforeOpen()) return;
+  const openEvent = async (eventId?: string) => {
+    // A plain answer opens at once; only a confirmation that is asked for is waited on.
+    const allowed = onBeforeOpen ? onBeforeOpen() : true;
+    if (!(allowed instanceof Promise ? await allowed : allowed)) return;
     openSheet({ kind: 'event', gameId: game.id, ...(eventId ? { eventId } : {}) });
   };
   const [filter, setFilter] = useState('current');
@@ -80,7 +83,7 @@ export function GameEvents({
             onChange={(event) => setQuery(event.target.value)}
           />
         )}
-        <Btn kind="primary" className={`game-events-add ${TOUCH_BUTTON}`} onClick={() => openEvent()}>
+        <Btn kind="primary" className={`game-events-add ${TOUCH_BUTTON}`} onClick={() => void openEvent()}>
           Add event
         </Btn>
       </div>
@@ -111,8 +114,7 @@ export function GameEvents({
                         : minimal
                           ? fmtDur(event.end - now)
                           : `Ends in ${fmtDur(event.end - now)}`;
-                  const mark = (to: 'done' | 'none') => () =>
-                    upsertEvent({ id: event.id, gameId: event.gameId, ...setEventProgress(to) });
+                  const mark = (to: 'done' | 'none') => () => setProgress(event.id, to);
                   return (
                     <SwipeRow
                       as="li"
@@ -122,7 +124,7 @@ export function GameEvents({
                       right={event.done ? null : { label: 'Done', run: mark('done') }}
                       left={event.done ? { label: 'Not done', run: mark('none') } : null}
                     >
-                      <button type="button" className="game-events-row" onClick={() => openEvent(event.id)}>
+                      <button type="button" className="game-events-row" onClick={() => void openEvent(event.id)}>
                         <span className="min-w-0">
                           <span
                             className={`block break-words text-body font-semibold ${event.done ? 'text-muted line-through' : 'text-fg-soft'}`}

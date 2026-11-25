@@ -20,7 +20,7 @@ import { closeWorkspace, openGame } from '../../workspace-navigation';
 import { gameInk, gameSupport } from '../../game-color';
 import { useGround } from '../../theme';
 import { GameLogo } from '../GameLogo';
-import { useIdentityColors } from '../roster';
+import { gameAccountTag, useIdentityColors } from '../roster';
 import { Logo } from '../Logo';
 import { NavIcon, type NavGlyph } from '../../nav-icons';
 import { Tooltip } from '../ui';
@@ -70,6 +70,8 @@ type Place = 'calendar' | 'games' | 'today' | 'notes' | 'settings';
 const DOCK_ORDER: readonly Place[] = ['calendar', 'games', 'today', 'notes', 'settings'];
 /** Down a wide screen's side Today leads; Games comes last so its list opens beneath it. */
 const RAIL_ORDER: readonly Place[] = ['today', 'calendar', 'notes', 'games', 'settings'];
+/** Alt+1..5 never move with the layout: muscle memory outlives a rotated tablet. */
+const ALT_PLACES: readonly Place[] = RAIL_ORDER;
 
 /** Upright, the rail is a dock along the bottom, so its tips rise above it. */
 const useTipSide = () => (useMediaQuery('(orientation: portrait)') ? 'top' : 'right');
@@ -111,8 +113,11 @@ function RailGame({
   shortcut,
   energy,
   support,
+  roster,
 }: {
   game: Game;
+  /** Every game, so two accounts of one game can be told apart. */
+  roster: readonly Game[];
   ink: string;
   /** The bar and its bank, drawn as two hairlines under the face. */
   energy?: RailEnergy;
@@ -126,7 +131,11 @@ function RailGame({
   const descriptionId = useId();
   const tipSide = useTipSide();
   const countdown = at == null ? null : railCountdown(at - now);
-  const account = game.accountLabel?.trim();
+  const kind = game.presetKey ?? game.name;
+  const twinned = roster.filter((item) => !item.deleted && (item.presetKey ?? item.name) === kind).length > 1;
+  // Two coins of one game look alike; a short tag on each tells them apart.
+  const accountTag = twinned ? gameAccountTag(game, roster, now) : '';
+  const account = accountTag || game.accountLabel?.trim();
   const name = account ? `${game.name}, ${account}` : game.name;
   const next = game.paused ? 'Paused' : label && countdown ? `${label} in ${countdown.long}` : '';
   const reading = energy && !game.paused ? railEnergyText(energy) : '';
@@ -166,7 +175,14 @@ function RailGame({
       >
         <span aria-hidden className="rail-pin" />
         {/* Under 44px a text coin is a monogram, which is what a rail can read. */}
-        <GameLogo game={game} size={42} className="rail-game-logo" />
+        <span className="rail-game-face">
+          <GameLogo game={game} size={42} className="rail-game-logo" />
+          {accountTag && (
+            <span className="rail-game-tag" aria-hidden>
+              {accountTag}
+            </span>
+          )}
+        </span>
         {energy && (
           <span aria-hidden className="rail-meters" data-banked={energy.bank ? true : undefined}>
             <span className="rail-meter" data-full={energy.value >= energy.cap || undefined}>
@@ -274,8 +290,8 @@ function RefreshButton() {
  * under the thumb, in the order Calendar, Games, Today, Notes, Settings, and
  * Games raises the shelf of game logos over it. The games
  * never re-sort, so a game is always where the player left it. Ctrl+1 to
- * Ctrl+9 open the first nine games; Alt+1 to Alt+5 the five places, in the
- * order shown.
+ * Ctrl+9 open the first nine games; Alt+1 to Alt+5 always open Today, Calendar,
+ * Notes, Games and Settings, whichever order the dock shows them in.
  */
 export function AppRail() {
   const now = useNow(30_000);
@@ -294,7 +310,7 @@ export function AppRail() {
   const tipSide = useTipSide();
   const upright = useMediaQuery('(orientation: portrait)');
   const placeOrder = upright ? DOCK_ORDER : RAIL_ORDER;
-  const altKey = (place: Place) => `Alt+${placeOrder.indexOf(place) + 1}`;
+  const altKey = (place: Place) => `Alt+${ALT_PLACES.indexOf(place) + 1}`;
   const shelfOpen = useUI((s) => s.shelfOpen);
   const setShelfOpen = useUI((s) => s.setShelfOpen);
   const railGamesOpen = useUI((s) => s.railGamesOpen);
@@ -341,7 +357,7 @@ export function AppRail() {
     }
   }, [aurora]);
 
-  // Alt+1..5 open the five places, in the order they are shown.
+  // Alt+1..5 open Today, Calendar, Notes, Games and Settings, whatever the dock's order.
   useEffect(() => {
     const go = (event: KeyboardEvent) => {
       if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.repeat) return;
@@ -349,10 +365,12 @@ export function AppRail() {
       if (useUI.getState().sheet || document.querySelector('[role="dialog"], [role="alertdialog"]')) return;
       event.preventDefault();
       const ui = useUI.getState();
-      const place = placeOrder[Number(event.key) - 1];
+      const place = ALT_PLACES[Number(event.key) - 1];
       if (place === 'calendar') ui.setTab('timeline');
       else if (place === 'games') {
-        const id = ui.lastGameId ?? order.split(' ')[0];
+        // The last game open, unless it has since been deleted; else the first one.
+        const live = order.split(' ');
+        const id = live.includes(ui.lastGameId ?? '') ? ui.lastGameId : live[0];
         if (id) openGame(id);
       } else if (place === 'today') {
         if (ui.tab === 'home') closeWorkspace();
@@ -362,7 +380,7 @@ export function AppRail() {
     };
     document.addEventListener('keydown', go);
     return () => document.removeEventListener('keydown', go);
-  }, [order, placeOrder]);
+  }, [order]);
 
   // Across the top the games scroll sideways; the open game is kept in view.
   const gamesRef = useRef<HTMLDivElement>(null);
@@ -474,7 +492,7 @@ export function AppRail() {
   return (
     <nav aria-label="Primary" className="app-rail" data-shelf={shelfShown || undefined}>
       <span className="rail-mark" aria-hidden>
-        <Logo className="[&>svg]:h-[30px] [&>svg]:w-[30px]" />
+        <Logo />
       </span>
       <div className="rail-places">
         {placeOrder.filter((place) => place !== 'settings').map((place) => placeButtons[place])}
@@ -498,6 +516,7 @@ export function AppRail() {
                 at={next?.at}
                 label={next?.label}
                 now={now}
+                roster={games}
                 current={currentGame === game.id}
                 shortcut={index < 9 ? index + 1 : undefined}
               />

@@ -102,6 +102,11 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
+  /* Pixel faces break up at small sizes; the small figures read in the body face. */
+  .today-step-bank-figure,
+  .rail-countdown {
+    font-family: var(--font-body);
+  }
   .view-switch {
     border: 0;
     background: var(--color-fill-2);

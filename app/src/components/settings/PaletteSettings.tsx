@@ -3,6 +3,8 @@ import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group';
 import { accentChoices, accentSwatch, FAMILIES, findPalette, resolveAccent, surfacesOf } from '../../palettes';
 import { accentFor, useUI } from '../../ui-store';
 import { Segmented } from '../ui';
+import { tierForPalette } from '../../entitlements';
+import { ProBadge, ProNotice, useProGate } from './MarkPicker';
 import { SettingRow } from './SettingRow';
 
 /** Colour palettes in the manner of an editor's colour themes, and the accent within one. */
@@ -15,6 +17,7 @@ export function PaletteSettings() {
   const { family, flavour } = findPalette(palette);
   const accent = resolveAccent(family, accentFor(accents, palette));
   const accentName = accentChoices(family).find((choice) => choice.id === accent)?.name;
+  const gate = useProGate();
 
   return (
     <>
@@ -33,7 +36,7 @@ export function PaletteSettings() {
             value={family.id}
             onValueChange={(next) => {
               const chosen = FAMILIES.find((candidate) => candidate.id === next);
-              if (chosen) setPalette(chosen.flavours[0]!.id);
+              if (chosen) gate.choose(tierForPalette(chosen.flavours[0]!.id), () => setPalette(chosen.flavours[0]!.id));
             }}
             aria-label="Colour palette"
             className="palette-grid"
@@ -47,7 +50,12 @@ export function PaletteSettings() {
                 ...candidate.accents.map((choice) => choice.id).filter((id) => id !== candidateAccent),
               ].slice(0, 4);
               return (
-                <ToggleGroupPrimitive.Item key={candidate.id} value={candidate.id} className="palette-option">
+                <ToggleGroupPrimitive.Item
+                  key={candidate.id}
+                  value={candidate.id}
+                  className="palette-option"
+                  {...gate.itemProps(tierForPalette(shown))}
+                >
                   <span aria-hidden className="palette-preview" style={{ background: ground }}>
                     <span className="palette-preview-text" style={{ color: accentSwatch(shown, theme, 'mono') }}>
                       Aa
@@ -58,11 +66,15 @@ export function PaletteSettings() {
                       ))}
                     </span>
                   </span>
-                  <span className="text-meta font-semibold">{candidate.name}</span>
+                  <span className="palette-option-name text-meta font-semibold">
+                    {candidate.name}
+                    <ProBadge tier={tierForPalette(shown)} />
+                  </span>
                 </ToggleGroupPrimitive.Item>
               );
             })}
           </ToggleGroupPrimitive.Root>
+          <ProNotice id={gate.noticeId} shown={gate.notice} />
           {family.flavours.length > 1 && (
             <Segmented
               ariaLabel={`${family.name} flavour`}

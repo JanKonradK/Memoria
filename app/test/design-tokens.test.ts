@@ -262,6 +262,8 @@ describe('depth is tonal, not cast', () => {
     const MAY_FLOAT = new Set([
       'App.tsx',
       'components/Sheet.tsx',
+      // Confirmation alert dialog: overlays sheets and pages.
+      'components/ConfirmDialog.tsx',
       'components/ui.tsx',
       // The add menu: a dropdown genuinely overlays the page.
       'components/AddMenu.tsx',

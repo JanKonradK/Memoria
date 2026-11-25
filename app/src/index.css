@@ -54,6 +54,10 @@
   --color-accent-fg: #80c3ff;
   --color-on-accent: #0a0a0b; /* text and thumbs on an accent fill */
   --color-gold: #d9b871; /* the app mark's own metal, and nothing else */
+  /* The mark's metallic ramp either side of gold: champagne highlight, deep
+     shadow. The logo's gradient only; never text. */
+  --color-gold-hi: #fff6dc;
+  --color-gold-lo: #c99138;
   --color-rose: #ff6fa5; /* the under-a-day countdown tone (see endTone in util.ts) */
 
   /* ── Tag hues ──────────────────────────────────────────────────────────────
@@ -160,7 +164,7 @@
 
   /* One easing for everything that is not the stage. Exponential deceleration
      from an already-visible default; real objects do not overshoot. */
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   /* Leaving is the reverse: slow to start, gone quickly, so nothing lingers over the next action. */
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --dur-fast: 140ms;
@@ -222,6 +226,7 @@
 
   --color-ok: #2c7a57;
   --color-warn: #8a5e0a;
+  --color-warn-fg: #7c5308; /* AA text on tinted warn controls and active rail items. */
   --color-danger: #b8341f;
   --color-danger-fg: #9c2b1a; /* AA text on tinted danger controls. */
   --color-later: #656874;
@@ -232,7 +237,11 @@
   --color-accent-2: #005bbf;
   --color-accent-fg: #005bbf;
   --color-on-accent: #f4f4f6;
-  --color-gold: #8a6a24;
+  --color-gold: #785b1a;
+  /* On the pale ground the ramp runs ink, bright gold, gold, deep gold, so
+     every stop keeps the mark's edge against #f6f7f9. */
+  --color-gold-hi: #a57c25;
+  --color-gold-lo: #62460f;
   --color-rose: #b03566;
 
   --color-tag-event: #2f5bb0;
@@ -289,6 +298,12 @@ body {
 
 ::selection {
   background: color-mix(in oklab, var(--color-accent) 30%, transparent);
+}
+
+/* The caret is the one cursor the player watches while typing a value. */
+input,
+textarea {
+  caret-color: var(--color-accent);
 }
 
 /* Every number in the product is tabular, so digits never shift width as they
@@ -675,21 +690,23 @@ input[type='number'] {
 }
 
 /* The page arriving when you change tab: 260ms on the shared curve, so the
-   rail's pressed fill and the page settle together.
+   rail's pressed fill and the page settle together. A short glide from mostly
+   transparent: far enough to say which side it came from, short enough that
+   the page is readable before it lands.
 
    Note there is no animation-fill-mode: the keyframes run FROM the offset, and
    the element's resting state is the plain, visible one. That is deliberate —
    an entrance whose failure mode is "no animation" rather than "no page". */
 @keyframes pageEnterForward {
   from {
-    opacity: 0.6;
-    transform: translateX(1.5rem);
+    opacity: 0.25;
+    transform: translateX(0.875rem);
   }
 }
 @keyframes pageEnterBack {
   from {
-    opacity: 0.6;
-    transform: translateX(-1.5rem);
+    opacity: 0.25;
+    transform: translateX(-0.875rem);
   }
 }
 /* A sideways drag moves the page a little with the finger, so the swipe answers
@@ -929,6 +946,19 @@ input[type='number'] {
   transform-origin: center;
   animation: checkBurst var(--dur-base) var(--ease-out) forwards;
 }
+/* The check is written, not stamped: it draws itself as the disc lands. The
+   path carries pathLength="1", so one unit is the whole stroke. Resting state
+   is fully drawn; `backwards` only holds it hidden through the short delay. */
+@keyframes checkStroke {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+.check-stroke {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: checkStroke var(--dur-base) var(--ease-out) 40ms backwards;
+}
 
 /* Completion echoes the control's outline without covering adjacent tasks. */
 @keyframes novaWave {
@@ -945,6 +975,9 @@ input[type='number'] {
   }
 }
 .nova-wave {
+  /* The game's colour (set on the element by Tick), ok green otherwise. An
+     inset ring scales with the wave, so it echoes the disc's own edge. */
+  box-shadow: inset 0 0 0 2px var(--tick-color, var(--color-ok));
   animation: novaWave var(--dur-slow) var(--ease-out) forwards;
 }
 
@@ -1195,18 +1228,13 @@ input[type='number'] {
   }
 }
 @media (hover: none) {
-  .energy-step.energy-row-control,
-  .energy-spent.energy-row-control {
+  .energy-step.energy-row-control {
     display: none;
   }
   [data-energy-row]:focus-within .energy-step.energy-row-control,
   [data-energy-row][data-need='value'] > :not(.energy-reserve) .energy-step.energy-row-control,
   [data-energy-row][data-need='reserve'] .energy-reserve .energy-step.energy-row-control {
     display: flex;
-  }
-  [data-energy-row]:focus-within .energy-spent.energy-row-control,
-  [data-energy-row][data-need='value'] .energy-spent.energy-row-control {
-    display: inline-block;
   }
 }
 
@@ -1284,17 +1312,18 @@ input[type='number'] {
   font-size: var(--text-lead);
 }
 
-/* A minute in and still owed: the step pulses until it is dealt with. */
+/* A minute in and still owed: the step pulses until it is dealt with. The
+   halo is drawn once on a layer of its own and only its opacity and scale
+   move, so the compositor runs it without repainting the row. */
 @keyframes session-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 2px var(--session-ink);
+    opacity: 0;
+    transform: scale(0.96);
   }
   50% {
-    box-shadow:
-      0 0 0 2px var(--session-ink),
-      0 0 0 6px color-mix(in oklab, var(--session-ink) 35%, transparent),
-      0 0 28px 6px color-mix(in oklab, var(--session-ink) 30%, transparent);
+    opacity: 1;
+    transform: scale(1);
   }
 }
 @keyframes session-rail {
@@ -1308,7 +1337,25 @@ input[type='number'] {
 }
 [data-energy-row][data-need='value'][data-pulse] > .energy-row-line .energy-value-box,
 [data-energy-row][data-need='reserve'][data-pulse] .energy-reserve .energy-value-box {
+  position: relative;
+}
+[data-energy-row][data-need='value'][data-pulse] > .energy-row-line .energy-value-box::after,
+[data-energy-row][data-need='reserve'][data-pulse] .energy-reserve .energy-value-box::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 0 5px color-mix(in oklab, var(--session-ink) 35%, transparent);
+  opacity: 0;
+  will-change: opacity, transform;
   animation: session-pulse 1.8s var(--ease-out) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* The steady ring above still marks what is owed. */
+  [data-energy-row][data-pulse] .energy-value-box::after {
+    display: none;
+  }
 }
 [data-session-need='dailies'][data-session-pulse] [data-cadence='daily'] {
   animation: session-rail 1.8s var(--ease-out) infinite;

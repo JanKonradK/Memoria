@@ -24,7 +24,17 @@ reach. The PC has to be on with Memoria running, as for Wi-Fi sync.
 ## Limits
 
 - One mailbox per PC, named from the PC's key fingerprint. The first PC to
-  collect from it claims it with a token kept in its `devices.json`.
-- A request waits up to 25 seconds for the PC to answer.
-- Free-plan Durable Objects allow 100,000 requests a day. A PC waiting for
-  requests uses about 3,500 of them a day.
+  collect from it claims it with two secrets kept in its `devices.json` (a
+  bearer token and an `X-Memoria-Owner` value). The relay stores only a hash
+  of the pair, and every later collect or reply must present both. A mailbox
+  claimed by an older Memoria with the token alone moves to the pair on the
+  first collect from an updated PC; older PCs are refused once the relay is
+  redeployed, so update Memoria on the PC first.
+- A request waits up to 25 seconds for the PC to answer, and at most 4
+  requests wait at once.
+- A request or reply carries at most 8 MiB. Packets are sealed as hex, so that
+  is about 4 MB of app data; a larger sync has to happen on Wi-Fi.
+- Free-plan Durable Objects allow 100,000 requests a day. A PC with a paired
+  phone waits for requests continuously, pausing up to 10 seconds between
+  waits while nothing arrives, so it uses at most about 3,500 a day. A PC with
+  no paired phone does not poll.

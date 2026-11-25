@@ -13,6 +13,8 @@ use std::time::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::locks::Locked;
+
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Preferences {
@@ -64,12 +66,12 @@ impl PreferenceFile {
     }
 
     pub fn get(&self) -> Preferences {
-        *self.current.lock().unwrap()
+        *self.current.locked()
     }
 
     /// Applies only known boolean keys and returns the full result.
     pub fn set(&self, changes: &Value) -> Preferences {
-        let mut current = self.current.lock().unwrap();
+        let mut current = self.current.locked();
         let mut next = *current;
         let flag = |key: &str| changes.get(key).and_then(Value::as_bool);
         if let Some(value) = flag("openAtLogin") {
@@ -139,6 +141,9 @@ struct WatchState {
     /// When each running game was first seen running.
     since: HashMap<String, Instant>,
     active: bool,
+    /// Bumped by each start, so a loop from before a quick stop and start ends
+    /// instead of running beside the new one.
+    generation: u64,
 }
 
 /// Calls `on_start(game_id)` when a watched game goes from not running to running,
@@ -165,7 +170,7 @@ impl GameWatcher {
 
     pub fn set_watch(&self, value: &Value) {
         let next = clean_watch_list(value);
-        let mut state = self.state.lock().unwrap();
+        let mut state = self.state.locked();
         let added: Vec<String> = next
             .keys()
             .filter(|id| !state.watch.contains_key(*id))
@@ -178,7 +183,7 @@ impl GameWatcher {
     /// One look at the running programs.
     pub fn tick(&self, programs: &HashSet<String>) {
         let (started, stopped): (Vec<String>, Vec<(String, Duration)>) = {
-            let mut state = self.state.lock().unwrap();
+            let mut state = self.state.locked();
             let now: HashSet<String> = state
                 .watch
                 .iter()
@@ -219,19 +224,21 @@ impl GameWatcher {
     }
 
     pub fn start(&self) {
-        {
-            let mut state = self.state.lock().unwrap();
+        let generation = {
+            let mut state = self.state.locked();
             if state.active {
                 return;
             }
             state.active = true;
-        }
+            state.generation = state.generation.wrapping_add(1);
+            state.generation
+        };
         let watcher = self.clone();
         tauri::async_runtime::spawn(async move {
             loop {
                 let watching = {
-                    let state = watcher.state.lock().unwrap();
-                    if !state.active {
+                    let state = watcher.state.locked();
+                    if !state.active || state.generation != generation {
                         break;
                     }
                     !state.watch.is_empty()
@@ -246,7 +253,7 @@ impl GameWatcher {
     }
 
     pub fn stop(&self) {
-        let mut state = self.state.lock().unwrap();
+        let mut state = self.state.locked();
         state.active = false;
         state.running = None;
         state.since.clear();

@@ -2,7 +2,7 @@
 
 **One dashboard for every gacha you play: what are you about to waste, and when?**
 
-Memoria tracks energy, dailies, weeklies, events and banners across Genshin Impact, Honkai: Star Rail, Zenless Zone Zero, Wuthering Waves, Neverness to Everness, Arknights: Endfield and more, each on its own server clock. It runs on Windows and Android, works offline, needs no account, and never touches your game account: you type what the game shows.
+Memoria tracks energy, dailies, weeklies, events and banners across ten preset games (Genshin Impact, Honkai: Star Rail, Zenless Zone Zero, Wuthering Waves, Neverness to Everness, Love and Deepspace, Umamusume: Pretty Derby, Goddess of Victory: NIKKE, Arknights: Endfield and CookieRun: Crumble) plus custom games, each on its own server clock. It runs on Windows, Android and the web, works offline by default, and never touches game memory or hooks game processes. Opt-in on-device **Connections** add HoYoLAB and SKPORT live numbers, one-tap check-in and code claiming, read-only pull history import (local PC cache or UIGF v4 / WuWa JSON), and multi-field confirm-before-save screenshot reading.
 
 **[Download the latest release](https://github.com/JanKonradK/Memoria/releases/latest)** · [Guide](docs/guide.md) · [Report a problem](https://github.com/JanKonradK/Memoria/issues)
 
@@ -13,9 +13,12 @@ Memoria tracks energy, dailies, weeklies, events and banners across Genshin Impa
 - **Today** ranks your games by what is lost first and lists everything that caps, ends or resets in the next two days.
 - **Timeline** holds every event, banner, reset and livestream, from a calendar that updates between releases.
 - **Quests** follows each game's story: main-story acts, world-quest series and character stories, ticked off part by part, with the characters in each.
-- **Pulls** tracks savings and pity, and shows what every version since launch gave a free-to-play player.
+- **Pulls & Codes** tracks savings, pity (UIGF v4 / WuWa JSON import and Windows read-only cache scans) and free F2P pulls per version, plus a dedicated **Codes** tab on each game with one-tap HoYoLAB claiming when linked.
+- **Connections (optional)** reads HoYoLAB Real-Time Notes (Genshin, HSR, ZZZ) and SKPORT (Endfield) via an isolated window, the bundled **Memoria Browser Connect** extension or pasted cookies (sealed with Windows DPAPI / Android Keystore, never in backups or sync), and captures bars, tasks, endgame cycles and savings from screenshots (`Ctrl+Shift+M` / `Shift+S` / Android Share) with confirmation before saving.
+- **Appearance** offers eight looks, six colour palettes, an infinity-to-M mark with selectable colours, shadings and tiles, and six app backdrops.
 - **Reminders** arrive before resets, caps and event ends, as anything from a silent note to a ringing alarm with snooze.
-- **Sync** keeps a PC and a phone in step over Wi-Fi, end-to-end encrypted, with no server in between.
+- **Sync** keeps a PC and a phone in step over Wi-Fi (or away from home over Tailscale or a self-hosted encrypted Cloudflare relay), end-to-end encrypted, with no server holding plaintext.
+- **Keyboard** shortcuts include `A/S/D/F` energy stepping, `Enter` to move down Today steps, `Shift+S` / `Ctrl+Shift+M` screenshot capture, `Alt+1..5` navigation and `?` for the full reference.
 
 ### Timeline and Pulls
 

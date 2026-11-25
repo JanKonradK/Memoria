@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from 'react';
-import { detectLocalTz, missingPresetTasks } from '@memoria/shared';
+import { missingPresetTasks } from '@memoria/shared';
 import '../surfaces.css';
 import { useApp } from '../store';
-import { utcOffsetLabel } from '../timezone';
+import { useShallow } from 'zustand/react/shallow';
 import { isNativeApp } from '../native';
 import {
   openAndroidBatterySettings,
@@ -16,7 +16,6 @@ import { setPresence, usePresence } from '../presence';
 const PRESET_GAP_KEY = 'memoria-preset-gap-dismissed';
 /** The key this counter shipped under before the rename. */
 const LEGACY_PRESET_GAP_KEY = 'void-preset-gap-dismissed';
-const LEGACY_HOME_TZ_KEY = 'memoria-legacy-home-timezone-dismissed';
 /** Which reminder prompt was last waved away on this device. Each problem asks once. */
 const REMINDER_PROMPT_KEY = 'memoria-reminder-prompt-dismissed';
 
@@ -109,10 +108,6 @@ function readDismissedGap(): number {
   return Number(localStorage.getItem(PRESET_GAP_KEY) ?? localStorage.getItem(LEGACY_PRESET_GAP_KEY) ?? '0');
 }
 
-function readLegacyHomeTzDismissed(): boolean {
-  return localStorage.getItem(LEGACY_HOME_TZ_KEY) === '1';
-}
-
 /**
  * A dismissible line across the top of Today: something the app noticed, the
  * one thing to do about it, and a way to say "not now".
@@ -165,10 +160,9 @@ function Notice({
   );
 }
 
-export function TodayNotices({ now }: { now: number }) {
-  const state = useApp((s) => s.state);
+export function TodayNotices() {
+  const state = useApp(useShallow((s) => ({ games: s.state.games, tasks: s.state.tasks })));
   const addMissingPresetTasksEverywhere = useApp((s) => s.addMissingPresetTasksEverywhere);
-  const updateSettings = useApp((s) => s.updateSettings);
 
   // Presets only apply when a game is ADDED, so a preset that grows later is
   // invisible to everyone already tracking that game — which is exactly the case
@@ -187,17 +181,13 @@ export function TodayNotices({ now }: { now: number }) {
   const presetGamesBehind = presetShortfalls.filter((count) => count > 0).length;
   const [dismissedGap, setDismissedGap] = useState(readDismissedGap);
   const presetGapDismissed = dismissedGap >= presetGap;
-  const detectedTz = detectLocalTz();
-  const [legacyHomeTzDismissed, setLegacyHomeTzDismissed] = useState(readLegacyHomeTzDismissed);
-  const showLegacyHomeTz =
-    !legacyHomeTzDismissed && state.settings.localTz === 'Europe/Warsaw' && detectedTz !== 'Europe/Warsaw';
   const showPresetGap = presetGap > 0 && !presetGapDismissed;
   const reminderProblem = useReminderProblem();
   const [reminderDismissed, setReminderDismissed] = useState(readReminderDismissed);
   const [reminderError, setReminderError] = useState('');
   const showReminder = reminderProblem != null && !reminderDismissed.includes(reminderProblem.id);
 
-  if (!showLegacyHomeTz && !showPresetGap && !showReminder) return null;
+  if (!showPresetGap && !showReminder) return null;
 
   return (
     <div className="today-notices">
@@ -229,26 +219,6 @@ export function TodayNotices({ now }: { now: number }) {
           }}
         />
       )}
-      {showLegacyHomeTz && (
-        <Notice
-          label="Home timezone correction"
-          title="Check your home timezone"
-          detail={
-            <>
-              Set to Europe/Warsaw ({utcOffsetLabel('Europe/Warsaw', now)}). This device uses {detectedTz} (
-              {utcOffsetLabel(detectedTz, now)}).
-            </>
-          }
-          action={`Switch to ${detectedTz}`}
-          onAction={() => updateSettings({ localTz: detectedTz })}
-          dismissLabel="Dismiss home timezone correction"
-          onDismiss={() => {
-            localStorage.setItem(LEGACY_HOME_TZ_KEY, '1');
-            setLegacyHomeTzDismissed(true);
-          }}
-        />
-      )}
-
       {showPresetGap && (
         <Notice
           label="New preset routines"

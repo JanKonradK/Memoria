@@ -43,9 +43,8 @@ test("browser Back and Forward use the same workspace and focus path as the rail
   await page.goForward();
   await expect(heading).toBeFocused();
   const today = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true });
-  // Today is first down a wide screen's rail and third in an upright dock; its Alt key follows.
-  const upright = await page.evaluate(() => matchMedia('(orientation: portrait)').matches);
-  const key = upright ? 'Alt+3' : 'Alt+1';
+  // Today is Alt+1 whether it leads a wide screen's rail or sits third in an upright dock.
+  const key = 'Alt+1';
   await expect(today).toHaveAttribute('aria-keyshortcuts', `${key} Alt+ArrowLeft`);
   await today.click();
   await expect(card).toBeFocused();
@@ -61,15 +60,23 @@ test('returning dismisses an event first and preserves a rejected dirty draft', 
   await addFromShell(page, 'Event');
   const editor = page.getByRole('dialog', { name: 'New event', exact: true });
   await editor.getByLabel('Name', { exact: true }).fill('Keep my event draft');
-  let discard = false;
-  page.on('dialog', (dialog) => (discard ? dialog.accept() : dialog.dismiss()));
+  // The app asks in its own dialog, above the editor.
+  const question = page.getByRole('alertdialog', { name: 'Discard your unsaved changes?' });
   await page.goBack();
+  await question.getByRole('button', { name: 'Keep editing' }).click();
+  await expect(question).toHaveCount(0);
   await expect(editor.getByLabel('Name', { exact: true })).toHaveValue('Keep my event draft');
   await expect.poll(() => page.evaluate(() => history.state.memoriaWorkspace)).toBe(gameId);
   await page.keyboard.press('Alt+ArrowLeft');
+  // Where the open page answers Alt+Left, it asks the same question; keep editing.
+  const asked = await question.waitFor({ state: 'visible', timeout: 1000 }).then(
+    () => true,
+    () => false,
+  );
+  if (asked) await question.getByRole('button', { name: 'Keep editing' }).click();
   await expect(editor.getByLabel('Name', { exact: true })).toHaveValue('Keep my event draft');
-  discard = true;
   await page.goBack();
+  await question.getByRole('button', { name: 'Discard' }).click();
   await expect(editor).toHaveCount(0);
   await expect(page.locator('.focus-workspace')).toBeVisible();
   await expect.poll(() => page.evaluate(() => history.state.memoriaWorkspace)).toBe(gameId);

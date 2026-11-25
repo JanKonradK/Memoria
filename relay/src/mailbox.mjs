@@ -9,8 +9,12 @@ export const CALL_TIMEOUT_MS = 25_000;
 export const COLLECT_TIMEOUT_MS = 25_000;
 /** A PC that has not collected for this long counts as offline. */
 export const PC_FRESH_MS = 70_000;
-/** Calls waiting at once; more means something is wrong, not a busy owner. */
-export const MAX_WAITING = 32;
+/**
+ * Calls waiting at once; more means something is wrong, not a busy owner.
+ * Each can hold a body of up to MAX_BODY, so this also bounds the memory one
+ * mailbox can be made to hold.
+ */
+export const MAX_WAITING = 4;
 
 export const OFFLINE = {
   status: 503,
@@ -20,7 +24,10 @@ export const NO_ANSWER = {
   status: 504,
   body: { error: 'Your PC did not answer in time. Check that Memoria is running on it.' },
 };
-const BUSY = { status: 429, body: { error: 'Too many requests are waiting for your PC. Try again shortly.' } };
+export const BUSY = {
+  status: 429,
+  body: { error: 'Too many requests are waiting for your PC. Try again shortly.' },
+};
 
 export class Mailbox {
   /** @param {{ now?: () => number, newId?: () => string }} [options] */
@@ -41,8 +48,8 @@ export class Mailbox {
    * error when the PC is offline or too slow.
    */
   call(path, body) {
-    if (this.collectors.length === 0 && this.now() - this.pcSeenAt > PC_FRESH_MS) return Promise.resolve(OFFLINE);
-    if (this.queue.length + this.pending.size >= MAX_WAITING) return Promise.resolve(BUSY);
+    const refused = this.refusal();
+    if (refused) return Promise.resolve(refused);
     return new Promise((resolve) => {
       const entry = { id: this.newId(), path, body, resolve, timer: undefined };
       entry.timer = setTimeout(() => {
@@ -54,6 +61,17 @@ export class Mailbox {
       if (collector) this.#deliver(entry, collector);
       else this.queue.push(entry);
     });
+  }
+
+  /**
+   * Why a call would be turned away right now (the PC is offline, or too many
+   * calls already wait), or null. Checked before a call's body is read, so a
+   * burst of large calls is refused without buffering any of them.
+   */
+  refusal() {
+    if (this.collectors.length === 0 && this.now() - this.pcSeenAt > PC_FRESH_MS) return OFFLINE;
+    if (this.queue.length + this.pending.size >= MAX_WAITING) return BUSY;
+    return null;
   }
 
   /** The PC asks for the next call. Resolves with `{ id, path, body }`, or null when none came. */

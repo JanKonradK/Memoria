@@ -56,6 +56,7 @@ describe('splash exit', () => {
     // The full intro; the test setup answers reduced motion by default.
     vi.stubGlobal('matchMedia', (query: string) => ({ matches: false, media: query }));
     window.__memoriaSplashAt = performance.now();
+    localStorage.removeItem('memoria-splash-seen');
   });
 
   afterEach(() => {
@@ -75,6 +76,15 @@ describe('splash exit', () => {
     expect(node.classList.contains('leave')).toBe(true);
     node.dispatchEvent(new Event('animationend'));
     expect(node.isConnected).toBe(false);
+  });
+
+  it('only covers the first paint on a repeat open', async () => {
+    localStorage.setItem('memoria-splash-seen', '1');
+    const node = mountSplash();
+    const { splashDone, REPEAT_INTRO_MS } = await loadSplash();
+    splashDone();
+    await flush(REPEAT_INTRO_MS + 100);
+    expect(node.classList.contains('leave')).toBe(true);
   });
 
   it('holds a shorter beat under reduced motion', async () => {

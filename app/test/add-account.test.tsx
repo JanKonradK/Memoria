@@ -16,6 +16,7 @@ vi.mock('idb-keyval', () => ({
 
 import { AddGameSheet } from '../src/components/AddGame';
 import { flushPersist, useApp } from '../src/store';
+import { useUI } from '../src/ui-store';
 
 /** Drop everything the module-level store holds so nothing leaks between tests. */
 async function freshStore(): Promise<void> {
@@ -48,7 +49,8 @@ describe('Add another account', () => {
     expect(screen.getByRole('button', { name: 'Add account' })).toBeDisabled();
     fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Enter' });
     fireEvent.click(screen.getByRole('option', { name: 'America (UTC−5)' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Add account' }));
+    // Enter in a field commits, the same as the button.
+    fireEvent.submit(screen.getByLabelText(/^Short name/).closest('form')!);
 
     const state = useApp.getState().state;
     const accounts = state.games.filter((game) => !game.deleted && game.presetKey === genshin.key);
@@ -93,4 +95,42 @@ describe('Add another account', () => {
       ).toEqual(genshin.tasks.map((task) => task.name));
     }
   });
+});
+
+describe('Add a game', () => {
+  beforeEach(async () => {
+    idb.clear();
+    await freshStore();
+  });
+
+  it('starts each game clean, and Back drops what was typed', () => {
+    render(<AddGameSheet open />);
+    fireEvent.click(screen.getByRole('button', { name: /^Genshin Impact/ }));
+    fireEvent.change(screen.getByLabelText(/^Nickname/), { target: { value: 'Main EU' } });
+    fireEvent.change(screen.getAllByRole('spinbutton')[0]!, { target: { value: '999' } });
+    fireEvent.click(screen.getByRole('button', { name: '← Back' }));
+
+    fireEvent.click(screen.getByRole('button', { name: /^Honkai: Star Rail/ }));
+    expect(screen.getByLabelText(/^Nickname/)).toHaveValue('');
+    const hsr = PRESETS.find((preset) => preset.key === 'hsr')!;
+    expect(screen.getAllByRole('spinbutton')[0]).toHaveValue(hsr.resources[0]!.cap);
+  });
+
+  it('picks the only server for a single-server game, so Add is ready', () => {
+    const uma = PRESETS.find((preset) => preset.key === 'uma')!;
+    render(<AddGameSheet open />);
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(`^${uma.name}`) }));
+    const add = screen.getByRole('button', { name: `Add ${uma.short}` });
+    expect(add).toBeEnabled();
+    fireEvent.submit(add.closest('form')!);
+    expect(useApp.getState().state.games.filter((game) => !game.deleted && game.presetKey === 'uma')).toHaveLength(1);
+  });
+});
+
+it('closes without asking when a game was only opened to look at', () => {
+  useUI.setState({ sheet: { kind: 'addGame' } });
+  render(<AddGameSheet open />);
+  fireEvent.click(screen.getByRole('button', { name: /^Genshin Impact/ }));
+  fireEvent.keyDown(document, { key: 'Escape' });
+  expect(useUI.getState().sheet).toBeNull();
 });

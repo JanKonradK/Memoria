@@ -23,6 +23,7 @@ use tokio::sync::oneshot;
 use crate::core::{Core, CoreError, MAX_STATE_BYTES};
 use crate::lan_crypto as crypto;
 use crate::store;
+use crate::locks::Locked;
 
 pub const LAN_PORT: u16 = 17820;
 const CODE_TTL_MS: u64 = 5 * 60_000;
@@ -83,7 +84,7 @@ fn shared_address_space(ip: IpAddr) -> bool {
 /// Tailscale network. Checked at most once a minute.
 fn on_tailnet() -> bool {
     static CACHE: Mutex<Option<(std::time::Instant, bool)>> = Mutex::new(None);
-    let mut cache = CACHE.lock().unwrap();
+    let mut cache = CACHE.locked();
     if let Some((at, value)) = *cache
         && at.elapsed() < std::time::Duration::from_secs(60) {
         return value;
@@ -123,6 +124,11 @@ struct Config {
     /// first one it sees, so another PC cannot collect this one's requests.
     #[serde(rename = "relayToken")]
     relay_token: String,
+    /// A second secret the relay requires beside the token (X-Memoria-Owner).
+    /// The relay stores only a hash of both, so a caller that guesses or sees
+    /// one of them still cannot claim or collect from this PC's mailbox.
+    #[serde(rename = "relayOwner")]
+    relay_owner: String,
 }
 impl Default for Config {
     fn default() -> Self {
@@ -132,8 +138,19 @@ impl Default for Config {
             secret: crypto::random_hex::<32>(),
             relay: None,
             relay_token: crypto::random_hex::<32>(),
+            relay_owner: crypto::random_hex::<32>(),
         }
     }
+}
+
+/// A saved 64-hex relay secret, or a fresh one when it is missing or malformed.
+fn relay_secret(object: &serde_json::Map<String, Value>, key: &str) -> String {
+    object
+        .get(key)
+        .and_then(Value::as_str)
+        .filter(|secret| secret.len() == 64 && secret.bytes().all(|b| b.is_ascii_hexdigit()))
+        .map(str::to_string)
+        .unwrap_or_else(crypto::random_hex::<32>)
 }
 
 /// A relay address as saved: https, or http to this machine for testing, with no trailing slash.
@@ -185,12 +202,8 @@ fn parse_config(value: &Value) -> Option<Config> {
     crypto::public(&secret).ok()?;
     // A bad relay address or token is dropped alone, never the paired devices.
     let relay = object.get("relay").and_then(Value::as_str).and_then(relay_url);
-    let relay_token = object
-        .get("relayToken")
-        .and_then(Value::as_str)
-        .filter(|token| token.len() == 64 && token.bytes().all(|b| b.is_ascii_hexdigit()))
-        .map(str::to_string)
-        .unwrap_or_else(crypto::random_hex::<32>);
+    let relay_token = relay_secret(object, "relayToken");
+    let relay_owner = relay_secret(object, "relayOwner");
     let devices = match object.get("devices") {
         None => Vec::new(),
         Some(Value::Array(items)) => {
@@ -223,6 +236,7 @@ fn parse_config(value: &Value) -> Option<Config> {
         secret,
         relay,
         relay_token,
+        relay_owner,
     })
 }
 
@@ -268,6 +282,8 @@ pub struct Lan {
     file: PathBuf,
     core: Core,
     port: u16,
+    /// Wakes the relay loop from an idle pause: settings changed or a device synced.
+    relay_wake: Arc<tokio::sync::Notify>,
 }
 
 #[derive(Debug)]
@@ -302,12 +318,15 @@ impl Lan {
             {
                 Some(config) => {
                     // A key saved in the clear by an older version is protected now,
-                    // and a relay token made on this load is kept for the next one.
+                    // and relay secrets made on this load are kept for the next one.
                     let stored = stored_config(&config);
                     let old = serde_json::from_slice::<Value>(&bytes).ok();
                     let plain_secret = stored.get("protectedSecret").is_some()
                         && old.as_ref().is_some_and(|o| o.get("secret").is_some());
-                    let new_token = old.as_ref().is_some_and(|o| o.get("relayToken").is_none());
+                    let new_token = old.as_ref().is_some_and(|o| {
+                        o.get("relayToken") != stored.get("relayToken")
+                            || o.get("relayOwner") != stored.get("relayOwner")
+                    });
                     if plain_secret || new_token {
                         let _ = store::write_atomic(&file, stored.to_string().as_bytes());
                     }
@@ -335,7 +354,18 @@ impl Lan {
             file,
             core,
             port,
+            relay_wake: Arc::new(tokio::sync::Notify::new()),
         }
+    }
+
+    /// Ends the relay loop's idle pause, so it collects right away.
+    pub fn wake_relay(&self) {
+        self.relay_wake.notify_one();
+    }
+
+    /// Resolves when `wake_relay` is called (or was, since the last wait).
+    pub async fn relay_woken(&self) {
+        self.relay_wake.notified().await;
     }
 
     fn save(&self, next: &Config) -> Result<(), LanError> {
@@ -347,21 +377,22 @@ impl Lan {
     fn commit(&self, inner: &mut Inner, next: Config) -> Result<(), LanError> {
         self.save(&next)?;
         inner.config = next;
+        self.wake_relay();
         Ok(())
     }
 
     pub fn status(&self) -> Value {
-        let inner = self.inner.lock().unwrap();
+        let inner = self.inner.locked();
         status_of(&inner, self.port)
     }
 
     pub fn enabled(&self) -> bool {
-        self.inner.lock().unwrap().running.is_some()
+        self.inner.locked().running.is_some()
     }
 
     /// Starts the listener again if the user left Wi-Fi sync on.
     pub async fn restore(&self) {
-        let enabled = self.inner.lock().unwrap().config.enabled;
+        let enabled = self.inner.locked().config.enabled;
         if enabled && let Err(error) = self.start().await {
             eprintln!("Wi-Fi sync unavailable: {}", error.message);
         }
@@ -369,8 +400,9 @@ impl Lan {
 
     pub async fn control(&self, body: &Value) -> Result<Value, LanError> {
         let _serial = self.control_lock.lock().await;
+        self.wake_relay();
         let action = body.get("action").and_then(Value::as_str).unwrap_or("");
-        let load_error = self.inner.lock().unwrap().load_error;
+        let load_error = self.inner.locked().load_error;
         if let Some(message) = load_error
             && action != "reset" {
             return Err(fail(409, message));
@@ -390,7 +422,7 @@ impl Lan {
                     ));
                     std::fs::rename(&self.file, backup).map_err(|e| fail(500, e.to_string()))?;
                 }
-                let mut inner = self.inner.lock().unwrap();
+                let mut inner = self.inner.locked();
                 self.commit(&mut inner, Config::default())?;
                 inner.load_error = None;
                 Ok(status_of(&inner, self.port))
@@ -406,7 +438,7 @@ impl Lan {
                         )
                     })?),
                 };
-                let mut inner = self.inner.lock().unwrap();
+                let mut inner = self.inner.locked();
                 let mut next = inner.config.clone();
                 next.relay = url;
                 self.commit(&mut inner, next)?;
@@ -422,7 +454,7 @@ impl Lan {
             "code" => self.new_code(),
             "revoke" => {
                 let id = body.get("id").and_then(Value::as_str).unwrap_or("").to_string();
-                let mut inner = self.inner.lock().unwrap();
+                let mut inner = self.inner.locked();
                 let mut next = inner.config.clone();
                 next.devices.retain(|device| device.id != id);
                 self.commit(&mut inner, next)?;
@@ -433,7 +465,7 @@ impl Lan {
     }
 
     fn new_code(&self) -> Result<Value, LanError> {
-        let mut inner = self.inner.lock().unwrap();
+        let mut inner = self.inner.locked();
         if inner.running.is_none() {
             return Err(fail(409, "Turn on Wi-Fi sync first."));
         }
@@ -454,7 +486,7 @@ impl Lan {
             .map_err(|error| fail(500, format!("Wi-Fi sync could not start: {error}")))?;
         let port = listener.local_addr().map(|a| a.port()).unwrap_or(self.port);
         {
-            let mut inner = self.inner.lock().unwrap();
+            let mut inner = self.inner.locked();
             let mut next = inner.config.clone();
             next.enabled = true;
             self.commit(&mut inner, next)?;
@@ -468,12 +500,12 @@ impl Lan {
                 })
                 .await;
         });
-        self.inner.lock().unwrap().running = Some((port, stop));
+        self.inner.locked().running = Some((port, stop));
         self.new_code()
     }
 
     fn stop(&self) -> Result<Value, LanError> {
-        let mut inner = self.inner.lock().unwrap();
+        let mut inner = self.inner.locked();
         let mut next = inner.config.clone();
         next.enabled = false;
         self.commit(&mut inner, next)?;
@@ -486,7 +518,7 @@ impl Lan {
 
     /// A paired device counts only while the listener runs and the device is still on the list.
     fn active(&self, device_id: &str) -> bool {
-        let inner = self.inner.lock().unwrap();
+        let inner = self.inner.locked();
         inner.running.is_some() && inner.config.devices.iter().any(|d| d.id == device_id)
     }
 
@@ -511,7 +543,7 @@ impl Lan {
 
     /// A one-use challenge and this PC's key, the first step of every request.
     fn hello(&self, peer: IpAddr) -> Result<Value, LanError> {
-        let mut inner = self.inner.lock().unwrap();
+        let mut inner = self.inner.locked();
         inner.challenges.retain(|(_, _, expires)| *expires > now_ms());
         if inner.challenges.len() >= 256 || inner.challenges.iter().filter(|(_, ip, _)| *ip == peer).count() >= 8 {
             return Err(fail(429, "Too many connection requests. Try again in a minute."));
@@ -527,7 +559,7 @@ impl Lan {
         let packet: crypto::Packet = serde_json::from_value(envelope)
             .map_err(|_| fail(400, "Encrypted sync is required. Update both devices and pair again."))?;
         let (pc, keys) = {
-            let mut inner = self.inner.lock().unwrap();
+            let mut inner = self.inner.locked();
             let index = inner
                 .challenges
                 .iter()
@@ -567,26 +599,36 @@ impl Lan {
         }
     }
 
-    /// Where to collect relayed requests: the relay, this PC's mailbox and its
-    /// token. None while sync is paused or no relay is set.
-    pub fn relay_target(&self) -> Option<(String, String, String)> {
-        let inner = self.inner.lock().unwrap();
+    /// Where to collect relayed requests: the relay, this PC's mailbox, its
+    /// token and its owner secret. None while sync is paused, no relay is set
+    /// or no device is paired: only a paired phone can use the mailbox, so an
+    /// empty list has nothing to collect.
+    pub fn relay_target(&self) -> Option<(String, String, String, String)> {
+        let inner = self.inner.locked();
         inner.running.as_ref()?;
         let url = inner.config.relay.clone()?;
+        if inner.config.devices.is_empty() {
+            return None;
+        }
         let fingerprint = crypto::public(&inner.config.secret)
             .and_then(|p| crypto::fingerprint(&p))
             .ok()?;
-        Some((url, crypto::relay_room(&fingerprint), inner.config.relay_token.clone()))
+        Some((
+            url,
+            crypto::relay_room(&fingerprint),
+            inner.config.relay_token.clone(),
+            inner.config.relay_owner.clone(),
+        ))
     }
 
     pub fn set_relay_status(&self, state: &'static str, error: Option<String>) {
-        self.inner.lock().unwrap().relay = RelayStatus { state, error };
+        self.inner.locked().relay = RelayStatus { state, error };
     }
 
     async fn route_decrypted(&self, peer: IpAddr, path: &str, phone_key: &str, body: Value) -> Result<Value, LanError> {
         if path == "/pair" {
             {
-                let mut inner = self.inner.lock().unwrap();
+                let mut inner = self.inner.locked();
                 let now = now_ms();
                 if !pairing_allowed(&mut inner.failures, peer, now) {
                     return Err(fail(429, "Too many pairing attempts. Wait one minute and try again."));
@@ -602,7 +644,7 @@ impl Lan {
                 .chars()
                 .filter(|c| !c.is_whitespace())
                 .collect();
-            let mut inner = self.inner.lock().unwrap();
+            let mut inner = self.inner.locked();
             let valid = candidate.len() == 8
                 && candidate.bytes().all(|b| b.is_ascii_digit())
                 && inner
@@ -645,8 +687,7 @@ impl Lan {
 
         let device_id = self
             .inner
-            .lock()
-            .unwrap()
+            .locked()
             .config
             .devices
             .iter()
@@ -656,7 +697,7 @@ impl Lan {
             return Err(fail(401, "This phone is no longer paired. Pair it again in Settings."));
         };
         if path == "/disconnect" {
-            let mut inner = self.inner.lock().unwrap();
+            let mut inner = self.inner.locked();
             let mut next = inner.config.clone();
             next.devices.retain(|d| d.id != device_id);
             self.commit(&mut inner, next)?;
@@ -672,7 +713,7 @@ impl Lan {
         if !self.active(&device_id) {
             return Err(fail(401, "This device was disconnected."));
         }
-        self.inner.lock().unwrap().seen.insert(device_id, now_ms());
+        self.inner.locked().seen.insert(device_id, now_ms());
         let state: Value = serde_json::from_str(&merged).map_err(|e| fail(500, e.to_string()))?;
         // The phone keeps the address list, so it still finds the PC after its
         // address changes or when it switches between home Wi-Fi and a private
@@ -1033,10 +1074,13 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(set["relay"]["url"], "https://relay.example.workers.dev");
-        let (url, room, token) = lan.relay_target().unwrap();
+        let (url, room, token, owner) = lan.relay_target().unwrap();
         assert_eq!(url, "https://relay.example.workers.dev");
         assert_eq!(room, crypto::relay_room(&crypto::fingerprint(&pc).unwrap()));
         assert_eq!(token.len(), 64);
+        assert_eq!(owner.len(), 64);
+        assert_ne!(owner, token);
+        assert!(owner.bytes().all(|b| b.is_ascii_hexdigit()));
         let hello = lan.relayed("/hello", Value::Null).await.unwrap();
         let packet = crypto::seal(
             &keys.0,
@@ -1059,8 +1103,11 @@ mod tests {
         assert_eq!(lan.relayed("/pair", json!({})).await.err().unwrap().status, 403);
         let saved = store::read_json(&dir.join("devices.json")).unwrap();
         assert_eq!(saved["relayToken"], token.as_str());
+        assert_eq!(saved["relayOwner"], owner.as_str());
         let id = paired["deviceId"].as_str().unwrap();
         lan.control(&json!({"action":"revoke","id":id})).await.unwrap();
+        // With no paired device left there is nothing to collect.
+        assert!(lan.relay_target().is_none());
         let revoked = send(&client, &base, "/sync", &public, &keys, json!({"state":state})).await;
         assert_eq!(revoked["status"], 401);
 

@@ -94,6 +94,13 @@
 .quests-row {
   border-bottom: 1px solid var(--color-line-hairline);
   scroll-margin-top: calc(var(--app-bar-h) + 4.5rem);
+  /* A catalog runs to hundreds of lines: rows off screen skip layout and paint. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 56px;
+}
+.quests-row:focus-within {
+  /* Paint containment clips outlines along the flush row edge while focused. */
+  content-visibility: visible;
 }
 .quests-row-head {
   display: flex;

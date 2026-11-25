@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { missingPresetTasks, presetForGame, PRESETS, SERVER_TZ_OPTIONS } from '../src/presets';
+import { missingPresetTasks, presetForGame, presetTaskAnchor, PRESETS, SERVER_TZ_OPTIONS } from '../src/presets';
 
 describe('game presets', () => {
   it('lists each server time zone once, since the picker is keyed by zone', () => {
@@ -213,5 +213,21 @@ describe('catching an existing game up with its preset', () => {
         genshin.tasks.map((task) => ({ name: task.name })),
       ),
     ).toEqual([]);
+  });
+
+  it('anchors the NTE Tycoon Incentive Fund to a verified Monday 05:00 server-time period start', () => {
+    const nte = PRESETS.find((preset) => preset.key === 'nte')!;
+    const fund = nte.tasks.find((task) => task.key === 'nte-tycoon-fund')!;
+    expect(fund.anchorAt).toBe(Date.parse('2026-11-09T04:00:00Z'));
+    expect(nte.tz).toBe('Etc/GMT-1');
+    // A later period (Gold Clash, 2026-11-23 05:00 server time) is a whole number of cycles on.
+    expect((Date.parse('2026-11-23T04:00:00Z') - fund.anchorAt!) % (fund.intervalDays! * 86_400_000)).toBe(0);
+    expect(presetTaskAnchor(fund, 123)).toBe(fund.anchorAt);
+    expect(presetTaskAnchor({}, 123)).toBe(123);
+    // Only verified anchors are set; everything else counts from creation.
+    const anchored = PRESETS.flatMap((preset) =>
+      preset.tasks.filter((task) => task.anchorAt != null).map((task) => task.key),
+    );
+    expect(anchored).toEqual(['nte-tycoon-fund']);
   });
 });

@@ -87,10 +87,9 @@ test('down a wide screen the rail runs Today, Calendar, Notes, Games, with Setti
   expect(names).toEqual(
     upright ? ['Calendar', 'Games', 'Today', 'Notes', 'Settings'] : ['Today', 'Calendar', 'Notes', 'Games', 'Settings'],
   );
-  if (!upright) {
-    await page.keyboard.press('Alt+3');
-    await expect(page.getByRole('heading', { level: 1, name: 'Notes' })).toBeVisible();
-  }
+  // Alt+3 is Notes whichever order the dock shows.
+  await page.keyboard.press('Alt+3');
+  await expect(page.getByRole('heading', { level: 1, name: 'Notes' })).toBeVisible();
 });
 
 test('the month lists what ends each day and the day panel offers what is still running', async ({ page }) => {

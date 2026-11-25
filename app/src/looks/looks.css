@@ -56,6 +56,14 @@
 :root[data-theme='light'][data-look] {
   --dock-shadow: 0 14px 30px -16px rgb(20 24 40 / 0.35), 0 2px 8px -3px rgb(20 24 40 / 0.16);
 }
+/* A blur behind the dock is recomputed on every scroll frame. On a touch
+   screen that is the hot path, so the dock goes near-solid instead. */
+@media (pointer: coarse) {
+  [data-look] {
+    --dock-blur: none;
+    --dock-fill: color-mix(in srgb, var(--color-surface-1) 94%, transparent);
+  }
+}
 
 /* ── Shared hooks every look reads ──────────────────────────────────────── */
 
@@ -206,4 +214,99 @@ body {
 }
 [data-look]:not([data-look='classic']) .look-row.quests-row {
   padding: 4px 8px;
+}
+
+/* ── Backdrops: laid over the look's ground, under everything (brand.ts) ──
+   `data-backdrop` on <html> sets the page's; on a Settings swatch it sets just
+   that swatch, from the same rules. Each paints into one still, fixed layer
+   above the look's own ground (so Glass's aurora still glows through Celestial
+   Dust), and mixes only the palette's tokens, so it holds in every palette,
+   accent and theme. Void Obsidian alone is opaque: it is a ground, not a veil.
+   --backdrop-scale shrinks the pattern for a swatch. */
+:root {
+  --backdrop-shade: rgb(0 0 0 / 0.42);
+}
+:root[data-theme='light'] {
+  --backdrop-shade: color-mix(in oklab, var(--color-fg) 7%, transparent);
+}
+[data-backdrop] {
+  --backdrop: none;
+  --backdrop-ground: initial;
+}
+:root[data-backdrop]:not([data-backdrop='default']) body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--backdrop);
+}
+[data-backdrop='obsidian'] {
+  --backdrop-ground: color-mix(in oklab, var(--color-surface-0) 40%, #000000);
+  /* An image, not a colour, so it can sit under a swatch's own ground layer. */
+  --backdrop: linear-gradient(var(--backdrop-ground), var(--backdrop-ground));
+}
+:root[data-theme='light'] [data-backdrop='obsidian'],
+:root[data-theme='light'][data-backdrop='obsidian'] {
+  --backdrop-ground: color-mix(in oklab, var(--color-surface-0) 30%, #ffffff);
+}
+[data-backdrop='starfield'] {
+  --backdrop:
+    radial-gradient(circle at 22% 31%, var(--color-gold) 0, transparent 1.3px) 0 0 /
+      calc(173px * var(--backdrop-scale, 1)) calc(151px * var(--backdrop-scale, 1)),
+    radial-gradient(circle at 71% 64%, color-mix(in oklab, var(--color-fg) 62%, transparent) 0, transparent 1.1px) 0 0 /
+      calc(211px * var(--backdrop-scale, 1)) calc(187px * var(--backdrop-scale, 1)),
+    radial-gradient(circle at 43% 82%, color-mix(in oklab, var(--color-accent) 70%, transparent) 0, transparent 1.2px) 0
+      0 / calc(263px * var(--backdrop-scale, 1)) calc(229px * var(--backdrop-scale, 1)),
+    radial-gradient(circle at 86% 14%, var(--color-gold-hi) 0, transparent 1.7px) 0 0 /
+      calc(347px * var(--backdrop-scale, 1)) calc(311px * var(--backdrop-scale, 1)),
+    radial-gradient(ellipse 120% 90% at 50% 38%, transparent 55%, var(--backdrop-shade));
+}
+[data-backdrop='nebula'] {
+  --backdrop:
+    radial-gradient(65% 50% at 14% 8%, color-mix(in oklab, var(--color-accent) 22%, transparent), transparent 72%),
+    radial-gradient(55% 45% at 92% 86%, color-mix(in oklab, var(--color-accent) 14%, transparent), transparent 70%),
+    radial-gradient(42% 36% at 62% 44%, color-mix(in oklab, var(--color-gold) 8%, transparent), transparent 75%),
+    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 50%, var(--backdrop-shade));
+}
+[data-backdrop='astral-grid'] {
+  --backdrop:
+    linear-gradient(to right, color-mix(in oklab, var(--color-accent) 10%, transparent) 1px, transparent 1px) 0 0 /
+      calc(120px * var(--backdrop-scale, 1)) calc(120px * var(--backdrop-scale, 1)),
+    linear-gradient(to bottom, color-mix(in oklab, var(--color-accent) 10%, transparent) 1px, transparent 1px) 0 0 /
+      calc(120px * var(--backdrop-scale, 1)) calc(120px * var(--backdrop-scale, 1)),
+    linear-gradient(to right, color-mix(in oklab, var(--color-fg) 4%, transparent) 1px, transparent 1px) 0 0 /
+      calc(24px * var(--backdrop-scale, 1)) calc(24px * var(--backdrop-scale, 1)),
+    linear-gradient(to bottom, color-mix(in oklab, var(--color-fg) 4%, transparent) 1px, transparent 1px) 0 0 /
+      calc(24px * var(--backdrop-scale, 1)) calc(24px * var(--backdrop-scale, 1)),
+    radial-gradient(ellipse 120% 90% at 50% 36%, transparent 60%, var(--backdrop-shade));
+}
+[data-backdrop='horizon'] {
+  --backdrop:
+    radial-gradient(120% 42% at 50% 100%, color-mix(in oklab, var(--color-gold-hi) 13%, transparent), transparent 70%),
+    linear-gradient(
+      to top,
+      color-mix(in oklab, var(--color-gold) 15%, transparent),
+      color-mix(in oklab, var(--color-gold) 4%, transparent) 30%,
+      transparent 58%
+    );
+}
+/* Sticky bands paint the ground, so on Obsidian they paint the deeper one. */
+:root[data-backdrop='obsidian'] .timeline-board [data-timeline-ruler] {
+  background: var(--backdrop-ground);
+}
+
+/* The mark's Celestial stardust shimmers, only where it is being chosen. */
+@media (prefers-reduced-motion: no-preference) {
+  .brand-mark[data-interactive] .brand-mark-dust {
+    animation: brand-dust 2.6s ease-in-out infinite alternate;
+  }
+  .brand-mark[data-interactive] .brand-mark-dust:nth-of-type(odd) {
+    animation-delay: -1.3s;
+  }
+}
+@keyframes brand-dust {
+  to {
+    opacity: 0.32;
+  }
 }

@@ -10,10 +10,11 @@ import {
 } from '@memoria/shared';
 import { eventCategory, eventBannerKind } from '../event-category';
 import { useApp } from '../store';
+import { useShallow } from 'zustand/react/shallow';
 import { useUI } from '../ui-store';
 import { fmtDateTimeLocalInput, fmtDur, parseDateTimeLocalInput } from '../util';
 import { rosterGames } from './roster';
-import { Sheet } from './Sheet';
+import { confirmDiscard, Sheet } from './Sheet';
 import { Btn, Field, Segmented, Select, TextArea, TextInput, Toggle } from './ui';
 
 const DAY = 86_400_000;
@@ -29,7 +30,9 @@ const TYPE_NAMES: Record<EventType, string> = {
 
 /** Add/edit an event from anywhere (Timeline, dashboard). */
 export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?: string; gameId?: string }) {
-  const state = useApp((s) => s.state);
+  const state = useApp(
+    useShallow((s) => ({ games: s.state.games, events: s.state.events, settings: s.state.settings })),
+  );
   const upsertEvent = useApp((s) => s.upsertEvent);
   const deleteEvent = useApp((s) => s.deleteEvent);
   const closeSheet = useUI((s) => s.closeSheet);
@@ -169,8 +172,8 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
           )}
           {confirmDelete && <Btn onClick={() => setConfirmDelete(false)}>Keep event</Btn>}
           <Btn
-            onClick={() => {
-              if (!dirty || window.confirm('Discard your unsaved changes?')) closeSheet();
+            onClick={async () => {
+              if (!dirty || (await confirmDiscard())) closeSheet();
             }}
           >
             Cancel

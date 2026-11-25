@@ -14,6 +14,22 @@ import type { NoteSort } from '@memoria/shared';
 import { isGlyphId, isLogoStyle, type GlyphId, type LogoStyle } from './game-glyphs';
 import { DEFAULT_ICON_SET, isIconSet, type IconSet } from './icon-sets';
 import { applyLook, DEFAULT_DETAIL, DEFAULT_LOOK, isDetail, isLookId, type Detail, type LookId } from './looks';
+import {
+  applyBrand,
+  DEFAULT_BACKDROP,
+  DEFAULT_MARK_BACKING,
+  DEFAULT_MARK_COLOUR,
+  DEFAULT_MARK_SHADING,
+  isBackdropId,
+  isMarkBackingId,
+  isMarkColourId,
+  isMarkShadingId,
+  pickBrand,
+  type BackdropId,
+  type MarkBackingId,
+  type MarkColourId,
+  type MarkShadingId,
+} from './brand';
 
 export const UI_STORAGE_KEY = 'memoria-ui';
 /**
@@ -46,8 +62,8 @@ migrateLegacyUiStorage();
 /** The rail's places. `home` is one game's page; `timeline` is the Calendar; `notes` every game's notes. */
 export type Tab = 'today' | 'home' | 'timeline' | 'notes' | 'settings';
 /** A game page's own tabs. Pulls, Quests, News (Catch up) and Notes live inside each game. */
-export type GameTab = 'track' | 'events' | 'pulls' | 'quests' | 'news' | 'notes';
-export const GAME_TABS: readonly GameTab[] = ['track', 'events', 'pulls', 'quests', 'news', 'notes'];
+export type GameTab = 'track' | 'events' | 'codes' | 'pulls' | 'quests' | 'news' | 'notes';
+export const GAME_TABS: readonly GameTab[] = ['track', 'events', 'codes', 'pulls', 'quests', 'news', 'notes'];
 /** Today as one ordered list of steps across games, or as the ranked games. */
 export type TodayView = 'steps' | 'games';
 export type Theme = 'dark' | 'light';
@@ -120,7 +136,16 @@ export function applyTheme(theme: Theme, palette: string = DEFAULT_PALETTE, acce
 export type GameEditorSection = 'game' | 'resets' | 'resources' | 'spend' | 'tasks' | 'reminders' | 'events';
 
 export type SettingsSection =
-  'games' | 'general' | 'appearance' | 'reminders' | 'sync' | 'device' | 'updates' | 'data' | 'activity';
+  | 'games'
+  | 'general'
+  | 'appearance'
+  | 'reminders'
+  | 'sync'
+  | 'connections'
+  | 'device'
+  | 'updates'
+  | 'data'
+  | 'activity';
 
 export type SheetRoute =
   | { kind: 'game'; gameId: string; section?: GameEditorSection }
@@ -131,6 +156,8 @@ export type SheetRoute =
   | { kind: 'reminder' }
   /** The guide: what each part of the app is, shown in miniature. */
   | { kind: 'guide' }
+  /** Every keyboard shortcut, opened with `?` or from Settings. */
+  | { kind: 'shortcuts' }
   /** What a game added since the player last caught up. */
   | null;
 
@@ -203,6 +230,21 @@ interface UIStore {
   /** Elaborate shows the words; Minimal only the facts and controls. Remembered on this device. */
   detail: Detail;
   setDetail(detail: Detail): void;
+  /** The mark's metal, its lighting, its tile, and the app's backdrop (brand.ts). Remembered on this device. */
+  markColour: MarkColourId;
+  setMarkColour(colour: MarkColourId): void;
+  markShading: MarkShadingId;
+  setMarkShading(shading: MarkShadingId): void;
+  markBacking: MarkBackingId;
+  setMarkBacking(backing: MarkBackingId): void;
+  backdrop: BackdropId;
+  setBackdrop(backdrop: BackdropId): void;
+  /**
+   * Shows which options the Microsoft Store and Google Play Pro tier would
+   * hold (entitlements.ts). Off by default, and off nothing is locked.
+   */
+  previewStoreLocks: boolean;
+  setPreviewStoreLocks(on: boolean): void;
   /** Vibration on touch: swipes, scrubs and ticks. Remembered on this device. */
   vibration: boolean;
   setVibration(on: boolean): void;
@@ -227,6 +269,9 @@ interface UIStore {
   /** A short notice with an Undo, over the dock. Session only. */
   undoNotice: UndoNotice | null;
   showUndo(text: string, undo: () => void): void;
+  /** Hold the Undo while it is pointed at or focused; resuming gives back what it had left. */
+  pauseUndo(): void;
+  resumeUndo(): void;
   dismissUndo(): void;
 }
 
@@ -253,6 +298,19 @@ export interface UndoNotice {
 }
 let undoTimer: ReturnType<typeof setTimeout> | undefined;
 let undoSeq = 0;
+/** When the latest Undo leaves; while it is held, how long it had left (0 when not held). */
+let undoEnds = 0;
+let undoLeft = 0;
+
+/** A timer for the latest Undo only: a stale one finds a newer notice, or none, and leaves it. */
+function armUndo(ms: number) {
+  const id = undoSeq;
+  clearTimeout(undoTimer);
+  undoEnds = Date.now() + ms;
+  undoTimer = setTimeout(() => {
+    if (useUI.getState().undoNotice?.id === id) useUI.setState({ undoNotice: null });
+  }, ms);
+}
 
 export const useUI = create<UIStore>()(
   persist(
@@ -347,6 +405,28 @@ export const useUI = create<UIStore>()(
         applyLook(get().look, detail);
         set({ detail });
       },
+      markColour: DEFAULT_MARK_COLOUR,
+      setMarkColour: (markColour) => {
+        set({ markColour });
+        applyBrand(pickBrand(get()));
+      },
+      markShading: DEFAULT_MARK_SHADING,
+      setMarkShading: (markShading) => {
+        set({ markShading });
+        applyBrand(pickBrand(get()));
+      },
+      markBacking: DEFAULT_MARK_BACKING,
+      setMarkBacking: (markBacking) => {
+        set({ markBacking });
+        applyBrand(pickBrand(get()));
+      },
+      backdrop: DEFAULT_BACKDROP,
+      setBackdrop: (backdrop) => {
+        set({ backdrop });
+        applyBrand(pickBrand(get()));
+      },
+      previewStoreLocks: false,
+      setPreviewStoreLocks: (previewStoreLocks) => set({ previewStoreLocks }),
       vibration: true,
       setVibration: (vibration) => set({ vibration }),
       shelfOpen: false,
@@ -368,12 +448,19 @@ export const useUI = create<UIStore>()(
       setNotesView: (patch) => set({ notesView: { ...get().notesView, ...patch } }),
       undoNotice: null,
       showUndo: (text, undo) => {
+        undoLeft = 0;
+        set({ undoNotice: { id: ++undoSeq, text, undo } });
+        armUndo(7000);
+      },
+      pauseUndo: () => {
+        if (undoLeft || !get().undoNotice) return;
         clearTimeout(undoTimer);
-        const id = ++undoSeq;
-        set({ undoNotice: { id, text, undo } });
-        undoTimer = setTimeout(() => {
-          if (get().undoNotice?.id === id) set({ undoNotice: null });
-        }, 7000);
+        undoLeft = Math.max(1, undoEnds - Date.now());
+      },
+      // Let go, it gets back what it had left, never less than a moment to reach it.
+      resumeUndo: () => {
+        if (undoLeft) armUndo(Math.max(undoLeft, 2500));
+        undoLeft = 0;
       },
       dismissUndo: () => {
         clearTimeout(undoTimer);
@@ -397,6 +484,11 @@ export const useUI = create<UIStore>()(
         todayView: state.todayView,
         look: state.look,
         detail: state.detail,
+        markColour: state.markColour,
+        markShading: state.markShading,
+        markBacking: state.markBacking,
+        backdrop: state.backdrop,
+        previewStoreLocks: state.previewStoreLocks,
         vibration: state.vibration,
         railGamesOpen: state.railGamesOpen,
         notesView: state.notesView,
@@ -448,6 +540,11 @@ export const useUI = create<UIStore>()(
           todayView: stored.todayView === 'games' ? 'games' : 'steps',
           look: isLookId(stored.look) ? stored.look : DEFAULT_LOOK,
           detail: isDetail(stored.detail) ? stored.detail : DEFAULT_DETAIL,
+          markColour: isMarkColourId(stored.markColour) ? stored.markColour : DEFAULT_MARK_COLOUR,
+          markShading: isMarkShadingId(stored.markShading) ? stored.markShading : DEFAULT_MARK_SHADING,
+          markBacking: isMarkBackingId(stored.markBacking) ? stored.markBacking : DEFAULT_MARK_BACKING,
+          backdrop: isBackdropId(stored.backdrop) ? stored.backdrop : DEFAULT_BACKDROP,
+          previewStoreLocks: stored.previewStoreLocks === true,
           railGamesOpen: stored.railGamesOpen !== false,
           vibration: stored.vibration !== false,
           notesView: readNotesView(stored.notesView),

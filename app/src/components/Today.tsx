@@ -1,11 +1,10 @@
 import { useState, type CSSProperties } from 'react';
 import { DateTime } from 'luxon';
-import { actBy, eventReward, isTickableDaily, nextQuietWindow, type Game, type GameUrgency } from '@memoria/shared';
+import { actBy, eventReward, nextQuietWindow, type Game, type GameUrgency } from '@memoria/shared';
 import { useDerived, type Derived } from '../selectors';
 import { selectAllClear, type AllClear } from '../all-clear';
-import { useApp } from '../store';
 import { useUI } from '../ui-store';
-import { haptic, useMediaQuery } from '../hooks';
+import { useMediaQuery } from '../hooks';
 import { useFlip } from '../flip';
 import { fmtClock, fmtDur } from '../util';
 import { calendarSchedule } from '../event-schedule';
@@ -15,7 +14,7 @@ import { gameShellVars, useGround, useSurfaces } from '../theme';
 import { openGame } from '../workspace-navigation';
 import { isDesktopApp } from '../desktop-host';
 import { readingSource } from '../reading-source';
-import { useIdentityColors } from './roster';
+import { gameAccountTag, useIdentityColors } from './roster';
 import { GameControls } from './GameCard';
 import { GameLogo } from './GameLogo';
 import { TickNumber } from './TickNumber';
@@ -40,15 +39,12 @@ function PriorityRow({
   selected,
   desktop,
   onSelect,
-  onTicked,
 }: {
   entry: GameUrgency;
   derived: Derived;
   selected: boolean;
   desktop: boolean;
   onSelect: () => void;
-  /** Ticking can make the day all clear, which folds the list away with its Undo. */
-  onTicked: () => void;
 }) {
   const { game, next } = entry;
   const { now } = derived;
@@ -68,13 +64,6 @@ function PriorityRow({
       : (next?.label ?? (resource && !known ? `Enter ${resource.name}` : ''));
   const dailies = (derived.checklistByGame.get(game.id) ?? []).filter((item) => item.cadence === 'daily');
   const done = dailies.filter((item) => item.done).length;
-  // The ring ticks every check-type daily from Today, with Undo, without opening the game.
-  const completeDailies = useApp((store) => store.completeDailies);
-  const undoActivity = useApp((store) => store.undoActivity);
-  const journal = useApp((store) => store.history.journal);
-  const [ticked, setTicked] = useState<string>();
-  const canTick = !game.paused && dailies.some(isTickableDaily);
-  const canUndo = Boolean(ticked && journal.some((entry) => entry.id === ticked && !entry.undone));
   const left = next ? next.at - now : null;
   // With quiet hours set, a reset at 03:00 is due when they begin, not at 03:00.
   const actLeft = next ? actBy(derived.state.settings, next.at, now) - now : null;
@@ -95,12 +84,8 @@ function PriorityRow({
     .filter(Boolean)
     .join('. ');
 
-  // The account's name only tells rows apart when one game is tracked twice.
-  const twinned = useApp(
-    (store) =>
-      store.state.games.filter((item) => !item.deleted && (item.presetKey ?? item.id) === (game.presetKey ?? game.id))
-        .length > 1,
-  );
+  // The account's name tells rows apart when one game is tracked twice; its own label always shows.
+  const account = gameAccountTag(game, derived.state.games, now);
   return (
     <li className="today-priority-item">
       <button
@@ -120,10 +105,10 @@ function PriorityRow({
         <span className="today-row-name">
           <span className="sr-only">{desktop ? 'Review' : 'Open'}</span>{' '}
           <span className="today-row-title text-body font-semibold text-fg">{game.name}</span>
-          {game.accountLabel && twinned && (
+          {account && (
             <>
               {' '}
-              <span className="today-row-account aside truncate text-meta">{game.accountLabel}</span>
+              <span className="today-row-account aside truncate text-meta">{account}</span>
             </>
           )}
         </span>
@@ -154,7 +139,13 @@ function PriorityRow({
                   mark
                   at={snap.provenance?.observedAt ?? snap.takenAt}
                   now={now}
-                  verb="Entered"
+                  verb={
+                    source.kind === 'account'
+                      ? `Read from ${source.provider ?? 'your account'}`
+                      : source.kind === 'screenshot'
+                        ? 'Read from a screenshot'
+                        : 'Entered'
+                  }
                   className="today-row-source numeral text-caption"
                 />
               )}
@@ -192,27 +183,6 @@ function PriorityRow({
       <span id={descriptionId} className="sr-only">
         {summary}
       </span>
-      {(canTick || canUndo) && (
-        <button
-          type="button"
-          className="today-ring-action"
-          data-undo={canUndo || undefined}
-          aria-label={canUndo ? `Undo ticking ${game.name} dailies` : `Tick all ${game.name} dailies`}
-          title={canUndo ? 'Undo' : 'Tick all dailies'}
-          onClick={() => {
-            haptic();
-            if (canUndo) {
-              undoActivity(ticked!);
-              setTicked(undefined);
-            } else {
-              onTicked();
-              setTicked(completeDailies(game.id));
-            }
-          }}
-        >
-          {canUndo && <span className="today-ring-undo text-caption font-semibold">Undo</span>}
-        </button>
-      )}
     </li>
   );
 }
@@ -249,7 +219,9 @@ function TodayAgenda({ derived, onSelectGame }: { derived: Derived; onSelectGame
   const byId = new Map(state.games.map((game) => [game.id, game]));
   const gameName = (id: string) => {
     const game = byId.get(id);
-    return game ? (game.accountLabel ? `${game.name} (${game.accountLabel})` : game.name) : '';
+    if (!game) return '';
+    const account = gameAccountTag(game, state.games, now);
+    return account ? `${game.name} (${account})` : game.name;
   };
   const shown = expanded ? items : items.slice(0, AGENDA_PREVIEW);
   const behind = behindGames(state, now);
@@ -414,7 +386,11 @@ export function TodayPage({ now }: { now: number }) {
   const selected = order.find((entry) => entry.game.id === selectedId) ?? games[0];
   const phone = useMediaQuery('(max-width: 767px)');
   const date = DateTime.fromMillis(now, { zone: state.settings.localTz }).toFormat(phone ? 'ccc d LLL' : 'cccc d LLLL');
-  const listRef = useFlip<HTMLDivElement>('[data-roster-game]', (node) => node.dataset.rosterGame ?? null);
+  const listRef = useFlip<HTMLDivElement>(
+    '[data-roster-game]',
+    (node) => node.dataset.rosterGame ?? null,
+    games.map((entry) => entry.game.id).join(' '),
+  );
   const allClear = selectAllClear(derived);
   const [showGames, setShowGames] = useState(false);
   const listFolded = Boolean(allClear) && !showGames && !desktop;
@@ -427,16 +403,14 @@ export function TodayPage({ now }: { now: number }) {
     <Page className="today-page">
       <PageBar className="today-bar">
         <PageTitle
-          sub={
-            <>
-              {date}
-              {phone && plan.total > 0 && (
-                <span className="numeral">
-                  {' '}
-                  · {doneCount}/{plan.total} done
-                </span>
-              )}
-            </>
+          sub={date}
+          // Not under `.say`: Minimal mode hides the date, never how much is done.
+          meta={
+            phone && plan.total > 0 ? (
+              <span className="numeral">
+                {doneCount}/{plan.total} done
+              </span>
+            ) : undefined
           }
         >
           Today
@@ -457,13 +431,13 @@ export function TodayPage({ now }: { now: number }) {
                 {doneCount} of {plan.total} done
               </span>
               <span className="today-progress-tube" aria-hidden>
-                <span style={{ width: `${(doneCount / plan.total) * 100}%` }} />
+                <span style={{ transform: `scaleX(${doneCount / plan.total})` }} />
               </span>
             </span>
           </PageBarEnd>
         )}
       </PageBar>
-      <TodayNotices now={now} />
+      <TodayNotices />
       {order.length > 0 && view === 'steps' ? (
         <TodaySteps
           derived={derived}
@@ -512,7 +486,6 @@ export function TodayPage({ now }: { now: number }) {
                   desktop={desktop}
                   selected={selected?.game.id === entry.game.id}
                   onSelect={() => (desktop ? setSelectedId(entry.game.id) : openGame(entry.game.id))}
-                  onTicked={() => setShowGames(true)}
                 />
               ))}
             </ul>

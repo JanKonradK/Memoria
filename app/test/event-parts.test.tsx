@@ -70,18 +70,41 @@ it('asks for the next state when the tick is pressed', () => {
   expect(onSetProgress).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'Finished' }), 'none');
 });
 
-it('cycles an event through partly done, done and back in the store', () => {
+it('cycles an event through partly done, done and back in the store, keeping its part count', () => {
   useApp.setState({ state: { ...emptyState(), games: [game], events: [event('Story', { parts: 3 })] } });
   show(<Page />);
   fireEvent.click(tick('Story'));
-  expect(stored('Story')).toMatchObject({ partsDone: 1, done: false });
-  expect(stored('Story').parts).toBeUndefined();
+  expect(stored('Story')).toMatchObject({ parts: 3, partsDone: 1, done: false });
   expect(tick('Story')).toHaveAttribute('aria-checked', 'mixed');
   fireEvent.click(tick('Story'));
-  expect(stored('Story')).toMatchObject({ partsDone: 2, done: true });
+  expect(stored('Story')).toMatchObject({ parts: 3, partsDone: 3, done: true });
   expect(tick('Story')).toBeChecked();
   fireEvent.click(tick('Story'));
-  expect(stored('Story')).toMatchObject({ partsDone: 0, done: false });
+  expect(stored('Story')).toMatchObject({ parts: 3, partsDone: 0, done: false });
+});
+
+it('ticks events the same way from every surface, through the store', () => {
+  useApp.setState({
+    state: { ...emptyState(), games: [game], events: [event('Plain'), event('Parts', { parts: 4, partsDone: 2 })] },
+  });
+  const store = useApp.getState();
+  store.toggleEventDone('Plain');
+  expect(stored('Plain')).toMatchObject({ partsDone: 2, done: true });
+  store.toggleEventDone('Plain');
+  expect(stored('Plain')).toMatchObject({ partsDone: 0, done: false });
+  // A part tally is kept: partly done stays where it was, done ticks every part.
+  store.setEventProgress('Parts', 'partial');
+  expect(stored('Parts')).toMatchObject({ parts: 4, partsDone: 2, done: false });
+  store.toggleEventDone('Parts');
+  expect(stored('Parts')).toMatchObject({ parts: 4, partsDone: 4, done: true });
+  store.setEventPartsDone('Parts', 3);
+  expect(stored('Parts')).toMatchObject({ parts: 4, partsDone: 3, done: false });
+  store.setEventPartsDone('Parts', 9);
+  expect(stored('Parts')).toMatchObject({ parts: 4, partsDone: 4, done: true });
+  // Each tick is one entry in the history, so it can be undone.
+  const last = useApp.getState().history.journal.at(-1)!;
+  useApp.getState().undoActivity(last.id);
+  expect(stored('Parts')).toMatchObject({ partsDone: 3, done: false });
 });
 
 it('sets the status from the editor', () => {

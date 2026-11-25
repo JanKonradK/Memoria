@@ -1,5 +1,5 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { useReducedMotion } from '../hooks';
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
+import { useMediaQuery, useReducedMotion } from '../hooks';
 import { useUI } from '../ui-store';
 import { NightMark } from './NightMark';
 import { Tick } from './primitives';
@@ -142,24 +142,100 @@ function NightDemo() {
   );
 }
 
-const CARDS: { title: string; line: string; demo: () => ReactNode }[] = [
-  { title: 'Today', line: 'Soonest first. Tick it when it’s done.', demo: TodayDemo },
-  { title: 'Bars', line: 'Type what your game shows. Memoria counts on.', demo: BarDemo },
-  { title: 'Your games', line: 'Next deadline, bar and reserve at a glance.', demo: RailDemo },
-  { title: 'Overnight', line: 'Ends while you sleep? The night before is the last day.', demo: NightDemo },
-];
+/** Moving around: the keys on a keyboard, a sideways swipe on a touch screen. */
+function MoveDemo({ touch }: { touch: boolean }) {
+  const beat = useBeat(1100, 3);
+  if (touch) {
+    return (
+      <div className="guide-move" aria-hidden>
+        {(['Today', 'Games', 'Notes'] as const).map((place, index) => (
+          <span key={place} className="guide-move-place" data-current={index === beat || undefined}>
+            {place}
+          </span>
+        ))}
+      </div>
+    );
+  }
+  const keys = [['Alt', '1–5'], ['Ctrl', '1–9'], ['?']];
+  return (
+    <div className="guide-keys" aria-hidden>
+      {keys.map((combo, index) => (
+        <span key={combo.join('+')} className="guide-key-combo" data-current={index === beat || undefined}>
+          {combo.map((key) => (
+            <kbd key={key}>{key}</kbd>
+          ))}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+type Card = { title: string; line: string; demo: () => ReactNode };
+
+/** The cards, worded for how this device is used: fingers or keys. */
+function cardsFor(touch: boolean): Card[] {
+  return [
+    {
+      title: 'Today',
+      line: touch ? 'Soonest first. Swipe a row right when it’s done.' : 'Soonest first. Tick it when it’s done.',
+      demo: TodayDemo,
+    },
+    {
+      title: 'Bars',
+      line: touch
+        ? 'Type what your game shows, or scrub the bar. Memoria counts on.'
+        : 'Type what your game shows, or step it with A S D F. Memoria counts on.',
+      demo: BarDemo,
+    },
+    { title: 'Your games', line: 'Next deadline, bar and reserve at a glance.', demo: RailDemo },
+    { title: 'Overnight', line: 'Ends while you sleep? The night before is the last day.', demo: NightDemo },
+    {
+      title: 'Getting around',
+      line: touch
+        ? 'Swipe sideways to move between places and through a game’s tabs.'
+        : 'Alt+1–5 jumps between places, Ctrl+1–9 opens a game, and ? lists every shortcut.',
+      demo: () => <MoveDemo touch={touch} />,
+    },
+  ];
+}
+
+const PANEL_ID = 'guide-card-panel';
 
 /**
- * The guide: four cards, each a working miniature of the thing it is about
- * and one line under it. Opened after setup and from Settings, never in the
- * middle of the app.
+ * The guide: a few cards, each a working miniature of the thing it is about
+ * and one line under it, worded for touch or keyboard. Opened after setup and
+ * from Settings, never in the middle of the app.
  */
 export function Guide({ open }: { open: boolean }) {
   const closeSheet = useUI((s) => s.closeSheet);
+  const openSheet = useUI((s) => s.openSheet);
+  const touch = useMediaQuery('(pointer: coarse)');
+  const cards = cardsFor(touch);
   const [at, setAt] = useState(0);
-  const card = CARDS[at]!;
+  const dots = useRef<(HTMLButtonElement | null)[]>([]);
+  const card = cards[at]!;
   const Demo = card.demo;
-  const last = at === CARDS.length - 1;
+  const last = at === cards.length - 1;
+  const go = (index: number) => {
+    setAt(index);
+    dots.current[index]?.focus();
+  };
+  // Arrow keys, Home and End move between cards, as a tablist should.
+  const onTabsKey = (event: KeyboardEvent) => {
+    const next =
+      event.key === 'ArrowRight'
+        ? (at + 1) % cards.length
+        : event.key === 'ArrowLeft'
+          ? (at - 1 + cards.length) % cards.length
+          : event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? cards.length - 1
+              : null;
+    if (next === null) return;
+    event.preventDefault();
+    go(next);
+  };
   return (
     <Sheet
       open={open}
@@ -168,13 +244,19 @@ export function Guide({ open }: { open: boolean }) {
       hideTitle
       footer={
         <div className="guide-foot">
-          <div className="guide-dots" role="tablist" aria-label="Guide cards">
-            {CARDS.map((item, index) => (
+          <div className="guide-dots" role="tablist" aria-label="Guide cards" onKeyDown={onTabsKey}>
+            {cards.map((item, index) => (
               <button
                 key={item.title}
+                ref={(node) => {
+                  dots.current[index] = node;
+                }}
+                id={`guide-tab-${index}`}
                 type="button"
                 role="tab"
                 aria-selected={index === at}
+                aria-controls={PANEL_ID}
+                tabIndex={index === at ? 0 : -1}
                 aria-label={item.title}
                 className="guide-dot"
                 onClick={() => setAt(index)}
@@ -188,14 +270,23 @@ export function Guide({ open }: { open: boolean }) {
         </div>
       }
     >
-      <section className="guide-card" aria-live="polite" aria-labelledby="guide-card-title">
+      <section
+        className="guide-card"
+        role="tabpanel"
+        id={PANEL_ID}
+        aria-labelledby={`guide-tab-${at}`}
+        aria-live="polite"
+      >
         <div className="guide-stage" key={at}>
           <Demo />
         </div>
-        <h2 id="guide-card-title" className="guide-title">
-          {card.title}
-        </h2>
+        <h2 className="guide-title">{card.title}</h2>
         <p className="guide-line">{card.line}</p>
+        {last && !touch && (
+          <Btn className="mt-2" onClick={() => openSheet({ kind: 'shortcuts' })}>
+            Keyboard shortcuts
+          </Btn>
+        )}
       </section>
     </Sheet>
   );

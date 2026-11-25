@@ -6,12 +6,14 @@
 //! own copy of Chromium and Node.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod connectors;
 mod core;
 mod dpapi;
 mod firewall;
 mod lan;
 mod relay;
 mod lan_crypto;
+mod locks;
 mod publisher;
 mod launch;
 mod presence;
@@ -32,6 +34,8 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::webview::{NewWindowResponse, PageLoadEvent};
 use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, RunEvent, WebviewUrl, WebviewWindow, WindowEvent};
 use tokio::sync::broadcast;
+
+use crate::locks::Locked;
 
 const APP_ID: &str = "app.memoria.tracker";
 const MAIN: &str = "main";
@@ -83,6 +87,8 @@ struct App {
     tray: Mutex<Option<TrayItems>>,
     /// The page zoom picked with Ctrl and + or -, kept across launches.
     zoom: Mutex<f64>,
+    /// Opt-in live numbers: HoYoLAB, wish history and screenshot text.
+    connectors: connectors::ConnectorManager,
 }
 
 impl App {
@@ -134,6 +140,17 @@ pub fn shell_open(target: &str) -> bool {
 #[cfg(not(windows))]
 pub fn shell_open(_target: &str) -> bool {
     false
+}
+
+/// Where screen captures are kept. The player's own copy uses the local (not
+/// roaming) app data, so captures never sync; a check run or a pinned data
+/// folder keeps them beside its data.
+fn captures_dir(data: &Path) -> PathBuf {
+    let pinned = std::env::var_os("MEMORIA_DATA_DIR").is_some() || std::env::var_os("MEMORIA_INSTANCE").is_some();
+    match std::env::var_os("LOCALAPPDATA") {
+        Some(local) if cfg!(windows) && !pinned => PathBuf::from(local).join("Memoria").join("captures"),
+        _ => data.join("captures"),
+    }
 }
 
 /// A message box for failures before the window exists. A check run
@@ -460,7 +477,7 @@ fn message(app: &AppHandle, kind: MessageDialogKind, title: &str, text: &str) {
 fn save_bounds(app: &AppHandle) {
     let state = app.state::<App>();
     let maximized = main_window(app).and_then(|w| w.is_maximized().ok()).unwrap_or(false);
-    let saved = *state.bounds.lock().unwrap();
+    let saved = *state.bounds.locked();
     if let Some(b) = saved {
         let _ = store::write_json(
             &state.bounds_file(),
@@ -475,7 +492,7 @@ fn record_bounds(window: &WebviewWindow) {
     }
     if let (Ok(position), Ok(size)) = (window.outer_position(), window.inner_size())
         && size.width > 0 && size.height > 0 {
-        *window.state::<App>().bounds.lock().unwrap() = Some(Bounds {
+        *window.state::<App>().bounds.locked() = Some(Bounds {
             x: position.x,
             y: position.y,
             width: size.width,
@@ -488,7 +505,7 @@ fn record_bounds(window: &WebviewWindow) {
 fn request_close(app: &AppHandle) {
     let state = app.state::<App>();
     let id = {
-        let mut close = state.close.lock().unwrap();
+        let mut close = state.close.locked();
         if close.pending.is_some() || close.quitting {
             return;
         }
@@ -510,7 +527,7 @@ fn request_close(app: &AppHandle) {
         tokio::time::sleep(Duration::from_secs(30)).await;
         let state = handle.state::<App>();
         let timed_out = {
-            let mut close = state.close.lock().unwrap();
+            let mut close = state.close.locked();
             if close.pending.as_deref() == Some(id.as_str()) {
                 close.pending = None;
                 close.install_on_quit = false;
@@ -538,7 +555,7 @@ fn hide_to_tray(app: &AppHandle) {
     }
     let state = app.state::<App>();
     let first = {
-        let mut close = state.close.lock().unwrap();
+        let mut close = state.close.locked();
         !std::mem::replace(&mut close.tray_hint_shown, true)
     };
     if first {
@@ -564,14 +581,14 @@ fn apply_preferences(app: &AppHandle) {
     if state.packaged {
         set_open_at_login(prefs.open_at_login);
     }
-    if let Some(watcher) = state.watcher.lock().unwrap().as_ref() {
+    if let Some(watcher) = state.watcher.locked().as_ref() {
         if cfg!(windows) && prefs.game_start_notices {
             watcher.start();
         } else {
             watcher.stop();
         }
     }
-    if let Some(items) = state.tray.lock().unwrap().as_ref() {
+    if let Some(items) = state.tray.locked().as_ref() {
         if let Some(item) = &items.open_at_login {
             let _ = item.set_checked(prefs.open_at_login);
         }
@@ -640,12 +657,14 @@ fn create_tray(app: &AppHandle) -> tauri::Result<()> {
         prefs.close_to_tray,
         None::<&str>,
     )?;
+    let capture = MenuItem::with_id(app, "capture", "Capture game screenshot", true, None::<&str>)?;
     let phone = MenuItem::with_id(app, "phone", "Allow phone sync through Windows", true, None::<&str>)?;
     let updates = MenuItem::with_id(app, "updates", "Check for updates", true, None::<&str>)?;
     let about = MenuItem::with_id(app, "about", "About Memoria", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit Memoria", true, None::<&str>)?;
     let menu = Menu::new(app)?;
     menu.append(&open)?;
+    menu.append(&capture)?;
     menu.append(&PredefinedMenuItem::separator(app)?)?;
     if let Some(login) = &login {
         menu.append(login)?;
@@ -668,6 +687,12 @@ fn create_tray(app: &AppHandle) -> tauri::Result<()> {
             let state = app.state::<App>();
             match event.id().as_ref() {
                 "open" => focus_window(app),
+                // A short wait, so the closing menu is not in the picture.
+                "capture" => connectors::capture::trigger(
+                    app,
+                    connectors::capture::Mode::Snip,
+                    Duration::from_millis(250),
+                ),
                 "login" => {
                     let flag = !state.prefs.get().open_at_login;
                     state.prefs.set(&json!({ "openAtLogin": flag }));
@@ -712,7 +737,7 @@ fn create_tray(app: &AppHandle) -> tauri::Result<()> {
         tray = tray.icon(icon.clone());
     }
     tray.build(app)?;
-    *state.tray.lock().unwrap() = Some(TrayItems {
+    *state.tray.locked() = Some(TrayItems {
         open_at_login: login,
         notices,
         reminders,
@@ -754,9 +779,9 @@ fn create_window(app: &AppHandle, token: &str) -> tauri::Result<()> {
         })
         .on_page_load(move |window, payload| match payload.event() {
             // A reload or navigation starts a page that has not registered its close handler yet.
-            PageLoadEvent::Started => window.state::<App>().close.lock().unwrap().ready = false,
+            PageLoadEvent::Started => window.state::<App>().close.locked().ready = false,
             PageLoadEvent::Finished => {
-                let mut shown = shown.lock().unwrap();
+                let mut shown = shown.locked();
                 if !*shown {
                     *shown = true;
                     let _ = window.show();
@@ -764,16 +789,8 @@ fn create_window(app: &AppHandle, token: &str) -> tauri::Result<()> {
                 }
             }
         });
-    // A check run (MEMORIA_INSTANCE) drives the window over the DevTools port.
-    // Some machines ignore WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS, so the port is
-    // passed here. Passing arguments replaces wry's defaults, so they are repeated.
-    let debug_port = std::env::var_os("MEMORIA_INSTANCE")
-        .and(std::env::var("MEMORIA_DEBUG_PORT").ok())
-        .and_then(|port| port.parse::<u16>().ok());
-    let builder = match debug_port {
-        Some(port) => builder.additional_browser_args(&format!(
-            "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --remote-debugging-port={port}"
-        )),
+    let builder = match webview_browser_args() {
+        Some(args) => builder.additional_browser_args(&args),
         None => builder,
     };
     let window = builder.build()?;
@@ -790,14 +807,14 @@ fn create_window(app: &AppHandle, token: &str) -> tauri::Result<()> {
     let bounds = window_bounds(saved_bounds, &monitor_areas(app));
     let _ = window.set_size(PhysicalSize::new(bounds.width, bounds.height));
     let _ = window.set_position(PhysicalPosition::new(bounds.x, bounds.y));
-    *state.bounds.lock().unwrap() = Some(bounds);
+    *state.bounds.locked() = Some(bounds);
     if saved.as_ref().is_some_and(|v| v["maximized"] == true) {
         let _ = window.maximize();
     }
     let zoom = store::read_json(&state.zoom_file())
         .and_then(|v| v["zoom"].as_f64())
         .map_or(1.0, |zoom| zoom_step(zoom, 0));
-    *state.zoom.lock().unwrap() = zoom;
+    *state.zoom.locked() = zoom;
     if zoom != 1.0 {
         let _ = window.set_zoom(zoom);
     }
@@ -807,11 +824,11 @@ fn create_window(app: &AppHandle, token: &str) -> tauri::Result<()> {
     window.on_window_event(move |event| match event {
         WindowEvent::CloseRequested { api, .. } => {
             let state = handle.state::<App>();
-            if state.close.lock().unwrap().quitting {
+            if state.close.locked().quitting {
                 return;
             }
             api.prevent_close();
-            let pending = state.close.lock().unwrap().pending.is_some();
+            let pending = state.close.locked().pending.is_some();
             if state.prefs.get().close_to_tray && !pending {
                 save_bounds(&handle);
                 hide_to_tray(&handle);
@@ -823,6 +840,19 @@ fn create_window(app: &AppHandle, token: &str) -> tauri::Result<()> {
         _ => {}
     });
     Ok(())
+}
+
+/// Browser arguments for webviews on the main window's profile, which must all
+/// agree. A check run (MEMORIA_INSTANCE) drives the window over the DevTools
+/// port. Some machines ignore WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS, so the port
+/// is passed here. Passing arguments replaces wry's defaults, so they are repeated.
+fn webview_browser_args() -> Option<String> {
+    let port = std::env::var_os("MEMORIA_INSTANCE")
+        .and(std::env::var("MEMORIA_DEBUG_PORT").ok())
+        .and_then(|port| port.parse::<u16>().ok())?;
+    Some(format!(
+        "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --remote-debugging-port={port}"
+    ))
 }
 
 /// The zoom levels Ctrl and + or - step through, as in a browser.
@@ -848,7 +878,7 @@ fn zoom_step(current: f64, step: i32) -> f64 {
 #[tauri::command]
 fn set_zoom(webview: tauri::Webview, state: tauri::State<'_, App>, step: i32) -> CommandResult<f64> {
     trusted(&webview, &state)?;
-    let mut zoom = state.zoom.lock().unwrap();
+    let mut zoom = state.zoom.locked();
     let next = if step == 0 {
         1.0
     } else {
@@ -869,8 +899,22 @@ fn trusted(webview: &tauri::Webview, state: &App) -> CommandResult<()> {
             .url()
             .map(|u| u.origin().ascii_serialization() == state.origin)
             .unwrap_or(false);
-    let quitting = state.close.lock().unwrap().quitting;
+    let quitting = state.close.locked().quitting;
     if same && !quitting {
+        Ok(())
+    } else {
+        Err("This action is only available in Memoria.".into())
+    }
+}
+
+/// Only the snip page Memoria serves, in the snip window, may call the snip commands.
+fn snip_trusted(webview: &tauri::Webview, state: &App) -> CommandResult<()> {
+    let ours = webview.label() == connectors::capture::SNIP_LABEL
+        && webview
+            .url()
+            .map(|u| u.origin().ascii_serialization() == state.origin && u.path() == connectors::capture::SNIP_PATH)
+            .unwrap_or(false);
+    if ours && !state.close.locked().quitting {
         Ok(())
     } else {
         Err("This action is only available in Memoria.".into())
@@ -921,7 +965,7 @@ async fn update_check(app: AppHandle, webview: tauri::Webview) -> CommandResult<
     trusted(&webview, &state)?;
     let installed = update::release_record(&state.root).and_then(|r| r["version"].as_str().map(str::to_string));
     let release = update::fetch_latest_release(installed.as_deref(), &state.update_paths).await?;
-    *state.latest_release.lock().unwrap() = release.clone();
+    *state.latest_release.locked() = release.clone();
     let _ = store::write_json(
         &state.update_paths.last_check,
         &json!({ "checkedAt": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0) }),
@@ -939,8 +983,7 @@ async fn update_download(app: AppHandle, webview: tauri::Webview) -> CommandResu
     trusted(&webview, &state)?;
     let release = state
         .latest_release
-        .lock()
-        .unwrap()
+        .locked()
         .clone()
         .ok_or("Check for updates first.")?;
     // One download at a time. A second request waits and then finds it staged.
@@ -948,7 +991,7 @@ async fn update_download(app: AppHandle, webview: tauri::Webview) -> CommandResu
     let last = Mutex::new(Instant::now() - Duration::from_secs(1));
     let handle = app.clone();
     update::stage_release(&state.root, &state.update_paths, &release, move |received, total| {
-        let mut last = last.lock().unwrap();
+        let mut last = last.locked();
         if last.elapsed() >= Duration::from_millis(200) {
             *last = Instant::now();
             emit(
@@ -969,7 +1012,7 @@ fn update_install(app: AppHandle, webview: tauri::Webview) -> CommandResult<bool
         return Err("Download the update first.".into());
     }
     update::validate_pending(&state.root, &state.update_paths)?;
-    state.close.lock().unwrap().install_on_quit = true;
+    state.close.locked().install_on_quit = true;
     request_close(&app);
     Ok(true)
 }
@@ -992,7 +1035,7 @@ fn presence_set(app: AppHandle, webview: tauri::Webview, changes: Value) -> Comm
 #[tauri::command]
 fn games_watch(webview: tauri::Webview, state: tauri::State<'_, App>, games: Value) -> CommandResult<bool> {
     trusted(&webview, &state)?;
-    if let Some(watcher) = state.watcher.lock().unwrap().as_ref() {
+    if let Some(watcher) = state.watcher.locked().as_ref() {
         watcher.set_watch(&games);
     }
     Ok(true)
@@ -1004,7 +1047,7 @@ fn game_notify(app: AppHandle, webview: tauri::Webview, notice: Value) -> Comman
     trusted(&webview, &state)?;
     let game_id = notice["gameId"].as_str().unwrap_or("").to_string();
     // Only a game the watcher just reported starting or stopping can show a notice, once.
-    let reported = state.started_games.lock().unwrap().remove(&game_id);
+    let reported = state.started_games.locked().remove(&game_id);
     if !reported.is_some_and(|at| at.elapsed() < Duration::from_secs(60)) {
         return Ok(false);
     }
@@ -1067,7 +1110,7 @@ fn notifications_settings(webview: tauri::Webview, state: tauri::State<'_, App>)
 #[tauri::command]
 fn renderer_ready(webview: tauri::Webview, state: tauri::State<'_, App>) -> CommandResult<()> {
     trusted(&webview, &state)?;
-    state.close.lock().unwrap().ready = true;
+    state.close.locked().ready = true;
     Ok(())
 }
 
@@ -1082,7 +1125,7 @@ fn close_result(
     let state = app.state::<App>();
     trusted(&webview, &state)?;
     {
-        let mut close = state.close.lock().unwrap();
+        let mut close = state.close.locked();
         if close.pending.as_deref() != Some(request_id.as_str()) {
             return Ok(());
         }
@@ -1113,6 +1156,410 @@ fn open_external(webview: tauri::Webview, state: tauri::State<'_, App>, url: Str
     } else {
         Err("Windows could not open this link.".into())
     }
+}
+
+// ---------------------------------------------------------------------------
+// Connectors: opt-in live numbers. Cookies and history links stay in Rust.
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+fn connector_status(webview: tauri::Webview, state: tauri::State<'_, App>) -> CommandResult<Value> {
+    trusted(&webview, &state)?;
+    Ok(state.connectors.status())
+}
+
+/// Opens HoYoLAB's own sign-in in a separate window. The result arrives as
+/// `memoria:connector-status`. Async: building a window from a synchronous
+/// command deadlocks on Windows.
+#[tauri::command]
+async fn connector_hoyolab_login(app: AppHandle, webview: tauri::Webview, fresh: Option<bool>) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    connectors::login::open(&app, fresh.unwrap_or(false))?;
+    Ok(state.connectors.status())
+}
+
+/// The status after a browser connection, with its error (if any) for the page.
+fn browser_connected(app: &AppHandle, outcome: Result<usize, String>) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    let status = state.connectors.status();
+    if let Err(error) = &outcome {
+        let mut event = status.clone();
+        event["error"] = json!(error);
+        emit(app, "memoria:connector-status", event);
+        return Err(error.clone());
+    }
+    emit(app, "memoria:connector-status", status.clone());
+    Ok(status)
+}
+
+/// Connects HoYoLAB with cookies pasted from the player's own browser. They are
+/// checked live with HoYoLAB before anything is saved.
+#[tauri::command]
+async fn connector_hoyolab_import_browser(app: AppHandle, webview: tauri::Webview, raw: String) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    let cookies = connectors::browser::parse_hoyolab_input(&raw);
+    drop(raw);
+    let outcome = match cookies {
+        Ok(cookies) => connectors::browser::connect_hoyolab(&state.connectors, cookies).await,
+        Err(error) => Err(error),
+    };
+    browser_connected(&app, outcome)
+}
+
+/// Connects SKPORT with a token pasted from the player's own browser.
+#[tauri::command]
+async fn connector_skport_import_browser(app: AppHandle, webview: tauri::Webview, raw: String) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    let tokens = connectors::browser::parse_skport_input(&raw);
+    drop(raw);
+    let outcome = match tokens {
+        Ok((account, cred)) => connectors::browser::connect_skport(&state.connectors, account, cred).await,
+        Err(error) => Err(error),
+    };
+    browser_connected(&app, outcome)
+}
+
+/// Starts a one-time pairing with the Browser Connect helper and opens the
+/// service in the default browser. Only this answer carries the code.
+#[tauri::command]
+fn connector_browser_start(app: AppHandle, webview: tauri::Webview, provider: String) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    let provider = connectors::browser::BrowserProvider::parse(&provider).ok_or("Choose HoYoLAB or SKPORT.")?;
+    let started = state.connectors.start_handoff(provider);
+    shell_open(provider.home());
+    emit(&app, "memoria:connector-status", state.connectors.status());
+    Ok(started)
+}
+
+#[tauri::command]
+fn connector_browser_cancel(webview: tauri::Webview, state: tauri::State<'_, App>) -> CommandResult<Value> {
+    trusted(&webview, &state)?;
+    state.connectors.cancel_handoff();
+    Ok(state.connectors.status())
+}
+
+/// Shows the Browser Connect helper's folder, to load it as an unpacked extension.
+#[tauri::command]
+fn connector_browser_open_helper(webview: tauri::Webview, state: tauri::State<'_, App>) -> CommandResult<()> {
+    trusted(&webview, &state)?;
+    let dir = state.root.join("desktop").join("browser-helper");
+    if !dir.join("manifest.json").is_file() {
+        return Err("The Browser Connect helper is missing from this install. Download Memoria again.".into());
+    }
+    if shell_open(&dir.to_string_lossy()) {
+        Ok(())
+    } else {
+        Err("Windows could not open the helper's folder.".into())
+    }
+}
+
+#[tauri::command]
+async fn connector_hoyolab_disconnect(app: AppHandle, webview: tauri::Webview) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    connectors::login::close(&app);
+    state.connectors.disconnect()?;
+    let status = state.connectors.status();
+    emit(&app, "memoria:connector-status", status.clone());
+    Ok(status)
+}
+
+#[tauri::command]
+fn connector_hoyolab_link(
+    webview: tauri::Webview,
+    state: tauri::State<'_, App>,
+    game_id: String,
+    preset_key: String,
+    uid: Option<String>,
+    region: Option<String>,
+) -> CommandResult<Value> {
+    trusted(&webview, &state)?;
+    state
+        .connectors
+        .link(&game_id, &preset_key, uid.as_deref(), region.as_deref())?;
+    Ok(state.connectors.status())
+}
+
+#[tauri::command]
+async fn connector_hoyolab_refresh(
+    app: AppHandle,
+    webview: tauri::Webview,
+    game_id: String,
+    auto: Option<bool>,
+) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    Ok(connectors::hoyolab::refresh(&state.connectors, &game_id, auto.unwrap_or(false)).await)
+}
+
+/// Redeems a gift code on the linked game's account. The answer is a fixed sentence.
+#[tauri::command]
+async fn connector_hoyolab_redeem(
+    app: AppHandle,
+    webview: tauri::Webview,
+    game_id: String,
+    code: String,
+) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    Ok(connectors::hoyolab::redeem_code(&state.connectors, &game_id, &code).await)
+}
+
+/// Claims today's HoYoLAB daily check-in for the linked game.
+#[tauri::command]
+async fn connector_hoyolab_checkin(app: AppHandle, webview: tauri::Webview, game_id: String) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    Ok(connectors::hoyolab::claim_checkin(&state.connectors, &game_id).await)
+}
+
+#[tauri::command]
+fn connector_hoyolab_prefs(webview: tauri::Webview, state: tauri::State<'_, App>, changes: Value) -> CommandResult<Value> {
+    trusted(&webview, &state)?;
+    state.connectors.set_prefs(&changes)?;
+    Ok(state.connectors.status())
+}
+
+/// Reads wish, warp, signal or convene history. `pickFolder` lets the player
+/// point at the install folder when the game's log does not name it; a
+/// cancelled pick returns null.
+#[tauri::command]
+async fn connector_gacha_scan(
+    app: AppHandle,
+    webview: tauri::Webview,
+    game: String,
+    pick_folder: Option<bool>,
+) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    if !connectors::gacha::GAMES.contains(&game.as_str()) {
+        return Err("This game has no history scan.".into());
+    }
+    let window = main_window(&app);
+    let scanned = game.clone();
+    let address = tokio::task::spawn_blocking(move || {
+        let picked = if pick_folder.unwrap_or(false) {
+            let mut dialog = rfd::FileDialog::new().set_title("Choose the folder the game is installed in");
+            if let Some(window) = &window {
+                dialog = dialog.set_parent(window);
+            }
+            match dialog.pick_folder() {
+                Some(folder) => Some(folder),
+                None => return Ok(None),
+            }
+        } else {
+            None
+        };
+        connectors::gacha::locate(&scanned, picked.as_deref()).map(Some)
+    })
+    .await
+    .map_err(|_| "The history scan stopped unexpectedly.".to_string())??;
+    let Some(address) = address else { return Ok(Value::Null) };
+    connectors::gacha::fetch(&game, &address).await
+}
+
+#[tauri::command]
+async fn connector_screenshot_pick(app: AppHandle, webview: tauri::Webview) -> CommandResult<Option<Value>> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    let window = main_window(&app);
+    tokio::task::spawn_blocking(move || connectors::ocr::pick_and_read(window))
+        .await
+        .map_err(|_| "The screenshot could not be read.".to_string())?
+}
+
+#[tauri::command]
+async fn connector_screenshot_watch_choose(app: AppHandle, webview: tauri::Webview) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    let window = main_window(&app);
+    let picked = tokio::task::spawn_blocking(move || {
+        let mut dialog = rfd::FileDialog::new().set_title("Choose the folder your screenshots are saved in");
+        if let Some(window) = &window {
+            dialog = dialog.set_parent(window);
+        }
+        dialog.pick_folder()
+    })
+    .await
+    .map_err(|_| "The folder could not be chosen.".to_string())?;
+    if let Some(dir) = picked {
+        let watcher = connectors::ocr::watch_folder(&app, &dir).ok_or("Memoria could not watch that folder.")?;
+        state.connectors.set_watcher(Some(&dir), Some(watcher))?;
+    }
+    let status = state.connectors.status();
+    emit(&app, "memoria:connector-status", status.clone());
+    Ok(status)
+}
+
+#[tauri::command]
+fn connector_screenshot_watch_clear(app: AppHandle, webview: tauri::Webview) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    state.connectors.set_watcher(None, None)?;
+    let status = state.connectors.status();
+    emit(&app, "memoria:connector-status", status.clone());
+    Ok(status)
+}
+
+/// Opens the folder screen captures are kept in, making it first if needed.
+#[tauri::command]
+fn connector_screenshot_captures_open(webview: tauri::Webview, state: tauri::State<'_, App>) -> CommandResult<()> {
+    trusted(&webview, &state)?;
+    let dir = state.connectors.captures_dir();
+    std::fs::create_dir_all(dir).map_err(|_| "Memoria could not make the captures folder.".to_string())?;
+    if shell_open(&dir.to_string_lossy()) {
+        Ok(())
+    } else {
+        Err("Windows could not open the captures folder.".into())
+    }
+}
+
+/// Deletes the kept screen captures and returns the new status.
+#[tauri::command]
+fn connector_screenshot_captures_clear(app: AppHandle, webview: tauri::Webview) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    state.connectors.clear_captures()?;
+    let status = state.connectors.status();
+    emit(&app, "memoria:connector-status", status.clone());
+    Ok(status)
+}
+
+/// Opens SKPORT's own sign-in in a separate window. The result arrives as
+/// `memoria:connector-status`. Async: building a window from a synchronous
+/// command deadlocks on Windows.
+#[tauri::command]
+async fn connector_skport_login(app: AppHandle, webview: tauri::Webview, fresh: Option<bool>) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    connectors::skport::open(&app, fresh.unwrap_or(false))?;
+    Ok(state.connectors.status())
+}
+
+#[tauri::command]
+async fn connector_skport_disconnect(app: AppHandle, webview: tauri::Webview) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    connectors::skport::close(&app);
+    state.connectors.skport_disconnect()?;
+    let status = state.connectors.status();
+    emit(&app, "memoria:connector-status", status.clone());
+    Ok(status)
+}
+
+#[tauri::command]
+fn connector_skport_link(
+    webview: tauri::Webview,
+    state: tauri::State<'_, App>,
+    game_id: String,
+    uid: Option<String>,
+    region: Option<String>,
+) -> CommandResult<Value> {
+    trusted(&webview, &state)?;
+    state
+        .connectors
+        .skport_link(&game_id, uid.as_deref(), region.as_deref())?;
+    Ok(state.connectors.status())
+}
+
+#[tauri::command]
+async fn connector_skport_refresh(
+    app: AppHandle,
+    webview: tauri::Webview,
+    game_id: String,
+    auto: Option<bool>,
+) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    Ok(connectors::skport::refresh(&state.connectors, &game_id, auto.unwrap_or(false)).await)
+}
+
+#[tauri::command]
+fn connector_skport_prefs(
+    webview: tauri::Webview,
+    state: tauri::State<'_, App>,
+    changes: Value,
+) -> CommandResult<Value> {
+    trusted(&webview, &state)?;
+    state.connectors.set_skport_prefs(&changes)?;
+    Ok(state.connectors.status())
+}
+
+/// Captures the screen. "window" reads the game in front and returns the
+/// reading (also sent as `memoria:screenshot-ocr`); "snip" opens the frozen
+/// screen to drag on and returns null, the reading arriving as the event.
+#[tauri::command]
+async fn connector_screenshot_capture(app: AppHandle, webview: tauri::Webview, mode: String) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    let mode = connectors::capture::Mode::parse(&mode).ok_or("Choose window or snip.")?;
+    Ok(connectors::capture::start(&app, mode).await?.unwrap_or(Value::Null))
+}
+
+/// Turns the global capture shortcut on or off, or changes it. A shortcut
+/// another app holds is saved but reported in `screenshotShortcut.error`.
+#[tauri::command]
+async fn connector_screenshot_set_shortcut(
+    app: AppHandle,
+    webview: tauri::Webview,
+    enabled: bool,
+    accelerator: Option<String>,
+) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    let spec = accelerator.unwrap_or_else(|| state.connectors.shortcut_setting().1);
+    let parsed = connectors::capture::parse_accelerator(&spec)?;
+    state.connectors.save_shortcut(enabled, &parsed.display)?;
+    let handle = app.clone();
+    tokio::task::spawn_blocking(move || connectors::capture::apply_shortcut(&handle))
+        .await
+        .map_err(|_| "The capture shortcut could not be changed.".to_string())?;
+    let status = state.connectors.status();
+    emit(&app, "memoria:connector-status", status.clone());
+    Ok(status)
+}
+
+#[tauri::command]
+fn screenshot_snip_data(app: AppHandle, webview: tauri::Webview) -> CommandResult<Value> {
+    snip_trusted(&webview, &app.state::<App>())?;
+    connectors::capture::snip_data(&app)
+}
+
+/// Reads the snip: `regions` (up to eight `{ x, y, width, height }` in CSS
+/// pixels, read in order) or, as before, the one rectangle in `x`, `y`,
+/// `width` and `height`. Several regions arrive as one reading whose lines
+/// hold an empty line between regions.
+#[tauri::command]
+#[allow(clippy::too_many_arguments)]
+async fn screenshot_snip_commit(
+    app: AppHandle,
+    webview: tauri::Webview,
+    x: Option<f64>,
+    y: Option<f64>,
+    width: Option<f64>,
+    height: Option<f64>,
+    regions: Option<Vec<connectors::capture::SnipRegion>>,
+    view_width: f64,
+    view_height: f64,
+) -> CommandResult<()> {
+    snip_trusted(&webview, &app.state::<App>())?;
+    let regions = match (regions, x, y, width, height) {
+        (Some(regions), ..) if !regions.is_empty() => regions,
+        (_, Some(x), Some(y), Some(width), Some(height)) => vec![connectors::capture::SnipRegion { x, y, width, height }],
+        _ => return Err("Drag around a larger area.".into()),
+    };
+    connectors::capture::snip_commit(&app, &regions, (view_width, view_height))
+}
+
+#[tauri::command]
+async fn screenshot_snip_cancel(app: AppHandle, webview: tauri::Webview) -> CommandResult<()> {
+    snip_trusted(&webview, &app.state::<App>())?;
+    connectors::capture::snip_cancel(&app);
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -1208,6 +1655,7 @@ fn main() {
     let (changes, _) = broadcast::channel(16);
     let core = core::Core::start(data.join("state.json"), changes.clone());
     let reminder_changes = changes.subscribe();
+    let relay_changes = changes.subscribe();
     let _state_watcher = store::watch_state_file(&data, changes.clone());
     let lan = lan::Lan::new(data.clone(), core.clone(), lan_port);
     let token = store::new_token();
@@ -1225,10 +1673,11 @@ fn main() {
     )
     .unwrap_or_else(|error| fatal(&error));
     let origin = server.origin();
-    Arc::new(server).serve(listener);
+    let server = Arc::new(server);
+    server.clone().serve(listener);
     // The user's choice survives restarts. A bind failure does not block local work.
     // Away from home, phones reach the PC through the owner's relay, if one is set.
-    tauri::async_runtime::spawn(relay::run(lan.clone()));
+    tauri::async_runtime::spawn(relay::run(lan.clone(), relay_changes));
     tauri::async_runtime::spawn(async move { lan.restore().await });
 
     let prefs = presence::PreferenceFile::new(&data);
@@ -1250,6 +1699,7 @@ fn main() {
         bounds: Mutex::new(None),
         tray: Mutex::new(None),
         zoom: Mutex::new(1.0),
+        connectors: connectors::ConnectorManager::new_with_captures(&data, captures_dir(&data)),
     };
 
     let app = tauri::Builder::default()
@@ -1274,25 +1724,55 @@ fn main() {
             notifications_status,
             notifications_test,
             notifications_settings,
+            connector_status,
+            connector_hoyolab_login,
+            connector_hoyolab_disconnect,
+            connector_hoyolab_link,
+            connector_hoyolab_refresh,
+            connector_hoyolab_redeem,
+            connector_hoyolab_checkin,
+            connector_hoyolab_prefs,
+            connector_gacha_scan,
+            connector_screenshot_pick,
+            connector_screenshot_watch_choose,
+            connector_screenshot_watch_clear,
+            connector_screenshot_captures_open,
+            connector_screenshot_captures_clear,
+            connector_skport_login,
+            connector_skport_disconnect,
+            connector_skport_link,
+            connector_skport_refresh,
+            connector_skport_prefs,
+            connector_hoyolab_import_browser,
+            connector_skport_import_browser,
+            connector_browser_start,
+            connector_browser_cancel,
+            connector_browser_open_helper,
+            connector_screenshot_capture,
+            connector_screenshot_set_shortcut,
+            screenshot_snip_data,
+            screenshot_snip_commit,
+            screenshot_snip_cancel,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();
+            // The browser helper's endpoint reaches the connectors through the app.
+            server.set_app(handle.clone());
             let state = handle.state::<App>();
             if state.packaged {
                 register_notice_identity(&state.root);
             }
             let notices = handle.clone();
             let stops = handle.clone();
-            *state.watcher.lock().unwrap() = Some(presence::GameWatcher::new(
+            *state.watcher.locked() = Some(presence::GameWatcher::new(
                 move |game_id| {
                     let state = notices.state::<App>();
-                    if !state.close.lock().unwrap().ready || !state.prefs.get().game_start_notices {
+                    if !state.close.locked().ready || !state.prefs.get().game_start_notices {
                         return;
                     }
                     state
                         .started_games
-                        .lock()
-                        .unwrap()
+                        .locked()
                         .insert(game_id.clone(), Instant::now());
                     emit(&notices, "memoria:game-started", json!(game_id));
                 },
@@ -1301,15 +1781,14 @@ fn main() {
                     // player knows what is left. A quick launch and exit is not one.
                     let state = stops.state::<App>();
                     if ran < Duration::from_secs(5 * 60)
-                        || !state.close.lock().unwrap().ready
+                        || !state.close.locked().ready
                         || !state.prefs.get().game_start_notices
                     {
                         return;
                     }
                     state
                         .started_games
-                        .lock()
-                        .unwrap()
+                        .locked()
                         .insert(game_id.clone(), Instant::now());
                     emit(&stops, "memoria:game-stopped", json!(game_id));
                 },
@@ -1317,6 +1796,15 @@ fn main() {
             create_window(&handle, &token)?;
             create_tray(&handle)?;
             apply_preferences(&handle);
+            // A screenshot folder chosen earlier is watched again from the start.
+            if let Some(dir) = state.connectors.watch_dir() {
+                let watcher = connectors::ocr::watch_folder(&handle, &dir);
+                let _ = state.connectors.set_watcher(Some(&dir), watcher);
+            }
+            // The capture shortcut, if the player turned it on before.
+            if state.connectors.shortcut_setting().0 {
+                connectors::capture::apply_shortcut(&handle);
+            }
             let notices = handle.clone();
             reminders::start(core, reminder_changes, reminder_preferences, data.clone(), move |notice| {
                 deliver_reminder(&notices, notice)
@@ -1329,16 +1817,18 @@ fn main() {
     app.run(|app, event| match event {
         RunEvent::ExitRequested { code: None, api, .. } => {
             // Only an explicit quit ends Memoria; the window never closes on its own.
-            if !app.state::<App>().close.lock().unwrap().quitting {
+            if !app.state::<App>().close.locked().quitting {
                 api.prevent_exit();
             }
         }
         RunEvent::Exit => {
             let state = app.state::<App>();
-            if let Some(watcher) = state.watcher.lock().unwrap().as_ref() {
+            if let Some(watcher) = state.watcher.locked().as_ref() {
                 watcher.stop();
             }
-            let install = std::mem::take(&mut state.close.lock().unwrap().install_on_quit);
+            state.connectors.stop_watcher();
+            connectors::capture::stop_shortcut(app);
+            let install = std::mem::take(&mut state.close.locked().install_on_quit);
             if install
                 && let Err(error) = update::run_staged_installer(&state.root, &state.update_paths) {
                 fatal(&format!("Update refused: {error}"));

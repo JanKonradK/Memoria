@@ -43,7 +43,9 @@ export function PinnedEvents({ events, games, now, onOpen }: PinnedEventsProps) 
   const gamesById = useMemo(() => new Map(games.map((game) => [game.id, game])), [games]);
   const pinned = useMemo(() => pinnedEventsNeedingYou(events, games, now), [events, games, now]);
   // A chip that joins or leaves moves the rest; they glide over as Today's rows do.
-  const chipsRef = useFlip<HTMLDivElement>('[data-pinned-chip]', (node) => node.dataset.pinnedChip ?? null);
+  // Only a change of chips is worth measuring; the countdowns tick every minute.
+  const orderKey = useMemo(() => pinned.map((event) => event.id).join('|'), [pinned]);
+  const chipsRef = useFlip<HTMLDivElement>('[data-pinned-chip]', (node) => node.dataset.pinnedChip ?? null, orderKey);
   if (pinned.length === 0) return null;
 
   return (

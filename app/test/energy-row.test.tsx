@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import type { EnergyProjection, Resource } from '@memoria/shared';
+import { emptyHistory, emptyState, type EnergyProjection, type Resource } from '@memoria/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { EnergyRow } from '../src/components/EnergyRow';
+import { EnergyRow, ValueStepper } from '../src/components/EnergyRow';
+import { useApp } from '../src/store';
 import { useUI } from '../src/ui-store';
 
 const now = new Date('2026-07-19T12:00:00Z').getTime();
@@ -132,7 +133,7 @@ describe('EnergyRow reserve controls', () => {
     renderRow();
     openReserve();
 
-    const verdict = screen.getByText('Full');
+    const verdict = screen.getByText('Full', { selector: 'span' });
     const summary = screen.getByText('Reserve TB Power', { selector: '[data-reserve] .energy-bank-name' });
     // DOCUMENT_POSITION_FOLLOWING: the summary comes after the verdict.
     expect(verdict.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -400,5 +401,98 @@ describe('EnergyRow crafted bank', () => {
   it('says Max once the counter is full', () => {
     renderPair(5);
     expect(screen.getByText('Max')).toBeInTheDocument();
+  });
+});
+
+describe('EnergyRow quick readings and hints', () => {
+  beforeEach(() => {
+    useUI.setState({ undoNotice: null });
+    useApp.setState({
+      state: { ...emptyState(), resources: [resource] },
+      history: emptyHistory('test-device'),
+      loaded: true,
+    });
+  });
+
+  it('names the A/S/D/F keys on the value field', () => {
+    renderRow();
+    expect(screen.getByRole('textbox', { name: 'Trailblaze Power current value' })).toHaveAttribute(
+      'title',
+      'Type a value, or use A (−10), S (−1), D (+1), F (+10)',
+    );
+  });
+
+  it('shows Spent all and Full as plain buttons, and offers Undo for each', () => {
+    const onCommit = vi.fn((value: number) => useApp.getState().setEnergy(resource.id, value));
+    renderRow({ proj: projectionAt(100), onCommit });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Spent all Trailblaze Power' }));
+    expect(onCommit).toHaveBeenLastCalledWith(0, 320);
+    expect(useUI.getState().undoNotice?.text).toBe('Trailblaze Power set to 0');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Trailblaze Power full' }));
+    expect(onCommit).toHaveBeenLastCalledWith(300, 320);
+    expect(useUI.getState().undoNotice?.text).toBe('Trailblaze Power set to full');
+
+    const latest = () =>
+      useApp
+        .getState()
+        .state.snapshots.filter((snap) => snap.resourceId === resource.id && !snap.deleted)
+        .at(-1);
+    expect(latest()?.value).toBe(300);
+    useUI.getState().undoNotice!.undo();
+    expect(latest()?.value).toBe(0);
+  });
+
+  it('offers no Undo when a quick reading changed nothing', () => {
+    renderRow({ proj: projectionAt(100), onCommit: vi.fn() });
+    fireEvent.click(screen.getByRole('button', { name: 'Spent all Trailblaze Power' }));
+    expect(useUI.getState().undoNotice).toBeNull();
+  });
+});
+
+describe('ValueStepper Enter in a list', () => {
+  function Stepper({ onCommit, onCommitNext }: { onCommit: () => void; onCommitNext?: (reverse: boolean) => void }) {
+    return (
+      <ValueStepper
+        value="50"
+        cap={100}
+        color="#fff"
+        label="Energy"
+        ariaLabel="Energy value"
+        valueClassName=""
+        onStep={vi.fn()}
+        onBeginEdit={vi.fn()}
+        onDraft={vi.fn()}
+        onEndEdit={vi.fn()}
+        onCommit={onCommit}
+        onCommitNext={onCommitNext}
+        onCancel={vi.fn()}
+      />
+    );
+  }
+
+  it('commits and hands focus on instead of dropping it', () => {
+    const onCommit = vi.fn();
+    const onCommitNext = vi.fn();
+    render(<Stepper onCommit={onCommit} onCommitNext={onCommitNext} />);
+    const input = screen.getByRole('textbox', { name: 'Energy value' });
+    input.focus();
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onCommit).toHaveBeenCalledOnce();
+    expect(onCommitNext).toHaveBeenLastCalledWith(false);
+    expect(input).toHaveFocus();
+    fireEvent.keyDown(input, { key: 'Enter', shiftKey: true });
+    expect(onCommitNext).toHaveBeenLastCalledWith(true);
+  });
+
+  it('still commits and blurs without a next field', () => {
+    const onCommit = vi.fn();
+    render(<Stepper onCommit={onCommit} />);
+    const input = screen.getByRole('textbox', { name: 'Energy value' });
+    input.focus();
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onCommit).toHaveBeenCalledOnce();
+    expect(input).not.toHaveFocus();
   });
 });

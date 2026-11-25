@@ -531,10 +531,10 @@ export function initNotifications(): () => void {
       whenLoaded(() => useApp.getState().completeDailies(extra.gameId!));
     if (event.actionId === 'events-done' && extra.gameId && extra.eventIds?.length)
       whenLoaded(() => {
-        const { state, upsertEvent } = useApp.getState();
+        const { state, setEventProgress } = useApp.getState();
         for (const id of extra.eventIds!) {
           const found = state.events.find((item) => item.id === id && !item.deleted);
-          if (found && !found.done) upsertEvent({ id, gameId: found.gameId, done: true });
+          if (found && !found.done) setEventProgress(id, 'done');
         }
       });
   }).catch((cause: unknown) => {

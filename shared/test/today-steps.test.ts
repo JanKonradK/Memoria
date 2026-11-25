@@ -207,4 +207,41 @@ describe('todaySteps', () => {
       { at: utc('2026-11-19T03:00:00Z'), gameIds: ['genshin'], kinds: ['reset'] },
     ]);
   });
+
+  it('lists every other bar of an active game, never counted as a step', () => {
+    const resin = bar('resin', 'genshin', 149); // caps within the day: a step
+    const slow = bar('slow', 'crumble', 10); // caps after a day
+    const unread = makeResource({ id: 'unread', gameId: 'nikke', name: 'unread energy', cap: 200, regenMinutes: 8 });
+    const paused = makeGame({ id: 'paused', name: 'Paused', tz: 'UTC', paused: true, sort: 3 });
+    const pausedBar = makeResource({ id: 'pausedbar', gameId: 'paused', cap: 100, regenMinutes: 8 });
+    const plan = todaySteps(
+      state({
+        games: [genshin, crumble, nikke, paused],
+        resources: [resin.resource, slow.resource, unread, pausedBar],
+        snapshots: [resin.snapshot, slow.snapshot],
+      }),
+      NOW,
+    );
+    expect(plan.otherBars.map((step) => [step.key, step.unmeasured === true, step.value])).toEqual([
+      ['energy:slow', false, 10],
+      ['energy:unread', true, 0],
+    ]);
+    expect(plan.otherBars[0]!.at).toBe(NOW + 190 * 8 * MIN);
+    expect(plan.otherBars[1]!.at).toBeGreaterThan(NOW + 24 * 60 * MIN);
+    expect(plan).toMatchObject({ open: 1, total: 1 });
+    expect(plan.marks).toHaveLength(1);
+  });
+
+  it('leaves a bar hidden on the card out of the other bars', () => {
+    const slow = bar('slow', 'crumble', 10);
+    const plan = todaySteps(
+      state({
+        games: [{ ...crumble, cardLayout: [{ id: 'resource:slow', hidden: true }] } as typeof crumble],
+        resources: [slow.resource],
+        snapshots: [slow.snapshot],
+      }),
+      NOW,
+    );
+    expect(plan.otherBars).toEqual([]);
+  });
 });

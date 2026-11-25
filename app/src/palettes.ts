@@ -260,7 +260,7 @@ export const FAMILIES: Family[] = [
         orange: '#8a5e0a',
         red: '#b8341f',
         pink: '#b03566',
-        yellow: '#8a6a24',
+        yellow: '#785b1a',
         blue: '#2f5bb0',
         violet: '#7b3fb5',
         teal: '#1c6b78',

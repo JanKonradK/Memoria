@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { Game } from '@memoria/shared';
 import { resolveGameIdentityColors, type GameColors } from '../game-color';
+import { serverRegionLabel } from '../server-region';
 
 /**
  * The live roster in the user's own order — the list every picker shows.
@@ -24,4 +25,17 @@ export function rosterGames(games: readonly Game[]): Game[] {
  */
 export function useIdentityColors(games: readonly Game[]): Record<string, GameColors> {
   return useMemo(() => resolveGameIdentityColors(games.filter((game) => !game.deleted)), [games]);
+}
+
+/**
+ * The words that tell two accounts of one game apart: the player's own label,
+ * else, when the roster holds the game twice, its server region. Empty for a
+ * game tracked once without a label.
+ */
+export function gameAccountTag(game: Game, allGames: readonly Game[], now?: number): string {
+  const label = game.accountLabel?.trim() || '';
+  if (label) return label;
+  const kind = game.presetKey ?? game.name;
+  const twins = allGames.filter((item) => !item.deleted && (item.presetKey ?? item.name) === kind).length;
+  return twins > 1 ? serverRegionLabel(game.tz, now ?? Date.now()) : '';
 }

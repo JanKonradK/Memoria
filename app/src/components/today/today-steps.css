@@ -16,12 +16,15 @@
   background: var(--color-line-edge);
   overflow: hidden;
 }
+/* Scaled, not resized, so a tick moves on the compositor without a layout pass.
+   The tube's own rounded clip shapes the ends. */
 .today-progress-tube > span {
   display: block;
+  width: 100%;
   height: 100%;
-  border-radius: inherit;
   background: var(--color-ok);
-  transition: width var(--dur-fast) var(--ease-out);
+  transform-origin: left;
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 @media (max-width: 767px) {
   .today-bar .page-title {
@@ -123,6 +126,23 @@
 .today-strip-faces > .game-logo + .game-logo {
   margin-left: -6px;
 }
+/* More games than coins at one time: the rest as a count, the coins' height. */
+.today-strip-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  margin-left: -6px;
+  padding-inline: 5px;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  box-shadow: 0 0 0 2px var(--color-surface-0);
+  font-size: var(--text-label);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--color-fg-soft);
+}
 .today-strip-stem {
   width: 2px;
   height: 10px;
@@ -176,6 +196,11 @@
     height: 18px !important;
     --logo-size: 18px !important;
   }
+  .today-strip-more {
+    min-width: 18px;
+    height: 18px;
+    padding-inline: 4px;
+  }
 }
 
 /* The list beside its side column; the column drops under it on narrow windows. */
@@ -192,17 +217,19 @@
   max-width: 900px;
   margin-left: -12px;
 }
+/* More air between groups than inside them: each deadline reads as its own
+   block, and its rule sits close to the steps it heads. */
 .today-steps-group {
-  margin-top: 24px;
+  margin-top: 28px;
 }
 .today-steps-group:first-child {
-  margin-top: 16px;
+  margin-top: 18px;
 }
 .today-steps-rule {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  margin: 0 12px 4px;
+  margin: 0 12px 6px;
 }
 .today-steps-rule h2 {
   margin: 0;
@@ -246,15 +273,22 @@
   grid-template-columns: 22px minmax(0, 1fr) auto 96px;
   align-items: center;
   gap: 14px;
-  min-height: 62px;
-  padding: 9px 12px;
+  min-height: 58px;
+  padding: 8px 12px;
   border-radius: var(--radius-ui-md);
-  transition: background var(--dur-fast) var(--ease-out);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    scale var(--dur-fast) var(--ease-out);
 }
 @media (hover: hover) {
   .today-step:hover {
     background: var(--color-fill-1);
   }
+}
+/* A press is felt at once. Never while a value is being typed: the field
+   under the caret must not move. `scale`, so it never fights a FLIP glide. */
+.today-step:not(:has(input:focus)):active {
+  scale: 0.99;
 }
 .today-step:focus-within {
   background: var(--color-fill-1);
@@ -474,6 +508,14 @@
 }
 .today-steps-done .today-steps-list {
   margin: 0 -12px;
+  animation: doneReveal var(--dur-base) var(--ease-out);
+}
+/* Opening Done today lets the finished steps settle in under the rule. */
+@keyframes doneReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 
 /* The side column. */
@@ -494,6 +536,9 @@
     max-height: calc(100dvh - var(--app-bar-h));
     overflow-y: auto;
     scrollbar-width: thin;
+    /* A hairline anchors the column to the list it serves. */
+    padding-left: 28px;
+    border-left: 1px solid var(--color-line-hairline);
   }
 }
 .today-side ul {
@@ -528,6 +573,12 @@
   box-sizing: content-box;
   border-radius: var(--radius-ui-md);
   text-align: left;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    scale var(--dur-fast) var(--ease-out);
+}
+.today-side-row:active {
+  scale: 0.99;
 }
 @media (hover: hover) {
   .today-side-row:hover {
@@ -602,7 +653,7 @@
     font-size: 0.9375rem;
   }
   .today-step {
-    grid-template-columns: minmax(0, 1fr) auto 52px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(56px, max-content);
     gap: 10px;
     min-height: 60px;
     padding: 7px 8px;
@@ -654,8 +705,16 @@
 @media (prefers-reduced-motion: reduce) {
   .today-progress-tube > span,
   .today-step,
+  .today-side-row,
   .today-steps-done-toggle > svg {
     transition: none;
+  }
+  .today-step:not(:has(input:focus)):active,
+  .today-side-row:active {
+    scale: none;
+  }
+  .today-steps-done .today-steps-list {
+    animation: none;
   }
 }
 
@@ -723,5 +782,49 @@
 @media (prefers-reduced-motion: reduce) {
   .today-step-bank-tube i {
     transition: none;
+  }
+}
+
+/* A bar never read asks for its reading where a countdown would sit. */
+.today-step-when b.today-step-ask {
+  font-size: var(--text-meta);
+  font-weight: 600;
+  color: var(--color-accent-fg);
+}
+.today-step-account {
+  font-weight: 500;
+}
+/* Other bars are not steps: no number of their own. */
+.today-steps-other .today-step-idx {
+  visibility: hidden;
+}
+
+/* The order waits while the list is in use; this says so and offers it now. */
+.today-steps-paused {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 12px 4px;
+}
+.today-steps-paused button {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-ui-full);
+  background: var(--color-fill-2);
+  box-shadow: inset 0 0 0 1px var(--color-line-hairline);
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--color-fg-soft);
+}
+.today-steps-paused button span {
+  color: var(--color-accent-fg);
+}
+@media (hover: hover) {
+  .today-steps-paused button:hover {
+    background: var(--color-fill-3);
+  }
+}
+@media (pointer: coarse) {
+  .today-steps-paused button {
+    min-height: 44px;
   }
 }

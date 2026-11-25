@@ -4,7 +4,7 @@ import { useUI, type GameEditorSection } from '../ui-store';
 import { ServerSelect } from './ServerSelect';
 import { useGameDraft } from './game-detail/useGameDraft';
 import { GameEditor } from './settings/GameEditor';
-import { Sheet } from './Sheet';
+import { confirmDiscard, Sheet } from './Sheet';
 import { Btn, COMPACT_INPUT, Field, TextInput } from './ui';
 
 const ACCOUNT_DRAFT_FIELDS = ['accountLabel'] as const;
@@ -29,14 +29,14 @@ export function GameDetailSheet({
   open: boolean;
   initialSection?: GameEditorSection;
 }) {
-  const state = useApp((store) => store.state);
+  const games = useApp((s) => s.state.games);
   const updateGame = useApp((store) => store.updateGame);
   const deleteGame = useApp((store) => store.deleteGame);
   const closeSheet = useUI((store) => store.closeSheet);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [dirty, setDirty] = useState(false);
   // Keep a soft-deleted game visible until its sheet finishes exiting.
-  const game = state.games.find((candidate) => candidate.id === gameId);
+  const game = games.find((candidate) => candidate.id === gameId);
   const { changeDraft, commitDraft, draft } = useGameDraft(game, ACCOUNT_DRAFT_FIELDS, open);
 
   if (!game) return null;
@@ -65,8 +65,8 @@ export function GameDetailSheet({
           </span>
           <Btn
             kind="primary"
-            onClick={() => {
-              if (!dirty || window.confirm('Discard your unsaved changes?')) close();
+            onClick={async () => {
+              if (!dirty || (await confirmDiscard())) close();
             }}
           >
             Done

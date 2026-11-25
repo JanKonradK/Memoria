@@ -39,7 +39,8 @@ export interface ChecklistLine {
   text: string;
 }
 
-const CHECK = /^(\s*)[-*]\s\[( |x|X)\]\s?(.*)$/;
+/** A body pasted or imported with Windows line endings keeps a `\r` on each line; it is not part of the item. */
+const CHECK = /^(\s*)[-*]\s\[( |x|X)\][^\S\r\n]?(.*?)(\r?)$/;
 
 /** Every line, as text or as a checklist item. */
 export function noteLines(body: string): (ChecklistLine | { line: number; text: string; done?: undefined })[] {
@@ -67,7 +68,7 @@ export function toggleChecklistLine(body: string, line: number): string {
   const lines = body.split('\n');
   const match = CHECK.exec(lines[line] ?? '');
   if (!match) return body;
-  lines[line] = `${match[1]}- [${match[2] === ' ' ? 'x' : ' '}] ${match[3]}`;
+  lines[line] = `${match[1]}- [${match[2] === ' ' ? 'x' : ' '}] ${match[3]}${match[4]}`;
   return lines.join('\n');
 }
 

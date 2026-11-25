@@ -31,8 +31,25 @@ $result = foreach ($network in $networks) {
 @{ networks = @($result) } | ConvertTo-Json -Compress -Depth 4
 "#;
 
+/// A PowerShell single-quoted string literal. PowerShell treats the curly
+/// single quotes (U+2018, U+2019, U+201A, U+201B) exactly like an ASCII `'`,
+/// so each of those is doubled too; otherwise a path such as `C:\Users\O’Neil`
+/// would end the string early and run the rest as code.
+pub fn powershell_quote(text: &str) -> String {
+    let mut quoted = String::with_capacity(text.len() + 2);
+    quoted.push('\'');
+    for ch in text.chars() {
+        if matches!(ch, '\'' | '\u{2018}' | '\u{2019}' | '\u{201A}' | '\u{201B}') {
+            quoted.push(ch);
+        }
+        quoted.push(ch);
+    }
+    quoted.push('\'');
+    quoted
+}
+
 fn quote(text: &str) -> String {
-    format!("'{}'", text.replace('\'', "''"))
+    powershell_quote(text)
 }
 
 /// The elevated script: the fixed text above, told which Memoria.exe to allow.
@@ -144,5 +161,16 @@ mod tests {
         // A game tracker does not change how Windows treats every program on a network.
         assert!(!command.contains("Set-NetConnectionProfile"));
         assert!(check_command(path).starts_with("$program = 'C:\\Users\\O''Neil\\Memoria.exe'\n"));
+    }
+
+    #[test]
+    fn smart_quotes_in_a_path_are_doubled_like_ascii_quotes() {
+        let path = std::path::Path::new("C:\\Users\\O\u{2019}Neil \u{2018}a\u{201A}b\u{201B}\\Memoria.exe");
+        assert_eq!(
+            allow_command(path).lines().next().unwrap(),
+            "$program = 'C:\\Users\\O\u{2019}\u{2019}Neil \u{2018}\u{2018}a\u{201A}\u{201A}b\u{201B}\u{201B}\\Memoria.exe'"
+        );
+        assert_eq!(powershell_quote("a'b"), "'a''b'");
+        assert_eq!(powershell_quote(""), "''");
     }
 }

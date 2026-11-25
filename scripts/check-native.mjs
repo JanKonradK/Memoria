@@ -338,7 +338,7 @@ try {
   expect(surface).toMatchObject({
     node: 'undefined',
     process: 'undefined',
-    bridge: ['completeClose', 'launch', 'onCloseRequested', 'presence', 'update', 'version'],
+    bridge: ['completeClose', 'connectors', 'launch', 'onCloseRequested', 'presence', 'update', 'version'],
     workers: 0,
     presence: { canStartWithWindows: false, closeToTray: false, gameWatch: true },
   });
@@ -377,14 +377,13 @@ try {
   await page.getByRole('tab', { name: 'Tasks', exact: true }).click();
   const draft = page.getByRole('textbox', { name: 'New task name', exact: true });
   await draft.fill('Keep my unsaved task');
-  const confirmation = page.waitForEvent('dialog');
+  const confirm = page.getByRole('alertdialog', { name: 'Close Memoria and discard your unsaved changes?' });
   await run('powershell', ['-NoProfile', '-Command', `(Get-Process -Id ${app.pid}).CloseMainWindow() | Out-Null`], {
     windowsHide: true,
   });
-  const dialog = await confirmation;
-  expect(dialog.type()).toBe('confirm');
-  expect(dialog.message()).toContain('unsaved changes');
-  await dialog.dismiss();
+  await expect(confirm).toBeVisible();
+  await confirm.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(confirm).toHaveCount(0);
   await expect(draft).toHaveValue('Keep my unsaved task');
   await page.waitForTimeout(500);
   expect(app.exitCode).toBe(null);

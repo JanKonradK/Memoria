@@ -1,14 +1,22 @@
 import {
   assertSyncProtocol,
+  boundHistory,
   checkpoint,
+  compactState,
   emptyHistory,
+  localDayKey,
+  presetTaskAnchor,
   recordAction,
   restoreCheckpoint,
   sameValue,
   stampChanges,
+  TOMBSTONE_RETENTION_MS,
   undoAction,
   checklistFor,
+  eventPartsPatch,
+  eventProgressPatch,
   isTickableDaily,
+  type EventProgress,
   type LocalHistory,
 } from '@memoria/shared';
 import { create } from 'zustand';
@@ -18,6 +26,7 @@ import type {
   AppState,
   Cadence,
   Game,
+  GameCode,
   GameEvent,
   GamePreset,
   RemoteEventImportResult,
@@ -61,6 +70,12 @@ import {
   presetForGame,
   RemoteEventFeedSchema,
   MAX_EVENT_FEED_BYTES,
+  applyConnectorObservation as applyObservation,
+  taskPeriodKey,
+  defaultRedeemUrl,
+  MAX_CODE_LENGTH,
+  type ConnectorObservation,
+  type ObservationProvenance,
 } from '@memoria/shared';
 import {
   planSeedImport,
@@ -73,6 +88,7 @@ import { uid } from './util';
 import { launcherFetch, servedByLauncher } from './launcher';
 
 const IDB_KEY = 'memoria-state';
+const IDB_HISTORY_KEY = 'memoria-history';
 /**
  * Every key this store has shipped under, newest first. The app has been renamed
  * twice and this is the user's ONLY copy of their data — a rename that dropped
@@ -102,7 +118,7 @@ function tasksFromPreset(tasks: GamePreset['tasks'], gameId: string, at: number,
     name: task.name,
     cadence: task.cadence,
     intervalDays: task.intervalDays ?? 1,
-    anchorAt: at,
+    anchorAt: presetTaskAnchor(task, at),
     mode: task.mode,
     timerDurationMinutes: task.timerDurationMinutes,
     timerStepMinutes: task.timerStepMinutes,
@@ -129,6 +145,30 @@ function patchIn<T extends { id: string; updatedAt: number }>(list: T[], id: str
 }
 
 type EventUpsert = Partial<GameEvent> & { gameId: string };
+
+/** Most codes one game keeps; matches GameSchema. */
+const MAX_GAME_CODES = 200;
+
+export interface GameCodeEntry {
+  code: string;
+  rewards?: string;
+  expiresAt?: number;
+  redeemUrl?: string;
+}
+
+/** Replaces one live game's saved codes under `label`, so the change lands in history and Undo. */
+function patchGameCodes(
+  batch: AppStore['batch'],
+  gameId: string,
+  label: string,
+  change: (codes: GameCode[]) => GameCode[],
+): void {
+  batch((s) => {
+    const game = s.games.find((item) => item.id === gameId && !item.deleted);
+    if (!game) return s;
+    return { ...s, games: patchIn(s.games, gameId, { codes: change(game.codes ?? []) }) };
+  }, label);
+}
 
 function applyEventUpsert(byId: Map<string, GameEvent>, ev: EventUpsert): void {
   if (ev.id) {
@@ -162,6 +202,10 @@ function applyEventUpsert(byId: Map<string, GameEvent>, ev: EventUpsert): void {
   byId.set(item.id, item);
 }
 
+function liveEvent(state: AppState, id: string): GameEvent | undefined {
+  return state.events.find((event) => event.id === id && !event.deleted);
+}
+
 function tombstone<T extends { id: string; updatedAt: number; deleted?: boolean }>(
   list: T[],
   match: (x: T) => boolean,
@@ -170,15 +214,21 @@ function tombstone<T extends { id: string; updatedAt: number; deleted?: boolean 
 }
 
 /** Manual readings and resource-rule edits use the same ordering and retention. */
-function recordEnergySnapshot(state: AppState, reading: Omit<Snapshot, 'id' | 'takenAt'>, at: number): AppState {
+function recordEnergySnapshot(
+  state: AppState,
+  reading: Omit<Snapshot, 'id' | 'takenAt'>,
+  at: number,
+  takenAtOverride?: number,
+): AppState {
   const mine = state.snapshots.filter((snapshot) => snapshot.resourceId === reading.resourceId);
   mine.sort((a, b) => b.takenAt - a.takenAt);
   // A new reading must win even when a seed or earlier edit has the same timestamp.
+  const prevTakenAt = mine.find((item) => item.provenance?.kind !== 'estimate')?.takenAt ?? 0;
   const snapshot: Snapshot = {
     ...reading,
     provenance: reading.provenance ?? { kind: 'manual', observedAt: at, importedAt: at },
     id: uid(),
-    takenAt: Math.max(at, (mine.find((item) => item.provenance?.kind !== 'estimate')?.takenAt ?? 0) + 1),
+    takenAt: Math.max(takenAtOverride ?? at, prevTakenAt + 1),
   };
   const keep = new Set(mine.slice(0, SNAPSHOTS_KEPT - 1).map((item) => item.id));
   return {
@@ -190,18 +240,114 @@ function recordEnergySnapshot(state: AppState, reading: Omit<Snapshot, 'id' | 't
   };
 }
 
+export interface ScreenshotReadingsInput {
+  gameId: string;
+  observedAt: number;
+  provider: string;
+  readings: Array<{ resourceId: string; value: number; reserve?: number }>;
+  tasks: Array<{ taskId: string; action: 'done' | 'count'; countDone?: number }>;
+  savings?: { currency?: number; tickets?: number };
+  /** Endgame cycles (Spiral Abyss, Memory of Chaos…) the screenshot showed progress on. */
+  events?: Array<{ eventId: string; progress: EventProgress }>;
+}
+
+const MAX_SAVINGS_AMOUNT = 100_000_000;
+
+function clampInt(value: number, max: number): number | undefined {
+  return Number.isFinite(value) ? Math.min(max, Math.max(0, Math.round(value))) : undefined;
+}
+
 let persistTimer: ReturnType<typeof setTimeout> | undefined;
-type StoredDocument = AppState & { localHistory: LocalHistory };
-let pendingPersist: StoredDocument | null = null;
+type LegacyStoredDocument = AppState & { localHistory?: LocalHistory };
+let pendingState: AppState | null = null;
+let pendingHistory: LocalHistory | null = null;
+let pendingBroadcast = false;
+let lastWrittenState: AppState | null = null;
+let lastWrittenHistory: LocalHistory | null = null;
 let persistInFlight: Promise<void> | null = null;
 let storageEpoch = 0;
 let storedReadInFlight: { epoch: number; promise: Promise<unknown> } | null = null;
 let migrationWriteInFlight: Promise<void> | null = null;
 let clearInFlight: Promise<void> | null = null;
+const TAB_ID = uid();
+let tabChannel: BroadcastChannel | null = null;
 
-function persist(state: AppState): void {
+function withIdbLock<T>(fn: () => Promise<T>): Promise<T> {
+  if (typeof navigator !== 'undefined' && navigator.locks && typeof navigator.locks.request === 'function') {
+    return navigator.locks.request('memoria-idb-write', () => fn());
+  }
+  return fn();
+}
+
+function ensureTabChannel(): void {
+  if (tabChannel || servedByLauncher() || typeof BroadcastChannel === 'undefined') return;
+  const channel = new BroadcastChannel('memoria-state');
+  channel.addEventListener('message', (event: MessageEvent<{ type?: unknown; sender?: unknown }>) => {
+    const data = event.data;
+    if (!data || typeof data !== 'object' || data.sender === TAB_ID) return;
+    if (data.type === 'cleared') {
+      void useApp.getState().load();
+      return;
+    }
+    if (data.type === 'saved') {
+      const epoch = storageEpoch;
+      void Promise.resolve(idbGet(IDB_KEY))
+        .then((latest) => {
+          if (epoch !== storageEpoch || !latest) return;
+          const parsed = safeParseAppState(latest);
+          if (!parsed.success) return;
+          useApp.getState().replaceState(mergeState(useApp.getState().state, normalizeState(parsed.data)));
+        })
+        .catch(() => undefined);
+    }
+  });
+  tabChannel = channel;
+}
+
+function notifyOtherTabs(type: 'saved' | 'cleared'): void {
+  if (servedByLauncher()) return;
+  ensureTabChannel();
+  try {
+    tabChannel?.postMessage({ type, sender: TAB_ID });
+  } catch {
+    tabChannel = null;
+  }
+}
+
+export function closeTabSyncForTest(): void {
+  try {
+    tabChannel?.close();
+  } catch {
+    // Ignore already-closed test channels.
+  }
+  tabChannel = null;
+}
+
+function ensureDailyCheckpoint(
+  history: LocalHistory,
+  state: AppState,
+  at: number,
+): { history: LocalHistory; added: boolean } {
+  const day = localDayKey(at, state.settings.localTz);
+  if (
+    history.checkpoints.some(
+      (item) => item.label === 'Daily checkpoint' && localDayKey(item.at, state.settings.localTz) === day,
+    )
+  ) {
+    return { history, added: false };
+  }
+  return { history: checkpoint(history, state, 'Daily checkpoint', at, uid()), added: true };
+}
+
+function persist(
+  state: AppState,
+  history: LocalHistory = useApp.getState().history,
+  options: { broadcast?: boolean } = {},
+): void {
   clearTimeout(persistTimer);
-  pendingPersist = { ...state, localHistory: useApp.getState().history };
+  pendingState = state;
+  pendingHistory = history;
+  if (options.broadcast) pendingBroadcast = true;
   persistTimer = setTimeout(() => {
     void flushPersist().catch(() => undefined);
   }, 120);
@@ -218,20 +364,38 @@ export async function flushPersist(): Promise<void> {
     await persistInFlight;
     return flushPersist();
   }
-  const pending = pendingPersist;
-  if (!pending) return;
-  pendingPersist = null;
+  const state = pendingState;
+  const history = pendingHistory;
+  const broadcast = pendingBroadcast;
+  if (!state && !history) return;
+  pendingState = null;
+  pendingHistory = null;
+  pendingBroadcast = false;
   // This is the last boundary shared by every local writer. Keeping the guard
   // here preserves debounce performance while making an invalid disk write
   // impossible even if a future mutation forgets its own range check.
   persistInFlight = (async () => {
+    let wroteState = false;
     try {
-      assertStateCapacity(pending);
-      await idbSet(IDB_KEY, { ...normalizeState(pending), localHistory: pending.localHistory });
+      await withIdbLock(async () => {
+        if (state && state !== lastWrittenState) {
+          assertStateCapacity(state);
+          await idbSet(IDB_KEY, normalizeState(state));
+          lastWrittenState = state;
+          wroteState = true;
+        }
+        if (history && history !== lastWrittenHistory) {
+          await idbSet(IDB_HISTORY_KEY, history);
+          lastWrittenHistory = history;
+        }
+      });
       if (useApp.getState().saveError) useApp.setState({ saveError: '' });
+      if (broadcast && wroteState) notifyOtherTabs('saved');
     } catch (error) {
-      // A newer edit takes priority. Otherwise retain this exact document for retry.
-      pendingPersist ??= pending;
+      // A newer edit takes priority. Otherwise retain unfinished writes for retry.
+      if (!wroteState && state) pendingState ??= state;
+      if (history && history !== lastWrittenHistory) pendingHistory ??= history;
+      pendingBroadcast ||= broadcast;
       useApp.setState({
         saveError: error instanceof Error ? error.message : 'The device could not save your changes.',
       });
@@ -243,7 +407,7 @@ export async function flushPersist(): Promise<void> {
   } finally {
     persistInFlight = null;
   }
-  if (pendingPersist) await flushPersist();
+  if (pendingState || pendingHistory) await flushPersist();
 }
 
 function sameJson(left: unknown, right: unknown): boolean {
@@ -630,6 +794,10 @@ export interface AppStore {
   addBlankGame(name: string): string;
   updateGame(id: string, patch: Partial<Game>): void;
   deleteGame(id: string): void;
+  /** Saves new redemption codes for one game, skipping any it has (any case). Returns how many were added. */
+  addGameCodes(gameId: string, entries: GameCodeEntry[]): number;
+  toggleGameCodeRedeemed(gameId: string, codeId: string): void;
+  removeGameCode(gameId: string, codeId: string): void;
 
   upsertResource(res: Partial<Resource> & { gameId: string }): void;
   deleteResource(id: string): void;
@@ -637,7 +805,15 @@ export interface AppStore {
   upsertChip(chip: Partial<QuickChip> & { gameId: string }): void;
   deleteChip(id: string): void;
 
-  setEnergy(resourceId: string, value: number, reserve?: number): void;
+  /** `provenance` marks a reading that came from somewhere other than the player's hand (a screenshot). */
+  setEnergy(resourceId: string, value: number, reserve?: number, provenance?: ObservationProvenance): void;
+  /**
+   * Everything the player confirmed from one screenshot, as one history entry:
+   * bars, task progress and savings. One Undo restores all of it.
+   */
+  applyScreenshotReadings(input: ScreenshotReadingsInput): void;
+  /** Writes a live account reading into one game. Returns how many records changed. */
+  applyConnectorObservation(gameId: string, obs: ConnectorObservation): number;
   adjustEnergy(resourceId: string, delta: number): void;
   importRemoteEvents(payload: unknown): RemoteEventImportResult;
 
@@ -656,6 +832,11 @@ export interface AppStore {
   upsertEvent(ev: EventUpsert): void;
   upsertEvents(list: EventUpsert[]): void;
   deleteEvent(id: string): void;
+  /** Every surface that ticks an event goes through these three, so a stored part count is kept. */
+  setEventProgress(eventId: string, progress: EventProgress): void;
+  /** Done when not done; not started when done. */
+  toggleEventDone(eventId: string): void;
+  setEventPartsDone(eventId: string, partsDone: number): void;
 
   upsertRule(rule: Partial<AlertRule> & { type: AlertRule['type']; gameId: string | null }): void;
   clearRule(type: AlertRule['type'], gameId: string | null): void;
@@ -713,36 +894,71 @@ export const useApp = create<AppStore>((set, get) => ({
     }
     if (epoch !== storageEpoch) return;
     try {
-      const disk = await readStoredState(epoch);
-      const localHistory = (disk as StoredDocument | undefined)?.localHistory;
+      ensureTabChannel();
+      const [disk, storedHistory] = await Promise.all([readStoredState(epoch), idbGet<LocalHistory>(IDB_HISTORY_KEY)]);
+      const legacyHistory = (disk as LegacyStoredDocument | undefined)?.localHistory;
       const raw =
         disk && typeof disk === 'object'
           ? Object.fromEntries(Object.entries(disk).filter(([key]) => key !== 'localHistory'))
           : disk;
       const stored = stateForStorage(raw);
       if (epoch !== storageEpoch) return;
+      const at = now();
       const editedWhileLoading = get().loaded && get().state !== before;
-      let history = editedWhileLoading ? get().history : (localHistory ?? emptyHistory(uid()));
-      let next = editedWhileLoading ? collapseSourceTwins(mergeState(stored.state, get().state), now()) : stored.state;
+      const boundedStoredHistory = storedHistory ? boundHistory(storedHistory) : undefined;
+      let history = editedWhileLoading
+        ? get().history
+        : boundedStoredHistory
+          ? boundedStoredHistory
+          : legacyHistory
+            ? boundHistory(legacyHistory)
+            : emptyHistory(uid());
+      let next = editedWhileLoading ? collapseSourceTwins(mergeState(stored.state, get().state), at) : stored.state;
       if (stored.repaired && raw) {
         // Keep the original pre-migration document for recovery, including removed fields.
-        const original = { ...(raw as StoredDocument) };
-        delete (original as Partial<StoredDocument>).localHistory;
-        history = checkpoint(history, original as AppState, 'Before migration', now(), uid());
+        const original = { ...(raw as LegacyStoredDocument) };
+        delete original.localHistory;
+        history = checkpoint(history, original as AppState, 'Before migration', at, uid());
         const baseline = normalizeState(raw);
-        const stamped = stampChanges(baseline, next, history, now());
+        const stamped = stampChanges(baseline, next, history, at);
         next = stamped.state;
-        history = recordAction({ ...history, clock: stamped.clock }, raw as AppState, next, 'Migration', now(), uid());
+        history = recordAction({ ...history, clock: stamped.clock }, raw as AppState, next, 'Migration', at, uid());
       }
-      const day = new Date(now()).toISOString().slice(0, 10);
-      if (
-        !history.checkpoints.some(
-          (item) => item.label === 'Daily checkpoint' && new Date(item.at).toISOString().slice(0, 10) === day,
-        )
-      )
-        history = checkpoint(history, next, 'Daily checkpoint', now(), uid());
+      const compacted = compactState(next, at - TOMBSTONE_RETENTION_MS);
+      const compactedSomething =
+        compacted.games.length !== next.games.length ||
+        compacted.resources.length !== next.resources.length ||
+        compacted.tasks.length !== next.tasks.length ||
+        compacted.completions.length !== next.completions.length ||
+        compacted.events.length !== next.events.length ||
+        compacted.chips.length !== next.chips.length ||
+        compacted.alertRules.length !== next.alertRules.length ||
+        compacted.reminders.length !== next.reminders.length ||
+        compacted.questMarks.length !== next.questMarks.length ||
+        compacted.customQuests.length !== next.customQuests.length ||
+        compacted.notes.length !== next.notes.length;
+      if (compactedSomething) next = compacted;
+      const daily = ensureDailyCheckpoint(history, next, at);
+      history = daily.history;
+      const stateUnchangedOnDisk =
+        raw !== undefined &&
+        !editedWhileLoading &&
+        !stored.repaired &&
+        legacyHistory === undefined &&
+        !compactedSomething;
+      const historyUnchangedOnDisk =
+        raw !== undefined &&
+        !editedWhileLoading &&
+        !stored.repaired &&
+        legacyHistory === undefined &&
+        storedHistory !== undefined &&
+        history === storedHistory;
+      lastWrittenState = stateUnchangedOnDisk ? next : null;
+      lastWrittenHistory = historyUnchangedOnDisk ? history : null;
       set({ state: next, history, loaded: true, loadError: '' });
-      if (raw !== undefined || editedWhileLoading) persist(next);
+      if (raw !== undefined || editedWhileLoading || legacyHistory !== undefined || storedHistory !== undefined) {
+        persist(next, history, { broadcast: false });
+      }
       // Each game's old single notes box becomes a note of its own (notes.ts).
       if (get().state.games.some((game) => game.notes)) get().batch((state) => adoptGameNotes(state, now()), 'Notes');
       const seedPlan = planSeedImport(get().state, now());
@@ -761,7 +977,11 @@ export const useApp = create<AppStore>((set, get) => ({
     ++storageEpoch;
     clearTimeout(persistTimer);
     persistTimer = undefined;
-    pendingPersist = null;
+    pendingState = null;
+    pendingHistory = null;
+    pendingBroadcast = false;
+    lastWrittenState = null;
+    lastWrittenHistory = null;
     const clearing = (async () => {
       try {
         // Finish an older write before deleting, so it cannot restore cleared data.
@@ -769,8 +989,13 @@ export const useApp = create<AppStore>((set, get) => ({
         // An adoption write may have already started before this epoch changed.
         // Wait only for that write; stale reads can finish later and are ignored.
         await migrationWriteInFlight?.catch(() => undefined);
-        pendingPersist = null;
+        pendingState = null;
+        pendingHistory = null;
+        pendingBroadcast = false;
+        lastWrittenState = null;
+        lastWrittenHistory = null;
         await idbDel(IDB_KEY);
+        await idbDel(IDB_HISTORY_KEY);
         // Every legacy document, INCLUDING the identity-suffixed ones the reader
         // deliberately leaves in place. Adoption is conservative because it must
         // not destroy data; an explicit wipe is the opposite, and leaving another
@@ -787,6 +1012,7 @@ export const useApp = create<AppStore>((set, get) => ({
           // Restricted localStorage must not prevent clearing the main database.
         }
         set({ state: emptyState(), history: emptyHistory(uid()), loaded: true, loadError: '', saveError: '' });
+        notifyOtherTabs('cleared');
       } catch (error) {
         set({ loadError: error instanceof Error ? error.message : 'Local data could not be cleared.' });
       }
@@ -808,13 +1034,7 @@ export const useApp = create<AppStore>((set, get) => ({
     const before = get().state;
     if (sameJson(before, repaired)) return;
     const history = recordAction(
-      checkpoint(
-        repair ? { ...get().history, clock: repair.clock } : get().history,
-        before,
-        'Before sync',
-        now(),
-        uid(),
-      ),
+      repair ? { ...get().history, clock: repair.clock } : get().history,
       before,
       repaired,
       'Sync arrivals',
@@ -822,7 +1042,7 @@ export const useApp = create<AppStore>((set, get) => ({
       uid(),
     );
     set({ state: repaired, history });
-    persist(repaired);
+    persist(repaired, history, { broadcast: false });
     if (repaired !== next) announceMutation();
   },
 
@@ -850,18 +1070,14 @@ export const useApp = create<AppStore>((set, get) => ({
     const at = now();
     if (label.includes('import') || label === 'Feed import' || label === 'Restore checkpoint')
       history = checkpoint(history, state, `Before ${label.toLowerCase()}`, at, uid());
-    const day = new Date(at).toISOString().slice(0, 10);
-    if (
-      !history.checkpoints.some(
-        (item) => item.label === 'Daily checkpoint' && new Date(item.at).toISOString().slice(0, 10) === day,
-      )
-    )
-      history = checkpoint(history, state, 'Daily checkpoint', at, uid());
+    const daily = ensureDailyCheckpoint(history, state, at);
+    history = daily.history;
     const stamped = stampChanges(state, collapseSourceTwins(changed, at), history, at);
     if (sameJson(state, stamped.state)) return;
     history = recordAction({ ...history, clock: stamped.clock }, state, stamped.state, label, at, uid());
-    set({ state: stamped.state, history });
-    persist(stamped.state);
+    const finalState = daily.added ? compactState(stamped.state, at - TOMBSTONE_RETENTION_MS) : stamped.state;
+    set({ state: finalState, history });
+    persist(finalState, history, { broadcast: true });
     announceMutation();
   },
 
@@ -879,7 +1095,7 @@ export const useApp = create<AppStore>((set, get) => ({
       },
     });
     get().batch(() => next, `Undo: ${entry.label}`);
-    persist(get().state);
+    persist(get().state, get().history, { broadcast: true });
   },
 
   restoreSavedCheckpoint(id) {
@@ -1039,6 +1255,57 @@ export const useApp = create<AppStore>((set, get) => ({
     get().mutate((s) => ({ ...s, games: patchIn(s.games, id, patch) }));
   },
 
+  addGameCodes(gameId, entries) {
+    const game = get().state.games.find((item) => item.id === gameId && !item.deleted);
+    if (!game) return 0;
+    const presetKey = game.presetKey ?? presetForGame(game)?.key;
+    const existing = game.codes ?? [];
+    const seen = new Set(existing.map((item) => item.code.toLowerCase()));
+    const room = MAX_GAME_CODES - existing.length;
+    const addedAt = now();
+    const added: GameCode[] = [];
+    for (const entry of entries) {
+      if (added.length >= room) break;
+      const code = entry.code.trim();
+      if (!code || code.length > MAX_CODE_LENGTH || seen.has(code.toLowerCase())) continue;
+      seen.add(code.toLowerCase());
+      const rewards = entry.rewards?.trim().slice(0, 200);
+      const link = entry.redeemUrl?.trim();
+      const redeemUrl =
+        link && link.startsWith('https://') && link.length <= 500 ? link : defaultRedeemUrl(presetKey, code);
+      const expiresAt =
+        entry.expiresAt !== undefined && Number.isFinite(entry.expiresAt) && entry.expiresAt > 0
+          ? Math.round(entry.expiresAt)
+          : undefined;
+      added.push({
+        id: uid(),
+        code,
+        addedAt,
+        ...(rewards ? { rewards } : {}),
+        ...(expiresAt !== undefined ? { expiresAt } : {}),
+        ...(redeemUrl ? { redeemUrl } : {}),
+      });
+    }
+    if (added.length === 0) return 0;
+    patchGameCodes(get().batch, gameId, 'Add codes', (codes) => [...codes, ...added]);
+    return added.length;
+  },
+
+  toggleGameCodeRedeemed(gameId, codeId) {
+    const game = get().state.games.find((item) => item.id === gameId && !item.deleted);
+    const code = game?.codes?.find((item) => item.id === codeId);
+    if (!code) return;
+    patchGameCodes(get().batch, gameId, code.redeemed ? 'Unmark code' : 'Mark code redeemed', (codes) =>
+      codes.map((item) => (item.id === codeId ? { ...item, redeemed: !item.redeemed } : item)),
+    );
+  },
+
+  removeGameCode(gameId, codeId) {
+    const game = get().state.games.find((item) => item.id === gameId && !item.deleted);
+    if (!game?.codes?.some((item) => item.id === codeId)) return;
+    patchGameCodes(get().batch, gameId, 'Remove code', (codes) => codes.filter((item) => item.id !== codeId));
+  },
+
   deleteGame(id) {
     get().mutate((s) => ({
       ...s,
@@ -1158,7 +1425,7 @@ export const useApp = create<AppStore>((set, get) => ({
     get().mutate((s) => ({ ...s, chips: tombstone(s.chips, (c) => c.id === id) }));
   },
 
-  setEnergy(resourceId, value, reserve) {
+  setEnergy(resourceId, value, reserve, provenance) {
     get().mutate((s) => {
       const res = s.resources.find((item) => item.id === resourceId && !item.deleted);
       if (!res) return s;
@@ -1176,25 +1443,145 @@ export const useApp = create<AppStore>((set, get) => ({
         keptReserve != null && res.reserveCap > 0
           ? Math.min(res.reserveCap, Math.max(0, Math.round(keptReserve)))
           : undefined;
+      const at = now();
+      // A screenshot shows the bar as it was when it was taken, so the reading dates from then.
+      const takenAt = provenance && provenance.kind !== 'manual' ? Math.min(at, provenance.observedAt) : undefined;
       return recordEnergySnapshot(
         s,
-        { resourceId, value: clamped, ...(clampedReserve != null ? { reserve: clampedReserve } : {}) },
-        now(),
+        {
+          resourceId,
+          value: clamped,
+          ...(clampedReserve != null ? { reserve: clampedReserve } : {}),
+          ...(provenance ? { provenance } : {}),
+        },
+        at,
+        takenAt,
       );
     });
   },
 
+  applyScreenshotReadings(input) {
+    get().batch((start) => {
+      const game = start.games.find((item) => item.id === input.gameId && !item.deleted);
+      if (!game) return start;
+      const at = now();
+      const observedAt =
+        Number.isFinite(input.observedAt) && input.observedAt > 0 ? Math.min(at, Math.round(input.observedAt)) : at;
+      const provenance: ObservationProvenance = {
+        kind: 'screenshot',
+        provider: input.provider,
+        observedAt,
+        importedAt: at,
+      };
+      let s = start;
+      for (const reading of input.readings) {
+        const res = s.resources.find(
+          (item) => item.id === reading.resourceId && item.gameId === game.id && !item.deleted,
+        );
+        const value = res ? clampInt(reading.value, res.cap) : undefined;
+        if (!res || value == null) continue;
+        let reserve =
+          reading.reserve != null && res.reserveCap > 0 ? clampInt(reading.reserve, res.reserveCap) : undefined;
+        // A reading of the main bar alone carries the projected reserve over, as setEnergy does.
+        if (reserve == null && res.reserveCap > 0) {
+          const snap = latestSnapshots(s.snapshots).get(res.id);
+          const kept = snap ? (projectEnergy(res, snap, at, game).reserve ?? snap.reserve) : undefined;
+          reserve = kept != null ? clampInt(kept, res.reserveCap) : undefined;
+        }
+        s = recordEnergySnapshot(
+          s,
+          { resourceId: res.id, value, ...(reserve != null ? { reserve } : {}), provenance },
+          at,
+          observedAt,
+        );
+      }
+      for (const item of input.tasks) {
+        const task = s.tasks.find((t) => t.id === item.taskId && t.gameId === game.id && !t.deleted);
+        if (!task) continue;
+        // An older screenshot ticks the period it was taken in, not the one open now.
+        const periodKey = taskPeriodKey(game, task, observedAt);
+        const target = effectiveCountTarget(task);
+        const countDone = item.action === 'count' ? clampInt(item.countDone ?? NaN, target) : undefined;
+        if (item.action === 'count' && countDone == null) continue;
+        s = {
+          ...s,
+          completions: upsert(s.completions, {
+            id: completionId(task.id, periodKey),
+            taskId: task.id,
+            periodKey,
+            done: countDone == null ? true : countDone >= target,
+            ...(countDone != null ? { countDone } : {}),
+            updatedAt: at,
+            provenance,
+          }),
+        };
+      }
+      const currency =
+        input.savings?.currency != null ? clampInt(input.savings.currency, MAX_SAVINGS_AMOUNT) : undefined;
+      const tickets = input.savings?.tickets != null ? clampInt(input.savings.tickets, MAX_SAVINGS_AMOUNT) : undefined;
+      if (currency != null || tickets != null) {
+        const current = game.savings;
+        const savings = {
+          ...(current ?? { participation: 1, goals: [] }),
+          currency: currency ?? current?.currency ?? 0,
+          tickets: tickets ?? current?.tickets ?? 0,
+          takenAt: Math.max(1, observedAt),
+        };
+        s = { ...s, games: patchIn(s.games, game.id, { savings }) };
+      }
+      for (const item of input.events ?? []) {
+        const event = s.events.find((ev) => ev.id === item.eventId && ev.gameId === game.id && !ev.deleted);
+        if (event) s = { ...s, events: patchIn(s.events, event.id, eventProgressPatch(event, item.progress)) };
+      }
+      return s;
+    }, 'Screenshot reading');
+  },
+
+  applyConnectorObservation(gameId, obs) {
+    let applied = 0;
+    get().batch((s) => {
+      const result = applyObservation(s, gameId, obs, now(), uid(), uid);
+      applied = result.applied;
+      return result.applied > 0 ? result.state : s;
+    }, 'Live reading sync');
+    return applied;
+  },
+
   adjustEnergy(resourceId, delta) {
-    const s = get().state;
-    const res = s.resources.find((r) => r.id === resourceId);
-    const game = s.games.find((g) => g.id === res?.gameId);
-    if (!res) return;
-    const snap = latestSnapshots(s.snapshots).get(resourceId);
-    const proj = projectEnergy(res, snap, now(), game);
-    const next = Math.max(0, Math.min(res.cap, proj.value + delta));
-    // Persist the PROJECTED reserve, not the snapshot's — reserve keeps growing
-    // while the bar is capped and a quick adjustment must not roll it back.
-    get().setEnergy(resourceId, next, proj.reserve ?? snap?.reserve);
+    get().mutate((s) => {
+      const res = s.resources.find((r) => r.id === resourceId && !r.deleted);
+      if (!res) return s;
+      const game = s.games.find((g) => g.id === res.gameId);
+      const snap = latestSnapshots(s.snapshots).get(resourceId);
+      const at = now();
+      const proj = projectEnergy(res, snap, at, game);
+      const next = Math.max(0, Math.min(res.cap, proj.value + delta));
+      // Persist the PROJECTED reserve, not the snapshot's — reserve keeps growing
+      // while the bar is capped and a quick adjustment must not roll it back.
+      const rawReserve = res.reserveCap > 0 ? (proj.reserve ?? snap?.reserve) : undefined;
+      const clampedReserve =
+        rawReserve != null ? Math.min(res.reserveCap, Math.max(0, Math.round(rawReserve))) : undefined;
+      // Preserve fractional regeneration phase across +/- spends when below cap.
+      let takenAtOverride: number | undefined;
+      if (
+        effectiveResourceKind(res) === 'regen' &&
+        res.regenMinutes > 0 &&
+        snap &&
+        proj.value < res.cap &&
+        next < res.cap
+      ) {
+        const frac = proj.precise - Math.floor(proj.precise);
+        if (frac > 1e-6 && frac < 1 - 1e-6) {
+          takenAtOverride = at - Math.round(frac * res.regenMinutes * 60_000);
+        }
+      }
+      return recordEnergySnapshot(
+        s,
+        { resourceId, value: next, ...(clampedReserve != null ? { reserve: clampedReserve } : {}) },
+        at,
+        takenAtOverride,
+      );
+    });
   },
 
   importRemoteEvents(payload) {
@@ -1407,6 +1794,21 @@ export const useApp = create<AppStore>((set, get) => ({
 
   deleteEvent(id) {
     get().mutate((s) => ({ ...s, events: tombstone(s.events, (e) => e.id === id) }));
+  },
+
+  setEventProgress(eventId, progress) {
+    const event = liveEvent(get().state, eventId);
+    if (event) get().upsertEvent({ id: event.id, gameId: event.gameId, ...eventProgressPatch(event, progress) });
+  },
+
+  toggleEventDone(eventId) {
+    const event = liveEvent(get().state, eventId);
+    if (event) get().setEventProgress(eventId, event.done === true ? 'none' : 'done');
+  },
+
+  setEventPartsDone(eventId, partsDone) {
+    const event = liveEvent(get().state, eventId);
+    if (event) get().upsertEvent({ id: event.id, gameId: event.gameId, ...eventPartsPatch(event, partsDone) });
   },
 
   upsertRule(rule) {

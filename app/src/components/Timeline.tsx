@@ -4,6 +4,7 @@ import { isPredictedWindow, morningOf, packSpans, shownEnd, type Game, type Game
 import { useApp } from '../store';
 import { useElementWidth, useMediaQuery } from '../hooks';
 import { useUI } from '../ui-store';
+import { claimPointer, releasePointer } from '../gestures';
 import { Pill } from './primitives';
 import { rosterGames, useIdentityColors } from './roster';
 import { Btn, Page, ServerChip, TOUCH_BUTTON } from './ui';
@@ -553,7 +554,7 @@ function Ruler({
 
 export function TimelinePage({ now }: { now: number }) {
   const state = useApp((s) => s.state);
-  const upsertEvent = useApp((s) => s.upsertEvent);
+  const toggleEventDone = useApp((s) => s.toggleEventDone);
   const updateGame = useApp((s) => s.updateGame);
   const openSheet = useUI((s) => s.openSheet);
   const ground = useGround();
@@ -578,9 +579,9 @@ export function TimelinePage({ now }: { now: number }) {
   const toggleEvent = useCallback(
     (event: GameEvent) => {
       if (!event.done) setJustDone((current) => new Set(current).add(event.id));
-      upsertEvent({ id: event.id, gameId: event.gameId, done: !event.done });
+      toggleEventDone(event.id);
     },
-    [upsertEvent],
+    [toggleEventDone],
   );
 
   // The grid is rebuilt on the hour; countdowns and the now line move each minute.
@@ -788,6 +789,13 @@ export function TimelinePage({ now }: { now: number }) {
           className="timeline-board tl-board"
           data-compact={compact || undefined}
           data-range={range}
+          // A sideways drag here steps the week, so the page swipe lets that finger go.
+          // Upright drags still scroll natively (touch-action: pan-y).
+          onPointerDown={(e) => {
+            if (e.pointerType !== 'mouse' && e.isPrimary) claimPointer(e.pointerId);
+          }}
+          onPointerUp={(e) => releasePointer(e.pointerId)}
+          onPointerCancel={(e) => releasePointer(e.pointerId)}
           onTouchStart={(e) => {
             const touch = e.touches[0];
             swipe.current = touch && e.touches.length === 1 ? { x: touch.clientX, y: touch.clientY } : null;

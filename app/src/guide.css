@@ -34,19 +34,24 @@
 }
 .guide-foot {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
 }
 .guide-dots {
   display: flex;
-  gap: 2px;
   margin-inline-end: auto;
 }
+/* A small dot, a full 44px target around it. */
 .guide-dot {
   display: grid;
   place-items: center;
-  width: 28px;
+  width: 44px;
   height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: var(--radius-ui-md);
 }
 .guide-dot::before {
   content: '';
@@ -221,6 +226,46 @@
   color: var(--color-rose);
 }
 
+/* Getting around */
+.guide-keys,
+.guide-move {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+.guide-key-combo {
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  border-radius: var(--radius-ui-md);
+  transition: background-color var(--dur-base) var(--ease-out);
+}
+.guide-key-combo[data-current],
+.guide-move-place[data-current] {
+  background: var(--color-fill-3);
+  box-shadow: inset 0 0 0 1px var(--color-line-edge);
+}
+.guide-key-combo kbd {
+  min-width: 2rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  background: var(--color-fill-2);
+  box-shadow: inset 0 -2px 0 var(--color-line-strong);
+  font: inherit;
+  font-size: var(--text-meta);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-fg);
+}
+.guide-move-place {
+  padding: 0.5rem 0.875rem;
+  border-radius: 999px;
+  font-weight: 700;
+  color: var(--color-fg-soft);
+  transition: background-color var(--dur-base) var(--ease-out);
+}
+
 /* Ends overnight */
 .guide-night {
   width: min(100%, 20rem);
@@ -287,6 +332,8 @@
   .guide-today li,
   .guide-meter i,
   .guide-rail-game,
+  .guide-key-combo,
+  .guide-move-place,
   .guide-dot::before {
     transition: none;
   }

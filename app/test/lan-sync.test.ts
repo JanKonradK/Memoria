@@ -8,12 +8,15 @@ import {
 } from '@memoria/shared/lan-crypto';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { emptyState, encodePairingCode, type Game } from '@memoria/shared';
-const native = vi.hoisted(() => ({ post: vi.fn(), relayOffline: false }));
+const native = vi.hoisted(() => ({ post: vi.fn(), relayOffline: false, failSeal: false }));
 vi.mock('@capacitor/core', () => ({
   Capacitor: { isNativePlatform: () => true },
   // A stand-in Keystore: sealed text that is plainly not the key.
   registerPlugin: () => ({
-    seal: async ({ value }: { value: string }) => ({ sealed: btoa(`sealed:${value}`) }),
+    seal: async ({ value }: { value: string }) => {
+      if (native.failSeal) throw new Error('Keystore locked');
+      return { sealed: btoa(`sealed:${value}`) };
+    },
     unseal: async ({ sealed }: { sealed: string }) => ({ value: atob(sealed).replace(/^sealed:/, '') }),
   }),
   CapacitorHttp: {
@@ -405,5 +408,19 @@ describe('native LAN sync', () => {
       expect(useLanSync.getState().choice).toBeNull();
       expect(useLanSync.getState().status).toBe('ok');
     });
+  });
+
+  it('refuses to store plaintext sync secrets and warns if Android Keystore fails', async () => {
+    native.failSeal = true;
+    try {
+      native.post
+        .mockResolvedValueOnce(reply({ token, deviceId: 'phone' }))
+        .mockResolvedValueOnce(reply({ state: emptyState() }));
+      await pairLanDevice('192.168.1.20:17820', '12345678', fingerprint);
+      await vi.waitFor(() => expect(useLanSync.getState().keyStorageWarning).toMatch(/Keystore/i));
+      expect(localStorage.getItem('memoria-wifi-device')).toBeNull();
+    } finally {
+      native.failSeal = false;
+    }
   });
 });

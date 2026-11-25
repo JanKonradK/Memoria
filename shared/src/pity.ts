@@ -4,8 +4,9 @@ import { z } from 'zod';
  * Pity tracker: pulls since the last 5★ on each banner type, whether the next
  * 5★ is guaranteed to be the featured one, and a log of past 5★s.
  *
- * The player records pulls as they make them. Memoria does not read the game's
- * own history. Hard pity, base rates and the featured odds are each game's
+ * Pulls are recorded by the player as they make them, or imported from the
+ * game's pull history (a UIGF v4 export or WuWa Tracker JSON; see
+ * connectors/gacha-map.ts). Hard pity, base rates and the featured odds are each game's
  * published rules; the soft-pity start and ramp are community-measured, so
  * anything built on them ("typical") is shown as an estimate.
  *

@@ -22,7 +22,10 @@ export interface Checkpoint {
   label: string;
   state: AppState;
 }
-/** Device-local only. Persist beside state in the SAME atomic write; never export it. */
+/**
+ * Device-local only; never export it. The phone persists it beside state in the
+ * same write; the PC keeps it in its own history.json so state.json stays small.
+ */
 export interface LocalHistory {
   deviceId: string;
   clock?: Hlc;
@@ -134,10 +137,62 @@ function jsonBytes(value: unknown): number {
   }
   return bytes;
 }
+/** Local history limits. The PC keeps history in its own file, but a phone stores it with the state. */
+export const MAX_CHECKPOINTS = 6;
+export const MAX_CHECKPOINT_BYTES = 3_000_000;
+export const MAX_JOURNAL_ENTRIES = 300;
+export const MAX_JOURNAL_BYTES = 1_000_000;
+
+/**
+ * The newest `count` items whose JSON array fits in `bytes`. Each item is
+ * measured once, newest first, so this is linear in the input; the brackets
+ * and separating commas are counted, so the result's JSON never exceeds `bytes`.
+ */
 function bounded<T>(items: T[], count: number, bytes: number): T[] {
-  let result = items.slice(-count);
-  while (result.length && jsonBytes(result) > bytes) result = result.slice(1);
-  return result;
+  const recent = items.slice(-count);
+  let total = 2; // "[" and "]"
+  let start = recent.length;
+  for (let index = recent.length - 1; index >= 0; index--) {
+    const size = jsonBytes(recent[index]) + (index === recent.length - 1 ? 0 : 1);
+    if (total + size > bytes) break;
+    total += size;
+    start = index;
+  }
+  return recent.slice(start);
+}
+
+/**
+ * The calendar day of `at` in `tz`, as YYYY-MM-DD. An unknown zone (or a
+ * runtime without Intl) falls back to this device's local day.
+ */
+export function localDayKey(at: number, tz?: string): string {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  if (tz) {
+    try {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: tz,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(new Date(at));
+      const part = (type: string) => Number(parts.find((item) => item.type === type)?.value);
+      const [year, month, day] = [part('year'), part('month'), part('day')];
+      if (Number.isInteger(year) && Number.isInteger(month) && Number.isInteger(day))
+        return `${String(year).padStart(4, '0')}-${pad(month)}-${pad(day)}`;
+    } catch {
+      // An invalid zone falls through to the device's own day.
+    }
+  }
+  const local = new Date(at);
+  return `${String(local.getFullYear()).padStart(4, '0')}-${pad(local.getMonth() + 1)}-${pad(local.getDate())}`;
+}
+/** A history cut to the current limits: for one saved by a version with larger ones. */
+export function boundHistory(history: LocalHistory): LocalHistory {
+  const checkpoints = bounded(history.checkpoints, MAX_CHECKPOINTS, MAX_CHECKPOINT_BYTES);
+  const journal = bounded(history.journal, MAX_JOURNAL_ENTRIES, MAX_JOURNAL_BYTES);
+  return checkpoints.length === history.checkpoints.length && journal.length === history.journal.length
+    ? history
+    : { ...history, checkpoints, journal };
 }
 export function checkpoint(
   history: LocalHistory,
@@ -146,7 +201,10 @@ export function checkpoint(
   at: number,
   id: string,
 ): LocalHistory {
-  return { ...history, checkpoints: bounded([...history.checkpoints, { id, at, label, state }], 12, 16_000_000) };
+  return {
+    ...history,
+    checkpoints: bounded([...history.checkpoints, { id, at, label, state }], MAX_CHECKPOINTS, MAX_CHECKPOINT_BYTES),
+  };
 }
 export function recordAction(
   history: LocalHistory,
@@ -166,7 +224,11 @@ export function recordAction(
       : label;
   return {
     ...history,
-    journal: bounded([...history.journal, { id, at, label: actionLabel, changes }], 500, 4_000_000),
+    journal: bounded(
+      [...history.journal, { id, at, label: actionLabel, changes }],
+      MAX_JOURNAL_ENTRIES,
+      MAX_JOURNAL_BYTES,
+    ),
   };
 }
 /** New tombstones remove rows created since the checkpoint. The caller stamps ALL differences. */

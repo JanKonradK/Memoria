@@ -89,7 +89,7 @@
 }
 
 .settings-group {
-  margin-top: 1.75rem;
+  margin-top: 2rem;
 }
 .settings-group-heading {
   display: flex;
@@ -108,9 +108,10 @@
 }
 
 /* One setting per row: name and note on the left, control on the right. A
-   form reads down one line of labels, so rows stop at a readable measure. */
+   form reads down one line of labels, so rows stop at a readable measure:
+   past it, the eye loses the label on the way to its control. */
 .settings-rows {
-  max-width: 56rem;
+  max-width: 52rem;
 }
 .settings-row {
   display: flex;
@@ -119,7 +120,7 @@
   justify-content: space-between;
   gap: 0.625rem 2rem;
   padding: 0.875rem 0.5rem;
-  border-bottom: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line-hairline);
 }
 .settings-row-text {
   min-width: min(100%, 16rem);
@@ -205,6 +206,15 @@
    window, decides: the rail and the section menu both take width beside it. */
 .settings-pane {
   container: settings-pane / inline-size;
+  animation: paneArrive var(--dur-base) var(--ease-out);
+}
+/* A section settles in when it is chosen. No fill mode: the resting pane is
+   the plain visible one, so a missed animation never hides it. */
+@keyframes paneArrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 @container settings-pane (min-width: 48rem) {
   .settings-roster-row {
@@ -265,6 +275,9 @@
   .settings-nav-item,
   .settings-game-row {
     transition: none;
+  }
+  .settings-pane {
+    animation: none;
   }
 }
 

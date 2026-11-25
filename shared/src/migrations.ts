@@ -305,7 +305,10 @@ function migrateNteReserves(raw: unknown): unknown {
   return { ...state, resources, tasks };
 }
 
-/** The clock bump migrateNteReserves gives a changed row, so every device lands on the same one. */
+/**
+ * The clock bump a migration or content normalizer gives a changed row, so
+ * every device lands on the same one.
+ */
 function bumpRow(row: Record<string, unknown>) {
   const clock = objectRecord(row.hlc);
   const updatedAt = typeof row.updatedAt === 'number' && Number.isFinite(row.updatedAt) ? row.updatedAt : 0;
@@ -362,8 +365,42 @@ export const MIGRATIONS: Readonly<Record<number, StateMigration>> = {
 };
 
 /**
+ * Content normalizers: corrections to preset-derived content (a wrong reset
+ * zone, a retired routine, a stale reserve) that do NOT change the document's
+ * shape.
+ *
+ * Future preset fixes belong here, not in MIGRATIONS. A schema bump is a sync
+ * protocol change: every device on the old version is refused (426) until it
+ * updates, so bumping CURRENT_SCHEMA_VERSION for a content fix locks out
+ * phones for no structural reason. These run on EVERY normalization, at the
+ * current version, so each one must be:
+ *
+ * - idempotent: f(f(x)) deep-equals f(x), and it returns its input unchanged
+ *   (the same reference) when nothing applies;
+ * - deterministic: no Date.now(), no random ids, no device-local zone. Every
+ *   device must turn the same document into the same records, whatever its
+ *   clock, or the copies stop converging. Stamp a changed row with bumpRow(),
+ *   which derives its clock from the row itself;
+ * - conservative: it only touches rows still exactly as the preset shipped
+ *   them. Anything the player edited is theirs and is left alone, and a
+ *   tombstone is never revived.
+ */
+export const CONTENT_NORMALIZERS: readonly StateMigration[] = [];
+
+/** Applies every content normalizer in order. Returns `raw` itself when none applies. */
+export function normalizeContent(raw: unknown, normalizers: readonly StateMigration[] = CONTENT_NORMALIZERS): unknown {
+  let state = raw;
+  for (const normalize of normalizers) {
+    if (!objectRecord(state)) return state;
+    state = normalize(state);
+  }
+  return state;
+}
+
+/**
  * Schema versions 1 -> 2 and 2 -> 3 were migrated implicitly by
- * inferLegacyResource and inferLegacyTask during normalization.
+ * inferLegacyResource and inferLegacyTask during normalization. Content
+ * normalizers run after the version steps, on current documents too.
  */
 export function migrateState(raw: unknown): unknown {
   let state = raw;
@@ -384,7 +421,7 @@ export function migrateState(raw: unknown): unknown {
     version += 1;
     state = { ...migrated, schemaVersion: version };
   }
-  return state;
+  return normalizeContent(state);
 }
 
 /** Seed energy clocks at zero and untouched weekly stock at its full cap. */

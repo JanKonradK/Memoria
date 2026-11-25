@@ -50,7 +50,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 196px;
+  min-height: 204px;
   overflow: hidden;
   border-radius: 16px;
   font-family: var(--font-body);
@@ -311,4 +311,237 @@
 }
 .glyph-option[data-state='checked'] {
   box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+/* ── The mark and the backdrop (MarkPicker.tsx) ────────────────────────────
+   Every shadow, ring and glow lives here, never inline: the mark's own light
+   is drawn inside its SVG. */
+.brand-stage-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 20px;
+  margin: 0.875rem 0.5rem;
+  padding: 10px;
+  border-radius: 26px;
+  background: var(--color-fill-1);
+  box-shadow: inset 0 0 0 1px var(--color-line);
+}
+/* A swatch of a backdrop: the same rules as the page's, scaled down. */
+.backdrop-preview {
+  --backdrop-scale: 0.32;
+  background: var(--backdrop, none), var(--backdrop-ground, var(--color-surface-0));
+}
+.backdrop-preview.brand-stage {
+  --backdrop-scale: 0.6;
+}
+.brand-stage {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 208px;
+  max-width: 100%;
+  height: 132px;
+  overflow: hidden;
+  border-radius: 18px;
+  box-shadow: inset 0 0 0 1px var(--color-line-hairline);
+}
+.brand-stage .brand-mark {
+  height: 56px;
+}
+.brand-stage:not([data-backing='bare']) .brand-mark {
+  height: 92px;
+  filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.38));
+}
+.brand-stage-text {
+  display: grid;
+  flex: 1 1 14rem;
+  gap: 2px;
+  min-width: 0;
+}
+.brand-stage-tier {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.brand-picker {
+  display: grid;
+  width: 100%;
+}
+.brand-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+.brand-grid-compact {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+.brand-option {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 8px 8px 10px;
+  border-radius: 18px;
+  text-align: left;
+  color: var(--color-fg);
+  box-shadow: inset 0 0 0 1px var(--color-line);
+  transition:
+    box-shadow var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .brand-option:hover {
+    background: var(--color-fill-1);
+  }
+}
+.brand-option:active {
+  transform: scale(0.985);
+}
+.brand-option[data-state='on'] {
+  background: var(--color-fill-2);
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+/* Colours: a swatch beside its name, so nine fit a phone. */
+.brand-grid-compact .brand-option {
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 10px;
+  border-radius: 16px;
+}
+.mark-colour-swatch {
+  display: block;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.2),
+    0 0 0 1px var(--color-line);
+}
+.brand-option-preview {
+  display: grid;
+  place-items: center;
+  height: 60px;
+  border-radius: 12px;
+  background: var(--color-surface-0);
+}
+.brand-option-preview .brand-mark {
+  height: 26px;
+}
+.brand-option-preview .brand-mark:not([data-backing='bare']) {
+  height: 48px;
+}
+.backdrop-swatch {
+  display: block;
+  height: 60px;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px var(--color-line-hairline);
+}
+.brand-option-name,
+.look-option-name,
+.palette-option-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+.brand-option-name {
+  padding-inline: 4px;
+  font-size: var(--text-meta);
+  font-weight: 650;
+  line-height: 1.25;
+}
+.brand-grid-compact .brand-option-name {
+  padding-inline: 0;
+}
+.brand-option-blurb {
+  padding-inline: 4px;
+  font-size: var(--text-caption);
+  line-height: 1.3;
+  color: var(--color-muted);
+}
+
+/* Pro: a quiet gold tag, and while the store preview is on, a dimmed face. */
+.pro-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: var(--radius-ui-full, 999px);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--color-gold);
+  background: color-mix(in oklab, var(--color-gold) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-gold) 42%, transparent);
+}
+:is(.brand-option, .look-option, .palette-option)[data-locked='true'] {
+  cursor: not-allowed;
+}
+/* Dimmed, never greyed: the preview still shows what Pro would give. */
+:is(.brand-option, .look-option, .palette-option)[data-locked='true'] > :first-child {
+  opacity: 0.6;
+}
+/* A live region from the first render, so its words are announced; empty, it takes no room. */
+.pro-notice {
+  margin: 0;
+  color: var(--color-fg-soft);
+}
+.pro-notice:not(:empty) {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--color-gold) 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-gold) 30%, transparent);
+}
+
+.pro-features {
+  width: 100%;
+}
+.pro-features > summary {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  cursor: pointer;
+}
+.pro-feature-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: 8px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pro-feature {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--color-fill-1);
+}
+.pro-feature > :nth-child(2) {
+  grid-column: 1;
+}
+.pro-feature-planned {
+  grid-column: 2;
+  grid-row: 1;
+  color: var(--color-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-option {
+    transition: none;
+  }
+  .brand-option:active {
+    transform: none;
+  }
 }

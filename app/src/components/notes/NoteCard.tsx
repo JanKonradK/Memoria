@@ -311,6 +311,8 @@ function NoteEditor({ note, onDone }: { note: Note; onDone: () => void }) {
       className="note-edit"
       onKeyDown={onKey}
       onBlur={(event) => {
+        // Switching to another window (a game) is not leaving the note.
+        if (!document.hasFocus()) return;
         const next = event.relatedTarget as Node | null;
         if (next && box.current?.contains(next)) return;
         finish();

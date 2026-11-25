@@ -10,6 +10,7 @@ import { fileToImageDataUrl, intOr, localResetLabel } from '../../util';
 import { ResourceEditor } from '../game-detail/ResourceEditor';
 import { GameEvents } from '../GameEvents';
 import { GameLogo } from '../GameLogo';
+import { confirmDiscard } from '../Sheet';
 import { LaunchSettings } from '../GameLaunch';
 import { useGameDraft } from '../game-detail/useGameDraft';
 import { gameServerLabel } from '../../server-choice';
@@ -251,12 +252,7 @@ export function GameEditor({
 
       <EditorTabPanel idBase={tabsId} tab={tab}>
         {tab === 'events' && (
-          <GameEvents
-            key={game.id}
-            game={game}
-            now={Date.now()}
-            onBeforeOpen={() => !dirty || window.confirm('Discard your unsaved changes?')}
-          />
+          <GameEvents key={game.id} game={game} now={Date.now()} onBeforeOpen={() => !dirty || confirmDiscard()} />
         )}
 
         {tab === 'game' && (

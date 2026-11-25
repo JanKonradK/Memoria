@@ -5,8 +5,10 @@ import { initDesktopHost, isDesktopApp, useUnsavedDraft, type DesktopCloseResult
 const lifecycle = vi.hoisted(() => ({
   persist: vi.fn<() => Promise<void>>(),
   sync: vi.fn<() => Promise<void>>(),
+  confirm: vi.fn<() => Promise<boolean>>(),
   store: { loaded: true, loadError: '', state: {} },
 }));
+vi.mock('../src/components/ConfirmDialog', () => ({ confirmDialog: lifecycle.confirm }));
 vi.mock('../src/store', () => ({
   flushPersist: lifecycle.persist,
   useApp: { getState: () => lifecycle.store, subscribe: () => vi.fn() },
@@ -23,6 +25,7 @@ beforeEach(() => {
   lifecycle.store = { loaded: true, loadError: '', state: {} };
   lifecycle.persist.mockResolvedValue(undefined);
   lifecycle.sync.mockResolvedValue(undefined);
+  lifecycle.confirm.mockResolvedValue(true);
   window.memoriaDesktop = {
     version: 1,
     onCloseRequested: (listener) => {
@@ -70,13 +73,13 @@ describe('installed PC close lifecycle', () => {
 
   it('keeps a dirty draft when the user cancels and asks only once when they discard', async () => {
     renderHook(() => useUnsavedDraft(true));
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
+    lifecycle.confirm.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
     close('keep-draft');
     await vi.waitFor(() => expect(complete).toHaveBeenCalledWith('keep-draft', { allow: false }));
     expect(lifecycle.persist).not.toHaveBeenCalled();
     close('discard-draft');
     await vi.waitFor(() => expect(complete).toHaveBeenCalledWith('discard-draft', { allow: true }));
-    expect(confirm).toHaveBeenCalledTimes(2);
+    expect(lifecycle.confirm).toHaveBeenCalledTimes(2);
   });
 
   it.each(['persist', 'sync'] as const)('stays open if %s fails and permits a retry', async (operation) => {

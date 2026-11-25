@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Memoria Browser Connect</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #14151a;
+        --panel: #1d1f26;
+        --line: #2d3039;
+        --text: #e9e9ee;
+        --muted: #9a9cab;
+        --accent: #8fb4ff;
+        --ok: #7fd3a1;
+        --bad: #ff9a9a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        width: 320px;
+        padding: 16px;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          13px/1.45 system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      p {
+        margin: 0 0 12px;
+        color: var(--muted);
+      }
+      .services {
+        display: grid;
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+      .service {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+      .service input {
+        margin: 0 8px 0 0;
+      }
+      .service label {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        cursor: pointer;
+      }
+      .state {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .state.on {
+        color: var(--ok);
+      }
+      label.code {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      #code {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        color: var(--text);
+        font:
+          600 18px/1.2 ui-monospace,
+          'Cascadia Mono',
+          monospace;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        text-align: center;
+      }
+      #code:focus,
+      button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+      button {
+        width: 100%;
+        margin-top: 10px;
+        padding: 9px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #10131a;
+        font:
+          600 13px system-ui,
+          sans-serif;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      #message {
+        min-height: 1.45em;
+        margin: 10px 0 0;
+      }
+      #message.ok {
+        color: var(--ok);
+      }
+      #message.bad {
+        color: var(--bad);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Connect to Memoria</h1>
+    <p>Choose a service you are signed in to here, then type the code Memoria shows.</p>
+    <div class="services">
+      <div class="service">
+        <label><input type="radio" name="provider" value="hoyolab" />HoYoLAB</label>
+        <span class="state" id="state-hoyolab">Checking…</span>
+      </div>
+      <div class="service">
+        <label><input type="radio" name="provider" value="skport" />SKPORT</label>
+        <span class="state" id="state-skport">Checking…</span>
+      </div>
+    </div>
+    <label class="code" for="code">Code from Memoria</label>
+    <input id="code" maxlength="16" autocomplete="off" spellcheck="false" placeholder="ABC234" />
+    <button id="send" type="button" disabled>Send to Memoria</button>
+    <p id="message" role="status" aria-live="polite"></p>
+    <script src="popup.js"></script>
+  </body>
+</html>

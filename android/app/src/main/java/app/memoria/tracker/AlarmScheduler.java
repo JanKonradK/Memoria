@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.UserManager;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -14,7 +15,9 @@ import org.json.JSONObject;
  * Alarm-style reminders as real alarms: each one is set with
  * AlarmManager.setAlarmClock, which fires on the minute even in Doze and shows
  * in the status bar like a clock app's alarm. The list is kept on disk so a
- * reboot or an app update can set them again.
+ * reboot or an app update can set them again. That list lives in
+ * device-protected storage, so it can be read straight after a reboot, before
+ * the phone is first unlocked (Direct Boot), and alarms still ring then.
  */
 final class AlarmScheduler {
     static final String EXTRA_ID = "memoria.alarm.id";
@@ -23,6 +26,8 @@ final class AlarmScheduler {
     private static final long LATE_GRACE_MS = 10 * 60_000L;
     private static final String PREFS = "memoria-alarms";
     private static final String KEY = "alarms";
+    /** Set once the list kept in credential-protected storage by older versions has moved over. */
+    private static final String KEY_MIGRATED = "alarms-migrated";
 
     private AlarmScheduler() {}
 
@@ -69,7 +74,8 @@ final class AlarmScheduler {
                 .putExtra(EXTRA_ID, id)
                 .putExtra("title", title)
                 .putExtra("body", body)
-                .putExtra("tone", tone);
+                .putExtra("tone", tone)
+                .putExtra("snoozed", snoozed);
         }
 
         static Alarm fromIntent(Intent intent) {
@@ -79,14 +85,20 @@ final class AlarmScheduler {
                 intent.getStringExtra("title"),
                 intent.getStringExtra("body"),
                 intent.getStringExtra("tone"),
-                false
+                intent.getBooleanExtra("snoozed", false)
             );
         }
     }
 
     static synchronized JSONArray read(Context context) {
+        migrate(context);
+        return parse(prefs(context).getString(KEY, null));
+    }
+
+    private static JSONArray parse(String stored) {
+        if (stored == null) return new JSONArray();
         try {
-            return new JSONArray(prefs(context).getString(KEY, "[]"));
+            return new JSONArray(stored);
         } catch (JSONException broken) {
             return new JSONArray();
         }
@@ -96,8 +108,44 @@ final class AlarmScheduler {
         prefs(context).edit().putString(KEY, alarms.toString()).apply();
     }
 
+    /** Device-protected: readable before the first unlock after a reboot. */
     private static SharedPreferences prefs(Context context) {
-        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        return context.createDeviceProtectedStorageContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+    }
+
+    /**
+     * Older versions kept the list in credential-protected storage, which only
+     * opens once the phone is unlocked. The first time it can be read, its
+     * alarms join the device-protected list (an alarm already there wins) and
+     * the old copy is cleared. Until then nothing is lost: the old list stays
+     * where it is and is merged in later.
+     */
+    private static void migrate(Context context) {
+        SharedPreferences device = prefs(context);
+        if (device.getBoolean(KEY_MIGRATED, false)) return;
+        UserManager users = context.getSystemService(UserManager.class);
+        if (users != null && !users.isUserUnlocked()) return;
+        try {
+            SharedPreferences legacy = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            JSONArray merged = parse(device.getString(KEY, null));
+            JSONArray old = parse(legacy.getString(KEY, null));
+            for (int i = 0; i < old.length(); i++) {
+                JSONObject json = old.optJSONObject(i);
+                if (json != null && !hasId(merged, json.optInt("id"))) merged.put(json);
+            }
+            device.edit().putString(KEY, merged.toString()).putBoolean(KEY_MIGRATED, true).commit();
+            if (legacy != device) legacy.edit().remove(KEY).apply();
+        } catch (IllegalStateException locked) {
+            // Still in Direct Boot: credential-protected storage opens after the first unlock.
+        }
+    }
+
+    private static boolean hasId(JSONArray alarms, int id) {
+        for (int i = 0; i < alarms.length(); i++) {
+            JSONObject json = alarms.optJSONObject(i);
+            if (json != null && json.optInt("id") == id) return true;
+        }
+        return false;
     }
 
     /**
@@ -133,10 +181,19 @@ final class AlarmScheduler {
         return count;
     }
 
+    /**
+     * The id a snoozed alarm rings under. Planned ids are 1..2_000_000_000, so
+     * setting the sign bit gives each its own negative id that no planned
+     * alarm uses, and snoozing a snoozed alarm again keeps the same id.
+     */
+    static int snoozeId(int id) {
+        return id < 0 ? id : (id | 0x80000000);
+    }
+
     /** The same alarm again in ten minutes. */
     static synchronized void snooze(Context context, Alarm alarm) {
         long at = System.currentTimeMillis() + SNOOZE_MS;
-        Alarm again = new Alarm(alarm.id ^ 0x5a5a5a5a, at, alarm.title, alarm.body, alarm.tone, true);
+        Alarm again = new Alarm(snoozeId(alarm.id), at, alarm.title, alarm.body, alarm.tone, true);
         JSONArray alarms = withoutId(read(context), again.id);
         try {
             alarms.put(again.toJson());
@@ -147,16 +204,20 @@ final class AlarmScheduler {
         set(context, again);
     }
 
-    /** The alarm with this id, taken off the list because it is ringing now. */
-    static synchronized Alarm take(Context context, int id) {
+    /** The alarm with this id, still on the list; null when a newer plan dropped it. */
+    static synchronized Alarm find(Context context, int id) {
         JSONArray alarms = read(context);
         Alarm found = null;
         for (int i = 0; i < alarms.length(); i++) {
             JSONObject json = alarms.optJSONObject(i);
             if (json != null && json.optInt("id") == id) found = Alarm.fromJson(json);
         }
-        write(context, withoutId(alarms, id));
         return found;
+    }
+
+    /** Takes the alarm off the list once it has been delivered (ringing, or posted as a notification). */
+    static synchronized void remove(Context context, int id) {
+        write(context, withoutId(read(context), id));
     }
 
     /** After a reboot, an update or a clock change: set every alarm again, dropping long-missed ones. */

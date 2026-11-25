@@ -6,13 +6,13 @@ import {
   eventReward,
   EVENT_PROGRESS_LABEL,
   eventProgress,
-  setEventProgress,
   type EventProgress,
   type GameEvent,
 } from '@memoria/shared';
 import { calendarSchedule } from '../event-schedule';
 import { useNow } from '../hooks';
 import { useApp } from '../store';
+import { useShallow } from 'zustand/react/shallow';
 import { useUI } from '../ui-store';
 import { endTone, fmtDur } from '../util';
 import { gameInk } from '../game-color';
@@ -55,7 +55,9 @@ export function togglePinned(event: GameEvent): void {
 export function EventPeek({ open, eventId }: { open: boolean; eventId: string }) {
   const now = useNow(30_000);
   const ground = useGround();
-  const state = useApp((store) => store.state);
+  const state = useApp(
+    useShallow((s) => ({ games: s.state.games, events: s.state.events, settings: s.state.settings })),
+  );
   const closeSheet = useUI((ui) => ui.closeSheet);
   const openSheet = useUI((ui) => ui.openSheet);
   const identityColors = useIdentityColors(state.games);
@@ -73,8 +75,7 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
   const visualGame = { ...game, ...(identityColors[game.id] ?? {}) };
   const ink = gameInk(visualGame, ground);
   const progress = eventProgress(event);
-  const setProgress = (next: EventProgress) =>
-    useApp.getState().upsertEvent({ id: event.id, gameId: event.gameId, ...setEventProgress(next) });
+  const setProgress = (next: EventProgress) => useApp.getState().setEventProgress(event.id, next);
   const calendar = calendarSchedule(event);
   const upcoming = event.start > now;
   const ended = event.end <= now;

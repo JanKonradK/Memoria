@@ -560,14 +560,14 @@
   top: 4px;
   height: 24px;
 }
-/* A finger needs a taller bar than a pointer: rows grow, the bars with them. */
+/* A finger needs a 44px bar: rows grow, the bars with them. */
 @media (pointer: coarse) {
   .tl-board {
-    --tl-row: 40px;
+    --tl-row: 48px;
   }
   .tl-bar {
-    top: 4px;
-    height: 32px;
+    top: 2px;
+    height: 44px;
   }
 }
 .tl-open {
@@ -575,6 +575,11 @@
   inset: 0;
   z-index: 1;
   border-radius: 999px;
+}
+@media (pointer: coarse) {
+  .tl-open {
+    min-height: 44px;
+  }
 }
 .tl-face {
   position: absolute;
@@ -716,6 +721,14 @@
 .tl-milestone .tl-open {
   inset: -2px -4px;
 }
+@media (pointer: coarse) {
+  .tl-milestone {
+    top: 12px;
+  }
+  .tl-milestone .tl-open {
+    inset: -10px -4px;
+  }
+}
 .tl-milestone-name {
   pointer-events: none;
 }
@@ -851,8 +864,8 @@
 }
 @media (pointer: coarse) {
   .tl-board[data-compact] .tl-bar {
-    top: 4px;
-    height: 32px;
+    top: 2px;
+    height: 44px;
   }
 }
 .tl-board[data-compact] .tl-face {

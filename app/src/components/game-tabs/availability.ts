@@ -1,4 +1,4 @@
-import { pityRulesFor, presetForGame, type AppState, type Game } from '@memoria/shared';
+import { presetForGame, type AppState, type Game } from '@memoria/shared';
 import { digestsForGame } from '../../data/catch-up';
 import { nextBroadcast } from '../../catch-up-status';
 import type { GameTab } from '../../ui-store';
@@ -27,18 +27,18 @@ const QUEST_CATALOGS = new Set(
 );
 
 /**
- * Which of a game's tabs it has anything for. Track, Events and Notes always exist.
- * Pulls needs version history or pity rules, Quests a researched catalog, and
- * News version notes or a livestream on the calendar.
+ * Which of a game's tabs it has anything for. Track, Events, Codes, Notes and
+ * Pulls always exist: Pulls holds Savings, which any game can use, custom ones too.
+ * Quests needs a researched catalog, and News version notes or a livestream on
+ * the calendar.
  */
 export function gameTabAvailable(
   game: Game,
   tab: GameTab,
   { state, now }: { state: Pick<AppState, 'events'>; now: number },
 ): boolean {
-  if (tab === 'track' || tab === 'events' || tab === 'notes') return true;
+  if (tab === 'track' || tab === 'events' || tab === 'codes' || tab === 'notes' || tab === 'pulls') return true;
   const preset = game.presetKey ?? presetForGame(game)?.key;
-  if (tab === 'pulls') return !!preset && (VERSION_HISTORY_GAMES.includes(preset) || pityRulesFor(preset).length > 0);
   if (tab === 'quests') return !!preset && QUEST_CATALOGS.has(preset);
   return digestsForGame(preset).length > 0 || nextBroadcast(state, game.id, now) != null;
 }

@@ -36,7 +36,8 @@ The browser tests cover responsive layouts, keyboard controls, and accessibility
 | `app/src/data/seed-feed.ts`   | Event facts and source notes                                               |
 | `app/src/data/seed-events.ts` | Event import rules                                                         |
 | `shared/src/`                 | Types, validation, migrations, merge rules, energy, and reset calculations |
-| `desktop/`                    | Windows app (`desktop/tauri`), installer and updates                       |
+| `desktop/`                    | Windows app (`desktop/tauri`), installer and `browser-helper` extension    |
+| `relay/`                      | Optional Cloudflare Durable Object mailbox relay for remote mobile sync    |
 | `scripts/` and `app/scripts/` | Builds, packaging, and release checks                                      |
 
 Read [AGENTS.md](../AGENTS.md) before code changes. Reuse existing code and preserve saved data.
@@ -128,12 +129,14 @@ This builds the app, then compiles and starts the program against this checkout.
 
 What the program does, by file:
 
-- `server.rs`: serves `app/dist` on a fixed loopback port (17817, then 17818, 17819) and backs `/api/state`, `/api/sync`, `/api/events`, `/api/devices`, `/api/calendar` and `/api/update` with `%APPDATA%\memoria\state.json`. The API answers only a token minted each run and handed to the window by `bridge.js`.
+- `server.rs`: serves `app/dist` on a fixed loopback port (17817, then 17818, 17819), serves `/__memoria-snip.html` & `/__memoria-snip.js`, handles extension pairing on `/api/browser-connect`, and backs `/api/state`, `/api/sync`, `/api/events`, `/api/devices`, `/api/calendar` and `/api/update` with `%APPDATA%\memoria\state.json`. The API answers only a token minted each run and handed to the window by `bridge.js`.
 - `core.rs`: merges and validates the data file with the app's own TypeScript code (`desktop/tauri/core-entry.mjs`, bundled to `desktop/dist/core.js` by `npm run build:desktop`) running in QuickJS. There is no second copy of the merge rules.
-- `lan.rs`: Wi-Fi sync with the Android app on port 17820.
+- `connectors/`: HoYoLAB (`hoyolab.rs`, `ds.rs`) and SKPORT (`skport.rs`) requests with cookies/tokens sealed via Windows DPAPI in `connectors.json`, isolated webview sign-in (`login.rs`), **Memoria Browser Connect** extension handoff (`browser.rs`), read-only pull-history scans (`gacha.rs`), and multi-region frozen-screen snipping + 2× upscaled WinRT OCR (`capture.rs`, `ocr.rs`, `snip.html`, `snip.js`).
+- `lan.rs` & `relay.rs`: Wi-Fi sync with the Android app on port 17820 and optional polling against a self-hosted encrypted relay (`relay/`).
+- `reminders.rs`: Windows toast notifications for resets, caps, event deadlines and user reminders.
 - `update.rs`: checks GitHub, downloads and verifies the release zip, and installs it after the window closes.
-- `launch.rs` and `presence.rs`: starting games, start-with-Windows, the tray, and game start notices.
-- `bridge.js`: gives the page the same narrow `window.memoriaDesktop` API it always had. The page has no other access to the program.
+- `launch.rs` and `presence.rs`: starting games, start-with-Windows, the tray, game start/stop detection and notices.
+- `bridge.js`: gives the page the narrow `window.memoriaDesktop` API (`connectors`, `launch`, `presence`, `update`, `version`, `onCloseRequested`, `completeClose`). The page has no other access to the program.
 
 The window's browser profile is `%APPDATA%\memoria\webview`. A new profile reads the PC's data file before its first write, so nothing is lost when it is reset.
 Hidden in the tray, the window stops painting and WebView2 lowers its memory use.
@@ -192,9 +195,9 @@ git push --follow-tags
 ```
 
 Use `minor` or `major` instead of `patch` when appropriate.
-Write the release notes in `docs/releases/<version>.md` before tagging. The app shows them in **Settings → Updates**.
-Tags are the bare version (`0.2.0`); `.npmrc` makes `npm version` tag that way, and that tag starts [the release workflow](../.github/workflows/release.yml).
-The tag must match the version in `package.json`. The app shows it as "Beta 0.2.0".
+Write the release notes in `docs/releases/<version>.md` before tagging, and keep every version file in lockstep (`package.json`, `app/package.json`, `shared/package.json`, `package-lock.json`, `desktop/tauri/Cargo.toml`, `desktop/tauri/Cargo.lock`, `desktop/tauri/tauri.conf.json`). The app shows those release notes in **Settings → Updates**.
+Tags are the bare version (`0.6.0`); `.npmrc` makes `npm version` tag that way, and that tag starts [the release workflow](../.github/workflows/release.yml).
+The tag must match the version in `package.json`. The app shows it as "Beta 0.6.0".
 
 Versions restarted at 0.1.0 in November 2026. The earlier line was tagged `v2.0.0` to `v4.0.3` (and an unrelated `v0.1.0`); installed copies ignore every `v…` release, because those higher numbers would otherwise look like updates. Android adds 1000000 to its version code so the restarted line installs over 4.0.3. Copies on 4.0.3 or earlier do not see the new line and are updated once by hand.
 The workflow builds and publishes the Windows installer and zip, the Android app, checksums, and release notes.

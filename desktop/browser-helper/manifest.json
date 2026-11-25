@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Memoria Browser Connect",
+  "version": "1.0.0",
+  "description": "Hands your HoYoLAB or SKPORT sign-in from this browser to the Memoria app on this PC. Nothing is sent anywhere else.",
+  "permissions": ["cookies"],
+  "host_permissions": [
+    "https://*.hoyolab.com/*",
+    "https://*.hoyoverse.com/*",
+    "https://*.skport.com/*",
+    "https://*.gryphline.com/*",
+    "http://127.0.0.1:17817/*",
+    "http://127.0.0.1:17818/*",
+    "http://127.0.0.1:17819/*"
+  ],
+  "action": {
+    "default_title": "Memoria Browser Connect",
+    "default_popup": "popup.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src http://127.0.0.1:17817 http://127.0.0.1:17818 http://127.0.0.1:17819; base-uri 'none'; form-action 'none'"
+  },
+  "browser_specific_settings": {
+    "gecko": { "id": "connect@memoria.tracker" }
+  }
+}

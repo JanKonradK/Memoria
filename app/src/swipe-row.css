@@ -3,12 +3,22 @@
    finger drags it, its content slides (the `translate` property, so a child's
    own `transform`, like a press scale, is left alone) and the action grows in
    the space it leaves, never under the text. */
+/* Registered, so a new offset each frame does not restyle the row's subtree. */
+@property --swipe-x {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
 .swipe-row {
   position: relative;
   touch-action: pan-y;
 }
 .swipe-row[data-swiping] {
   overflow: clip;
+}
+.swipe-row[data-swiping] > * {
+  /* Handed one level down only: the slid content and the reveals read it. */
+  --swipe-x: inherit;
 }
 .swipe-row[data-swiping] > :not(.swipe-reveal) {
   translate: var(--swipe-x, 0px) 0;
@@ -21,6 +31,7 @@
   position: absolute;
   top: 2px;
   bottom: 2px;
+  inset-inline: 0;
   z-index: 0;
   display: none;
   align-items: center;
@@ -36,16 +47,15 @@
   display: flex;
 }
 .swipe-reveal[data-for='right'] {
-  left: 0;
-  width: max(0px, var(--swipe-x, 0px));
+  /* Full width, uncovered from the left by a clip: no layout per frame. */
+  clip-path: inset(0 calc(100% - max(0px, var(--swipe-x, 0px))) 0 0);
   padding-left: 14px;
   justify-content: flex-start;
   background: color-mix(in srgb, var(--swipe-ink, var(--color-ok)) 22%, transparent);
   color: color-mix(in srgb, var(--swipe-ink, var(--color-ok)) 70%, var(--color-fg));
 }
 .swipe-reveal[data-for='left'] {
-  right: 0;
-  width: max(0px, calc(-1 * var(--swipe-x, 0px)));
+  clip-path: inset(0 0 0 calc(100% - max(0px, calc(-1 * var(--swipe-x, 0px)))));
   padding-right: 14px;
   justify-content: flex-end;
   background: var(--color-fill-3);

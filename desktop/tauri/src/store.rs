@@ -42,8 +42,27 @@ pub fn migrate_legacy_data(data: &Path) -> io::Result<()> {
     Ok(())
 }
 
-/// The state file's text, or None when there is none yet.
+/// The largest data file read in normal use. The state is held to 8 MB and
+/// history.json to about 4 MB, so anything bigger is damaged or foreign.
+pub const MAX_RAW_BYTES: u64 = 10_000_000;
+/// How large a state.json from before history.json may be. Those versions kept
+/// up to 16 MB of local history inside the state; reading it once lets the next
+/// save split it into a small state.json and a bounded history.json.
+pub const MAX_LEGACY_STATE_BYTES: u64 = 32_000_000;
+
+/// A data file's text, or None when there is none yet.
 pub fn read_raw(file: &Path) -> Result<Option<String>, CoreError> {
+    read_limited(file, MAX_RAW_BYTES)
+}
+
+/// state.json's text, or None when there is none yet. Allows the larger size
+/// of a legacy file that still carries its history, so it recovers instead of
+/// refusing every sync; the history is stripped before anything uses it.
+pub fn read_raw_state(file: &Path) -> Result<Option<String>, CoreError> {
+    read_limited(file, MAX_LEGACY_STATE_BYTES)
+}
+
+fn read_limited(file: &Path, limit: u64) -> Result<Option<String>, CoreError> {
     let unreadable = || {
         CoreError::new(
             500,
@@ -53,7 +72,7 @@ pub fn read_raw(file: &Path) -> Result<Option<String>, CoreError> {
     match fs::metadata(file) {
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
         Err(_) => return Err(unreadable()),
-        Ok(meta) if meta.len() > 10_000_000 => return Err(unreadable()),
+        Ok(meta) if meta.len() > limit => return Err(unreadable()),
         Ok(_) => {}
     }
     fs::read_to_string(file).map(Some).map_err(|_| unreadable())
@@ -126,6 +145,9 @@ pub fn new_token() -> String {
     base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
 }
 
+/// The shape `new_token` makes. Only the tests check it: tokens that arrive are
+/// compared with `secret_equals`, which needs no shape.
+#[cfg(test)]
 pub fn is_token(value: &str) -> bool {
     value.len() == 43
         && value
@@ -165,5 +187,17 @@ mod tests {
         assert_eq!(fs::read(&file).unwrap(), b"two");
         assert!(!dir.join("state.json.tmp").exists());
         assert_eq!(read_raw(&dir.join("missing.json")).unwrap(), None);
+    }
+
+    #[test]
+    fn only_state_reads_allow_a_legacy_sized_file() {
+        let dir = std::env::temp_dir().join(format!("memoria-store-size-{}", std::process::id()));
+        let file = dir.join("state.json");
+        write_atomic(&file, &vec![b' '; (MAX_RAW_BYTES + 1) as usize]).unwrap();
+        assert!(read_raw(&file).is_err());
+        assert_eq!(read_raw_state(&file).unwrap().unwrap().len() as u64, MAX_RAW_BYTES + 1);
+        write_atomic(&file, &vec![b' '; (MAX_LEGACY_STATE_BYTES + 1) as usize]).unwrap();
+        assert!(read_raw_state(&file).is_err());
+        let _ = fs::remove_dir_all(&dir);
     }
 }

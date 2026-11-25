@@ -8,9 +8,15 @@
  * compositor keeps it smooth however busy the page is underneath.
  */
 
-/** Since the intro started: the glint ends here and the mark is complete. */
-export const INTRO_MS = 2450;
-const REDUCED_INTRO_MS = 700;
+import { activeLookReady } from './looks';
+
+/** Since the intro started, on a first open: long enough for the mark to land. */
+export const INTRO_MS = 1400;
+/** Every later open: the app is the point, so the splash only covers its first paint. */
+export const REPEAT_INTRO_MS = 250;
+/** Set once the full intro has been seen on this device. */
+const SEEN_KEY = 'memoria-splash-seen';
+const REDUCED_INTRO_MS = 650;
 /** The exit's own length, and a little past it in case animationend never comes. */
 const LEAVE_FALLBACK_MS = 1000;
 /** Fonts usually land with the app; past this they swap in under a visible page. */
@@ -46,6 +52,17 @@ const wait = (ms: number) =>
   });
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
+/** Whether this device has seen the intro before; marks it seen. Storage can be blocked, so never throws. */
+function seenBefore(): boolean {
+  try {
+    const seen = localStorage.getItem(SEEN_KEY) === '1';
+    if (!seen) localStorage.setItem(SEEN_KEY, '1');
+    return seen;
+  } catch {
+    return false;
+  }
+}
+
 function themeColor() {
   return document.querySelector('meta[name="theme-color"]');
 }
@@ -77,9 +94,14 @@ async function leave(node: HTMLElement) {
   if (window.__memoriaSplashAt == null && document.visibilityState === 'hidden') return remove(node);
   while (window.__memoriaSplashAt == null) await nextFrame();
   const elapsed = performance.now() - window.__memoriaSplashAt;
-  const intro = reducedMotion() ? REDUCED_INTRO_MS : INTRO_MS;
+  const repeat = seenBefore();
+  const intro = repeat ? REPEAT_INTRO_MS : reducedMotion() ? REDUCED_INTRO_MS : INTRO_MS;
   if (elapsed < intro) await wait(intro - elapsed);
-  await Promise.race([document.fonts?.ready, new Promise((resolve) => setTimeout(resolve, FONT_WAIT_MS))]);
+  // The look's stylesheet and the faces land before the page is shown, so it never reveals half-dressed.
+  await Promise.race([
+    Promise.all([document.fonts?.ready, activeLookReady()]),
+    new Promise((resolve) => setTimeout(resolve, FONT_WAIT_MS)),
+  ]);
   // Two frames: the app's first paint under the splash is done, so the fade
   // uncovers a finished page, not one still laying out.
   await nextFrame();

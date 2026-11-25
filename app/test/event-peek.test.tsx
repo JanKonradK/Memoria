@@ -65,7 +65,7 @@ it('sets the event status in the quick view', () => {
   fireEvent.click(within(status).getByRole('radio', { name: 'Partly done' }));
   expect(stored('Story')).toMatchObject({ partsDone: 1, done: false });
   fireEvent.click(within(status).getByRole('radio', { name: 'Done' }));
-  expect(stored('Story')).toMatchObject({ partsDone: 2, done: true });
+  expect(stored('Story')).toMatchObject({ parts: 3, partsDone: 3, done: true });
 });
 
 it('hands over to the editor from Edit', () => {

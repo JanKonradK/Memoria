@@ -42,12 +42,16 @@ export function PageBar({ children, className = '' }: { children: ReactNode; cla
   );
 }
 
-/** The page's name, with a quiet line beside it. Focused on arrival by the shell. */
-export function PageTitle({ children, sub }: { children: ReactNode; sub?: ReactNode }) {
+/**
+ * The page's name, with a quiet line beside it. Focused on arrival by the shell.
+ * `sub` is prose that Minimal mode hides; `meta` is a figure that always shows.
+ */
+export function PageTitle({ children, sub, meta }: { children: ReactNode; sub?: ReactNode; meta?: ReactNode }) {
   return (
     <div className="page-title">
       <h1 tabIndex={-1}>{children}</h1>
       {sub && <span className="page-title-sub say">{sub}</span>}
+      {meta && <span className="page-title-meta">{meta}</span>}
     </div>
   );
 }

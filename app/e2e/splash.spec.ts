@@ -25,7 +25,9 @@ test('the intro plays over the loading app, then hands it over', async ({ page }
   expect(animated.length).toBeGreaterThan(0);
   expect(new Set(animated)).toEqual(new Set(['opacity', 'transform']));
   // Still up while the intro plays, even though the app is ready long before.
-  await page.waitForTimeout(1500);
+  // Measured from the intro's own start, not from when the page finished loading.
+  const remaining = await page.evaluate(() => Math.max(0, 950 - (performance.now() - (window.__memoriaSplashAt ?? 0))));
+  if (remaining > 0) await page.waitForTimeout(remaining);
   await expect(splash).toBeAttached();
   await expect(splash).not.toBeAttached({ timeout: 6000 });
   await expect(page.locator('#root > *').first()).toBeVisible();

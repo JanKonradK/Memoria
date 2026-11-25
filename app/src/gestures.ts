@@ -29,6 +29,12 @@ const AXIS_LOCK_PX = 10;
  * swiping exists.
  */
 const INTERACTIVE = 'button, [role="button"], a, input, textarea, select, label, [contenteditable]';
+/**
+ * Inside a swipeable row, its open button lets the page swipe through: the row
+ * takes only the direction it has an action for. Its inner controls still don't.
+ */
+const ROW_INNER_CONTROL =
+  '.energy-value-stepper, .today-step-tick, [data-scrub], a, input, textarea, select, [contenteditable]';
 
 type Axis = 'undecided' | 'horizontal' | 'vertical';
 
@@ -53,23 +59,37 @@ const pageOf = (host: Element) => host.querySelector<HTMLElement>(':scope > .pag
 
 function follow(page: HTMLElement | null, dx: number) {
   if (!page) return;
+  if ('swipeRelease' in page.dataset) releaseGen.set(page, (releaseGen.get(page) ?? 0) + 1);
   page.removeAttribute('data-swipe-release');
   page.dataset.swiping = '';
   page.style.setProperty('--swipe-x', `${Math.max(-FOLLOW_MAX_PX, Math.min(FOLLOW_MAX_PX, dx / 3))}px`);
 }
 
+/** Each page's latest release: an older one's late timer leaves a newer drag be. */
+const releaseGen = new WeakMap<HTMLElement, number>();
+
 function release(page: HTMLElement | null) {
   if (!page || !('swiping' in page.dataset)) return;
+  const gen = (releaseGen.get(page) ?? 0) + 1;
+  releaseGen.set(page, gen);
   page.dataset.swipeRelease = '';
   page.style.setProperty('--swipe-x', '0px');
+  let timer = 0;
   const done = () => {
+    page.removeEventListener('transitionend', onEnd);
+    window.clearTimeout(timer);
+    if (releaseGen.get(page) !== gen) return;
     page.removeAttribute('data-swiping');
     page.removeAttribute('data-swipe-release');
     page.style.removeProperty('--swipe-x');
   };
-  page.addEventListener('transitionend', done, { once: true });
+  // The page's own spring back, not a transition ending somewhere inside it.
+  function onEnd(event: TransitionEvent) {
+    if (event.target === page && event.propertyName === 'transform') done();
+  }
+  page.addEventListener('transitionend', onEnd);
   // Reduced motion has no transition to end.
-  window.setTimeout(done, 400);
+  timer = window.setTimeout(done, 400);
 }
 
 export function useTabSwipe(onSwipe: (direction: 1 | -1) => void) {
@@ -89,7 +109,11 @@ export function useTabSwipe(onSwipe: (direction: 1 | -1) => void) {
       // A mouse drag across a page is a text selection, not a gesture.
       if (event.pointerType === 'mouse' || !event.isPrimary) return;
       const target = event.target as HTMLElement;
-      if (target.closest(INTERACTIVE)) return;
+      const control = target.closest(INTERACTIVE);
+      if (control) {
+        const row = control.closest('[data-swipe-row]');
+        if (!row || target.closest(ROW_INNER_CONTROL)) return;
+      }
       // Anything that scrolls sideways already means something by a sideways
       // drag: the timeline ruler, a page bar's tabs, the dock's games.
       // Only a real sideways scroller: content mid-slide (a tab entering) also

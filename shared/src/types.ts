@@ -91,6 +91,22 @@ export interface Game extends Syncable {
   savings?: GameSavings;
   /** Pity tracker: pulls since the last 5★ per banner type, and past 5★s. */
   pity?: GamePity;
+  /** Redemption codes saved for this account. */
+  codes?: GameCode[];
+}
+
+/** A redemption code the player saved for one game. */
+export interface GameCode {
+  id: string;
+  code: string;
+  /** What the code pays, e.g. "60 Primogems, 5 Hero's Wit". */
+  rewards?: string;
+  /** Absolute deadline (epoch ms); absent when the source did not say. */
+  expiresAt?: number;
+  /** Where to redeem it; always https. */
+  redeemUrl?: string;
+  redeemed?: boolean;
+  addedAt: number;
 }
 
 export interface Resource extends Syncable {

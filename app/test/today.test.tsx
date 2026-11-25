@@ -1,11 +1,13 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import type { ReactElement } from 'react';
-import { emptyState, type AppState, type Game } from '@memoria/shared';
+import { completionId, emptyState, taskPeriodKey, type AppState, type Game } from '@memoria/shared';
 import { beforeEach, expect, it } from 'vitest';
 import { TodayPage } from '../src/components/Today';
 import { useApp } from '../src/store';
 import { useUI } from '../src/ui-store';
 import { TooltipProvider } from '../src/components/ui';
+import { gameAccountTag } from '../src/components/roster';
+import { makeTask } from '../../shared/test/helpers';
 
 const NOW = Date.UTC(2026, 9, 6, 12);
 const game = (id: string, sort: number): Game => ({
@@ -155,8 +157,11 @@ it('opens on Steps: one list ordered by deadline, and the switch keeps the ranke
   expect(within(view).getByRole('button', { name: 'Steps' })).toHaveAttribute('aria-pressed', 'true');
   // 195 of 200 at 8 minutes a point caps within the hour; 10 of 200 caps after a day.
   const hour = screen.getByRole('region', { name: 'Within the hour' });
-  expect(within(hour).getByRole('button', { name: /^Energy / })).toBeInTheDocument();
-  expect(screen.getAllByRole('button', { name: /^Energy / })).toHaveLength(1);
+  expect(within(hour).getAllByRole('button', { name: /^Energy / })).toHaveLength(1);
+  // Every other bar is still here to enter, under its own heading, and never counted as a step.
+  const other = screen.getByRole('region', { name: 'Other bars' });
+  expect(within(other).getAllByRole('button', { name: /^Energy / })).toHaveLength(2);
+  expect(within(other).getByText('Enter reading')).toBeInTheDocument();
   expect(screen.getByRole('region', { name: 'This week' })).toHaveTextContent('Energy caps');
   // Paused games have no steps.
   expect(screen.queryByText(/Paused game/)).not.toBeInTheDocument();
@@ -168,7 +173,7 @@ it('opens on Steps: one list ordered by deadline, and the switch keeps the ranke
 it('keeps a step in place while its value is typed, and commits through the store', () => {
   useUI.setState({ todayView: 'steps' });
   show(<TodayPage now={NOW} />);
-  const input = screen.getByLabelText('Energy current value');
+  const input = within(screen.getByRole('region', { name: 'Within the hour' })).getByLabelText('Energy current value');
   fireEvent.focus(input);
   fireEvent.change(input, { target: { value: '20' } });
   // Still the same row while typing, even though 20 no longer caps within the day.
@@ -178,4 +183,129 @@ it('keeps a step in place while its value is typed, and commits through the stor
     .getState()
     .state.snapshots.find((item) => item.resourceId === 'resource-Near cap' && item.value === 20);
   expect(snap).toBeDefined();
+});
+
+it('moves Enter from one reading to the next in Steps, and Shift+Enter back', () => {
+  useUI.setState({ todayView: 'steps' });
+  show(<TodayPage now={NOW} />);
+  const inputs = screen.getAllByLabelText('Energy current value');
+  expect(inputs.length).toBeGreaterThan(1);
+  const [first, second] = inputs as [HTMLElement, HTMLElement];
+  act(() => second.focus());
+  fireEvent.keyDown(second, { key: 'Enter', shiftKey: true });
+  expect(first).toHaveFocus();
+  fireEvent.keyDown(first, { key: 'Enter' });
+  expect(second).toHaveFocus();
+});
+
+it('counts only steps as done or open, never the other bars', () => {
+  useUI.setState({ todayView: 'steps' });
+  show(<TodayPage now={NOW} />);
+  // Two other bars are listed, one of them never read, with no fake countdown.
+  const other = screen.getByRole('region', { name: 'Other bars' });
+  expect(within(other).getAllByText('Enter reading')).toHaveLength(1);
+  expect(within(other).getByText(/not read yet/)).toBeInTheDocument();
+  expect(screen.getByText('0 of 1 done')).toBeInTheDocument();
+});
+
+it('says when the order is held, and re-sorts on request', () => {
+  const state = fixture();
+  state.tasks = [makeTask({ id: 'commissions', gameId: 'Can rest', name: 'Commissions' })];
+  useApp.setState({ state });
+  useUI.setState({ todayView: 'steps' });
+  show(<TodayPage now={NOW} />);
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  const tick = screen.getByRole('button', { name: 'Mark Commissions done' });
+  fireEvent.focus(tick);
+  fireEvent.click(tick);
+  // Ticked in place: the row stays where it was until asked.
+  const pill = screen.getByRole('status');
+  expect(pill).toHaveTextContent('Order paused · Re-sort now');
+  fireEvent.click(within(pill).getByRole('button'));
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Done today' })).toBeInTheDocument();
+});
+
+it('opens a game from its row on Games, and never ticks its dailies', () => {
+  const state = fixture();
+  state.tasks = [makeTask({ id: 'commissions', gameId: 'Can rest', name: 'Commissions' })];
+  useApp.setState({ state });
+  show(<TodayPage now={NOW} />);
+  expect(screen.queryByRole('button', { name: /^Tick all Can rest dailies/ })).not.toBeInTheDocument();
+  fireEvent.click(row('Can rest'));
+  expect(row('Can rest')).toHaveAttribute('aria-pressed', 'true');
+  expect(useApp.getState().state.completions).toHaveLength(0);
+});
+
+it('tells two accounts of one game apart everywhere', () => {
+  const state = fixture();
+  state.games = [
+    { ...state.games[0]!, presetKey: 'genshin', tz: 'Etc/GMT-1' },
+    { ...state.games[1]!, presetKey: 'genshin', tz: 'Etc/GMT+5' },
+    { ...state.games[3]!, accountLabel: 'Alt' },
+  ];
+  expect(gameAccountTag(state.games[0]!, state.games, NOW)).toBe('EU');
+  expect(gameAccountTag(state.games[1]!, state.games, NOW)).toBe('NA');
+  expect(gameAccountTag(state.games[2]!, state.games, NOW)).toBe('Alt');
+  // A game tracked once, with no label of its own, needs no tag.
+  expect(gameAccountTag({ ...state.games[2]!, accountLabel: '  ' }, state.games, NOW)).toBe('');
+  // A deleted twin no longer counts.
+  expect(gameAccountTag(state.games[0]!, [state.games[0]!, { ...state.games[1]!, deleted: true }], NOW)).toBe('');
+  useApp.setState({ state });
+  useUI.setState({ todayView: 'steps' });
+  show(<TodayPage now={NOW} />);
+  const hour = screen.getByRole('region', { name: 'Within the hour' });
+  expect(within(hour).getByRole('button', { name: /^Energy .* · EU/ })).toBeInTheDocument();
+  expect(within(screen.getByRole('region', { name: 'Other bars' })).getByText('Alt')).toBeInTheDocument();
+});
+
+it('offers undo after resetting a done count task or restarting a timer task on Today', () => {
+  const state = fixture();
+  const targetGame = state.games[1]!;
+  const domains = makeTask({
+    id: 'domains',
+    gameId: targetGame.id,
+    name: 'Domains',
+    mode: 'count',
+    countTarget: 3,
+  });
+  const expeditions = makeTask({
+    id: 'expeditions',
+    gameId: targetGame.id,
+    name: 'Expeditions',
+    mode: 'timer',
+    timerDurationMinutes: 1200,
+    timerEndsAt: NOW - 60_000,
+  });
+  const domainsPeriod = taskPeriodKey(targetGame, domains, NOW);
+  state.tasks = [domains, expeditions];
+  state.completions = [
+    {
+      id: completionId(domains.id, domainsPeriod),
+      taskId: domains.id,
+      periodKey: domainsPeriod,
+      done: true,
+      countDone: 3,
+      updatedAt: NOW,
+    },
+  ];
+  useApp.setState({ state, loaded: true });
+  useUI.getState().dismissUndo();
+  useUI.setState({ todayView: 'steps' });
+  show(<TodayPage now={NOW} />);
+
+  fireEvent.click(screen.getByRole('button', { name: /Done today/ }));
+  fireEvent.click(screen.getByRole('button', { name: /^Domains: 3 of 3 done/ }));
+  const countNotice = useUI.getState().undoNotice;
+  expect(countNotice?.text).toBe('Domains reset');
+  expect(useApp.getState().state.completions.find((c) => c.taskId === domains.id)?.countDone).toBe(0);
+  act(() => countNotice?.undo());
+  expect(useApp.getState().state.completions.find((c) => c.taskId === domains.id)?.countDone).toBe(3);
+
+  fireEvent.click(screen.getByRole('button', { name: /^Expeditions:/ }));
+  const timerNotice = useUI.getState().undoNotice;
+  expect(timerNotice?.text).toBe('Expeditions timer started');
+  expect(useApp.getState().state.tasks.find((t) => t.id === expeditions.id)?.timerEndsAt).toBeGreaterThan(NOW);
+  act(() => timerNotice?.undo());
+  expect(useApp.getState().state.tasks.find((t) => t.id === expeditions.id)?.timerEndsAt).toBe(NOW - 60_000);
 });

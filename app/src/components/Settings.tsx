@@ -1,5 +1,5 @@
 import { Activity } from './settings/Activity';
-import { useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useRef, useState, type ReactNode } from 'react';
 import { detectLocalTz, normalizeState, safeParseAppState } from '@memoria/shared';
 import { useApp } from '../store';
 import { PageBar, PageBarEnd, PageTitle } from './shell/PageBar';
@@ -10,6 +10,7 @@ import { deviceSyncAvailable, DeviceSync } from './settings/DeviceSync';
 import { PaletteSettings } from './settings/PaletteSettings';
 import { DetailRow, LookPicker, VibrationRow } from './settings/LookPicker';
 import { GameIconsRow, IconSetRow } from './settings/IconPicker';
+import { MarkPicker, StorePreviewRow } from './settings/MarkPicker';
 import { SettingRow, SettingsGroup } from './settings/SettingRow';
 import { usePresence } from '../presence';
 import { APP_VERSION, displayVersion, updateTarget, useAppUpdate } from '../app-update';
@@ -36,14 +37,19 @@ import { fmtClock } from '../util';
 import { HomeTimeZoneField } from './HomeTimeZoneField';
 import { rosterGames, useIdentityColors } from './roster';
 import { Btn, Page, Segmented, TOUCH_BUTTON } from './ui';
+import { confirmDialog } from './ConfirmDialog';
 // Today is lazy-loaded, so its heading rule is brought in here as well.
 import '../today.css';
 import '../settings.css';
 
 const MAX_BACKUP_BYTES = 20_000_000;
+const Connections = lazy(() => import('./settings/Connections').then((m) => ({ default: m.Connections })));
 
 export function SettingsPage() {
-  const state = useApp((store) => store.state);
+  // Only what the page shows: a snapshot or a tick elsewhere does not redraw Settings.
+  const settings = useApp((store) => store.state.settings);
+  const trackedGames = useApp((store) => store.state.games);
+  const eventCount = useApp((store) => store.state.events.filter((e) => !e.deleted).length);
   const syncStatus = useApp((store) => store.syncStatus);
   const syncError = useApp((store) => store.syncError);
   const cloudStatus = useApp((store) => store.cloudStatus);
@@ -63,10 +69,9 @@ export function SettingsPage() {
   const presence = usePresence((store) => store.presence);
   const update = useAppUpdate();
   const launcher = servedByLauncher();
-  const settings = state.settings;
   const detectedTz = detectLocalTz();
-  const games = rosterGames(state.games);
-  const identityColors = useIdentityColors(state.games);
+  const games = rosterGames(trackedGames);
+  const identityColors = useIdentityColors(trackedGames);
   const [statusMessage, setStatusMessage] = useState('');
   const [importDraft, setImportDraft] = useState<{ text: string; games: number; events: number } | null>(null);
   useUnsavedDraft(importDraft !== null);
@@ -77,7 +82,7 @@ export function SettingsPage() {
   const syncSizeWarning = syncStatus === 'error' && syncError.startsWith('Local data is ');
 
   const exportJson = () => {
-    const text = JSON.stringify(state, null, 2);
+    const text = JSON.stringify(useApp.getState().state, null, 2);
     const fileName = `memoria-backup-${new Date().toISOString().slice(0, 10)}.json`;
     if (isNativeApp) {
       void exportNativeBackup(text, fileName).catch((error: unknown) => {
@@ -143,6 +148,7 @@ export function SettingsPage() {
     { key: 'appearance', label: 'Appearance' },
     { key: 'reminders', label: 'Reminders' },
     { key: 'sync', label: 'Device sync', badge: syncBadge },
+    { key: 'connections', label: 'Connections' },
   ];
   if (presence) sections.push({ key: 'device', label: 'On this PC' });
   if (updateTarget() !== 'none')
@@ -177,6 +183,7 @@ export function SettingsPage() {
         )}
         <PageTitle>{split || menu ? 'Settings' : activeLabel}</PageTitle>
         <PageBarEnd>
+          <Btn onClick={() => useUI.getState().openSheet({ kind: 'shortcuts' })}>Shortcuts</Btn>
           <Btn onClick={() => useUI.getState().openSheet({ kind: 'guide' })}>Guide</Btn>
         </PageBarEnd>
       </PageBar>
@@ -251,18 +258,20 @@ export function SettingsPage() {
                     onChange={(value) => updateSettings({ localTz: resolveHomeTimeZone(value) })}
                   />
                 </SettingRow>
+                <VibrationRow />
               </div>
             </SettingsPane>
 
             <SettingsPane {...pane('appearance')}>
               <div className="settings-rows">
+                <MarkPicker />
                 <LookPicker />
                 <IconSetRow />
                 <GameIconsRow />
                 <DetailRow />
-                <VibrationRow />
                 <ThemeRow />
                 <PaletteSettings />
+                <StorePreviewRow />
               </div>
             </SettingsPane>
 
@@ -366,6 +375,12 @@ export function SettingsPage() {
               </div>
             </SettingsPane>
 
+            <SettingsPane {...pane('connections')}>
+              <Suspense fallback={null}>
+                <Connections />
+              </Suspense>
+            </SettingsPane>
+
             <SettingsPane {...pane('reminders')}>
               <RemindersPane />
             </SettingsPane>
@@ -421,7 +436,7 @@ export function SettingsPage() {
                   label="Backup"
                   hint={
                     <span className="numeral">
-                      {games.length} games · {state.events.filter((e) => !e.deleted).length} events
+                      {games.length} games · {eventCount} events
                     </span>
                   }
                 >
@@ -476,13 +491,14 @@ export function SettingsPage() {
                   <Btn
                     kind="danger"
                     className={TOUCH_BUTTON}
-                    onClick={() => {
-                      if (
-                        !window.confirm(
-                          'Delete all Memoria data in this browser? Export a backup first if you need one.',
-                        )
-                      )
-                        return;
+                    onClick={async () => {
+                      const clear = await confirmDialog({
+                        title: 'Delete all Memoria data in this browser?',
+                        description: 'Export a backup first if you need one.',
+                        confirmLabel: 'Clear local data',
+                        danger: true,
+                      });
+                      if (!clear) return;
                       void disconnectLanSync()
                         .then(clearLocalData)
                         .then(() => {

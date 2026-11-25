@@ -1,4 +1,6 @@
 import { useLayoutEffect } from 'react';
+import type { GachaPresetKey, HoyolabPresetKey, RawGachaPull, SkportPresetKey } from '@memoria/shared';
+import { confirmDialog } from './components/ConfirmDialog';
 import { flushPersist, useApp } from './store';
 import { flushSync } from './sync';
 
@@ -41,6 +43,11 @@ export interface DesktopHost {
     onGameStopped?(listener: (gameId: string) => void): () => void;
     onOpenGame(listener: (gameId: string) => void): () => void;
   };
+  /**
+   * Opt-in live numbers. Sign-in cookies, history links and folder paths stay
+   * in the native host: the page only ever sees status, numbers and text.
+   */
+  connectors?: DesktopConnectors;
   onCloseRequested(listener: (requestId: string) => void): () => void;
   completeClose(requestId: string, result: DesktopCloseResult): void;
 }
@@ -77,6 +84,202 @@ export interface ReleaseInfo {
 /** Game id to the file name of what starts it. */
 export interface LaunchTargets {
   targets: Record<string, string>;
+}
+
+export interface HoyolabRole {
+  presetKey: HoyolabPresetKey;
+  uid: string;
+  region: string;
+  nickname?: string | null;
+  level?: number | null;
+  regionName?: string | null;
+}
+
+export interface HoyolabGameLink {
+  presetKey: HoyolabPresetKey;
+  uid: string;
+  region: string;
+}
+
+export interface SkportRole {
+  presetKey: SkportPresetKey;
+  uid: string;
+  region: string;
+  nickname?: string | null;
+  level?: number | null;
+  regionName?: string | null;
+}
+
+export interface SkportGameLink {
+  presetKey: SkportPresetKey;
+  uid: string;
+  region: string;
+}
+
+/** The Windows app's global screenshot shortcut. `registered` is false when another program holds it. */
+export interface ScreenshotShortcutStatus {
+  enabled: boolean;
+  /** `Ctrl+Shift+M`-style: Ctrl, Alt, Shift or Win with A-Z, 0-9, F1-F12 or PrintScreen. */
+  accelerator: string;
+  registered: boolean;
+  error?: string | null;
+}
+
+/** Captures Memoria saved in its own folder. Older hosts lack it. */
+export interface ScreenshotCapturesStatus {
+  count: number;
+  bytes: number;
+}
+
+/** What the native host says about its connectors. Never carries a cookie, link or full path. */
+export interface ConnectorStatus {
+  hoyolab: {
+    connected: boolean;
+    maskedUid: string | null;
+    roles: HoyolabRole[];
+    /** Memoria game id to the HoYoLAB account it reads. */
+    gameLinks: Record<string, HoyolabGameLink>;
+    backoffUntilMs: number | null;
+    autoRefreshOnExit: boolean;
+  };
+  /** Arknights: Endfield through SKPORT. Older hosts lack it. */
+  skport?: {
+    connected: boolean;
+    maskedUid: string | null;
+    roles: SkportRole[];
+    /** Memoria game id to the SKPORT account it reads. */
+    gameLinks: Record<string, SkportGameLink>;
+    autoRefreshOnExit: boolean;
+  };
+  screenshotWatch: {
+    enabled: boolean;
+    folderName: string | null;
+  };
+  /** Windows only; older hosts lack it. */
+  screenshotShortcut?: ScreenshotShortcutStatus;
+  /** Windows only; older hosts lack it. */
+  screenshotCaptures?: ScreenshotCapturesStatus;
+  /** A pending browser-helper handoff. Older hosts lack it. */
+  browserHandoff?: BrowserHandoffStatus;
+  error?: string;
+}
+
+export type BrowserProvider = 'hoyolab' | 'skport';
+
+export interface BrowserHandoffStatus {
+  active: boolean;
+  provider: BrowserProvider | null;
+  expiresAtMs: number | null;
+}
+
+/** A one-time code the Memoria Browser Helper extension pairs with. */
+export interface BrowserStartResult {
+  provider: BrowserProvider;
+  code: string;
+  expiresAtMs: number;
+}
+
+export interface HoyolabRefreshResult {
+  ok: boolean;
+  retcode: number | null;
+  backoffUntilMs: number | null;
+  presetKey: string | null;
+  observedAt: number;
+  /** The Real-Time Notes `data` object, mapped in the page. */
+  raw: unknown;
+  error: string | null;
+}
+
+/** What a one-tap HoYoverse code redemption came to. `message` is a fixed sentence. */
+export interface HoyolabRedeemResult {
+  ok: boolean;
+  status: 'redeemed' | 'already' | 'expired' | 'invalid' | 'cooldown' | 'auth' | 'failed';
+  retcode: number | null;
+  message: string;
+}
+
+/** What a one-tap HoYoLAB daily check-in came to. `message` is a fixed sentence. */
+export interface HoyolabCheckInResult {
+  ok: boolean;
+  status: 'claimed' | 'already' | 'captcha' | 'auth' | 'failed';
+  retcode: number | null;
+  message: string;
+}
+
+export interface GachaScanResult {
+  presetKey: GachaPresetKey;
+  uid?: string | null;
+  pulls: RawGachaPull[];
+}
+
+export interface ScreenshotOcrResult {
+  fileName: string;
+  observedAt: number;
+  lines: string[];
+  /** A downscaled JPEG of what was read, for the confirmation sheet. */
+  dataUrl?: string | null;
+  /** The program a capture was taken from, without `.exe`. */
+  processName?: string | null;
+  /**
+   * How many snipped regions `lines` and `dataUrl` cover. Each region's lines
+   * are set apart by one empty line. Missing means one.
+   */
+  regionCount?: number;
+}
+
+export interface DesktopConnectors {
+  status(): Promise<ConnectorStatus>;
+  hoyolab: {
+    /** Opens the sign-in window and returns at once; the outcome arrives through `onStatusChanged`. */
+    login(options?: { fresh?: boolean }): Promise<ConnectorStatus>;
+    /** A pasted `Cookie:` header, `Copy as cURL` or `Copy as fetch`. Older hosts lack it. */
+    importBrowser?(raw: string): Promise<ConnectorStatus>;
+    disconnect(): Promise<ConnectorStatus>;
+    link(gameId: string, presetKey: string, uid: string | null, region: string | null): Promise<ConnectorStatus>;
+    refresh(gameId: string, options?: { auto?: boolean }): Promise<HoyolabRefreshResult>;
+    /** Older hosts lack it. */
+    redeem?(gameId: string, code: string): Promise<HoyolabRedeemResult>;
+    /** Older hosts lack it. */
+    checkin?(gameId: string): Promise<HoyolabCheckInResult>;
+    setPrefs(changes: { autoRefreshOnExit?: boolean }): Promise<ConnectorStatus>;
+  };
+  /** Arknights: Endfield through SKPORT. Older hosts lack it. */
+  skport?: {
+    /** Opens the sign-in window; the outcome arrives through `onStatusChanged`. */
+    login(options?: { fresh?: boolean }): Promise<ConnectorStatus>;
+    importBrowser?(raw: string): Promise<ConnectorStatus>;
+    disconnect(): Promise<ConnectorStatus>;
+    link(gameId: string, uid: string | null, region: string | null): Promise<ConnectorStatus>;
+    refresh(gameId: string, options?: { auto?: boolean }): Promise<HoyolabRefreshResult>;
+    setPrefs(changes: { autoRefreshOnExit?: boolean }): Promise<ConnectorStatus>;
+  };
+  /** Connecting from the player's own browser. Older hosts lack it. */
+  browser?: {
+    start(provider: BrowserProvider): Promise<BrowserStartResult>;
+    cancel(): Promise<void>;
+    openHelper(): Promise<void>;
+  };
+  /** Null when the folder picker is cancelled. */
+  gachaScan(game: GachaPresetKey, options?: { pickFolder?: boolean }): Promise<GachaScanResult | null>;
+  screenshot: {
+    /** Null when the picker is cancelled. */
+    pick(): Promise<ScreenshotOcrResult | null>;
+    watchChoose(): Promise<ConnectorStatus>;
+    watchClear(): Promise<ConnectorStatus>;
+    /**
+     * `window` reads the game in front and resolves with the reading (and also
+     * emits it through `onScreenshotOcr`); `snip` resolves with null and the
+     * reading arrives only through `onScreenshotOcr`. Older hosts lack it.
+     */
+    capture?(mode?: 'snip' | 'window'): Promise<ScreenshotOcrResult | null>;
+    setShortcut?(enabled: boolean, accelerator: string | null): Promise<ConnectorStatus>;
+    /** Opens Memoria's captures folder in Explorer. Older hosts lack it. */
+    openCaptures?(): Promise<void>;
+    /** Deletes every saved capture. Older hosts lack it. */
+    clearCaptures?(): Promise<ConnectorStatus>;
+  };
+  onStatusChanged(listener: (status: ConnectorStatus) => void): () => void;
+  onScreenshotOcr(listener: (payload: ScreenshotOcrResult) => void): () => void;
 }
 
 declare global {
@@ -149,7 +352,14 @@ export function initDesktopHost(): (() => void) | undefined {
         }
         // Inline energy editors commit on blur, before the save boundary below.
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-        if (drafts.size > 0 && !window.confirm('Close Memoria and discard your unsaved changes?')) {
+        if (
+          drafts.size > 0 &&
+          !(await confirmDialog({
+            title: 'Close Memoria and discard your unsaved changes?',
+            confirmLabel: 'Discard and close',
+            danger: true,
+          }))
+        ) {
           return { allow: false };
         }
         const startedAt = edits;

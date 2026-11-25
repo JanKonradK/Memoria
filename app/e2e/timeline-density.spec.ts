@@ -113,7 +113,7 @@ test('first run ends on the guide, and Settings opens it again', async ({ page }
   await page.getByRole('button', { name: 'Skip for now', exact: true }).click();
   const guide = page.getByRole('dialog', { name: 'Guide' });
   await expect(guide.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
-  for (const title of ['Bars', 'Your games', 'Overnight']) {
+  for (const title of ['Bars', 'Your games', 'Overnight', 'Getting around']) {
     await guide.getByRole('button', { name: 'Next', exact: true }).click();
     await expect(guide.getByRole('heading', { name: title, exact: true })).toBeVisible();
   }

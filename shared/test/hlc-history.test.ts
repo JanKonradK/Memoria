@@ -10,7 +10,13 @@ import {
   recordAction,
   undoAction,
   restoreCheckpoint,
+  boundHistory,
   checkpoint,
+  localDayKey,
+  MAX_CHECKPOINTS,
+  MAX_CHECKPOINT_BYTES,
+  MAX_JOURNAL_BYTES,
+  MAX_JOURNAL_ENTRIES,
   type AppState,
 } from '../src';
 import { makeGame, makeResource, makeSnapshot, makeState, makeTask } from './helpers';
@@ -133,8 +139,74 @@ describe('local recovery', () => {
     const before = makeState();
     const after = makeState({ games: [makeGame()] });
     for (let i = 0; i < 520; i++) history = recordAction(history, before, after, 'Edit', i, String(i));
-    expect(history.journal).toHaveLength(500);
+    expect(MAX_JOURNAL_ENTRIES).toBe(300);
+    expect(history.journal).toHaveLength(300);
+    expect(history.journal[0]!.id).toBe('220');
     for (let i = 0; i < 20; i++) history = checkpoint(history, after, 'Daily', i, String(i));
-    expect(history.checkpoints).toHaveLength(12);
+    expect(MAX_CHECKPOINTS).toBe(6);
+    expect(history.checkpoints).toHaveLength(6);
+    expect(history.checkpoints.map((item) => item.id)).toEqual(['14', '15', '16', '17', '18', '19']);
+  });
+  it('bounds by bytes in one pass, keeping the newest entries that fit', () => {
+    const before = makeState();
+    // About 100 KB per action: ten fit in the 1 MB journal, not eleven.
+    const big = (i: number) => makeState({ games: [makeGame({ notes: `${i}`.padEnd(100_000, 'x') })] });
+    let history = emptyHistory('a');
+    for (let i = 0; i < 40; i++) history = recordAction(history, before, big(i), 'Edit', i, String(i));
+    const size = new TextEncoder().encode(JSON.stringify(history.journal)).length;
+    expect(size).toBeLessThanOrEqual(MAX_JOURNAL_BYTES);
+    expect(history.journal.length).toBeGreaterThan(5);
+    expect(history.journal.length).toBeLessThan(11);
+    expect(history.journal.at(-1)!.id).toBe('39');
+    // Ids stay contiguous and newest-last: only the oldest were dropped.
+    const ids = history.journal.map((entry) => Number(entry.id));
+    expect(ids).toEqual(ids.map((_, index) => 40 - ids.length + index));
+    // Multi-byte text is counted as UTF-8, not UTF-16 code units.
+    const wide = makeState({ games: [makeGame({ notes: 'ż'.repeat(400_000) })] });
+    let utf = emptyHistory('b');
+    for (let i = 0; i < 3; i++) utf = recordAction(utf, before, wide, 'Edit', i, String(i));
+    expect(utf.journal).toHaveLength(1);
+    // A single entry larger than the whole budget is not kept.
+    const huge = makeState({ games: [makeGame({ notes: 'x'.repeat(MAX_CHECKPOINT_BYTES) })] });
+    expect(checkpoint(emptyHistory('c'), huge, 'Daily', 1, 'huge').checkpoints).toEqual([]);
+  });
+  it('cuts a history saved under larger limits down to the current ones', () => {
+    const state = makeState();
+    const old = {
+      ...emptyHistory('a'),
+      checkpoints: Array.from({ length: 12 }, (_, i) => ({ id: String(i), at: i, label: 'Daily', state })),
+      journal: Array.from({ length: 500 }, (_, i) => ({ id: String(i), at: i, label: 'Edit', changes: [] })),
+    };
+    const cut = boundHistory(old);
+    expect(cut.checkpoints.map((item) => item.id)).toEqual(['6', '7', '8', '9', '10', '11']);
+    expect(cut.journal).toHaveLength(MAX_JOURNAL_ENTRIES);
+    expect(boundHistory(cut)).toBe(cut);
+  });
+  it('bounds a large history quickly (linear, not quadratic)', () => {
+    const entries = Array.from({ length: 5_000 }, (_, i) => ({
+      id: String(i),
+      at: i,
+      label: 'Edit',
+      changes: [{ collection: 'games' as const, id: 'g', after: { notes: 'x'.repeat(20_000) } }],
+    }));
+    const history = { ...emptyHistory('a'), journal: entries };
+    const started = performance.now();
+    const next = recordAction(history, makeState(), makeState({ games: [makeGame()] }), 'Edit', 9, 'last');
+    expect(performance.now() - started).toBeLessThan(2_000);
+    // 300 recent entries of ~20 KB each: only the newest ~50 fit in 1 MB.
+    expect(next.journal.length).toBeGreaterThan(40);
+    expect(next.journal.length).toBeLessThan(MAX_JOURNAL_ENTRIES);
+    expect(next.journal.at(-1)!.id).toBe('last');
+  });
+  it('keys days in the given time zone, falling back to the device day', () => {
+    const at = Date.parse('2026-11-21T23:30:00Z');
+    expect(localDayKey(at, 'UTC')).toBe('2026-11-21');
+    expect(localDayKey(at, 'Asia/Tokyo')).toBe('2026-11-22');
+    expect(localDayKey(at, 'America/Los_Angeles')).toBe('2026-11-21');
+    expect(localDayKey(Date.parse('2026-01-05T00:30:00Z'), 'Pacific/Honolulu')).toBe('2026-01-04');
+    const local = new Date(at);
+    const device = `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, '0')}-${String(local.getDate()).padStart(2, '0')}`;
+    expect(localDayKey(at, 'Not/AZone')).toBe(device);
+    expect(localDayKey(at)).toBe(device);
   });
 });

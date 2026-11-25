@@ -139,6 +139,75 @@
         onGameStopped: (listener) => subscribe('memoria:game-stopped', listener),
         onOpenGame: (listener) => subscribe('memoria:open-game', listener),
       }),
+      // Opt-in live numbers. Sign-in cookies, history links and folder paths
+      // stay in Rust: the page only ever sees status, numbers and text.
+      connectors: Object.freeze({
+        status: () => invoke('connector_status'),
+        hoyolab: Object.freeze({
+          login: (options) => invoke('connector_hoyolab_login', { fresh: options?.fresh === true }),
+          importBrowser: (raw) => invoke('connector_hoyolab_import_browser', { raw: String(raw ?? '') }),
+          disconnect: () => invoke('connector_hoyolab_disconnect'),
+          link: (gameId, presetKey, uid, region) =>
+            invoke('connector_hoyolab_link', {
+              gameId: String(gameId),
+              presetKey: String(presetKey),
+              uid: uid == null ? null : String(uid),
+              region: region == null ? null : String(region),
+            }),
+          refresh: (gameId, options) =>
+            invoke('connector_hoyolab_refresh', { gameId: String(gameId), auto: options?.auto === true }),
+          redeem: (gameId, code) =>
+            invoke('connector_hoyolab_redeem', { gameId: String(gameId), code: String(code ?? '') }),
+          checkin: (gameId) => invoke('connector_hoyolab_checkin', { gameId: String(gameId) }),
+          setPrefs: (changes) => invoke('connector_hoyolab_prefs', { changes: changes ?? {} }),
+        }),
+        // Arknights: Endfield through SKPORT. Its tokens stay in Rust like HoYoLAB's cookies.
+        skport: Object.freeze({
+          login: (options) => invoke('connector_skport_login', { fresh: options?.fresh === true }),
+          importBrowser: (raw) => invoke('connector_skport_import_browser', { raw: String(raw ?? '') }),
+          disconnect: () => invoke('connector_skport_disconnect'),
+          link: (gameId, uid, region) =>
+            invoke('connector_skport_link', {
+              gameId: String(gameId),
+              uid: uid == null ? null : String(uid),
+              region: region == null ? null : String(region),
+            }),
+          refresh: (gameId, options) =>
+            invoke('connector_skport_refresh', { gameId: String(gameId), auto: options?.auto === true }),
+          setPrefs: (changes) => invoke('connector_skport_prefs', { changes: changes ?? {} }),
+        }),
+        // Connecting from the player's own browser: a one-time code for the helper extension.
+        browser: Object.freeze({
+          start: (provider) => invoke('connector_browser_start', { provider: String(provider) }),
+          cancel: () => invoke('connector_browser_cancel'),
+          openHelper: () => invoke('connector_browser_open_helper'),
+        }),
+        gachaScan: (game, options) =>
+          invoke('connector_gacha_scan', { game: String(game), pickFolder: options?.pickFolder === true }),
+        screenshot: Object.freeze({
+          pick: () => invoke('connector_screenshot_pick'),
+          watchChoose: () => invoke('connector_screenshot_watch_choose'),
+          watchClear: () => invoke('connector_screenshot_watch_clear'),
+          openCaptures: () => invoke('connector_screenshot_captures_open'),
+          clearCaptures: () => invoke('connector_screenshot_captures_clear'),
+          // 'window' reads the game in front and resolves with the reading;
+          // 'snip' resolves with null and the reading arrives through onScreenshotOcr.
+          capture: (mode) => invoke('connector_screenshot_capture', { mode: mode === 'window' ? 'window' : 'snip' }),
+          setShortcut: (enabled, accelerator) =>
+            invoke('connector_screenshot_set_shortcut', {
+              enabled: enabled === true,
+              accelerator: accelerator == null ? null : String(accelerator),
+            }),
+        }),
+        onStatusChanged: (listener) =>
+          subscribe('memoria:connector-status', listener, (value) => Boolean(value && typeof value === 'object')),
+        onScreenshotOcr: (listener) =>
+          subscribe(
+            'memoria:screenshot-ocr',
+            listener,
+            (value) => typeof value?.fileName === 'string' && Array.isArray(value?.lines),
+          ),
+      }),
       onCloseRequested(listener) {
         const stop = subscribe('memoria:close-request', listener, (value) => typeof value === 'string');
         void invoke('renderer_ready').catch(() => undefined);

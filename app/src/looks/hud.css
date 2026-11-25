@@ -33,6 +33,16 @@
     backdrop-filter: blur(10px);
     border-bottom-color: color-mix(in srgb, var(--color-accent) 16%, var(--color-line-hairline));
   }
+  @media (pointer: coarse) {
+    :scope {
+      --dock-fill: color-mix(in srgb, var(--color-surface-0) 95%, transparent);
+    }
+    .page-bar {
+      background: color-mix(in srgb, var(--color-surface-0) 95%, transparent);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
   :is(.today-steps-rule h2, .look-rule-label, .tab-label, .look-preview-h2) {
     font-size: var(--text-caption);
     font-weight: 400;

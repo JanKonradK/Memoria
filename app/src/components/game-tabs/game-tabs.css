@@ -1,5 +1,6 @@
 /* A game's tab panel: flat on the page ground, under the page bar. */
 .game-tab-panel {
+  min-width: 0;
   padding-top: 24px;
   padding-bottom: 40px;
 }
@@ -9,8 +10,9 @@
   }
 }
 
-/* Track: energy, tasks, then events above the notes. Below 1280px the side
-   column stands beside energy and tasks; one column reads top to bottom. */
+/* Track: energy, tasks, then events above the notes. On a wide screen energy
+   stacks above tasks in the first column and events fill the second; one
+   column reads top to bottom. */
 .game-track-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -18,18 +20,20 @@
   gap: 24px 44px;
 }
 .game-track-grid[data-cols='2'] {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.05fr);
   grid-template-areas:
     'energy side'
     'tasks side';
   grid-template-rows: auto 1fr;
+  column-gap: clamp(32px, 4vw, 56px);
 }
-/* Energy is a few short bars, so it takes the narrowest column; events carry
-   the longest names, so they grow with the tasks rather than stop at 380px. */
+/* Energy is a few short bars, so it takes the narrowest column; tasks are the
+   daily hot path, so they lead in width; events carry the longest names, so
+   they keep a generous floor rather than stop at 380px. */
 .game-track-grid[data-cols='3'] {
-  grid-template-columns: minmax(280px, 0.78fr) minmax(0, 1fr) minmax(320px, 1fr);
+  grid-template-columns: minmax(290px, 0.85fr) minmax(0, 1.05fr) minmax(310px, 0.95fr);
   grid-template-areas: 'energy tasks side';
-  column-gap: 36px;
+  column-gap: 40px;
 }
 .game-track-grid[data-cols='2'] > .game-track-energy,
 .game-track-grid[data-cols='3'] > .game-track-energy {
@@ -45,12 +49,17 @@
 }
 .game-track-side {
   display: grid;
-  gap: 22px;
+  gap: 28px;
   align-content: start;
 }
 /* Tasks begin at the top of their own column, level with the energy. */
 .game-track-grid[data-cols='3'] .game-track-tasks > :first-child {
   margin-top: 0;
+}
+
+/* Codes: a single readable column, not the full page width. */
+.game-codes-page {
+  max-width: 56rem;
 }
 
 /* A section label: words, then a hairline to the edge. */
@@ -101,12 +110,17 @@
   padding: 10px 8px;
   border-radius: var(--radius-ui-sm);
   text-align: left;
-  transition: background-color var(--dur-fast) var(--ease-out);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    scale var(--dur-fast) var(--ease-out);
 }
 @media (hover: hover) {
   .game-events-row:hover {
     background: var(--color-fill-1);
   }
+}
+.game-events-row:active {
+  scale: 0.99;
 }
 .game-events-row + .game-events-row,
 .game-events-list > li + li {
@@ -227,7 +241,11 @@
   scroll-snap-align: start;
   transition:
     background-color var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out);
+    color var(--dur-fast) var(--ease-out),
+    scale var(--dur-fast) var(--ease-out);
+}
+.game-account:active {
+  scale: 0.96;
 }
 .game-account[aria-pressed='true'] {
   background: color-mix(in srgb, var(--game-ink, var(--color-accent)) 18%, transparent);
@@ -248,5 +266,15 @@
 @media (pointer: coarse) {
   .game-account {
     min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-events-row,
+  .game-account {
+    transition: none;
+  }
+  .game-events-row:active,
+  .game-account:active {
+    scale: none;
   }
 }

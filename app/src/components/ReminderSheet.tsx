@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import { NOTIFICATION_STYLES, notificationStyle, type NotificationStyle } from '@memoria/shared';
 import { useApp } from '../store';
+import { useShallow } from 'zustand/react/shallow';
 import { useUI } from '../ui-store';
 import { fmtDateTimeLocalInput, parseDateTimeLocalInput } from '../util';
 import { rosterGames } from './roster';
@@ -10,7 +11,7 @@ import { REPEAT_OPTIONS } from './settings/reminder-repeat';
 import { STYLE_HINTS, STYLE_LABELS } from './settings/ReminderStyles';
 
 export function ReminderSheet({ open }: { open: boolean }) {
-  const state = useApp((s) => s.state);
+  const state = useApp(useShallow((s) => ({ games: s.state.games, settings: s.state.settings })));
   const addReminder = useApp((s) => s.addReminder);
   const closeSheet = useUI((s) => s.closeSheet);
 

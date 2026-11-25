@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { EVENT_STEPS, eventPartsDone, eventProgress, nextEventProgress, setEventProgress } from '../src/event-parts';
+import {
+  EVENT_STEPS,
+  eventPartsDone,
+  eventPartsPatch,
+  eventProgress,
+  eventProgressPatch,
+  nextEventProgress,
+  setEventProgress,
+} from '../src/event-parts';
 import type { GameEvent } from '../src/types';
 import { makeEvent } from './helpers';
 
@@ -43,5 +51,30 @@ describe('event progress', () => {
       event = { ...event, ...setEventProgress(next) };
     }
     expect(seen).toEqual(['partial', 'done', 'none']);
+  });
+
+  it('keeps a stored part count when the state changes', () => {
+    const story = eventOf({ parts: 5, partsDone: 3 });
+    expect(eventProgressPatch(story, 'done')).toEqual({ parts: 5, partsDone: 5, done: true });
+    expect(eventProgressPatch(story, 'partial')).toEqual({ parts: 5, partsDone: 3, done: false });
+    expect(eventProgressPatch(eventOf({ parts: 5, partsDone: 5, done: true }), 'partial')).toEqual({
+      parts: 5,
+      partsDone: 4,
+      done: false,
+    });
+    expect(eventProgressPatch(eventOf({ parts: 5 }), 'partial')).toEqual({ parts: 5, partsDone: 1, done: false });
+    expect(eventProgressPatch(story, 'none')).toEqual({ parts: 5, partsDone: 0, done: false });
+    // Without parts, the plain three states.
+    expect(eventProgressPatch(eventOf(), 'done')).toEqual(setEventProgress('done'));
+    expect(eventProgressPatch(eventOf({ parts: 0 }), 'partial')).toEqual(setEventProgress('partial'));
+  });
+
+  it('clamps a part tally and calls it done once every part is', () => {
+    expect(eventPartsPatch({ parts: 4 }, 2)).toEqual({ parts: 4, partsDone: 2, done: false });
+    expect(eventPartsPatch({ parts: 4 }, 4)).toEqual({ parts: 4, partsDone: 4, done: true });
+    expect(eventPartsPatch({ parts: 4 }, 9)).toEqual({ parts: 4, partsDone: 4, done: true });
+    expect(eventPartsPatch({ parts: 4 }, -2)).toEqual({ parts: 4, partsDone: 0, done: false });
+    expect(eventPartsPatch({}, 1)).toEqual({ partsDone: 1, done: false });
+    expect(eventPartsPatch({}, EVENT_STEPS)).toEqual({ partsDone: EVENT_STEPS, done: true });
   });
 });

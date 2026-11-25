@@ -76,6 +76,11 @@ test('Today says when Windows hides Memoria’s toasts and opens the right setti
   await prompt.getByRole('button', { name: 'Open Windows settings' }).click();
   expect(await page.evaluate(() => (window as unknown as { testCalls: string[] }).testCalls)).toContain('settings');
   await prompt.getByRole('button', { name: 'Not now: reminders' }).click();
+  await page.evaluate(async () => {
+    const path = '/src/store.ts';
+    const { flushPersist } = await import(path);
+    await flushPersist();
+  });
   await page.reload();
   await expect(page.getByText('Windows is hiding Memoria’s reminders')).toHaveCount(0);
 });
@@ -95,6 +100,11 @@ test('each kind of reminder has a style, alarms have a ring, and Test sends a sa
     'test:alarm:chime',
   );
 
+  await page.evaluate(async () => {
+    const path = '/src/store.ts';
+    const { flushPersist } = await import(path);
+    await flushPersist();
+  });
   await page.reload();
   await openSettings(page, 'Reminders');
   await expect(page.getByRole('combobox', { name: 'Dailies before reset style', exact: true })).toContainText('Alarm');
