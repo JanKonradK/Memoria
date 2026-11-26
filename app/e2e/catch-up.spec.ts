@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { emptyState, PRESETS } from '@memoria/shared';
 import { makeGame } from '../../shared/test/helpers';
-import { openGame, openSettings, showTodayGames } from './support';
+import { openGame, openSettings } from './support';
 
 const genshin = PRESETS.find((preset) => preset.key === 'genshin')!;
 
@@ -57,15 +57,8 @@ test('a game page catches up in its News tab, which marks versions read and stay
   const now = Date.parse('2026-11-05T12:00:00Z');
   await page.clock.setFixedTime(new Date(now));
   await openGenshin(page, now);
-  let news;
-  if ((page.viewportSize()?.width ?? 0) >= 900) {
-    // The card beside Today's games opens the same tab.
-    await showTodayGames(page);
-    await page.getByRole('button', { name: /^Review Genshin Impact/ }).click();
-    await page.getByRole('button', { name: /^Catch up on Genshin Impact, 2 new/ }).click();
-    await expect(page.getByRole('tab', { name: /^News/ })).toHaveAttribute('aria-selected', 'true');
-    news = page.getByRole('tabpanel');
-  } else news = await openNews(page);
+  // Every width opens the game's page from Today, then its News tab.
+  const news = await openNews(page);
   await expect(page.getByRole('tab', { name: /^News.*2 new$/ })).toBeVisible();
   await expect(news.getByRole('heading', { name: /Version 7\.2/ })).toBeVisible();
   await expect(news.getByText('Mitya', { exact: true })).toBeVisible();

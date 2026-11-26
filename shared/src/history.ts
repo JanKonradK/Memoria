@@ -270,7 +270,15 @@ export function undoAction(current: AppState, entry: JournalEntry, later: Journa
     } else if (!live) {
       if (!protectedFields.size) list.push(change.before);
     } else {
-      const restored = { ...live };
+      // A tombstone slimmed after 90 days still holds its original deletion clock: rebuild the
+      // pre-slim snapshot from the journal's `after` before restoring deleted fields, keeping the
+      // live clock metadata so synced peers still accept the restore.
+      const sameTombstone =
+        live.deleted === true && change.after?.deleted === true && sameValue(recordHlc(live), recordHlc(change.after));
+      const base: Row = sameTombstone
+        ? { ...change.after, hlc: live.hlc, updatedAt: live.updatedAt, deviceId: live.deviceId }
+        : live;
+      const restored = { ...base };
       for (const field of new Set([...Object.keys(change.before), ...Object.keys(change.after ?? {})])) {
         if (
           META.has(field) ||
@@ -279,7 +287,7 @@ export function undoAction(current: AppState, entry: JournalEntry, later: Journa
           sameValue(change.before[field], change.after?.[field])
         )
           continue;
-        if (!sameValue(live[field], change.after?.[field])) continue;
+        if (!sameValue(base[field], change.after?.[field])) continue;
         if (field in change.before) restored[field] = change.before[field];
         else delete restored[field];
       }

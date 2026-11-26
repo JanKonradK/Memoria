@@ -1,0 +1,267 @@
+/* The Windows app's quick card (CompactGameCard.tsx): the one window shrunk
+   to a single game. Its bar is the window's title bar, drawn to the full
+   bar's measures (32px, Segoe, Windows' close red) and, like it, undoing the
+   page zoom through --chrome-zoom so it stays the size of Windows' own. */
+.compact-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.compact-chrome {
+  position: sticky;
+  top: 0;
+  /* Over sheets and confirms, as the full bar is: the card can always be moved and closed. */
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding-left: 10px;
+  zoom: var(--chrome-zoom, 1);
+  pointer-events: auto;
+  background: var(--backdrop-ground, var(--color-surface-0));
+  border-bottom: 1px solid var(--color-line-hairline);
+  color: var(--color-dim);
+  font:
+    400 12px/32px 'Segoe UI Variable Text',
+    'Segoe UI',
+    var(--font-body),
+    sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+.compact-chrome[data-active] {
+  color: var(--color-muted);
+}
+.compact-chrome-logo {
+  flex-shrink: 0;
+}
+.compact-chrome-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--game-ink, var(--color-fg));
+  font-weight: 600;
+}
+.compact-chrome-chip {
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+.compact-chrome-switch,
+.compact-chrome-buttons {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+.compact-chrome-switch {
+  position: relative;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-ui-sm);
+  color: var(--color-fg-soft);
+}
+.compact-chrome-switch:hover {
+  background: var(--color-fill-3);
+}
+.compact-chrome-switch:has(:focus-visible) {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: -2px;
+}
+/* The native list opens from the chevron; the select itself is the hit area. */
+.compact-chrome-switch select {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.compact-chrome-buttons {
+  display: flex;
+  align-self: stretch;
+  margin-left: auto;
+}
+.compact-chrome-buttons button {
+  display: grid;
+  place-items: center;
+  height: 32px;
+  color: var(--color-fg-soft);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.compact-chrome[data-active] .compact-chrome-buttons button {
+  color: var(--color-fg);
+}
+.compact-chrome-buttons button:hover {
+  background: var(--color-fill-3);
+}
+.compact-chrome-buttons button:active {
+  background: var(--color-fill-2);
+}
+.compact-chrome-buttons button:focus-visible {
+  outline-offset: -2px;
+}
+.compact-chrome-glyph {
+  width: 40px;
+  font:
+    10px/1 'Segoe Fluent Icons',
+    'Segoe MDL2 Assets';
+}
+.compact-chrome .compact-chrome-glyph[aria-pressed='true'] {
+  color: var(--game-ink, var(--color-accent-fg));
+}
+.compact-chrome-open {
+  padding-inline: 10px;
+  white-space: nowrap;
+}
+.compact-chrome-glyph[data-close] {
+  width: 46px;
+}
+.compact-chrome-buttons button[data-close]:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+.compact-chrome-buttons button[data-close]:active {
+  background: rgb(196 43 28 / 0.9);
+  color: rgb(255 255 255 / 0.7);
+}
+
+.compact-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  padding: 12px 14px 16px;
+  overflow-y: auto;
+}
+
+/* The reading leads: a 56px value the keyboard lands on, its steps always shown. */
+.compact-card-reading .energy-value-box {
+  height: 56px;
+  padding-inline: 14px;
+}
+.compact-card-reading .energy-value-input {
+  min-height: 56px;
+  font-size: 2rem;
+}
+.compact-card-reading .energy-step.energy-row-control {
+  display: flex;
+  width: 40px;
+  height: 40px;
+  opacity: 1;
+}
+
+.compact-card-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.compact-card-rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  color: var(--color-muted);
+  font-size: var(--text-meta);
+  font-weight: 600;
+}
+.compact-card-rule-line {
+  flex: 1;
+  min-width: 16px;
+  height: 1px;
+  background: var(--color-line-hairline);
+}
+.compact-card-tick {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding-inline: 8px;
+  border-radius: var(--radius-ui-sm);
+  color: var(--game-ink, var(--color-accent-fg));
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+.compact-card-tick:hover {
+  background: var(--color-fill-2);
+}
+
+.compact-card-dailies {
+  display: flex;
+  flex-direction: column;
+}
+.compact-card-daily,
+.compact-card-event {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border-radius: var(--radius-ui-md);
+  text-align: left;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.compact-card-daily {
+  gap: 10px;
+  min-height: 36px;
+  padding: 4px 8px;
+  font-size: var(--text-body);
+}
+.compact-card-daily:hover,
+.compact-card-event:hover {
+  background: var(--color-fill-2);
+}
+.compact-card-daily[aria-disabled='true'] {
+  cursor: default;
+}
+.compact-card-daily[aria-disabled='true']:hover {
+  background: none;
+}
+
+.compact-card-events {
+  display: flex;
+  flex-direction: column;
+}
+.compact-card-event {
+  gap: 8px;
+  min-height: 32px;
+  padding: 2px 8px;
+  font-size: var(--text-meta);
+}
+
+.compact-card-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px 4px;
+}
+.compact-card-action {
+  min-height: var(--control-h);
+  padding-inline: 12px;
+  border-radius: var(--radius-ui-md);
+  background: var(--color-fill-2);
+  box-shadow: inset 0 0 0 1px var(--color-line-hairline);
+  color: var(--color-fg-soft);
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+.compact-card-action:hover {
+  background: var(--color-fill-3);
+}
+
+@media (forced-colors: active) {
+  .compact-chrome-buttons button:hover {
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .compact-chrome-buttons button,
+  .compact-card-daily,
+  .compact-card-event {
+    transition: none;
+  }
+}

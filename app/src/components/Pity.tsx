@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { DateTime } from 'luxon';
 import {
   addPulls,
@@ -19,7 +19,7 @@ import {
 import { useApp } from '../store';
 import { useElementWidth } from '../hooks';
 import { uid } from '../util';
-import { Btn, Field, NumInput, Segmented, TextInput, TOUCH_BUTTON } from './ui';
+import { Btn, Field, FileButton, NumInput, Segmented, TextInput } from './ui';
 import { gachaSummaryText, importGachaFile, scanPcGacha, type GachaImportOutcome } from '../connectors';
 import { ChartTip, fmt } from './chart';
 
@@ -110,7 +110,6 @@ type ImportStatus = { tone: 'ok' | 'error'; text: string; folderMissing?: boolea
 
 /** Fills pity from a pull-history export, or from the game on this PC in the Windows app. */
 function PullImportBar({ game }: { game: Game }) {
-  const inputId = useId();
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<ImportStatus>(null);
   const [pick, setPick] = useState<{ text: string; uids: string[]; uid: string } | null>(null);
@@ -156,30 +155,16 @@ function PullImportBar({ game }: { game: Game }) {
   return (
     <div className="mt-2 space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <input
-          id={inputId}
-          type="file"
-          accept="application/json,.json"
-          className="sr-only"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = '';
-            readFile(file);
-          }}
-        />
-        <label
-          htmlFor={inputId}
-          className={`btn-compact inline-flex min-h-8 cursor-pointer items-center rounded-ui-md bg-fill-2 px-3 py-1 text-caption font-semibold text-fg-soft ring-1 ring-line-hairline hover:bg-fill-3 ${TOUCH_BUTTON}`}
-        >
+        <FileButton accept="application/json,.json" onFile={readFile}>
           Import UIGF / JSON…
-        </label>
+        </FileButton>
         {pcScan && (
-          <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => scan(false)}>
+          <Btn disabled={busy} onClick={() => scan(false)}>
             {busy ? 'Reading…' : 'Read from PC game'}
           </Btn>
         )}
         {pcScan && status?.folderMissing && (
-          <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => scan(true)}>
+          <Btn disabled={busy} onClick={() => scan(true)}>
             Choose game folder…
           </Btn>
         )}
@@ -195,7 +180,6 @@ function PullImportBar({ game }: { game: Game }) {
           />
           <Btn
             kind="primary"
-            className={TOUCH_BUTTON}
             onClick={() => {
               const outcome = importGachaFile(game, pick.text, pick.uid);
               setPick(null);
@@ -204,9 +188,7 @@ function PullImportBar({ game }: { game: Game }) {
           >
             Import selected account
           </Btn>
-          <Btn className={TOUCH_BUTTON} onClick={() => setPick(null)}>
-            Cancel
-          </Btn>
+          <Btn onClick={() => setPick(null)}>Cancel</Btn>
         </div>
       )}
       {status && (

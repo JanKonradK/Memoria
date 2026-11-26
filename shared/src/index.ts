@@ -34,4 +34,5 @@ export * from './timeline-pack';
 export * from './bank';
 export * from './notes';
 export * from './get-ahead';
+export * from './streaks';
 export * from './connectors';

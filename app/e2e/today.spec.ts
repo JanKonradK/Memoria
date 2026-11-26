@@ -133,8 +133,8 @@ test('Today starts a new roster and keeps all navigation reachable', async ({ pa
   await addGenshin(page);
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   // Steps first: a new game's dailies are already there to tick.
-  const view = page.getByRole('group', { name: 'Today view' });
-  await expect(view.getByRole('button', { name: 'Steps', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  const view = page.getByRole('radiogroup', { name: 'Today view' });
+  await expect(view.getByRole('radio', { name: 'Steps', exact: true })).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByRole('button', { name: 'Mark Daily Commissions ×4 done', exact: true })).toBeVisible();
   await showTodayGames(page);
   await expect(page.getByRole('list', { name: 'Games', exact: true })).toBeVisible();
@@ -151,35 +151,27 @@ test('Today starts a new roster and keeps all navigation reachable', async ({ pa
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
 });
 
-test('a Today game is edited in its card on desktop and on its own page on a phone', async ({ page }) => {
+test('a Today game is edited on its own page, at every width', async ({ page }) => {
   await addGenshin(page);
   await showTodayGames(page);
-  const desktop = page.viewportSize()!.width >= 900;
-  const row = page.getByRole('button', { name: `${desktop ? 'Review' : 'Open'} Genshin Impact`, exact: true });
+  const row = page.getByRole('button', { name: 'Open Genshin Impact', exact: true });
   await expect(page.getByRole('button', { name: 'Open game', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Readings', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Play mode', exact: true })).toHaveCount(0);
-  if (desktop) {
-    await expect(row).toHaveAttribute('aria-pressed', 'true');
-    const card = page.getByRole('region', { name: 'Genshin Impact card', exact: true });
-    const energy = card.getByLabel('Original Resin current value', { exact: true });
-    await energy.fill('91');
-    await energy.press('Enter');
-    await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
-  } else {
-    await row.click();
-    const energy = page.getByLabel('Original Resin current value', { exact: true });
-    await energy.fill('91');
-    await energy.press('Enter');
-    await page.goBack();
-    await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
-  }
+  // No card beside the list on a wide window: the row is the way in everywhere.
+  await expect(page.getByRole('region', { name: 'Genshin Impact card', exact: true })).toHaveCount(0);
+  await row.click();
+  const energy = page.getByLabel('Original Resin current value', { exact: true });
+  await energy.fill('91');
+  await energy.press('Enter');
+  await page.goBack();
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible();
   await expect(row).toHaveAccessibleDescription(/Estimated 91 of 200 Original Resin/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 test('browser Back restores a scrolled Today roster', async ({ page }, info) => {
-  test.skip(info.project.name === 'desktop', 'Phone priority opens the game directly');
+  test.skip(info.project.name === 'desktop', 'A desktop grid holds the whole roster without scrolling');
   const state = emptyState();
   state.games = Array.from({ length: 12 }, (_, index) =>
     makeGame({ id: `today-${index}`, name: `Today game ${index}`, sort: index }),
@@ -210,7 +202,11 @@ test.describe('Steps', () => {
     const titles = await groups.allTextContents();
     expect(titles.indexOf('This evening')).toBeGreaterThan(0);
     expect(titles.indexOf('Reset 03:00')).toBeGreaterThan(titles.indexOf('This evening'));
-    expect(titles.at(-1)).toBe('This week');
+    // The rest of the week sits in the side column, with what is coming.
+    expect(titles).not.toContain('This week');
+    await expect(
+      page.getByRole('complementary', { name: 'Coming up' }).getByRole('heading', { name: 'This week' }),
+    ).toBeVisible();
     // NIKKE's nine events ending together are one step.
     await expect(page.getByRole('button', { name: /^VOLT TRIP / })).toBeVisible();
     await expect(page.getByText(/ends · \+8/)).toBeVisible();
@@ -251,9 +247,15 @@ test.describe('Steps', () => {
 
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const targets = await page
-      .locator('.today-step-tick, .today-step-open, .view-switch button')
+      .locator('.today-step-tick, .today-step-open')
       .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().height));
     if (info.project.name !== 'desktop') expect(Math.min(...targets)).toBeGreaterThanOrEqual(44);
+    // The view switch is a control: 44px under a finger, the shared 36px under a mouse at any width.
+    const touch = await page.evaluate(() => matchMedia('(pointer: coarse)').matches);
+    const switches = await page
+      .locator('.view-switch button')
+      .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().height));
+    expect(Math.min(...switches)).toBeGreaterThanOrEqual(touch ? 44 : 36);
     expect(await seriousViolations(page)).toEqual([]);
     await page.screenshot({ path: info.outputPath('steps-dark.png'), fullPage: true });
     await page.emulateMedia({ colorScheme: 'light' });

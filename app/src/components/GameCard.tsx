@@ -30,7 +30,7 @@ import { EnergyRow } from './EnergyRow';
 import { AttentionIndicator } from './AttentionIndicator';
 import { Pill, ProgressBar, Tick } from './primitives';
 import { GameEvents } from './GameEvents';
-import { Btn, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
+import { Btn, ServerChip, Tooltip } from './ui';
 import { useIdentityColors } from './roster';
 import { gameServerLabel } from '../server-choice';
 import { groupGameEvents } from '../event-category';
@@ -498,7 +498,7 @@ export function EventStrip({
                   key={ev.id}
                   type="button"
                   onClick={() => onOpenEvent(ev.id, game.id)}
-                  className={`flex min-h-11 w-full min-w-0 items-start gap-2 rounded-ui-md px-1.5 py-2 text-left text-body transition hover:bg-fill-2 fine:min-h-8 fine:items-center fine:py-0.5`}
+                  className="flex min-h-11 w-full min-w-0 items-start gap-2 rounded-ui-md px-1.5 py-2 text-left text-body transition hover:bg-fill-2 fine:min-h-8 fine:items-center fine:py-0.5"
                 >
                   <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 md:flex-nowrap">
                     <EventTags game={game} event={ev} />
@@ -540,17 +540,20 @@ export function EventStrip({
                 >
                   <div className="flex items-center gap-1">
                     {open}
-                    <button
-                      type="button"
-                      role="checkbox"
-                      aria-checked={progress === 'done' ? true : progress === 'partial' ? 'mixed' : false}
-                      aria-label={`${ev.name}: done`}
-                      title={`${EVENT_PROGRESS_LABEL[progress]}. Tap for ${EVENT_PROGRESS_LABEL[nextEventProgress(ev)].toLowerCase()}.`}
-                      onClick={() => onSetProgress(ev, nextEventProgress(ev))}
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-md transition hover:bg-fill-2 fine:h-8 fine:w-8"
+                    <Tooltip
+                      content={`${EVENT_PROGRESS_LABEL[progress]}. Tap for ${EVENT_PROGRESS_LABEL[nextEventProgress(ev)].toLowerCase()}.`}
                     >
-                      <EventTick ticked={eventPartsDone(ev)} total={EVENT_STEPS} color={gameInk(game, ground)} />
-                    </button>
+                      <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={progress === 'done' ? true : progress === 'partial' ? 'mixed' : false}
+                        aria-label={`${ev.name}: done`}
+                        onClick={() => onSetProgress(ev, nextEventProgress(ev))}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ui-md transition hover:bg-fill-2 fine:h-8 fine:w-8"
+                      >
+                        <EventTick ticked={eventPartsDone(ev)} total={EVENT_STEPS} color={gameInk(game, ground)} />
+                      </button>
+                    </Tooltip>
                   </div>
                 </SwipeRow>
               );
@@ -568,12 +571,24 @@ export function EventStrip({
 // its own height. The same verdict is on the hub as one line across all games,
 // which is where a once-a-night check belongs.
 
+/** Rows a player hid in the retired layout editor, or from Game settings: `resource:<id>`, `task:<id>`, `quick-spend`, `events`. */
+export function hiddenRows(game: Game, state: AppState): ReadonlySet<string> {
+  return new Set(
+    game.cardLayout
+      ? resolveGameLayout(game, state.resources, state.tasks)
+          .filter((item) => item.hidden)
+          .map((item) => item.id)
+      : [],
+  );
+}
+
 export type GameControlActions = Pick<
   AppStore,
   'setTaskDone' | 'restartTaskTimer' | 'advanceTaskTimer' | 'setTaskCount' | 'setEnergy' | 'adjustEnergy'
 >;
 
-function EnergyControlRow({
+/** One bar of a game's card, with what banks it. The quick card shows the game's first. */
+export function EnergyControlRow({
   game,
   res,
   snap,
@@ -585,6 +600,7 @@ function EnergyControlRow({
   pulse,
   counter,
   counterSnap,
+  onCommitNext,
 }: {
   game: Game;
   res: AppState['resources'][number];
@@ -599,6 +615,8 @@ function EnergyControlRow({
   note?: ReactNode;
   need?: 'value' | 'reserve';
   pulse?: boolean;
+  /** Enter in the value moves on, for a reading followed by more of the same game. */
+  onCommitNext?: (reverse: boolean) => void;
 }) {
   const ground = useGround();
   const projection = useMemo(() => projectEnergy(res, measuredSnapshot(res, snap), now, game), [game, now, res, snap]);
@@ -643,6 +661,7 @@ function EnergyControlRow({
       pulse={pulse}
       onTouched={touched}
       counter={bank}
+      onCommitNext={onCommitNext}
     />
   );
 }
@@ -715,7 +734,15 @@ function ResourceControls({
   );
 }
 
-function QuickSpendControls({ game, state, actions }: { game: Game; state: AppState; actions: GameControlActions }) {
+export function QuickSpendControls({
+  game,
+  state,
+  actions,
+}: {
+  game: Game;
+  state: AppState;
+  actions: GameControlActions;
+}) {
   const resources = state.resources
     .filter((item) => item.gameId === game.id && !item.deleted)
     .sort((a, b) => a.sort - b.sort);
@@ -751,7 +778,7 @@ function QuickSpendControls({ game, state, actions }: { game: Game; state: AppSt
  * worked: dailies, then the cycles that are open right now, then the weekly
  * and monthly backlog. Core tasks lead inside each group.
  */
-function groupChecklist(checklist: ChecklistItem[]): Array<{
+export function groupChecklist(checklist: ChecklistItem[]): Array<{
   cadence: ChecklistItem['cadence'];
   items: ChecklistItem[];
   done: number;
@@ -951,23 +978,24 @@ function LinkedTaskRow({
             Mark done
           </button>
         ) : (
-          <a
-            href={item.link}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-ui-sm text-accent-fg hover:bg-fill-2 fine:min-h-8 fine:min-w-8"
-            aria-label={`Open ${item.name}`}
-            title={`Open ${item.name}`}
-            onClick={() => setOpened(true)}
-          >
-            <svg viewBox="0 0 20 20" aria-hidden className="icon h-4 w-4" fill="none" stroke="currentColor">
-              <path
-                d="M11 4h5v5M16 4l-7 7M14 11.5V15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </a>
+          <Tooltip content={`Open ${item.name}`}>
+            <a
+              href={item.link}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-ui-sm text-accent-fg hover:bg-fill-2 fine:min-h-8 fine:min-w-8"
+              aria-label={`Open ${item.name}`}
+              onClick={() => setOpened(true)}
+            >
+              <svg viewBox="0 0 20 20" aria-hidden className="icon h-4 w-4" fill="none" stroke="currentColor">
+                <path
+                  d="M11 4h5v5M16 4l-7 7M14 11.5V15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </a>
+          </Tooltip>
         ))}
       {checkIn.failure && !item.done && <CheckInFailureNote failure={checkIn.failure} className="basis-full pl-1" />}
     </div>
@@ -1027,28 +1055,29 @@ function ChecklistControls({
                   Undo
                 </button>
               ) : canComplete ? (
-                <button
-                  type="button"
-                  className="-my-2.5 inline-flex min-h-11 shrink-0 items-center gap-1 rounded-ui-sm px-2 py-1.5 text-caption font-semibold hover:bg-fill-2 focus-visible:bg-fill-2 fine:-my-1.5 fine:min-h-0"
-                  style={{ color: actionInk }}
-                  aria-label={`Tick all dailies for ${game.name}`}
-                  title="Tick all dailies"
-                  onClick={() => {
-                    passSession(game.id, 'energy', 'reserve');
-                    const actionId = completeDailies(game.id);
-                    setCompletedAction(actionId);
-                    if (actionId)
-                      useUI.getState().showUndo(`${game.name} dailies ticked`, () => {
-                        undoActivity(actionId);
-                        setCompletedAction(undefined);
-                      });
-                  }}
-                >
-                  <svg viewBox="0 0 20 20" aria-hidden className="icon h-4 w-4" fill="none" stroke="currentColor">
-                    <path d="m2.5 10.5 3 3 6.5-7M9.5 13l.5.5 6.5-7" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <span aria-hidden>Tick all</span>
-                </button>
+                <Tooltip content="Tick all dailies">
+                  <button
+                    type="button"
+                    className="-my-2.5 inline-flex min-h-11 shrink-0 items-center gap-1 rounded-ui-sm px-2 py-1.5 text-caption font-semibold hover:bg-fill-2 focus-visible:bg-fill-2 fine:-my-1.5 fine:min-h-0"
+                    style={{ color: actionInk }}
+                    aria-label={`Tick all dailies for ${game.name}`}
+                    onClick={() => {
+                      passSession(game.id, 'energy', 'reserve');
+                      const actionId = completeDailies(game.id);
+                      setCompletedAction(actionId);
+                      if (actionId)
+                        useUI.getState().showUndo(`${game.name} dailies ticked`, () => {
+                          undoActivity(actionId);
+                          setCompletedAction(undefined);
+                        });
+                    }}
+                  >
+                    <svg viewBox="0 0 20 20" aria-hidden className="icon h-4 w-4" fill="none" stroke="currentColor">
+                      <path d="m2.5 10.5 3 3 6.5-7M9.5 13l.5.5 6.5-7" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span aria-hidden>Tick all</span>
+                  </button>
+                </Tooltip>
               ) : undefined
             }
           />
@@ -1120,19 +1149,20 @@ function GameControlsHeader({
   return (
     <div className="game-card-heading relative z-10 flex items-center gap-3">
       {onBack && (
-        <button
-          type="button"
-          data-workspace-back
-          onClick={onBack}
-          aria-label="Back to Today"
-          aria-keyshortcuts="Alt+ArrowLeft"
-          title="Back to Today (Alt+Left)"
-          className="workspace-back shell-control shrink-0"
-        >
-          <svg viewBox="0 0 20 20" className="icon h-5 w-5" fill="none" stroke="currentColor" aria-hidden>
-            <path d="m11 4-6 6 6 6M5 10h11" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
+        <Tooltip content="Back to Today (Alt+Left)">
+          <button
+            type="button"
+            data-workspace-back
+            onClick={onBack}
+            aria-label="Back to Today"
+            aria-keyshortcuts="Alt+ArrowLeft"
+            className="workspace-back shell-control shrink-0"
+          >
+            <svg viewBox="0 0 20 20" className="icon h-5 w-5" fill="none" stroke="currentColor" aria-hidden>
+              <path d="m11 4-6 6 6 6M5 10h11" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </Tooltip>
       )}
       {layout === 'focus' && <GameLogo game={game} size={fullLogo ? 136 : 72} flippable />}
       <TitleContainer
@@ -1188,8 +1218,11 @@ function GameControlsHeader({
       <div className="game-card-actions flex shrink-0 items-center gap-2" aria-label={`${game.name} tracking controls`}>
         {actions}
         <CatchUpButton game={game} />
-        <LiveRefreshButton game={game} />
-        <SnipReadingButton game={game} />
+        {/* Where a reading comes from, kept apart from the bar's own value chips (Spent all, Full). */}
+        <span className="game-card-sources" role="group" aria-label={`Read ${game.name} numbers`}>
+          <LiveRefreshButton game={game} />
+          <SnipReadingButton game={game} />
+        </span>
         {/* One Edit control for the game's settings and its events. Compact cards keep their title shortcut. */}
         <DropdownMenuPrimitive.Root>
           <Tooltip content={`Edit ${game.name} settings or events`}>
@@ -1197,7 +1230,7 @@ function GameControlsHeader({
               <Btn
                 ref={editRef}
                 type="button"
-                className={`inline-flex shrink-0 items-center gap-2 ${TOUCH_BUTTON}`}
+                className="inline-flex shrink-0 items-center gap-2"
                 aria-label={`Edit ${game.name}`}
               >
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" className="icon h-4 w-4" aria-hidden>
@@ -1270,7 +1303,7 @@ function LiveRefreshButton({ game }: { game: Game }) {
     <Tooltip content={failure || (waiting ? `${name} asked Memoria to wait` : `Read live numbers from ${name}`)}>
       <Btn
         type="button"
-        className={`relative inline-flex shrink-0 items-center gap-2 ${TOUCH_BUTTON}`}
+        className="relative inline-flex shrink-0 items-center gap-2"
         aria-label={`Refresh live numbers for ${game.name}`}
         aria-busy={busy || undefined}
         disabled={busy || waiting}
@@ -1300,31 +1333,39 @@ function LiveRefreshButton({ game }: { game: Game }) {
 function SnipReadingButton({ game }: { game: Game }) {
   const busy = useConnectors((store) => Boolean(store.busy.capture));
   if (game.paused || !window.memoriaDesktop?.connectors?.screenshot?.capture) return null;
-  // A plain title, not a Tooltip: the shortcut hint should not show twice.
   return (
-    <Btn
-      type="button"
-      className={`inline-flex shrink-0 items-center gap-2 ${TOUCH_BUTTON}`}
-      aria-label="Snip screenshot reading"
-      title="Snip screenshot reading (Shift+S)"
-      aria-busy={busy || undefined}
-      disabled={busy}
-      onClick={() =>
-        void import('../connectors').then(
-          ({ captureScreenshot }) => captureScreenshot('snip'),
-          () => undefined,
-        )
-      }
-    >
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" className="icon h-4 w-4" aria-hidden>
-        <path
-          d="M3 7V4.5A1.5 1.5 0 0 1 4.5 3H7M13 3h2.5A1.5 1.5 0 0 1 17 4.5V7M17 13v2.5a1.5 1.5 0 0 1-1.5 1.5H13M7 17H4.5A1.5 1.5 0 0 1 3 15.5V13"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path d="M7.5 10h5M10 7.5v5" strokeLinecap="round" />
-      </svg>
-    </Btn>
+    <Tooltip content="Snip screenshot reading (Shift+S)">
+      <Btn
+        type="button"
+        className="inline-flex shrink-0 items-center gap-2"
+        aria-label="Snip screenshot reading"
+        aria-keyshortcuts="Shift+S"
+        aria-busy={busy || undefined}
+        disabled={busy}
+        onClick={() =>
+          void import('../connectors').then(
+            ({ captureScreenshot }) => captureScreenshot('snip'),
+            () => undefined,
+          )
+        }
+      >
+        <svg
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          className="icon h-4 w-4"
+          aria-hidden
+        >
+          <path
+            d="M3 7V4.5A1.5 1.5 0 0 1 4.5 3H7M13 3h2.5A1.5 1.5 0 0 1 17 4.5V7M17 13v2.5a1.5 1.5 0 0 1-1.5 1.5H13M7 17H4.5A1.5 1.5 0 0 1 3 15.5V13"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path d="M7.5 10h5M10 7.5v5" strokeLinecap="round" />
+        </svg>
+      </Btn>
+    </Tooltip>
   );
 }
 
@@ -1339,7 +1380,7 @@ function CatchUpButton({ game }: { game: Game }) {
     >
       <Btn
         type="button"
-        className={`relative inline-flex shrink-0 items-center gap-2 ${TOUCH_BUTTON}`}
+        className="relative inline-flex shrink-0 items-center gap-2"
         aria-label={`Catch up on ${game.name}${unread > 0 ? `, ${unread} new` : ''}`}
         onClick={() => {
           setGameTab('news');
@@ -1422,14 +1463,7 @@ export function GameControlsView({
   // Cadence order and core-first ordering now both belong to groupChecklist —
   // this flat sort used to run AFTER checklistFor's core-first one and silently
   // undo it, so the card ignored the rule that pull-currency tasks lead.
-  // Rows a player hid in the retired layout editor, or from Game settings, stay hidden.
-  const hidden = new Set(
-    game.cardLayout
-      ? resolveGameLayout(game, state.resources, state.tasks)
-          .filter((item) => item.hidden)
-          .map((item) => item.id)
-      : [],
-  );
+  const hidden = hiddenRows(game, state);
   const allChecklist = derived.checklistByGame.get(game.id) ?? [];
   const checklist = allChecklist.filter((item) => !hidden.has(`task:${item.taskId}`));
   const dailies = allChecklist.filter((item) => item.cadence === 'daily');
@@ -1540,9 +1574,7 @@ export function GameControlsView({
       {game.paused && (
         <div className="relative z-10 mt-2 flex flex-wrap items-center gap-2">
           <p className="mr-auto text-meta text-muted">Paused</p>
-          <Btn className={TOUCH_BUTTON} onClick={() => updateGame(game.id, { paused: false })}>
-            Resume tracking
-          </Btn>
+          <Btn onClick={() => updateGame(game.id, { paused: false })}>Resume tracking</Btn>
         </div>
       )}
       <div id={eventsPanelId} hidden={!managingEvents}>

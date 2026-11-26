@@ -3,8 +3,8 @@ import type { Game, Reminder } from '@memoria/shared';
 import { useApp } from '../../store';
 import { useShallow } from 'zustand/react/shallow';
 import { fmtDateTimeLocalInput, parseDateTimeLocalInput } from '../../util';
-import { confirmDiscard } from '../Sheet';
-import { Btn, COMPACT_INPUT, ConfirmDelete, Field, TextInput } from '../ui';
+import { confirmDiscard, SheetFooter } from '../Sheet';
+import { Btn, ConfirmDelete, Field, TextInput } from '../ui';
 
 export type ReminderDraft = {
   editing: string | null;
@@ -115,7 +115,6 @@ export function GameReminders({
         )}
         <Field label="Reminder message">
           <TextInput
-            className={COMPACT_INPUT}
             ref={messageRef}
             maxLength={20_000}
             value={message}
@@ -126,7 +125,6 @@ export function GameReminders({
         </Field>
         <Field label="When">
           <TextInput
-            className={COMPACT_INPUT}
             type="datetime-local"
             value={when}
             onChange={(event) => patch({ when: event.target.value, status: '' })}
@@ -140,20 +138,28 @@ export function GameReminders({
             Enter a valid date and time.
           </p>
         )}
-        <div className="flex flex-wrap gap-2 sm:col-span-2">
-          <Btn type="submit" kind="primary" disabled={!message.trim() || at == null || unavailable}>
-            {editing ? 'Save reminder' : 'Add reminder'}
-          </Btn>
-          {unavailable && (
-            <Btn kind="primary" onClick={() => save(true)} disabled={!message.trim() || at == null}>
-              Add as new reminder
-            </Btn>
-          )}
-          {editing && <Btn onClick={async () => (await canDiscard()) && clear()}>Cancel</Btn>}
+        <div className="sm:col-span-2">
+          <SheetFooter
+            // Always in the page, so a screen reader hears each change to it.
+            status={
+              <p role="status" className="text-label text-muted empty:hidden">
+                {status}
+              </p>
+            }
+          >
+            {editing && <Btn onClick={async () => (await canDiscard()) && clear()}>Cancel</Btn>}
+            {/* A deleted reminder cannot be saved over, so its one way forward is a new copy. */}
+            {unavailable ? (
+              <Btn kind="primary" onClick={() => save(true)} disabled={!message.trim() || at == null}>
+                Add as new reminder
+              </Btn>
+            ) : (
+              <Btn type="submit" kind="primary" disabled={!message.trim() || at == null}>
+                {editing ? 'Save reminder' : 'Add reminder'}
+              </Btn>
+            )}
+          </SheetFooter>
         </div>
-        <p role="status" className="text-label text-muted empty:hidden sm:col-span-2">
-          {status}
-        </p>
       </form>
     </section>
   );

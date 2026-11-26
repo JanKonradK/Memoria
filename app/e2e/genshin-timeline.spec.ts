@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openSettings, calendarAxe } from './support';
+import { openSettings, calendarAxe, showTimeline } from './support';
 import { emptyState } from '@memoria/shared';
 import { makeEvent, makeGame } from '../../shared/test/helpers';
 import { eventFingerprint, planSeedImport } from '../src/data/seed-events';
@@ -82,7 +82,7 @@ test('Genshin timeline separates worlds and refreshes legacy selectors with conf
   await page.reload();
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
   const view = page.getByRole('radiogroup', { name: 'Event view' });
-  await view.getByRole('radio', { name: 'Timeline', exact: true }).click();
+  await showTimeline(page);
   const groups = page.locator('[data-timeline-event-group]');
   await expect
     .poll(() => groups.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-timeline-event-group'))))

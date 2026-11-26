@@ -3,30 +3,28 @@ import { expect, type Locator, type Page } from '@playwright/test';
 import { emptyState, PRESETS, type AppState, type Game, type GameEvent } from '@memoria/shared';
 import { planSeedImport } from '../src/data/seed-events';
 
-/** A game's row on Today. It reads "Review" beside the desktop card and "Open" where the row is the way in. */
+/** A game's row on Today: at every width, pressing it opens the game's page. */
 export function gameRow(page: Page, name: string): Locator {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return page.getByRole('button', { name: new RegExp(`^(Open|Review) ${escaped}(, paused)?$`) });
+  return page.getByRole('button', { name: new RegExp(`^Open ${escaped}(, paused)?$`) });
 }
 
 /** Today opens on its Steps; the ranked games are its other view. */
 export async function showTodayGames(page: Page): Promise<void> {
-  const games = page.getByRole('group', { name: 'Today view' }).getByRole('button', { name: 'Games', exact: true });
-  if ((await games.count()) > 0 && (await games.getAttribute('aria-pressed')) !== 'true') await games.click();
+  const games = page.getByRole('radiogroup', { name: 'Today view' }).getByRole('radio', { name: 'Games', exact: true });
+  if ((await games.count()) > 0 && (await games.getAttribute('data-state')) !== 'on') await games.click();
 }
 
 /** Open a game's own page from Today, at any window size. */
 export async function openGame(page: Page, name: string): Promise<void> {
   await showTodayGames(page);
   await gameRow(page, name).click();
-  // A wide window puts the card beside the list first; its page is one more step.
-  if ((page.viewportSize()?.width ?? 0) >= 900) await page.getByRole('button', { name: 'Open full page' }).click();
   await expect(page.locator('.focus-workspace')).toBeVisible();
 }
 
 /**
  * A game's settings or its events. On its own page the pencil opens settings and
- * the events have their own tab; the card beside Today keeps the Edit menu.
+ * the events have their own tab; a game card elsewhere keeps the Edit menu.
  */
 export async function chooseFromEdit(
   page: Page,
@@ -51,6 +49,22 @@ export async function chooseFromEdit(
 export async function editFromQuickView(page: Page): Promise<void> {
   await page.getByRole('dialog').getByRole('button', { name: 'Edit', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Edit event' })).toBeVisible();
+}
+
+/**
+ * The Calendar's Timeline (its lanes), every lane unfolded so its bars can be
+ * found. A phone opens the Calendar on its Agenda, and a stacked lane folds
+ * unless something in it ends within two days, so both are undone here.
+ */
+export async function showTimeline(page: Page): Promise<void> {
+  const timeline = page
+    .getByRole('radiogroup', { name: 'Event view' })
+    .getByRole('radio', { name: 'Timeline', exact: true });
+  if ((await timeline.getAttribute('data-state')) !== 'on') await timeline.click();
+  await expect(timeline).toHaveAttribute('data-state', 'on');
+  const folded = page.locator('.tl-head-button[aria-expanded="false"]');
+  for (let left = await folded.count(); left > 0; left--) await folded.first().click();
+  await expect(folded).toHaveCount(0);
 }
 
 /** Open one Settings section: from the menu beside it on a wide window, or the menu page on a narrow one. */
@@ -79,8 +93,9 @@ export async function addGameFromRail(page: Page): Promise<Locator> {
   }
   if (expanded === 'false') await games.click();
   const add = nav.getByRole('button', { name: 'Add game', exact: true });
+  const upright = await page.evaluate(() => window.matchMedia('(orientation: portrait)').matches);
   await add.click();
-  return add;
+  return upright ? games : add;
 }
 
 /**

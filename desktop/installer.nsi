@@ -118,6 +118,7 @@ Section "Uninstall"
   ${EndIf}
   RMDir /r "$LOCALAPPDATA\Memoria\icons"
   DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "Memoria"
+  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run" "Memoria"
   DeleteRegKey HKCU "Software\Classes\AppUserModelId\${APP_ID}"
   DeleteRegKey HKCU "${UNINSTALL_KEY}"
   Delete "$INSTDIR\${UNINSTALLER}"

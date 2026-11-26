@@ -1,0 +1,128 @@
+{
+  "about": "Text built from each preset's own HUD numbers that the guessing rules must not misread: a glued glyph, a reserve beside a bar, a room without its mode. Every preset has at least one.",
+  "cases": [
+    {
+      "name": "Genshin Realm Currency is its own 2400 cap, not a glued Resin cap",
+      "preset": "genshin",
+      "capture": "snip",
+      "lines": ["2000/2400"],
+      "readings": [{ "resource": "Realm Currency", "field": "value", "value": 2000, "confidence": "high" }]
+    },
+    {
+      "name": "Genshin Realm Currency at a 2000 tier is that cap, not Resin",
+      "preset": "genshin",
+      "caps": { "Realm Currency": 2000 },
+      "capture": "snip",
+      "lines": ["80/2000"],
+      "readings": [{ "resource": "Realm Currency", "field": "value", "value": 80, "confidence": "high" }]
+    },
+    {
+      "name": "Genshin Condensed Resin's cap of 5 never takes a glued glyph",
+      "preset": "genshin",
+      "capture": "snip",
+      "lines": ["3/50"],
+      "readings": []
+    },
+    {
+      "name": "Genshin quest acts are not Imaginarium Theater",
+      "preset": "genshin",
+      "capture": "snip",
+      "lines": ["Archon Quest Act I", "Act 1"],
+      "readings": [],
+      "events": []
+    },
+    {
+      "name": "Genshin rooms in a whole window need a clean bar beside them",
+      "preset": "genshin",
+      "capture": "window",
+      "lines": ["Paimon: Floor 12 Chamber 3, here we come!"],
+      "readings": [],
+      "events": []
+    },
+    {
+      "name": "HSR Stellar Jade beside the bar is no reserve",
+      "preset": "hsr",
+      "capture": "snip",
+      "lines": ["1600   180/300"],
+      "readings": [{ "resource": "Trailblaze Power", "field": "value", "value": 180, "confidence": "high" }]
+    },
+    {
+      "name": "ZZZ Polychrome beside the bar is no Backup Battery",
+      "preset": "zzz",
+      "capture": "snip",
+      "lines": ["1600   190/240"],
+      "readings": [{ "resource": "Battery Charge", "field": "value", "value": 190, "confidence": "high" }]
+    },
+    {
+      "name": "ZZZ Backup Battery is its own 2400 cap, never a glued 240",
+      "preset": "zzz",
+      "capture": "snip",
+      "lines": ["240/2400"],
+      "readings": [{ "resource": "Battery Charge", "field": "reserve", "value": 240, "confidence": "medium" }]
+    },
+    {
+      "name": "WuWa in a whole window: a number beside the bar is not trusted",
+      "preset": "wuwa",
+      "capture": "window",
+      "lines": ["388   61/240"],
+      "readings": [{ "resource": "Waveplates", "field": "value", "value": 61, "confidence": "high" }]
+    },
+    {
+      "name": "WuWa: more than the crystal cap, or not a bare number, is no reserve",
+      "preset": "wuwa",
+      "capture": "snip",
+      "lines": ["500   61/240", "Lv 88   120/240"],
+      "readings": [{ "resource": "Waveplates", "field": "value", "value": 61, "confidence": "high" }]
+    },
+    {
+      "name": "NTE Photo Paper Supply is a reserve fraction",
+      "preset": "nte",
+      "capture": "snip",
+      "lines": ["1200/2400"],
+      "readings": [{ "resource": "Character Pixels", "field": "reserve", "value": 1200, "confidence": "medium" }]
+    },
+    {
+      "name": "NTE 240/2400 is the pixel reserve, never a glued 240 bar",
+      "preset": "nte",
+      "capture": "snip",
+      "lines": ["240/2400"],
+      "readings": [{ "resource": "Character Pixels", "field": "reserve", "value": 240, "confidence": "medium" }]
+    },
+    {
+      "name": "LADS has no 240 cap to glue a glyph onto",
+      "preset": "lads",
+      "capture": "snip",
+      "lines": ["1200/2400"],
+      "readings": []
+    },
+    {
+      "name": "Uma RP's cap of 5 never takes a glued glyph",
+      "preset": "uma",
+      "capture": "snip",
+      "lines": ["3/50"],
+      "readings": []
+    },
+    {
+      "name": "NIKKE Outpost's 24 hours never take a glued glyph",
+      "preset": "nikke",
+      "capture": "snip",
+      "lines": ["12/240"],
+      "readings": []
+    },
+    {
+      "name": "Endfield has no 200 cap, and no Spiral Abyss",
+      "preset": "endfield",
+      "capture": "snip",
+      "lines": ["80/2000 0 Floor 12 Chamber 3"],
+      "readings": [],
+      "events": []
+    },
+    {
+      "name": "Crumble's 8 banked hours never take a glued glyph",
+      "preset": "crumble",
+      "capture": "snip",
+      "lines": ["6/80"],
+      "readings": []
+    }
+  ]
+}

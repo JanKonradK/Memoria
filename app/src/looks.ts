@@ -13,6 +13,8 @@
  * facts and the controls (`data-detail` on <html>).
  */
 
+import { startViewTransitionOf } from './view-transition';
+
 export const LOOK_IDS = ['classic', 'instrument', 'hud', 'clean', 'glass', 'arcade', 'paper', 'neon'] as const;
 export type LookId = (typeof LOOK_IDS)[number];
 export const DEFAULT_LOOK: LookId = 'classic';
@@ -117,13 +119,11 @@ export function applyLook(look: LookId, detail: Detail, animate = false): void {
   const swap = () => {
     if (wanted !== look) return;
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const start = (document as Document & { startViewTransition?: (update: () => void) => unknown })
-      .startViewTransition;
     const set = () => {
       root.dataset.look = look;
     };
-    if (animate && !reduced && typeof start === 'function') start.call(document, set);
-    else set();
+    // Its own kind of transition, so a game's logo morph never takes its cross-fade, nor it the morph's.
+    if (!animate || reduced || !startViewTransitionOf('look', set)) set();
   };
   // A chosen look swaps once its stylesheet is here, so it never shows half-dressed.
   if (arrived.has(look)) swap();

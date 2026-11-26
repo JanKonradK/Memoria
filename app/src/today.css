@@ -7,9 +7,9 @@
   padding: 0.5rem 0.5rem 1.25rem;
 }
 
-/* One ranked list beside the real card for the selected game. The list keeps
-   a scannable width; the game pane takes the rest of the window, and lays its
-   own columns out from the width it gets (see .today-card). */
+/* The ranked games, then what is due across them. Every game opens its own
+   page; a wide window lays the games out as a grid of cards, and sets the next
+   day's agenda beside the codes. */
 .today-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -17,6 +17,7 @@
   gap: clamp(1rem, 2vw, 2rem);
   max-width: 200rem;
   margin-inline: auto;
+  container: today-layout / inline-size;
 }
 
 .today-list {
@@ -24,7 +25,22 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 1.75rem;
   min-width: 0;
-  container-type: inline-size;
+}
+@container today-layout (min-width: 64rem) {
+  .today-list {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    grid-auto-flow: row dense;
+    column-gap: 2.5rem;
+  }
+  .today-list > * {
+    grid-column: 1 / -1;
+  }
+  .today-list > .today-agenda {
+    grid-column: 1;
+  }
+  .today-list > .today-codes {
+    grid-column: 2;
+  }
 }
 
 .today-group-rule {
@@ -54,6 +70,18 @@
 .today-priority-list {
   display: grid;
   gap: 4px;
+}
+/* Room for two cards side by side: the games become a grid of them, each
+   edged so the eye reads one game per card. */
+@container today-layout (min-width: 56rem) {
+  .today-priority-list {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr));
+    gap: 0.625rem;
+  }
+  .today-priority-row {
+    height: 100%;
+    box-shadow: inset 0 0 0 1px var(--color-line-hairline);
+  }
 }
 
 /* Two lines between a logo and a dailies ring of the same size: name and
@@ -89,11 +117,6 @@
     background: var(--color-fill-1);
   }
 }
-.today-priority-row[aria-pressed='true'] {
-  background: var(--color-fill-2);
-  box-shadow: inset 0 0 0 1px var(--color-line-edge);
-}
-
 .today-row-badge {
   grid-area: badge;
   display: flex;
@@ -158,8 +181,10 @@
   max-width: 100%;
   color: var(--color-muted);
 }
+/* Each row lays its own figures out from its own width, in a list or a grid. */
 .today-priority-item {
   position: relative;
+  container-type: inline-size;
 }
 .today-row-ring {
   grid-area: ring;
@@ -194,7 +219,7 @@
   transform-origin: left;
   border-radius: inherit;
   background: var(--meter-ink, var(--color-fg-soft));
-  transition: transform var(--dur-slow) var(--ease-out);
+  transition: transform var(--dur-4) var(--ease-move);
 }
 /* No reading is not the same as empty. */
 .today-meter:not([data-known]) {
@@ -205,87 +230,6 @@
 .today-notices {
   max-width: 200rem;
   margin-inline: auto;
-}
-
-.today-detail {
-  display: none;
-  min-width: 0;
-}
-/* The same flat ground as the list: the game is in its name, its bars and its
-   ink, with no tinted panel behind them. */
-.today-card {
-  display: flex;
-  flex-direction: column;
-  padding: 0.25rem 0 0;
-  container: today-card / inline-size;
-}
-/* The pane splits into tracking and events once each half has room for a
-   row's name and its countdown, and a very wide pane lets the event sections
-   run side by side rather than in one long column. */
-.today-card .focus-bay-grid {
-  grid-template-columns: minmax(0, 1fr);
-}
-@container today-card (min-width: 46rem) {
-  .today-card .focus-bay-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-}
-@container today-card (min-width: 92rem) {
-  .today-card .focus-bay-grid {
-    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-  }
-  /* Columns, not a grid: a long section and two short ones balance out. */
-  .today-card .event-strip {
-    columns: 2;
-    column-gap: 2rem;
-  }
-  .today-card .event-strip > section {
-    break-inside: avoid;
-    margin-top: 0;
-    padding-bottom: 0.75rem;
-  }
-}
-.today-card > .game-card-heading {
-  align-items: center;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--color-line);
-}
-.today-card .game-card-heading h2 {
-  font-size: clamp(1.5rem, 2.4vw, 1.875rem);
-  line-height: 1.15;
-  /* Break between words only; "anywhere" let a squeezed pane stack the name
-     one letter per line. */
-  overflow-wrap: normal;
-  text-wrap: balance;
-}
-/* The same rules as the game page: the ring stays beside the name, and the
-   actions move to their own line before the name breaks inside a word. */
-.today-card > .game-card-heading {
-  flex-wrap: wrap;
-}
-.today-card .game-card-title {
-  min-width: auto;
-}
-.today-card .game-card-heading h2 {
-  min-width: min-content;
-}
-.today-card .game-card-actions {
-  margin-left: auto;
-  align-self: flex-start;
-}
-/* A half-screen window: the actions take their own row along the top of the
-   pane, right-aligned, and the logo and name get the full width below. */
-@container today-card (max-width: 40rem) {
-  .today-card > .game-card-heading {
-    row-gap: 0.75rem;
-  }
-  .today-card .game-card-actions {
-    order: -1;
-    flex-basis: 100%;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
 }
 
 /* The next day across every game, flat like the list above it. */
@@ -435,54 +379,6 @@
   }
 }
 
-@media (min-width: 900px) {
-  .today-layout {
-    grid-template-columns: clamp(23rem, 42vw, 40rem) minmax(0, 1fr);
-  }
-  /* One hairline separates the list from the selected game. */
-  .today-detail {
-    display: block;
-    padding-left: clamp(1rem, 2vw, 2rem);
-    border-left: 1px solid var(--color-line);
-  }
-}
-
-/* A short window keeps one document scroll. A taller one keeps the card beside
-   the list, with every control reachable inside it. */
-@media (min-width: 900px) and (min-height: 700px) {
-  .today-detail {
-    position: sticky;
-    top: calc(var(--app-bar-h) + 1rem);
-    /* Less the heading above the layout, so the foot of the pane is on screen before any scroll. */
-    max-height: calc(100dvh - var(--app-bar-h) - 6.5rem);
-    overflow-y: auto;
-    /* Two bars side by side read as a fault: the pane's own stays invisible
-       until the pointer is over it. */
-    scrollbar-width: thin;
-    scrollbar-color: transparent transparent;
-    scrollbar-gutter: stable;
-  }
-  /* Its scrollbar hides until the pointer is over it, so a soft edge says more
-     is above or below. Scroll-linked; no fade at all when the card fits. */
-  @supports (animation-timeline: scroll()) {
-    .today-detail {
-      mask-image: linear-gradient(
-        to bottom,
-        transparent,
-        #000 var(--detail-fade-top),
-        #000 calc(100% - var(--detail-fade-bottom)),
-        transparent
-      );
-      animation: detail-fade linear both;
-      animation-timeline: scroll(self block);
-    }
-  }
-  .today-detail:hover,
-  .today-detail:focus-within {
-    scrollbar-color: var(--color-line-strong) transparent;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .today-agenda-row,
   .today-priority-row,
@@ -492,32 +388,6 @@
   .today-agenda-row:active,
   .today-priority-row:active {
     scale: none;
-  }
-}
-
-@property --detail-fade-top {
-  syntax: '<length>';
-  inherits: false;
-  initial-value: 0px;
-}
-@property --detail-fade-bottom {
-  syntax: '<length>';
-  inherits: false;
-  initial-value: 0px;
-}
-@keyframes detail-fade {
-  from {
-    --detail-fade-top: 0px;
-    --detail-fade-bottom: 3rem;
-  }
-  4%,
-  96% {
-    --detail-fade-top: 2rem;
-    --detail-fade-bottom: 3rem;
-  }
-  to {
-    --detail-fade-top: 2rem;
-    --detail-fade-bottom: 0px;
   }
 }
 

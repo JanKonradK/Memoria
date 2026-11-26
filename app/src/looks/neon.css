@@ -119,7 +119,7 @@
     background: transparent;
     border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
   }
-  .view-switch button:is([aria-pressed='true'], [aria-selected='true']) {
+  .view-switch button:is([aria-pressed='true'], [aria-selected='true'], [aria-checked='true'], [data-state='on']) {
     background: transparent;
     box-shadow:
       inset 0 0 0 1px var(--color-accent),

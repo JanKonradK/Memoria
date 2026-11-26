@@ -60,11 +60,11 @@ function fixture(): AppState {
 
 // Rows and the embedded card carry tooltips, which the real app supplies at the root.
 const show = (ui: ReactElement) => render(<TooltipProvider>{ui}</TooltipProvider>);
-const row = (name: string) => screen.getByRole('button', { name: `Review ${name}`, exact: true });
+const row = (name: string) => screen.getByRole('button', { name: `Open ${name}`, exact: true });
 
 beforeEach(() => {
   useApp.setState({ state: fixture(), loaded: true });
-  useUI.setState({ tab: 'today', sheet: null, focusedGameId: null, todayGameId: null, todayView: 'games' });
+  useUI.setState({ tab: 'today', sheet: null, focusedGameId: null, todayView: 'games' });
 });
 
 it('lists every game in one list, soonest first, with paused games last', () => {
@@ -109,26 +109,10 @@ it('treats a starting guess as no reading, and clamps age when the device clock 
   expect(row('Near cap')).toHaveAccessibleDescription(/Estimated 195 of 200 Energy, entered just now/);
 });
 
-it('puts the real, editable card beside the list instead of a link to it', () => {
+it('opens a paused game on its own page too, where tracking resumes', () => {
   show(<TodayPage now={NOW} />);
-  expect(screen.getByRole('region', { name: 'Near cap card' })).toBeInTheDocument();
-  fireEvent.click(row('Can rest'));
-  expect(row('Can rest')).toHaveAttribute('aria-pressed', 'true');
-  const card = screen.getByRole('region', { name: 'Can rest card' });
-  expect(within(card).getByLabelText('Energy current value')).toHaveValue('10');
-  expect(within(card).getByRole('button', { name: 'Edit Can rest' })).toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: 'Open game' })).not.toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: 'Readings' })).not.toBeInTheDocument();
-  // Selecting stays on Today; the card is already here.
-  expect(useUI.getState().tab).toBe('today');
-});
-
-it('selects a paused game so tracking can be resumed from its card', () => {
-  show(<TodayPage now={NOW} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Review Paused game', description: /^Paused\. / }));
-  expect(
-    within(screen.getByRole('region', { name: 'Paused game card' })).getByRole('button', { name: 'Resume tracking' }),
-  ).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Open Paused game', description: /^Paused\. / }));
+  expect(useUI.getState()).toMatchObject({ tab: 'home', focusedGameId: 'Paused game' });
 });
 
 it('offers a first game and PC connection for an empty roster', () => {
@@ -140,10 +124,13 @@ it('offers a first game and PC connection for an empty roster', () => {
   expect(useUI.getState().tab).toBe('settings');
 });
 
-it('opens the selected game on its own page', () => {
+it('opens a game straight on its own page at every width, with no card beside the list', () => {
   show(<TodayPage now={NOW} />);
+  // A wide window (the test's) has no side card and no extra step.
+  expect(screen.queryByRole('region', { name: /card$/ })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Open full page' })).toBeNull();
+  expect(row('Can rest')).not.toHaveAttribute('aria-pressed');
   fireEvent.click(row('Can rest'));
-  fireEvent.click(screen.getByRole('button', { name: 'Open full page' }));
   expect(useUI.getState().tab).toBe('home');
   expect(useApp.getState().state.games.find((game) => game.id === useUI.getState().focusedGameId)?.name).toBe(
     'Can rest',
@@ -153,8 +140,8 @@ it('opens the selected game on its own page', () => {
 it('opens on Steps: one list ordered by deadline, and the switch keeps the ranked games', () => {
   useUI.setState({ todayView: 'steps' });
   show(<TodayPage now={NOW} />);
-  const view = screen.getByRole('group', { name: 'Today view' });
-  expect(within(view).getByRole('button', { name: 'Steps' })).toHaveAttribute('aria-pressed', 'true');
+  const view = screen.getByRole('radiogroup', { name: 'Today view' });
+  expect(within(view).getByRole('radio', { name: 'Steps' })).toHaveAttribute('aria-checked', 'true');
   // 195 of 200 at 8 minutes a point caps within the hour; 10 of 200 caps after a day.
   const hour = screen.getByRole('region', { name: 'Within the hour' });
   expect(within(hour).getAllByRole('button', { name: /^Energy / })).toHaveLength(1);
@@ -162,10 +149,13 @@ it('opens on Steps: one list ordered by deadline, and the switch keeps the ranke
   const other = screen.getByRole('region', { name: 'Other bars' });
   expect(within(other).getAllByRole('button', { name: /^Energy / })).toHaveLength(2);
   expect(within(other).getByText('Enter reading')).toBeInTheDocument();
-  expect(screen.getByRole('region', { name: 'This week' })).toHaveTextContent('Energy caps');
+  // The rest of the week sits in the side column, with what is coming.
+  const week = screen.getByRole('region', { name: 'This week' });
+  expect(week).toHaveTextContent('Energy caps');
+  expect(screen.getByRole('complementary', { name: 'Coming up' })).toContainElement(week);
   // Paused games have no steps.
   expect(screen.queryByText(/Paused game/)).not.toBeInTheDocument();
-  fireEvent.click(within(view).getByRole('button', { name: 'Games' }));
+  fireEvent.click(within(view).getByRole('radio', { name: 'Games' }));
   expect(useUI.getState().todayView).toBe('games');
   expect(screen.getByRole('list', { name: 'Games' })).toBeInTheDocument();
 });
@@ -233,7 +223,7 @@ it('opens a game from its row on Games, and never ticks its dailies', () => {
   show(<TodayPage now={NOW} />);
   expect(screen.queryByRole('button', { name: /^Tick all Can rest dailies/ })).not.toBeInTheDocument();
   fireEvent.click(row('Can rest'));
-  expect(row('Can rest')).toHaveAttribute('aria-pressed', 'true');
+  expect(useUI.getState()).toMatchObject({ tab: 'home', focusedGameId: 'Can rest' });
   expect(useApp.getState().state.completions).toHaveLength(0);
 });
 

@@ -2,7 +2,7 @@ import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group';
 
 import { accentChoices, accentSwatch, FAMILIES, findPalette, resolveAccent, surfacesOf } from '../../palettes';
 import { accentFor, useUI } from '../../ui-store';
-import { Segmented } from '../ui';
+import { Segmented, Tooltip } from '../ui';
 import { tierForPalette } from '../../entitlements';
 import { ProBadge, ProNotice, useProGate } from './MarkPicker';
 import { SettingRow } from './SettingRow';
@@ -98,10 +98,12 @@ export function PaletteSettings() {
               key={choice.id}
               value={choice.id}
               aria-label={choice.name}
-              title={choice.name}
               className="accent-swatch"
             >
-              <span aria-hidden style={{ background: accentSwatch(flavour.id, theme, choice.id) }} />
+              {/* On the swatch, not the item: a tip's data-state would replace the item's on/off. */}
+              <Tooltip content={choice.name}>
+                <span aria-hidden style={{ background: accentSwatch(flavour.id, theme, choice.id) }} />
+              </Tooltip>
             </ToggleGroupPrimitive.Item>
           ))}
         </ToggleGroupPrimitive.Root>

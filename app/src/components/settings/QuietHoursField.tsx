@@ -18,6 +18,7 @@ export function QuietHoursField() {
   return (
     <SettingRow
       label="Quiet hours"
+      hintKind="fact"
       hint={
         on
           ? `Reminders due inside them arrive at ${toClock((start + 1439) % 1440)} instead.`
@@ -31,7 +32,7 @@ export function QuietHoursField() {
             <TextInput
               type="time"
               step={900}
-              className="!min-h-11 !w-28 fine:!min-h-8 fine:!py-1"
+              className="!w-28"
               aria-label="Quiet hours start"
               value={toClock(start)}
               onChange={(e) => {
@@ -43,7 +44,7 @@ export function QuietHoursField() {
             <TextInput
               type="time"
               step={900}
-              className="!min-h-11 !w-28 fine:!min-h-8 fine:!py-1"
+              className="!w-28"
               aria-label="Quiet hours end"
               value={toClock(end)}
               onChange={(e) => {

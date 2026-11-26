@@ -1,9 +1,11 @@
 import { useLayoutEffect, useRef, type RefObject } from 'react';
+import { cssEasing, duration, easing } from './motion';
 
 type Point = { x: number; y: number };
 
-const DURATION_MS = 260;
-const EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
+// A row already on screen changing place: the scale's arrival length on its move curve.
+const DURATION_MS = duration[3] * 1000;
+const EASING = cssEasing(easing.move);
 const MIN_MOVE_PX = 1;
 // More movers than this is a layout change (resize, reflow), not a reorder; jumping is right there.
 const MAX_MOVERS = 24;

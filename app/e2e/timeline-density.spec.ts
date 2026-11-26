@@ -129,10 +129,8 @@ test('first run ends on the guide, and Settings opens it again', async ({ page }
   await expect(page.getByRole('button', { name: 'Got it' })).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page
-    .getByRole('navigation', { name: 'Primary' })
-    .getByRole('button', { name: 'Settings', exact: true })
-    .click();
-  await page.getByRole('button', { name: 'Guide', exact: true }).click();
+  // The guide lives with the app's version, in Activity & About.
+  await openSettings(page, 'Activity');
+  await page.getByRole('button', { name: 'Open guide', exact: true }).click();
   await expect(guide).toBeVisible();
 });

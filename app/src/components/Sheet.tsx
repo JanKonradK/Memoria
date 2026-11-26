@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { animate, AnimatePresence, m, useMotionValue, usePresence, type MotionValue } from 'motion/react';
 import { useMediaQuery, useReducedMotion } from '../hooks';
-import { backdropFade, dialogEnter, sheetEnter, sheetSpring } from '../motion';
+import { backdropFade, dialogEnter, sheetEnter, sheetSpring, type SheetPresence } from '../motion';
 import { useUnsavedDraft } from '../desktop-host';
-import { confirmDialog } from './ConfirmDialog';
+import { confirmDialog, keepOpenForWindowChrome, useDialogsSuspended } from './ConfirmDialog';
+import { useSheetHandoff } from './sheet-handoff';
 
 /** The one question every dirty draft asks before it is dropped. */
 export const confirmDiscard = () =>
@@ -20,7 +21,7 @@ function CloseButton() {
     <DialogPrimitive.Close asChild>
       <button
         type="button"
-        className="flex h-11 w-11 items-center justify-center rounded-ui-full bg-fill-2 text-muted ring-1 ring-line-hairline transition hover:bg-fill-3 hover:text-fg-soft fine:h-9 fine:w-9"
+        className="flex size-(--control-h) items-center justify-center rounded-ui-full bg-fill-2 text-muted ring-1 ring-line-hairline transition hover:bg-fill-3 hover:text-fg-soft"
         aria-label="Close"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -28,6 +29,39 @@ function CloseButton() {
         </svg>
       </button>
     </DialogPrimitive.Close>
+  );
+}
+
+/**
+ * A sheet's actions, in one order everywhere: what removes or sets aside on
+ * the left, Cancel then the one primary action on the right, and a line about
+ * the draft above them. On a phone the right-hand pair shares the full width,
+ * so both sit under the thumb.
+ */
+export function SheetFooter({
+  start,
+  status,
+  children,
+}: {
+  /** Destructive or secondary actions, kept apart from the commit. */
+  start?: ReactNode;
+  /** What the draft is waiting on, or what just happened. */
+  status?: ReactNode;
+  /** Cancel, then the primary action, in that order. */
+  children?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      {status}
+      <div className="flex flex-wrap items-center gap-2">
+        {start && <div className="flex min-w-0 flex-wrap items-center gap-2">{start}</div>}
+        {children && (
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2 max-sm:w-full max-sm:*:flex-1">
+            {children}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -229,6 +263,8 @@ export function Sheet({
   // Every close updates the route first. Retain its portal until the inner
   // exit finishes, then release App's waiting presence boundary.
   const [present, safeToRemove] = usePresence();
+  const suspended = useDialogsSuspended();
+  const shown = open && present && !suspended;
   useUnsavedDraft(open && present && dirty);
   // Escape, the scrim, X and a drag can all ask at once; only one question opens.
   const asking = useRef(false);
@@ -248,21 +284,30 @@ export function Sheet({
   const { handlers: dragHandlers, releaseVelocity, body: bodyDrag } = useDragDismiss(dialogRef, sheetY, reduced, close);
   const [sheetBody, setSheetBody] = useState<HTMLDivElement | null>(null);
   useBodyDragDismiss(desktop ? null : sheetBody, bodyDrag);
+  // Handing over to another sheet keeps the scrim up across both (motion.ts).
+  // A leaving sheet's variants read this through AnimatePresence's custom.
+  const presence: SheetPresence = { velocity: releaseVelocity.current, handoff: useSheetHandoff() };
 
   return (
     <DialogPrimitive.Root
-      open={open && present}
+      open={shown}
       onOpenChange={(next) => {
         if (!next) void close();
       }}
     >
       <DialogPrimitive.Portal forceMount>
-        <AnimatePresence custom={releaseVelocity.current} onExitComplete={safeToRemove ?? undefined}>
-          {open && present && (
+        <AnimatePresence
+          custom={presence}
+          onExitComplete={() => {
+            if (!present) safeToRemove?.();
+          }}
+        >
+          {shown && (
             <m.div
               key={desktop ? 'dialog' : 'sheet'}
               data-layer="sheet"
-              className={`pointer-events-none fixed inset-0 z-50 flex justify-center ${
+              // Under the Windows app's title bar, which stays usable above the scrim.
+              className={`pointer-events-none fixed inset-0 top-(--desktop-chrome-h) z-50 flex justify-center ${
                 desktop ? 'items-center p-6' : 'items-end'
               }`}
               initial="hidden"
@@ -273,6 +318,7 @@ export function Sheet({
                 <m.div
                   className="sheet-scrim pointer-events-auto fixed inset-0 bg-scrim-veil backdrop-blur-[2px]"
                   variants={backdropFade}
+                  custom={presence}
                 />
               </DialogPrimitive.Overlay>
               {desktop ? (
@@ -285,13 +331,14 @@ export function Sheet({
                     ref={dialogRef}
                     aria-describedby={undefined}
                     tabIndex={-1}
+                    onInteractOutside={keepOpenForWindowChrome}
                     // The sheet itself takes focus, not its close button: a ring on X greets
                     // nobody. Tab still reaches X first.
                     onOpenAutoFocus={(event) => {
                       event.preventDefault();
                       dialogRef.current?.focus({ preventScroll: true });
                     }}
-                    className="glass gold-hairline relative flex max-h-[85dvh] w-full flex-col rounded-ui-card shadow-float outline-none"
+                    className="glass gold-hairline relative flex max-h-[calc(85dvh-var(--desktop-chrome-h))] w-full flex-col rounded-ui-card shadow-float outline-none"
                   >
                     <div
                       className={`flex shrink-0 items-center justify-between gap-3 px-6 ${
@@ -328,6 +375,7 @@ export function Sheet({
                     ref={dialogRef}
                     aria-describedby={undefined}
                     tabIndex={-1}
+                    onInteractOutside={keepOpenForWindowChrome}
                     // The sheet itself takes focus, not its close button: a ring on X greets
                     // nobody. Tab still reaches X first.
                     onOpenAutoFocus={(event) => {

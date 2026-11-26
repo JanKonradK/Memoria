@@ -7,12 +7,73 @@
  * Billing) is wired in behind `isLockedByStorePreview`. The one switch that
  * changes anything is Settings → Appearance → "Preview Store locks", which
  * shows a player which options would be Pro. It never takes a choice away.
+ *
+ * `useEntitlements` is the seam billing will fill: on Android it already knows
+ * which build is running (GitHub APK or Google Play), and reports `free` with
+ * nothing unlocked or sellable until Play Billing lands.
  */
 
+import { Capacitor, registerPlugin } from '@capacitor/core';
+import { create } from 'zustand';
 import { findPalette } from './palettes';
 import type { LookId } from './looks';
 
 export type FeatureTier = 'free' | 'pro';
+
+/**
+ * Where this copy came from. `direct` is the APK from GitHub releases, `play`
+ * the Google Play build (no self-updater), `web` every non-Android copy.
+ * `unknown` only while the Android host has not answered yet.
+ */
+export type Distribution = 'direct' | 'play' | 'web' | 'unknown';
+
+export interface EntitlementStatus {
+  distribution: Distribution;
+  tier: FeatureTier;
+  /** A store purchase unlocked Pro. Never true today: nothing is locked. */
+  proUnlocked: boolean;
+  /** Play Billing is wired in and can sell Pro. False until it is. */
+  billingReady: boolean;
+}
+
+/** The Android host's answer (EntitlementsPlugin). Its build flavour fixes `distribution`. */
+const EntitlementsHost = registerPlugin<{
+  getStatus(): Promise<{ distribution?: string; tier?: string; proUnlocked?: boolean; billingReady?: boolean }>;
+}>('Entitlements');
+
+export const useEntitlements = create<EntitlementStatus>(() => ({
+  distribution: Capacitor.isNativePlatform() ? 'unknown' : 'web',
+  tier: 'free',
+  proUnlocked: false,
+  billingReady: false,
+}));
+
+let asking: Promise<EntitlementStatus> | undefined;
+
+/**
+ * Asks the Android host once which build this is. An APK without the plugin
+ * (or one that fails to answer) is the GitHub build, as every APK was before.
+ */
+export function initEntitlements(): Promise<EntitlementStatus> {
+  if (useEntitlements.getState().distribution !== 'unknown') return Promise.resolve(useEntitlements.getState());
+  asking ??= Promise.resolve()
+    .then(() => EntitlementsHost.getStatus())
+    .then((status) => ({
+      distribution: status.distribution === 'play' ? ('play' as const) : ('direct' as const),
+      tier: status.tier === 'pro' ? ('pro' as const) : ('free' as const),
+      proUnlocked: status.proUnlocked === true,
+      billingReady: status.billingReady === true,
+    }))
+    .catch(() => ({ distribution: 'direct' as const, tier: 'free' as const, proUnlocked: false, billingReady: false }))
+    .then((status) => {
+      useEntitlements.setState(status);
+      return useEntitlements.getState();
+    });
+  return asking;
+}
+
+/** The Google Play build: Play updates it, so it never checks GitHub or installs an APK. */
+export const isPlayStoreBuild = (): boolean => useEntitlements.getState().distribution === 'play';
 
 export interface StoreFeatureMeta {
   /** A stable key, and the entitlement id the store SKU will carry. */

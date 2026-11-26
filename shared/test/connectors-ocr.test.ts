@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { inferScreenshotGame, matchOcrReadings, matchScreenshotOcr } from '../src/connectors';
+import {
+  inferScreenshotGame,
+  matchOcrReadings,
+  matchScreenshotOcr,
+  matchScreenshotOcrPasses,
+  type OcrCapture,
+  type OcrPass,
+} from '../src/connectors';
+import { PRESETS } from '../src/presets';
+import type { GameEvent, Resource } from '../src/types';
+import collisions from './fixtures/ocr/collisions.json';
+import hud from './fixtures/ocr/windows-ocr-hud.json';
 import { makeEvent, makeGame, makeResource, makeTask } from './helpers';
 
 const resin = makeResource({ id: 'resin', name: 'Original Resin', cap: 200 });
@@ -660,5 +671,380 @@ describe('endgame cycles', () => {
     expect(inferScreenshotGame(['Memory of Chaos'], games, [], [])).toBe('hsr');
     expect(inferScreenshotGame(['Polychrome', '12,800'], games, [], [])).toBe('zzz');
     expect(inferScreenshotGame(['Crystal 900'], games, [], [])).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Real Windows OCR text, collisions across every preset, and the guessing rules.
+// ---------------------------------------------------------------------------
+
+interface FixtureCase {
+  name: string;
+  preset: string;
+  caps?: Record<string, number>;
+  capture: string;
+  lines: string[];
+  passes?: Array<{ name: string; lines: string[] }>;
+  readings: Array<{ resource: string; field: string; value: number; confidence: string }>;
+  events?: Array<Record<string, unknown>>;
+  savings?: unknown[];
+  infers?: string | null;
+}
+
+const AT = Date.UTC(2026, 10, 24, 12);
+const OPEN = { type: 'cycle' as const, start: AT - 5 * 86_400_000, end: AT + 5 * 86_400_000 };
+
+/** One game per preset, with the preset's own bars (and any caps a case sets on its own game). */
+function presetWorld(caps: Record<string, number> = {}, only?: string) {
+  const games = PRESETS.map((preset, i) =>
+    makeGame({ id: preset.key, name: preset.name, short: preset.short, presetKey: preset.key, sort: i }),
+  );
+  const resources: Resource[] = PRESETS.flatMap((preset) =>
+    preset.resources.map((res, i) =>
+      makeResource({
+        id: `${preset.key}-${i}`,
+        gameId: preset.key,
+        name: res.name,
+        cap: (preset.key === only ? caps[res.name] : undefined) ?? res.cap,
+        regenMinutes: res.regenMinutes,
+        reserveCap: res.reserveCap,
+        ...(res.kind ? { kind: res.kind } : {}),
+        ...(res.reserveLabel ? { reserveLabel: res.reserveLabel } : {}),
+        sort: i,
+      }),
+    ),
+  );
+  const events: GameEvent[] = [makeEvent({ id: 'abyss', gameId: 'genshin', name: 'Spiral Abyss', ...OPEN })];
+  return { games, resources, events };
+}
+
+function readCase(item: FixtureCase) {
+  const world = presetWorld(item.caps, item.preset);
+  const game = world.games.find((g) => g.id === item.preset)!;
+  const input = {
+    lines: item.lines,
+    ...(item.passes ? { passes: item.passes as OcrPass[] } : {}),
+    captures: [item.capture as OcrCapture],
+  };
+  const found = matchScreenshotOcrPasses(input, {
+    game,
+    resources: world.resources.filter((res) => res.gameId === game.id),
+    tasks: [],
+    events: world.events,
+    observedAt: AT,
+  });
+  const inferred = inferScreenshotGame(item.lines, world.games, world.resources, [], {
+    events: world.events,
+    observedAt: AT,
+    ...input,
+  });
+  return { found, inferred };
+}
+
+const byKey = (a: { resource: string; field: string }, b: { resource: string; field: string }) =>
+  `${a.resource}|${a.field}`.localeCompare(`${b.resource}|${b.field}`);
+
+function checkCase(item: FixtureCase) {
+  const { found, inferred } = readCase(item);
+  const readings = found.readings
+    .map((r) => ({ resource: r.resourceName, field: r.field, value: r.value, confidence: r.confidence }))
+    .sort(byKey);
+  expect(readings, item.name).toEqual([...item.readings].sort(byKey));
+  if (item.events) {
+    expect(
+      found.events.map((e) => ({
+        event: e.eventName,
+        progress: e.progress,
+        partsDone: e.partsDone,
+        partsTotal: e.partsTotal,
+        detail: e.detail,
+        confidence: e.confidence,
+      })),
+      item.name,
+    ).toEqual(item.events.map((e) => expect.objectContaining(e)));
+  }
+  if (item.savings) expect(found.savings, item.name).toEqual(item.savings);
+  if (item.infers !== undefined) expect(inferred ?? null, item.name).toBe(item.infers);
+}
+
+describe('real Windows OCR fixtures', () => {
+  for (const item of hud.cases as FixtureCase[]) it(item.name, () => checkCase(item));
+});
+
+describe('collisions across every preset', () => {
+  it('covers all ten presets', () => {
+    const covered = new Set((collisions.cases as FixtureCase[]).map((item) => item.preset));
+    expect(PRESETS.map((preset) => preset.key)).toHaveLength(10);
+    expect([...covered].sort()).toEqual(PRESETS.map((preset) => preset.key).sort());
+  });
+  for (const item of collisions.cases as FixtureCase[]) it(item.name, () => checkCase(item));
+});
+
+describe('glued glyph on a fraction total', () => {
+  const gi = makeGame({ id: 'gi', name: 'Genshin Impact', short: 'Genshin', presetKey: 'genshin' });
+  const giResin = makeResource({ id: 'gi-resin', gameId: 'gi', name: 'Original Resin', cap: 200 });
+  const read = (lines: string[]) => matchScreenshotOcr(lines, { game: gi, resources: [giResin], tasks: [] }).readings;
+
+  it('reads a glued 0, O or Q as the HUD glyph it is, at low confidence', () => {
+    for (const line of ['80/2000', '80/200O', '80/200Q', 'Q80/2000']) {
+      expect(read([line]), line).toEqual([
+        expect.objectContaining({
+          resourceId: 'gi-resin',
+          value: 80,
+          cap: 200,
+          confidence: 'low',
+          rule: 'glued-glyph',
+        }),
+      ]);
+    }
+  });
+
+  it('reads symbols after the cap as a plain fraction', () => {
+    for (const line of ['80/200®', '80/200@', '80/200⊕', '80/200+', '80/200©']) {
+      const [reading] = read([line]);
+      expect(reading, line).toEqual(expect.objectContaining({ value: 80, confidence: 'high' }));
+      expect(reading!.rule, line).toBeUndefined();
+    }
+  });
+
+  it('needs a value within the cap, a plain total and a game', () => {
+    expect(read(['250/2000'])).toEqual([]);
+    expect(read(['80/2,000'])).toEqual([]);
+    expect(read(['80/200Quest'])).toEqual([]);
+    expect(matchScreenshotOcr(['80/2000'], { resources: [giResin], tasks: [] }).readings).toEqual([]);
+    expect(matchOcrReadings(['80/2000'], [giResin])).toEqual([]);
+  });
+
+  it('never reads a real cap of the game or its preset as a glued one', () => {
+    const realm = makeResource({ id: 'gi-realm', gameId: 'gi', name: 'Realm Currency', cap: 2000 });
+    expect(matchScreenshotOcr(['80/2000'], { game: gi, resources: [giResin, realm], tasks: [] }).readings).toEqual([
+      expect.objectContaining({ resourceId: 'gi-realm', value: 80, confidence: 'high' }),
+    ]);
+    // 2400 is a preset reserve for HSR, so 240 never hides in it.
+    const hsr = makeGame({ id: 'hsr', short: 'HSR', presetKey: 'hsr' });
+    const bar240 = makeResource({ id: 'b', gameId: 'hsr', name: 'Bar', cap: 240 });
+    expect(matchScreenshotOcr(['61/2400'], { game: hsr, resources: [bar240], tasks: [] }).readings).toEqual([]);
+  });
+
+  it('points at a game only through a cap one preset owns', () => {
+    const { games, resources } = presetWorld();
+    expect(inferScreenshotGame(['508/7000'], games, resources, [])).toBe('nte');
+    expect(inferScreenshotGame(['80/2000'], games, resources, [])).toBe('genshin');
+    // 240 is ZZZ's, WuWa's and NTE's: the guess is still made for WuWa, but says nothing about the game.
+    const wuwa = games.filter((game) => game.id === 'wuwa' || game.id === 'uma');
+    const plates = resources.find((res) => res.gameId === 'wuwa')!;
+    expect(matchScreenshotOcr(['61/2400'], { game: wuwa[0]!, resources: [plates], tasks: [] }).readings).toEqual([
+      expect.objectContaining({ value: 61, rule: 'glued-glyph' }),
+    ]);
+    expect(inferScreenshotGame(['61/2400'], wuwa, resources, [])).toBeUndefined();
+  });
+});
+
+describe('reserve beside the bar', () => {
+  const wuwa = makeGame({ id: 'ww', name: 'Wuthering Waves', short: 'WuWa', presetKey: 'wuwa' });
+  const plates = makeResource({
+    id: 'wp',
+    gameId: 'ww',
+    name: 'Waveplates',
+    cap: 240,
+    reserveCap: 480,
+    reserveLabel: 'Waveplate Crystals',
+  });
+
+  it('reads it beside a glued bar too', () => {
+    const found = matchScreenshotOcr(['388   61/2400'], { game: wuwa, resources: [plates], tasks: [] }).readings;
+    expect(found).toEqual([
+      expect.objectContaining({ field: 'value', value: 61, confidence: 'low', rule: 'glued-glyph' }),
+      expect.objectContaining({ field: 'reserve', value: 388, confidence: 'low', rule: 'reserve-beside-bar' }),
+    ]);
+  });
+
+  it('is WuWa only, and in a whole window only in its top band', () => {
+    for (const presetKey of ['zzz', 'nte', 'hsr', 'genshin']) {
+      const game = makeGame({ id: 'ww', short: presetKey, presetKey });
+      const found = matchScreenshotOcr(['200   61/240'], { game, resources: [plates], tasks: [] }).readings;
+      expect(
+        found.map((r) => r.field),
+        presetKey,
+      ).toEqual(['value']);
+    }
+    const read = (pass?: OcrPass['name']) =>
+      matchScreenshotOcr(['388   61/240'], {
+        game: wuwa,
+        resources: [plates],
+        tasks: [],
+        capture: 'window',
+        ...(pass ? { pass } : {}),
+      }).readings.map((r) => r.field);
+    expect(read()).toEqual(['value']);
+    expect(read('raw1x')).toEqual(['value']);
+    expect(read('topBand2x')).toEqual(['value', 'reserve']);
+  });
+});
+
+describe('endgame rooms on the HUD', () => {
+  const gi = makeGame({ id: 'gi', name: 'Genshin Impact', short: 'Genshin', presetKey: 'genshin' });
+  const giResin = makeResource({ id: 'gi-resin', gameId: 'gi', name: 'Original Resin', cap: 200 });
+  const events = [makeEvent({ id: 'abyss', gameId: 'gi', name: 'Spiral Abyss', ...OPEN })];
+  const read = (lines: string[], extra: { capture?: OcrCapture; pass?: OcrPass['name'] } = {}, game = gi) =>
+    matchScreenshotOcr(lines, { game, resources: [giResin], tasks: [], events, observedAt: AT, ...extra }).events;
+
+  it('reads a room as partial, never done, with or without the mode named', () => {
+    expect(read(['Spiral Abyss', 'Floor 12 Chamber 3'])).toEqual([
+      expect.objectContaining({
+        eventId: 'abyss',
+        progress: 'partial',
+        partsDone: 11,
+        partsTotal: 12,
+        detail: 'Floor 12 Chamber 3',
+        confidence: 'low',
+      }),
+    ]);
+    expect(read(['Floor 9 Chamber 1'])).toEqual([
+      expect.objectContaining({ progress: 'partial', partsDone: 0, partsTotal: 12 }),
+    ]);
+    expect(read(['Floor 10 - Chamber 2'])).toEqual([expect.objectContaining({ partsDone: 4 })]);
+    // The floor alone, under the mode's own title, still reads as before.
+    expect(read(['Spiral Abyss', 'Floor 12'])).toEqual([
+      expect.objectContaining({ progress: 'done', detail: 'Floor 12', confidence: 'medium' }),
+    ]);
+  });
+
+  it('needs a real floor and room of the mode, in its own game', () => {
+    for (const line of ['Floor 8 Chamber 2', 'Floor 13 Chamber 1', 'Floor 12 Chamber 4', 'Floor 12']) {
+      expect(read([line]), line).toEqual([]);
+    }
+    const hsr = makeGame({ id: 'gi', short: 'HSR', presetKey: 'hsr' });
+    expect(read(['Floor 12 Chamber 3'], {}, hsr)).toEqual([]);
+    expect(
+      matchScreenshotOcr(['Floor 12 Chamber 3'], { resources: [], tasks: [], events, observedAt: AT }).events,
+    ).toEqual([]);
+  });
+
+  it('in a whole window, reads a bare room or glued cap only beside a clean bar or in the top band', () => {
+    expect(read(['Floor 12 Chamber 3'], { capture: 'window' })).toEqual([]);
+    expect(read(['80/2000 0 Floor 12 Chamber 3'], { capture: 'window', pass: 'raw1x' })).toEqual([]);
+    expect(
+      matchScreenshotOcr(['Adventure EXP 150/2000'], { game: gi, resources: [giResin], tasks: [], capture: 'window' })
+        .readings,
+    ).toEqual([]);
+    expect(read(['22/200 O Floor 12 Chamber 3'], { capture: 'window' })).toEqual([
+      expect.objectContaining({ progress: 'partial' }),
+    ]);
+    expect(read(['80/2000 0 Floor 12 Chamber 3'], { capture: 'window', pass: 'topBand2x' })).toEqual([
+      expect.objectContaining({ progress: 'partial' }),
+    ]);
+  });
+
+  it('keeps acts gated on the mode name', () => {
+    expect(read(['Archon Quest Act I', 'Act 1', 'Act II', 'Act 10'])).toEqual([]);
+  });
+
+  it('is a Genshin cue per line in HUD views only', () => {
+    const games = [gi, makeGame({ id: 'hsr', short: 'HSR', presetKey: 'hsr' })];
+    expect(inferScreenshotGame(['Floor 12 Chamber 3'], games, [], [])).toBe('gi');
+    expect(inferScreenshotGame(['Floor 14 Chamber 3'], games, [], [])).toBeUndefined();
+    // Split lines or whole-window dialogue never infer Genshin from a bare room phrase.
+    expect(inferScreenshotGame(['Floor 12', 'Chamber 3'], games, [], [])).toBeUndefined();
+    expect(inferScreenshotGame(['Floor 12 Chamber 3'], games, [], [], { captures: ['window'] })).toBeUndefined();
+  });
+});
+
+describe('several passes over one capture', () => {
+  const gi = makeGame({ id: 'gi', name: 'Genshin Impact', short: 'Genshin', presetKey: 'genshin' });
+  const giResin = makeResource({ id: 'gi-resin', gameId: 'gi', name: 'Original Resin', cap: 200 });
+  const ctx = { game: gi, resources: [giResin], tasks: [] };
+  const pass = (name: OcrPass['name'], lines: string[], region?: number): OcrPass => ({
+    name,
+    lines,
+    ...(region !== undefined ? { region } : {}),
+  });
+
+  it('lifts a glued reading when another pass reads it plainly', () => {
+    const found = matchScreenshotOcrPasses(
+      { lines: ['80/2000 0'], passes: [pass('raw1x', ['80/2000 0']), pass('raw2x', ['80/200 0'])] },
+      ctx,
+    );
+    expect(found.readings).toEqual([expect.objectContaining({ value: 80, confidence: 'high' })]);
+    expect(found.readings[0]!.rule).toBeUndefined();
+  });
+
+  it('never lifts a guess that only guesses agree on', () => {
+    const found = matchScreenshotOcrPasses(
+      {
+        lines: ['80/2000'],
+        passes: [pass('raw1x', ['80/2000']), pass('raw2x', ['80/200O']), pass('bright2x', ['80/2000'])],
+      },
+      ctx,
+    );
+    expect(found.readings).toEqual([expect.objectContaining({ value: 80, confidence: 'low', rule: 'glued-glyph' })]);
+    const wuwa = makeGame({ id: 'ww', short: 'WuWa', presetKey: 'wuwa' });
+    const plates = makeResource({ id: 'wp', gameId: 'ww', name: 'Waveplates', cap: 240, reserveCap: 480 });
+    const beside = matchScreenshotOcrPasses(
+      { lines: [], passes: [pass('raw2x', ['388   61/240']), pass('bright2x', ['388   61/240'])] },
+      { game: wuwa, resources: [plates], tasks: [] },
+    );
+    expect(beside.readings.find((r) => r.field === 'reserve')).toEqual(
+      expect.objectContaining({ value: 388, confidence: 'medium' }),
+    );
+  });
+
+  it('leaves a rough match when passes disagree, but not across regions', () => {
+    const conflict = matchScreenshotOcrPasses(
+      { lines: ['145/200'], passes: [pass('raw2x', ['145/200']), pass('bright2x', ['146/200'])] },
+      ctx,
+    );
+    expect(conflict.readings).toEqual([expect.objectContaining({ value: 145, confidence: 'low' })]);
+    const regions = matchScreenshotOcrPasses(
+      { lines: ['145/200', '', '150/200'], passes: [pass('raw2x', ['145/200'], 0), pass('raw2x', ['150/200'], 1)] },
+      ctx,
+    );
+    expect(regions.readings).toEqual([expect.objectContaining({ value: 145, confidence: 'high' })]);
+  });
+
+  it('keeps what only one pass read, and reads text-only regions from their lines', () => {
+    const found = matchScreenshotOcrPasses(
+      {
+        lines: ['Original Resin 145/200', '', 'Intertwined Fate 12'],
+        passes: [
+          pass('raw1x', ['Original Resin 145/200', 'Primogems 2086']),
+          pass('raw2x', ['Original Resin 145/200']),
+        ],
+      },
+      ctx,
+    );
+    expect(found.readings).toEqual([expect.objectContaining({ value: 145, confidence: 'high' })]);
+    expect(found.savings.map((s) => [s.field, s.value])).toEqual([
+      ['currency', 2086],
+      ['tickets', 12],
+    ]);
+  });
+
+  it('reads a whole window in full and its top band, each under its own rules', () => {
+    const events = [makeEvent({ id: 'abyss', gameId: 'gi', name: 'Spiral Abyss', ...OPEN })];
+    const found = matchScreenshotOcrPasses(
+      {
+        lines: ['80/2000 0 Floor 12 Chamber 3', 'Paimon: Floor 11 Chamber 1 next!'],
+        passes: [
+          pass('raw1x', ['80/2000 0 Floor 12 Chamber 3', 'Paimon: Floor 11 Chamber 1 next!']),
+          pass('topBand2x', ['80/2000 0 Floor 12 Chamber 3']),
+        ],
+        captures: ['window'],
+      },
+      { ...ctx, events, observedAt: AT },
+    );
+    expect(found.events).toEqual([expect.objectContaining({ detail: 'Floor 12 Chamber 3', confidence: 'low' })]);
+    expect(found.readings).toEqual([expect.objectContaining({ value: 80, confidence: 'low' })]);
+  });
+
+  it('is plain matching without passes or captures', () => {
+    const lines = ['Original Resin 145/200', '', 'Primogems 14,250'];
+    expect(matchScreenshotOcrPasses({ lines }, ctx)).toEqual(matchScreenshotOcr(lines, ctx));
+  });
+});
+
+describe('NTE on PC', () => {
+  it('knows the HTGame program', () => {
+    expect(PRESETS.find((preset) => preset.key === 'nte')!.processNames).toEqual(['NTE', 'HTGame']);
   });
 });

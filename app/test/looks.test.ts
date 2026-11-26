@@ -51,9 +51,13 @@ describe('looks', () => {
 });
 
 describe('the dock shelf', () => {
-  it('opens with a game page and closes with any other place', () => {
+  it('opens only when asked, and any route change lowers it, a picked game included', () => {
     useUI.getState().setTab('home');
-    expect(useUI.getState().shelfOpen).toBe(true);
+    expect(useUI.getState().shelfOpen).toBe(false);
+    useUI.getState().setShelfOpen(true);
+    useUI.getState().setTab('home');
+    expect(useUI.getState().shelfOpen).toBe(false);
+    useUI.getState().setShelfOpen(true);
     useUI.getState().setTab('notes');
     expect(useUI.getState().shelfOpen).toBe(false);
     useUI.getState().setShelfOpen(true);
@@ -61,7 +65,7 @@ describe('the dock shelf', () => {
     expect(useUI.getState().shelfOpen).toBe(false);
   });
 
-  it('remembers the last game for a swipe toward Games', () => {
+  it('remembers the last game for Alt+4 toward Games', () => {
     useUI.getState().setFocusedGameId('g1');
     useUI.getState().setFocusedGameId(null);
     expect(useUI.getState().lastGameId).toBe('g1');

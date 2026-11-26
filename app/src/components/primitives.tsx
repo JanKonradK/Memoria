@@ -98,7 +98,7 @@ export function Tick({
   return (
     <span
       aria-hidden
-      className={`relative flex h-5 w-5 shrink-0 items-center justify-center rounded-ui-full transition group-active:scale-75 ${className}`}
+      className={`relative flex h-5 w-5 shrink-0 items-center justify-center rounded-ui-full transition group-active:scale-[0.85] ${className}`}
     >
       {/* overflow-visible: the burst deliberately overshoots past the ring, and
           an SVG clips to its viewBox by default. */}
@@ -253,7 +253,7 @@ export function ProgressBar({
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={circumference * (1 - progress)}
-            className="transition-[stroke-dashoffset] duration-(--dur-slow) ease-(--ease-out) motion-reduce:transition-none"
+            className="transition-[stroke-dashoffset] duration-(--dur-4) ease-(--ease-move) motion-reduce:transition-none"
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center text-caption font-bold text-fg-soft">
@@ -304,7 +304,7 @@ export function ReactorTube({
       style={{ height, '--meter-ink': tone, ...style } as CSSProperties}
     >
       <div
-        className="meter-fill h-full w-full origin-left rounded-ui-full transition-transform duration-(--dur-slow) ease-(--ease-out) motion-reduce:transition-none"
+        className="meter-fill h-full w-full origin-left rounded-ui-full transition-transform duration-(--dur-4) ease-(--ease-move) motion-reduce:transition-none"
         style={{ transform: `scaleX(${Math.max(0, Math.min(1, value))})`, background: tone, ...fillStyle }}
       />
     </div>

@@ -12,30 +12,31 @@ import {
 import { AnimatePresence, m } from 'motion/react';
 import { flushPersist, useApp } from './store';
 import { initCloudSync } from './cloud-sync';
-import { initRemoteFeed } from './data/remote-feed';
 import { initNotifications } from './notifications';
 import { initSync } from './sync';
 import { disconnectLanSync, initLanSync } from './lan-sync';
 import { useUI, type Tab } from './ui-store';
 import { useNow, useOnline } from './hooks';
 import { applyPwaUpdate } from './pwa';
-import { initAppUpdates } from './app-update';
-import { UpdateScreen } from './components/UpdateScreen';
+import { useAppUpdate } from './app-update-state';
 import { servedByLauncher } from './launcher';
-import { closeWorkspace, initWorkspaceHistory, openGame } from './workspace-navigation';
-import { initDesktopHost } from './desktop-host';
+import { initWorkspaceHistory, openGame } from './workspace-navigation';
+import { arrivePage } from './page-arrival';
+import { SheetHandoff } from './components/sheet-handoff';
+import { initDesktopHost, type DesktopSurface, type DesktopSurfaceChange, type DesktopWindow } from './desktop-host';
 import { dismissLaunchNotice, initGameLaunch, useGameLaunch } from './game-launch';
 import { initPresence } from './presence';
 import { initHomeWidget } from './home-widget';
 import { easing, duration } from './motion';
 import { nextGameStop, useTabSwipe } from './gestures';
+import { refreshData } from './refresh-data';
 import { AppRail } from './components/shell/AppRail';
-import { Btn } from './components/ui';
-import { confirmDialog, ConfirmHost } from './components/ConfirmDialog';
+import { Btn, focusSilently } from './components/ui';
+import { confirmDialog, ConfirmHost, SuspendDialogs } from './components/ConfirmDialog';
 import { splashDone } from './splash';
 import { isNativeApp } from './native';
 
-/** The dock's order, left to right; `home` is a game's page, the Games place. */
+/** The dock's order, left to right, which the pages slide in from; `home` is a game's page, the Games place. */
 const TAB_ORDER: readonly Tab[] = ['timeline', 'home', 'today', 'notes', 'settings'];
 const tabRank = (tab: Tab) => TAB_ORDER.indexOf(tab);
 
@@ -123,9 +124,14 @@ function useConnectorToast(tab: Tab) {
 
 const Onboarding = lazy(() => import('./components/Onboarding').then((module) => ({ default: module.Onboarding })));
 const TodayRoute = lazy(() => import('./components/Today').then((module) => ({ default: module.TodayRoute })));
-const TimelinePage = lazy(() => import('./components/Timeline').then((module) => ({ default: module.TimelinePage })));
-const NotesPage = lazy(() => import('./components/Notes').then((module) => ({ default: module.NotesPage })));
-const SettingsPage = lazy(() => import('./components/Settings').then((module) => ({ default: module.SettingsPage })));
+// The places past Today, fetched once the app is idle (prefetchPlaces) so a
+// first visit opens without waiting on the network. Still their own chunks.
+const timelineChunk = () => import('./components/Timeline');
+const notesChunk = () => import('./components/Notes');
+const settingsChunk = () => import('./components/Settings');
+const TimelinePage = lazy(() => timelineChunk().then((module) => ({ default: module.TimelinePage })));
+const NotesPage = lazy(() => notesChunk().then((module) => ({ default: module.NotesPage })));
+const SettingsPage = lazy(() => settingsChunk().then((module) => ({ default: module.SettingsPage })));
 const GameDetailSheet = lazy(() =>
   import('./components/GameDetail').then((module) => ({ default: module.GameDetailSheet })),
 );
@@ -142,6 +148,113 @@ const ScreenshotConfirm = lazy(() =>
 const ShortcutsSheet = lazy(() =>
   import('./components/ShortcutsSheet').then((module) => ({ default: module.ShortcutsSheet })),
 );
+const UpdateScreen = lazy(() =>
+  import('./components/UpdateScreen').then((module) => ({ default: module.UpdateScreen })),
+);
+// Its own chunk, fetched only in the Windows app: the web and Android never load it.
+const WindowChrome = lazy(() =>
+  import('./components/WindowChrome').then((module) => ({ default: module.WindowChrome })),
+);
+// Fetched only once the Windows app's window becomes the quick card.
+const CompactGameCard = lazy(() =>
+  import('./components/CompactGameCard').then((module) => ({ default: module.CompactGameCard })),
+);
+
+/** Where the full app was when the quick card took the window, to come back to. */
+type FullView = { scrollY: number; tab: Tab; focusedGameId: string | null };
+
+/**
+ * What the Windows app's one window shows: the full app, or the quick card for
+ * one game. Before the card takes over, the page notes where it was and commits
+ * any value being typed; coming back, it opens the game asked for, or returns
+ * to the same place at the same scroll.
+ */
+function useDesktopSurface(host: DesktopWindow | undefined): DesktopSurface | null {
+  const [surface, setSurface] = useState<DesktopSurface | null>(null);
+  const view = useRef<FullView | null>(null);
+  const returning = useRef<{ openGameId: string | null } | null>(null);
+  useEffect(() => {
+    if (!host?.onSurfaceChanged) return;
+    let active = true;
+    let heard = false;
+    let mode: DesktopSurface['mode'] = 'full';
+    const apply = (next: DesktopSurfaceChange) => {
+      if (!active) return;
+      if (next.mode === 'compact' && mode !== 'compact') {
+        const ui = useUI.getState();
+        view.current = { scrollY: window.scrollY, tab: ui.tab, focusedGameId: ui.focusedGameId };
+        // Inline energy editors commit on blur, before their field is hidden.
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      }
+      if (next.mode === 'full' && mode === 'compact') returning.current = { openGameId: next.openGameId ?? null };
+      mode = next.mode;
+      setSurface(next);
+    };
+    const stop = host.onSurfaceChanged((next) => {
+      heard = true;
+      apply(next);
+    });
+    // A page reloaded under the card opens as the card.
+    void host.getSurface?.().then(
+      (next) => !heard && apply(next),
+      () => undefined,
+    );
+    return () => {
+      active = false;
+      stop();
+    };
+  }, [host]);
+  const mode = surface?.mode;
+  useEffect(() => {
+    const back = returning.current;
+    if (mode !== 'full' || !back) return;
+    returning.current = null;
+    const before = view.current;
+    view.current = null;
+    if (back.openGameId && useApp.getState().state.games.some((game) => game.id === back.openGameId && !game.deleted)) {
+      openGame(back.openGameId);
+      return;
+    }
+    const ui = useUI.getState();
+    // A game started meanwhile turned the page to it: that page keeps its own place.
+    if (!before || ui.tab !== before.tab || ui.focusedGameId !== before.focusedGameId) return;
+    const frame = requestAnimationFrame(() => window.scrollTo({ top: before.scrollY, behavior: 'instant' }));
+    return () => cancelAnimationFrame(frame);
+  }, [mode]);
+  return surface;
+}
+
+/** Start a module that loads after the first screen; stop it, or never start it, on cleanup. */
+function startLater<T>(module: Promise<T>, start: (loaded: T) => () => void): () => void {
+  let stop: (() => void) | undefined;
+  let active = true;
+  void module.then((loaded) => {
+    if (active) stop = start(loaded);
+  });
+  return () => {
+    active = false;
+    stop?.();
+  };
+}
+
+/**
+ * Once the first screen is up and the browser is idle, fetch the other places'
+ * chunks, so a first visit to one never waits on "Loading view…". Skipped when
+ * the device asks to save data. Off the startup path: they stay async chunks.
+ */
+function prefetchPlaces(): () => void {
+  const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
+  if (saveData) return () => undefined;
+  const fetchAll = () => {
+    for (const chunk of [timelineChunk, notesChunk, settingsChunk]) void chunk().catch(() => undefined);
+  };
+  if (typeof window.requestIdleCallback === 'function') {
+    const idle = window.requestIdleCallback(fetchAll, { timeout: 5000 });
+    return () => window.cancelIdleCallback(idle);
+  }
+  const timer = window.setTimeout(fetchAll, 2000);
+  return () => window.clearTimeout(timer);
+}
 
 /** Where a typed `?` is text, not a request for the shortcuts. */
 function typingInto(target: EventTarget | null): boolean {
@@ -150,8 +263,9 @@ function typingInto(target: EventTarget | null): boolean {
 }
 
 /** `?` anywhere outside a field opens the keyboard shortcuts, unless a dialog already has the screen. */
-function useShortcutsKey() {
+function useShortcutsKey(disabled = false) {
   useEffect(() => {
+    if (disabled) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== '?' || event.ctrlKey || event.metaKey || event.altKey || event.defaultPrevented) return;
       if (typingInto(event.target) || useUI.getState().sheet) return;
@@ -161,15 +275,16 @@ function useShortcutsKey() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [disabled]);
 }
 
 /**
  * Shift+S starts a screen snip in the Windows app, outside fields and open
  * dialogs. The connectors load only when it is pressed, never at startup.
  */
-function useSnipKey() {
+function useSnipKey(disabled = false) {
   useEffect(() => {
+    if (disabled) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() !== 's' || !event.shiftKey || event.repeat || event.defaultPrevented) return;
       if (event.ctrlKey || event.metaKey || event.altKey) return;
@@ -181,7 +296,7 @@ function useSnipKey() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [disabled]);
 }
 
 type PagePosition = { page: number; board: number };
@@ -220,8 +335,12 @@ function PageFrame({
       });
     };
   }, [positions, tab]);
+  // The page arrives once, as it mounts with its content: what is under its
+  // bar fades in (and on the dock glides from the side its place sits on).
+  // The bar stays where it rests; content that mounts later never replays it.
+  useLayoutEffect(() => arrivePage(pageRef.current, direction), [direction]);
   return (
-    <div ref={pageRef} className="page-enter" data-direction={direction}>
+    <div ref={pageRef} className="page-enter">
       {children}
     </div>
   );
@@ -253,7 +372,7 @@ function useSheetFocusReturn(open: boolean) {
     window.setTimeout(() => {
       const active = document.activeElement;
       if (useUI.getState().sheet || !target?.isConnected || (active && active !== document.body)) return;
-      target.focus({ preventScroll: true });
+      focusSilently(target);
     }, 0);
   };
 }
@@ -261,25 +380,51 @@ function useSheetFocusReturn(open: boolean) {
 function AppSheets() {
   const sheet = useUI((s) => s.sheet);
   const returnFocus = useSheetFocusReturn(Boolean(sheet));
+  const key = sheet ? JSON.stringify(sheet) : null;
+  // Whether the last change went from one sheet straight to another (a handoff:
+  // sheet-handoff.ts). Stored with the key it was decided on, like the pages'
+  // direction in AppScreens, so it holds for the whole exit and entrance.
+  const [route, setRoute] = useState({ key, handoff: false });
+  if (route.key !== key) setRoute({ key, handoff: route.key !== null && key !== null });
+  const handoff = route.handoff;
   return (
-    <AnimatePresence mode="wait" onExitComplete={() => !useUI.getState().sheet && returnFocus()}>
-      {sheet && (
-        // A new lazy editor must not suspend the outgoing sheet during its exit.
-        <Suspense key={JSON.stringify(sheet)} fallback={null}>
-          {sheet.kind === 'game' && (
-            <GameDetailSheet key={`game-${sheet.gameId}`} open gameId={sheet.gameId} initialSection={sheet.section} />
-          )}
-          {sheet.kind === 'addGame' && <AddGameSheet key="add-game" open />}
-          {sheet.kind === 'event' && (
-            <EventSheet key={`event-${sheet.eventId ?? 'new'}`} open eventId={sheet.eventId} gameId={sheet.gameId} />
-          )}
-          {sheet.kind === 'eventPeek' && <EventPeek key={`peek-${sheet.eventId}`} open eventId={sheet.eventId} />}
-          {sheet.kind === 'reminder' && <ReminderSheet key="reminder" open />}
-          {sheet.kind === 'guide' && <Guide key="guide" open />}
-          {sheet.kind === 'shortcuts' && <ShortcutsSheet key="shortcuts" open />}
-        </Suspense>
-      )}
-    </AnimatePresence>
+    <SheetHandoff value={handoff}>
+      <AnimatePresence mode="wait" onExitComplete={() => !useUI.getState().sheet && returnFocus()}>
+        {sheet && (
+          // A new lazy editor must not suspend the outgoing sheet during its exit.
+          // Mid-handoff its fallback is the scrim, so the page never shows between the two.
+          <Suspense key={key} fallback={handoff ? <HandoffScrim /> : null}>
+            {sheet.kind === 'game' && (
+              <GameDetailSheet key={`game-${sheet.gameId}`} open gameId={sheet.gameId} initialSection={sheet.section} />
+            )}
+            {sheet.kind === 'addGame' && <AddGameSheet key="add-game" open />}
+            {sheet.kind === 'event' && (
+              <EventSheet key={`event-${sheet.eventId ?? 'new'}`} open eventId={sheet.eventId} gameId={sheet.gameId} />
+            )}
+            {sheet.kind === 'eventPeek' && <EventPeek key={`peek-${sheet.eventId}`} open eventId={sheet.eventId} />}
+            {sheet.kind === 'reminder' && <ReminderSheet key="reminder" open />}
+            {sheet.kind === 'guide' && <Guide key="guide" open />}
+            {sheet.kind === 'shortcuts' && <ShortcutsSheet key="shortcuts" open />}
+          </Suspense>
+        )}
+      </AnimatePresence>
+    </SheetHandoff>
+  );
+}
+
+/** The scrim alone, while the next sheet's chunk is still on its way. */
+function HandoffScrim() {
+  return <div aria-hidden className="sheet-scrim fixed inset-0 z-50 bg-scrim-veil backdrop-blur-[2px]" />;
+}
+
+/** The update screen and its download code load once a newer version is found. */
+function UpdateScreenHost() {
+  const found = useAppUpdate((s) => s.release !== null);
+  if (!found) return null;
+  return (
+    <Suspense fallback={null}>
+      <UpdateScreen />
+    </Suspense>
   );
 }
 
@@ -303,17 +448,57 @@ function ScreenshotConfirmHost() {
   );
 }
 
-/** One confirm host for every screen: recovery, setup and the app itself. */
+/**
+ * The save-error banner's own way to reload and resync: the rail's Refresh is
+ * only down the side of a wide screen, never on the phone's dock.
+ */
+function RefreshDataButton() {
+  const [refreshing, setRefreshing] = useState(false);
+  return (
+    <Btn
+      disabled={refreshing}
+      aria-busy={refreshing}
+      onClick={() => {
+        setRefreshing(true);
+        void refreshData().finally(() => setRefreshing(false));
+      }}
+    >
+      Refresh data
+    </Btn>
+  );
+}
+
+/**
+ * One confirm host, and in the Windows app one title bar, for every screen:
+ * recovery, setup and the app itself. The quick card brings its own bar and
+ * the full app waits hidden underneath it, still running, with every draft kept.
+ */
 export default function App() {
+  const desktopWindow = window.memoriaDesktop?.window;
+  const surface = useDesktopSurface(desktopWindow);
+  const card = desktopWindow && surface?.mode === 'compact' ? surface : null;
   return (
     <>
-      <AppScreens />
-      <ConfirmHost />
+      {desktopWindow && !card && (
+        <Suspense fallback={null}>
+          <WindowChrome host={desktopWindow} />
+        </Suspense>
+      )}
+      {desktopWindow && card && (
+        <Suspense fallback={null}>
+          <CompactGameCard host={desktopWindow} surface={card} />
+        </Suspense>
+      )}
+      <SuspendDialogs suspended={Boolean(card)}>
+        <AppScreens hidden={Boolean(card)} />
+        <ConfirmHost />
+      </SuspendDialogs>
     </>
   );
 }
 
-function AppScreens() {
+/** `hidden`: the quick card has the window. Everything keeps running underneath. */
+function AppScreens({ hidden = false }: { hidden?: boolean }) {
   const load = useApp((s) => s.load);
   const loaded = useApp((s) => s.loaded);
   const hasGames = useApp((s) => s.state.games.some((game) => !game.deleted));
@@ -337,40 +522,12 @@ function AppScreens() {
   }
   const direction = nav.tab === tab ? nav.direction : 1;
 
+  // Only a game's page swipes, through its own tabs. At either end it
+  // rubber-bands and stays: never off to another game or place.
   const swipe = useTabSwipe((towards) => {
-    // On a game's page a swipe steps through its tabs, then on to the next game.
-    if (tab === 'home') {
-      const ui = useUI.getState();
-      const live = useApp
-        .getState()
-        .state.games.filter((game) => !game.deleted)
-        .sort((a, b) => a.sort - b.sort);
-      const step = nextGameStop(
-        ui.gameTabs,
-        ui.gameTab,
-        live.map((game) => game.id),
-        ui.focusedGameId,
-        towards,
-      );
-      if (step.kind === 'tab') return ui.setGameTab(step.tab, towards);
-      if (step.kind === 'game') {
-        ui.setGameTab(step.tab, towards);
-        return openGame(step.gameId);
-      }
-    }
-    let next = TAB_ORDER[TAB_ORDER.indexOf(tab) + towards];
-    if (next === 'home') {
-      // The Games place is the last game that was open, else the first one.
-      const ui = useUI.getState();
-      const { games } = useApp.getState().state;
-      const live = games.filter((game) => !game.deleted).sort((a, b) => a.sort - b.sort);
-      const id = live.find((game) => game.id === ui.lastGameId)?.id ?? live[0]?.id;
-      if (id) return openGame(id);
-      next = TAB_ORDER[TAB_ORDER.indexOf('home') + towards];
-    }
-    if (!next) return;
-    if (tab === 'home' && next === 'today') closeWorkspace();
-    else setTab(next);
+    const ui = useUI.getState();
+    const next = nextGameStop(ui.gameTabs, ui.gameTab, towards);
+    if (next) ui.setGameTab(next, towards);
   });
 
   // The game page is the only thing on the internal `home` route. A deleted
@@ -401,8 +558,8 @@ function AppScreens() {
   }, [load]);
 
   useEffect(initWorkspaceHistory, []);
-  useShortcutsKey();
-  useSnipKey();
+  useShortcutsKey(hidden);
+  useSnipKey(hidden);
   useEffect(initDesktopHost, []);
   useEffect(initGameLaunch, []);
 
@@ -415,7 +572,12 @@ function AppScreens() {
   }, [loaded]);
 
   useEffect(() => {
-    if (loaded) return initRemoteFeed();
+    // Android keeps a copy in a folder the player chose; the module loads only there.
+    if (loaded && isNativeApp) return startLater(import('./auto-backup'), ({ initAutoBackup }) => initAutoBackup());
+  }, [loaded]);
+
+  useEffect(() => {
+    if (loaded) return startLater(import('./data/remote-feed'), ({ initRemoteFeed }) => initRemoteFeed());
   }, [loaded]);
 
   useEffect(() => {
@@ -435,20 +597,18 @@ function AppScreens() {
   useEffect(() => {
     // Live numbers are a native feature; a browser never loads the module.
     if (!loaded || (!window.memoriaDesktop?.connectors && !isNativeApp)) return;
-    let stop: (() => void) | undefined;
-    let active = true;
-    void import('./connectors').then(({ initConnectors }) => {
-      if (active) stop = initConnectors();
-    });
-    return () => {
-      active = false;
-      stop?.();
-    };
+    return startLater(import('./connectors'), ({ initConnectors }) => initConnectors());
+  }, [loaded]);
+
+  useEffect(() => {
+    if (loaded) return prefetchPlaces();
   }, [loaded]);
 
   useEffect(() => {
     if (!loaded) return;
-    return initAppUpdates(() => useUI.getState().openSettings('updates'));
+    return startLater(import('./app-update'), ({ initAppUpdates }) =>
+      initAppUpdates(() => useUI.getState().openSettings('activity')),
+    );
   }, [loaded]);
 
   useEffect(() => {
@@ -468,7 +628,7 @@ function AppScreens() {
 
   if (loadError) {
     return (
-      <main className="flex min-h-dvh items-center justify-center px-5 py-12">
+      <main className="flex min-h-dvh items-center justify-center px-5 py-12" hidden={hidden}>
         <SplashDone />
         <section className="glass gold-hairline w-full max-w-lg rounded-ui-card p-6" role="alert">
           <p className="text-meta font-bold uppercase tracking-widest text-danger-fg">Local data unavailable</p>
@@ -510,7 +670,12 @@ function AppScreens() {
 
   if (!loaded) {
     return (
-      <div className="flex min-h-dvh items-center justify-center" role="status" aria-label="Loading Memoria">
+      <div
+        className="flex min-h-dvh items-center justify-center"
+        role="status"
+        aria-label="Loading Memoria"
+        hidden={hidden}
+      >
         <div className="loader-spin h-12 w-12 rounded-ui-xl bg-gradient-to-br from-accent via-accent-2 to-gold" />
       </div>
     );
@@ -520,22 +685,24 @@ function AppScreens() {
   // The intro stays until it has drawn.
   if (setup && !hasGames)
     return (
-      <Suspense fallback={null}>
-        <SplashDone />
-        <Onboarding
-          onComplete={() => {
-            markOnboardingComplete();
-            setSetup(false);
-          }}
-        />
-      </Suspense>
+      <div hidden={hidden}>
+        <Suspense fallback={null}>
+          <SplashDone />
+          <Onboarding
+            onComplete={() => {
+              markOnboardingComplete();
+              setSetup(false);
+            }}
+          />
+        </Suspense>
+      </div>
     );
 
   return (
-    <div className="app-frame relative min-h-dvh">
+    <div className="app-frame relative min-h-dvh" hidden={hidden}>
       <a
         href="#main-content"
-        className="fixed left-3 top-3 z-[70] -translate-y-20 rounded-ui-lg bg-fg px-4 py-2 text-body font-bold text-fg-invert transition focus:translate-y-0"
+        className="fixed left-3 top-[calc(0.75rem+var(--desktop-chrome-h))] z-[70] -translate-y-20 rounded-ui-lg bg-fg px-4 py-2 text-body font-bold text-fg-invert transition focus:translate-y-0"
       >
         Skip to content
       </a>
@@ -552,7 +719,7 @@ function AppScreens() {
         id="main-content"
         tabIndex={-1}
         className="relative overflow-x-clip [touch-action:pan-y_pinch-zoom]"
-        {...swipe}
+        {...(tab === 'home' ? swipe : {})}
       >
         {saveError && (
           <section className="mx-4 my-3 space-y-2 rounded-ui-lg bg-danger/10 p-4 text-body" role="alert">
@@ -570,6 +737,7 @@ function AppScreens() {
               >
                 {retryingSave ? 'Saving…' : 'Try saving again'}
               </Btn>
+              <RefreshDataButton />
               <Btn onClick={() => useUI.getState().openSettings('data')}>Open backup settings</Btn>
             </div>
             <details className="text-meta text-muted">
@@ -578,16 +746,17 @@ function AppScreens() {
             </details>
           </section>
         )}
-        {/* A CSS entrance, re-keyed on the tab, deliberately NOT a motion one.
+        {/* An entrance re-keyed on the tab, deliberately NOT a motion-library one.
             Every route is a lazy chunk, and a subtree that suspends part-way
             through a JS-driven transition leaves the library holding an element
             it can no longer drive. Both AnimatePresence modes failed that way
             here — popLayout parked both pages at opacity 0, wait never mounted
             the incoming one — and the failure mode of a JS page transition is a
             blank app, which is far worse than the thing it was buying.
-            A keyframe has no such failure mode: it animates FROM the offset with
-            no fill-mode, so the resting state is the plain visible one. If the
-            animation never runs, for any reason, the page is simply there.
+            PageFrame's arrival (page-arrival.ts) has no such failure mode: it
+            starts once the page has mounted with its content, animates FROM the
+            offset with no fill-mode, and the resting state is the plain visible
+            page. If it never runs, for any reason, the page is simply there.
             The exit slide is what this gives up; the direction still reads. */}
         <Suspense fallback={<div className="px-5 py-12 text-center text-body text-dim">Loading view…</div>}>
           <PageFrame key={tab} tab={tab} direction={direction} positions={pagePositions}>
@@ -706,7 +875,7 @@ function AppScreens() {
 
       <AppSheets />
       <ScreenshotConfirmHost />
-      <UpdateScreen />
+      <UpdateScreenHost />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import type { EventProgress } from '../event-parts';
-import { presetForGame } from '../presets';
+import { PRESETS, presetForGame } from '../presets';
 import { effectiveCountTarget, effectiveTaskMode } from '../tracking';
 import type { Cadence, Game, GameEvent, Resource, Task, TaskMode } from '../types';
 
@@ -15,6 +15,45 @@ import type { Cadence, Game, GameEvent, Resource, Task, TaskMode } from '../type
 
 export type OcrConfidence = 'high' | 'medium' | 'low';
 
+/**
+ * One word an OCR pass placed: left, top, right and bottom edges. Windows passes give the region's own
+ * pixels; the Android `mlkit` pass gives fractions of the image, from 0 to 1, so they survive downscaling.
+ */
+export interface OcrWordBox {
+  text: string;
+  l: number;
+  t: number;
+  r: number;
+  b: number;
+}
+
+/**
+ * One way a region was read: as captured, upscaled twice, as bright text on white, or a window's top band
+ * (Windows OCR), or by ML Kit's on-device text recognition (Android).
+ */
+export type OcrPassName = 'raw1x' | 'raw2x' | 'bright2x' | 'topBand2x' | 'mlkit';
+
+/**
+ * One reading of one region. A pass covers a single region (`region`, 0 when missing), so its `lines`
+ * never hold the empty separator between regions, and the passes of a capture stay parallel per region.
+ */
+export interface OcrPass {
+  name: OcrPassName;
+  lines: string[];
+  words?: OcrWordBox[];
+  region?: number;
+}
+
+/** What a region was taken from: a snipped area, a whole game window, an image file, a camera or a share. */
+export type OcrCapture = 'snip' | 'window' | 'file' | 'camera' | 'share';
+
+/** Read by a rule that guesses past an OCR slip, so it is only ever as sure as the rule allows. */
+export type OcrReadingRule =
+  /** A HUD glyph glued onto the cap ("80/2000" for 80/200 and a "+" read as 0). */
+  | 'glued-glyph'
+  /** A bare number beside the bar on its row, read as the bar's reserve (WuWa's Waveplate Crystals). */
+  | 'reserve-beside-bar';
+
 export interface OcrReadingCandidate {
   resourceId: string;
   resourceName: string;
@@ -26,6 +65,8 @@ export interface OcrReadingCandidate {
   confidence: OcrConfidence;
   /** The OCR line it came from, for showing the player. */
   line: string;
+  /** Set when a guessing rule read it; a plain read leaves it out. */
+  rule?: OcrReadingRule;
 }
 
 const RANK: Record<OcrConfidence, number> = { high: 3, medium: 2, low: 1 };
@@ -60,9 +101,12 @@ const GROUPED = `${DIGIT}{1,3}(?:[,.\\u00a0\\u202f ]${DIGIT}{3})+`;
  * version), and never the letters OCR uses for digits, which are read as digits instead.
  */
 const GLYPH = '[A-HJ-NP-UW-Zabcdefghijkmnpqrstuwxyz]';
-/** Never inside a word (level2/3), a chain (2026/11/24) or a date with a time (11/24 04:00). */
+/**
+ * Never inside a word (level2/3), a chain (2026/11/24) or a date with a time (11/24 04:00). A "Q" glued
+ * on the total is captured apart: it is a HUD glyph, read only by the glued-glyph rule.
+ */
 const FRACTION = new RegExp(
-  `(?<![A-Za-z\\d|,.])(?<![/\\\\]\\s*)(${GLYPH})?(${GROUPED}|${DIGIT}{1,6})\\s*[/\\\\]\\s*(${GROUPED}|${DIGIT}{1,6})` +
+  `(?<![A-Za-z\\d|,.])(?<![/\\\\]\\s*)(${GLYPH})?(${GROUPED}|${DIGIT}{1,6})\\s*[/\\\\]\\s*(${GROUPED}|${DIGIT}{1,6})(Q)?` +
     `(?![A-Za-z\\d|]|[,.]\\d|\\s*[/\\\\]\\s*\\d|\\s+\\d{1,2}:\\d{2})`,
   'g',
 );
@@ -91,26 +135,68 @@ function spaceVariants(token: string, keep: 'first' | 'last'): string[] {
   return [token, keep === 'last' ? parts[parts.length - 1]! : parts[0]!];
 }
 
-/** Every "value / total" in a line: one group per slash, its readings grouped thousands first. */
-function lineFractions(line: string): OcrFraction[][] {
-  const groups: OcrFraction[][] = [];
+/** A total read past one glyph glued on its end: "80/2000" as 80/200, or "80/200Q". */
+interface GluedFraction {
+  value: number;
+  /** The total as OCR read it, glyph and all; undefined when the glyph is a letter. */
+  total: number | undefined;
+  /** The total without the glyph. */
+  cap: number;
+  glyph: boolean;
+}
+
+/** One slash in a line: where it starts, its readings grouped thousands first, and its glued-glyph readings. */
+interface FractionMatch {
+  index: number;
+  fractions: OcrFraction[];
+  glued: GluedFraction[];
+}
+
+/** A total's digits without one glued glyph on its end (0, O, o or a captured Q), or undefined. */
+function gluedStem(right: string, suffix: boolean): string | undefined {
+  // Only a plain run of digits: "2,400" is grouped thousands, not a glyph.
+  if (!/^[\dOolI|]+$/.test(right)) return undefined;
+  const stem = suffix ? right : /[0Oo]$/.test(right) ? right.slice(0, -1) : undefined;
+  return stem !== undefined && stem.length >= 3 ? stem : undefined;
+}
+
+function fractionMatches(line: string): FractionMatch[] {
+  const out: FractionMatch[] = [];
   for (const match of line.matchAll(FRACTION)) {
     const glyph = match[1] !== undefined;
-    const group: OcrFraction[] = [];
+    // A letter glued on the total is never a plain reading.
+    const suffix = match[4] !== undefined;
+    const fractions: OcrFraction[] = [];
+    const glued: GluedFraction[] = [];
     const lefts = spaceVariants(match[2]!, 'last');
     // A leading "|" is read as a 1 first, then as the HUD divider it often is ("Resin |145/200").
     const touching = lefts[lefts.length - 1]!;
     if (/^\|[\dOolI]/.test(touching)) lefts.push(touching.slice(1));
+    const stem = gluedStem(match[3]!, suffix);
+    const cap = stem === undefined ? undefined : fractionDigits(stem);
     for (const left of lefts) {
-      for (const right of spaceVariants(match[3]!, 'first')) {
-        const value = fractionDigits(left);
-        const total = fractionDigits(right);
-        if (value !== undefined && total !== undefined && total > 0) group.push({ value, total, glyph });
+      const value = fractionDigits(left);
+      if (value === undefined) continue;
+      if (!suffix) {
+        for (const right of spaceVariants(match[3]!, 'first')) {
+          const total = fractionDigits(right);
+          if (total !== undefined && total > 0) fractions.push({ value, total, glyph });
+        }
+      }
+      if (cap !== undefined && cap > 0) {
+        glued.push({ value, total: suffix ? undefined : fractionDigits(match[3]!), cap, glyph });
       }
     }
-    if (group.length > 0) groups.push(group);
+    if (fractions.length > 0 || glued.length > 0) out.push({ index: match.index, fractions, glued });
   }
-  return groups;
+  return out;
+}
+
+/** Every "value / total" in a line: one group per slash, its readings grouped thousands first. */
+function lineFractions(line: string): OcrFraction[][] {
+  return fractionMatches(line)
+    .map((match) => match.fractions)
+    .filter((group) => group.length > 0);
 }
 
 /** A fraction that can be one of these bars: its main cap (overflow up to double), or its reserve. */
@@ -296,13 +382,32 @@ function pairedText(region: OcrRegion, i: number, holdsValue: (line: string) => 
 export function matchOcrReadings(lines: readonly string[], resources: readonly Resource[]): OcrReadingCandidate[] {
   const live = resources.filter((res) => !res.deleted);
   const index: LabelIndex = { resources: live, tasks: [], savings: allSavingsLabels(undefined), modes: MODE_NAMES };
-  return collectReadings(ocrRegions(lines, index), live, false);
+  return collectReadings(ocrRegions(lines, index), live, { disambiguate: false });
 }
+
+/** How far bar matching may guess past what OCR read. */
+interface ReadingRules {
+  /** Bars of one game sharing a cap: a line naming one of them rules the others out. */
+  disambiguate: boolean;
+  /**
+   * The glued-glyph rule, on for one game: these totals are real caps there (its own bars and its
+   * preset's), so a total among them is never a cap with a glyph glued on.
+   */
+  glued?: ReadonlySet<number>;
+  /** The reserve-beside-bar rule: WuWa's HUD sets Waveplate Crystals as a bare number left of the bar. */
+  beside?: boolean;
+}
+
+/** Glued totals are only read against caps this large: a small cap ("5" in "3/50") is too easy to fake. */
+const GLUED_MIN_CAP = 100;
+
+/** "388   61/240": a bare number in its own column right before the bar, at the start of the row. */
+const BESIDE_BAR = /(?:^| {3})(\d{1,3}) {3}$/;
 
 function collectReadings(
   regions: readonly OcrRegion[],
   live: readonly Resource[],
-  disambiguate: boolean,
+  rules: ReadingRules,
 ): OcrReadingCandidate[] {
   const found: OcrReadingCandidate[] = [];
   const namesBar = (text: string) =>
@@ -315,20 +420,33 @@ function collectReadings(
       const context =
         prev !== undefined && !/\d/.test(prev) && namesBar(prev) && !namesBar(line) ? `${prev} ${line}` : line;
 
-      for (const group of lineFractions(line)) {
-        const fraction = group.find((f) => barFraction(live, f));
+      for (const match of fractionMatches(line)) {
+        const plain = match.fractions.find((f) => barFraction(live, f));
+        const glued = plain ? undefined : gluedBar(live, match, rules.glued);
+        const fraction = plain ?? glued;
         if (!fraction) continue;
-        const { value, total: cap } = fraction;
+        const { value } = fraction;
+        const cap = plain ? plain.total : glued!.cap;
+        const rule = glued ? ({ rule: 'glued-glyph' } as const) : {};
         // Bars of one game sharing a cap: when the line names one of them, the others are not it.
         const sharing = live.filter((res) => res.cap === cap || res.reserveCap === cap);
-        const named = disambiguate ? sharing.filter((res) => resourceNamed(context, res)) : [];
+        const named = rules.disambiguate ? sharing.filter((res) => resourceNamed(context, res)) : [];
         const allowed = (res: Resource) =>
           named.length === 0 || named.includes(res) || !named.some((other) => other.gameId === res.gameId);
+        const bars: Resource[] = [];
         for (const res of live) {
           if (res.cap !== cap || !allowed(res)) continue;
           // Over the cap is real for overflow stores (Condensed Resin, coffee Battery), but not by more than double.
-          const confidence: OcrConfidence | undefined = value <= cap ? 'high' : value <= cap * 2 ? 'medium' : undefined;
+          // A glued glyph is a guess, never surer than low.
+          const confidence: OcrConfidence | undefined = glued
+            ? 'low'
+            : value <= cap
+              ? 'high'
+              : value <= cap * 2
+                ? 'medium'
+                : undefined;
           if (!confidence) continue;
+          bars.push(res);
           found.push({
             resourceId: res.id,
             resourceName: res.name,
@@ -337,8 +455,14 @@ function collectReadings(
             cap,
             confidence,
             line: context,
+            ...rule,
           });
         }
+        if (rules.beside) {
+          found.push(...reservesBeside(line.slice(0, match.index), bars, context, glued ? 'low' : 'medium'));
+        }
+        // A guessed total is a main bar's cap, never a reserve's.
+        if (glued) continue;
         // The same fraction can be an overflow store read against its own cap (320/480 Waveplate Crystals,
         // 1200/2400 Reserved Trailblaze Power). Trusted when the line names the store, or when no main bar
         // shares that cap so the fraction cannot be anything else.
@@ -392,6 +516,49 @@ function collectReadings(
     if (!current || RANK[candidate.confidence] > RANK[current.confidence]) best.set(key, candidate);
   }
   return [...best.values()].sort((a, b) => RANK[b.confidence] - RANK[a.confidence]);
+}
+
+/**
+ * The bar a glued glyph hides ("80/2000" as 80 of the 200 Resin cap): only when the total as read is no
+ * real cap here, the cap without the glyph is a bar's own and at least `GLUED_MIN_CAP`, and the value fits it.
+ */
+function gluedBar(
+  live: readonly Resource[],
+  match: FractionMatch,
+  blocked: ReadonlySet<number> | undefined,
+): GluedFraction | undefined {
+  if (!blocked || match.fractions.some((f) => blocked.has(f.total))) return undefined;
+  return match.glued.find(
+    (g) =>
+      (g.total === undefined || !blocked.has(g.total)) &&
+      g.cap >= GLUED_MIN_CAP &&
+      g.value <= g.cap &&
+      live.some((res) => res.cap === g.cap),
+  );
+}
+
+/** The reserve a bare number left of its bar shows ("388   61/240"), for bars that have one. */
+function reservesBeside(
+  before: string,
+  bars: readonly Resource[],
+  line: string,
+  confidence: OcrConfidence = 'medium',
+): OcrReadingCandidate[] {
+  const number = BESIDE_BAR.exec(before)?.[1];
+  if (number === undefined) return [];
+  const value = Number(number);
+  return bars
+    .filter((res) => res.reserveCap > 0 && value <= res.reserveCap)
+    .map((res) => ({
+      resourceId: res.id,
+      resourceName: res.name,
+      field: 'reserve' as const,
+      value,
+      cap: res.reserveCap,
+      confidence,
+      line,
+      rule: 'reserve-beside-bar' as const,
+    }));
 }
 
 // ---------------------------------------------------------------------------
@@ -449,6 +616,13 @@ export interface OcrScreenshotContext {
   events?: readonly GameEvent[];
   /** When the screenshot was taken, to pick the cycle it shows. Defaults to now. */
   observedAt?: number;
+  /**
+   * What the text was read from. A whole game window holds stray text anywhere, so rules that read a
+   * bare number or a bare HUD label wait for its top band or a clean bar there.
+   */
+  capture?: OcrCapture;
+  /** Which pass of the capture this text is. */
+  pass?: OcrPassName;
 }
 
 type GameRef = NonNullable<OcrScreenshotContext['game']>;
@@ -699,6 +873,11 @@ interface EndgameMode {
   stages?: number[];
   /** The word before the stage reached ("Act 10") and the stage that clears the mode. */
   stage?: { word: string; full: number };
+  /**
+   * Rooms inside each stage, shown on the HUD while one is being fought ("Floor 12 Chamber 3"): the room
+   * word, the first stage counted and the rooms per stage. A room in progress is never a clear.
+   */
+  rooms?: { word: string; first: number; per: number };
   /** Shows a letter rank; S is the clear. */
   ranked?: boolean;
   /** Shows a points total, which says it was played but not how far. */
@@ -706,7 +885,14 @@ interface EndgameMode {
 }
 
 const ENDGAME_MODES: EndgameMode[] = [
-  { preset: 'genshin', names: ['Spiral Abyss', 'Abyssal Stars'], stars: [36], stage: { word: 'Floor', full: 12 } },
+  {
+    preset: 'genshin',
+    names: ['Spiral Abyss', 'Abyssal Stars'],
+    stars: [36],
+    stage: { word: 'Floor', full: 12 },
+    // Floors 9 to 12 hold three chambers each: the stars that count.
+    rooms: { word: 'Chamber', first: 9, per: 3 },
+  },
   {
     preset: 'genshin',
     names: ['Imaginarium Theater', 'Imaginarium Theatre'],
@@ -779,6 +965,20 @@ function groupThousands(n: number): string {
   return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+/** The stage and room a HUD shows ("Floor 12 Chamber 3"), when both are ones the mode has. */
+function roomReached(text: string, mode: EndgameMode): { stage: number; room: number } | undefined {
+  if (!mode.stage || !mode.rooms) return undefined;
+  const { word, full } = mode.stage;
+  const { word: roomWord, first, per } = mode.rooms;
+  const found = new RegExp(
+    `(?<![A-Za-z])${word}\\s*[:#.]?\\s*(\\d{1,2})\\s*[,:·•\\-–—]?\\s*${roomWord}\\s*[:#.]?\\s*(\\d)(?!\\d)`,
+    'i',
+  ).exec(text);
+  const stage = Number(found?.[1] ?? 0);
+  const room = Number(found?.[2] ?? 0);
+  return stage >= first && stage <= full && room >= 1 && room <= per ? { stage, room } : undefined;
+}
+
 /** What the text says about one mode: a star or stage fraction, stars, the stage reached, a rank or a score. */
 function readEndgame(text: string, mode: EndgameMode): EndgameReading | undefined {
   const known = [...(mode.stars ?? []), ...(mode.stages ?? [])];
@@ -806,6 +1006,18 @@ function readEndgame(text: string, mode: EndgameMode): EndgameReading | undefine
       partsTotal: fullStars,
       detail: `${stars} ★`,
       confidence: 'high',
+    };
+  }
+  // A room on the HUD is the one being fought, so the chamber itself is not yet cleared.
+  const at = roomReached(text, mode);
+  if (at && mode.stage && mode.rooms) {
+    const { first, per } = mode.rooms;
+    return {
+      progress: 'partial',
+      partsDone: (at.stage - first) * per + at.room - 1,
+      partsTotal: (mode.stage.full - first + 1) * per,
+      detail: `${mode.stage.word} ${at.stage} ${mode.rooms.word} ${at.room}`,
+      confidence: 'low',
     };
   }
   if (mode.stage) {
@@ -837,13 +1049,21 @@ function matchEvents(
   pool: readonly GameEvent[],
   modes: readonly EndgameMode[],
   at: number,
+  bareRooms: { preset: string | undefined; anywhere: boolean },
 ): OcrEventCandidate[] {
   const best = new Map<string, OcrEventCandidate>();
   if (pool.length === 0) return [];
   for (const region of regions) {
     region.lines.forEach((line, i) => {
       for (const mode of modes) {
-        if (!namesMode(line, mode)) continue;
+        // The HUD inside a mode shows its room without the mode's name ("Floor 12 Chamber 3"). Read alone
+        // only for the mode's own game, and in a whole window only beside a clean bar or in its top band.
+        const bare =
+          mode.preset !== '' &&
+          mode.preset === bareRooms.preset &&
+          (bareRooms.anywhere || region.bar[i] === true) &&
+          roomReached(line, mode) !== undefined;
+        if (!bare && !namesMode(line, mode)) continue;
         const event = cycleEventFor(pool, mode, at);
         if (!event) continue;
         let reading = readEndgame(line, mode);
@@ -889,11 +1109,176 @@ export function matchScreenshotOcr(lines: readonly string[], context: OcrScreens
     savings: allSavingsLabels(game),
     modes: modes.flatMap((mode) => mode.names.map(compact)),
   });
+  const preset = game ? presetForGame(game) : undefined;
+  // Stray text fills a whole window; its top band, a snip or a file holds the HUD and little else.
+  const hud = context.capture !== 'window' || context.pass === 'topBand2x';
+  const rules: ReadingRules = {
+    disambiguate: true,
+    ...(game && hud ? { glued: realCaps(resources, preset?.key) } : {}),
+    beside: preset?.key === 'wuwa' && hud,
+  };
   return {
-    readings: collectReadings(regions, resources, true),
+    readings: collectReadings(regions, resources, rules),
     tasks: matchTasks(regions, tasks),
     savings: matchSavings(regions, game),
-    events: matchEvents(regions, pool, modes, context.observedAt ?? Date.now()),
+    events: matchEvents(regions, pool, modes, context.observedAt ?? Date.now(), {
+      preset: preset?.key,
+      anywhere: hud,
+    }),
+  };
+}
+
+/** Every cap and reserve cap a game really has: its own bars' and its preset's. */
+function realCaps(resources: readonly Resource[], presetKey: string | undefined): Set<number> {
+  const preset = PRESETS.find((item) => item.key === presetKey);
+  return new Set(
+    [...resources, ...(preset?.resources ?? [])].flatMap((res) => [res.cap, res.reserveCap]).filter((cap) => cap > 0),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Several passes over the same regions.
+// ---------------------------------------------------------------------------
+
+export interface OcrScreenshotInput {
+  /** The primary reading, one empty line between regions (see `OcrPass`). */
+  lines: readonly string[];
+  /** Other readings of the same regions; a region with passes is read from them alone. */
+  passes?: readonly OcrPass[];
+  /** How each region was captured, by region index. */
+  captures?: readonly (OcrCapture | null | undefined)[];
+}
+
+/** `lines` cut at every empty line, so region i of the text is region i of the passes. */
+function splitRegions(lines: readonly string[]): string[][] {
+  const out: string[][] = [[]];
+  for (const line of lines) {
+    if (line.trim() === '') out.push([]);
+    else out[out.length - 1]!.push(line);
+  }
+  return out;
+}
+
+/**
+ * One candidate per key from several reads of one region. The views show the same picture, so they
+ * vote no further than this: a plain read beats a rule's guess (and lifts it when they agree), two
+ * guesses never lift each other, and views that disagree on the value leave only a rough match.
+ */
+function mergeViews<T extends { confidence: OcrConfidence; rule?: OcrReadingRule }>(
+  views: readonly (readonly T[])[],
+  key: (candidate: T) => string,
+  same: (a: T, b: T) => boolean,
+): T[] {
+  const groups = new Map<string, T[]>();
+  for (const view of views) {
+    for (const candidate of view) {
+      const id = key(candidate);
+      const group = groups.get(id);
+      if (group) group.push(candidate);
+      else groups.set(id, [candidate]);
+    }
+  }
+  return [...groups.values()].map((group) => {
+    // Stable: on a tie the earlier view wins.
+    const best = [...group].sort(
+      (a, b) => Number(a.rule !== undefined) - Number(b.rule !== undefined) || RANK[b.confidence] - RANK[a.confidence],
+    )[0]!;
+    return group.every((other) => same(other, best)) ? best : { ...best, confidence: 'low' };
+  });
+}
+
+/** The most confident candidate per key across regions, the first seen on a tie. */
+function bestPerKey<T extends { confidence: OcrConfidence }>(
+  lists: readonly (readonly T[])[],
+  key: (candidate: T) => string,
+): T[] {
+  const best = new Map<string, T>();
+  for (const list of lists) {
+    for (const candidate of list) {
+      const id = key(candidate);
+      const current = best.get(id);
+      if (!current || RANK[candidate.confidence] > RANK[current.confidence]) best.set(id, candidate);
+    }
+  }
+  return [...best.values()];
+}
+
+const readingKey = (c: OcrReadingCandidate) => `${c.resourceId}|${c.field}`;
+const taskKey = (c: OcrTaskCandidate) => c.taskId;
+const savingsKey = (c: OcrSavingsCandidate) => c.field;
+const eventKey = (c: OcrEventCandidate) => c.eventId;
+
+/**
+ * `matchScreenshotOcr` over every pass of every region: a region's passes are merged (see `mergeViews`),
+ * then regions keep the most confident candidate, as one reading's regions always have. Without passes
+ * or captures it is `matchScreenshotOcr` on `lines`.
+ */
+export function matchScreenshotOcrPasses(
+  input: OcrScreenshotInput,
+  context: OcrScreenshotContext,
+): OcrScreenshotMatches {
+  const passes = input.passes ?? [];
+  if (passes.length === 0 && !input.captures?.some(Boolean)) return matchScreenshotOcr(input.lines, context);
+  const regionOf = (pass: OcrPass) =>
+    pass.region !== undefined && Number.isInteger(pass.region) && pass.region >= 0 ? pass.region : 0;
+  const texts = splitRegions(input.lines);
+  const count = Math.max(texts.length, ...passes.map((pass) => regionOf(pass) + 1));
+  const regions: OcrScreenshotMatches[] = [];
+  for (let region = 0; region < count; region++) {
+    const own: Array<{ name?: OcrPassName; lines: readonly string[] }> = passes.filter(
+      (pass) => regionOf(pass) === region,
+    );
+    const capture = input.captures?.[region] ?? context.capture;
+    const views = (own.length > 0 ? own : [{ lines: texts[region] ?? [] }])
+      .filter((view) => view.lines.some((line) => line.trim() !== ''))
+      .map((view) =>
+        matchScreenshotOcr(view.lines, {
+          ...context,
+          ...(capture ? { capture } : {}),
+          ...(view.name ? { pass: view.name } : {}),
+        }),
+      );
+    regions.push({
+      readings: mergeViews(
+        views.map((view) => view.readings),
+        readingKey,
+        (a, b) => a.value === b.value,
+      ),
+      tasks: mergeViews(
+        views.map((view) => view.tasks),
+        taskKey,
+        (a, b) => a.action === b.action && a.countDone === b.countDone,
+      ),
+      savings: mergeViews(
+        views.map((view) => view.savings),
+        savingsKey,
+        (a, b) => a.value === b.value,
+      ),
+      events: mergeViews(
+        views.map((view) => view.events),
+        eventKey,
+        (a, b) => a.progress === b.progress && a.partsDone === b.partsDone,
+      ),
+    });
+  }
+  const readings = bestPerKey(
+    regions.map((region) => region.readings),
+    readingKey,
+  );
+  return {
+    readings: readings.sort((a, b) => RANK[b.confidence] - RANK[a.confidence]),
+    tasks: bestPerKey(
+      regions.map((region) => region.tasks),
+      taskKey,
+    ),
+    savings: bestPerKey(
+      regions.map((region) => region.savings),
+      savingsKey,
+    ),
+    events: bestPerKey(
+      regions.map((region) => region.events),
+      eventKey,
+    ),
   };
 }
 
@@ -925,24 +1310,60 @@ function presetCues(presetKey: string): string[] {
   return [...own.currency, ...own.tickets].filter((label) => !others.includes(labelStem(label)));
 }
 
+/** How many presets have a bar or reserve with this cap: 200 is Genshin's alone, 240 is three games'. */
+function presetsWithCap(cap: number): number {
+  return PRESETS.filter((preset) => preset.resources.some((res) => res.cap === cap || res.reserveCap === cap)).length;
+}
+
+/** Whether a reading says which game this is. A guessed reserve never does, nor a glued cap two games share. */
+function pointsAtGame(reading: OcrReadingCandidate): boolean {
+  if (reading.rule === 'reserve-beside-bar') return false;
+  return reading.rule !== 'glued-glyph' || presetsWithCap(reading.cap) === 1;
+}
+
 /** The game a screenshot most likely shows, or undefined when nothing points at one game alone. */
 export function inferScreenshotGame(
   lines: readonly string[],
   games: readonly Game[],
   resources: readonly Resource[],
   tasks: readonly Task[],
-  extra: { events?: readonly GameEvent[]; observedAt?: number } = {},
+  extra: {
+    events?: readonly GameEvent[];
+    observedAt?: number;
+    passes?: readonly OcrPass[];
+    captures?: readonly (OcrCapture | null | undefined)[];
+  } = {},
 ): string | undefined {
-  const text = lines.join('\n').toLowerCase();
+  const allLines = [...lines, ...(extra.passes ?? []).flatMap((pass) => pass.lines)];
+  const hudViews: Array<{
+    lines: readonly string[];
+    capture: OcrCapture | null | undefined;
+    pass: OcrPass['name'] | undefined;
+  }> = extra.passes?.length
+    ? extra.passes.map((pass) => {
+        const region = pass.region !== undefined && Number.isInteger(pass.region) && pass.region >= 0 ? pass.region : 0;
+        return { lines: pass.lines, capture: extra.captures?.[region], pass: pass.name };
+      })
+    : splitRegions(lines).map((regionLines, region) => ({
+        lines: regionLines,
+        capture: extra.captures?.[region],
+        pass: undefined,
+      }));
+  const text = allLines.join('\n').toLowerCase();
   // Joined across lines too, so a label the OCR wrapped ("Spiral" / "Abyss") still reads.
   const flat = compact(text);
+  const input: OcrScreenshotInput = {
+    lines,
+    ...(extra.passes ? { passes: extra.passes } : {}),
+    ...(extra.captures ? { captures: extra.captures } : {}),
+  };
   let bestId: string | undefined;
   let bestScore = 0;
   let tied = false;
   for (const game of games) {
     if (game.deleted) continue;
     const own = resources.filter((res) => res.gameId === game.id && !res.deleted);
-    const found = matchScreenshotOcr(lines, {
+    const found = matchScreenshotOcrPasses(input, {
       game,
       resources: own,
       tasks: tasks.filter((task) => task.gameId === game.id),
@@ -951,6 +1372,7 @@ export function inferScreenshotGame(
     });
     let score = 0;
     for (const reading of found.readings) {
+      if (!pointsAtGame(reading)) continue;
       score += READING_SCORE[reading.confidence];
       const res = own.find((r) => r.id === reading.resourceId);
       if (res && resourceNamed(reading.line, res)) score += 4;
@@ -962,7 +1384,19 @@ export function inferScreenshotGame(
     if (presetKey) {
       const cues = [
         ...presetCues(presetKey).filter((label) => includesWord(text, label)),
-        ...ENDGAME_MODES.filter((mode) => mode.preset === presetKey && namesMode(flat, mode)),
+        // A mode's name, or the room a single HUD line shows when its view allows it.
+        ...ENDGAME_MODES.filter((mode) => {
+          if (mode.preset !== presetKey) return false;
+          if (namesMode(flat, mode)) return true;
+          return hudViews.some((view) => {
+            const hud = view.capture !== 'window' || view.pass === 'topBand2x';
+            return view.lines.some((line) => {
+              if (!roomReached(line, mode)) return false;
+              if (hud) return true;
+              return fractionMatches(line).some((match) => match.fractions.some((f) => barFraction(own, f)));
+            });
+          });
+        }),
       ];
       score += cues.length * CUE_SCORE;
     }

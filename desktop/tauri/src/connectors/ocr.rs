@@ -115,6 +115,188 @@ pub fn resize_bgra(src: &[u8], width: u32, height: u32, to_width: u32, to_height
     Some(out)
 }
 
+/// Bright HUD text as dark text on white, for OCR to read past busy art.
+///
+/// Brightness is `V = max(R, G, B)`. The brightest text sets the level: the
+/// 99.5th percentile of V (at least 160), so a stray hot pixel does not. Pixels
+/// well above `threshold = peak - max(12% of peak, 24)` turn black and those
+/// well below it white, on a 32-level ramp around it. Run it on the 2x
+/// upscaled pixels, so a 1px slash is about 2px wide before it is thresholded.
+pub fn bright_text_pass(bgra: &[u8]) -> Vec<u8> {
+    let brightness = |px: &[u8]| px[0].max(px[1]).max(px[2]);
+    let mut histogram = [0u64; 256];
+    for px in bgra.chunks_exact(4) {
+        histogram[usize::from(brightness(px))] += 1;
+    }
+    let total: u64 = histogram.iter().sum();
+    let wanted = (total * 995).div_ceil(1000).max(1);
+    let mut seen = 0;
+    let mut peak = 255;
+    for (level, count) in histogram.iter().enumerate() {
+        seen += count;
+        if seen >= wanted {
+            peak = level as i32;
+            break;
+        }
+    }
+    let peak = peak.max(160);
+    let threshold = peak - (peak * 12 / 100).max(24);
+    let mut out = Vec::with_capacity(bgra.len());
+    for px in bgra.chunks_exact(4) {
+        let v = i32::from(brightness(px));
+        let ink = (255 - (v - (threshold - 16)) * 255 / 32).clamp(0, 255) as u8;
+        out.extend_from_slice(&[ink, ink, ink, 255]);
+    }
+    out
+}
+
+/// One way an image is read; its name is what the page sees.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PassKind {
+    /// As captured.
+    Raw1x,
+    /// Upscaled twice (see `upscale_size`), so small HUD digits read.
+    Raw2x,
+    /// Upscaled twice, then bright text on white (see `bright_text_pass`).
+    Bright2x,
+    /// A window's top band (see `top_band`), upscaled twice: where HUD bars sit.
+    TopBand2x,
+}
+
+impl PassKind {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Raw1x => "raw1x",
+            Self::Raw2x => "raw2x",
+            Self::Bright2x => "bright2x",
+            Self::TopBand2x => "topBand2x",
+        }
+    }
+}
+
+/// A crop smaller than this is too small for Windows to read as it is: only its upscaled passes run.
+const TINY_BELOW: (u32, u32) = (48, 24);
+/// A snip with up to this many areas reads each in every pass; more read only the primary one.
+pub const MULTI_PASS_MAX_CROPS: usize = 4;
+/// A window's top band: its top fifth, where stamina bars and endgame floors sit.
+const TOP_BAND_PERCENT: u32 = 20;
+/// A top band shorter than this holds nothing worth reading.
+const TOP_BAND_MIN_HEIGHT: u32 = 16;
+/// The upscaled top band's longest side stays within this.
+const TOP_BAND_MAX_SIDE: u32 = 4096;
+
+/// The passes a snipped area or a picked image is read with, the primary one
+/// (whose lines the page keeps as `lines`) first. A large image is read once,
+/// as it is; a small one upscaled, then (with `multi`) as it is too, unless
+/// tiny, since 2x can drop a line 1x reads, and as bright text on white.
+/// `engine_max` is the longest side Windows OCR reads.
+pub fn image_plan(width: u32, height: u32, engine_max: u32, multi: bool) -> Vec<PassKind> {
+    if upscale_size(width, height, UPSCALE_MAX_SIDE.min(engine_max)).is_none() {
+        return vec![PassKind::Raw1x];
+    }
+    if !multi {
+        return vec![PassKind::Raw2x];
+    }
+    let tiny = width < TINY_BELOW.0 || height < TINY_BELOW.1;
+    let mut plan = vec![PassKind::Raw2x];
+    if !tiny {
+        plan.push(PassKind::Raw1x);
+    }
+    plan.push(PassKind::Bright2x);
+    plan
+}
+
+/// The passes a whole game window is read with: all of it as it is (or
+/// upscaled, when the window is small enough to be upscaled whole), and its
+/// top band upscaled twice.
+pub fn window_plan(width: u32, height: u32, engine_max: u32) -> Vec<PassKind> {
+    if upscale_size(width, height, UPSCALE_MAX_SIDE.min(engine_max)).is_some() {
+        return vec![PassKind::Raw2x];
+    }
+    let mut plan = vec![PassKind::Raw1x];
+    if top_band(width, height, engine_max).is_some() {
+        plan.push(PassKind::TopBand2x);
+    }
+    plan
+}
+
+/// A window's top band as `(band height, upscaled width, upscaled height)`,
+/// or None when it is too short or cannot grow.
+pub fn top_band(width: u32, height: u32, engine_max: u32) -> Option<(u32, u32, u32)> {
+    let band = height * TOP_BAND_PERCENT / 100;
+    if band < TOP_BAND_MIN_HEIGHT {
+        return None;
+    }
+    let (to_width, to_height) = upscale_size(width, band, TOP_BAND_MAX_SIDE.min(engine_max))?;
+    Some((band, to_width, to_height))
+}
+
+/// One recognised word and where it sits, in the pixels of the image its region was cut from.
+#[derive(Clone, Debug, PartialEq)]
+pub struct WordBox {
+    pub text: String,
+    pub left: f32,
+    pub top: f32,
+    pub right: f32,
+    pub bottom: f32,
+}
+
+/// At most this many word boxes are kept from one pass.
+const MAX_WORDS: usize = 1000;
+
+/// What one pass read: its lines in rows (see `arrange_lines`) and its words.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct PassText {
+    pub lines: Vec<String>,
+    pub words: Vec<WordBox>,
+}
+
+/// One pass over one region.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Pass {
+    pub kind: PassKind,
+    pub text: PassText,
+}
+
+/// The passes of one region as the page takes them: `{ name, region, lines,
+/// words: [{ text, l, t, r, b }] }`, word edges in whole pixels.
+pub fn passes_json(region: usize, passes: &[Pass]) -> Vec<Value> {
+    passes
+        .iter()
+        .map(|pass| {
+            let words: Vec<Value> = pass
+                .text
+                .words
+                .iter()
+                .map(|word| {
+                    json!({
+                        "text": word.text,
+                        "l": word.left.round() as i64,
+                        "t": word.top.round() as i64,
+                        "r": word.right.round() as i64,
+                        "b": word.bottom.round() as i64,
+                    })
+                })
+                .collect();
+            json!({ "name": pass.kind.name(), "region": region, "lines": pass.text.lines, "words": words })
+        })
+        .collect()
+}
+
+/// Word boxes read from a scaled image, put back in the source image's pixels.
+fn unscale_words(words: Vec<WordBox>, scale: (f32, f32)) -> Vec<WordBox> {
+    words
+        .into_iter()
+        .map(|word| WordBox {
+            left: word.left * scale.0,
+            top: word.top * scale.1,
+            right: word.right * scale.0,
+            bottom: word.bottom * scale.1,
+            ..word
+        })
+        .collect()
+}
+
 /// One recognised line and where it sits in the image, in pixels.
 #[derive(Clone, Debug, PartialEq)]
 pub struct LineBox {
@@ -180,7 +362,8 @@ pub fn arrange_lines(mut boxes: Vec<LineBox>) -> Vec<String> {
         .collect()
 }
 
-/// `{ fileName, observedAt, lines, dataUrl }` for one image. Blocking: run it off the async runtime.
+/// `{ fileName, observedAt, lines, passes, source, dataUrl }` for one image:
+/// `lines` is the primary pass's. Blocking: run it off the async runtime.
 pub fn read_image(path: &Path) -> Result<Value, String> {
     if !is_image(path) {
         return Err("Choose a PNG, JPEG, WebP or BMP screenshot.".into());
@@ -189,17 +372,26 @@ pub fn read_image(path: &Path) -> Result<Value, String> {
     if meta.len() > MAX_IMAGE_BYTES {
         return Err("This screenshot is larger than 25 MB.".into());
     }
-    let (lines, data_url) = recognize_file(path)?;
+    let (passes, data_url) = recognize_file(path)?;
+    let lines = passes.first().map(|pass| pass.text.lines.clone()).unwrap_or_default();
     Ok(json!({
         "fileName": file_name(path),
         "observedAt": observed_at(path),
         "lines": lines,
+        "passes": passes_json(0, &passes),
+        "source": "file",
         "dataUrl": data_url_json(&data_url),
     }))
 }
 
+/// The longest side Windows OCR reads.
 #[cfg(windows)]
-fn recognize_file(path: &Path) -> Result<(Vec<String>, String), String> {
+pub fn engine_max_side() -> u32 {
+    windows::Media::Ocr::OcrEngine::MaxImageDimension().unwrap_or(10_000)
+}
+
+#[cfg(windows)]
+fn recognize_file(path: &Path) -> Result<(Vec<Pass>, String), String> {
     use windows::Graphics::Imaging::BitmapDecoder;
     use windows::Storage::{FileAccessMode, StorageFile};
     use windows::core::HSTRING;
@@ -232,19 +424,22 @@ fn recognize_file(path: &Path) -> Result<(Vec<String>, String), String> {
         .GetSoftwareBitmapAsync()
         .and_then(|op| op.join())
         .map_err(unreadable)?;
-    // A small image (a cropped snip from another tool) is upscaled like a capture's crop.
-    let max = windows::Media::Ocr::OcrEngine::MaxImageDimension().unwrap_or(10_000);
-    let small = upscale_size(width, height, UPSCALE_MAX_SIDE.min(max)).is_some();
-    let lines = match small.then(|| bitmap_bgra(&bitmap).ok()).flatten() {
-        Some(pixels) => recognize_bgra(&pixels, width, height)?,
-        None => recognize_bitmap(&bitmap)?,
+    // A small image (a cropped snip from another tool) is read in every pass, like a capture's crop.
+    let plan = image_plan(width, height, max, true);
+    let pixels = (plan != [PassKind::Raw1x]).then(|| bitmap_bgra(&bitmap).ok()).flatten();
+    let passes = match pixels {
+        Some(pixels) => recognize_passes(&pixels, width, height, &plan)?,
+        None => vec![Pass {
+            kind: PassKind::Raw1x,
+            text: recognize_bitmap(&bitmap)?,
+        }],
     };
     let (data_url, _) = encode_preview(&bitmap, PREVIEW_MAX_SIDE);
-    Ok((lines, data_url))
+    Ok((passes, data_url))
 }
 
 #[cfg(not(windows))]
-fn recognize_file(_path: &Path) -> Result<(Vec<String>, String), String> {
+fn recognize_file(_path: &Path) -> Result<(Vec<Pass>, String), String> {
     Err("Screenshot reading needs Windows.".into())
 }
 
@@ -321,24 +516,69 @@ fn bitmap_bgra(bitmap: &windows::Graphics::Imaging::SoftwareBitmap) -> Result<Ve
     Ok(pixels)
 }
 
-/// The text in opaque top-down BGRA pixels, read in rows (see
-/// `arrange_lines`). A small crop is upscaled first (see `upscale_size`), so
-/// HUD digits read reliably. Blocking.
+/// The text in opaque top-down BGRA pixels, read once per pass in `plan`
+/// (see `image_plan` and `window_plan`), word boxes in these pixels. The
+/// first pass is the primary one and its failure is the read's; a later pass
+/// that fails is left out. Blocking.
 #[cfg(windows)]
-pub fn recognize_bgra(bgra: &[u8], width: u32, height: u32) -> Result<Vec<String>, String> {
-    let max = windows::Media::Ocr::OcrEngine::MaxImageDimension().unwrap_or(10_000);
-    let upscaled = upscale_size(width, height, UPSCALE_MAX_SIDE.min(max)).and_then(|(to_width, to_height)| {
-        resize_bgra(bgra, width, height, to_width, to_height).map(|pixels| (pixels, to_width, to_height))
-    });
-    let bitmap = match &upscaled {
-        Some((pixels, to_width, to_height)) => software_bitmap(pixels, *to_width, *to_height)?,
-        None => software_bitmap(bgra, width, height)?,
+pub fn recognize_passes(bgra: &[u8], width: u32, height: u32, plan: &[PassKind]) -> Result<Vec<Pass>, String> {
+    let max = engine_max_side();
+    // Reads pixels of `size` and puts the words back in the pixels of `source`, the part they were scaled from.
+    let read = |pixels: &[u8], size: (u32, u32), source: (u32, u32)| -> Result<PassText, String> {
+        let text = recognize_bitmap(&software_bitmap(pixels, size.0, size.1)?)?;
+        let scale = (source.0 as f32 / size.0 as f32, source.1 as f32 / size.1 as f32);
+        Ok(PassText {
+            words: unscale_words(text.words, scale),
+            ..text
+        })
     };
-    recognize_bitmap(&bitmap)
+    // Upscaled once for both 2x passes, and left as it is when it cannot grow.
+    let doubled = plan
+        .iter()
+        .any(|kind| matches!(kind, PassKind::Raw2x | PassKind::Bright2x))
+        .then(|| upscale_size(width, height, UPSCALE_MAX_SIDE.min(max)))
+        .flatten()
+        .and_then(|(to_width, to_height)| {
+            resize_bgra(bgra, width, height, to_width, to_height).map(|pixels| (pixels, to_width, to_height))
+        });
+    let (double, double_size) = match &doubled {
+        Some((pixels, to_width, to_height)) => (pixels.as_slice(), (*to_width, *to_height)),
+        None => (bgra, (width, height)),
+    };
+    let mut passes = Vec::new();
+    for (index, &kind) in plan.iter().enumerate() {
+        let text = match kind {
+            PassKind::Raw1x => read(bgra, (width, height), (width, height)),
+            PassKind::Raw2x => {
+                // Skip when upscaling could not grow the image: 1x is already read or covers it.
+                if doubled.is_none() && plan.contains(&PassKind::Raw1x) {
+                    continue;
+                }
+                read(double, double_size, (width, height))
+            }
+            PassKind::Bright2x => read(&bright_text_pass(double), double_size, (width, height)),
+            PassKind::TopBand2x => {
+                // Top-down rows: the band is the start of the buffer.
+                let band = top_band(width, height, max).and_then(|(band, to_width, to_height)| {
+                    let rows = bgra.get(..width as usize * band as usize * 4)?;
+                    let pixels = resize_bgra(rows, width, band, to_width, to_height)?;
+                    Some((pixels, (to_width, to_height), (width, band)))
+                });
+                let Some((pixels, size, source)) = band else { continue };
+                read(&pixels, size, source)
+            }
+        };
+        match text {
+            Ok(text) => passes.push(Pass { kind, text }),
+            Err(error) if index == 0 => return Err(error),
+            Err(_) => {}
+        }
+    }
+    Ok(passes)
 }
 
 #[cfg(windows)]
-fn recognize_bitmap(bitmap: &windows::Graphics::Imaging::SoftwareBitmap) -> Result<Vec<String>, String> {
+fn recognize_bitmap(bitmap: &windows::Graphics::Imaging::SoftwareBitmap) -> Result<PassText, String> {
     use windows::Media::Ocr::OcrEngine;
 
     let unreadable = |_| "Windows could not read this image.".to_string();
@@ -365,19 +605,30 @@ fn recognize_bitmap(bitmap: &windows::Graphics::Imaging::SoftwareBitmap) -> Resu
     let mut boxes = Vec::new();
     // Lines Windows gave without a position keep its order, after the placed ones.
     let mut unplaced = Vec::new();
+    let mut placed_words = Vec::new();
     for line in result.Lines().map_err(unreadable)? {
         let mut words = Vec::new();
         let mut bounds: Option<(f32, f32, f32, f32)> = None;
         for word in line.Words().into_iter().flatten() {
             let Ok(text) = word.Text() else { continue };
-            words.push(text.to_string());
+            let text = text.to_string();
             if let Ok(rect) = word.BoundingRect() {
                 let (left, top, right, bottom) = (rect.X, rect.Y, rect.X + rect.Width, rect.Y + rect.Height);
                 bounds = Some(match bounds {
                     None => (left, top, right, bottom),
                     Some((l, t, r, b)) => (l.min(left), t.min(top), r.max(right), b.max(bottom)),
                 });
+                if placed_words.len() < MAX_WORDS && !text.trim().is_empty() {
+                    placed_words.push(WordBox {
+                        text: text.chars().take(MAX_LINE_CHARS).collect(),
+                        left,
+                        top,
+                        right,
+                        bottom,
+                    });
+                }
             }
+            words.push(text);
         }
         let text = if words.is_empty() {
             line.Text().map(|t| t.to_string()).unwrap_or_default()
@@ -404,7 +655,10 @@ fn recognize_bitmap(bitmap: &windows::Graphics::Imaging::SoftwareBitmap) -> Resu
     }
     let mut lines = arrange_lines(boxes);
     lines.extend(unplaced);
-    Ok(lines)
+    Ok(PassText {
+        lines,
+        words: placed_words,
+    })
 }
 
 /// Encodes a bitmap with a WinRT encoder (`JpegEncoderId`, `PngEncoderId`),
@@ -578,6 +832,121 @@ mod tests {
         assert_eq!(resize_bgra(&edge, 2, 1, 2, 1).unwrap(), edge);
         assert!(resize_bgra(&edge, 2, 1, 0, 1).is_none());
         assert!(resize_bgra(&edge[..4], 2, 1, 4, 1).is_none());
+    }
+
+    /// A `size x size` BGRA image: `V = 60` ground, a `V = 200` grey block at
+    /// 4..10, and a 1px `V = 230` slash down the diagonal, crossing the block.
+    fn slash_over_grey(size: usize) -> Vec<u8> {
+        let mut pixels = Vec::with_capacity(size * size * 4);
+        for y in 0..size {
+            for x in 0..size {
+                let px: [u8; 4] = if x == y {
+                    [230, 120, 40, 255]
+                } else if (4..10).contains(&x) && (4..10).contains(&y) {
+                    [200, 200, 200, 255]
+                } else {
+                    [30, 45, 60, 255]
+                };
+                pixels.extend_from_slice(&px);
+            }
+        }
+        pixels
+    }
+
+    #[test]
+    fn bright_text_keeps_the_slash_dark_and_the_grey_light() {
+        let size = 20;
+        let out = bright_text_pass(&slash_over_grey(size));
+        assert_eq!(out.len(), size * size * 4);
+        let at = |x: usize, y: usize| &out[(y * size + x) * 4..][..4];
+        // The 99.5th percentile is the slash: peak 230, threshold 230 - 27 = 203.
+        for i in 0..size {
+            assert_eq!(at(i, i), [0, 0, 0, 255], "slash at {i}");
+        }
+        // Inside the block the slash is still the darkest thing there.
+        assert_eq!(at(6, 6), [0, 0, 0, 255]);
+        // The grey block falls on the white side of the ramp around the threshold...
+        let grey = at(5, 7)[0];
+        assert_eq!(grey, 152);
+        assert!(grey > 128 && at(5, 7) == [grey, grey, grey, 255]);
+        // ...and the ground is plain white.
+        assert_eq!(at(15, 2), [255, 255, 255, 255]);
+        assert_eq!(at(0, 19), [255, 255, 255, 255]);
+    }
+
+    #[test]
+    fn bright_text_needs_bright_text() {
+        // Nothing past 160: the peak floor keeps a dim picture from turning to ink.
+        let dim = [90u8, 100, 80, 255].repeat(64);
+        assert!(bright_text_pass(&dim).chunks(4).all(|px| px == [255, 255, 255, 255]));
+        assert!(bright_text_pass(&[]).is_empty());
+    }
+
+    #[test]
+    fn passes_are_planned_by_size() {
+        use PassKind::*;
+        // A small snip: upscaled first (the primary), then as it is, then as bright text.
+        assert_eq!(image_plan(300, 80, 10_000, true), [Raw2x, Raw1x, Bright2x]);
+        // Tiny: 1x is not worth reading.
+        assert_eq!(image_plan(40, 18, 10_000, true), [Raw2x, Bright2x]);
+        // Many areas: only the primary pass.
+        assert_eq!(image_plan(300, 80, 10_000, false), [Raw2x]);
+        // Large: read once, as it is.
+        assert_eq!(image_plan(1920, 1080, 10_000, true), [Raw1x]);
+        // A whole window: all of it, and its top band.
+        assert_eq!(window_plan(1920, 1080, 10_000), [Raw1x, TopBand2x]);
+        // A small window is upscaled whole, so it has no band of its own.
+        assert_eq!(window_plan(800, 450, 10_000), [Raw2x]);
+        assert_eq!(
+            [Raw1x, Raw2x, Bright2x, TopBand2x].map(PassKind::name),
+            ["raw1x", "raw2x", "bright2x", "topBand2x"]
+        );
+    }
+
+    #[test]
+    fn the_top_band_is_the_top_fifth_upscaled() {
+        assert_eq!(top_band(1920, 1080, 10_000), Some((216, 3840, 432)));
+        // A wide window grows only as far as the band's longest side allows.
+        assert_eq!(top_band(3840, 2160, 10_000), Some((432, 4096, 461)));
+        // Too short to hold a HUD.
+        assert_eq!(top_band(1920, 70, 10_000), None);
+    }
+
+    #[test]
+    fn passes_reach_the_page_with_their_region_and_words() {
+        let passes = [
+            Pass {
+                kind: PassKind::Raw2x,
+                text: PassText {
+                    lines: vec!["388   61/240".into()],
+                    words: vec![WordBox {
+                        text: "61/240".into(),
+                        left: 40.4,
+                        top: 2.5,
+                        right: 90.0,
+                        bottom: 20.2,
+                    }],
+                },
+            },
+            Pass {
+                kind: PassKind::Bright2x,
+                text: PassText::default(),
+            },
+        ];
+        let json = passes_json(2, &passes);
+        assert_eq!(
+            json[0],
+            json!({
+                "name": "raw2x",
+                "region": 2,
+                "lines": ["388   61/240"],
+                "words": [{ "text": "61/240", "l": 40, "t": 3, "r": 90, "b": 20 }],
+            })
+        );
+        assert_eq!(json[1], json!({ "name": "bright2x", "region": 2, "lines": [], "words": [] }));
+        // Words read at twice the size go back to the crop's own pixels.
+        let words = unscale_words(passes[0].text.words.clone(), (0.5, 0.5));
+        assert_eq!((words[0].left, words[0].right, words[0].bottom), (20.2, 45.0, 10.1));
     }
 
     fn line(text: &str, left: f32, top: f32, right: f32, bottom: f32) -> LineBox {

@@ -92,7 +92,7 @@
   inset: 0;
   border-radius: inherit;
   transform-origin: left;
-  transition: transform var(--dur-slow) var(--ease-out);
+  transition: transform var(--dur-4) var(--ease-move);
 }
 .guide-meter[data-full] i {
   background: var(--color-rose) !important;

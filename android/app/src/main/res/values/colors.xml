@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Home screen widget colours: Memoria's dark tokens. Android 12 and later
+    replaces them with the wallpaper's own palette (values-v31).
+-->
+<resources>
+    <color name="widget_surface">#F2121317</color>
+    <color name="widget_stroke">#1FFFFFFF</color>
+    <color name="widget_pressed">#1AFFFFFF</color>
+    <color name="widget_fg">#F4F4F6</color>
+    <color name="widget_fg_soft">#DCDCE2</color>
+    <color name="widget_muted">#9A9AA4</color>
+    <color name="widget_accent">#80C3FF</color>
+    <color name="widget_track">#33FFFFFF</color>
+    <color name="widget_danger">#FF5A48</color>
+</resources>

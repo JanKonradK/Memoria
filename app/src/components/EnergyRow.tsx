@@ -1,8 +1,9 @@
-import { memo, useEffect, useRef, useState, type ReactNode } from 'react';
+import { memo, useEffect, useRef, useState, type FocusEvent, type ReactNode } from 'react';
 import type { EnergyProjection, Resource } from '@memoria/shared';
 import { effectiveReserveRegenMinutes, effectiveResourceKind } from '@memoria/shared';
 import { clamp, fmtClock, fmtDur, intOr } from '../util';
 import { ProgressBar } from './primitives';
+import { Tooltip } from './ui';
 import { useScrub } from '../scrub';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
@@ -148,8 +149,8 @@ export function ValueStepper({
   /** Focus: seed the draft from the live reading and arm the edit. */
   onBeginEdit: () => void;
   onDraft: (text: string) => void;
-  /** Blur: commit the edit, or discard it. */
-  onEndEdit: () => void;
+  /** Blur: commit the edit, or discard it. Told where focus went, for a caller with controls of its own. */
+  onEndEdit: (event?: FocusEvent<HTMLInputElement>) => void;
   /** Enter. Omitted where the blur that follows already commits. */
   onCommit?: () => void;
   /**
@@ -165,61 +166,62 @@ export function ValueStepper({
     <span className="energy-value-stepper ml-auto flex shrink-0 items-center justify-end gap-1">
       <StepBtn delta={-step} onStep={onStep} label={label} />
       {/* One pill: editable value + "/ cap" together inside the same box. */}
-      <span
-        title={ENERGY_KEYS_HINT}
-        className="energy-value-box focus-ring-group flex h-11 cursor-text items-center rounded-ui-full bg-fill-2 px-2.5 ring-1 ring-line-hairline transition focus-within:bg-fill-3 fine:h-8"
-        onMouseDown={(e) => {
-          if (e.target !== inputRef.current) {
-            e.preventDefault();
-            inputRef.current?.focus();
-          }
-        }}
-      >
-        <input
-          ref={inputRef}
-          value={value}
-          placeholder={placeholder}
-          inputMode="numeric"
-          enterKeyHint="done"
-          onFocus={(e) => {
-            onBeginEdit();
-            e.target.select();
-          }}
-          onChange={(e) => onDraft(e.target.value.replace(/[^\d]/g, ''))}
-          onBlur={onEndEdit}
-          onKeyDown={(e) => {
-            const delta = ENERGY_STEP_KEYS[e.key.toLowerCase()];
-            if (delta !== undefined && !e.ctrlKey && !e.altKey && !e.metaKey) {
-              // Browser repeat already supplies one event per tick; a second
-              // timer here would make a held key accelerate unpredictably.
+      <Tooltip content={ENERGY_KEYS_HINT}>
+        <span
+          className="energy-value-box focus-ring-group flex h-11 cursor-text items-center rounded-ui-full bg-fill-2 px-2.5 ring-1 ring-line-hairline transition focus-within:bg-fill-3 fine:h-8"
+          onMouseDown={(e) => {
+            if (e.target !== inputRef.current) {
               e.preventDefault();
-              onStep(delta);
-              return;
+              inputRef.current?.focus();
             }
-            if (e.key === 'Enter') {
-              if (onCommitNext) {
+          }}
+        >
+          <input
+            ref={inputRef}
+            value={value}
+            placeholder={placeholder}
+            inputMode="numeric"
+            enterKeyHint="done"
+            onFocus={(e) => {
+              onBeginEdit();
+              e.target.select();
+            }}
+            onChange={(e) => onDraft(e.target.value.replace(/[^\d]/g, ''))}
+            onBlur={onEndEdit}
+            onKeyDown={(e) => {
+              const delta = ENERGY_STEP_KEYS[e.key.toLowerCase()];
+              if (delta !== undefined && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                // Browser repeat already supplies one event per tick; a second
+                // timer here would make a held key accelerate unpredictably.
                 e.preventDefault();
-                onCommit?.();
-                onCommitNext(e.shiftKey);
-              } else {
-                onCommit?.();
+                onStep(delta);
+                return;
+              }
+              if (e.key === 'Enter') {
+                if (onCommitNext) {
+                  e.preventDefault();
+                  onCommit?.();
+                  onCommitNext(e.shiftKey);
+                } else {
+                  onCommit?.();
+                  inputRef.current?.blur();
+                }
+              }
+              if (e.key === 'Escape') {
+                onCancel();
                 inputRef.current?.blur();
               }
-            }
-            if (e.key === 'Escape') {
-              onCancel();
-              inputRef.current?.blur();
-            }
-          }}
-          className={`energy-value-input min-h-11 bg-transparent text-right fine:min-h-8 tabular-nums outline-none ${valueClassName}`}
-          // Room for four digits whatever the value, so every currency on a page lines up.
-          style={{ color, width: `${Math.max(4, value.length) + 0.5}ch` }}
-          aria-label={ariaLabel}
-          title={ENERGY_KEYS_HINT}
-          aria-keyshortcuts="a s d f Enter Escape"
-        />
-        <span className="inline-block min-w-[6ch] pl-1 text-left text-label tabular-nums text-dim">/ {cap}</span>
-      </span>
+            }}
+            className={`energy-value-input min-h-11 bg-transparent text-right fine:min-h-8 tabular-nums outline-none ${valueClassName}`}
+            // Room for four digits whatever the value, so every currency on a page lines up.
+            style={{ color, width: `${Math.max(4, value.length) + 0.5}ch` }}
+            aria-label={ariaLabel}
+            aria-description={ENERGY_KEYS_HINT}
+            aria-keyshortcuts="a s d f Enter Escape"
+          />
+          <span className="inline-block min-w-[6ch] pl-1 text-left text-label tabular-nums text-dim">/ {cap}</span>
+        </span>
+      </Tooltip>
       <StepBtn delta={step} onStep={onStep} label={label} />
     </span>
   );
@@ -374,6 +376,7 @@ export const EnergyRow = memo(function EnergyRow({
   pulse,
   onTouched,
   counter,
+  onCommitNext,
 }: {
   res: Resource;
   color: string;
@@ -394,6 +397,8 @@ export const EnergyRow = memo(function EnergyRow({
   onTouched?: (part: 'value' | 'reserve') => void;
   /** A counter crafted from this bar (Condensed Resin), shown as the bar's second row. */
   counter?: CounterBankProps;
+  /** Enter in the value: commit, then move on (Shift: back) instead of dropping focus. */
+  onCommitNext?: (reverse: boolean) => void;
 }) {
   const kind = effectiveResourceKind(res);
   const compact = kind === 'counter';
@@ -569,6 +574,7 @@ export const EnergyRow = memo(function EnergyRow({
             setDraft(text);
           }}
           onCommit={() => commit(intOr(shown, liveValue ?? 0))}
+          onCommitNext={onCommitNext}
           onCancel={() => {
             mainEdit.current.cancelled = true;
             setDraft(null);
@@ -615,8 +621,14 @@ export const EnergyRow = memo(function EnergyRow({
             >
               {subtitle}
             </span>
+            {/* Value chips: they state the reading. Where a reading comes from (Refresh, Snip)
+                lives in the card's heading, and its age at the end of this line. */}
             {kind === 'regen' && (
-              <span className="energy-quick-set -my-3 inline-flex items-center gap-1 sm:my-0">
+              <span
+                className="energy-quick-set -my-3 inline-flex items-center gap-1 sm:my-0"
+                role="group"
+                aria-label={`Set ${res.name}`}
+              >
                 <button
                   type="button"
                   className={QUICK_SET}

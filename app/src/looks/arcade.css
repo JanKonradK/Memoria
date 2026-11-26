@@ -111,7 +111,7 @@
     border: 0;
     background: var(--color-fill-2);
   }
-  .view-switch button:is([aria-pressed='true'], [aria-selected='true']) {
+  .view-switch button:is([aria-pressed='true'], [aria-selected='true'], [aria-checked='true'], [data-state='on']) {
     background: var(--color-accent);
     color: var(--color-on-accent);
   }

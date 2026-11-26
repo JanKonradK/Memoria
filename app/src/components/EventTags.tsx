@@ -1,5 +1,6 @@
 import type { Game, GameEvent } from '@memoria/shared';
 import { eventBannerKind, eventCategory } from '../event-category';
+import { Tooltip } from './ui';
 
 const BANNER_LABELS = {
   character: 'Character',
@@ -42,14 +43,14 @@ export function EventTags({
   const tagBudget = labels.reduce((width, label) => width + label.text.length * 7 + 14, 0);
   if (availableWidth !== undefined && availableWidth < tagBudget + 40) return null;
   return labels.map(({ text, title }) => (
-    <span
-      key={text}
-      data-event-tag
-      title={title}
-      aria-label={title}
-      className={`shrink-0 rounded-ui-sm border px-1 text-caption font-semibold leading-tight ${inherit ? 'border-current' : 'border-line-edge bg-fill-2 text-fg-soft'}`}
-    >
-      {text}
-    </span>
+    <Tooltip key={text} content={title}>
+      <span
+        data-event-tag
+        aria-label={title}
+        className={`shrink-0 rounded-ui-sm border px-1 text-caption font-semibold leading-tight ${inherit ? 'border-current' : 'border-line-edge bg-fill-2 text-fg-soft'}`}
+      >
+        {text}
+      </span>
+    </Tooltip>
   ));
 }

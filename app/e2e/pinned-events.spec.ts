@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openSettings, calendarAxe } from './support';
+import { openSettings, calendarAxe, showTimeline } from './support';
 import { emptyState } from '@memoria/shared';
 import { makeEvent, makeGame } from '../../shared/test/helpers';
 
@@ -49,10 +49,7 @@ test('a pinned event stands out on the calendar in both views and in its strip',
   await expect(strip.getByRole('button')).toHaveCount(1);
   await expect(strip.getByRole('button')).toContainText('Pinned strip event');
 
-  await page
-    .getByRole('radiogroup', { name: 'Event view' })
-    .getByRole('radio', { name: 'Timeline', exact: true })
-    .click();
+  await showTimeline(page);
   await expect(page.locator('[data-event-id="pinned-event"] [data-event-bar]')).toHaveAttribute('data-pinned', 'true');
   // The pinned bar wears the gold rim; its neighbour keeps its game's ink.
   const rimOf = (id: string) =>

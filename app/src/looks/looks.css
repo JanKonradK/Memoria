@@ -52,6 +52,16 @@
   --place-current-edge: var(--color-line-edge);
   --place-current-fg: var(--color-fg);
 }
+/* Classic's own curves, firmer than the shared base the other looks start
+   from. Pills stay where they mean something: chips, segmented controls and
+   the dock's pressed place keep --radius-ui-full or their own radius. */
+[data-look='classic'] {
+  --radius-ui-sm: 8px;
+  --radius-ui-md: 12px;
+  --radius-ui-lg: 16px;
+  --radius-ui-xl: 20px;
+  --radius-ui-card: 24px;
+}
 :root[data-theme='light'] [data-look],
 :root[data-theme='light'][data-look] {
   --dock-shadow: 0 14px 30px -16px rgb(20 24 40 / 0.35), 0 2px 8px -3px rgb(20 24 40 / 0.16);
@@ -120,10 +130,18 @@ body {
   }
 }
 
-/* A look change cross-fades (looks.ts), and only that. */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 180ms;
+/* A look change cross-fades the page (looks.ts, type look), and only that.
+   data-vt is the same type for a browser without transition types; each
+   rule stands alone, so one the browser cannot read drops only itself. */
+:root:active-view-transition-type(look)::view-transition-old(root),
+:root:active-view-transition-type(look)::view-transition-new(root) {
+  animation-duration: var(--dur-2);
+  animation-timing-function: var(--ease-move);
+}
+:root[data-vt='look']::view-transition-old(root),
+:root[data-vt='look']::view-transition-new(root) {
+  animation-duration: var(--dur-2);
+  animation-timing-function: var(--ease-move);
 }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(root),

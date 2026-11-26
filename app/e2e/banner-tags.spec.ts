@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { emptyState } from '@memoria/shared';
 import { makeGame, makeEvent } from '../../shared/test/helpers';
-import { editFromQuickView, openSettings, calendarAxe } from './support';
+import { editFromQuickView, openSettings, calendarAxe, showTimeline } from './support';
 
 test('banner tags distinguish rewards across games and can be edited', async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('memoria-onboarding', 'complete'));
@@ -31,10 +31,7 @@ test('banner tags distinguish rewards across games and can be edited', async ({ 
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
-  await page
-    .getByRole('radiogroup', { name: 'Event view' })
-    .getByRole('radio', { name: 'Timeline', exact: true })
-    .click();
+  await showTimeline(page);
   // Narrow timeline bars omit tags to keep the event name readable.
   const compact = (page.viewportSize()?.width ?? 0) <= 320;
   if (compact) await page.getByRole('radio', { name: 'Agenda', exact: true }).click();

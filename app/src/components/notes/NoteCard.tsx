@@ -42,9 +42,9 @@ export function noteInk(color: NoteColor | undefined, game: Game | undefined, gr
   return NOTE_INK[color];
 }
 
-const MENU_ITEM =
+export const MENU_ITEM =
   'flex min-h-11 cursor-pointer items-center gap-2 rounded-ui-sm px-3 text-body text-fg-soft outline-none transition-colors data-[highlighted]:bg-fill-2 data-[highlighted]:text-fg fine:min-h-9';
-const MENU = 'popover-motion z-50 min-w-48 rounded-ui-lg bg-popover p-1 shadow-float ring-1 ring-line-strong';
+export const MENU = 'popover-motion z-50 min-w-48 rounded-ui-lg bg-popover p-1 shadow-float ring-1 ring-line-strong';
 
 /** A note's name in a sentence: its title, or its first words. */
 export function noteName(note: Pick<Note, 'title' | 'body'>): string {

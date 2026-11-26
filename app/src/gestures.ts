@@ -2,7 +2,8 @@ import { useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { GAME_TABS, type GameTab } from './ui-store';
 
 /**
- * Drag sideways to change tab.
+ * Drag sideways to change a game page's tab. Only a game's page swipes; the
+ * places (Today, Calendar, Notes, Settings) never page sideways.
  *
  * Hand-rolled pointer events rather than the motion library's `drag`. `drag`
  * wants to own the transform of the element it is attached to, which here is the
@@ -20,7 +21,9 @@ const COMMIT_PX = 64;
 /** …or a flick: short but fast enough to be unambiguous. */
 const COMMIT_VELOCITY = 0.5;
 /** How far to let a gesture travel before deciding which axis it belongs to. */
-const AXIS_LOCK_PX = 10;
+const AXIS_LOCK_PX = 16;
+/** A drag starting this close to either side of the screen is the system's back gesture, not a swipe. */
+const EDGE_PX = 24;
 
 /**
  * Controls own their own gestures. A drag that starts on a button is that
@@ -35,6 +38,12 @@ const INTERACTIVE = 'button, [role="button"], a, input, textarea, select, label,
  */
 const ROW_INNER_CONTROL =
   '.energy-value-stepper, .today-step-tick, [data-scrub], a, input, textarea, select, [contenteditable]';
+/**
+ * Surfaces that mean something by a sideways drag of their own: the tab and
+ * account strips scroll, the Calendar's board and ruler step the week, and a
+ * bar is scrubbed to a value.
+ */
+const OWN_SIDEWAYS = '.game-tabs, .game-accounts, .tl-board, [data-timeline-scale], .energy-scrub';
 
 type Axis = 'undecided' | 'horizontal' | 'vertical';
 
@@ -62,7 +71,7 @@ function follow(page: HTMLElement | null, dx: number) {
   if ('swipeRelease' in page.dataset) releaseGen.set(page, (releaseGen.get(page) ?? 0) + 1);
   page.removeAttribute('data-swipe-release');
   page.dataset.swiping = '';
-  page.style.setProperty('--swipe-x', `${Math.max(-FOLLOW_MAX_PX, Math.min(FOLLOW_MAX_PX, dx / 3))}px`);
+  page.style.setProperty('--page-swipe-x', `${Math.max(-FOLLOW_MAX_PX, Math.min(FOLLOW_MAX_PX, dx / 3))}px`);
 }
 
 /** Each page's latest release: an older one's late timer leaves a newer drag be. */
@@ -73,7 +82,7 @@ function release(page: HTMLElement | null) {
   const gen = (releaseGen.get(page) ?? 0) + 1;
   releaseGen.set(page, gen);
   page.dataset.swipeRelease = '';
-  page.style.setProperty('--swipe-x', '0px');
+  page.style.setProperty('--page-swipe-x', '0px');
   let timer = 0;
   const done = () => {
     page.removeEventListener('transitionend', onEnd);
@@ -81,11 +90,17 @@ function release(page: HTMLElement | null) {
     if (releaseGen.get(page) !== gen) return;
     page.removeAttribute('data-swiping');
     page.removeAttribute('data-swipe-release');
-    page.style.removeProperty('--swipe-x');
+    page.style.removeProperty('--page-swipe-x');
   };
-  // The page's own spring back, not a transition ending somewhere inside it.
+  // Only the page body's spring back on `translate`, not a transition ending inside it.
   function onEnd(event: TransitionEvent) {
-    if (event.target === page && event.propertyName === 'transform') done();
+    if (
+      event.propertyName === 'translate' &&
+      event.target instanceof Element &&
+      event.target.parentElement?.matches('.app-page, .focus-workspace')
+    ) {
+      done();
+    }
   }
   page.addEventListener('transitionend', onEnd);
   // Reduced motion has no transition to end.
@@ -108,7 +123,11 @@ export function useTabSwipe(onSwipe: (direction: 1 | -1) => void) {
     onPointerDown: (event: ReactPointerEvent) => {
       // A mouse drag across a page is a text selection, not a gesture.
       if (event.pointerType === 'mouse' || !event.isPrimary) return;
+      // The screen's own edges belong to the system's back gesture.
+      const width = window.innerWidth || document.documentElement.clientWidth;
+      if (event.clientX < EDGE_PX || (width > EDGE_PX * 2 && event.clientX > width - EDGE_PX)) return;
       const target = event.target as HTMLElement;
+      if (target.closest(OWN_SIDEWAYS)) return;
       const control = target.closest(INTERACTIVE);
       if (control) {
         const row = control.closest('[data-swipe-row]');
@@ -139,8 +158,9 @@ export function useTabSwipe(onSwipe: (direction: 1 | -1) => void) {
       if (axis.current === 'undecided') {
         if (Math.abs(dx) < AXIS_LOCK_PX && Math.abs(dy) < AXIS_LOCK_PX) return;
         // Resolved once and kept. Re-deciding mid-drag makes a diagonal gesture
-        // flicker between scrolling and paging.
-        axis.current = Math.abs(dy) > Math.abs(dx) ? 'vertical' : 'horizontal';
+        // flicker between scrolling and paging. Only a clearly sideways drag,
+        // twice as wide as it is tall, pages; anything steeper is a scroll.
+        axis.current = Math.abs(dx) > Math.abs(dy) * 2 ? 'horizontal' : 'vertical';
         if (axis.current === 'vertical') {
           cancel();
           return;
@@ -167,24 +187,12 @@ export function useTabSwipe(onSwipe: (direction: 1 | -1) => void) {
 }
 
 /**
- * Where a swipe on a game's page goes: the next of its tabs, else the next
- * game (forward lands on its first tab, back on its last: Notes, which every
- * game has), else off the games to the dock's neighbouring place.
+ * Where a swipe on a game's page goes: the next of its tabs, or nowhere past
+ * either end. There the page only rubber-bands; a swipe never jumps to another
+ * game or place.
  */
-export function nextGameStop(
-  tabs: readonly GameTab[],
-  current: GameTab,
-  gameIds: readonly string[],
-  gameId: string | null,
-  towards: 1 | -1,
-): { kind: 'tab'; tab: GameTab } | { kind: 'game'; gameId: string; tab: GameTab } | { kind: 'place' } {
+export function nextGameStop(tabs: readonly GameTab[], current: GameTab, towards: 1 | -1): GameTab | null {
   const shown = tabs.length ? tabs : GAME_TABS;
   const at = Math.max(0, shown.indexOf(current));
-  const tab = shown[at + towards];
-  if (tab) return { kind: 'tab', tab };
-  const next = gameIds[gameIds.indexOf(gameId ?? '') + towards];
-  if (gameId && gameIds.includes(gameId) && next) {
-    return { kind: 'game', gameId: next, tab: towards === 1 ? 'track' : 'notes' };
-  }
-  return { kind: 'place' };
+  return shown[at + towards] ?? null;
 }

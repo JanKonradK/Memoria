@@ -44,10 +44,17 @@ export interface PlannedNotification {
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
-/** Far enough ahead that a week without opening the app still warns before every reset. */
-export const NOTIFICATION_HORIZON_DAYS = 7;
-/** Android keeps at most 500 alarms per app. Nine games need about 63 for a week of dailies alone. */
-export const MAX_PLANNED_NOTIFICATIONS = 128;
+/**
+ * Far enough ahead that four weeks without opening the app still warns before
+ * every reset: a phone cannot rebuild the plan while the app stays closed.
+ */
+export const NOTIFICATION_HORIZON_DAYS = 28;
+/**
+ * Android keeps at most 500 alarms per app. Nine games need about 252 for four
+ * weeks of dailies alone; the rest of the 500 is left for snoozes, codes and
+ * the runway warning. A plan that would run past this ends early instead.
+ */
+export const MAX_PLANNED_NOTIFICATIONS = 400;
 /** Weeklies take one hour of warning per game still owing them, never more than this. */
 export const WEEKLY_LEAD_MAX_MINUTES = 600;
 
@@ -126,7 +133,7 @@ export function nextReminderAt(reminder: Reminder, now: number, zone: string): n
   return reminderTimes(reminder, now, now + (reminder.repeatDays + 1) * 86_400_000, zone)[0] ?? null;
 }
 
-/** The style a kind of notification arrives in, as set in Settings → Reminders. */
+/** The style a kind of notification arrives in, as set in Settings → Time & reminders. */
 export function notificationStyle(
   settings: Pick<Settings, 'notificationStyles'>,
   kind: NotificationKind,
@@ -139,7 +146,7 @@ function gameTitle(game: Game): string {
 }
 
 /**
- * Device notifications for the next week: before each daily, weekly and
+ * Device notifications for the next four weeks: before each daily, weekly and
  * monthly reset that still has work, before unfinished events end, and before
  * a freshly read bar caps. Quiet hours move a notification earlier, never drop it.
  */
@@ -459,4 +466,25 @@ export function buildNotificationPlan(state: AppState, now: number): PlannedNoti
   }
 
   return plan.sort((a, b) => a.at - b.at || a.id - b.id).slice(0, MAX_PLANNED_NOTIFICATIONS);
+}
+
+const DAY_MS = 24 * HOUR;
+
+/**
+ * How far the shared plan reaches. A full plan stops at its last entry before
+ * the horizon when capped at `MAX_PLANNED_NOTIFICATIONS`.
+ */
+export function planCoveredUntil(built: readonly PlannedNotification[], now: number): number {
+  const horizon = now + NOTIFICATION_HORIZON_DAYS * DAY_MS;
+  if (built.length < MAX_PLANNED_NOTIFICATIONS) return horizon;
+  const last = Math.max(...built.map((item) => item.at));
+  return Number.isFinite(last) ? Math.min(horizon, last) : horizon;
+}
+
+/** "the next 4 weeks", "the next 9 days", "the next day". */
+export function coverageSpan(ms: number): string {
+  const days = Math.max(1, Math.round(ms / DAY_MS));
+  if (days >= 14) return `the next ${Math.floor(days / 7)} weeks`;
+  if (days >= 7 && days % 7 === 0) return 'the next week';
+  return days === 1 ? 'the next day' : `the next ${days} days`;
 }

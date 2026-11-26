@@ -302,6 +302,32 @@ async function windowShown(handle) {
   return stdout.trim() === 'True';
 }
 
+/** How far below the window's top edge its page starts: Windows' title bar, or none when frameless. */
+async function captionHeight(handle) {
+  const { stdout } = await run(
+    'powershell',
+    [
+      '-NoProfile',
+      '-Command',
+      `Add-Type -Namespace Check -Name Frame -MemberDefinition '[StructLayout(LayoutKind.Sequential)] public struct Rect { public int Left, Top, Right, Bottom; } [StructLayout(LayoutKind.Sequential)] public struct Point { public int X, Y; } [DllImport("user32.dll")] public static extern bool GetWindowRect(System.IntPtr h, out Rect r); [DllImport("user32.dll")] public static extern bool ClientToScreen(System.IntPtr h, ref Point p);'; $w = New-Object Check.Frame+Rect; $p = New-Object Check.Frame+Point; [void][Check.Frame]::GetWindowRect([IntPtr]${handle}, [ref]$w); [void][Check.Frame]::ClientToScreen([IntPtr]${handle}, [ref]$p); $p.Y - $w.Top`,
+    ],
+    { windowsHide: true },
+  );
+  return Number(stdout.trim());
+}
+
+/** The page's own title bar, and its state from the bridge. */
+const titleBar = () => page.locator('[data-window-chrome]');
+const windowState = () => page.evaluate(() => window.memoriaDesktop.window.getState());
+/** The page's viewport in CSS pixels: the window's inner size at 100% zoom. */
+const viewport = () => page.evaluate(() => [window.innerWidth, window.innerHeight]);
+/** Every WebView showing the app: the quick card must stay the one window, never a second. */
+const appViews = () =>
+  browser
+    .contexts()
+    .flatMap((context) => context.pages())
+    .filter((item) => item.url().includes(`:${appPort}`));
+
 /** Asks Windows to close the window, as its close button does. */
 async function closeWindow() {
   const exited = once(app, 'exit');
@@ -338,10 +364,21 @@ try {
   expect(surface).toMatchObject({
     node: 'undefined',
     process: 'undefined',
-    bridge: ['completeClose', 'connectors', 'launch', 'onCloseRequested', 'presence', 'update', 'version'],
+    bridge: ['completeClose', 'connectors', 'launch', 'onCloseRequested', 'presence', 'update', 'version', 'window'],
     workers: 0,
-    presence: { canStartWithWindows: false, closeToTray: false, gameWatch: true },
+    presence: { canStartWithWindows: false, startupBlockedByWindows: false, closeToTray: false, gameWatch: true },
   });
+  // A frameless window: the page draws a 32px title bar, and its buttons work.
+  const chrome = titleBar();
+  await expect(chrome).toBeVisible();
+  expect(Math.round((await chrome.boundingBox()).height)).toBe(32);
+  expect(await captionHeight(await windowHandle())).toBeLessThan(4);
+  expect(await windowState()).toMatchObject({ maximized: false, zoom: 1 });
+  await chrome.getByRole('button', { name: 'Maximize', exact: true }).click();
+  await expect.poll(async () => (await windowState()).maximized).toBe(true);
+  await chrome.getByRole('button', { name: 'Restore', exact: true }).click();
+  await expect.poll(async () => (await windowState()).maximized).toBe(false);
+  await expect(chrome.getByRole('button', { name: 'Maximize', exact: true })).toBeVisible();
   // The page cannot leave the app for a local file.
   await page.evaluate(() => {
     location.href = 'file:///C:/Windows/win.ini';
@@ -371,17 +408,19 @@ try {
   expect(secondCode).toBe(0);
   expect(app.exitCode).toBe(null);
 
-  // An unsaved draft keeps the app open when the window is closed.
+  // An unsaved draft keeps the app open when the window is closed. The title
+  // bar's Close is the window's own, and pressing it over the open editor
+  // neither dismisses the editor nor asks about its draft.
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByRole('button', { name: 'Game settings for Native archive', exact: true }).click();
   await page.getByRole('tab', { name: 'Tasks', exact: true }).click();
   const draft = page.getByRole('textbox', { name: 'New task name', exact: true });
   await draft.fill('Keep my unsaved task');
   const confirm = page.getByRole('alertdialog', { name: 'Close Memoria and discard your unsaved changes?' });
-  await run('powershell', ['-NoProfile', '-Command', `(Get-Process -Id ${app.pid}).CloseMainWindow() | Out-Null`], {
-    windowsHide: true,
-  });
+  // The open editor hides the rest of the page from assistive tech, so the button is found by its mark.
+  await titleBar().locator('button[data-close]').click();
   await expect(confirm).toBeVisible();
+  await expect(page.getByRole('alertdialog', { name: 'Discard your unsaved changes?', exact: true })).toHaveCount(0);
   await confirm.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(confirm).toHaveCount(0);
   await expect(draft).toHaveValue('Keep my unsaved task');
@@ -395,6 +434,8 @@ try {
   const width = await page.evaluate(() => window.innerWidth);
   await page.keyboard.press('Control+Equal');
   await expect.poll(() => page.evaluate(() => window.innerWidth)).toBeLessThan(width);
+  // The title bar undoes the zoom: still 32px on the screen.
+  await expect.poll(async () => Math.round((await titleBar().boundingBox()).height * 1.1)).toBe(32);
   await expect
     .poll(
       () => existsSync(join(dataDir, 'desktop-zoom.json')) && readFileSync(join(dataDir, 'desktop-zoom.json'), 'utf8'),
@@ -454,11 +495,72 @@ try {
   writeFileSync(stateFile, JSON.stringify(synced));
   await expect(page.getByRole('heading', { name: 'Synced archive', exact: true })).toBeVisible({ timeout: 15_000 });
   checkExistingData();
+
+  // The quick card: the same window shrunk to one game, then back as it was.
+  const fullView = await viewport();
+  const scale = await page.evaluate(() => window.devicePixelRatio);
+  await page.evaluate(() => window.memoriaDesktop.window.enterCompact('native-archive-game'));
+  const card = page.locator('.compact-card');
+  await expect(card).toBeVisible();
+  await expect.poll(viewport).toEqual([380, 520]);
+  expect(await page.evaluate(() => window.memoriaDesktop.window.getSurface())).toMatchObject({
+    mode: 'compact',
+    gameId: 'native-archive-game',
+  });
+  expect(appViews()).toHaveLength(1);
+  // One title bar, the card's, at Windows' own height.
+  await expect(titleBar()).toHaveCount(1);
+  await expect(titleBar().getByRole('button', { name: 'Close quick card', exact: true })).toBeVisible();
+  expect(Math.round((await titleBar().boundingBox()).height)).toBe(32);
+  await expect(page.locator('.app-frame')).toBeHidden();
+  const cardEnergy = card.getByLabel('Archive energy current value', { exact: true });
+  await expect(cardEnergy).toHaveValue('42');
+  await cardEnergy.fill('77');
+  await cardEnergy.press('Enter');
+  await expect.poll(latestEnergy, { timeout: 10_000 }).toBe(77);
+  // Open in Memoria: the full window and its page come back, on the card's game.
+  await card.getByRole('button', { name: 'Open in Memoria', exact: true }).click();
+  await expect(card).toHaveCount(0);
+  await expect.poll(viewport).toEqual(fullView);
+  await expect(titleBar().getByRole('button', { name: 'Maximize', exact: true })).toBeVisible();
+  await expect(
+    page.locator('.focus-workspace').getByLabel('Archive energy current value', { exact: true }),
+  ).toHaveValue('77');
+
+  // A maximized window becomes a card, never a maximized one, and comes back maximized.
+  await titleBar().getByRole('button', { name: 'Maximize', exact: true }).click();
+  await expect.poll(async () => (await windowState()).maximized).toBe(true);
+  await page.evaluate(() => window.memoriaDesktop.window.enterCompact(null));
+  await expect(card).toBeVisible();
+  await expect.poll(viewport).toEqual([380, 520]);
+  expect((await windowState()).maximized).toBe(false);
+  // Windows' own close (Alt+F4, the taskbar) puts the card away; it never quits Memoria.
+  await run('powershell', ['-NoProfile', '-Command', `(Get-Process -Id ${app.pid}).CloseMainWindow() | Out-Null`], {
+    windowsHide: true,
+  });
+  await expect(card).toHaveCount(0);
+  await expect.poll(async () => (await windowState()).maximized).toBe(true);
+  expect(app.exitCode).toBe(null);
+  await titleBar().getByRole('button', { name: 'Restore', exact: true }).click();
+  await expect.poll(async () => (await windowState()).maximized).toBe(false);
+  await expect.poll(viewport).toEqual(fullView);
+  // Escape puts it away as well, and the card's place is kept apart from the full window's.
+  await page.evaluate(() => window.memoriaDesktop.window.enterCompact('native-archive-game'));
+  await expect(card).toBeVisible();
+  await expect.poll(viewport).toEqual([380, 520]);
+  await page.waitForTimeout(600);
+  await page.keyboard.press('Escape');
+  await expect(card).toHaveCount(0);
+  await expect.poll(viewport).toEqual(fullView);
+  expect(JSON.parse(readFileSync(join(dataDir, 'desktop-compact.json'), 'utf8'))).toMatchObject({ physical: true });
   expect(await page.evaluate(() => window.cspViolations)).toEqual([]);
   await page.screenshot({ path: join(root, 'dist/native-desktop.png') });
 
-  // With the tray on, closing hides the window and Memoria keeps running.
+  // With the tray on, closing hides the window and Memoria keeps running. It
+  // goes maximized, which Windows keeps while it is hidden.
   await page.evaluate(() => window.memoriaDesktop.presence.set({ closeToTray: true }));
+  await titleBar().getByRole('button', { name: 'Maximize', exact: true }).click();
+  await expect.poll(async () => (await windowState()).maximized).toBe(true);
   const handle = await windowHandle();
   await run('powershell', ['-NoProfile', '-Command', `(Get-Process -Id ${app.pid}).CloseMainWindow() | Out-Null`], {
     windowsHide: true,
@@ -467,16 +569,39 @@ try {
   await page.waitForTimeout(3000);
   expect(app.exitCode).toBe(null);
   const trayMemory = await memoryInUse(app.pid);
+  // From the tray the card comes on screen, never maximized, and goes back there.
+  await page.evaluate(() => window.memoriaDesktop.window.enterCompact('native-archive-game'));
+  await expect.poll(() => windowShown(handle)).toBe(true);
+  await expect(page.locator('.compact-card')).toBeVisible();
+  await expect.poll(viewport).toEqual([380, 520]);
+  expect((await windowState()).maximized).toBe(false);
+  await page.evaluate(() => window.memoriaDesktop.window.exitCompact());
+  await expect.poll(() => windowShown(handle)).toBe(false);
+  await expect(page.locator('.compact-card')).toHaveCount(0);
+  // Windows' own start at sign-in leaves it in the tray.
+  const signIn = spawn(executablePath, ['--background'], { cwd: install, env, stdio: 'ignore' });
+  expect((await once(signIn, 'exit'))[0]).toBe(0);
+  await page.waitForTimeout(1500);
+  expect(await windowShown(handle)).toBe(false);
   // Starting Memoria again brings the hidden window back.
   const reopen = spawn(executablePath, [], { cwd: install, env, stdio: 'ignore' });
   expect((await once(reopen, 'exit'))[0]).toBe(0);
   await expect.poll(() => windowShown(handle)).toBe(true);
+  // Maximized, as it was before the tray and the card.
+  await expect.poll(async () => (await windowState()).maximized).toBe(true);
+  await titleBar().getByRole('button', { name: 'Restore', exact: true }).click();
+  await expect.poll(async () => (await windowState()).maximized).toBe(false);
+  await expect.poll(viewport).toEqual(fullView);
   await page.evaluate(() => window.memoriaDesktop.presence.set({ closeToTray: false }));
 
   await page.locator('.focus-workspace').getByLabel('Archive energy current value', { exact: true }).fill('124');
   await quit();
   expect(latestEnergy()).toBe(124);
   checkExistingData();
+  // The full window's saved size is its own, never the card's.
+  const savedWindow = JSON.parse(readFileSync(join(dataDir, 'desktop-window.json'), 'utf8'));
+  expect(Math.abs(savedWindow.width - Math.round(fullView[0] * scale))).toBeLessThan(4);
+  expect(Math.abs(savedWindow.height - Math.round(fullView[1] * scale))).toBeLessThan(4);
   expect(errors).toEqual([]);
   const megabytes = (bytes) => Math.round(bytes / 1024 / 1024);
   const folderBytes = (dir) =>
@@ -486,7 +611,7 @@ try {
   console.log(
     JSON.stringify({
       native:
-        'PASS: packaged program, existing PC data, narrow bridge, no service worker, blocked navigation, close flush, relaunch, single instance, unsaved draft, phone pairing and sync, disk sync, tray hide and reopen, zoom keys, content policy',
+        'PASS: packaged program, existing PC data, narrow bridge, frameless title bar and its buttons, no service worker, blocked navigation, close flush, relaunch, single instance, unsaved draft over an open editor, phone pairing and sync, disk sync, quick card in the one window (size, title bar, energy saved, open in Memoria, maximized round trip, Windows close, Escape, from and back to the tray hidden maximized), tray hide, sign-in start stays in the tray, reopen, zoom keys, content policy',
       installMB: megabytes(folderBytes(install)),
       memoryMB: memory,
       trayMemoryMB: trayMemory,

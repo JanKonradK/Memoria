@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The Google Play build's changes to the main manifest. Play installs updates
+    itself and reserves exact alarms, full-screen intents and media-playback
+    foreground services for alarm-clock and calling apps, so this build drops
+    the permissions and the ringer components that use them. Alarm-style
+    reminders arrive on the high priority alarm notification channels instead.
+    scripts/check-android.mjs fails the build if any of these come back.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" tools:node="remove" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" tools:node="remove" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" tools:node="remove" />
+
+    <application>
+        <service android:name=".AlarmService" tools:node="remove" />
+        <activity android:name=".AlarmActivity" tools:node="remove" />
+        <receiver android:name=".AlarmReceiver" tools:node="remove" />
+    </application>
+</manifest>

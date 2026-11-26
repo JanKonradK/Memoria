@@ -50,7 +50,8 @@ it('keeps a draft when its event is deleted and requires an explicit new copy', 
   act(() => useApp.getState().deleteEvent(event.id));
 
   expect(screen.getByLabelText('Name')).toHaveValue('My pending change');
-  expect(screen.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+  // One primary action, not a dead Save beside the way forward.
+  expect(screen.queryByRole('button', { name: 'Save', exact: true })).not.toBeInTheDocument();
   expect(screen.getByRole('alert')).toHaveTextContent('This event was deleted');
   expect(useApp.getState().state.events).toHaveLength(1);
   fireEvent.click(screen.getByRole('button', { name: 'Add as new event', exact: true }));

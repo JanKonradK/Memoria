@@ -1,13 +1,13 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, type KeyboardEvent } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import type { Game } from '@memoria/shared';
-import { useMediaQuery } from '../hooks';
+import { useMediaQuery, useReducedMotion } from '../hooks';
 import { useDerived } from '../selectors';
 import { useApp } from '../store';
 import { GAME_TABS, useUI, type GameTab } from '../ui-store';
 import { GameControlsView } from './GameCard';
 import { gameShellVars, useGround, useSurfaces } from '../theme';
 import { useIdentityColors } from './roster';
-import { Btn, Page, ServerChip, Tooltip, TOUCH_BUTTON } from './ui';
+import { Btn, Page, ServerChip, Tooltip, useSlidingIndicator } from './ui';
 import { Pill } from './primitives';
 import { GameNotes } from './Notes';
 import { GameLogo } from './GameLogo';
@@ -19,7 +19,7 @@ import { closeWorkspace, openGame, recordWorkspaceHistory } from '../workspace-n
 import { titleStyle } from '../fonts';
 import { gameTitleInk } from '../game-color';
 import { localResetLabel } from '../util';
-import { gameServerLabel, presetKeyOf } from '../server-choice';
+import { gameServerLabel, sameGameKey } from '../server-choice';
 import { useCatchUpUnread } from '../catch-up-status';
 import { useActiveCodeCount } from '../codes';
 import { gameTabAvailable } from './game-tabs/availability';
@@ -73,9 +73,6 @@ function GameIdentity({ game, now, urgent }: { game: Game; now: number; urgent: 
   );
 }
 
-/** Two games are the same game when they share a preset, or for a custom game, a name. */
-const sameGameKey = (game: Game) => presetKeyOf(game) ?? `custom:${game.name.trim().toLowerCase()}`;
-
 /**
  * The same game on other servers or under other nicknames, as a sideways strip
  * of its accounts. One account has no strip.
@@ -115,6 +112,23 @@ function GameAccounts({ game, now }: { game: Game; now: number }) {
   );
 }
 
+/**
+ * Below 1100px the tabs wrap onto their own row under the game's name, and the
+ * bar sticks with only that row in view: it publishes how far down the bar the
+ * tabs start as --game-id-h, which shell.css lifts the sticky bar by. Measured
+ * again whenever the bar's size changes (the name wraps, an accounts strip).
+ */
+const pinTabs = (tabs: HTMLDivElement | null) => {
+  const bar = tabs?.parentElement;
+  if (!tabs || !bar) return;
+  const measure = () => bar.style.setProperty('--game-id-h', `${tabs.offsetTop}px`);
+  measure();
+  if (typeof ResizeObserver === 'undefined') return;
+  const observer = new ResizeObserver(measure);
+  observer.observe(bar);
+  return () => observer.disconnect();
+};
+
 /** Track, Events, Codes, Pulls, Quests, News and Notes: everything about one game, one tab at a time. */
 function GameTabs({
   game,
@@ -132,6 +146,15 @@ function GameTabs({
   const setGameTab = useUI((s) => s.setGameTab);
   const { unread } = useCatchUpUnread(game);
   const refs = useRef(new Map<GameTab, HTMLButtonElement>());
+  const strip = useRef<HTMLDivElement | null>(null);
+  // One underline in the game's colour, slid from tab to tab rather than
+  // switched off under one and on under the next.
+  const underline = useSlidingIndicator(
+    strip,
+    '[aria-selected="true"]',
+    `${current}|${tabs.join()}`,
+    useReducedMotion(),
+  );
   // On a narrow screen the strip scrolls sideways; the open tab is kept in view.
   useEffect(() => {
     refs.current.get(current)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -150,8 +173,12 @@ function GameTabs({
     setGameTab(next);
     refs.current.get(next)?.focus();
   };
+  const setStrip = useCallback((node: HTMLDivElement | null) => {
+    strip.current = node;
+    return pinTabs(node);
+  }, []);
   return (
-    <div role="tablist" aria-label={`${game.name} sections`} className="game-tabs" onKeyDown={move}>
+    <div ref={setStrip} role="tablist" aria-label={`${game.name} sections`} className="game-tabs" onKeyDown={move}>
       {tabs.map((tab) => (
         <button
           key={tab}
@@ -179,7 +206,30 @@ function GameTabs({
           )}
         </button>
       ))}
+      {/* After the tabs, so it draws over the chosen tab's fill. */}
+      <span aria-hidden className="game-tab-underline" style={underline} />
     </div>
+  );
+}
+
+/** Windows app only: shrinks the window to this game's quick card, to keep beside the game. */
+function QuickCardButton({ game }: { game: Game }) {
+  const enterCompact = window.memoriaDesktop?.window?.enterCompact;
+  if (!enterCompact) return null;
+  return (
+    <Tooltip content="Quick card">
+      <Btn
+        kind="quiet"
+        className="inline-flex shrink-0 items-center"
+        aria-label={`Open ${game.name} quick card`}
+        onClick={() => void enterCompact(game.id).catch(() => undefined)}
+      >
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" className="icon h-4 w-4" aria-hidden>
+          <rect x="3" y="3" width="14" height="14" rx="2.5" />
+          <path d="M10.5 9.5H14V13M14 9.5 9.5 14" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </Btn>
+    </Tooltip>
   );
 }
 
@@ -210,6 +260,8 @@ export function GamePage({ now }: { now: number }) {
   const openSheet = useUI((s) => s.openSheet);
   const openGameEvent = useCallback((eventId: string) => openSheet({ kind: 'eventPeek', eventId }), [openSheet]);
   const twoColumns = useMediaQuery('(min-width: 900px)');
+  // An ultrawide window gives energy, tasks and events a column each.
+  const threeColumns = useMediaQuery('(min-width: 1800px)');
   const focusedGameId = useUI((s) => s.focusedGameId);
   const gameTab = useUI((s) => s.gameTab);
   const focusedEntry = focusedGameId ? entryById.get(focusedGameId) : undefined;
@@ -232,11 +284,16 @@ export function GamePage({ now }: { now: number }) {
   }, [setGameTabs, tabKey]);
   const direction = useUI((s) => s.gameTabDirection);
   const codeCount = useActiveCodeCount(focusedEntry?.game, now);
+  const tab = tabs.includes(gameTab) ? gameTab : 'track';
+  // A tab slides in only when it takes over from another of this game's tabs.
+  // Arriving on the page, or on another game, is the page's own arrival.
+  const panelKey = `${workspaceId ?? ''}:${tab}`;
+  const [panel, setPanel] = useState({ key: panelKey, slides: false });
+  if (panel.key !== panelKey) setPanel({ key: panelKey, slides: panel.key.startsWith(`${workspaceId ?? ''}:`) });
 
   // Without a game there is no page. The shell sends this route back to Today.
   if (!focusedEntry) return null;
   const game = { ...focusedEntry.game, ...(identityColors[focusedEntry.game.id] ?? {}) };
-  const tab = tabs.includes(gameTab) ? gameTab : 'track';
   const eventCount = state.events.filter(
     (event) => event.gameId === game.id && !event.deleted && !event.done && event.end > now,
   ).length;
@@ -255,9 +312,10 @@ export function GamePage({ now }: { now: number }) {
           <GameTabs game={game} tabs={tabs} current={tab} eventCount={eventCount} codeCount={codeCount} />
           <PageBarEnd>
             <LaunchButton game={game} />
+            <QuickCardButton game={game} />
             <Tooltip content={`Edit ${game.name}`}>
               <Btn
-                className={`inline-flex shrink-0 items-center ${TOUCH_BUTTON}`}
+                className="inline-flex shrink-0 items-center"
                 aria-label={`Edit ${game.name}`}
                 onClick={() => openSheet({ kind: 'game', gameId: game.id })}
               >
@@ -278,7 +336,7 @@ export function GamePage({ now }: { now: number }) {
           id="game-tab-panel"
           aria-labelledby={`game-tab-${tab}`}
           className="game-tab-panel tab-enter"
-          data-direction={direction}
+          data-direction={panel.slides ? direction : undefined}
         >
           {tab === 'track' && (
             <GameControlsView
@@ -290,7 +348,7 @@ export function GamePage({ now }: { now: number }) {
               layout="focus"
               heading={false}
               split
-              columns={twoColumns ? 2 : 1}
+              columns={threeColumns ? 3 : twoColumns ? 2 : 1}
               onOpenEvent={openGameEvent}
             />
           )}

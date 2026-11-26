@@ -1,21 +1,11 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { DateTime } from 'luxon';
-import {
-  endsOvernight,
-  lastPlayDay,
-  morningOf,
-  type TodayPlan,
-  type TodayStep,
-  type TodayStepGroup,
-  type TodayWeekItem,
-} from '@memoria/shared';
-import { NightMark } from '../NightMark';
+import type { TodayPlan, TodayStep, TodayStepGroup } from '@memoria/shared';
 import type { Derived } from '../../selectors';
 import { useMediaQuery } from '../../hooks';
 import { gameInk, gameSupport, legible } from '../../game-color';
 import { useGround, useInset } from '../../theme';
 import { gameAccountTag, useIdentityColors } from '../roster';
-import { GameLogo } from '../GameLogo';
 import { DayStrip } from './DayStrip';
 import { gameWithAccount, StepRow, stepWhat, type StepGame } from './StepRow';
 import { TodaySide } from './TodaySide';
@@ -25,7 +15,6 @@ import './today-steps.css';
 /** A group longer than this folds after its first few rows. */
 const FOLD_OVER = 5;
 const FOLD_SHOWN = 4;
-const WEEK_SHOWN = 6;
 /** Finished rows have no reset of their own to name. */
 const DONE_GROUP: TodayStepGroup = { key: 'done', kind: 'reset', at: 0, steps: [], gameIds: [] };
 /** Other bars are not due within the day: the calm group, with no reset to name. */
@@ -105,48 +94,6 @@ function groupTitle(group: TodayStepGroup, plan: TodayPlan, games: Map<string, S
   };
 }
 
-function WeekRow({
-  item,
-  game,
-  now,
-  zone,
-  morning,
-}: {
-  item: TodayWeekItem;
-  game: StepGame;
-  now: number;
-  zone: string;
-  morning: number;
-}) {
-  // An event ending in the small hours shows the night before, as the calendar does.
-  const overnight = item.kind === 'event' && endsOvernight(item.at, zone, morning);
-  const what =
-    item.kind === 'cap'
-      ? `${item.name} caps`
-      : item.kind === 'event'
-        ? `${item.name} ends`
-        : `${item.left === 1 ? item.name : `${item.left} ${cadenceNoun(item.kind, item.left)}`} reset`;
-  return (
-    <li className="today-week-row">
-      <GameLogo game={game.logo} size={28} />
-      <span className="min-w-0 truncate">
-        <b style={{ color: game.text }}>{game.game.short}</b>
-        {game.account && <> · {game.account}</>} · {what}
-      </span>
-      <span className="today-week-at numeral">
-        {overnight ? (
-          <>
-            {lastPlayDay(item.at, now, zone, morning).toFormat('ccc')} <NightMark at={item.at} tz={zone} />
-            {hhmm(item.at, zone)}
-          </>
-        ) : (
-          weekWhen(item.at, now, zone)
-        )}
-      </span>
-    </li>
-  );
-}
-
 export function TodaySteps({ derived, empty }: { derived: Derived; empty: ReactNode }) {
   const { state, now } = derived;
   const plan = derived.todaySteps();
@@ -188,7 +135,6 @@ export function TodaySteps({ derived, empty }: { derived: Derived; empty: ReactN
 
   const [unfolded, setUnfolded] = useState<ReadonlySet<string>>(new Set());
   const [doneOpen, setDoneOpen] = useState(false);
-  const [weekOpen, setWeekOpen] = useState(false);
   const week = plan.week.filter((item) => games.has(item.gameId));
   // Each group's first number: the count runs on across groups, folded rows included.
   const starts = layout.groups.reduce<number[]>(
@@ -305,33 +251,6 @@ export function TodaySteps({ derived, empty }: { derived: Derived; empty: ReactN
             </section>
           )}
 
-          {week.length > 0 && (
-            <section className="today-steps-group" aria-labelledby="today-group-week">
-              <div className="today-steps-rule">
-                <h2 id="today-group-week" data-tone="calm">
-                  This week
-                </h2>
-              </div>
-              <ul className="today-week-list">
-                {(weekOpen ? week : week.slice(0, WEEK_SHOWN)).map((item) => (
-                  <WeekRow
-                    key={item.key}
-                    item={item}
-                    game={games.get(item.gameId)!}
-                    now={now}
-                    zone={zone}
-                    morning={morningOf(state.settings)}
-                  />
-                ))}
-              </ul>
-              {week.length > WEEK_SHOWN && (
-                <button type="button" className="today-steps-more" onClick={() => setWeekOpen(!weekOpen)}>
-                  {weekOpen ? 'Show less' : `Show ${week.length - WEEK_SHOWN} more this week`}
-                </button>
-              )}
-            </section>
-          )}
-
           {layout.done.length > 0 && (
             <section className="today-steps-done" aria-label="Done today">
               <button
@@ -384,7 +303,7 @@ export function TodaySteps({ derived, empty }: { derived: Derived; empty: ReactN
             </section>
           )}
         </div>
-        <TodaySide state={state} now={now} games={games} />
+        <TodaySide state={state} now={now} games={games} week={week} />
       </div>
     </>
   );

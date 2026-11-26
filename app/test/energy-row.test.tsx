@@ -1,7 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render as renderPlain, screen } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import { emptyHistory, emptyState, type EnergyProjection, type Resource } from '@memoria/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { EnergyRow, ValueStepper } from '../src/components/EnergyRow';
+import { ENERGY_KEYS_HINT, EnergyRow, ValueStepper } from '../src/components/EnergyRow';
+import { TooltipProvider } from '../src/components/ui';
 import { useApp } from '../src/store';
 import { useUI } from '../src/ui-store';
 
@@ -41,6 +43,12 @@ function projectionAt(value: number): EnergyProjection {
     msToFull: value >= resource.cap ? 0 : null,
   };
 }
+
+/**
+ * Radix tooltips need their provider, which the app mounts once at the root in
+ * main.tsx. matchMedia below reports a mouse, so the value field's tip is live.
+ */
+const render = (element: ReactElement) => renderPlain(element, { wrapper: TooltipProvider });
 
 function renderRow({
   proj = projection,
@@ -414,12 +422,13 @@ describe('EnergyRow quick readings and hints', () => {
     });
   });
 
-  it('names the A/S/D/F keys on the value field', () => {
+  it('names the A/S/D/F keys on the value field', async () => {
     renderRow();
-    expect(screen.getByRole('textbox', { name: 'Trailblaze Power current value' })).toHaveAttribute(
-      'title',
-      'Type a value, or use A (−10), S (−1), D (+1), F (+10)',
-    );
+    const field = screen.getByRole('textbox', { name: 'Trailblaze Power current value' });
+    expect(field).toHaveAttribute('aria-description', 'Type a value, or use A (−10), S (−1), D (+1), F (+10)');
+    // A keyboard user reaching the field sees the same hint a mouse user hovers for.
+    act(() => field.focus());
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(ENERGY_KEYS_HINT);
   });
 
   it('shows Spent all and Full as plain buttons, and offers Undo for each', () => {

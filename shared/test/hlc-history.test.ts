@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   assertSyncProtocol,
+  compactState,
   compareHlc,
   emptyHistory,
   mergeState,
@@ -8,6 +9,7 @@ import {
   stampChanges,
   tickHlc,
   recordAction,
+  TOMBSTONE_RETENTION_MS,
   undoAction,
   restoreCheckpoint,
   boundHistory,
@@ -208,5 +210,42 @@ describe('local recovery', () => {
     const device = `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, '0')}-${String(local.getDate()).padStart(2, '0')}`;
     expect(localDayKey(at, 'Not/AZone')).toBe(device);
     expect(localDayKey(at)).toBe(device);
+  });
+  it('restores a deletion in full even after its tombstone was slimmed past 90 days', () => {
+    const deletedAt = 1_000_000;
+    const before = normalizeState(
+      makeState({
+        notes: [
+          {
+            id: 'n1',
+            gameId: 'g1',
+            title: 'Save plan',
+            body: 'Keep 16000 for rerun',
+            sort: 0,
+            updatedAt: 500_000,
+          },
+        ],
+      }),
+    );
+    const deleted = stampChanges(
+      before,
+      { ...before, notes: [{ ...before.notes[0]!, deleted: true }] },
+      emptyHistory('a'),
+      deletedAt,
+    ).state;
+    const history = recordAction(emptyHistory('a'), before, deleted, 'Edit', deletedAt, 'del-note');
+    const later = deletedAt + 100 * 86_400_000;
+    const slimmed = compactState(deleted, later - TOMBSTONE_RETENTION_MS);
+    expect(slimmed.notes[0]!.deleted).toBe(true);
+    expect(slimmed.notes[0]!.title).toBe('');
+    expect(slimmed.notes[0]!.body).toBe('');
+
+    const restored = undoAction(slimmed, history.journal[0]!, []);
+    expect(restored.notes[0]).toMatchObject({
+      id: 'n1',
+      title: 'Save plan',
+      body: 'Keep 16000 for rerun',
+    });
+    expect(restored.notes[0]!.deleted).toBeUndefined();
   });
 });

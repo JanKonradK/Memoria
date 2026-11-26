@@ -146,7 +146,9 @@ for (const method of ['scan', 'manual']) {
       await page.getByText('Connection options', { exact: true }).click();
       await page.screenshot({ path: info.outputPath('wifi-connected.png') });
       await page.getByText('Connection options', { exact: true }).click();
+      // Disconnecting asks once: pairing again needs the PC's code.
       await page.getByRole('button', { name: 'Disconnect', exact: true }).click();
+      await page.getByRole('button', { name: 'Confirm disconnect', exact: true }).click();
       await expect(page.getByRole('button', { name: 'Scan PC code', exact: true })).toBeVisible();
       await page.getByRole('button', { name: 'Today', exact: true }).click();
       await openGame(page, 'PC edited game');

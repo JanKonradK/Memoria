@@ -13,19 +13,20 @@ import android.view.WindowInsets;
 import android.webkit.CookieManager;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
+import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 /**
  * HoYoLAB's own sign-in page in a plain WebView: no bridge, no JavaScript
  * interface, and only HoYoLAB, its captcha and the sign-in providers it offers.
- * Once the three session cookies appear they (and any account tokens) are sealed by ConnectorPlugin and
- * the activity closes; the cookies are never handed back in the result.
+ * Once the three session cookies appear they (and any account tokens) are sealed by ConnectorPlugin,
+ * every HoYoLAB and HoYoverse cookie is expired from the shared WebView jar, and the activity closes;
+ * the cookies are never handed back in the result. The WebView's cache, form data and HoYoLAB's web
+ * storage are cleared with it.
  */
 public class HoyolabLoginActivity extends Activity {
     static final String EXTRA_ERROR = "error";
-    /** True to sign in from a clean cookie jar even when an account is connected. */
-    static final String EXTRA_FRESH = "fresh";
     private static final String START = "https://www.hoyolab.com/";
     private static final String COOKIE_URL = "https://www.hoyolab.com";
     private static final String ACCOUNT_URL = "https://account.hoyoverse.com";
@@ -94,6 +95,42 @@ public class HoyolabLoginActivity extends Activity {
         cookies.flush();
     }
 
+    /** Every HoYoLAB and HoYoverse page the sign-in can set cookies for. */
+    private static final String[] COOKIE_ORIGINS = {
+        "https://www.hoyolab.com",
+        "https://hoyolab.com",
+        "https://act.hoyolab.com",
+        "https://m.hoyolab.com",
+        "https://account.hoyolab.com",
+        "https://account.hoyoverse.com",
+        "https://hoyoverse.com",
+        "https://www.hoyoverse.com",
+    };
+
+    /**
+     * Expires every cookie the shared WebView jar holds for HoYoLAB and HoYoverse,
+     * whatever its name: once the session is sealed in the Keystore no raw copy
+     * stays in the jar, which Memoria's own WebView shares.
+     */
+    static void expireAllHoyoCookies() {
+        CookieManager cookies = CookieManager.getInstance();
+        for (String origin : COOKIE_ORIGINS) {
+            String header = cookies.getCookie(origin);
+            if (header == null) continue;
+            String host = Uri.parse(origin).getHost();
+            String site = host != null && host.endsWith("hoyoverse.com") ? ".hoyoverse.com" : ".hoyolab.com";
+            for (String part : header.split(";")) {
+                int eq = part.indexOf('=');
+                String name = (eq > 0 ? part.substring(0, eq) : part).trim();
+                if (name.isEmpty()) continue;
+                cookies.setCookie(origin, name + "=; Max-Age=0; Path=/; Domain=" + site);
+                cookies.setCookie(origin, name + "=; Max-Age=0; Path=/; Domain=" + host);
+                cookies.setCookie(origin, name + "=; Max-Age=0; Path=/");
+            }
+        }
+        expireSessionCookies();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -106,6 +143,7 @@ public class HoyolabLoginActivity extends Activity {
         settings.setAllowContentAccess(false);
         settings.setSupportMultipleWindows(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
         cookies.setAcceptThirdPartyCookies(webView, true);
@@ -131,13 +169,9 @@ public class HoyolabLoginActivity extends Activity {
         });
         setContentView(webView);
         webView.requestApplyInsets();
-        boolean connected = getSharedPreferences(ConnectorPlugin.PREFS, MODE_PRIVATE).getString("sealedCookies", null) != null;
-        boolean fresh = getIntent() != null && getIntent().getBooleanExtra(EXTRA_FRESH, false);
-        if (!connected || fresh) {
-            // A disconnected account, or one asked to start over, signs in from a clean jar.
-            // A connected one keeps its session, so a re-check needs no password, 2FA or captcha.
-            expireSessionCookies();
-        }
+        // Every sign-in starts from a clean jar: a sealed session never stays in it
+        // (see checkCookies), so nothing from an earlier visit is reused.
+        expireAllHoyoCookies();
         webView.loadUrl(START);
         handler.postDelayed(poll, POLL_MS);
     }
@@ -186,6 +220,8 @@ public class HoyolabLoginActivity extends Activity {
             found.get("account_id_v2"),
             found.get("account_mid_v2")
         );
+        // Sealed (or refused): either way no raw session stays in the shared WebView jar.
+        expireAllHoyoCookies();
         if (stored) {
             setResult(RESULT_OK);
         } else {
@@ -209,9 +245,18 @@ public class HoyolabLoginActivity extends Activity {
         handler.removeCallbacks(poll);
         if (webView != null) {
             webView.stopLoading();
+            // Nothing from the sign-in pages outlives them: memory cache, form data,
+            // history and HoYoLAB's own storage go with the WebView without wiping
+            // the main app's disk HTTP cache.
+            webView.clearCache(false);
+            webView.clearFormData();
+            webView.clearHistory();
             webView.destroy();
             webView = null;
         }
+        WebStorage storage = WebStorage.getInstance();
+        for (String origin : COOKIE_ORIGINS) storage.deleteOrigin(origin);
+        expireAllHoyoCookies();
         super.onDestroy();
     }
 }

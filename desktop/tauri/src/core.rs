@@ -432,7 +432,7 @@ mod tests {
         ] {
             let millis = |text: &str| text.parse::<jiff::Timestamp>().unwrap().as_millisecond();
             let plan = core.notification_plan(millis(now)).await.unwrap();
-            assert_eq!(plan.len(), 7);
+            assert_eq!(plan.len(), 28);
             assert_eq!(plan[0].at, millis(first));
             assert_eq!(plan[1].at, millis(second));
         }

@@ -45,8 +45,9 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     if (reducedMotion === 'no-preference') {
       // Pause the actual content arrival partway through, then reverse with
       // the keyboard on the rail's Today. A pointer click would wait for it to settle.
-      const arrival = await page.locator('.focus-workspace').evaluate((node) => {
-        const animation = node.getAnimations()[0];
+      // Only what is under the game's bar arrives; the bar itself never moves.
+      const arrival = await page.locator('.focus-workspace > .game-tab-panel').evaluate((node) => {
+        const animation = node.getAnimations().find((running) => running.id === 'page-arrival');
         if (!animation) return null;
         animation.pause();
         animation.currentTime = 80;
@@ -58,6 +59,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       expect(arrival!.x).toBeLessThanOrEqual(24);
       expect(arrival!.opacity).toBeGreaterThan(0);
       expect(arrival!.opacity).toBeLessThan(1);
+      await expect(page.locator('.focus-workspace > .page-bar')).toHaveCSS('transform', 'none');
       await page.screenshot({ path: info.outputPath('workspace-expanding.png') });
     } else {
       await expect(page.locator('.focus-workspace')).toHaveCSS('transform', 'none');

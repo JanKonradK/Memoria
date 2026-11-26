@@ -9,7 +9,7 @@ import {
 } from '@memoria/shared';
 import { useApp } from '../../store';
 import { intOr } from '../../util';
-import { COMPACT_INPUT, Field, NumInput, Select, TextInput, Toggle } from '../ui';
+import { Field, NumInput, Select, TextInput, Toggle } from '../ui';
 
 export const TASK_CADENCES: { value: Cadence; label: string }[] = [
   { value: 'daily', label: 'Daily' },
@@ -47,7 +47,6 @@ export function TaskFields({
       <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2">
         <Field label={nameLabel} className="sm:col-span-2">
           <TextInput
-            className={COMPACT_INPUT}
             value={task.name}
             maxLength={500}
             aria-label={nameLabel === 'Name' ? `Task name: ${task.name}` : undefined}
@@ -56,7 +55,6 @@ export function TaskFields({
         </Field>
         <Field label="Cadence">
           <Select
-            className={COMPACT_INPUT}
             value={task.cadence}
             aria-label={`Cadence for ${task.name}`}
             onChange={(event) => updateTask(task.id, { cadence: event.target.value as Cadence })}
@@ -70,7 +68,6 @@ export function TaskFields({
         </Field>
         <Field label="Mode">
           <Select
-            className={COMPACT_INPUT}
             value={mode}
             aria-label={`Mode for ${task.name}`}
             onChange={(event) => updateTask(task.id, { mode: event.target.value as TaskMode })}
@@ -89,7 +86,6 @@ export function TaskFields({
             <>
               <Field label="Cycle days">
                 <NumInput
-                  className={COMPACT_INPUT}
                   min={1}
                   aria-label={`Cycle days for ${task.name}`}
                   value={String(task.intervalDays)}
@@ -106,7 +102,6 @@ export function TaskFields({
               {task.timelineLinked !== false && (
                 <Field label="Timeline match" className="sm:col-span-2">
                   <TextInput
-                    className={COMPACT_INPUT}
                     placeholder="Auto (task name)"
                     maxLength={120}
                     aria-label={`Timeline match for ${task.name}`}
@@ -121,7 +116,6 @@ export function TaskFields({
             <>
               <Field label="Timer minutes">
                 <NumInput
-                  className={COMPACT_INPUT}
                   min={1}
                   aria-label={`Timer minutes for ${task.name}`}
                   value={String(effectiveTimerDurationMinutes(task))}
@@ -132,7 +126,6 @@ export function TaskFields({
               </Field>
               <Field label="Timer step minutes">
                 <NumInput
-                  className={COMPACT_INPUT}
                   min={1}
                   aria-label={`Timer step minutes for ${task.name}`}
                   placeholder="No step"
@@ -148,7 +141,6 @@ export function TaskFields({
           {mode === 'count' && (
             <Field label="Count target">
               <NumInput
-                className={COMPACT_INPUT}
                 min={1}
                 max={365}
                 aria-label={`Count target for ${task.name}`}

@@ -70,14 +70,23 @@ it('moves a legacy localHistory out of state.json into history.json', () => {
   expect(old.status).toBe(200);
   expect(JSON.parse(old.json).localHistory).toBeUndefined();
 });
-it('drops tombstones past the retention window on the PC too', () => {
+it('drops tombstones past the retention window on the PC too, and slims them before that', () => {
   const state = JSON.parse(core.read(null));
-  const old = Date.now() - 91 * 86_400_000;
-  const recent = Date.now() - 86_400_000;
-  state.reminders = [
-    reminder('gone', { deleted: true, updatedAt: old, hlc: { wall: old, counter: 0, device: 'phone' } }),
-    reminder('fresh', { deleted: true, updatedAt: recent, hlc: { wall: recent, counter: 0, device: 'phone' } }),
-  ];
+  const deleted = (id, days) => {
+    const at = Date.now() - days * 86_400_000;
+    return reminder(id, { deleted: true, updatedAt: at, hlc: { wall: at, counter: 0, device: 'phone' } });
+  };
+  state.reminders = [deleted('gone', 366), deleted('slim', 91), deleted('fresh', 1)];
   const result = core.merge(null, null, JSON.stringify({ state }));
-  expect(JSON.parse(result.stateJson).reminders.map((row) => row.id)).toEqual(['fresh']);
+  const reminders = JSON.parse(result.stateJson).reminders;
+  expect(reminders.map((row) => [row.id, row.message])).toEqual([
+    ['fresh', 'Test'],
+    ['slim', ''],
+  ]);
+
+  // The phone has not compacted yet and sends its full copy again: the PC
+  // keeps the slimmed one and has nothing to write.
+  const again = core.merge(result.stateJson, result.historyJson, JSON.stringify({ state }));
+  expect(again.changed).toBe(false);
+  expect(again.historyChanged).toBe(false);
 });

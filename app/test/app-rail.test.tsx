@@ -237,3 +237,50 @@ it('tags two accounts of one game on their coins, and only then', () => {
   const solo = games.getByRole('button', { name: 'Honkai: Star Rail, Only' });
   expect(solo.querySelector('.rail-game-tag')).toBeNull();
 });
+
+/** An upright screen: the rail is the dock along the bottom. */
+function upright() {
+  const fallback = window.matchMedia;
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    ...fallback(query),
+    matches: query === '(orientation: portrait)' || fallback(query).matches,
+  }));
+}
+
+it('upright, keeps the five places and turns sync trouble into a dot on Settings that leads to the fix', () => {
+  upright();
+  try {
+    useApp.setState({ syncStatus: 'error', syncError: 'PC sync failed' });
+    renderRail();
+    const nav = within(screen.getByRole('navigation', { name: 'Primary' }));
+    expect(nav.queryByRole('button', { name: 'Refresh data' })).toBeNull();
+    expect(nav.queryByRole('button', { name: /^Sync needs attention/ })).toBeNull();
+    const settings = nav.getByRole('button', { name: 'Settings' });
+    expect(settings.querySelector('.rail-dot-danger')).not.toBeNull();
+    expect(settings).toHaveAccessibleDescription(/Sync needs attention: PC sync failed/);
+    expect(screen.getByRole('status')).toHaveTextContent('Sync needs attention: PC sync failed');
+    fireEvent.click(settings);
+    expect(useUI.getState()).toMatchObject({ tab: 'settings', settingsSection: 'sync' });
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+it("upright, wears the open game's coin on Games, and the shelf only rises when asked and falls on a tap away", () => {
+  upright();
+  try {
+    withGames();
+    useUI.setState({ tab: 'home', focusedGameId: 'first', shelfOpen: false });
+    renderRail();
+    const games = within(screen.getByRole('navigation', { name: 'Primary' })).getByRole('button', { name: 'Games' });
+    expect(games.querySelector('[data-game-logo]')).not.toBeNull();
+    expect(games).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(games);
+    expect(useUI.getState().shelfOpen).toBe(true);
+    // A tap on the page lowers it again.
+    fireEvent.pointerDown(document.body);
+    expect(useUI.getState().shelfOpen).toBe(false);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

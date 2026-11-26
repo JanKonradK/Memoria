@@ -1,5 +1,7 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import {
+  bankCounterOf,
+  bankedCounterIds,
   checklistFor,
   EVENT_PROGRESS_LABEL,
   effectiveResourceKind,
@@ -26,8 +28,8 @@ import { useNow } from '../hooks';
 import { useApp } from '../store';
 import { useUI } from '../ui-store';
 import { Ago } from './Ago';
-import { Pill } from './primitives';
-import { confirmDiscard, Sheet } from './Sheet';
+import { Pill, Tick } from './primitives';
+import { confirmDiscard, Sheet, SheetFooter } from './Sheet';
 import { Btn, Field, NumInput, Segmented, Select } from './ui';
 
 const CONFIDENCE_LABEL: Record<OcrConfidence, string> = {
@@ -37,6 +39,8 @@ const CONFIDENCE_LABEL: Record<OcrConfidence, string> = {
 };
 
 const SAVINGS_MAX = 100_000_000;
+/** A counter this small gets a chip per count (0 to 5 Condensed Resin), one tap each. */
+const QUICK_MAX = 10;
 const DAY_MS = 86_400_000;
 const PROGRESS_OPTIONS = (['none', 'partial', 'done'] as const).map((value) => ({
   value,
@@ -251,33 +255,53 @@ function ErrorNote({ id, text }: { id: string; text: string | undefined }) {
   );
 }
 
-/** One include toggle beside its fields. */
+/** Whether a row is saved: the shared tick, in a 44px target on touch screens. */
+function IncludeTick({ label, on, onToggle }: { label: string; on: boolean; onToggle: (on: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={on}
+      aria-label={`Include ${label}`}
+      onClick={() => onToggle(!on)}
+      className="group -m-1.5 flex size-11 shrink-0 items-center justify-center rounded-ui-md transition hover:bg-fill-2 fine:m-0 fine:size-8"
+    >
+      <Tick color="var(--color-accent)" checked={on} />
+    </button>
+  );
+}
+
+/** One include toggle beside its fields; `after` holds a paired row of its own, never dimmed with this one. */
 function Row({
   label,
   on,
   onToggle,
   children,
+  after,
 }: {
   label: string;
   on: boolean;
   onToggle: (on: boolean) => void;
   children: ReactNode;
+  after?: ReactNode;
 }) {
   return (
     <div className="flex items-start gap-3 rounded-ui-md bg-fill-1 p-3">
-      <input
-        type="checkbox"
-        aria-label={`Include ${label}`}
-        checked={on}
-        onChange={(event) => onToggle(event.target.checked)}
-        className="mt-1 size-4 shrink-0 accent-accent"
-      />
-      <div className={`min-w-0 flex-1 space-y-2 ${on ? '' : 'opacity-60'}`}>
-        <p className="text-caption font-semibold text-fg-soft">{label}</p>
-        {children}
+      <IncludeTick label={label} on={on} onToggle={onToggle} />
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className={`space-y-2 ${on ? '' : 'opacity-60'}`}>
+          <p className="text-caption font-semibold text-fg-soft">{label}</p>
+          {children}
+        </div>
+        {after}
       </div>
     </div>
   );
+}
+
+/** A denominator beside its field, kept on one line however narrow the sheet. */
+function OutOf({ children }: { children: ReactNode }) {
+  return <span className="shrink-0 text-body whitespace-nowrap text-muted tabular-nums">{children}</span>;
 }
 
 function Section({ label, children }: { label: string; children: ReactNode }) {
@@ -492,10 +516,17 @@ function ReadingsForm({
   const savingsDraft = (item: SavingsModel) => draftOf(item.seed, savingsEdits[item.field]);
 
   // ---- What shows, and what saves ----------------------------------------
-  const shownBars = resources.filter(
-    (res) => matchedBarIds.has(res.id) || res.id === fallback?.id || barEdits[res.id] !== undefined,
-  );
-  const visibleBars = showBars ? resources : shownBars;
+  // A counter banked from a bar (Condensed Resin) is read inside that bar's row, never as a row of its own.
+  const banked = bankedCounterIds(resources);
+  const barRows = resources.filter((res) => !banked.has(res.id));
+  const bankOf = (res: Resource) => bankCounterOf(res, resources);
+  const touched = (res: Resource | undefined) =>
+    res !== undefined && (matchedBarIds.has(res.id) || barEdits[res.id] !== undefined);
+  const shownBars = barRows.filter((res) => touched(res) || res.id === fallback?.id || touched(bankOf(res)));
+  const visibleBars = showBars ? barRows : shownBars;
+  const visibleBanks = [
+    ...new Map(visibleBars.flatMap((res) => bankOf(res) ?? []).map((bank) => [bank.id, bank])).values(),
+  ];
   const visibleTasks = tasks.filter((task) => task.match || showTasks || taskEdits[task.taskId] !== undefined);
   const visibleEvents = events.filter((item) => item.match || showEvents || eventEdits[item.event.id] !== undefined);
   const visibleSavings = savings.filter((item) => item.match || showSavings || savingsEdits[item.field] !== undefined);
@@ -517,7 +548,7 @@ function ReadingsForm({
   const savingsError = (draft: CountDraft) =>
     draft.on ? amountError(draft.value, SAVINGS_MAX, 'this count') : undefined;
 
-  const chosenBars = visibleBars.filter((res) => barDraft(res).on);
+  const chosenBars = [...visibleBars, ...visibleBanks].filter((res) => barDraft(res).on);
   const chosenTasks = visibleTasks.filter((task) => taskDraft(task).on);
   const chosenEvents = visibleEvents.filter((item) => eventDraft(item).on);
   const chosenSavings = visibleSavings.filter((item) => savingsDraft(item).on);
@@ -577,6 +608,55 @@ function ReadingsForm({
 
   const fieldId = (kind: string, id: string) => `${formId}-${kind}-${id}`;
 
+  /** The counter a bar banks, read in the bar's own row with its own tick. */
+  const bankRow = (bank: Resource) => {
+    const draft = barDraft(bank);
+    const errors = barErrors(bank, draft);
+    const match = readings.find((r) => r.resourceId === bank.id && r.field === 'value');
+    const errorId = fieldId('bar', `${bank.id}-value`);
+    const quick = bank.cap > 0 && bank.cap <= QUICK_MAX ? Array.from({ length: bank.cap + 1 }, (_, n) => n) : [];
+    return (
+      <div className="flex items-start gap-3 border-t border-line-hairline pt-2">
+        <IncludeTick label={bank.name} on={draft.on} onToggle={(on) => patchBar(bank.id, { on })} />
+        <div className={`min-w-0 flex-1 space-y-2 ${draft.on ? '' : 'opacity-60'}`}>
+          <div className="flex items-center gap-2">
+            <NumInput
+              aria-label={`${bank.name} value`}
+              aria-invalid={errors.value ? true : undefined}
+              aria-describedby={errors.value ? errorId : undefined}
+              min={0}
+              max={bank.cap}
+              value={draft.value}
+              placeholder="Keep as is"
+              onChange={(event) => patchBar(bank.id, { value: event.target.value, on: true })}
+              className="max-w-28"
+            />
+            <OutOf>
+              / {bank.cap} {bank.name}
+            </OutOf>
+          </div>
+          {quick.length > 0 && (
+            <div role="group" aria-label={`${bank.name} count`} className="flex flex-wrap gap-1">
+              {quick.map((n) => (
+                <Btn
+                  key={n}
+                  aria-pressed={draft.value === String(n)}
+                  onClick={() => patchBar(bank.id, { value: String(n), on: true })}
+                  className="min-w-(--control-h) tabular-nums aria-pressed:bg-accent aria-pressed:text-on-accent"
+                >
+                  {n}
+                </Btn>
+              ))}
+            </div>
+          )}
+          <ErrorNote id={errorId} text={errors.value} />
+          {isStale(bank) && <p className="text-meta text-warn-fg">Older than your last reading</p>}
+          {match && <MatchHint match={match} />}
+        </div>
+      </div>
+    );
+  };
+
   const barRow = (res: Resource) => {
     const draft = barDraft(res);
     const errors = barErrors(res, draft);
@@ -586,8 +666,15 @@ function ReadingsForm({
     const reserveLabel = res.reserveLabel || 'Reserve';
     const valueError = fieldId('bar', `${res.id}-value`);
     const reserveError = fieldId('bar', `${res.id}-reserve`);
+    const bank = bankOf(res);
     return (
-      <Row key={res.id} label={res.name} on={draft.on} onToggle={(on) => patchBar(res.id, { on })}>
+      <Row
+        key={res.id}
+        label={res.name}
+        on={draft.on}
+        onToggle={(on) => patchBar(res.id, { on })}
+        after={bank && bankRow(bank)}
+      >
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex items-center gap-2">
             <NumInput
@@ -600,7 +687,7 @@ function ReadingsForm({
               onChange={(event) => patchBar(res.id, { value: event.target.value, on: true })}
               className="max-w-28"
             />
-            <span className="text-body text-muted tabular-nums">/ {res.cap}</span>
+            <OutOf>/ {res.cap}</OutOf>
           </div>
           {res.reserveCap > 0 && (
             <div className="flex items-center gap-2">
@@ -615,9 +702,9 @@ function ReadingsForm({
                 onChange={(event) => patchBar(res.id, { reserve: event.target.value, on: true })}
                 className="max-w-28"
               />
-              <span className="text-body text-muted tabular-nums">
+              <OutOf>
                 / {res.reserveCap} {reserveLabel}
-              </span>
+              </OutOf>
             </div>
           )}
         </div>
@@ -655,9 +742,7 @@ function ReadingsForm({
               onChange={(event) => patchTask(task.taskId, { value: event.target.value, on: true })}
               className="max-w-28"
             />
-            {task.countTarget != null && (
-              <span className="text-body text-muted tabular-nums">/ {task.countTarget}</span>
-            )}
+            {task.countTarget != null && <OutOf>/ {task.countTarget}</OutOf>}
           </div>
         ) : (
           <p className="text-body text-muted">Mark done</p>
@@ -712,7 +797,7 @@ function ReadingsForm({
     );
   };
 
-  const hiddenBars = resources.length > shownBars.length;
+  const hiddenBars = barRows.length > shownBars.length;
   const hiddenTasks = tasks.some((task) => !task.match);
   const hiddenEvents = events.some((item) => !item.match);
   const hiddenSavings = savings.some((item) => !item.match);
@@ -775,13 +860,12 @@ function ReadingsForm({
           />
         )}
       </Section>
-      {count === 0 && <p className="text-meta text-muted">Tick at least one row to save.</p>}
-      <div className="flex flex-wrap justify-end gap-2">
+      <SheetFooter status={count === 0 && <p className="text-meta text-muted">Tick at least one row to save.</p>}>
         <Btn onClick={() => void dismiss()}>Dismiss</Btn>
         <Btn kind="primary" type="submit" disabled={!valid}>
           {count > 1 ? `Save ${count} updates` : 'Save reading'}
         </Btn>
-      </div>
+      </SheetFooter>
     </form>
   );
 }

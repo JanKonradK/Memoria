@@ -15,7 +15,7 @@ import { gameInk } from '../game-color';
 import { useGround } from '../theme';
 import { EventTags } from './EventTags';
 import { CalendarBehindNote } from './CalendarBehind';
-import { Btn, Segmented, TextInput, TOUCH_BUTTON } from './ui';
+import { Btn, Segmented, TextInput, Tooltip } from './ui';
 
 /** Every event of one game, to add, find and edit. It sits on the page, under one toolbar. */
 export function GameEvents({
@@ -83,7 +83,7 @@ export function GameEvents({
             onChange={(event) => setQuery(event.target.value)}
           />
         )}
-        <Btn kind="primary" className={`game-events-add ${TOUCH_BUTTON}`} onClick={() => void openEvent()}>
+        <Btn kind="primary" className="game-events-add" onClick={() => void openEvent()}>
           Add event
         </Btn>
       </div>
@@ -144,30 +144,35 @@ export function GameEvents({
                         </span>
                         <span className="game-events-when numeral inline-flex items-center gap-1.5" aria-hidden>
                           {!event.notify && (
-                            <span title="Not on Today or in reminders" className="inline-flex items-center">
-                              <svg
-                                viewBox="0 0 20 20"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="1.6"
-                                className="h-4 w-4"
-                                aria-hidden
+                            <Tooltip content="Not on Today or in reminders">
+                              <span
+                                role="img"
+                                aria-label="Not on Today or in reminders"
+                                className="inline-flex items-center"
                               >
-                                <path
-                                  d="M5.5 8.5a4.5 4.5 0 0 1 7.6-3.2M14.5 8.5c0 4 1.5 5.5 1.5 5.5H6M8.5 16.5a1.7 1.7 0 0 0 3 0M3.5 3.5l13 13"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                              <span className="sr-only">Not on Today or in reminders</span>
-                            </span>
+                                <svg
+                                  viewBox="0 0 20 20"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.6"
+                                  className="h-4 w-4"
+                                  aria-hidden
+                                >
+                                  <path
+                                    d="M5.5 8.5a4.5 4.5 0 0 1 7.6-3.2M14.5 8.5c0 4 1.5 5.5 1.5 5.5H6M8.5 16.5a1.7 1.7 0 0 0 3 0M3.5 3.5l13 13"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </span>
+                            </Tooltip>
                           )}
                           {calendar ? (
                             when
                           ) : (
-                            <span title={DateTime.fromMillis(event.end, { zone }).toFormat('d LLL yyyy, HH:mm')}>
-                              {when}
-                            </span>
+                            <Tooltip content={DateTime.fromMillis(event.end, { zone }).toFormat('d LLL yyyy, HH:mm')}>
+                              <span>{when}</span>
+                            </Tooltip>
                           )}
                         </span>
                         <svg

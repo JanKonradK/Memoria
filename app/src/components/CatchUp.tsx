@@ -17,7 +17,7 @@ import { useApp } from '../store';
 import { useShallow } from 'zustand/react/shallow';
 import { fmtDur } from '../util';
 import { LivestreamCodes } from './LivestreamCodes';
-import { Btn, Segmented, TOUCH_BUTTON } from './ui';
+import { Btn, Segmented } from './ui';
 import '../catch-up.css';
 
 function day(iso: string, format = 'd LLL'): string {
@@ -184,18 +184,21 @@ function VersionHeading({ digest, unread }: { digest: VersionDigest; unread: boo
   );
 }
 
-/** The newest version leads with its artwork; earlier ones fold away under quieter headings. */
+/**
+ * The newest version leads with its number set large in the game's colour, a
+ * plate drawn from type alone: no publisher artwork ships with Memoria.
+ * Earlier versions fold away under quieter headings.
+ */
 function Version({ digest, unread, lead }: { digest: VersionDigest; unread: boolean; lead: boolean }) {
   if (lead) {
     return (
       <article className="catch-up-version catch-up-lead" aria-labelledby={`${digest.id}-heading`}>
-        {/* Artwork beside the heading where there is room, so the content starts in the first view. */}
-        <div className="catch-up-lead-head" data-art={digest.artwork ? '' : undefined}>
-          {digest.artwork && (
-            <figure className="catch-up-art">
-              <img src={digest.artwork.src} alt={digest.artwork.alt} width={1280} height={720} />
-            </figure>
-          )}
+        {/* The plate sits beside the heading where there is room, so the content starts in the first view. */}
+        <div className="catch-up-lead-head" data-art="">
+          <div className="catch-up-plate" aria-hidden>
+            <span className="catch-up-plate-version numeral">{digest.version}</span>
+            {digest.title && <span className="catch-up-plate-title">{digest.title}</span>}
+          </div>
           <div className="min-w-0">
             <h3 id={`${digest.id}-heading`}>
               <VersionHeading digest={digest} unread={unread} />
@@ -322,7 +325,7 @@ export function CatchUpView({ game, now }: { game: Game; now: number }) {
             {stillUnread.length > 0 && (
               <Btn
                 kind="primary"
-                className={`catch-up-mark ${TOUCH_BUTTON}`}
+                className="catch-up-mark"
                 onClick={() =>
                   preset &&
                   markRead(
@@ -342,7 +345,7 @@ export function CatchUpView({ game, now }: { game: Game; now: number }) {
         ) : shown.length === 0 ? (
           <div className="catch-up-empty">
             <p className="text-body text-fg-soft">You’re caught up.</p>
-            <Btn className={`mt-3 ${TOUCH_BUTTON}`} onClick={() => setScope('all')}>
+            <Btn className="mt-3" onClick={() => setScope('all')}>
               Show all versions
             </Btn>
           </div>

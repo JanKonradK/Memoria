@@ -11,7 +11,7 @@ import { useCopyCode, useGameCodes, useRedeemed, withUndo, type GameCodeItem } f
 import { useApp } from '../store';
 import { fmtDur } from '../util';
 import { CodeClaim } from './CodeClaim';
-import { Btn, Field, TextArea, TextInput, TOUCH_BUTTON } from './ui';
+import { Btn, Field, TextArea, TextInput } from './ui';
 
 const LINK_CLASS =
   'inline-flex min-h-11 shrink-0 items-center px-1 text-meta font-semibold text-accent-fg underline underline-offset-4 fine:min-h-8';
@@ -120,10 +120,8 @@ function AddCodesForm({
         </p>
       )}
       <div className="mt-1 flex flex-wrap justify-end gap-2">
-        <Btn className={TOUCH_BUTTON} onClick={onCancel}>
-          Cancel
-        </Btn>
-        <Btn type="submit" kind="primary" className={TOUCH_BUTTON}>
+        <Btn onClick={onCancel}>Cancel</Btn>
+        <Btn type="submit" kind="primary">
           {count > 1 ? 'Add codes' : 'Add code'}
         </Btn>
       </div>
@@ -174,7 +172,7 @@ export function GameCodes({ game, now }: { game: Game; now: number }) {
           </a>
         )}
         <Btn
-          className={`shrink-0 ${TOUCH_BUTTON}`}
+          className="shrink-0"
           aria-expanded={adding}
           aria-label={`Add codes for ${game.name}`}
           onClick={() => {
@@ -211,7 +209,7 @@ export function GameCodes({ game, now }: { game: Game; now: number }) {
                   {meta && <p className="aside text-caption text-muted">{meta}</p>}
                 </div>
                 <Btn
-                  className={`min-w-16 shrink-0 ${TOUCH_BUTTON}`}
+                  className="min-w-16 shrink-0"
                   aria-label={`Copy ${item.code}`}
                   onClick={() => void copy(item.code)}
                 >
@@ -219,18 +217,14 @@ export function GameCodes({ game, now }: { game: Game; now: number }) {
                 </Btn>
                 <CodeClaim game={game} item={item} linkClassName={LINK_CLASS} onDone={setNote} />
                 <Btn
-                  className={`shrink-0 ${TOUCH_BUTTON}`}
+                  className="shrink-0"
                   aria-label={`Mark ${item.code} redeemed`}
                   onClick={() => (item.customId ? toggle(item) : mark(item.key, item.code))}
                 >
                   ✓
                 </Btn>
                 {item.customId && (
-                  <Btn
-                    className={`shrink-0 ${TOUCH_BUTTON}`}
-                    aria-label={`Remove ${item.code}`}
-                    onClick={() => remove(item)}
-                  >
+                  <Btn className="shrink-0" aria-label={`Remove ${item.code}`} onClick={() => remove(item)}>
                     ×
                   </Btn>
                 )}
@@ -253,20 +247,12 @@ export function GameCodes({ game, now }: { game: Game; now: number }) {
                   <span className="ml-2 text-caption text-muted">{tag}</span>
                 </div>
                 {item.customId && tag === 'Redeemed' && (
-                  <Btn
-                    className={`shrink-0 ${TOUCH_BUTTON}`}
-                    aria-label={`Unmark ${item.code}`}
-                    onClick={() => toggle(item)}
-                  >
+                  <Btn className="shrink-0" aria-label={`Unmark ${item.code}`} onClick={() => toggle(item)}>
                     Unmark
                   </Btn>
                 )}
                 {item.customId && (
-                  <Btn
-                    className={`shrink-0 ${TOUCH_BUTTON}`}
-                    aria-label={`Remove ${item.code}`}
-                    onClick={() => remove(item)}
-                  >
+                  <Btn className="shrink-0" aria-label={`Remove ${item.code}`} onClick={() => remove(item)}>
                     ×
                   </Btn>
                 )}

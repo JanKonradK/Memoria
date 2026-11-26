@@ -65,7 +65,13 @@ test('a game page adds, renames, changes behavior, and deletes finished events f
   await panel.getByRole('searchbox', { name: 'Find event' }).fill('My personal window');
   const row = panel.getByRole('button', { name: 'Edit Genshin Impact event: My personal window', exact: true });
   await expect(row).toContainText('Daily check-in');
-  await expect(row.locator('[title="Not on Today or in reminders"]')).toBeVisible();
+  const unlisted = row.locator('[aria-label="Not on Today or in reminders"]');
+  await expect(unlisted).toBeVisible();
+  if (info.project.name === 'desktop') {
+    await unlisted.hover();
+    await expect(page.getByRole('tooltip', { name: 'Not on Today or in reminders' })).toBeVisible();
+    await page.mouse.move(0, 0);
+  }
   await row.click();
   dialog = page.getByRole('dialog', { name: 'Edit event' });
   await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('My renamed cycle');

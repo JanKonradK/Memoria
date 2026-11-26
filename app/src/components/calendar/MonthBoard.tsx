@@ -13,7 +13,7 @@ import {
 } from '@memoria/shared';
 import { endTone } from '../../util';
 import { SwipeRow } from '../../swipe-row';
-import { Btn, TOUCH_BUTTON } from '../ui';
+import { Btn } from '../ui';
 import type { CalendarViewProps } from './types';
 import {
   EventKind,
@@ -212,7 +212,6 @@ export function MonthBoard({ games, events, now, localTz, morning, onOpenEvent, 
           </svg>
         </button>
         <Btn
-          className={TOUCH_BUTTON}
           onClick={() => {
             showMonth(DateTime.fromISO(todayIso, { zone: localTz }));
             choose(todayIso, true);

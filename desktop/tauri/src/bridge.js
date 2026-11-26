@@ -69,6 +69,16 @@
     true,
   );
 
+  // The page draws the window's title bar. It undoes the page zoom through
+  // --chrome-zoom, so it stays the size of Windows' own at every level.
+  const isWindowState = (value) =>
+    typeof value?.maximized === 'boolean' && typeof value?.focused === 'boolean' && value?.zoom > 0;
+  const chromeZoom = (state) => {
+    if (isWindowState(state)) document.documentElement?.style.setProperty('--chrome-zoom', String(1 / state.zoom));
+  };
+  subscribe('memoria:window-state', chromeZoom, isWindowState);
+  void invoke('window_state').then(chromeZoom, () => undefined);
+
   // Ctrl and +, - or 0, and Ctrl with the mouse wheel, zoom the page as in a
   // browser. Rust applies the level and keeps it for the next launch.
   const zoom = (step) => void invoke('set_zoom', { step }).catch(() => undefined);
@@ -99,9 +109,31 @@
     { capture: true, passive: false },
   );
 
+  // The quick card: the same window shrunk to one game, never a second one.
+  const isSurface = (value) => value?.mode === 'full' || value?.mode === 'compact';
+  const gameIdOrNull = (value) => (typeof value === 'string' && value ? value : null);
+
   Object.defineProperty(window, 'memoriaDesktop', {
     value: Object.freeze({
       version: 1,
+      // The frameless window's title bar buttons. Close is the window's own:
+      // into the tray, or the page's save first; the quick card's, back where it came from.
+      window: Object.freeze({
+        minimize: () => invoke('window_minimize'),
+        toggleMaximize: () => invoke('window_toggle_maximize'),
+        close: () => invoke('window_close'),
+        getState: () => invoke('window_state'),
+        onStateChanged: (listener) => subscribe('memoria:window-state', listener, isWindowState),
+        enterCompact: (gameId) => invoke('window_enter_compact', { gameId: gameIdOrNull(gameId) }),
+        exitCompact: (options) =>
+          invoke('window_exit_compact', {
+            openGameId: gameIdOrNull(options?.openGameId),
+            toTray: typeof options?.toTray === 'boolean' ? options.toTray : null,
+          }),
+        setCompactPin: (pinned) => invoke('window_set_compact_pin', { pinned: pinned === true }),
+        getSurface: () => invoke('window_surface'),
+        onSurfaceChanged: (listener) => subscribe('memoria:surface-changed', listener, isSurface),
+      }),
       // A game is named by id only. Paths are picked in a native dialog and stay in Rust.
       launch: Object.freeze({
         list: () => invoke('launch_list'),
@@ -129,6 +161,12 @@
       presence: Object.freeze({
         get: () => invoke('presence_get'),
         set: (changes) => invoke('presence_set', { changes }),
+        // Blank and off until the player picks one; another app's keys are reported, not taken.
+        setCompactShortcut: (enabled, accelerator) =>
+          invoke('presence_set_compact_shortcut', {
+            enabled: enabled === true,
+            accelerator: accelerator == null ? null : String(accelerator),
+          }),
         watch: (games) => invoke('games_watch', { games }),
         notify: (notice) => invoke('game_notify', { notice }),
         notificationStatus: () => invoke('notifications_status'),

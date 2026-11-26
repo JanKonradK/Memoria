@@ -39,8 +39,8 @@ test('with every daily done and nothing capping before the reset, Today says all
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await showTodayGames(page);
   const clear = page.locator('[data-all-clear]');
-  const mobile = info.project.name !== 'desktop';
-  if (mobile) await page.getByRole('button', { name: 'Open Genshin Impact', exact: true }).click();
+  // The row opens the game's page at every width; its card ticks the dailies.
+  await page.getByRole('button', { name: 'Open Genshin Impact', exact: true }).click();
   await page.getByRole('button', { name: 'Tick all dailies for Genshin Impact' }).click();
   // Tick all also collects and resends the expeditions.
   await expect(
@@ -50,9 +50,7 @@ test('with every daily done and nothing capping before the reset, Today says all
   const resin = page.getByLabel('Original Resin current value');
   await resin.fill('0');
   await resin.press('Enter');
-  if (mobile) {
-    await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
-  }
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await expect(clear.getByRole('heading')).toHaveText(/^All clear until (\w{3} )?\d\d:\d\d$/);
   if (info.project.name === 'mobile-390') {
     await expect(page.getByRole('list', { name: 'Games' })).toBeHidden();

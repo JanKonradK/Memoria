@@ -132,7 +132,6 @@ describe('finished events leave the lane', () => {
     show([event({ id: 'dated', name: 'Dated event' })]);
     const open = screen.getByRole('button', row('Dated event'));
     expect(open.getAttribute('aria-description')).toMatch(/Starts 22 Aug 2026 .*Ends 1 Sep 2026 .*Dates in/);
-    expect(open.getAttribute('title')).toContain('Dated event. Starts');
   });
 
   it('keeps Genshin world sections in order, banners on rows of their own', () => {

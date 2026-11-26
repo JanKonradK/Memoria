@@ -7,7 +7,7 @@ import {
   updateTarget,
   useAppUpdate,
 } from '../../app-update';
-import { Btn, Toggle, TOUCH_BUTTON } from '../ui';
+import { Btn, Toggle } from '../ui';
 import { SettingRow } from './SettingRow';
 
 export function AppUpdates() {
@@ -18,6 +18,7 @@ export function AppUpdates() {
     <div className="min-w-0">
       <SettingRow
         label={displayVersion(APP_VERSION)}
+        hintKind="fact"
         hint={
           <span role="status">
             {status === 'checking'
@@ -31,15 +32,11 @@ export function AppUpdates() {
         }
       >
         {release ? (
-          <Btn kind="primary" className={TOUCH_BUTTON} onClick={showUpdate}>
+          <Btn kind="primary" onClick={showUpdate}>
             See update
           </Btn>
         ) : (
-          <Btn
-            className={TOUCH_BUTTON}
-            disabled={status === 'checking' || status === 'downloading'}
-            onClick={() => void checkForUpdates()}
-          >
+          <Btn disabled={status === 'checking' || status === 'downloading'} onClick={() => void checkForUpdates()}>
             Check for updates
           </Btn>
         )}

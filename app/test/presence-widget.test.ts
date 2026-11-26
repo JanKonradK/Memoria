@@ -1,8 +1,11 @@
 import { emptyState } from '@memoria/shared';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { makeGame, makeResource, makeSnapshot, makeTask } from '../../shared/test/helpers';
 import { watchList } from '../src/presence';
-import { widgetSnapshot } from '../src/home-widget';
+import { openFromWidget, widgetSnapshot } from '../src/home-widget';
+
+const scan = vi.hoisted(() => vi.fn(async () => undefined));
+vi.mock('../src/connectors', () => ({ scanWithCamera: scan }));
 
 const now = Date.parse('2026-11-01T12:00:00Z');
 
@@ -42,6 +45,7 @@ describe('home widget snapshot', () => {
     expect(snapshot.generatedAt).toBe(now);
     expect(snapshot.rows.map((row) => row.id)).toEqual(['urgent', 'calm']);
     expect(snapshot.rows[0]).toMatchObject({
+      name: 'Urgent',
       label: 'TL',
       meter: { value: 100, cap: 100, isFull: true, regenMinutes: 6 },
       dailyTotal: 0,
@@ -49,6 +53,15 @@ describe('home widget snapshot', () => {
     });
     expect(snapshot.rows[1]).toMatchObject({ meter: null, dailyDone: 0, dailyTotal: 1 });
     expect(snapshot.rows[1]!.dailyResetAt).toBeGreaterThan(now);
+  });
+
+  it('keeps games pinned to a single-game widget even outside the top 24', () => {
+    const games = Array.from({ length: 26 }, (_, index) =>
+      makeGame({ id: `g${index}`, name: `Game ${index}`, sort: index }),
+    );
+    const snapshot = widgetSnapshot({ ...emptyState(), games }, now, ['g25']);
+    expect(snapshot.rows.map((row) => row.id)).toContain('g25');
+    expect(snapshot.rows).toHaveLength(25);
   });
 });
 
@@ -70,5 +83,12 @@ describe('widget ticks', () => {
     ]);
     expect(applyWidgetTicks(queue, now)).toEqual(['g1']);
     expect(applyWidgetTicks('not json', now)).toEqual([]);
+  });
+});
+
+describe('widget links', () => {
+  it('opens the camera reader from the Quick Scan widget', async () => {
+    openFromWidget('memoria://scan');
+    await vi.waitFor(() => expect(scan).toHaveBeenCalledOnce());
   });
 });

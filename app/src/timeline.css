@@ -185,42 +185,10 @@
 .calendar-view-short {
   display: none;
 }
-.calendar-games {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 2px;
-}
+/* The game filter's own look is in game-scope.css, shared with Notes. */
 .calendar-bar > .calendar-games {
   padding-left: 8px;
   border-left: 1px solid var(--color-line);
-}
-.calendar-game-toggle {
-  display: grid;
-  width: 44px;
-  height: 44px;
-  place-items: center;
-  border-radius: 999px;
-  transition:
-    opacity var(--dur-fast) var(--ease-out),
-    filter var(--dur-fast) var(--ease-out),
-    background-color var(--dur-fast) var(--ease-out);
-}
-.calendar-game-toggle[aria-pressed='false'] {
-  opacity: 0.32;
-  filter: grayscale(1);
-}
-@media (pointer: fine) {
-  .calendar-game-toggle {
-    width: 36px;
-    height: 36px;
-  }
-}
-@media (hover: hover) {
-  .calendar-game-toggle:hover {
-    background: var(--color-fill-2);
-    opacity: 1;
-  }
 }
 .calendar-bar-gap {
   flex: 1 1 0;
@@ -277,6 +245,12 @@
 }
 .calendar-tool:active {
   scale: 0.96;
+}
+@media (pointer: coarse) {
+  .calendar-tool {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 /* The folded bar: phones and upright tablets (Timeline's STACKED query). */
 @media (max-width: 1023px), (orientation: portrait) and (pointer: coarse) {
@@ -361,6 +335,17 @@
   --tl-label: 0px;
   --tl-head: 36px;
   margin-inline: 0;
+}
+/* A sideways finger drags the days with it, damped; letting go steps the week
+   or springs back. Only the tracks move: the names and the page stay put. */
+.tl-board:is([data-panning], [data-pan-release]) {
+  overflow-x: clip;
+}
+.tl-board[data-panning] :is(.tl-track, .tl-overlay, .tl-bands) {
+  translate: var(--tl-pan, 0px) 0;
+}
+.tl-board[data-pan-release] :is(.tl-track, .tl-overlay, .tl-bands) {
+  transition: translate var(--dur-base) var(--ease-out);
 }
 .tl-row {
   display: grid;
@@ -591,9 +576,13 @@
   gap: 6px;
   overflow: hidden;
   padding: 0 8px;
-  border: 1px solid color-mix(in srgb, var(--ink) 50%, transparent);
+  /* Tinted onto the page's own ground, never see-through: the now line passes
+     under a bar, and must not show through its name. */
+  border: 1px solid color-mix(in srgb, var(--ink) 50%, var(--backdrop-ground, var(--color-surface-0)));
   border-radius: 999px;
-  background: color-mix(in srgb, var(--ink) 16%, transparent);
+  /* A name, so the tick laid over the bar's start wears the same tint. */
+  --tl-face-bg: color-mix(in srgb, var(--ink) 16%, var(--backdrop-ground, var(--color-surface-0)));
+  background: var(--tl-face-bg);
   color: var(--color-fg);
   font-size: var(--text-caption);
   font-weight: 600;
@@ -606,7 +595,7 @@
 }
 @media (hover: hover) {
   .tl-bar:hover .tl-face {
-    background: color-mix(in srgb, var(--ink) 24%, transparent);
+    --tl-face-bg: color-mix(in srgb, var(--ink) 24%, var(--backdrop-ground, var(--color-surface-0)));
   }
 }
 .tl-bar:focus-within .tl-face {
@@ -622,9 +611,10 @@
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
 }
+/* Predicted: a dashed outline on the plain ground, still opaque over the now line. */
 .tl-bar[data-predicted] .tl-face {
   border: 1.5px dashed var(--ink);
-  background: none;
+  --tl-face-bg: var(--backdrop-ground, var(--color-surface-0));
 }
 .tl-name {
   display: flex;
@@ -646,31 +636,40 @@
   color: color-mix(in srgb, var(--tl-tone, var(--color-muted)) 45%, var(--color-fg));
   font-weight: 600;
 }
+/* Done fades by its colours, not its opacity, so it stays opaque over the now line. */
 .tl-bar[data-done] .tl-face {
-  opacity: 0.5;
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  border-color: color-mix(in srgb, var(--ink) 22%, var(--backdrop-ground, var(--color-surface-0)));
+  --tl-face-bg: color-mix(in srgb, var(--ink) 6%, var(--backdrop-ground, var(--color-surface-0)));
+  color: var(--color-muted);
 }
 .tl-bar[data-done] [data-event-title] {
   text-decoration: line-through;
 }
-/* The tick takes no room until the pointer or focus reaches its bar, and stays
-   reachable by keyboard all the while. */
+/* The tick takes no room until it is needed, and stays reachable by keyboard
+   all the while. It sits over the bar's start, on the bar's own tint, and
+   fades and scales in when the pointer or focus reaches its bar: the name
+   never moves. A done bar keeps its check, so its name starts after it. */
 .tl-tick {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 8px;
   z-index: 2;
   display: grid;
-  width: 0;
+  width: 16px;
   height: 16px;
-  flex-shrink: 0;
-  margin-right: -6px;
   place-items: center;
   border-radius: 999px;
+  /* A ring of the bar's tint around it, so the name it covers ends cleanly. */
+  background: var(--tl-face-bg);
+  box-shadow:
+    inset 0 0 0 1.5px var(--color-fg-soft),
+    0 0 0 4px var(--tl-face-bg);
   opacity: 0;
+  transform: translateY(-50%) scale(0.6);
   pointer-events: auto;
   transition:
-    width var(--dur-fast) var(--ease-out),
-    margin var(--dur-fast) var(--ease-out),
-    opacity var(--dur-fast) var(--ease-out);
+    opacity var(--dur-1) var(--ease-enter),
+    transform var(--dur-1) var(--ease-enter);
 }
 /* A larger hit area than the 16px ring it draws. */
 .tl-tick::before {
@@ -681,14 +680,15 @@
 .tl-bar:hover .tl-tick,
 .tl-bar:focus-within .tl-tick,
 .tl-bar[data-done] .tl-tick {
-  width: 16px;
-  margin-right: 0;
   opacity: 1;
-  box-shadow: inset 0 0 0 1.5px var(--color-fg-soft);
+  transform: translateY(-50%);
 }
 .tl-bar[data-done] .tl-tick {
   box-shadow: none;
   color: var(--color-ok-fg);
+}
+.tl-bar[data-done] .tl-face:has(.tl-tick) {
+  padding-left: 30px;
 }
 .tl-tick svg {
   width: 16px;
@@ -696,14 +696,16 @@
 }
 
 /* ---------- Milestones, maintenance ---------- */
+/* A livestream's moment: an upright square clipped to a diamond, so its box is
+   its drawn size and it centres on its time exactly. */
 .tl-diamond {
   display: inline-block;
-  width: 11px;
-  height: 11px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
-  border-radius: 2px;
+  border-radius: 0;
   background: var(--ink, var(--color-fg-soft));
-  rotate: 45deg;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
 }
 .tl-milestone {
   position: absolute;
@@ -712,7 +714,7 @@
   height: 24px;
   align-items: center;
   gap: 7px;
-  translate: -6px 0;
+  translate: -7px 0;
   color: var(--color-fg);
   font-size: var(--text-caption);
   font-weight: 600;
@@ -837,11 +839,13 @@
 .tl-board[data-compact] .tl-summary .tl-label {
   grid-column: 1 / -1;
 }
-/* On a phone the game's name spans the board, so the now line breaks for it. */
-.tl-board[data-compact] .tl-head .tl-label {
+/* On a phone the game's name, and a folded lane's summary, span the board,
+   so the now line breaks for them rather than running through their words. */
+.tl-board[data-compact] .tl-head .tl-label,
+.tl-board[data-compact] .tl-summary .tl-label {
   position: relative;
   z-index: 2;
-  background: var(--color-surface-0);
+  background: var(--backdrop-ground, var(--color-surface-0));
 }
 .tl-board[data-compact] .tl-head-button {
   gap: 8px;
@@ -854,6 +858,11 @@
 .tl-board[data-compact] .tl-note {
   padding-left: 32px;
   font-size: var(--text-meta);
+}
+/* A folded lane keeps its miniature, under its summary. */
+.tl-board[data-compact] .tl-summary .tl-density {
+  height: 26px;
+  margin-top: 2px;
 }
 .tl-board[data-compact] .tl-game {
   padding: 4px 0 8px;
@@ -885,7 +894,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .calendar-game-toggle,
   .calendar-tool,
   .tl-chevron,
   .tl-face,

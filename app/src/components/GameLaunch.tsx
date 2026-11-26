@@ -1,6 +1,6 @@
 import type { Game } from '@memoria/shared';
 import { chooseLaunchTarget, clearLaunchTarget, launchGame, useGameLaunch } from '../game-launch';
-import { Btn, TOUCH_BUTTON, Tooltip } from './ui';
+import { Btn, Tooltip } from './ui';
 
 /**
  * Starts the game itself. Only the Windows app can, and only once a target is
@@ -17,7 +17,7 @@ export function LaunchButton({ game }: { game: Game }) {
     <Tooltip content={`Starts ${target}`}>
       <Btn
         kind="primary"
-        className={`${TOUCH_BUTTON} inline-flex items-center gap-1.5`}
+        className="inline-flex items-center gap-1.5"
         disabled={busy}
         aria-label={`Play ${game.name}`}
         onClick={() => void launchGame(game.id)}
@@ -46,11 +46,11 @@ export function LaunchSettings({ game }: { game: Game }) {
       <p className="mr-auto min-w-0 text-meta text-muted">
         Play starts <span className="break-all font-medium text-fg-soft">{target ?? 'nothing yet'}</span>
       </p>
-      <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => void chooseLaunchTarget(game.id)}>
+      <Btn disabled={busy} onClick={() => void chooseLaunchTarget(game.id)}>
         {target ? 'Change' : 'Choose'}
       </Btn>
       {target && (
-        <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => void clearLaunchTarget(game.id)}>
+        <Btn disabled={busy} onClick={() => void clearLaunchTarget(game.id)}>
           Remove
         </Btn>
       )}

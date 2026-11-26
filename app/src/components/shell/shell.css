@@ -10,7 +10,8 @@
 .app-rail {
   position: fixed;
   z-index: 40;
-  inset: 0 auto 0 0;
+  /* Down the side, under the Windows app's title bar. */
+  inset: var(--desktop-chrome-h) auto 0 0;
   width: var(--rail-w);
   display: flex;
   flex-direction: column;
@@ -21,13 +22,15 @@
   border-right: 1px solid var(--rail-edge);
   overflow-y: auto;
   scrollbar-width: none;
-  /* Its own layer in a look's cross-fade, so the dock never fades with the page. */
+}
+/* Its own layer in a look's cross-fade, so the dock never fades with the page.
+   Only there: a game's logo morph leaves the rail live, uncaptured. Neither
+   starts under reduced motion. */
+:root:active-view-transition-type(look) .app-rail {
   view-transition-name: app-rail;
 }
-@media (prefers-reduced-motion: reduce) {
-  .app-rail {
-    view-transition-name: none;
-  }
+:root[data-vt='look'] .app-rail {
+  view-transition-name: app-rail;
 }
 .app-rail::-webkit-scrollbar {
   display: none;
@@ -68,18 +71,22 @@
   padding-top: 10px;
 }
 
-/* The game list folds away under Games: rows collapse from their full height
-   to none, the list fading as it goes. */
+/* The game list folds away under Games. Down the side the fold is one layout
+   step, not one per frame: the list's room opens at once and the rows slide
+   and fade in; folding, they fade and lift first, then the room closes
+   behind them. Only opacity and transform move. (The dock's shelf grows
+   instead; it is contained, below.) */
 .rail-shelf {
   display: grid;
   /* minmax(0, …): a bare fr track would keep its content's height as a floor. */
   grid-template-rows: minmax(0, 0fr);
   flex: none;
   width: 100%;
-  transition: grid-template-rows var(--dur-base) var(--ease-out);
+  transition: grid-template-rows 0s linear var(--dur-2);
 }
 .app-rail[data-shelf] .rail-shelf {
   grid-template-rows: minmax(0, 1fr);
+  transition-delay: 0s;
 }
 .rail-games {
   display: flex;
@@ -89,17 +96,21 @@
   min-height: 0;
   overflow: hidden;
   opacity: 0;
+  transform: translateY(-6px);
   /* Folded, it leaves the page once it has finished folding. */
   visibility: hidden;
   transition:
-    opacity var(--dur-fast) var(--ease-out),
-    visibility 0s linear var(--dur-base);
+    opacity var(--dur-2) var(--ease-exit),
+    transform var(--dur-2) var(--ease-exit),
+    visibility 0s linear var(--dur-2);
 }
 .app-rail[data-shelf] .rail-games {
   opacity: 1;
+  transform: none;
   visibility: visible;
   transition:
-    opacity var(--dur-fast) var(--ease-out),
+    opacity var(--dur-3) var(--ease-enter),
+    transform var(--dur-3) var(--ease-enter),
     visibility 0s;
 }
 /* A hairline above the list, inside it, so it folds with it. */
@@ -241,21 +252,34 @@
   background: var(--color-rose);
   box-shadow: 0 0 0 2px var(--dock-fill-solid, var(--color-surface-1));
 }
-/* The open game's own colour marks it from the rail's edge. */
+/* Sync or save trouble, on the dock's Settings. */
+.rail-dot-danger {
+  background: var(--color-danger);
+  box-shadow: 0 0 0 2px var(--dock-fill-solid, var(--color-surface-1));
+}
+/* The open game's coin, in place of the dock's Games icon, sitting on its pill. */
+.rail-coin {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  margin-top: -1px;
+}
+/* The open game's own colour marks it from the rail's edge. Always its full
+   size, folded to nothing: it grows by scale, on the compositor. */
 .rail-pin {
   position: absolute;
   left: -8px;
   /* Centred on the logo: its top padding plus half its height. */
   top: 28px;
   width: 4px;
-  height: 0;
+  height: 30px;
   border-radius: 0 4px 4px 0;
   background: var(--rail-ink);
-  transform: translateY(-50%);
-  transition: height var(--dur-base) var(--ease-out);
+  transform: translateY(-50%) scaleY(0);
+  transition: transform var(--dur-3) var(--ease-move);
 }
 .rail-game[aria-current='page'] .rail-pin {
-  height: 30px;
+  transform: translateY(-50%) scaleY(1);
 }
 .rail-game-logo {
   transition:
@@ -322,7 +346,7 @@
   background: var(--rail-ink);
   opacity: 0.85;
   transform-origin: left;
-  transition: transform var(--dur-slow) var(--ease-out);
+  transition: transform var(--dur-4) var(--ease-move);
 }
 .rail-meter-bank i {
   background: var(--rail-ink-2, var(--rail-ink));
@@ -385,8 +409,12 @@
 /* Which edge the rail takes follows the screen's shape, not its width. A wide
    screen is short on height, so the rail runs down the side; a tall one (a
    phone or a tablet held upright) is short on width, so it docks at the bottom. */
+/* Where page bars stick: the top edge, or under the Windows app's title bar. */
 :root {
-  --nav-h: 0px;
+  --nav-h: var(--desktop-chrome-h, 0px);
+}
+.app-frame {
+  padding-top: var(--desktop-chrome-h, 0px);
 }
 @media (orientation: landscape) {
   :root {
@@ -576,12 +604,13 @@
   .app-frame:has(> .app-rail[data-shelf]) {
     padding-bottom: calc(var(--dock-h) + var(--dock-shelf-h) + 10px);
   }
+  /* Notices ride up with a raised shelf by transform, never by re-placing. */
   .app-frame .app-toasts {
     bottom: calc(var(--dock-h) + 0.75rem);
-    transition: bottom var(--dur-base) var(--ease-out);
+    transition: transform var(--dur-3) var(--ease-move);
   }
   .app-frame:has(> .app-rail[data-shelf]) .app-toasts {
-    bottom: calc(var(--dock-h) + var(--dock-shelf-h) + 0.75rem);
+    transform: translateY(calc(-1 * var(--dock-shelf-h)));
   }
   .app-rail {
     inset: auto calc(var(--dock-gap) + env(safe-area-inset-right)) calc(var(--dock-gap) + env(safe-area-inset-bottom))
@@ -601,13 +630,13 @@
     box-shadow: var(--dock-shadow);
     overflow: hidden;
     contain: layout paint;
-    /* The shelf over the row of places; Settings (and any sync trouble) is
-       the row's last column, so the five places share it equally. */
+    /* The shelf over the row of places: five equal columns, Settings the last.
+       Sync trouble never takes a column of its own here; it is a dot on Settings. */
     display: grid;
-    grid-template-columns: minmax(0, 4fr) minmax(0, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     grid-template-areas:
-      'shelf shelf'
-      'places foot';
+      'shelf shelf shelf shelf shelf'
+      'places places places places foot';
   }
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .app-rail {
@@ -617,8 +646,12 @@
   .rail-mark {
     display: none;
   }
+  /* The shelf rises out of the dock as one object with it, so here its room
+     grows rather than opening at once. The dock contains its own layout and
+     paint, so the growth never reaches the page. */
   .rail-shelf {
     grid-area: shelf;
+    transition: grid-template-rows var(--dur-3) var(--ease-move);
   }
   .rail-games {
     flex-direction: row;
@@ -682,15 +715,13 @@
   .rail-pin {
     left: 50%;
     top: 0;
-    width: 0;
-    height: 3px;
-    border-radius: 0 0 3px 3px;
-    transform: translateX(-50%);
-    transition: width var(--dur-base) var(--ease-out);
-  }
-  .rail-game[aria-current='page'] .rail-pin {
     width: 24px;
     height: 3px;
+    border-radius: 0 0 3px 3px;
+    transform: translateX(-50%) scaleX(0);
+  }
+  .rail-game[aria-current='page'] .rail-pin {
+    transform: translateX(-50%) scaleX(1);
   }
   .rail-add {
     flex: none;
@@ -910,7 +941,7 @@
 }
 .view-switch button {
   flex: none;
-  min-height: 36px;
+  min-height: var(--control-h);
   padding: 0 14px;
   border-radius: calc(var(--radius-ui-md) - 4px);
   color: var(--color-muted);
@@ -930,15 +961,10 @@
     color: var(--color-fg);
   }
 }
-.view-switch button[aria-pressed='true'],
-.view-switch button[aria-selected='true'] {
+/* Pressed (a toggle row), selected (tabs) or checked (a radio group): one chosen look. */
+.view-switch button:is([aria-pressed='true'], [aria-selected='true'], [aria-checked='true'], [data-state='on']) {
   background: var(--color-surface-2);
   color: var(--color-fg);
-}
-@media (pointer: coarse) {
-  .view-switch button {
-    min-height: 44px;
-  }
 }
 @media (max-width: 767px) {
   .view-switch button {
@@ -977,6 +1003,9 @@
   color: var(--color-muted);
 }
 .game-tabs {
+  /* The underline is measured from, and slides inside, the strip itself, so
+     it scrolls with the tabs when a narrow strip scrolls sideways. */
+  position: relative;
   display: flex;
   gap: 2px;
   min-width: 0;
@@ -985,6 +1014,47 @@
 }
 .game-tabs::-webkit-scrollbar {
   display: none;
+}
+/* Tabs past either end of the strip fade out, so an overflowing row says it
+   scrolls. Scroll-linked: no fade at an end already reached, none at all when
+   every tab fits. Browsers without scroll timelines simply show no fade. */
+@supports (animation-timeline: scroll()) {
+  .game-tabs {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--tabs-fade-start),
+      #000 calc(100% - var(--tabs-fade-end)),
+      transparent
+    );
+    animation: tabs-fade linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
+@property --tabs-fade-start {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --tabs-fade-end {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@keyframes tabs-fade {
+  from {
+    --tabs-fade-start: 0px;
+    --tabs-fade-end: 28px;
+  }
+  6%,
+  94% {
+    --tabs-fade-start: 28px;
+    --tabs-fade-end: 28px;
+  }
+  to {
+    --tabs-fade-start: 28px;
+    --tabs-fade-end: 0px;
+  }
 }
 .game-tab {
   position: relative;
@@ -1012,10 +1082,17 @@
   color: var(--color-fg);
   background: var(--color-fill-3);
 }
-/* The chosen tab's underline in the game's colour. It is always there, folded
-   to nothing, so choosing a tab draws it out from the middle rather than
-   switching it on. */
-.game-tab::after {
+/* The chosen tab's underline in the game's colour: one line for the strip,
+   placed over the chosen tab and slid to the next (useSlidingIndicator in
+   GamePage), never switched off under one tab and on under another. The box
+   is the tab's; the line is drawn inside it. */
+.game-tab-underline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+.game-tab-underline::after {
   content: '';
   position: absolute;
   left: 14px;
@@ -1024,16 +1101,12 @@
   height: 2px;
   border-radius: 1px;
   background: var(--game-ink, var(--color-accent));
-  opacity: 0;
-  transform: scaleX(0);
-  transform-origin: center;
-  transition:
-    transform var(--dur-base) var(--ease-out),
-    opacity var(--dur-fast) var(--ease-out);
 }
-.game-tab[aria-selected='true']::after {
-  opacity: 1;
-  transform: scaleX(1);
+/* Under a finger a tab is 44px tall at every width, a wide tablet's single-row bar included. */
+@media (pointer: coarse) {
+  .game-tab {
+    min-height: 44px;
+  }
 }
 .game-tab-count {
   font-size: var(--text-caption);
@@ -1052,7 +1125,11 @@
 /* Until name, tabs and actions fit on one line: the game and its actions on
    the first row, the tabs across the second, never an action alone on a row. */
 @media (max-width: 1099px) {
+  /* Only the tabs stay pinned: the game's name scrolls away above them.
+     --game-id-h is where the tab row starts, measured by GamePage; the safe
+     area keeps the tabs clear of a notch. */
   .game-bar {
+    top: calc(var(--nav-h) + env(safe-area-inset-top, 0px) - var(--game-id-h, 0px));
     min-height: 0;
     padding-bottom: 0;
     gap: 6px 10px;
@@ -1075,7 +1152,7 @@
     border-radius: 0;
     background: transparent !important;
   }
-  .game-tab::after {
+  .game-tab-underline::after {
     left: 12px;
     right: 12px;
     bottom: 0;
@@ -1114,7 +1191,6 @@
   .rail-games,
   .app-rail[data-shelf] .rail-games,
   .app-frame .app-toasts,
-  .game-tab::after,
   .view-switch button {
     transition: none;
   }

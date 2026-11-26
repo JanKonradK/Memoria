@@ -17,7 +17,7 @@ import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { gameRim, gameTitleInk, mix } from '../game-color';
 import { useMediaQuery, useReducedMotion } from '../hooks';
-import { duration, easing } from '../motion';
+import { cssEasing, duration, easing } from '../motion';
 import { useGround } from '../theme';
 
 /**
@@ -108,15 +108,6 @@ export function ServerChip({
   );
 }
 
-/**
- * Desktop-compact overrides for the 44px touch defaults. Dense editors — the
- * game editor, the resource editor, the Settings data column — opt out of the
- * touch height above `sm` rather than each field spelling the same two
- * overrides out.
- */
-export const COMPACT_INPUT = 'fine:!min-h-8 fine:!py-1';
-export const TOUCH_BUTTON = '!min-h-11 fine:!min-h-8';
-
 export function Field({ label, children, className = '' }: { label: string; children: ReactNode; className?: string }) {
   return (
     <label className={`block ${className}`}>
@@ -126,8 +117,10 @@ export function Field({ label, children, className = '' }: { label: string; chil
   );
 }
 
-const inputCls =
-  'ui-input min-h-11 w-full rounded-ui-lg bg-fill-2 px-3 py-2 text-body text-fg ring-1 ring-line-edge outline-none placeholder:text-muted focus:bg-fill-3 transition fine:min-h-9';
+/** A field's box, without its vertical padding: one line sits in --control-h, a textarea pads itself. */
+const fieldCls =
+  'ui-input min-h-(--control-h) w-full rounded-ui-lg bg-fill-2 px-3 text-body text-fg ring-1 ring-line-edge outline-none placeholder:text-muted focus:bg-fill-3 transition';
+const inputCls = `${fieldCls} py-1`;
 
 export function TextInput(props: React.ComponentProps<'input'>) {
   return <input {...props} className={`${inputCls} ${props.className ?? ''}`} />;
@@ -248,7 +241,7 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
                     value={toRadixValue(option.value)}
                     disabled={option.disabled}
                     textValue={typeof option.label === 'string' ? option.label : undefined}
-                    className="relative flex min-h-11 cursor-default select-none items-center rounded-ui-md px-3 py-2 pr-8 text-body text-fg-soft [overflow-wrap:anywhere] outline-none transition data-[disabled]:opacity-40 data-[highlighted]:bg-fill-3 data-[state=checked]:bg-fill-4 data-[state=checked]:font-semibold fine:min-h-9 fine:py-1.5"
+                    className="relative flex min-h-(--control-h) cursor-default select-none items-center rounded-ui-md px-3 py-1.5 pr-8 text-body text-fg-soft [overflow-wrap:anywhere] outline-none transition data-[disabled]:opacity-40 data-[highlighted]:bg-fill-3 data-[state=checked]:bg-fill-4 data-[state=checked]:font-semibold"
                   >
                     <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
                     <SelectPrimitive.ItemIndicator className="absolute right-2 text-accent">
@@ -269,7 +262,7 @@ export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
   return (
     // No `font-mono` here: most textareas hold prose. Callers that hold code or
     // pasted data opt in themselves.
-    <textarea {...props} className={`${inputCls} min-h-20 resize-y text-meta ${props.className ?? ''}`} />
+    <textarea {...props} className={`${fieldCls} min-h-20 resize-y py-2 text-meta ${props.className ?? ''}`} />
   );
 }
 
@@ -279,6 +272,7 @@ export function Toggle({
   label,
   ariaLabel,
   ariaDescribedBy,
+  disabled,
   className = '',
 }: {
   checked: boolean;
@@ -286,16 +280,19 @@ export function Toggle({
   label?: string;
   ariaLabel?: string;
   ariaDescribedBy?: string;
+  /** While a change is still being applied, so a second press cannot race it. */
+  disabled?: boolean;
   className?: string;
 }) {
   const id = useId();
   return (
-    <label htmlFor={id} className={`flex min-h-11 items-center gap-2 text-body text-fg-soft fine:min-h-9 ${className}`}>
+    <label htmlFor={id} className={`flex min-h-(--control-h) items-center gap-2 text-body text-fg-soft ${className}`}>
       <SwitchPrimitive.Root
         id={id}
         checked={checked}
         onCheckedChange={onChange}
-        className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-ui-full bg-fill-3 transition-colors duration-(--dur-fast) data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-accent data-[state=checked]:to-accent-2"
+        disabled={disabled}
+        className="ui-switch relative inline-flex h-6 w-11 shrink-0 items-center rounded-ui-full bg-fill-3 transition-colors duration-(--dur-fast) disabled:opacity-40 data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-accent data-[state=checked]:to-accent-2"
         aria-label={ariaLabel ?? label}
         aria-describedby={ariaDescribedBy}
       >
@@ -344,7 +341,9 @@ export function useSlidingIndicator(
     if (typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(measure);
     observer.observe(container);
-    for (const child of Array.from(container.children)) observer.observe(child);
+    // The options, not the (aria-hidden) indicator: it resizes on every slide,
+    // and measuring it each frame would read layout for nothing.
+    for (const child of Array.from(container.children)) if (!child.hasAttribute('aria-hidden')) observer.observe(child);
     return () => observer.disconnect();
   }, [containerRef, selected, selectedKey]);
   useEffect(() => {
@@ -352,7 +351,7 @@ export function useSlidingIndicator(
     const frame = requestAnimationFrame(() => setPlaced(true));
     return () => cancelAnimationFrame(frame);
   }, [box, placed]);
-  const motion = `${duration.base}s cubic-bezier(${easing.out.join(', ')})`;
+  const motion = `${duration.base}s ${cssEasing(easing.move)}`;
   return box
     ? {
         width: box.w,
@@ -395,7 +394,8 @@ export function Segmented<T extends string>({
         if (next) onChange(next as T);
       }}
       ref={rootRef}
-      className="ui-segmented relative inline-flex rounded-ui-md border border-line-hairline bg-inset p-[3px]"
+      // The track is --control-h tall, level with a Btn, Select or TextInput beside it (index.css).
+      className="ui-segmented relative inline-flex min-h-(--control-h) items-stretch rounded-ui-md border border-line-hairline bg-inset"
       aria-label={ariaLabel}
     >
       <span aria-hidden className={INDICATOR_CLASS} style={indicator} />
@@ -405,7 +405,7 @@ export function Segmented<T extends string>({
             key={option.value}
             value={option.value}
             disabled={option.disabled}
-            className="relative min-h-8 rounded-ui-md border border-transparent px-3 text-meta font-semibold text-muted transition-colors hover:text-fg-soft disabled:cursor-default disabled:hover:text-muted data-[state=on]:text-fg"
+            className="relative rounded-ui-md border border-transparent px-3 text-meta font-semibold text-muted transition-colors hover:text-fg-soft disabled:cursor-default disabled:hover:text-muted data-[state=on]:text-fg"
           >
             <span className="relative z-10">{option.label}</span>
           </ToggleGroupPrimitive.Item>
@@ -416,6 +416,27 @@ export function Segmented<T extends string>({
 }
 
 export const TooltipProvider = TooltipPrimitive.Provider;
+
+let silentFocusTarget: HTMLElement | null = null;
+
+/** Move focus back after closing an overlay without popping any tooltip on that control. */
+export function focusSilently(target: HTMLElement): void {
+  silentFocusTarget = target;
+  try {
+    target.focus({ preventScroll: true });
+  } finally {
+    silentFocusTarget = null;
+  }
+}
+
+function isFocusVisible(node: HTMLElement): boolean {
+  try {
+    return node.matches(':focus-visible');
+  } catch {
+    // Environments without :focus-visible support (jsdom) cannot distinguish pointer vs keyboard focus.
+    return true;
+  }
+}
 
 /** Radix tooltip used for terse countdown abbreviations and icon-only affordances. */
 export function Tooltip({
@@ -430,10 +451,21 @@ export function Tooltip({
   // A tip is a hover thing. On a touch screen a tap would flash it for a moment
   // over the thing being opened, so there the control stands alone.
   const hover = useMediaQuery('(hover: hover) and (pointer: fine)');
-  if (!hover) return children;
+  // A tip with nothing to say stays closed rather than showing an empty bubble.
+  if (!hover || content == null || content === '') return children;
   return (
     <TooltipPrimitive.Root>
-      <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
+      <TooltipPrimitive.Trigger
+        asChild
+        onFocus={(event) => {
+          const focused = event.target instanceof HTMLElement ? event.target : event.currentTarget;
+          if ((silentFocusTarget && event.currentTarget.contains(silentFocusTarget)) || !isFocusVisible(focused)) {
+            event.preventDefault();
+          }
+        }}
+      >
+        {children}
+      </TooltipPrimitive.Trigger>
       <TooltipPrimitive.Portal>
         <TooltipPrimitive.Content
           side={side}
@@ -449,38 +481,100 @@ export function Tooltip({
   );
 }
 
+export type BtnKind = 'primary' | 'ghost' | 'danger' | 'quiet';
+export type BtnSize = 'md' | 'sm' | 'icon';
+
+const BTN_KINDS: Record<BtnKind, string> = {
+  primary: 'bg-accent text-on-accent hover:brightness-110 ring-1 ring-line-edge',
+  ghost: 'bg-fill-2 text-fg-soft ring-1 ring-line-hairline hover:bg-fill-3',
+  danger: 'bg-danger/15 text-danger-fg ring-1 ring-danger/30 hover:bg-danger/25',
+  // No fill and no edge at rest: an action that sits among words, not beside fields.
+  quiet: 'text-fg-soft hover:bg-fill-2 hover:text-fg',
+};
+const BTN_SIZES: Record<BtnSize, string> = {
+  md: 'min-h-(--control-h) px-3 py-1',
+  sm: 'min-h-(--control-h-sm) px-2.5 py-0.5',
+  icon: 'inline-grid size-(--control-h) place-items-center p-0',
+};
+
+/** A button's look, for the few controls that must be another element (a file picker's label). */
+export function btnClass(kind: BtnKind = 'ghost', size: BtnSize = 'md'): string {
+  return `btn-compact rounded-ui-md text-caption font-semibold transition active:scale-[0.97] disabled:opacity-40 ${BTN_SIZES[size]} ${BTN_KINDS[kind]}`;
+}
+
 export function Btn({
   children,
   onClick,
   type = 'button',
   kind = 'ghost',
+  size = 'md',
   className = '',
   disabled,
   ...props
 }: {
   children: ReactNode;
   onClick?: () => void;
-  kind?: 'primary' | 'ghost' | 'danger';
+  kind?: BtnKind;
+  /** `md` is --control-h, level with a field; `sm` sits inside a dense row; `icon` is square. */
+  size?: BtnSize;
   className?: string;
   disabled?: boolean;
 } & React.ComponentPropsWithRef<'button'>) {
-  const base =
-    'btn-compact min-h-8 rounded-ui-md px-3 py-1 text-caption font-semibold transition active:scale-[0.97] disabled:opacity-40';
-  const kinds = {
-    primary: 'bg-accent text-on-accent hover:brightness-110 ring-1 ring-line-edge',
-    ghost: 'bg-fill-2 text-fg-soft ring-1 ring-line-hairline hover:bg-fill-3',
-    danger: 'bg-danger/15 text-danger-fg ring-1 ring-danger/30 hover:bg-danger/25',
-  };
   return (
     <button
       {...props}
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className={`${base} ${kinds[kind]} ${className}`}
+      className={`${btnClass(kind, size)} ${className}`}
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * A file picker that looks, sizes and focuses like a `Btn`. The input stays in
+ * the tab order (sr-only, never `hidden`: display:none drops it out and the
+ * label is not focusable), and the label draws the one focus ring.
+ */
+export function FileButton({
+  children,
+  accept,
+  onFile,
+  kind = 'ghost',
+  size = 'md',
+  disabled,
+  className = '',
+}: {
+  children: ReactNode;
+  accept: string;
+  onFile: (file: File | undefined) => void;
+  kind?: BtnKind;
+  size?: BtnSize;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <label
+      className={`focus-ring-group inline-flex items-center justify-center ${btnClass(kind, size)} ${
+        disabled ? 'pointer-events-none opacity-40' : 'cursor-pointer'
+      } ${className}`}
+    >
+      {children}
+      <input
+        type="file"
+        accept={accept}
+        disabled={disabled}
+        className="sr-only"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          // Cleared at once, so choosing the same file again still reports it.
+          event.target.value = '';
+          onFile(file);
+        }}
+      />
+    </label>
   );
 }
 
@@ -547,7 +641,6 @@ export function ConfirmAction({
     <span className={`inline-flex flex-wrap items-center gap-2 ${className}`}>
       <Btn
         kind={asking ? 'danger' : kind}
-        className={TOUCH_BUTTON}
         disabled={disabled}
         aria-label={asking ? confirmAriaLabel : ariaLabel}
         onClick={() => {
@@ -559,7 +652,7 @@ export function ConfirmAction({
         {asking ? confirmLabel : label}
       </Btn>
       {asking && (
-        <Btn className={TOUCH_BUTTON} aria-label={cancelAriaLabel} onClick={() => setAsking(false)}>
+        <Btn aria-label={cancelAriaLabel} onClick={() => setAsking(false)}>
           {cancelLabel}
         </Btn>
       )}

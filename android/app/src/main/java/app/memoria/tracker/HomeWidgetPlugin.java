@@ -6,7 +6,11 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
-/** Receives the home screen widget's snapshot from the app. */
+/**
+ * Receives the home screen widgets' snapshot from the app. One snapshot feeds
+ * all three widgets (Glance, single game, Quick Scan), and each write redraws
+ * every one of them that is placed.
+ */
 @CapacitorPlugin(name = "HomeWidget")
 public class HomeWidgetPlugin extends Plugin {
     private static final int MAX_LENGTH = 400000;
@@ -22,11 +26,19 @@ public class HomeWidgetPlugin extends Plugin {
         call.resolve();
     }
 
-    /** Dailies ticked on the widget since the app last looked, as JSON. */
+    /** Dailies ticked on a widget since the app last looked, as JSON. */
     @PluginMethod
     public void takeQueue(PluginCall call) {
         JSObject result = new JSObject();
         result.put("queue", MemoriaWidgetProvider.takeQueue(getContext()));
+        call.resolve(result);
+    }
+
+    /** Game IDs assigned to placed single-game widgets so the snapshot always keeps them. */
+    @PluginMethod
+    public void placedGames(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("ids", SingleGameWidgetProvider.placedGameIds(getContext()));
         call.resolve(result);
     }
 }

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openSettings, calendarAxe } from './support';
+import { openSettings, calendarAxe, showTimeline } from './support';
 import { emptyState } from '@memoria/shared';
 import { makeEvent, makeGame } from '../../shared/test/helpers';
 
@@ -36,10 +36,7 @@ test('an event on the calendar opens a quick view where it is pinned and ticked 
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
-  await page
-    .getByRole('radiogroup', { name: 'Event view' })
-    .getByRole('radio', { name: 'Timeline', exact: true })
-    .click();
+  await showTimeline(page);
 
   const bar = page.getByRole('button', { name: 'Open Quick view game event: Anniversary story', exact: true });
   await bar.click();

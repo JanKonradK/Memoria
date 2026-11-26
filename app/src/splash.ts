@@ -13,7 +13,7 @@ import { activeLookReady } from './looks';
 /** Since the intro started, on a first open: long enough for the mark to land. */
 export const INTRO_MS = 1400;
 /** Every later open: the app is the point, so the splash only covers its first paint. */
-export const REPEAT_INTRO_MS = 250;
+export const REPEAT_INTRO_MS = 0;
 /** Set once the full intro has been seen on this device. */
 const SEEN_KEY = 'memoria-splash-seen';
 const REDUCED_INTRO_MS = 650;

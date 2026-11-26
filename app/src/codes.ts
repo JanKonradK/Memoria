@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { defaultRedeemUrl, presetForGame, redemptionCodeStatus, type FeedCode, type Game } from '@memoria/shared';
 import { VERSION_DIGESTS } from './data/catch-up';
 import { SEED_CODES } from './data/seed-feed';
-import { useRemoteFeed } from './data/remote-feed';
+import { useRemoteFeed } from './data/remote-feed-state';
 import { useApp } from './store';
 import { useUI } from './ui-store';
 

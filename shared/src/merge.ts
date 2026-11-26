@@ -26,6 +26,7 @@ import {
 import { GamePitySchema } from './pity';
 import { GameSavingsSchema } from './savings';
 import { groupBy, objectRecord } from './internal';
+import { latestSnapshots } from './energy';
 import { migrateState } from './migrations';
 import { inferLegacyResource, inferLegacyTask } from './tracking';
 import {
@@ -39,7 +40,13 @@ import {
 } from './validation';
 
 const SNAPSHOTS_KEPT_PER_RESOURCE = 200;
-export const TOMBSTONE_RETENTION_MS = 90 * 86_400_000;
+/**
+ * How long a deletion is kept. A device or backup that comes back within this
+ * window cannot bring a deleted row back, because the tombstone still beats it.
+ */
+export const TOMBSTONE_RETENTION_MS = 365 * 86_400_000;
+/** After this a tombstone keeps only the fields every version requires (see slimTombstones). */
+export const TOMBSTONE_SLIM_MS = 90 * 86_400_000;
 // Completion history is not rendered today. Bounding it keeps the synced document
 // under its size limit, but a future streak/history feature will need a separate durable model.
 export const COMPLETION_RETENTION_MS = 120 * 86_400_000;
@@ -55,18 +62,27 @@ function canonical(value: unknown): string {
   return JSON.stringify(value);
 }
 
+/**
+ * Equal clocks go to the larger canonical form. Two tombstones with one clock
+ * are one deletion, slimmed on one side and not yet on the other, so the
+ * smaller wins first: otherwise a peer's full copy would undo the slimming on
+ * every sync and the next compaction would redo it.
+ */
+function wins<T extends Syncable>(item: T, cur: T): boolean {
+  const order = compareHlc(recordHlc(item), recordHlc(cur));
+  if (order !== 0) return order > 0;
+  const left = canonical(item);
+  const right = canonical(cur);
+  if (item.deleted && cur.deleted && left.length !== right.length) return left.length < right.length;
+  return left > right;
+}
+
 function mergeById<T extends Syncable & { id: string }>(a: T[], b: T[]): T[] {
   const map = new Map<string, T>();
   for (const side of [a, b]) {
     for (const item of side) {
       const cur = map.get(item.id);
-      if (
-        !cur ||
-        compareHlc(recordHlc(item), recordHlc(cur)) > 0 ||
-        (compareHlc(recordHlc(item), recordHlc(cur)) === 0 && canonical(item) > canonical(cur))
-      ) {
-        map.set(item.id, item);
-      }
+      if (!cur || wins(item, cur)) map.set(item.id, item);
     }
   }
   return [...map.values()].sort((left, right) => left.id.localeCompare(right.id));
@@ -96,6 +112,51 @@ function mergeSnapshots(a: Snapshot[], b: Snapshot[]): Snapshot[] {
       right.takenAt - left.takenAt ||
       left.id.localeCompare(right.id),
   );
+}
+
+/** Code-unit order: the same on every engine, unlike localeCompare. */
+function byCodeUnit(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+/**
+ * A reading log over `limit`, thinned instead of refused. 100+ resources at the
+ * 200-per-resource retention pass the document limit with nothing wrong.
+ *
+ * Each resource keeps its newest reading and the reading its projection starts
+ * from (latestSnapshots), estimate or not. After those, every resource loses its
+ * oldest readings first, one rank at a time; a tie at the cut goes by resource
+ * id alone. The result depends only on the set of rows, so a merge stays
+ * commutative, and a stale peer offering back readings thinned here changes
+ * nothing: each one ranks no better than the reading that was kept over it.
+ */
+export function thinSnapshots(
+  snapshots: Snapshot[],
+  limit: number = APP_STATE_COLLECTION_LIMITS.snapshots,
+): Snapshot[] {
+  if (snapshots.length <= limit) return snapshots;
+  const anchors = new Set(latestSnapshots(snapshots).values());
+  const ranked: { snapshot: Snapshot; rank: number }[] = [];
+  for (const list of groupBy(snapshots, (s) => s.resourceId).values()) {
+    list.sort((x, y) => y.takenAt - x.takenAt || byCodeUnit(y.id, x.id));
+    list.forEach((snapshot, index) =>
+      ranked.push({ snapshot, rank: index === 0 || anchors.has(snapshot) ? -1 : index }),
+    );
+  }
+  ranked.sort(
+    (x, y) =>
+      x.rank - y.rank ||
+      byCodeUnit(x.snapshot.resourceId, y.snapshot.resourceId) ||
+      byCodeUnit(x.snapshot.id, y.snapshot.id),
+  );
+  const kept = new Set(ranked.slice(0, limit).map((item) => item.snapshot));
+  return snapshots.filter((snapshot) => kept.has(snapshot));
+}
+
+/** The same state with its reading log thinned to the limit; the same object when it already fits. */
+export function thinStateSnapshots(state: AppState): AppState {
+  const snapshots = thinSnapshots(state.snapshots);
+  return snapshots === state.snapshots ? state : { ...state, snapshots };
 }
 
 function finiteNumber(value: unknown): value is number {
@@ -392,15 +453,19 @@ export function assertStateCapacity(state: AppState): void {
 
 /** Row-wise last-write-wins merge of two full states. Commutative and idempotent. */
 export function mergeState(a: AppState, b: AppState): AppState {
-  assertStateCapacity(a);
-  assertStateCapacity(b);
-  const left = normalizeState(a);
-  const right = normalizeState(b);
+  // Readings have a retention rule of their own, so a log over the limit is
+  // thinned by it. Every other collection still fails before it can be truncated.
+  const fittedA = thinStateSnapshots(a);
+  const fittedB = thinStateSnapshots(b);
+  assertStateCapacity(fittedA);
+  assertStateCapacity(fittedB);
+  const left = normalizeState(fittedA);
+  const right = normalizeState(fittedB);
   const merged: AppState = {
     schemaVersion: Math.max(left.schemaVersion, right.schemaVersion),
     games: mergeById(left.games, right.games),
     resources: mergeById(left.resources, right.resources),
-    snapshots: mergeSnapshots(left.snapshots, right.snapshots),
+    snapshots: thinSnapshots(mergeSnapshots(left.snapshots, right.snapshots)),
     tasks: mergeById(left.tasks, right.tasks),
     completions: mergeById(left.completions, right.completions),
     events: mergeById(left.events, right.events),
@@ -414,7 +479,7 @@ export function mergeState(a: AppState, b: AppState): AppState {
   };
   // Normalization salvages oversized imports by truncating collections. A sync
   // merge must instead retain both devices' valid data or fail before writing.
-  // Snapshot retention has already run above; check its retained union here.
+  // Snapshot retention and thinning have already run above.
   assertStateCapacity(merged);
   return normalizeState(merged);
 }
@@ -636,21 +701,136 @@ export function normalizeState(raw: unknown): AppState {
  * deliberately means a future streak/history feature cannot recover older rows.
  */
 export function pruneCompletions(state: AppState, before: number): AppState {
-  return {
-    ...state,
-    completions: state.completions.filter((completion) => completion.updatedAt >= before),
-  };
+  const completions = state.completions.filter((completion) => completion.updatedAt >= before);
+  return completions.length === state.completions.length ? state : { ...state, completions };
 }
 
-/** Remove old tombstones after every device has had ample time to observe them. */
+type SlimmedCollection =
+  'games' | 'resources' | 'tasks' | 'completions' | 'events' | 'reminders' | 'customQuests' | 'notes';
+
+/**
+ * What an old tombstone sheds, per collection: optional fields it drops, and
+ * required text it empties. Required fields stay, so a slimmed row still parses
+ * on every version that reads this document, v0.6 included.
+ *
+ * An event keeps `sourceKey` and `seedHash`. The feed import finds a deleted
+ * bundled event by its source key, and without it would add that event back.
+ */
+const TOMBSTONE_PAYLOAD: Record<
+  SlimmedCollection,
+  { drop: readonly string[]; empty: readonly string[]; normalize: (raw: unknown) => unknown }
+> = {
+  games: {
+    drop: [
+      'image',
+      'notes',
+      'cardLayout',
+      'savings',
+      'pity',
+      'codes',
+      'processNames',
+      'titleFont',
+      'accountLabel',
+      'server',
+    ],
+    empty: [],
+    normalize: normalizeGame,
+  },
+  resources: { drop: ['reserveLabel'], empty: [], normalize: normalizeResource },
+  tasks: {
+    drop: ['timelineMatch', 'timerEndsAt', 'timerStepMinutes', 'timerDurationMinutes'],
+    empty: [],
+    normalize: normalizeTask,
+  },
+  completions: { drop: ['provenance'], empty: [], normalize: normalizeCompletion },
+  events: { drop: ['reward'], empty: ['notes'], normalize: normalizeEvent },
+  reminders: { drop: [], empty: ['message'], normalize: normalizeReminder },
+  customQuests: { drop: ['series', 'characters', 'parts', 'notes'], empty: [], normalize: normalizeCustomQuest },
+  notes: { drop: [], empty: ['body', 'title'], normalize: normalizeNote },
+};
+
+/** The row without its payload, or the same row when there is nothing to shed. */
+function slimRow<T extends Syncable>(row: T, collection: SlimmedCollection): T {
+  const { drop, empty, normalize } = TOMBSTONE_PAYLOAD[collection];
+  const record = row as unknown as Record<string, unknown>;
+  const dropped = drop.filter((key) => key in record);
+  const emptied = empty.filter((key) => typeof record[key] === 'string' && record[key] !== '');
+  if (!dropped.length && !emptied.length) return row;
+  const strip = (keys: readonly string[]) =>
+    Object.fromEntries(
+      Object.entries(record)
+        .filter(([key]) => !keys.includes(key))
+        .map(([key, value]) => [key, emptied.includes(key) ? '' : value]),
+    );
+  // A field the row normalizer infers (a timer's length, a reserve's label)
+  // would come straight back on the next load and be stripped again on every
+  // compaction. Such a field keeps its value, so a slimmed row is a fixed point.
+  const inferred = objectRecord(normalize(strip(dropped)));
+  if (!inferred) return row;
+  const shed = dropped.filter((key) => !(key in inferred));
+  if (!shed.length && !emptied.length) return row;
+  return strip(shed) as unknown as T;
+}
+
+/**
+ * Tombstones last updated before `slimBefore`, cut down to what deletion needs.
+ *
+ * Only the content goes: id, deleted, updatedAt, hlc, and deviceId are kept,
+ * so the tombstone still beats any older live copy, and live rows and newer
+ * tombstones are returned as they are. The same object comes back when nothing
+ * changed, and slimming a slimmed row changes nothing.
+ */
+export function slimTombstones(state: AppState, slimBefore: number): AppState {
+  let changed = false;
+  const slim = <T extends Syncable>(items: T[], collection: SlimmedCollection): T[] => {
+    let touched = false;
+    const next = items.map((item) => {
+      if (!item.deleted || item.updatedAt >= slimBefore) return item;
+      const slimmed = slimRow(item, collection);
+      if (slimmed !== item) touched = true;
+      return slimmed;
+    });
+    if (!touched) return items;
+    changed = true;
+    return next;
+  };
+  const next: AppState = {
+    ...state,
+    games: slim(state.games, 'games'),
+    resources: slim(state.resources, 'resources'),
+    tasks: slim(state.tasks, 'tasks'),
+    completions: slim(state.completions, 'completions'),
+    events: slim(state.events, 'events'),
+    reminders: slim(state.reminders, 'reminders'),
+    customQuests: slim(state.customQuests, 'customQuests'),
+    notes: slim(state.notes, 'notes'),
+  };
+  return changed ? next : state;
+}
+
+/**
+ * Remove tombstones after every device has had ample time to observe them,
+ * slim the ones past TOMBSTONE_SLIM_MS, and prune completion history.
+ *
+ * Both later cutoffs are measured from `tombstonesBefore` as "now minus the
+ * tombstone retention", so passing `now - TOMBSTONE_RETENTION_MS` prunes
+ * completions at `now - COMPLETION_RETENTION_MS` and slims at
+ * `now - TOMBSTONE_SLIM_MS`. The same object comes back when nothing changed.
+ */
 export function compactState(
   state: AppState,
   tombstonesBefore: number,
   completionsBefore = tombstonesBefore + TOMBSTONE_RETENTION_MS - COMPLETION_RETENTION_MS,
+  slimBefore = tombstonesBefore + TOMBSTONE_RETENTION_MS - TOMBSTONE_SLIM_MS,
 ): AppState {
-  const live = <T extends Syncable>(items: T[]) =>
-    items.filter((item) => !item.deleted || item.updatedAt >= tombstonesBefore);
-  const compacted = {
+  let changed = false;
+  const live = <T extends Syncable>(items: T[]) => {
+    const kept = items.filter((item) => !item.deleted || item.updatedAt >= tombstonesBefore);
+    if (kept.length === items.length) return items;
+    changed = true;
+    return kept;
+  };
+  const compacted: AppState = {
     ...state,
     games: live(state.games),
     resources: live(state.resources),
@@ -664,5 +844,5 @@ export function compactState(
     customQuests: live(state.customQuests),
     notes: live(state.notes),
   };
-  return pruneCompletions(compacted, completionsBefore);
+  return pruneCompletions(slimTombstones(changed ? compacted : state, slimBefore), completionsBefore);
 }

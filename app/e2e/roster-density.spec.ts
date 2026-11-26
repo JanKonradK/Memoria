@@ -107,9 +107,8 @@ test('Today fits more games and keeps compact summaries readable and actionable'
   }
   const trigger = cards.first();
   const game = (await trigger.getAttribute('data-roster-game'))!;
+  // The row opens the game's page at every width.
   await trigger.press('Enter');
-  // A wide window keeps the card beside the list; its page is one more step.
-  if (page.viewportSize()!.width >= 900) await page.getByRole('button', { name: 'Open full page' }).click();
   await expect(page.locator('.focus-workspace')).toBeVisible();
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await expect(page.locator(`[data-roster-game="${game}"]`)).toBeFocused();

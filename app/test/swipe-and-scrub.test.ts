@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { nextGameStop } from '../src/gestures';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, renderHook } from '@testing-library/react';
+import type { PointerEvent } from 'react';
+import { nextGameStop, useTabSwipe } from '../src/gestures';
 import { scrubStep, scrubValue } from '../src/scrub';
 import { swipeCommitPx, swipeFollow, swipeOutcome } from '../src/swipe-row';
 import { longAge, shortAge } from '../src/components/Ago';
@@ -54,21 +56,154 @@ describe('bar scrub', () => {
 
 describe('swiping a game page', () => {
   const tabs: GameTab[] = ['track', 'events', 'pulls', 'notes'];
-  const games = ['genshin', 'hsr', 'zzz'];
-  it('steps through the tabs first', () => {
-    expect(nextGameStop(tabs, 'events', games, 'hsr', 1)).toEqual({ kind: 'tab', tab: 'pulls' });
-    expect(nextGameStop(tabs, 'events', games, 'hsr', -1)).toEqual({ kind: 'tab', tab: 'track' });
+  it('steps through its tabs', () => {
+    expect(nextGameStop(tabs, 'events', 1)).toBe('pulls');
+    expect(nextGameStop(tabs, 'events', -1)).toBe('track');
   });
-  it('then moves to the next game, landing on its first tab, or back to the last game on Notes', () => {
-    expect(nextGameStop(tabs, 'notes', games, 'hsr', 1)).toEqual({ kind: 'game', gameId: 'zzz', tab: 'track' });
-    expect(nextGameStop(tabs, 'track', games, 'hsr', -1)).toEqual({ kind: 'game', gameId: 'genshin', tab: 'notes' });
-  });
-  it('leaves the games for the dock at either end', () => {
-    expect(nextGameStop(tabs, 'notes', games, 'zzz', 1)).toEqual({ kind: 'place' });
-    expect(nextGameStop(tabs, 'track', games, 'genshin', -1)).toEqual({ kind: 'place' });
+  it('stops at either end: never on to another game or place', () => {
+    expect(nextGameStop(tabs, 'notes', 1)).toBeNull();
+    expect(nextGameStop(tabs, 'track', -1)).toBeNull();
   });
   it('treats a tab the game does not show as its first', () => {
-    expect(nextGameStop(tabs, 'quests', games, 'hsr', 1)).toEqual({ kind: 'tab', tab: 'events' });
+    expect(nextGameStop(tabs, 'quests', 1)).toBe('events');
+    expect(nextGameStop(tabs, 'quests', -1)).toBeNull();
+  });
+});
+
+describe('the page swipe', () => {
+  const page = () => {
+    const host = document.createElement('main');
+    const frame = document.createElement('div');
+    frame.className = 'page-enter';
+    const surface = document.createElement('p');
+    frame.append(surface);
+    host.append(frame);
+    document.body.append(host);
+    return { host, frame, surface };
+  };
+  afterEach(() => document.body.replaceChildren());
+
+  /** A finger drag on `target`, as the hook's handlers see it. */
+  function drag(
+    handlers: ReturnType<typeof useTabSwipe>,
+    host: HTMLElement,
+    target: HTMLElement,
+    points: [number, number][],
+  ) {
+    const event = ([x, y]: [number, number], at: number) =>
+      ({
+        pointerType: 'touch',
+        isPrimary: true,
+        pointerId: 3,
+        clientX: x,
+        clientY: y,
+        timeStamp: at,
+        target,
+        currentTarget: host,
+      }) as unknown as PointerEvent<HTMLElement>;
+    act(() => handlers.onPointerDown(event(points[0]!, 0)));
+    for (const [index, point] of points.slice(1, -1).entries())
+      act(() => handlers.onPointerMove(event(point, (index + 1) * 50)));
+    act(() => handlers.onPointerUp(event(points.at(-1)!, points.length * 50)));
+  }
+
+  it('pages on a clearly sideways drag, and rubber-bands as it follows', () => {
+    const onSwipe = vi.fn();
+    const { result } = renderHook(() => useTabSwipe(onSwipe));
+    const { host, frame, surface } = page();
+    act(() =>
+      result.current.onPointerDown({
+        pointerType: 'touch',
+        isPrimary: true,
+        pointerId: 3,
+        clientX: 600,
+        clientY: 300,
+        timeStamp: 0,
+        target: surface,
+        currentTarget: host,
+      } as unknown as PointerEvent<HTMLElement>),
+    );
+    act(() =>
+      result.current.onPointerMove({
+        pointerId: 3,
+        clientX: 200,
+        clientY: 305,
+        target: surface,
+        currentTarget: host,
+      } as unknown as PointerEvent<HTMLElement>),
+    );
+    // A long drag follows a third of the way, never past 48px.
+    expect(frame).toHaveAttribute('data-swiping');
+    expect(frame.style.getPropertyValue('--page-swipe-x')).toBe('-48px');
+    act(() =>
+      result.current.onPointerUp({
+        pointerId: 3,
+        clientX: 200,
+        clientY: 305,
+        timeStamp: 300,
+        target: surface,
+        currentTarget: host,
+      } as unknown as PointerEvent<HTMLElement>),
+    );
+    expect(onSwipe).toHaveBeenCalledWith(1);
+  });
+
+  it('leaves a diagonal drag to the page scroll', () => {
+    const onSwipe = vi.fn();
+    const { result } = renderHook(() => useTabSwipe(onSwipe));
+    const { host, frame, surface } = page();
+    // 120px across but 80px down: under twice as wide as tall, so it is a scroll.
+    drag(result.current, host, surface, [
+      [600, 300],
+      [540, 340],
+      [480, 380],
+    ]);
+    expect(onSwipe).not.toHaveBeenCalled();
+    expect(frame).not.toHaveAttribute('data-swiping');
+  });
+
+  it('leaves a drag from within 24px of either edge to the system back gesture', () => {
+    const onSwipe = vi.fn();
+    const { result } = renderHook(() => useTabSwipe(onSwipe));
+    const { host, frame, surface } = page();
+    drag(result.current, host, surface, [
+      [12, 300],
+      [150, 300],
+      [300, 300],
+    ]);
+    drag(result.current, host, surface, [
+      [window.innerWidth - 10, 300],
+      [window.innerWidth - 200, 300],
+      [window.innerWidth - 400, 300],
+    ]);
+    expect(onSwipe).not.toHaveBeenCalled();
+    expect(frame).not.toHaveAttribute('data-swiping');
+  });
+
+  it('leaves a drag that starts in a sideways scroller, or on a strip that owns sideways drags', () => {
+    const onSwipe = vi.fn();
+    const { result } = renderHook(() => useTabSwipe(onSwipe));
+    const { host, frame } = page();
+    const scroller = document.createElement('div');
+    scroller.style.overflowX = 'auto';
+    Object.defineProperty(scroller, 'scrollWidth', { value: 900 });
+    Object.defineProperty(scroller, 'clientWidth', { value: 300 });
+    const inScroller = document.createElement('span');
+    scroller.append(inScroller);
+    const tabs = document.createElement('div');
+    tabs.className = 'game-tabs';
+    const inTabs = document.createElement('span');
+    tabs.append(inTabs);
+    frame.append(scroller, tabs);
+    for (const target of [inScroller, inTabs]) {
+      drag(result.current, host, target, [
+        [600, 300],
+        [400, 300],
+        [200, 300],
+      ]);
+    }
+    expect(onSwipe).not.toHaveBeenCalled();
+    expect(frame).not.toHaveAttribute('data-swiping');
   });
 });
 

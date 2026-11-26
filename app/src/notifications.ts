@@ -3,14 +3,16 @@ import { registerPlugin } from '@capacitor/core';
 import { LocalNotifications, type LocalNotificationSchema } from '@capacitor/local-notifications';
 import {
   buildNotificationPlan,
+  coverageSpan,
   notificationId,
   NOTIFICATION_HORIZON_DAYS,
+  planCoveredUntil,
   type AlarmTone,
   type NotificationStyle,
   type PlannedNotification,
 } from '@memoria/shared';
 import { allCodes, liveCodes } from './codes';
-import { useRemoteFeed } from './data/remote-feed';
+import { useRemoteFeed } from './data/remote-feed-state';
 import type { WindowsToastSetting } from './desktop-host';
 import { isNativeApp } from './native';
 import { useApp } from './store';
@@ -90,7 +92,7 @@ export function nativeNotification(
     },
   };
 }
-/** Fires only if the app is not opened for most of a week, before the plan runs out. */
+/** Fires only if the app stays closed until just before the plan runs out. */
 const RUNWAY_ID = 1_999_999_999;
 const RUNWAY_LEAD_MS = 12 * 3_600_000;
 function enabledOnDevice() {
@@ -298,19 +300,43 @@ export function codeNotices(now: number): PlannedNotification[] {
   return plan;
 }
 
+export { planCoveredUntil };
+
+const DAY_MS = 24 * 3_600_000;
+/** Headroom below Android's 500 concurrent AlarmManager limit per app. */
+const ANDROID_ALARM_CAP = 480;
+
+function capNotices(notices: readonly PlannedNotification[], cap: number): PlannedNotification[] {
+  if (notices.length <= cap) return [...notices];
+  if (cap <= 0) return [];
+  const runway = notices.find((item) => item.id === RUNWAY_ID);
+  const reserve = runway ? 1 : 0;
+  const head = notices
+    .filter((item) => item.id !== RUNWAY_ID)
+    .sort((a, b) => a.at - b.at || a.id - b.id)
+    .slice(0, cap - reserve);
+  return runway ? [...head, runway] : head;
+}
+
 /**
- * Android cannot rebuild the plan without the app, and the plan covers a week.
- * Half a day before it runs out, say so, rather than going silent.
+ * Android cannot rebuild the plan without the app, and the plan covers four
+ * weeks, or less when it filled up first. Half a day before it runs out, say
+ * so, rather than going silent.
  */
-export function withRunway(plan: PlannedNotification[], now: number): PlannedNotification[] {
-  const at = now + NOTIFICATION_HORIZON_DAYS * 24 * 3_600_000 - RUNWAY_LEAD_MS;
+export function withRunway(
+  plan: PlannedNotification[],
+  now: number,
+  coveredUntil = now + NOTIFICATION_HORIZON_DAYS * DAY_MS,
+): PlannedNotification[] {
+  const end = Math.min(coveredUntil, now + NOTIFICATION_HORIZON_DAYS * DAY_MS);
+  const at = Math.max(now + 60_000, end - RUNWAY_LEAD_MS);
   return [
     ...plan.filter((item) => item.id !== RUNWAY_ID),
     {
       id: RUNWAY_ID,
       kind: 'reminder',
       title: 'Open Memoria to keep reminders coming',
-      body: 'Reminders are planned a week ahead. Opening the app plans the next week.',
+      body: `Reminders are planned for ${coverageSpan(end - now)}. Opening the app plans what comes next.`,
       at,
       gameId: null,
     },
@@ -372,11 +398,9 @@ export function rescheduleNotifications(): Promise<void> {
     );
     const now = Date.now();
     const delivery = readDelivery();
+    const built = useNotifications.getState().enabled ? buildNotificationPlan(useApp.getState().state, now) : [];
     const plan = useNotifications.getState().enabled
-      ? withRunway(
-          unseenPlan([...buildNotificationPlan(useApp.getState().state, now), ...codeNotices(now)], delivery, now),
-          now,
-        )
+      ? withRunway(unseenPlan([...built, ...codeNotices(now)], delivery, now), now, planCoveredUntil(built, now))
       : [];
     if (owned.length) await LocalNotifications.cancel({ notifications: owned.map(({ id }) => ({ id })) });
     // A later scheduling failure must not leave the old count visible after cancellation.
@@ -397,13 +421,17 @@ export function rescheduleNotifications(): Promise<void> {
     // Exact alarms keep the 1-hour warning at the hour. Asking for them on
     // every schedule() would open Android's settings screen each time, so the
     // permission is checked here and requested only from Settings.
+    const kept = pending.notifications.length - owned.length;
     const exact = (await LocalNotifications.checkExactNotificationSetting()).exact_alarm === 'granted';
-    if (notices.length) {
+    const cappedNotices = capNotices(notices, Math.max(0, ANDROID_ALARM_CAP - kept));
+    if (cappedNotices.length) {
       await registerActions();
-      await LocalNotifications.schedule({ notifications: notices.map((item) => nativeNotification(item, exact)) });
+      await LocalNotifications.schedule({
+        notifications: cappedNotices.map((item) => nativeNotification(item, exact)),
+      });
     }
     writeDelivery(delivery);
-    const reminders = plan.filter((item) => item.id !== RUNWAY_ID).length;
+    const reminders = (rung ? alarms.length : 0) + cappedNotices.filter((item) => item.id !== RUNWAY_ID).length;
     useNotifications.setState({ scheduled: reminders, error: '', exact, plannedAt: now });
   };
   queue = queue.catch(() => undefined).then(run);

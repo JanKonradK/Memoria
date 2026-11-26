@@ -1,4 +1,5 @@
-import { useDeferredValue, useMemo, useState, type CSSProperties } from 'react';
+import { useDeferredValue, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import * as Menu from '@radix-ui/react-dropdown-menu';
 import { noteMatches, sortNotes, type Game, type Note, type NoteSort } from '@memoria/shared';
 import { gameInk } from '../game-color';
 import { useNow } from '../hooks';
@@ -7,11 +8,12 @@ import { useGround } from '../theme';
 import { useUI, type NotesView } from '../ui-store';
 import { openGame } from '../workspace-navigation';
 import { GameLogo } from './GameLogo';
-import { NoteCard } from './notes/NoteCard';
+import { GameScope } from './GameScope';
+import { MENU, MENU_ITEM, NoteCard } from './notes/NoteCard';
 import { NotesWall } from './notes/NotesWall';
 import { useIdentityColors } from './roster';
 import { PageBar, PageBarEnd, PageTitle } from './shell/PageBar';
-import { Page, Segmented, Select, TextInput } from './ui';
+import { Btn, Page, TextInput, Tooltip } from './ui';
 import '../notes.css';
 
 const SORTS: { value: NoteSort; label: string }[] = [
@@ -19,6 +21,102 @@ const SORTS: { value: NoteSort; label: string }[] = [
   { value: 'edited', label: 'Last edited' },
   { value: 'title', label: 'Title A–Z' },
 ];
+const GROUPS: { value: NotesView['group']; label: string }[] = [
+  { value: 'game', label: 'By game' },
+  { value: 'wall', label: 'Wall' },
+];
+const DENSITIES: { value: NotesView['density']; label: string }[] = [
+  { value: 'comfortable', label: 'Full' },
+  { value: 'compact', label: 'Compact' },
+];
+
+/** The general notes' mark: their group's heading, and General's toggle in the game filter. */
+function GeneralMark() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden>
+      <path
+        d="M5.5 2.5h6L15 6v9.5a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 4 15.5v-11.5a1.5 1.5 0 0 1 1.5-1.5zM7 10h6M7 13h4"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** One choice in the View menu: a labelled set of radio items, the chosen one ticked. */
+function ViewChoice<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (value: T) => void;
+}) {
+  return (
+    <>
+      <Menu.Label className="px-3 pb-1 pt-2 text-label text-muted">{label}</Menu.Label>
+      <Menu.RadioGroup aria-label={label} value={value} onValueChange={(next) => onChange(next as T)}>
+        {options.map((option) => (
+          <Menu.RadioItem
+            key={option.value}
+            value={option.value}
+            className={`${MENU_ITEM} data-[state=checked]:text-fg`}
+            // The menu stays open, so all three can be set in one visit.
+            onSelect={(event) => event.preventDefault()}
+          >
+            <span className="min-w-0 flex-1">{option.label}</span>
+            <Menu.ItemIndicator className="text-accent-fg">
+              <svg
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="icon h-4 w-4"
+                aria-hidden
+              >
+                <path d="m5 10.5 3.5 3.5L15 7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Menu.ItemIndicator>
+          </Menu.RadioItem>
+        ))}
+      </Menu.RadioGroup>
+    </>
+  );
+}
+
+/** How the page lays notes out (grouped or a wall), their order and their size, in one menu. */
+function ViewMenu({ view, setView }: { view: NotesView; setView: (patch: Partial<NotesView>) => void }) {
+  return (
+    <Menu.Root>
+      <Menu.Trigger asChild>
+        <Btn className="notes-view inline-flex shrink-0 items-center gap-1.5" aria-label="View options">
+          View
+          <svg viewBox="0 0 20 20" className="icon h-3 w-3 text-muted" fill="currentColor" aria-hidden>
+            <path d="M5.5 7.5l4.5 5 4.5-5z" />
+          </svg>
+        </Btn>
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Content align="end" sideOffset={6} className={MENU}>
+          <ViewChoice label="Arrange" value={view.group} options={GROUPS} onChange={(group) => setView({ group })} />
+          <Menu.Separator className="my-1 h-px bg-line" />
+          <ViewChoice label="Sort" value={view.sort} options={SORTS} onChange={(sort) => setView({ sort })} />
+          <Menu.Separator className="my-1 h-px bg-line" />
+          <ViewChoice
+            label="Note size"
+            value={view.density}
+            options={DENSITIES}
+            onChange={(density) => setView({ density })}
+          />
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
 
 /** Every live game in the rail's order, in its identity colours. */
 function useGames(): Game[] {
@@ -90,7 +188,6 @@ export function NotesPage() {
     notes.filter((note) => inFilter(note) && (note.id === editing || noteMatches(note, search, gameOf(note.gameId)))),
     view.sort,
   );
-  const withNotes = new Set(notes.map((note) => note.gameId));
   const compact = view.density === 'compact';
 
   const card = (note: Note, showGame: boolean) => (
@@ -106,23 +203,34 @@ export function NotesPage() {
     />
   );
 
-  // By game: general notes first, then each game in the rail's order. Without a
-  // search every game shows, so each has its place to write in.
+  // By game: general notes first, then each game in the rail's order. Only
+  // groups with notes show; + Note writes into the game chosen above.
   const groups: { id: string | null; game?: Game; notes: Note[] }[] = [
     { id: null, notes: shown.filter((note) => note.gameId == null) },
     ...games.map((game) => ({ id: game.id, game, notes: shown.filter((note) => note.gameId === game.id) })),
-  ].filter(
-    (group) =>
-      (filter === 'all' || filter === (group.id ?? 'general')) &&
-      (group.notes.length > 0 || (!search && (group.id != null || filter === 'general'))),
-  );
+  ].filter((group) => (filter === 'all' || filter === (group.id ?? 'general')) && group.notes.length > 0);
 
   const newIn = filter === 'all' || filter === 'general' ? null : filter;
   const count = notes.length;
+  const chosen = newIn ? gameOf(newIn) : undefined;
+  const general: ReactNode = (
+    <Tooltip content={filter === 'general' ? "Show every game's notes" : 'Show only general notes'}>
+      <button
+        type="button"
+        className="calendar-game-toggle"
+        aria-pressed={filter === 'general'}
+        aria-label="General"
+        onClick={() => setView({ filter: filter === 'general' ? 'all' : 'general' })}
+      >
+        <GeneralMark />
+      </button>
+    </Tooltip>
+  );
 
   return (
     <Page className="notes-page">
-      <PageBar>
+      {/* One toolbar: search, whose notes, how they are laid out, and a new note. */}
+      <PageBar className="notes-bar">
         <PageTitle sub={count ? `${count} ${count === 1 ? 'note' : 'notes'}` : undefined}>Notes</PageTitle>
         <PageBarEnd>
           {count > 0 && (
@@ -135,66 +243,20 @@ export function NotesPage() {
               onChange={(event) => setQuery(event.target.value)}
             />
           )}
+          <GameScope
+            className="notes-scope"
+            label="Show notes for"
+            lead={general}
+            pick={{
+              chosen: chosen?.id ?? null,
+              onPick: (gameId) => setView({ filter: gameId ?? 'all' }),
+              verb: 'notes',
+            }}
+          />
+          <ViewMenu view={view} setView={setView} />
           <NewNoteButton onClick={() => newNote(newIn)} />
         </PageBarEnd>
       </PageBar>
-
-      <div className="notes-tools">
-        <div className="notes-filters" role="group" aria-label="Show notes for">
-          <FilterChip current={filter === 'all'} onClick={() => setView({ filter: 'all' })}>
-            All
-          </FilterChip>
-          <FilterChip current={filter === 'general'} onClick={() => setView({ filter: 'general' })}>
-            General
-          </FilterChip>
-          {games.map((game) => (
-            <FilterChip
-              key={game.id}
-              current={filter === game.id}
-              faint={!withNotes.has(game.id)}
-              ink={gameInk(game, ground)}
-              onClick={() => setView({ filter: game.id })}
-              label={`${game.name}${game.accountLabel?.trim() ? `, ${game.accountLabel.trim()}` : ''}`}
-            >
-              <GameLogo game={game} size={20} />
-              <span aria-hidden>{game.short.trim() || game.name}</span>
-            </FilterChip>
-          ))}
-        </div>
-        <div className="notes-controls">
-          <div className="notes-sort">
-            <Select
-              aria-label="Sort notes"
-              value={view.sort}
-              onChange={(event) => setView({ sort: event.target.value as NoteSort })}
-            >
-              {SORTS.map((sort) => (
-                <option key={sort.value} value={sort.value}>
-                  {sort.label}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <Segmented<NotesView['group']>
-            ariaLabel="Arrange notes"
-            value={view.group}
-            onChange={(group) => setView({ group })}
-            options={[
-              { value: 'game', label: 'By game' },
-              { value: 'wall', label: 'Wall' },
-            ]}
-          />
-          <Segmented<NotesView['density']>
-            ariaLabel="Note size"
-            value={view.density}
-            onChange={(density) => setView({ density })}
-            options={[
-              { value: 'comfortable', label: 'Full' },
-              { value: 'compact', label: 'Compact' },
-            ]}
-          />
-        </div>
-      </div>
 
       {count === 0 && !editing ? (
         <div className="notes-empty">
@@ -203,6 +265,17 @@ export function NotesPage() {
         </div>
       ) : search && shown.length === 0 ? (
         <p className="notes-empty text-body text-muted">Nothing matches “{search}”.</p>
+      ) : view.group === 'game' && groups.length === 0 ? (
+        <div className="notes-empty">
+          <p className="text-body text-fg-soft">
+            {chosen
+              ? `No notes for ${chosen.name} yet.`
+              : filter === 'general'
+                ? 'No general notes yet.'
+                : 'No notes here yet.'}
+          </p>
+          <NewNoteButton onClick={() => newNote(newIn)} label="Write a note" />
+        </div>
       ) : view.group === 'wall' ? (
         shown.length === 0 ? (
           <p className="notes-empty text-body text-muted">No notes here yet.</p>
@@ -230,14 +303,7 @@ export function NotesPage() {
                     <GameLogo game={group.game} size={32} />
                   ) : (
                     <span aria-hidden className="notes-group-mark">
-                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor">
-                        <path
-                          d="M5.5 2.5h6L15 6v9.5a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 4 15.5v-11.5a1.5 1.5 0 0 1 1.5-1.5zM7 10h6M7 13h4"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                      <GeneralMark />
                     </span>
                   )}
                   <div className="min-w-0 flex-1">
@@ -264,55 +330,19 @@ export function NotesPage() {
                     onClick={() => newNote(group.id)}
                   />
                 </header>
-                {group.notes.length === 0 ? (
-                  <button type="button" className="notes-group-empty" onClick={() => newNote(group.id)}>
-                    Write a note
-                  </button>
-                ) : (
-                  <div className="notes-group-list" role="list" aria-label={`${group.game?.name ?? 'General'} notes`}>
-                    {group.notes.map((note) => (
-                      <div key={note.id} role="listitem">
-                        {card(note, false)}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="notes-group-list" role="list" aria-label={`${group.game?.name ?? 'General'} notes`}>
+                  {group.notes.map((note) => (
+                    <div key={note.id} role="listitem">
+                      {card(note, false)}
+                    </div>
+                  ))}
+                </div>
               </section>
             ),
           }))}
         />
       )}
     </Page>
-  );
-}
-
-function FilterChip({
-  current,
-  faint,
-  ink,
-  label,
-  onClick,
-  children,
-}: {
-  current: boolean;
-  faint?: boolean;
-  ink?: string;
-  label?: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      className="notes-chip"
-      aria-pressed={current}
-      aria-label={label}
-      data-faint={faint || undefined}
-      style={ink ? ({ '--chip-ink': ink } as CSSProperties) : undefined}
-      onClick={onClick}
-    >
-      {children}
-    </button>
   );
 }
 

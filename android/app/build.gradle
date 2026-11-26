@@ -41,6 +41,25 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    buildFeatures {
+        buildConfig = true
+    }
+    // Two builds of one app. `direct` is the APK on GitHub releases: it updates
+    // itself and rings alarm-style reminders as real alarms. `play` is the Google
+    // Play build: Play updates it, so it carries no APK installer, and its
+    // manifest (src/play) drops the permissions Play reserves for other apps.
+    // See docs/play-store-compliance.md.
+    flavorDimensions += "distribution"
+    productFlavors {
+        direct {
+            dimension "distribution"
+            buildConfigField "boolean", "IS_PLAY_BUILD", "false"
+        }
+        play {
+            dimension "distribution"
+            buildConfigField "boolean", "IS_PLAY_BUILD", "true"
+        }
+    }
 }
 
 repositories {
@@ -55,6 +74,20 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
+    // One Kotlin standard library for every Kotlin-built dependency (CameraX,
+    // lifecycle, ML Kit), so the old jdk7/jdk8 split never duplicates classes.
+    implementation platform('org.jetbrains.kotlin:kotlin-bom:1.9.25')
+    // The camera reader: CameraX for the viewfinder, and ML Kit's bundled text
+    // recognition (v2), which reads on the phone with no download and no network.
+    // Both ship 16 KB-aligned native code; check-android.mjs verifies it.
+    def cameraxVersion = '1.4.2'
+    implementation "androidx.camera:camera-core:$cameraxVersion"
+    implementation "androidx.camera:camera-camera2:$cameraxVersion"
+    implementation "androidx.camera:camera-lifecycle:$cameraxVersion"
+    implementation "androidx.camera:camera-view:$cameraxVersion"
+    implementation 'com.google.mlkit:text-recognition:16.0.1'
+    // Automatic backups write into a folder the player picked (Storage Access Framework).
+    implementation 'androidx.documentfile:documentfile:1.0.1'
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"

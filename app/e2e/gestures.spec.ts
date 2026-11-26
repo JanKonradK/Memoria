@@ -104,7 +104,7 @@ test('dragging along the resin bar sets the reading', async ({ page }) => {
   await expect(value).toHaveValue('200');
 });
 
-test('a swipe on a game page walks its tabs, then the next game', async ({ page }) => {
+test('a swipe on a game page walks its tabs, and stops at the last one', async ({ page }) => {
   await seed(page, [
     ['genshin', ['Europe']],
     ['hsr', ['Europe']],
@@ -113,11 +113,11 @@ test('a swipe on a game page walks its tabs, then the next game', async ({ page 
   const surface = page.locator('.energy-resource-name').first();
   await drag(surface, 0.9, 0.1);
   await expect(page.getByRole('tab', { name: /^Events/ })).toHaveAttribute('aria-selected', 'true');
-  // From the last tab, the next swipe opens the next game on its first tab.
+  // From the last tab a swipe only stretches the page: it never opens the next game.
   await page.getByRole('tab', { name: 'Notes' }).click();
   await drag(page.getByRole('heading', { level: 1, name: 'Genshin Impact' }), 0.9, 0.1);
-  await expect(page.getByRole('heading', { level: 1, name: /Honkai: Star Rail/ })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Track' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('heading', { level: 1, name: 'Genshin Impact' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Notes' })).toHaveAttribute('aria-selected', 'true');
 });
 
 test('the same game on two servers shows its accounts as a strip; one account shows none', async ({ page }) => {

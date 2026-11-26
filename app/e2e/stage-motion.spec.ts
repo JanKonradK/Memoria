@@ -82,9 +82,9 @@ test('a desktop row opens an integrated page and returns to the same Today geome
       }),
     );
   const open = gameRow(page, 'Honkai: Star Rail');
-  await open.click();
   const before = await readGeometry();
-  await page.getByRole('button', { name: 'Open full page' }).click();
+  // The row opens the game's page itself: no card beside the list first.
+  await open.click();
   const workspace = page.getByRole('region', { name: 'Honkai: Star Rail focus workspace' });
   await expect(workspace).toBeVisible();
   await expect(workspace).not.toHaveClass(/\bcard-shell\b/);
@@ -142,14 +142,14 @@ test('a long desktop Today list restores its scroll and supports repeated page v
   const triggerGame = (await trigger.getAttribute('data-roster-game'))!;
   const again = page.locator(`[data-roster-game="${triggerGame}"]`);
   const order = await rows.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-roster-game')));
-  const full = page.getByRole('button', { name: 'Open full page' });
   for (let visit = 0; visit < 3; visit++) {
-    await again.click();
-    // A short window has the card at the top of the document, so read the
-    // scroll the page is left from rather than where the row was.
-    await full.scrollIntoViewIfNeeded();
+    await expect(page.locator('.page-enter')).toHaveCSS('transform', 'none');
+    await expect(page.locator('.today-page')).toHaveCSS('transform', 'none');
+    // Read the scroll the page is left from: the row itself opens the game.
+    await again.scrollIntoViewIfNeeded();
     const savedScroll = await page.evaluate(() => scrollY);
-    await full.click();
+    expect(savedScroll).toBeGreaterThan(200);
+    await again.click();
     const back = page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true });
     await expect(page.locator('.focus-workspace')).toBeVisible();
     await expect(page.locator('.focus-workspace h1')).toBeFocused();

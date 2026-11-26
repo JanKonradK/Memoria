@@ -1,4 +1,5 @@
 import { useUI } from '../ui-store';
+import { Tooltip } from './ui';
 
 /** "Now", "13m", "5h", "3d": an age small enough to sit beside a mark. */
 export function shortAge(ms: number): string {
@@ -55,10 +56,12 @@ export function Ago({
   const full = longAge(verb, elapsed);
   if (!minimal && !mark) return <span className={className}>{full}</span>;
   return (
-    <span className={`ago ${className}`} title={full}>
-      <SyncMark />
-      <span aria-hidden>{shortAge(elapsed)}</span>
-      <span className="sr-only">{full}</span>
-    </span>
+    <Tooltip content={full}>
+      <span className={`ago ${className}`}>
+        <SyncMark />
+        <span aria-hidden>{shortAge(elapsed)}</span>
+        <span className="sr-only">{full}</span>
+      </span>
+    </Tooltip>
   );
 }

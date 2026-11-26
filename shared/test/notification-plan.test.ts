@@ -54,13 +54,14 @@ function rule(type: AlertRule['type'], over: Partial<AlertRule> = {}): AlertRule
 }
 
 describe('dailies', () => {
-  it('warns one hour before every daily reset for a week, including a 03:00 Europe reset', () => {
+  it('warns one hour before every daily reset for four weeks, including a 03:00 Europe reset', () => {
     const daily = ofKind(dailyState(), 'daily');
-    expect(daily).toHaveLength(7);
+    expect(daily).toHaveLength(28);
     expect(daily[0]).toMatchObject({ at: nextDailyReset - HOUR, gameId: 'g1' });
     expect(daily[0]?.title).toBe('Testland: dailies reset in 1 h');
     expect(daily[0]?.body).toBe('2 to do.');
     expect(daily[6]?.at).toBe(nextDailyReset + 6 * 24 * HOUR - HOUR);
+    expect(daily[27]?.at).toBe(nextDailyReset + 27 * 24 * HOUR - HOUR);
   });
 
   it('counts what is left today, and says nothing for today once every daily is ticked', () => {
@@ -69,7 +70,7 @@ describe('dailies', () => {
     expect(ofKind(state, 'daily')[0]?.body).toBe('1 of 2 still to do.');
     tick(state, 't2');
     const daily = ofKind(state, 'daily');
-    expect(daily).toHaveLength(6);
+    expect(daily).toHaveLength(27);
     expect(daily[0]?.at).toBe(nextDailyReset + 23 * HOUR);
   });
 
@@ -180,7 +181,9 @@ describe('weeklies', () => {
 
   it('gives one hour of lead per game owing weeklies, in one notification', () => {
     const three = ofKind(weeklyState(3), 'weekly');
-    expect(three).toHaveLength(1);
+    // One a week, for each of the four weeks ahead.
+    expect(three).toHaveLength(4);
+    expect(three[1]!.at - three[0]!.at).toBe(7 * 24 * HOUR);
     expect(three[0]?.at).toBe(monday - 3 * HOUR);
     expect(three[0]?.title).toBe('Weeklies: 3 games, first reset in 3 h');
     expect(three[0]?.body).toBe('G0, G1, G2. 3 weeklies still to do.');
@@ -298,10 +301,10 @@ describe('caps and custom reminders', () => {
     expect(buildNotificationPlan(state, now).map((item) => item.body)).toEqual(['Global']);
   });
 
-  it('keeps IDs stable and limits the plan to seven days and a fixed number of entries', () => {
+  it('keeps IDs stable and limits the plan to four weeks and a fixed number of entries', () => {
     const state = makeState({
       settings: quietOff,
-      reminders: Array.from({ length: 150 }, (_, index) => ({
+      reminders: Array.from({ length: MAX_PLANNED_NOTIFICATIONS + 50 }, (_, index) => ({
         id: `r${index}`,
         gameId: null,
         message: `Reminder ${index}`,
@@ -313,8 +316,11 @@ describe('caps and custom reminders', () => {
     expect(plan).toHaveLength(MAX_PLANNED_NOTIFICATIONS);
     expect(new Set(plan.map((item) => item.id)).size).toBe(MAX_PLANNED_NOTIFICATIONS);
     expect(buildNotificationPlan(state, now + 100).map((item) => item.id)).toEqual(plan.map((item) => item.id));
-    state.reminders = [{ id: 'late', gameId: null, message: 'Later', at: now + 7 * 24 * HOUR + 1, updatedAt: now }];
+    state.reminders = [{ id: 'late', gameId: null, message: 'Later', at: now + 28 * 24 * HOUR + 1, updatedAt: now }];
     expect(buildNotificationPlan(state, now)).toEqual([]);
+    // Three weeks out is inside the horizon: a phone left closed still warns.
+    state.reminders = [{ id: 'weeks', gameId: null, message: 'Weeks', at: now + 21 * 24 * HOUR, updatedAt: now }];
+    expect(buildNotificationPlan(state, now).map((item) => item.body)).toEqual(['Weeks']);
   });
 });
 
@@ -342,7 +348,7 @@ describe('evening digest', () => {
       title: 'Still open: Testland',
       body: `${state.games[0]!.short} 2 dailies left.`,
     });
-    expect(digest).toHaveLength(7);
+    expect(digest).toHaveLength(28);
     tick(state, 't1');
     tick(state, 't2');
     expect(ofKind(state, 'digest')[0]?.at).toBe(utc('2026-10-07T20:00:00Z'));
@@ -372,7 +378,7 @@ describe('quiet hours helpers', () => {
 
 describe('repeating reminders', () => {
   const base = { id: 'r1', gameId: null, message: 'Claim the monthly pass', updatedAt: 1 };
-  it('fire once by default, and on every repeat inside the week when repeating', () => {
+  it('fire once by default, and on every repeat inside the horizon when repeating', () => {
     const once = { ...base, at: now + HOUR };
     expect(reminderTimes(once, now, now + 7 * 24 * HOUR, 'UTC')).toEqual([now + HOUR]);
     const daily = { ...base, at: now - 10 * 24 * HOUR + HOUR, repeatDays: 1 };
@@ -381,8 +387,8 @@ describe('repeating reminders', () => {
     expect(times).toHaveLength(7);
     const state = dailyState({ reminders: [daily] });
     const planned = ofKind(state, 'reminder');
-    expect(planned).toHaveLength(7);
-    expect(new Set(planned.map((item) => item.id)).size).toBe(7);
+    expect(planned).toHaveLength(28);
+    expect(new Set(planned.map((item) => item.id)).size).toBe(28);
   });
 
   it('keep their home-time clock across a daylight-saving change', () => {

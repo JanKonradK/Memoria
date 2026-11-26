@@ -1,0 +1,92 @@
+{
+  "about": "Text Windows OCR (Windows.Media.Ocr) returned for real game HUDs, as Memoria arranges it: side-by-side columns joined by three spaces. Text only; no screenshot is kept.",
+  "cases": [
+    {
+      "name": "Genshin Spiral Abyss bar: a glyph glued onto the Resin cap",
+      "preset": "genshin",
+      "capture": "snip",
+      "lines": ["80/2000 0 Floor 12 Chamber 3"],
+      "readings": [{ "resource": "Original Resin", "field": "value", "value": 80, "confidence": "low" }],
+      "events": [
+        {
+          "event": "Spiral Abyss",
+          "progress": "partial",
+          "partsDone": 11,
+          "partsTotal": 12,
+          "detail": "Floor 12 Chamber 3",
+          "confidence": "low"
+        }
+      ],
+      "infers": "genshin"
+    },
+    {
+      "name": "Genshin Spiral Abyss bar: the glyph read apart as O",
+      "preset": "genshin",
+      "capture": "snip",
+      "lines": ["22/200 O Floor 12 Chamber 3"],
+      "readings": [{ "resource": "Original Resin", "field": "value", "value": 22, "confidence": "high" }],
+      "events": [
+        {
+          "event": "Spiral Abyss",
+          "progress": "partial",
+          "partsDone": 11,
+          "partsTotal": 12,
+          "detail": "Floor 12 Chamber 3",
+          "confidence": "low"
+        }
+      ],
+      "infers": "genshin"
+    },
+    {
+      "name": "WuWa map bar: Waveplate Crystals in the column left of Waveplates",
+      "preset": "wuwa",
+      "capture": "snip",
+      "lines": ["388   61/240"],
+      "readings": [
+        { "resource": "Waveplates", "field": "value", "value": 61, "confidence": "high" },
+        { "resource": "Waveplates", "field": "reserve", "value": 388, "confidence": "medium" }
+      ],
+      "infers": null
+    },
+    {
+      "name": "WuWa map bar: an empty bar beside its crystals",
+      "preset": "wuwa",
+      "capture": "snip",
+      "lines": ["267   0/240"],
+      "readings": [
+        { "resource": "Waveplates", "field": "value", "value": 0, "confidence": "high" },
+        { "resource": "Waveplates", "field": "reserve", "value": 267, "confidence": "medium" }
+      ],
+      "infers": null
+    },
+    {
+      "name": "Genshin currency bar: read at 1x, dropped at 2x",
+      "preset": "genshin",
+      "capture": "snip",
+      "lines": [],
+      "passes": [
+        { "name": "raw1x", "lines": ["+ 2086 0 48"] },
+        { "name": "raw2x", "lines": [] }
+      ],
+      "readings": [],
+      "savings": [],
+      "infers": null
+    },
+    {
+      "name": "NTE City Stamina with a glyph after it",
+      "preset": "nte",
+      "capture": "snip",
+      "lines": ["508/700 0"],
+      "readings": [{ "resource": "City Stamina", "field": "value", "value": 508, "confidence": "high" }],
+      "infers": "nte"
+    },
+    {
+      "name": "NTE Character Pixels at the Dream Weaver's Knot cap",
+      "preset": "nte",
+      "caps": { "Character Pixels": 360 },
+      "capture": "snip",
+      "lines": ["122/360 0"],
+      "readings": [{ "resource": "Character Pixels", "field": "value", "value": 122, "confidence": "high" }]
+    }
+  ]
+}

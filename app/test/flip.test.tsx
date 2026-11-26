@@ -3,7 +3,8 @@ import { afterEach, beforeEach, expect, it, vi, type Mock } from 'vitest';
 import { useFlip } from '../src/flip';
 
 const ROW = 40;
-const OPTIONS = { duration: 260, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' };
+// The motion scale's arrival length (--dur-3) on its move curve (--ease-move).
+const OPTIONS = { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' };
 
 interface Glide {
   key: string;

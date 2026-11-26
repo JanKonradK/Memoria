@@ -12,6 +12,7 @@ export function DigestField() {
   return (
     <SettingRow
       label="Evening digest"
+      hintKind={on ? 'fact' : 'say'}
       hint={
         on
           ? `One notification at ${toClock(at)} with what is still open.`
@@ -28,7 +29,7 @@ export function DigestField() {
           <TextInput
             type="time"
             step={900}
-            className="!min-h-11 !w-28 fine:!min-h-8 fine:!py-1"
+            className="!w-28"
             aria-label="Evening digest time"
             value={toClock(at)}
             onChange={(e) => {

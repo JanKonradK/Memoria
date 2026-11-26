@@ -27,7 +27,8 @@ it('keeps an edited reminder if it is deleted elsewhere and can save a new copy'
   act(() => useApp.getState().deleteReminder(id));
 
   expect(screen.getByLabelText('Reminder message')).toHaveValue('Claim all rewards');
-  expect(screen.getByRole('button', { name: 'Save reminder', exact: true })).toBeDisabled();
+  // One primary action, not a dead Save beside the way forward.
+  expect(screen.queryByRole('button', { name: 'Save reminder', exact: true })).not.toBeInTheDocument();
   expect(screen.getByRole('alert')).toHaveTextContent('This reminder was deleted');
   fireEvent.click(screen.getByRole('button', { name: 'Add as new reminder', exact: true }));
   expect(useApp.getState().state.reminders).toEqual([

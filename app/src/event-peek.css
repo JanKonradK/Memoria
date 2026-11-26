@@ -15,14 +15,6 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-/* Edit sits apart on the left; the two things you came to do are on the right, under the thumb. */
-.event-peek-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 /* A pinned event, wherever it is listed: the pin in gold beside its name. */
 .pin-mark {
   color: var(--color-gold);

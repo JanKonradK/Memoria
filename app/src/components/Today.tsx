@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react';
+import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group';
 import { DateTime } from 'luxon';
 import { actBy, eventReward, nextQuietWindow, type Game, type GameUrgency } from '@memoria/shared';
 import { useDerived, type Derived } from '../selectors';
@@ -10,12 +11,11 @@ import { fmtClock, fmtDur } from '../util';
 import { calendarSchedule } from '../event-schedule';
 import { selectTodayAgenda, TODAY_AGENDA_HOURS, type TodayAgendaItem } from '../today-agenda';
 import { gameInk } from '../game-color';
-import { gameShellVars, useGround, useSurfaces } from '../theme';
+import { useGround } from '../theme';
 import { openGame } from '../workspace-navigation';
 import { isDesktopApp } from '../desktop-host';
 import { readingSource } from '../reading-source';
 import { gameAccountTag, useIdentityColors } from './roster';
-import { GameControls } from './GameCard';
 import { GameLogo } from './GameLogo';
 import { TickNumber } from './TickNumber';
 import { behindGames, behindText, useFeedDate } from './CalendarBehind';
@@ -23,7 +23,7 @@ import { GamePage } from './GamePage';
 import { TodayNotices } from './TodayNotices';
 import { TodayCodes } from './TodayCodes';
 import { ProgressBar } from './primitives';
-import { Btn, Page, Tooltip, TOUCH_BUTTON } from './ui';
+import { Btn, Page, Tooltip } from './ui';
 import { PageBar, PageBarEnd, PageTitle } from './shell/PageBar';
 import { TodaySteps } from './today/TodaySteps';
 import { Ago } from './Ago';
@@ -33,19 +33,7 @@ const URGENT_MS = 2 * 60 * 60_000;
 /** A reading older than this shows its age on the row. */
 const STALE_READING_MS = 12 * 60 * 60_000;
 
-function PriorityRow({
-  entry,
-  derived,
-  selected,
-  desktop,
-  onSelect,
-}: {
-  entry: GameUrgency;
-  derived: Derived;
-  selected: boolean;
-  desktop: boolean;
-  onSelect: () => void;
-}) {
+function PriorityRow({ entry, derived }: { entry: GameUrgency; derived: Derived }) {
   const { game, next } = entry;
   const { now } = derived;
   const ground = useGround();
@@ -94,8 +82,7 @@ function PriorityRow({
         data-roster-game={game.id}
         data-paused={game.paused || undefined}
         aria-describedby={descriptionId}
-        aria-pressed={desktop ? selected : undefined}
-        onClick={onSelect}
+        onClick={() => openGame(game.id)}
       >
         {/* Named by its own words: what pressing does and the game. The figures
             beside them are read once, in order, as the row's description. */}
@@ -103,7 +90,7 @@ function PriorityRow({
           <GameLogo game={game} size={badge} />
         </span>
         <span className="today-row-name">
-          <span className="sr-only">{desktop ? 'Review' : 'Open'}</span>{' '}
+          <span className="sr-only">Open</span>{' '}
           <span className="today-row-title text-body font-semibold text-fg">{game.name}</span>
           {account && (
             <>
@@ -210,7 +197,7 @@ function agendaText(item: TodayAgendaItem, gameName: (id: string) => string, gam
 }
 
 /** Everything due across every game in the next day, under the list. */
-function TodayAgenda({ derived, onSelectGame }: { derived: Derived; onSelectGame: (gameId: string) => void }) {
+function TodayAgenda({ derived }: { derived: Derived }) {
   const { state, now, order } = derived;
   const openSheet = useUI((ui) => ui.openSheet);
   const colors = useIdentityColors(state.games);
@@ -279,7 +266,7 @@ function TodayAgenda({ derived, onSelectGame }: { derived: Derived; onSelectGame
                   onClick={() =>
                     item.kind === 'event'
                       ? openSheet({ kind: 'eventPeek', eventId: item.event.id })
-                      : onSelectGame(item.gameIds[0]!)
+                      : openGame(item.gameIds[0]!)
                   }
                 >
                   <span className="today-agenda-logos" data-count={Math.min(item.gameIds.length, 3)}>
@@ -375,15 +362,10 @@ function AllClearNote({
 export function TodayPage({ now }: { now: number }) {
   const derived = useDerived(now);
   const { state, order } = derived;
-  const colors = useIdentityColors(state.games);
-  const surfaces = useSurfaces();
   const desktop = useMediaQuery('(min-width: 900px)');
-  const selectedId = useUI((ui) => ui.todayGameId);
-  const setSelectedId = useUI((ui) => ui.setTodayGameId);
   const openSheet = useUI((ui) => ui.openSheet);
   // One list, soonest first. Paused games follow, dimmed.
   const games = [...order.filter((entry) => !entry.game.paused), ...order.filter((entry) => entry.game.paused)];
-  const selected = order.find((entry) => entry.game.id === selectedId) ?? games[0];
   const phone = useMediaQuery('(max-width: 767px)');
   const date = DateTime.fromMillis(now, { zone: state.settings.localTz }).toFormat(phone ? 'ccc d LLL' : 'cccc d LLLL');
   const listRef = useFlip<HTMLDivElement>(
@@ -393,6 +375,7 @@ export function TodayPage({ now }: { now: number }) {
   );
   const allClear = selectAllClear(derived);
   const [showGames, setShowGames] = useState(false);
+  // A wide window has room for every game beside All clear; a phone folds them under it.
   const listFolded = Boolean(allClear) && !showGames && !desktop;
   const view = useUI((ui) => ui.todayView);
   const setView = useUI((ui) => ui.setTodayView);
@@ -416,13 +399,22 @@ export function TodayPage({ now }: { now: number }) {
           Today
         </PageTitle>
         {order.length > 0 && (
-          <div className="view-switch" role="group" aria-label="Today view">
+          // One of two views, like the Calendar's: a radio group, so arrow keys move between them.
+          <ToggleGroupPrimitive.Root
+            type="single"
+            value={view}
+            onValueChange={(next) => {
+              if (next) setView(next as typeof view);
+            }}
+            aria-label="Today view"
+            className="view-switch"
+          >
             {(['steps', 'games'] as const).map((option) => (
-              <button key={option} type="button" aria-pressed={view === option} onClick={() => setView(option)}>
+              <ToggleGroupPrimitive.Item key={option} value={option}>
                 {option === 'steps' ? 'Steps' : 'Games'}
-              </button>
+              </ToggleGroupPrimitive.Item>
             ))}
-          </div>
+          </ToggleGroupPrimitive.Root>
         )}
         {plan.total > 0 && !phone && (
           <PageBarEnd>
@@ -477,58 +469,16 @@ export function TodayPage({ now }: { now: number }) {
                 onShowGames={() => setShowGames(true)}
               />
             )}
+            {/* Every game opens its own page, at every width; a wide window lays them out as a grid. */}
             <ul className="today-priority-list" aria-label="Games" hidden={listFolded}>
               {games.map((entry) => (
-                <PriorityRow
-                  key={entry.game.id}
-                  entry={entry}
-                  derived={derived}
-                  desktop={desktop}
-                  selected={selected?.game.id === entry.game.id}
-                  onSelect={() => (desktop ? setSelectedId(entry.game.id) : openGame(entry.game.id))}
-                />
+                <PriorityRow key={entry.game.id} entry={entry} derived={derived} />
               ))}
             </ul>
             {/* Extras come after what is lost first: the games' own deadlines. */}
             <TodayCodes games={derived.state.games} now={now} />
-            <TodayAgenda
-              derived={derived}
-              onSelectGame={(gameId) => (desktop ? setSelectedId(gameId) : openGame(gameId))}
-            />
+            <TodayAgenda derived={derived} />
           </div>
-          {desktop && selected && (
-            <div className="today-detail">
-              <section
-                key={selected.game.id}
-                className="today-card"
-                style={gameShellVars(selected.game, surfaces, colors[selected.game.id])}
-                aria-label={`${selected.game.name} card`}
-              >
-                <GameControls
-                  entry={selected}
-                  now={now}
-                  layout="focus"
-                  actionsEnd={
-                    <Tooltip content="Open full page">
-                      <Btn
-                        className={`inline-flex shrink-0 items-center ${TOUCH_BUTTON}`}
-                        aria-label="Open full page"
-                        onClick={() => openGame(selected.game.id)}
-                      >
-                        <svg viewBox="0 0 20 20" aria-hidden className="icon h-4 w-4" fill="none" stroke="currentColor">
-                          <path
-                            d="M12 3.5h4.5V8M16.5 3.5 11 9M8 16.5H3.5V12M3.5 16.5 9 11"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </Btn>
-                    </Tooltip>
-                  }
-                />
-              </section>
-            </div>
-          )}
         </div>
       )}
     </Page>

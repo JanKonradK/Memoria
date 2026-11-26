@@ -25,14 +25,19 @@ const mocks = vi.hoisted(() => ({
     | undefined,
 }));
 vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: mocks }));
-vi.mock('@memoria/shared', () => ({
-  buildNotificationPlan: mocks.plan,
-  NOTIFICATION_HORIZON_DAYS: 7,
-  notificationId: (key: string) => key.length,
-}));
+vi.mock('@memoria/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@memoria/shared')>();
+  return {
+    ...actual,
+    buildNotificationPlan: mocks.plan,
+    NOTIFICATION_HORIZON_DAYS: 28,
+    MAX_PLANNED_NOTIFICATIONS: 400,
+    notificationId: (key: string) => key.length,
+  };
+});
 // Codes are planned on the device; covered in codes.test.ts.
 vi.mock('../src/codes', () => ({ allCodes: () => [], liveCodes: () => [] }));
-vi.mock('../src/data/remote-feed', () => ({
+vi.mock('../src/data/remote-feed-state', () => ({
   useRemoteFeed: { getState: () => ({ codes: [] }), subscribe: () => () => undefined },
 }));
 vi.mock('../src/native', () => ({ isNativeApp: true }));
@@ -60,9 +65,11 @@ vi.mock('../src/ui-store', () => ({ useUI: { getState: () => ({ setTab: mocks.se
 
 import {
   initNotifications,
+  planCoveredUntil,
   rescheduleNotifications,
   setNotificationsEnabled,
   useNotifications,
+  withRunway,
 } from '../src/notifications';
 
 const cleanups: (() => void)[] = [];
@@ -119,8 +126,13 @@ describe('native notification lifecycle', () => {
           channelId: 'memoria-standard',
           extra: { memoria: true, gameId: 'game', kind: 'daily', eventIds: [], style: 'standard', tone: 'classic' },
         }),
-        // Half a day before the week runs out, unless the app is opened first.
-        expect.objectContaining({ id: 1_999_999_999, title: 'Open Memoria to keep reminders coming' }),
+        // Half a day before the four weeks run out, unless the app is opened first.
+        expect.objectContaining({
+          id: 1_999_999_999,
+          title: 'Open Memoria to keep reminders coming',
+          body: 'Reminders are planned for the next 4 weeks. Opening the app plans what comes next.',
+          schedule: { at: new Date(Date.now() + 28 * 86_400_000 - 12 * 3_600_000), allowWhileIdle: true },
+        }),
       ],
     });
     expect(useNotifications.getState()).toMatchObject({ enabled: true, scheduled: 1, error: '', exact: false });
@@ -338,5 +350,54 @@ describe('reminder styles on Android', () => {
     await rescheduleNotifications();
     expect(mocks.cancel).toHaveBeenCalledWith({ notifications: [{ id: 7 }] });
     cleanup();
+  });
+});
+
+describe('runway warning', () => {
+  const now = Date.parse('2026-11-26T12:00:00Z');
+  const DAY = 86_400_000;
+  const item = (at: number, id: number) => ({ id, title: 'T', body: 'B', at, gameId: null, kind: 'daily' as const });
+
+  it('covers the whole four weeks while the plan has room', () => {
+    const built = [item(now + DAY, 1), item(now + 2 * DAY, 2)];
+    expect(planCoveredUntil(built, now)).toBe(now + 28 * DAY);
+    const runway = withRunway(built, now, planCoveredUntil(built, now)).at(-1)!;
+    expect(runway).toMatchObject({ id: 1_999_999_999, at: now + 28 * DAY - 12 * 3_600_000 });
+    expect(runway.body).toContain('the next 4 weeks');
+  });
+
+  it('moves before the last planned reminder when the plan filled up early', () => {
+    const built = Array.from({ length: 400 }, (_, index) => item(now + 60_000 + index * 3_000_000, index + 1));
+    const last = built.at(-1)!.at;
+    expect(planCoveredUntil(built, now)).toBe(last);
+    const runway = withRunway(built, now, planCoveredUntil(built, now)).at(-1)!;
+    expect(runway.at).toBe(last - 12 * 3_600_000);
+    expect(runway.body).toBe('Reminders are planned for the next 2 weeks. Opening the app plans what comes next.');
+  });
+
+  it('never lands in the past, and replaces an older runway rather than adding a second', () => {
+    const built = Array.from({ length: 400 }, (_, index) => item(now + 60_000 + index * 1_000, index + 1));
+    const planned = withRunway([...built, item(now + DAY, 1_999_999_999)], now, planCoveredUntil(built, now));
+    expect(planned.filter((entry) => entry.id === 1_999_999_999)).toHaveLength(1);
+    expect(planned.at(-1)!.at).toBeGreaterThan(now);
+    expect(planned.at(-1)!.body).toContain('the next day');
+  });
+
+  it('caps scheduled notifications below Android’s 500-alarm limit when snoozes and codes fill the budget', async () => {
+    const snoozed = Array.from({ length: 120 }, (_, index) => ({
+      id: 9000 + index,
+      extra: { memoria: true, snoozed: true },
+    }));
+    mocks.getPending.mockResolvedValueOnce({ notifications: snoozed });
+    mocks.plan.mockReturnValue(
+      Array.from({ length: 400 }, (_, index) => item(Date.now() + 60_000 + index * 60_000, index + 1)),
+    );
+    useNotifications.setState({ enabled: true });
+    await rescheduleNotifications();
+    const sent = mocks.schedule.mock.calls[0]?.[0].notifications as { id: number }[];
+    // 480 cap minus 120 kept snoozed alarms = 360 max scheduled, including runway warning.
+    expect(sent).toHaveLength(360);
+    expect(sent.some((entry) => entry.id === 1_999_999_999)).toBe(true);
+    expect(useNotifications.getState().scheduled).toBe(359);
   });
 });

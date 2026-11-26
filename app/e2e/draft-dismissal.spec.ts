@@ -156,7 +156,7 @@ test('event and reminder forms save from Enter and explain invalid dates', async
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.locator('[data-layer=sheet]')).toHaveCount(0);
 
-  // The reminder was added from Settings → Reminders; its game's own list is under Games.
+  // The reminder was added from Settings → Time & reminders; its game's own list is under Games.
   await openSettings(page, 'Games');
   await page.getByRole('button', { name: 'Game settings for Genshin Impact', exact: true }).click();
   await page.getByRole('tab', { name: 'Reminders', exact: true }).click();

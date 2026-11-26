@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openGame, showTodayGames } from './support';
+import { openGame } from './support';
 
 test('urgent indicators breathe, pause during interaction, and respect reduced motion', async ({ page }, info) => {
   test.skip(!['desktop', 'android-s23'].includes(info.project.name), 'Desktop and touch motion');
@@ -14,10 +14,9 @@ test('urgent indicators breathe, pause during interaction, and respect reduced m
   await page.getByRole('option').nth(1).click();
   await page.getByRole('button', { name: 'Add Genshin', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  // A phone shows the indicator on the game's page; a wide window in the card beside Today's list.
+  // The indicator sits in the game page's bar, beside its name.
   const phone = info.project.name === 'android-s23';
-  if (phone) await openGame(page, 'Genshin Impact');
-  else await showTodayGames(page);
+  await openGame(page, 'Genshin Impact');
   const value = page.getByLabel('Original Resin current value');
   await value.fill('200');
   await value.press('Enter');

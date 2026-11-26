@@ -8,13 +8,12 @@ import {
   type ReactNode,
 } from 'react';
 import type { EnergyBank, Game } from '@memoria/shared';
-import { useAppUpdate } from '../../app-update';
-import { cloudSyncNow } from '../../cloud-sync';
+import { useAppUpdate } from '../../app-update-state';
 import { useMediaQuery, useNow, useReducedMotion } from '../../hooks';
-import { syncLanNow, useLanSync } from '../../lan-sync';
+import { useLanSync } from '../../lan-sync';
+import { refreshData } from '../../refresh-data';
 import { todayStepsLeft, useDerived } from '../../selectors';
 import { useApp } from '../../store';
-import { syncNow } from '../../sync';
 import { useUI } from '../../ui-store';
 import { closeWorkspace, openGame } from '../../workspace-navigation';
 import { gameInk, gameSupport } from '../../game-color';
@@ -31,6 +30,7 @@ import './shell.css';
 function RailView({
   label,
   icon,
+  face,
   current,
   badge,
   describedBy,
@@ -42,6 +42,8 @@ function RailView({
   className?: string;
   label: string;
   icon: NavGlyph;
+  /** Drawn in place of the icon: the open game's coin on the dock's Games. */
+  face?: ReactNode;
   current: boolean;
   badge?: ReactNode;
   describedBy?: string;
@@ -58,7 +60,7 @@ function RailView({
       aria-keyshortcuts={keyShortcuts}
       onClick={onClick}
     >
-      <NavIcon glyph={icon} className="rail-icon" />
+      {face ?? <NavIcon glyph={icon} className="rail-icon" />}
       <span className="rail-label">{label}</span>
       {badge}
     </button>
@@ -72,6 +74,8 @@ const DOCK_ORDER: readonly Place[] = ['calendar', 'games', 'today', 'notes', 'se
 const RAIL_ORDER: readonly Place[] = ['today', 'calendar', 'notes', 'games', 'settings'];
 /** Alt+1..5 never move with the layout: muscle memory outlives a rotated tablet. */
 const ALT_PLACES: readonly Place[] = RAIL_ORDER;
+/** Scrolling the page this far lowers the dock's shelf: the player has moved on. */
+const SHELF_SCROLL_PX = 24;
 
 /** Upright, the rail is a dock along the bottom, so its tips rise above it. */
 const useTipSide = () => (useMediaQuery('(orientation: portrait)') ? 'top' : 'right');
@@ -209,8 +213,8 @@ function RailGame({
   );
 }
 
-/** Trouble says so and leads to the fix; healthy sync says nothing. */
-function SyncAttention() {
+/** How sync stands across the PC, the sync file and nearby devices: the first trouble, if any. */
+function useSyncState() {
   const desktop = useApp((s) => s.syncStatus);
   const desktopError = useApp((s) => s.syncError);
   const cloud = useApp((s) => s.cloudStatus);
@@ -225,12 +229,25 @@ function SyncAttention() {
         : lan === 'error' || lan === 'offline'
           ? lanError || 'Device sync needs attention'
           : '';
-  const tipSide = useTipSide();
   const syncing = [desktop, cloud, lan].includes('syncing') || lan === 'pairing';
   const synced = [desktop, cloud, lan].includes('ok');
+  return { issue, syncing, synced };
+}
+
+/**
+ * Trouble says so and leads to the fix; healthy sync says nothing. Upright the
+ * dock keeps its five places, so trouble is only said here and dotted on Settings.
+ */
+function SyncAttention({ sync, docked }: { sync: ReturnType<typeof useSyncState>; docked: boolean }) {
+  const { issue, syncing, synced } = sync;
+  const tipSide = useTipSide();
   return (
     <span role="status" aria-live="polite" className="rail-status">
-      {issue ? (
+      {docked ? (
+        <span className="sr-only">
+          {issue ? `Sync needs attention: ${issue}` : syncing ? 'Syncing' : synced ? 'Synced' : 'Local mode'}
+        </span>
+      ) : issue ? (
         <Tooltip content={issue} side={tipSide}>
           <button
             type="button"
@@ -249,29 +266,18 @@ function SyncAttention() {
   );
 }
 
-/** Retry loading and syncing, shown only after something failed. */
+/** Retry loading and syncing, shown only after sync failed. A save error has its own banner. */
 function RefreshButton() {
-  const load = useApp((s) => s.load);
   const reducedMotion = useReducedMotion();
   const [refreshing, setRefreshing] = useState(false);
-  const refresh = async () => {
-    setRefreshing(true);
-    try {
-      await load();
-      const { loaded, loadError, saveError } = useApp.getState();
-      if (!loaded || loadError || saveError) return;
-      await Promise.all([syncNow(), cloudSyncNow(), syncLanNow()]);
-    } catch (error) {
-      useApp.setState({ loadError: error instanceof Error ? error.message : 'Local data operation failed.' });
-    } finally {
-      setRefreshing(false);
-    }
-  };
   return (
     <button
       type="button"
       className="rail-view"
-      onClick={() => void refresh()}
+      onClick={() => {
+        setRefreshing(true);
+        void refreshData().finally(() => setRefreshing(false));
+      }}
       disabled={refreshing}
       aria-label="Refresh data"
       aria-busy={refreshing}
@@ -300,10 +306,11 @@ export function AppRail() {
   const setTab = useUI((s) => s.setTab);
   const focusedGameId = useUI((s) => s.focusedGameId);
   const openSheet = useUI((s) => s.openSheet);
-  const needsRefresh = useApp(
-    (s) => Boolean(s.loadError || s.saveError) || s.syncStatus === 'error' || s.cloudStatus === 'error',
-  );
+  // A load error has its own screen and a save error its own banner, each with Refresh data.
+  const syncFailed = useApp((s) => s.syncStatus === 'error' || s.cloudStatus === 'error');
   const lanTrouble = useLanSync((s) => s.status === 'error');
+  const saveTrouble = useApp((s) => Boolean(s.loadError || s.saveError));
+  const sync = useSyncState();
   const updateWaiting = useAppUpdate((s) => s.status === 'available' || s.status === 'ready');
   const ground = useGround();
   const reducedMotion = useReducedMotion();
@@ -401,18 +408,53 @@ export function AppRail() {
     if (target !== strip.scrollLeft) strip.scrollTo({ left: target, behavior: reducedMotion ? 'instant' : 'smooth' });
   }, [currentGame, order, reducedMotion]);
 
-  // On a tall screen Games raises the shelf over the dock; on a wide one it
-  // folds the rail's list. A game's own page opens the shelf with it.
+  // On a tall screen Games raises the shelf over the dock, for a moment: only a
+  // press of Games opens it, and picking a game, a tap anywhere else, Escape or
+  // a scroll lowers it again. On a wide one Games folds the rail's list.
   const shelfShown = upright ? shelfOpen : railGamesOpen;
   const toggleGames = () => {
     if (games.length === 0) return openSheet({ kind: 'addGame' });
     if (upright) setShelfOpen(!shelfOpen);
     else setRailGamesOpen(!railGamesOpen);
   };
+  const railRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!upright || !shelfOpen) return;
+    const close = (restoreFocus: boolean) => {
+      const shelf = railRef.current?.querySelector('#rail-shelf');
+      if (restoreFocus && shelf?.contains(document.activeElement)) {
+        railRef.current?.querySelector<HTMLButtonElement>('.rail-place-games')?.focus({ preventScroll: true });
+      }
+      setShelfOpen(false);
+    };
+    const startY = window.scrollY;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!railRef.current?.contains(event.target as Node)) close(false);
+    };
+    const onScroll = () => {
+      if (Math.abs(window.scrollY - startY) >= SHELF_SCROLL_PX) close(true);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !event.defaultPrevented) close(true);
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      window.removeEventListener('scroll', onScroll);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [upright, shelfOpen, setShelfOpen]);
   const urgent = games.filter((game) => {
     const next = derived.entryById.get(game.id)?.next;
     return !game.paused && next != null && railCountdown(next.at - now).tone === 'now';
   }).length;
+  // Upright, the dock's Games wears the open game's coin.
+  const openGameFace = upright ? games.find((game) => game.id === currentGame) : undefined;
+  // Upright, the dock keeps its five places: sync and save trouble is a dot on Settings.
+  const dockTrouble = upright ? sync.issue || (saveTrouble ? 'Your latest changes were not saved' : '') : '';
+  const settingsNotes = [dockTrouble && 'rail-trouble', updateWaiting && 'rail-update'].filter(Boolean).join(' ');
 
   // Upright, the dock puts Today under the thumb in the middle; down a PC's
   // side Today leads and Games sits last, with its list opening under it.
@@ -434,6 +476,7 @@ export function AppRail() {
         className="rail-place rail-place-games"
         label="Games"
         icon="games"
+        face={openGameFace && <GameLogo game={openGameFace} size={24} className="rail-coin" />}
         current={tab === 'home'}
         aria-expanded={games.length > 0 ? shelfShown : undefined}
         aria-controls={games.length > 0 ? 'rail-shelf' : undefined}
@@ -490,7 +533,7 @@ export function AppRail() {
   };
 
   return (
-    <nav aria-label="Primary" className="app-rail" data-shelf={shelfShown || undefined}>
+    <nav ref={railRef} aria-label="Primary" className="app-rail" data-shelf={shelfShown || undefined}>
       <span className="rail-mark" aria-hidden>
         <Logo />
       </span>
@@ -528,30 +571,51 @@ export function AppRail() {
               label="Add game"
               icon="add"
               current={false}
-              onClick={() => openSheet({ kind: 'addGame' })}
+              onClick={() => {
+                if (upright) {
+                  railRef.current
+                    ?.querySelector<HTMLButtonElement>('.rail-place-games')
+                    ?.focus({ preventScroll: true });
+                  setShelfOpen(false);
+                }
+                openSheet({ kind: 'addGame' });
+              }}
             />
           </Tooltip>
         </div>
       </div>
       <div className="rail-foot">
-        <SyncAttention />
-        {(needsRefresh || lanTrouble) && <RefreshButton />}
-        <Tooltip content={updateWaiting ? 'Settings · Update available' : 'Settings'} side={tipSide}>
+        <SyncAttention sync={sync} docked={upright} />
+        {!upright && (syncFailed || lanTrouble) && <RefreshButton />}
+        <Tooltip
+          content={
+            dockTrouble ? `Settings · ${dockTrouble}` : updateWaiting ? 'Settings · Update available' : 'Settings'
+          }
+          side={tipSide}
+        >
           <RailView
             className="rail-place rail-place-settings rail-settings"
             label="Settings"
             icon="settings"
             current={tab === 'settings'}
             keyShortcuts={altKey('settings')}
-            describedBy={updateWaiting ? 'rail-update' : undefined}
-            onClick={() => setTab('settings')}
+            describedBy={settingsNotes || undefined}
+            // Trouble leads to its fix.
+            onClick={() => (sync.issue && upright ? useUI.getState().openSettings('sync') : setTab('settings'))}
             badge={
-              updateWaiting ? (
+              dockTrouble || updateWaiting ? (
                 <>
-                  <span aria-hidden className="rail-dot" />
-                  <span id="rail-update" hidden>
-                    Update available
-                  </span>
+                  <span aria-hidden className={`rail-dot ${dockTrouble ? 'rail-dot-danger' : ''}`} />
+                  {dockTrouble && (
+                    <span id="rail-trouble" hidden>
+                      {sync.issue ? `Sync needs attention: ${sync.issue}` : dockTrouble}
+                    </span>
+                  )}
+                  {updateWaiting && (
+                    <span id="rail-update" hidden>
+                      Update available
+                    </span>
+                  )}
                 </>
               ) : undefined
             }

@@ -20,10 +20,10 @@ import { createReminderDraft, GameReminders, reminderDraftChanged } from './Game
 import { EditorTabPanel, EditorTabs, type EditorTab } from './EditorTabs';
 import {
   Btn,
-  COMPACT_INPUT,
   ConfirmAction,
   ConfirmDelete,
   Field,
+  FileButton,
   NumInput,
   SectionTitle,
   Select,
@@ -31,7 +31,6 @@ import {
   TextArea,
   TextInput,
   Toggle,
-  TOUCH_BUTTON,
 } from '../ui';
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -263,7 +262,6 @@ export function GameEditor({
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Field label="Name">
                   <TextInput
-                    className={COMPACT_INPUT}
                     value={draft.name}
                     onChange={(event) => changeDraft('name', event.target.value)}
                     onBlur={commitDraft}
@@ -272,7 +270,6 @@ export function GameEditor({
                 <div>
                   <Field label="Short name">
                     <TextInput
-                      className={COMPACT_INPUT}
                       value={draft.short}
                       onChange={(event) => changeDraft('short', event.target.value)}
                       onBlur={commitDraft}
@@ -293,7 +290,6 @@ export function GameEditor({
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <Field label="Daily reset hour">
                   <NumInput
-                    className={COMPACT_INPUT}
                     value={String(game.dailyResetHour)}
                     min={0}
                     max={23}
@@ -306,7 +302,6 @@ export function GameEditor({
                 </Field>
                 <Field label="Weekly reset day">
                   <Select
-                    className={COMPACT_INPUT}
                     value={String(game.weeklyResetDay)}
                     onChange={(event) => updateGame(game.id, { weeklyResetDay: intOr(event.target.value, 1) })}
                   >
@@ -319,7 +314,6 @@ export function GameEditor({
                 </Field>
                 <Field label="Monthly reset day">
                   <NumInput
-                    className={COMPACT_INPUT}
                     value={String(game.monthlyResetDay)}
                     min={1}
                     max={28}
@@ -364,7 +358,6 @@ export function GameEditor({
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Field label="Title font">
                   <Select
-                    className={COMPACT_INPUT}
                     value={titleFontOption(game.titleFont)}
                     onChange={(event) => updateGame(game.id, { titleFont: event.target.value || undefined })}
                   >
@@ -382,28 +375,23 @@ export function GameEditor({
                 <div>
                   <span className={FIELD_LABEL}>Card artwork</span>
                   <div className="flex flex-wrap gap-2">
-                    <label className="btn-compact inline-flex min-h-11 w-fit cursor-pointer items-center justify-center rounded-ui-md bg-fill-2 px-3 py-1 text-caption font-semibold text-fg-soft ring-1 ring-line-hairline fine:min-h-8">
+                    <FileButton
+                      accept="image/*"
+                      onFile={(file) => {
+                        setImageError('');
+                        if (!file) return;
+                        void fileToImageDataUrl(file)
+                          .then((image) => {
+                            setImageError('');
+                            updateGame(game.id, { image });
+                          })
+                          .catch((error: unknown) => {
+                            setImageError(error instanceof Error ? error.message : 'Could not read that image.');
+                          });
+                      }}
+                    >
                       {game.image ? 'Replace image' : 'Choose image'}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="sr-only"
-                        onChange={(event) => {
-                          setImageError('');
-                          const file = event.target.files?.[0];
-                          if (file) {
-                            void fileToImageDataUrl(file)
-                              .then((image) => {
-                                setImageError('');
-                                updateGame(game.id, { image });
-                              })
-                              .catch((error: unknown) => {
-                                setImageError(error instanceof Error ? error.message : 'Could not read that image.');
-                              });
-                          }
-                        }}
-                      />
-                    </label>
+                    </FileButton>
                     {game.image && (
                       <ConfirmAction
                         label="Remove image"
@@ -466,13 +454,11 @@ export function GameEditor({
                 {chips.map((chip) => (
                   <div key={chip.id} className="flex flex-wrap items-center gap-2">
                     <TextInput
-                      className={COMPACT_INPUT}
                       value={chip.label}
                       aria-label="Quick spend label"
                       onChange={(event) => upsertChip({ id: chip.id, gameId: game.id, label: event.target.value })}
                     />
                     <NumInput
-                      className={COMPACT_INPUT}
                       value={String(chip.delta)}
                       aria-label={`${chip.label} energy change`}
                       onChange={(event) =>
@@ -484,20 +470,18 @@ export function GameEditor({
                 ))}
                 <div className="grid grid-cols-[minmax(0,1fr)_88px] gap-2 sm:grid-cols-[minmax(0,1fr)_88px_auto]">
                   <TextInput
-                    className={COMPACT_INPUT}
                     placeholder="Label, e.g. Domain"
                     aria-label="New quick spend label"
                     value={newChipLabel}
                     onChange={(event) => setNewChipLabel(event.target.value)}
                   />
                   <NumInput
-                    className={COMPACT_INPUT}
                     value={newChipDelta}
                     aria-label="Energy change"
                     onChange={(event) => setNewChipDelta(event.target.value)}
                   />
                   <Btn
-                    className={`col-span-2 w-fit sm:col-span-1 ${TOUCH_BUTTON}`}
+                    className="col-span-2 w-fit sm:col-span-1"
                     onClick={() => {
                       if (!newChipLabel.trim()) return;
                       upsertChip({
@@ -545,7 +529,6 @@ export function GameEditor({
               <div className="grid grid-cols-1 items-end gap-2 pt-1 sm:grid-cols-[minmax(0,1fr)_112px_auto]">
                 <Field label="New task">
                   <TextInput
-                    className={COMPACT_INPUT}
                     placeholder="e.g. Daily commissions"
                     aria-label="New task name"
                     value={newTask}
@@ -554,7 +537,7 @@ export function GameEditor({
                 </Field>
                 <Field label="Cadence">
                   <Select
-                    className={`w-full sm:w-28 ${COMPACT_INPUT}`}
+                    className="w-full sm:w-28"
                     value={newTaskCadence}
                     onChange={(event) => setNewTaskCadence(event.target.value as Cadence)}
                     aria-label="New task cadence"
@@ -567,7 +550,7 @@ export function GameEditor({
                   </Select>
                 </Field>
                 <Btn
-                  className={`w-fit shrink-0 ${TOUCH_BUTTON}`}
+                  className="w-fit shrink-0"
                   onClick={() => {
                     if (!newTask.trim()) return;
                     addTask(game.id, newTask.trim(), newTaskCadence);
@@ -582,9 +565,7 @@ export function GameEditor({
                   <p className="min-w-0 flex-1 text-label text-muted">
                     {presetGap} preset {presetGap === 1 ? 'routine' : 'routines'} not tracked
                   </p>
-                  <Btn className={TOUCH_BUTTON} onClick={() => addMissingPresetTasks(game.id)}>
-                    Add {presetGap}
-                  </Btn>
+                  <Btn onClick={() => addMissingPresetTasks(game.id)}>Add {presetGap}</Btn>
                 </div>
               )}
             </div>

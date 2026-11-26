@@ -14,7 +14,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useUI } from '../ui-store';
 import { fmtDateTimeLocalInput, fmtDur, parseDateTimeLocalInput } from '../util';
 import { rosterGames } from './roster';
-import { confirmDiscard, Sheet } from './Sheet';
+import { confirmDiscard, Sheet, SheetFooter } from './Sheet';
 import { Btn, Field, Segmented, Select, TextArea, TextInput, Toggle } from './ui';
 
 const DAY = 86_400_000;
@@ -153,24 +153,28 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
       dirty={dirty}
       title={eventId ? 'Edit event' : 'New event'}
       footer={
-        <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
-          {existing && (
-            <Btn
-              kind="danger"
-              className="mr-auto"
-              onClick={() => {
-                if (!confirmDelete) {
-                  setConfirmDelete(true);
-                  return;
-                }
-                deleteEvent(existing.id);
-                closeSheet();
-              }}
-            >
-              {confirmDelete ? 'Confirm delete' : 'Delete'}
-            </Btn>
-          )}
-          {confirmDelete && <Btn onClick={() => setConfirmDelete(false)}>Keep event</Btn>}
+        <SheetFooter
+          start={
+            existing && (
+              <>
+                <Btn
+                  kind="danger"
+                  onClick={() => {
+                    if (!confirmDelete) {
+                      setConfirmDelete(true);
+                      return;
+                    }
+                    deleteEvent(existing.id);
+                    closeSheet();
+                  }}
+                >
+                  {confirmDelete ? 'Confirm delete' : 'Delete'}
+                </Btn>
+                {confirmDelete && <Btn onClick={() => setConfirmDelete(false)}>Keep event</Btn>}
+              </>
+            )
+          }
+        >
           <Btn
             onClick={async () => {
               if (!dirty || (await confirmDiscard())) closeSheet();
@@ -178,15 +182,17 @@ export function EventSheet({ open, eventId, gameId }: { open: boolean; eventId?:
           >
             Cancel
           </Btn>
-          <Btn kind="primary" type="submit" form={formId} disabled={!validDraft || unavailable}>
-            {eventId ? 'Save' : 'Add event'}
-          </Btn>
-          {unavailable && (
+          {/* A deleted event cannot be saved over, so its one way forward is a new copy. */}
+          {unavailable ? (
             <Btn kind="primary" onClick={() => save(true)} disabled={!validDraft}>
               Add as new event
             </Btn>
+          ) : (
+            <Btn kind="primary" type="submit" form={formId} disabled={!validDraft}>
+              {eventId ? 'Save' : 'Add event'}
+            </Btn>
           )}
-        </div>
+        </SheetFooter>
       }
     >
       <form

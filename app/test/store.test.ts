@@ -111,6 +111,19 @@ it('skips storage, subscribers, and sync for unchanged mutations but still saves
   }
 });
 
+it('saves an edit that only reorders rows without rewriting the history blob', async () => {
+  useApp.getState().addBlankGame('First');
+  useApp.getState().addBlankGame('Second');
+  await flushPersist();
+  const history = useApp.getState().history;
+  vi.mocked(idbSet).mockClear();
+  useApp.getState().batch((state) => ({ ...state, games: [...state.games].reverse() }));
+  await flushPersist();
+  expect(useApp.getState().history).toBe(history);
+  expect(idbSet).toHaveBeenCalledWith(IDB_KEY, expect.anything());
+  expect(idbSet).not.toHaveBeenCalledWith('memoria-history', expect.anything());
+});
+
 it('keeps a just-entered value when Refresh runs before the pending save', async () => {
   const { resourceId } = addGameWithResource();
   await flushPersist();
@@ -1265,6 +1278,68 @@ describe('Wave 1 storage, preset anchors, compaction and cross-tab sync', () => 
     const ids = useApp.getState().state.games.map((g) => g.id);
     expect(ids).toContain('recent-tombstone');
     expect(ids).not.toContain('old-tombstone');
+  });
+
+  it('slims a tombstone past 90 days on load, writes it once, and leaves it alone after', async () => {
+    useApp.getState().addBlankGame('Active');
+    await flushPersist();
+    const deletedAt = Date.now() - 100 * 86_400_000;
+    const baseGame = useApp.getState().state.games[0]!;
+    const aged = {
+      ...baseGame,
+      id: 'aged-tombstone',
+      deleted: true,
+      titleFont: 'Serif',
+      image: 'data:image/png;base64,iVBORw0KGgo=',
+      updatedAt: deletedAt,
+      hlc: { wall: deletedAt, counter: 0, device: 'other-phone' },
+    };
+    idb.set(IDB_KEY, { ...useApp.getState().state, games: [baseGame, aged] });
+
+    await useApp.getState().load();
+    await flushPersist();
+    const saved = (idb.get(IDB_KEY) as { games: Record<string, unknown>[] }).games.find(
+      (game) => game.id === 'aged-tombstone',
+    );
+    expect(saved).toMatchObject({ deleted: true, name: baseGame.name, updatedAt: deletedAt, hlc: aged.hlc });
+    expect(saved).not.toHaveProperty('image');
+    expect(saved).not.toHaveProperty('titleFont');
+
+    vi.mocked(idbSet).mockClear();
+    await useApp.getState().load();
+    await flushPersist();
+    expect(idbSet).not.toHaveBeenCalledWith(IDB_KEY, expect.anything());
+  });
+
+  it('thins a reading log over the document limit instead of failing every save', async () => {
+    const { resourceId } = addGameWithResource();
+    writeEnergy(resourceId, 37);
+    await flushPersist();
+    // 150 other resources' worth of readings: valid data, past the 20,000-row limit.
+    const bulk = Array.from({ length: 20_500 }, (_, i) => ({
+      id: `bulk-${i}`,
+      resourceId: `bulk-resource-${i % 150}`,
+      value: 1,
+      takenAt: 1_000 + i,
+    }));
+    useApp.getState().batch((state) => ({ ...state, snapshots: [...state.snapshots, ...bulk] }), 'Readings import');
+    expect(useApp.getState().state.snapshots).toHaveLength(20_000);
+    expect(latestSnapshots(useApp.getState().state.snapshots).get(resourceId)?.value).toBe(37);
+
+    // A merged arrival that skipped the edit path is thinned on its way to disk.
+    useApp.getState().replaceState({
+      ...useApp.getState().state,
+      snapshots: [
+        ...useApp.getState().state.snapshots,
+        ...bulk.map((s) => ({ ...s, id: `${s.id}-more`, takenAt: s.takenAt + 50_000 })),
+      ],
+    });
+    await flushPersist();
+    expect(useApp.getState().saveError).toBe('');
+    const saved = idb.get(IDB_KEY) as { snapshots: { resourceId: string; value: number }[] };
+    expect(saved.snapshots).toHaveLength(20_000);
+    expect(safeParseAppState(saved).success).toBe(true);
+    expect(latestSnapshots(saved.snapshots as never).get(resourceId)?.value).toBe(37);
   });
 
   it('merges cross-tab BroadcastChannel saved updates without re-broadcasting', async () => {

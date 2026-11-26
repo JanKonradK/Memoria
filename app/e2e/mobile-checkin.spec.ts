@@ -98,9 +98,8 @@ test('event actions stay visible while the form scrolls and both event views rem
   page,
 }, info) => {
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
-  // Time bars open first on a phone too, each event a name line above a thin bar.
-  await expect(page.getByRole('radio', { name: 'Timeline', exact: true })).toHaveAttribute('data-state', 'on');
-  await page.getByRole('radio', { name: 'Agenda', exact: true }).click();
+  // A phone opens on the Agenda: a week of time bars leaves a bar no room for its name.
+  await expect(page.getByRole('radio', { name: 'Agenda', exact: true })).toHaveAttribute('data-state', 'on');
   await addFromShell(page, 'Event');
   const dialog = page.getByRole('dialog', { name: 'New event' });
   const save = dialog.getByRole('button', { name: 'Add event', exact: true });

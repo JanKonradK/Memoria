@@ -11,7 +11,7 @@ import {
   useLanSync,
 } from '../../lan-sync';
 import { scanPairingCode } from '../../native';
-import { Btn, Field, TextInput, TOUCH_BUTTON } from '../ui';
+import { Btn, ConfirmAction, Field, TextInput } from '../ui';
 import { Ago } from '../Ago';
 
 type Devices = {
@@ -81,17 +81,11 @@ function RelaySetup({
               onChange={(event) => setDraft(event.target.value)}
             />
           </Field>
-          <Btn
-            type="submit"
-            kind="primary"
-            className={TOUCH_BUTTON}
-            disabled={busy || draft.trim() === (relay.url ?? '')}
-          >
+          <Btn type="submit" kind="primary" disabled={busy || draft.trim() === (relay.url ?? '')}>
             Save
           </Btn>
           {relay.url && (
             <Btn
-              className={TOUCH_BUTTON}
               disabled={busy}
               onClick={() => {
                 setDraft('');
@@ -254,13 +248,11 @@ function FirewallCheck({ enabled }: { enabled: boolean }) {
               How to change it
             </a>
           </p>
-          <Btn className={TOUCH_BUTTON} onClick={() => setChecks((count) => count + 1)}>
-            Check again
-          </Btn>
+          <Btn onClick={() => setChecks((count) => count + 1)}>Check again</Btn>
         </>
       ) : (
         <>
-          <Btn kind="primary" className={TOUCH_BUTTON} disabled={busy} onClick={() => void allow()}>
+          <Btn kind="primary" disabled={busy} onClick={() => void allow()}>
             {busy ? 'Waiting for Windows…' : 'Allow through Windows Firewall'}
           </Btn>
           <p className="text-meta text-fg-soft">Windows asks for permission first.</p>
@@ -353,9 +345,7 @@ function DesktopConnection() {
       {loadError ? (
         <div role="alert" className="space-y-2 text-body text-danger-fg">
           <p>{loadError}</p>
-          <Btn className={TOUCH_BUTTON} onClick={() => void refresh()}>
-            Try again
-          </Btn>
+          <Btn onClick={() => void refresh()}>Try again</Btn>
         </div>
       ) : !devices ? (
         <p role="status" className="text-body text-muted">
@@ -367,7 +357,7 @@ function DesktopConnection() {
             {devices.error}
           </p>
           <p className="text-muted">Reset, then scan a new code on your phone or tablet. Your data stays.</p>
-          <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => void control('reset')}>
+          <Btn disabled={busy} onClick={() => void control('reset')}>
             Reset device connection
           </Btn>
         </div>
@@ -396,15 +386,17 @@ function DesktopConnection() {
                     ) : (
                       'Not synced since Memoria started'
                     ),
+                    // Disconnecting means pairing the device again from scratch, so it asks first.
                     action: (
-                      <Btn
-                        className={TOUCH_BUTTON}
+                      <ConfirmAction
+                        label="Disconnect"
+                        confirmLabel="Confirm disconnect"
+                        ariaLabel={`Disconnect ${device.name} ${device.id}`}
+                        confirmAriaLabel={`Confirm disconnect ${device.name} ${device.id}`}
+                        cancelAriaLabel={`Keep ${device.name} ${device.id} connected`}
                         disabled={busy}
-                        aria-label={`Disconnect ${device.name} ${device.id}`}
-                        onClick={() => void control('revoke', { id: device.id })}
-                      >
-                        Disconnect
-                      </Btn>
+                        onConfirm={() => void control('revoke', { id: device.id })}
+                      />
                     ),
                   };
                 }),
@@ -414,7 +406,6 @@ function DesktopConnection() {
           {!pairingVisible && (
             <Btn
               kind={paired && devices.enabled ? 'ghost' : 'primary'}
-              className={TOUCH_BUTTON}
               disabled={busy}
               onClick={() => void control(devices.enabled ? 'code' : 'start')}
             >
@@ -437,7 +428,7 @@ function DesktopConnection() {
                 ) : (
                   <div className="space-y-3">
                     <p className="text-body text-muted">This code has expired.</p>
-                    <Btn kind="primary" className={TOUCH_BUTTON} disabled={busy} onClick={() => void control('code')}>
+                    <Btn kind="primary" disabled={busy} onClick={() => void control('code')}>
                       Show a new code
                     </Btn>
                   </div>
@@ -483,7 +474,7 @@ function DesktopConnection() {
               <summary>Manage connection</summary>
               <div className="space-y-3 pb-3">
                 <p>Pausing stops every device from syncing until you resume.</p>
-                <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => void control('stop')}>
+                <Btn disabled={busy} onClick={() => void control('stop')}>
                   Pause sync
                 </Btn>
               </div>
@@ -524,14 +515,13 @@ function FirstSyncChoice({ deviceGames, pcGames }: { deviceGames: number; pcGame
         <div className="flex flex-wrap gap-2">
           <Btn
             kind={confirming ? 'danger' : 'primary'}
-            className={TOUCH_BUTTON}
             disabled={busy}
             onClick={() => (confirming ? answer('pc') : setConfirming(true))}
           >
             {confirming ? `Confirm: remove this device's ${games(deviceGames)}` : 'Use my PC’s data'}
           </Btn>
           {confirming && (
-            <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => setConfirming(false)}>
+            <Btn disabled={busy} onClick={() => setConfirming(false)}>
               Keep this device’s games
             </Btn>
           )}
@@ -539,13 +529,13 @@ function FirstSyncChoice({ deviceGames, pcGames }: { deviceGames: number; pcGame
         <p className="text-meta text-muted">Replaces this device's games with your PC's.</p>
       </div>
       <div className="space-y-1">
-        <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => answer('combine')}>
+        <Btn disabled={busy} onClick={() => answer('combine')}>
           Combine both
         </Btn>
         <p className="text-meta text-muted">Keeps both. A game on both appears twice.</p>
       </div>
       <div className="space-y-1">
-        <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => answer('cancel')}>
+        <Btn disabled={busy} onClick={() => answer('cancel')}>
           Cancel and disconnect
         </Btn>
       </div>
@@ -577,7 +567,7 @@ function PhoneConnection() {
       {!connection.host ? (
         <>
           <p className="text-body text-muted">On your PC: Settings → Connect my phone or tablet.</p>
-          <Btn kind="primary" className={TOUCH_BUTTON} disabled={busy} onClick={() => void scan()}>
+          <Btn kind="primary" disabled={busy} onClick={() => void scan()}>
             {busy ? 'Connecting…' : 'Scan PC code'}
           </Btn>
           <details className={DETAILS}>
@@ -628,7 +618,7 @@ function PhoneConnection() {
                   disabled={busy}
                 />
               </Field>
-              <Btn type="submit" kind="primary" className={TOUCH_BUTTON} disabled={busy}>
+              <Btn type="submit" kind="primary" disabled={busy}>
                 {busy ? 'Connecting…' : 'Connect to PC'}
               </Btn>
             </form>
@@ -700,28 +690,25 @@ function PhoneConnection() {
           <details className={DETAILS}>
             <summary>Connection options</summary>
             <div className="space-y-3 pb-3">
-              <Btn
-                className={TOUCH_BUTTON}
-                disabled={busy || connection.status === 'syncing'}
-                onClick={() => void syncLanNow()}
-              >
+              <Btn disabled={busy || connection.status === 'syncing'} onClick={() => void syncLanNow()}>
                 Check connection
               </Btn>
               <p>PC on a new network? Scan a new code.</p>
-              <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => void scan()}>
+              <Btn disabled={busy} onClick={() => void scan()}>
                 {busy ? 'Connecting…' : 'Scan a new PC code'}
               </Btn>
               <p className="break-all text-meta">PC address: {connection.host}</p>
-              <Btn
-                className={TOUCH_BUTTON}
+              {/* Pairing again needs the PC's code, so the disconnect asks first. */}
+              <ConfirmAction
+                label="Disconnect"
+                confirmLabel="Confirm disconnect"
+                cancelAriaLabel="Stay connected"
                 disabled={busy}
-                onClick={() => {
+                onConfirm={() => {
                   setError('');
                   void disconnectLanSync();
                 }}
-              >
-                Disconnect
-              </Btn>
+              />
             </div>
           </details>
         </>

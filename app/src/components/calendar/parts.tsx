@@ -8,6 +8,7 @@ import { useGround } from '../../theme';
 import { useIdentityColors } from '../roster';
 import { GameLogo } from '../GameLogo';
 import { Tick } from '../primitives';
+import { Tooltip } from '../ui';
 import type { SwipeAction } from '../../swipe-row';
 import './calendar.css';
 
@@ -59,9 +60,11 @@ export type CalendarGames = ReturnType<typeof useCalendarGames>;
  */
 export function EventKind({ game, event }: { game?: Game; event: GameEvent }) {
   const world = eventCategory(game, event) === 'miliastra' && (
-    <span data-event-tag title="Miliastra Wonderland" className="cal-tag">
-      MW
-    </span>
+    <Tooltip content="Miliastra Wonderland">
+      <span data-event-tag className="cal-tag">
+        MW
+      </span>
+    </Tooltip>
   );
   if (event.type === 'banner') {
     const kind = eventBannerKind(event);

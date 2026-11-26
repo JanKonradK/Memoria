@@ -452,6 +452,15 @@
     color: var(--color-fg);
   }
 }
+/* A finger's target: the busiest day's link grows to 44px tall around its words. */
+@media (pointer: coarse) {
+  .cal-month-jump {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    padding-inline: 4px;
+  }
+}
 
 .cal-month-body {
   display: flex;
@@ -877,6 +886,12 @@
 @media (hover: hover) {
   .soon-load-day:hover {
     background: var(--color-fill-2);
+  }
+}
+/* Fourteen days share a phone's width, so a day is narrow; it is never short. */
+@media (pointer: coarse) {
+  .soon-load-day {
+    min-height: 44px;
   }
 }
 .soon-load-bar {

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { emptyState } from '@memoria/shared';
 import { makeGame } from '../../shared/test/helpers';
-import { openSettings } from './support';
+import { openSettings, showTimeline } from './support';
 
 const DAY = 86_400_000;
 
@@ -29,10 +29,7 @@ async function load(page: Page, name: string, events: Record<string, unknown>[])
     .setInputFiles({ name: 'timeline.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(state)) });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
-  await page
-    .getByRole('radiogroup', { name: 'Event view' })
-    .getByRole('radio', { name: 'Timeline', exact: true })
-    .click();
+  await showTimeline(page);
 }
 
 test('separate cycles share a row, and names stay clear of countdowns', async ({ page }, info) => {

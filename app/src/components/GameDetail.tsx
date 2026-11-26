@@ -4,8 +4,8 @@ import { useUI, type GameEditorSection } from '../ui-store';
 import { ServerSelect } from './ServerSelect';
 import { useGameDraft } from './game-detail/useGameDraft';
 import { GameEditor } from './settings/GameEditor';
-import { confirmDiscard, Sheet } from './Sheet';
-import { Btn, COMPACT_INPUT, Field, TextInput } from './ui';
+import { confirmDiscard, Sheet, SheetFooter } from './Sheet';
+import { Btn, Field, TextInput } from './ui';
 
 const ACCOUNT_DRAFT_FIELDS = ['accountLabel'] as const;
 
@@ -59,10 +59,13 @@ export function GameDetailSheet({
       wide
       title={nickname ? `${game.name} · ${nickname}` : game.name}
       footer={
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="min-w-0 flex-1 text-meta text-muted">
-            {dirty ? 'Add or save your draft before closing' : 'Game settings save automatically'}
-          </span>
+        <SheetFooter
+          status={
+            <p className={`text-meta ${dirty ? 'text-warn-fg' : 'text-muted'}`}>
+              {dirty ? 'Add or save your draft before closing' : 'Game settings save automatically'}
+            </p>
+          }
+        >
           <Btn
             kind="primary"
             onClick={async () => {
@@ -71,7 +74,7 @@ export function GameDetailSheet({
           >
             Done
           </Btn>
-        </div>
+        </SheetFooter>
       }
     >
       <GameEditor
@@ -83,7 +86,6 @@ export function GameDetailSheet({
           <div>
             <Field label="Nickname">
               <TextInput
-                className={COMPACT_INPUT}
                 value={draft.accountLabel}
                 placeholder="e.g. Main EU"
                 onChange={(event) => changeDraft('accountLabel', event.target.value)}
@@ -95,7 +97,6 @@ export function GameDetailSheet({
         serverControl={
           <Field label="Server">
             <ServerSelect
-              className={COMPACT_INPUT}
               game={game}
               value={{ server: game.server, tz: game.tz }}
               onChange={(pick) => updateGame(game.id, pick)}

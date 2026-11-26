@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Up to eight games in rows of two. MemoriaWidgetProvider fills the cells and shows the rows that fit. -->
+<!--
+    Glance: up to eight games in rows of two. MemoriaWidgetProvider fills the cells
+    and shows the rows that fit. Each cell's countdown to full is a Chronometer, so
+    it ticks on the home screen without waking the app; the text beside it says
+    Now when the bar is already full. Generated cell by cell: keep the ids in step
+    with MemoriaWidgetProvider.CELLS.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -23,7 +29,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/app_name"
-            android:textColor="#F4F4F6"
+            android:textColor="@color/widget_fg"
             android:textSize="15sp"
             android:textStyle="bold" />
 
@@ -44,7 +50,7 @@
         android:layout_marginTop="4dp"
         android:paddingStart="6dp"
         android:text="@string/widget_empty"
-        android:textColor="#9A9AA4"
+        android:textColor="@color/widget_muted"
         android:textSize="13sp" />
 
     <LinearLayout
@@ -91,6 +97,11 @@
                 <TextView
                     android:id="@+id/cell0_full"
                     style="@style/WidgetFull" />
+
+                <Chronometer
+                    android:id="@+id/cell0_timer"
+                    style="@style/WidgetTimer"
+                    android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
 
@@ -130,6 +141,11 @@
                 <TextView
                     android:id="@+id/cell1_full"
                     style="@style/WidgetFull" />
+
+                <Chronometer
+                    android:id="@+id/cell1_timer"
+                    style="@style/WidgetTimer"
+                    android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
 
@@ -179,6 +195,11 @@
                 <TextView
                     android:id="@+id/cell2_full"
                     style="@style/WidgetFull" />
+
+                <Chronometer
+                    android:id="@+id/cell2_timer"
+                    style="@style/WidgetTimer"
+                    android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
 
@@ -218,6 +239,11 @@
                 <TextView
                     android:id="@+id/cell3_full"
                     style="@style/WidgetFull" />
+
+                <Chronometer
+                    android:id="@+id/cell3_timer"
+                    style="@style/WidgetTimer"
+                    android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
 
@@ -267,6 +293,11 @@
                 <TextView
                     android:id="@+id/cell4_full"
                     style="@style/WidgetFull" />
+
+                <Chronometer
+                    android:id="@+id/cell4_timer"
+                    style="@style/WidgetTimer"
+                    android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
 
@@ -306,6 +337,11 @@
                 <TextView
                     android:id="@+id/cell5_full"
                     style="@style/WidgetFull" />
+
+                <Chronometer
+                    android:id="@+id/cell5_timer"
+                    style="@style/WidgetTimer"
+                    android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
 
@@ -355,6 +391,11 @@
                 <TextView
                     android:id="@+id/cell6_full"
                     style="@style/WidgetFull" />
+
+                <Chronometer
+                    android:id="@+id/cell6_timer"
+                    style="@style/WidgetTimer"
+                    android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
 
@@ -394,6 +435,11 @@
                 <TextView
                     android:id="@+id/cell7_full"
                     style="@style/WidgetFull" />
+
+                <Chronometer
+                    android:id="@+id/cell7_timer"
+                    style="@style/WidgetTimer"
+                    android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
 

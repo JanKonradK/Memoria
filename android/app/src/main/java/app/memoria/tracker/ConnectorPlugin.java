@@ -8,6 +8,9 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.graphics.Rect;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.SystemClock;
 import android.provider.DocumentsContract;
@@ -23,7 +26,14 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.google.android.gms.tasks.Tasks;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.text.Text;
+import com.google.mlkit.vision.text.TextRecognition;
+import com.google.mlkit.vision.text.TextRecognizer;
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
@@ -34,12 +44,15 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.Mac;
@@ -50,12 +63,13 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
- * Opt-in live numbers on Android: a HoYoLAB sign-in, a SKPORT sign-in and
- * screenshots chosen or shared into Memoria.
+ * Opt-in live numbers on Android: a HoYoLAB sign-in, a SKPORT sign-in, and
+ * screenshots chosen, shared into Memoria or taken with the camera, read on the
+ * phone by ML Kit.
  *
  * HoYoLAB cookies and SKPORT tokens are sealed with an AES key held in the
  * Android Keystore and never cross into the page, a log or the app state. The page sees status,
- * the notes' numbers and downscaled screenshot images only.
+ * the notes' numbers, downscaled screenshot images and the text read from them only.
  */
 @CapacitorPlugin(name = "Connector")
 public class ConnectorPlugin extends Plugin {
@@ -299,15 +313,52 @@ public class ConnectorPlugin extends Plugin {
         return request(address, cookies, timeoutMs, null, null, null);
     }
 
+    /** The only cookies a HoYoLAB call ever carries: the sealed session and account tokens. */
+    private static final String[] SESSION_COOKIES = {
+        "ltuid_v2", "ltoken_v2", "ltmid_v2", "cookie_token_v2", "account_id_v2", "account_mid_v2",
+    };
+
+    /** HTTPS on the default port to hoyolab.com or hoyoverse.com (or a subdomain), with no user info. */
+    static boolean allowedApiHost(URL url) {
+        if (url == null || !"https".equals(url.getProtocol()) || url.getUserInfo() != null) return false;
+        if (url.getPort() != -1 && url.getPort() != 443) return false;
+        String host = url.getHost();
+        if (host == null) return false;
+        host = host.toLowerCase(java.util.Locale.ROOT);
+        for (String allowed : new String[] { "hoyolab.com", "hoyoverse.com" }) {
+            if (host.equals(allowed) || host.endsWith("." + allowed)) return true;
+        }
+        return false;
+    }
+
+    /** `header` cut down to the allowlisted session cookies, each a valid cookie value, in a fixed order. */
+    static String allowlistedCookies(String header) {
+        StringBuilder out = new StringBuilder();
+        for (String name : SESSION_COOKIES) {
+            String value = cookieValue(header, name);
+            if (!validCookie(value)) continue;
+            if (out.length() > 0) out.append("; ");
+            out.append(name).append('=').append(value);
+        }
+        return out.toString();
+    }
+
     /**
      * One HoYoLAB call. `site` set means HoYoverse's web redemption (its own Origin,
      * no DS); otherwise HoYoLAB's signed headers. `body` set makes it a JSON POST.
+     *
+     * The session never leaves HoYoLAB: only an allowlisted HTTPS host is called,
+     * redirects are never followed (a 3xx is an error), and only the allowlisted
+     * session cookies are sent.
      */
     private static JSONObject request(String address, String cookies, int timeoutMs, String site, String signGame, String body)
         throws HoyolabError {
         HttpURLConnection connection = null;
         try {
-            connection = (HttpURLConnection) new URL(address).openConnection();
+            URL url = new URL(address);
+            if (!allowedApiHost(url)) throw new HoyolabError("Memoria only sends your HoYoLAB sign-in to HoYoLAB.");
+            String session = allowlistedCookies(cookies);
+            connection = (HttpURLConnection) url.openConnection();
             connection.setConnectTimeout(timeoutMs);
             connection.setReadTimeout(timeoutMs);
             connection.setInstanceFollowRedirects(false);
@@ -326,7 +377,7 @@ public class ConnectorPlugin extends Plugin {
             if (signGame != null) connection.setRequestProperty("x-rpc-signgame", signGame);
             connection.setRequestProperty("Accept", "application/json, text/plain, */*");
             connection.setRequestProperty("User-Agent", USER_AGENT);
-            connection.setRequestProperty("Cookie", cookies);
+            if (!session.isEmpty()) connection.setRequestProperty("Cookie", session);
             if (body != null) {
                 byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
                 connection.setRequestMethod("POST");
@@ -338,6 +389,8 @@ public class ConnectorPlugin extends Plugin {
                 }
             }
             int code = connection.getResponseCode();
+            // A redirect is never followed: the session cookies stay with the host they were sent to.
+            if (code >= 300 && code < 400) throw new HoyolabError("HoYoLAB sent Memoria elsewhere. Try again later.");
             if (code < 200 || code >= 300) throw new HoyolabError("HoYoLAB answered with an error (" + code + "). Try again later.");
             try (InputStream input = connection.getInputStream()) {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -964,8 +1017,8 @@ public class ConnectorPlugin extends Plugin {
         }
         signingIn = true;
         try {
-            Intent intent = new Intent(getContext(), HoyolabLoginActivity.class)
-                .putExtra(HoyolabLoginActivity.EXTRA_FRESH, Boolean.TRUE.equals(call.getBoolean("fresh", false)));
+            // Every sign-in starts from a clean cookie jar, so another account needs no flag.
+            Intent intent = new Intent(getContext(), HoyolabLoginActivity.class);
             startActivityForResult(call, intent, "loginResult");
         } catch (RuntimeException error) {
             signingIn = false;
@@ -1922,7 +1975,186 @@ public class ConnectorPlugin extends Plugin {
         });
     }
 
-    /** `{ fileName, observedAt, dataUrl }`: the image downscaled to 1080 px, as JPEG. */
+    /** The camera viewfinder; the picture is read like a picked screenshot, then deleted. */
+    @PluginMethod
+    public void captureScreenshot(PluginCall call) {
+        if (picking) {
+            call.reject("The camera is already open.", "PICK_BUSY");
+            return;
+        }
+        picking = true;
+        try {
+            startActivityForResult(call, new Intent(getContext(), CameraCaptureActivity.class), "captureResult");
+        } catch (RuntimeException error) {
+            picking = false;
+            call.reject("The camera could not open.", "CAMERA_UNAVAILABLE", error);
+        }
+    }
+
+    @ActivityCallback
+    private void captureResult(PluginCall call, ActivityResult result) {
+        picking = false;
+        if (call == null) return;
+        Intent data = result.getData();
+        String path = data == null ? null : data.getStringExtra(CameraCaptureActivity.EXTRA_PATH);
+        if (result.getResultCode() != Activity.RESULT_OK || path == null) {
+            String error = data == null ? null : data.getStringExtra(CameraCaptureActivity.EXTRA_ERROR);
+            if (error != null) {
+                call.reject(error, "CAMERA_UNAVAILABLE");
+                return;
+            }
+            JSObject cancelled = new JSObject();
+            cancelled.put("cancelled", true);
+            call.resolve(cancelled);
+            return;
+        }
+        Context context = getContext().getApplicationContext();
+        EXECUTOR.execute(() -> {
+            File file = new File(path);
+            try {
+                // Only a picture this app's own viewfinder wrote, in its own cache.
+                File directory = new File(context.getCacheDir(), CameraCaptureActivity.DIRECTORY).getCanonicalFile();
+                File parent = file.getCanonicalFile().getParentFile();
+                if (parent == null || !parent.equals(directory)) throw new Exception("The picture could not be read.");
+                JSObject image = readImage(context, Uri.fromFile(file));
+                image.put("fileName", "Camera scan");
+                image.put("observedAt", System.currentTimeMillis());
+                call.resolve(image);
+            } catch (Exception error) {
+                call.reject(error.getMessage() != null ? error.getMessage() : "The picture could not be read.");
+            } finally {
+                // The picture never outlives its reading.
+                file.delete();
+            }
+        });
+    }
+
+    /** Degrees an image's EXIF orientation says to turn it, and whether it is mirrored. */
+    private static int[] exifTurn(ContentResolver resolver, Uri uri) {
+        try (InputStream input = resolver.openInputStream(uri)) {
+            if (input == null) return new int[] { 0, 0 };
+            int orientation = new ExifInterface(input).getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_NORMAL
+            );
+            switch (orientation) {
+                case ExifInterface.ORIENTATION_ROTATE_90:
+                    return new int[] { 90, 0 };
+                case ExifInterface.ORIENTATION_ROTATE_180:
+                    return new int[] { 180, 0 };
+                case ExifInterface.ORIENTATION_ROTATE_270:
+                    return new int[] { 270, 0 };
+                case ExifInterface.ORIENTATION_FLIP_HORIZONTAL:
+                    return new int[] { 0, 1 };
+                case ExifInterface.ORIENTATION_TRANSPOSE:
+                    return new int[] { 270, 1 };
+                case ExifInterface.ORIENTATION_TRANSVERSE:
+                    return new int[] { 90, 1 };
+                case ExifInterface.ORIENTATION_FLIP_VERTICAL:
+                    return new int[] { 180, 1 };
+                default:
+                    return new int[] { 0, 0 };
+            }
+        } catch (Exception ignored) {
+            // No EXIF (a PNG screenshot) reads as upright.
+            return new int[] { 0, 0 };
+        }
+    }
+
+    /** One recognised line and where it sits, for reading order. */
+    private static final class OcrLine {
+        final String text;
+        final float top;
+        final float left;
+        final float height;
+
+        OcrLine(String text, float top, float left, float height) {
+            this.text = text;
+            this.top = top;
+            this.left = left;
+            this.height = height;
+        }
+    }
+
+    private static double fraction(int value, int size) {
+        if (size <= 0) return 0;
+        double share = (double) value / size;
+        return Math.max(0, Math.min(1, Math.round(share * 10000) / 10000.0));
+    }
+
+    /**
+     * ML Kit's on-device text recognition (v2, Latin, bundled: no download, no
+     * network). Runs on the calling thread, which is never the main one. Fills
+     * `lines` (top to bottom, then left to right, as Windows OCR reads) and one
+     * `mlkit` pass whose word boxes are fractions of the image. A failure leaves
+     * the image without text, to be typed in by hand.
+     */
+    private static void recognize(Bitmap bitmap, JSObject image) {
+        TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+        try {
+            Text text = Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0)), 20, TimeUnit.SECONDS);
+            int width = bitmap.getWidth();
+            int height = bitmap.getHeight();
+            List<OcrLine> found = new ArrayList<>();
+            JSONArray words = new JSONArray();
+            for (Text.TextBlock block : text.getTextBlocks()) {
+                for (Text.Line line : block.getLines()) {
+                    String value = line.getText().trim();
+                    if (value.isEmpty()) continue;
+                    Rect box = line.getBoundingBox();
+                    found.add(
+                        box == null
+                            ? new OcrLine(value, Float.MAX_VALUE, 0, 0)
+                            : new OcrLine(value, box.top, box.left, Math.max(1, box.height()))
+                    );
+                    for (Text.Element element : line.getElements()) {
+                        Rect place = element.getBoundingBox();
+                        if (place == null || element.getText().trim().isEmpty() || words.length() >= 1500) continue;
+                        JSONObject word = new JSONObject();
+                        word.put("text", clip(element.getText().trim(), 200));
+                        word.put("l", fraction(place.left, width));
+                        word.put("t", fraction(place.top, height));
+                        word.put("r", fraction(place.right, width));
+                        word.put("b", fraction(place.bottom, height));
+                        words.put(word);
+                    }
+                }
+            }
+            // Rows by their top edge: a line within half the row's height of the row's first
+            // line joins it. Then left to right within each row.
+            found.sort((a, b) -> Float.compare(a.top, b.top));
+            JSONArray lines = new JSONArray();
+            int start = 0;
+            while (start < found.size() && lines.length() < 400) {
+                OcrLine first = found.get(start);
+                int end = start + 1;
+                while (end < found.size() && found.get(end).top - first.top <= first.height / 2) end++;
+                List<OcrLine> row = new ArrayList<>(found.subList(start, end));
+                row.sort((a, b) -> Float.compare(a.left, b.left));
+                for (OcrLine line : row) {
+                    if (lines.length() >= 400) break;
+                    lines.put(clip(line.text, 500));
+                }
+                start = end;
+            }
+            JSONObject pass = new JSONObject();
+            pass.put("name", "mlkit");
+            pass.put("region", 0);
+            pass.put("lines", lines);
+            pass.put("words", words);
+            image.put("lines", lines);
+            image.put("passes", new JSONArray().put(pass));
+        } catch (Exception ignored) {
+            // No text: the sheet still opens with the picture.
+        } finally {
+            recognizer.close();
+        }
+    }
+
+    /**
+     * `{ fileName, observedAt, dataUrl, lines?, passes? }`: the image turned
+     * upright, read by ML Kit, then downscaled to 1080 px as JPEG for the sheet.
+     */
     private static JSObject readImage(Context context, Uri uri) throws Exception {
         ContentResolver resolver = context.getContentResolver();
         String name = "Screenshot";
@@ -1963,6 +2195,19 @@ public class ConnectorPlugin extends Plugin {
             bitmap = BitmapFactory.decodeStream(input, null, decode);
         }
         if (bitmap == null) throw new Exception("This file is not an image Memoria can read.");
+        // A camera picture records which way is up in EXIF; screenshots are already upright.
+        int[] turn = exifTurn(resolver, uri);
+        if (turn[0] != 0 || turn[1] != 0) {
+            Matrix matrix = new Matrix();
+            if (turn[1] != 0) matrix.postScale(-1, 1);
+            matrix.postRotate(turn[0]);
+            Bitmap upright = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+            if (upright != bitmap) bitmap.recycle();
+            bitmap = upright;
+        }
+        JSObject image = new JSObject();
+        // Read at the decoded size (up to twice the preview's), where small HUD text is still sharp.
+        recognize(bitmap, image);
         int side = Math.max(bitmap.getWidth(), bitmap.getHeight());
         if (side > MAX_IMAGE_SIDE) {
             float scale = (float) MAX_IMAGE_SIDE / side;
@@ -1978,7 +2223,6 @@ public class ConnectorPlugin extends Plugin {
         ByteArrayOutputStream jpeg = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 82, jpeg);
         bitmap.recycle();
-        JSObject image = new JSObject();
         image.put("fileName", name);
         image.put("observedAt", observedAt);
         image.put("dataUrl", "data:image/jpeg;base64," + Base64.encodeToString(jpeg.toByteArray(), Base64.NO_WRAP));

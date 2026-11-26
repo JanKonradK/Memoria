@@ -203,7 +203,7 @@ export function TodayNotices() {
               .run()
               .catch((cause: unknown) =>
                 setReminderError(
-                  cause instanceof Error ? cause.message : 'That did not work. Try Settings → Reminders.',
+                  cause instanceof Error ? cause.message : 'That did not work. Try Settings → Time & reminders.',
                 ),
               );
           }}

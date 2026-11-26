@@ -20,10 +20,12 @@ mod presence;
 mod reminders;
 mod server;
 mod store;
+mod surface;
 mod update;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -49,6 +51,19 @@ struct CloseState {
     quitting: bool,
     tray_hint_shown: bool,
 }
+
+/// The page draws the window's title bar. Until it says it is ready, Windows'
+/// own frame is the way back to moving and closing a window that never loaded.
+#[derive(Default)]
+struct FrameFallback {
+    /// A check is waiting to run.
+    armed: bool,
+    /// Windows' frame was put back because the page was not ready in time.
+    restored: bool,
+}
+
+/// How long a shown window waits for its page before getting Windows' frame back.
+const FRAME_FALLBACK: Duration = Duration::from_secs(10);
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct Bounds {
@@ -87,8 +102,20 @@ struct App {
     tray: Mutex<Option<TrayItems>>,
     /// The page zoom picked with Ctrl and + or -, kept across launches.
     zoom: Mutex<f64>,
+    frame: Mutex<FrameFallback>,
+    /// The title bar's last word from `memoria:window-state`, so only a change is sent.
+    window_state: Mutex<Option<Value>>,
     /// Opt-in live numbers: HoYoLAB, wish history and screenshot text.
     connectors: connectors::ConnectorManager,
+    /// Tray, full window or quick card (surface.rs).
+    surface: Mutex<surface::SurfaceMachine>,
+    /// Where the quick card last settled, kept apart from the full window's `bounds`.
+    compact_bounds: Mutex<Option<Bounds>>,
+    /// The thread holding the quick card's global shortcut, once started.
+    compact_hotkey: Mutex<Option<connectors::capture::Hotkey>>,
+    compact_shortcut: Mutex<surface::ShortcutRuntime>,
+    /// The card came on screen without focus, which Tauri did not see.
+    inactive_reveal: AtomicBool,
 }
 
 impl App {
@@ -96,21 +123,41 @@ impl App {
         self.data.join("desktop-window.json")
     }
 
+    fn compact_file(&self) -> PathBuf {
+        self.data.join("desktop-compact.json")
+    }
+
     fn zoom_file(&self) -> PathBuf {
         self.data.join("desktop-zoom.json")
     }
 
+    /// Windows (Task Manager's Startup apps) switched off the start at sign-in the player chose.
+    fn startup_blocked(&self) -> bool {
+        self.packaged && self.prefs.get().open_at_login && presence::login::blocked()
+    }
+
     fn presence_state(&self) -> Value {
         let prefs = self.prefs.get();
+        let shortcut = self.compact_shortcut.locked();
         json!({
             "openAtLogin": prefs.open_at_login,
             "closeToTray": prefs.close_to_tray,
             "gameStartNotices": prefs.game_start_notices,
             "remindersOnPc": prefs.reminders_on_pc,
             "canStartWithWindows": self.packaged,
+            "startupBlockedByWindows": self.startup_blocked(),
             "gameWatch": cfg!(windows),
+            "compactPopOutOnStop": prefs.compact_pop_out_on_stop,
+            "compactAlwaysOnTop": prefs.compact_always_on_top,
+            "compactShortcut": {
+                "enabled": prefs.compact_shortcut_enabled,
+                "accelerator": prefs.compact_shortcut,
+                "registered": shortcut.registered,
+                "error": shortcut.error,
+            },
         })
     }
+
 }
 
 // ---------------------------------------------------------------------------
@@ -197,6 +244,22 @@ pub fn external_url(value: &str) -> Option<String> {
     Some(url.to_string())
 }
 
+/// How many pixels two rectangles share.
+fn overlap(a: &Bounds, b: &Bounds) -> i64 {
+    let w = (a.x + a.width as i32).min(b.x + b.width as i32) - a.x.max(b.x);
+    let h = (a.y + a.height as i32).min(b.y + b.height as i32) - a.y.max(b.y);
+    (w.max(0) as i64) * (h.max(0) as i64)
+}
+
+/// The display `b` overlaps most, if it overlaps any.
+fn best_area(b: &Bounds, areas: &[Bounds]) -> Option<Bounds> {
+    areas
+        .iter()
+        .copied()
+        .filter(|area| overlap(b, area) > 0)
+        .max_by_key(|area| overlap(b, area))
+}
+
 /// Places a saved window on the display it overlaps most, or centres a new one.
 fn window_bounds(saved: Option<Bounds>, areas: &[Bounds]) -> Bounds {
     let fallback = Bounds {
@@ -206,12 +269,7 @@ fn window_bounds(saved: Option<Bounds>, areas: &[Bounds]) -> Bounds {
         height: 900,
     };
     let valid = saved.filter(|b| (360..=10000).contains(&b.width) && (320..=10000).contains(&b.height));
-    let overlap = |area: &Bounds| -> i64 {
-        let Some(b) = valid else { return 0 };
-        let w = (b.x + b.width as i32).min(area.x + area.width as i32) - b.x.max(area.x);
-        let h = (b.y + b.height as i32).min(area.y + area.height as i32) - b.y.max(area.y);
-        (w.max(0) as i64) * (h.max(0) as i64)
-    };
+    let overlap = |area: &Bounds| -> i64 { valid.map_or(0, |b| overlap(&b, area)) };
     let area = areas
         .iter()
         .copied()
@@ -255,28 +313,6 @@ fn monitor_areas(app: &AppHandle) -> Vec<Bounds> {
         .filter(|b| b.width > 0 && b.height > 0)
         .collect()
 }
-
-#[cfg(windows)]
-fn set_open_at_login(enabled: bool) {
-    use winreg::enums::HKEY_CURRENT_USER;
-    let Ok((run, _)) =
-        winreg::RegKey::predef(HKEY_CURRENT_USER).create_subkey(r"Software\Microsoft\Windows\CurrentVersion\Run")
-    else {
-        return;
-    };
-    // The Electron build registered as electron.app.Memoria. One entry is enough.
-    let _ = run.delete_value("electron.app.Memoria");
-    if enabled {
-        if let Ok(exe) = std::env::current_exe() {
-            let _ = run.set_value("Memoria", &format!("\"{}\"", exe.display()));
-        }
-    } else {
-        let _ = run.delete_value("Memoria");
-    }
-}
-
-#[cfg(not(windows))]
-fn set_open_at_login(_enabled: bool) {}
 
 /// Windows shows an installed copy's notices under Memoria's own name and icon.
 #[cfg(windows)]
@@ -345,12 +381,88 @@ fn set_background(window: &WebviewWindow, background: bool) {
     let _ = (window, background);
 }
 
+/// Brings the full app forward: the tray, a second start, a notice, a snip's
+/// reading, an update and quitting all land here. The quick card steps aside
+/// first, putting the full window back as it was.
 fn focus_window(app: &AppHandle) {
+    if surface::leave(app, surface::Leave::Full, None) {
+        return;
+    }
     if let Some(window) = main_window(app) {
         set_background(&window, false);
         let _ = window.unminimize();
         let _ = window.show();
         let _ = window.set_focus();
+        app.state::<App>().surface.locked().shown();
+        arm_frame_fallback(app);
+    }
+}
+
+/// Called whenever the window comes on screen. If the page has not drawn its
+/// title bar within FRAME_FALLBACK, Windows' frame comes back so the window can
+/// still be moved, resized and closed.
+fn arm_frame_fallback(app: &AppHandle) {
+    let state = app.state::<App>();
+    if state.close.locked().ready {
+        return;
+    }
+    if std::mem::replace(&mut state.frame.locked().armed, true) {
+        return;
+    }
+    let handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(FRAME_FALLBACK).await;
+        let state = handle.state::<App>();
+        state.frame.locked().armed = false;
+        if state.close.locked().ready {
+            return;
+        }
+        if let Some(window) = main_window(&handle)
+            && window.set_decorations(true).is_ok()
+        {
+            state.frame.locked().restored = true;
+        }
+    });
+}
+
+/// What the page's title bar shows: maximized or not, focused or not, and the
+/// zoom it undoes to stay the size of Windows' own.
+fn current_window_state(app: &AppHandle) -> Option<Value> {
+    let window = main_window(app)?;
+    Some(json!({
+        "maximized": window.is_maximized().unwrap_or(false),
+        "focused": window.is_focused().unwrap_or(false),
+        "zoom": *app.state::<App>().zoom.locked(),
+    }))
+}
+
+/// Tells the title bar about a change, and only a change: resizing fires often.
+fn emit_window_state(app: &AppHandle, focused: Option<bool>) {
+    let Some(mut next) = current_window_state(app) else { return };
+    if let Some(focused) = focused {
+        // The event's own word: is_focused can still read the moment before.
+        next["focused"] = json!(focused);
+    }
+    let before = app.state::<App>().window_state.locked().replace(next.clone());
+    if before.as_ref() != Some(&next) {
+        emit(app, "memoria:window-state", next);
+    }
+}
+
+/// Closing the window, from the page's title bar or from Windows (Alt+F4, the
+/// taskbar): into the tray, or a save and quit. One path, so both behave alike.
+fn close_window(app: &AppHandle) {
+    // The quick card closes to where it came from; it never quits Memoria.
+    if surface::dismiss(app) {
+        return;
+    }
+    let state = app.state::<App>();
+    let pending = state.close.locked().pending.is_some();
+    if state.prefs.get().close_to_tray && !pending {
+        save_bounds(app);
+        hide_to_tray(app);
+    } else {
+        request_close(app);
     }
 }
 
@@ -476,7 +588,11 @@ fn message(app: &AppHandle, kind: MessageDialogKind, title: &str, text: &str) {
 
 fn save_bounds(app: &AppHandle) {
     let state = app.state::<App>();
-    let maximized = main_window(app).and_then(|w| w.is_maximized().ok()).unwrap_or(false);
+    // Under the quick card the full window is never maximized; the card knows whether it was.
+    let card_maximized = state.surface.locked().card().map(|card| card.was_maximized);
+    let maximized = card_maximized
+        .unwrap_or_else(|| main_window(app).and_then(|w| w.is_maximized().ok()).unwrap_or(false));
+    surface::save_card_position(app);
     let saved = *state.bounds.locked();
     if let Some(b) = saved {
         let _ = store::write_json(
@@ -486,18 +602,30 @@ fn save_bounds(app: &AppHandle) {
     }
 }
 
+/// Notes where the window is. The full window's place is never overwritten
+/// by the quick card's, nor by the moves of a change between the two.
 fn record_bounds(window: &WebviewWindow) {
-    if window.is_maximized().unwrap_or(false) || window.is_minimized().unwrap_or(false) {
+    let state = window.state::<App>();
+    let (full, card) = {
+        let machine = state.surface.locked();
+        (machine.records_full_bounds(), machine.records_card_bounds())
+    };
+    if !(full || card) || window.is_maximized().unwrap_or(false) || window.is_minimized().unwrap_or(false) {
         return;
     }
     if let (Ok(position), Ok(size)) = (window.outer_position(), window.inner_size())
         && size.width > 0 && size.height > 0 {
-        *window.state::<App>().bounds.locked() = Some(Bounds {
+        let bounds = Some(Bounds {
             x: position.x,
             y: position.y,
             width: size.width,
             height: size.height,
         });
+        if full {
+            *state.bounds.locked() = bounds;
+        } else {
+            *state.compact_bounds.locked() = bounds;
+        }
     }
 }
 
@@ -550,10 +678,11 @@ fn request_close(app: &AppHandle) {
 /// Closing the window hides it while Memoria keeps watching for games and syncing.
 fn hide_to_tray(app: &AppHandle) {
     if let Some(window) = main_window(app) {
-        let _ = window.hide();
+        surface::hide_window(&window);
         set_background(&window, true);
     }
     let state = app.state::<App>();
+    state.surface.locked().hidden();
     let first = {
         let mut close = state.close.locked();
         !std::mem::replace(&mut close.tray_hint_shown, true)
@@ -578,9 +707,8 @@ fn apply_preferences(app: &AppHandle) {
         *enabled = prefs.reminders_on_pc;
         changed
     });
-    if state.packaged {
-        set_open_at_login(prefs.open_at_login);
-    }
+    // The Run entry is written only when the player changes it (presence_set, the tray).
+    let starts_with_windows = prefs.open_at_login && !state.startup_blocked();
     if let Some(watcher) = state.watcher.locked().as_ref() {
         if cfg!(windows) && prefs.game_start_notices {
             watcher.start();
@@ -590,7 +718,7 @@ fn apply_preferences(app: &AppHandle) {
     }
     if let Some(items) = state.tray.locked().as_ref() {
         if let Some(item) = &items.open_at_login {
-            let _ = item.set_checked(prefs.open_at_login);
+            let _ = item.set_checked(starts_with_windows);
         }
         let _ = items.notices.set_checked(prefs.game_start_notices);
         let _ = items.close_to_tray.set_checked(prefs.close_to_tray);
@@ -627,7 +755,7 @@ fn create_tray(app: &AppHandle) -> tauri::Result<()> {
             "login",
             "Start with Windows",
             true,
-            prefs.open_at_login,
+            prefs.open_at_login && !state.startup_blocked(),
             None::<&str>,
         )?)
     } else {
@@ -658,12 +786,14 @@ fn create_tray(app: &AppHandle) -> tauri::Result<()> {
         None::<&str>,
     )?;
     let capture = MenuItem::with_id(app, "capture", "Capture game screenshot", true, None::<&str>)?;
+    let card = MenuItem::with_id(app, "card", "Quick card", true, None::<&str>)?;
     let phone = MenuItem::with_id(app, "phone", "Allow phone sync through Windows", true, None::<&str>)?;
     let updates = MenuItem::with_id(app, "updates", "Check for updates", true, None::<&str>)?;
     let about = MenuItem::with_id(app, "about", "About Memoria", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit Memoria", true, None::<&str>)?;
     let menu = Menu::new(app)?;
     menu.append(&open)?;
+    menu.append(&card)?;
     menu.append(&capture)?;
     menu.append(&PredefinedMenuItem::separator(app)?)?;
     if let Some(login) = &login {
@@ -687,6 +817,7 @@ fn create_tray(app: &AppHandle) -> tauri::Result<()> {
             let state = app.state::<App>();
             match event.id().as_ref() {
                 "open" => focus_window(app),
+                "card" => surface::open_for_active_game(app),
                 // A short wait, so the closing menu is not in the picture.
                 "capture" => connectors::capture::trigger(
                     app,
@@ -694,8 +825,12 @@ fn create_tray(app: &AppHandle) -> tauri::Result<()> {
                     Duration::from_millis(250),
                 ),
                 "login" => {
-                    let flag = !state.prefs.get().open_at_login;
+                    // Switched off by Windows reads as off, so a click here turns it back on.
+                    let flag = !(state.prefs.get().open_at_login && !state.startup_blocked());
                     state.prefs.set(&json!({ "openAtLogin": flag }));
+                    if state.packaged {
+                        presence::login::set(flag);
+                    }
                     apply_preferences(app);
                 }
                 "notices" => {
@@ -746,7 +881,8 @@ fn create_tray(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-fn create_window(app: &AppHandle, token: &str) -> tauri::Result<()> {
+/// `background`: started at sign-in, so the window stays in the tray until asked for.
+fn create_window(app: &AppHandle, token: &str, background: bool) -> tauri::Result<()> {
     let state = app.state::<App>();
     let origin = state.origin.clone();
     let script = include_str!("bridge.js")
@@ -754,11 +890,15 @@ fn create_window(app: &AppHandle, token: &str) -> tauri::Result<()> {
         .replace("__TOKEN__", &json!(token).to_string());
     let url: tauri::Url = format!("{origin}/").parse().expect("loopback URL");
     let nav_origin = origin.clone();
-    let shown = Arc::new(Mutex::new(false));
+    let shown = Arc::new(Mutex::new(background));
+    // The page draws the title bar (WindowChrome.tsx). Windows keeps the rest:
+    // rounded corners, the shadow, Snap, and the resize edges.
     let builder = tauri::WebviewWindowBuilder::new(app, MAIN, WebviewUrl::External(url))
         .title("Memoria")
         .min_inner_size(360.0, 480.0)
         .visible(false)
+        .decorations(false)
+        .shadow(true)
         .background_color(tauri::window::Color(12, 13, 15, 255))
         .data_directory(state.data.join("webview"))
         .initialization_script(&script)
@@ -786,14 +926,16 @@ fn create_window(app: &AppHandle, token: &str) -> tauri::Result<()> {
                     *shown = true;
                     let _ = window.show();
                     let _ = window.set_focus();
+                    window.state::<App>().surface.locked().shown();
+                    arm_frame_fallback(window.app_handle());
                 }
             }
         });
-    let builder = match webview_browser_args() {
-        Some(args) => builder.additional_browser_args(&args),
-        None => builder,
-    };
-    let window = builder.build()?;
+    let window = builder.additional_browser_args(&webview_browser_args()).build()?;
+    if background {
+        // Painting nothing and holding little memory, as if it had been closed to the tray.
+        set_background(&window, true);
+    }
 
     let saved = store::read_json(&state.bounds_file());
     let saved_bounds = saved.as_ref().filter(|v| v["physical"] == true).and_then(|v| {
@@ -823,36 +965,44 @@ fn create_window(app: &AppHandle, token: &str) -> tauri::Result<()> {
     let tracked = window.clone();
     window.on_window_event(move |event| match event {
         WindowEvent::CloseRequested { api, .. } => {
-            let state = handle.state::<App>();
-            if state.close.locked().quitting {
+            if handle.state::<App>().close.locked().quitting {
                 return;
             }
             api.prevent_close();
-            let pending = state.close.locked().pending.is_some();
-            if state.prefs.get().close_to_tray && !pending {
-                save_bounds(&handle);
-                hide_to_tray(&handle);
-            } else {
-                request_close(&handle);
-            }
+            close_window(&handle);
         }
-        WindowEvent::Moved(_) | WindowEvent::Resized(_) => record_bounds(&tracked),
+        WindowEvent::Moved(_) => record_bounds(&tracked),
+        WindowEvent::Resized(_) => {
+            record_bounds(&tracked);
+            emit_window_state(&handle, None);
+        }
+        WindowEvent::Focused(focused) => {
+            if *focused {
+                surface::focused(&handle, &tracked);
+            }
+            emit_window_state(&handle, Some(*focused));
+        }
         _ => {}
     });
     Ok(())
 }
 
 /// Browser arguments for webviews on the main window's profile, which must all
-/// agree. A check run (MEMORIA_INSTANCE) drives the window over the DevTools
-/// port. Some machines ignore WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS, so the port
-/// is passed here. Passing arguments replaces wry's defaults, so they are repeated.
-fn webview_browser_args() -> Option<String> {
+/// agree. Passing arguments replaces wry's defaults, so they are repeated.
+/// Scrollbars are Windows 11's thin overlay ones. A check run (MEMORIA_INSTANCE)
+/// drives the window over the DevTools port; some machines ignore
+/// WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS, so the port is passed here too.
+fn webview_browser_args() -> String {
+    let mut args = String::from(
+        "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --enable-features=FluentOverlayScrollbar",
+    );
     let port = std::env::var_os("MEMORIA_INSTANCE")
         .and(std::env::var("MEMORIA_DEBUG_PORT").ok())
-        .and_then(|port| port.parse::<u16>().ok())?;
-    Some(format!(
-        "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --remote-debugging-port={port}"
-    ))
+        .and_then(|port| port.parse::<u16>().ok());
+    if let Some(port) = port {
+        args.push_str(&format!(" --remote-debugging-port={port}"));
+    }
+    args
 }
 
 /// The zoom levels Ctrl and + or - step through, as in a browser.
@@ -876,18 +1026,104 @@ fn zoom_step(current: f64, step: i32) -> f64 {
 
 /// Ctrl and +, - or 0 in the window. `step` is 1 or -1, or 0 to reset to 100%.
 #[tauri::command]
-fn set_zoom(webview: tauri::Webview, state: tauri::State<'_, App>, step: i32) -> CommandResult<f64> {
+fn set_zoom(app: AppHandle, webview: tauri::Webview, step: i32) -> CommandResult<f64> {
+    let state = app.state::<App>();
     trusted(&webview, &state)?;
-    let mut zoom = state.zoom.locked();
-    let next = if step == 0 {
-        1.0
-    } else {
-        zoom_step(*zoom, step.signum())
+    let next = {
+        let mut zoom = state.zoom.locked();
+        let next = if step == 0 {
+            1.0
+        } else {
+            zoom_step(*zoom, step.signum())
+        };
+        webview.set_zoom(next).map_err(|error| error.to_string())?;
+        *zoom = next;
+        next
     };
-    webview.set_zoom(next).map_err(|error| error.to_string())?;
-    *zoom = next;
     let _ = store::write_json(&state.zoom_file(), &json!({ "zoom": next }));
+    // The title bar undoes the zoom, to stay the size of Windows' own.
+    emit_window_state(&app, None);
     Ok(next)
+}
+
+// The page's own title bar. The window is frameless (create_window), so these
+// are its only minimize, maximize and close buttons.
+
+#[tauri::command]
+fn window_minimize(app: AppHandle, webview: tauri::Webview) -> CommandResult<()> {
+    trusted(&webview, &app.state::<App>())?;
+    let window = main_window(&app).ok_or("The window is not open.")?;
+    window.minimize().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn window_toggle_maximize(app: AppHandle, webview: tauri::Webview) -> CommandResult<Value> {
+    trusted(&webview, &app.state::<App>())?;
+    let window = main_window(&app).ok_or("The window is not open.")?;
+    let toggled = if window.is_maximized().unwrap_or(false) {
+        window.unmaximize()
+    } else {
+        window.maximize()
+    };
+    toggled.map_err(|error| error.to_string())?;
+    current_window_state(&app).ok_or_else(|| "The window is not open.".into())
+}
+
+/// The same close as the window's own: into the tray, or the page's save first.
+#[tauri::command]
+fn window_close(app: AppHandle, webview: tauri::Webview) -> CommandResult<()> {
+    trusted(&webview, &app.state::<App>())?;
+    close_window(&app);
+    Ok(())
+}
+
+#[tauri::command]
+fn window_state(app: AppHandle, webview: tauri::Webview) -> CommandResult<Value> {
+    trusted(&webview, &app.state::<App>())?;
+    current_window_state(&app).ok_or_else(|| "The window is not open.".into())
+}
+
+/// The quick card for one game (or the page's pick), asked for by the player.
+#[tauri::command]
+fn window_enter_compact(app: AppHandle, webview: tauri::Webview, game_id: Option<String>) -> CommandResult<Value> {
+    trusted(&webview, &app.state::<App>())?;
+    surface::enter(&app, game_id, surface::Opener::Player);
+    Ok(surface::page_state(&app))
+}
+
+/// Takes the card down. `openGameId` opens the full app on that game; `toTray`
+/// picks the tray or the full window; neither dismisses it to where it came from.
+#[tauri::command]
+fn window_exit_compact(
+    app: AppHandle,
+    webview: tauri::Webview,
+    open_game_id: Option<String>,
+    to_tray: Option<bool>,
+) -> CommandResult<Value> {
+    trusted(&webview, &app.state::<App>())?;
+    let open = surface::clean_game_id(open_game_id);
+    match surface::exit_target(open.is_some(), to_tray) {
+        Some(to) => surface::leave(&app, to, open),
+        None => surface::dismiss(&app),
+    };
+    Ok(surface::page_state(&app))
+}
+
+#[tauri::command]
+fn window_set_compact_pin(app: AppHandle, webview: tauri::Webview, pinned: bool) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    if !surface::set_pinned(&app, pinned) {
+        return Err("The quick card is not open.".into());
+    }
+    emit(&app, "memoria:presence-changed", state.presence_state());
+    Ok(surface::page_state(&app))
+}
+
+#[tauri::command]
+fn window_surface(app: AppHandle, webview: tauri::Webview) -> CommandResult<Value> {
+    trusted(&webview, &app.state::<App>())?;
+    Ok(surface::page_state(&app))
 }
 
 type CommandResult<T> = Result<T, String>;
@@ -956,7 +1192,12 @@ fn launch_clear(webview: tauri::Webview, state: tauri::State<'_, App>, game_id: 
 #[tauri::command]
 fn launch_start(webview: tauri::Webview, state: tauri::State<'_, App>, game_id: String) -> CommandResult<Value> {
     trusted(&webview, &state)?;
-    state.launch.start(&game_id)
+    let started = state.launch.start(&game_id)?;
+    // Two accounts on one program: the one started here is the one running.
+    if let Some(watcher) = state.watcher.locked().as_ref() {
+        watcher.note_launch(&game_id, Instant::now());
+    }
+    Ok(started)
 }
 
 #[tauri::command]
@@ -1028,6 +1269,42 @@ fn presence_set(app: AppHandle, webview: tauri::Webview, changes: Value) -> Comm
     let state = app.state::<App>();
     trusted(&webview, &state)?;
     state.prefs.set(&changes);
+    // The Run entry changes only when the player changes it, here or in the tray.
+    if state.packaged
+        && let Some(enabled) = changes.get("openAtLogin").and_then(Value::as_bool)
+    {
+        presence::login::set(enabled);
+    }
+    apply_preferences(&app);
+    Ok(state.presence_state())
+}
+
+/// Turns the quick card's global shortcut on or off, or changes it. Blank by
+/// default, so it never takes a key another app uses; one another app holds
+/// is saved but reported in `compactShortcut.error`.
+#[tauri::command]
+async fn presence_set_compact_shortcut(
+    app: AppHandle,
+    webview: tauri::Webview,
+    enabled: bool,
+    accelerator: Option<String>,
+) -> CommandResult<Value> {
+    let state = app.state::<App>();
+    trusted(&webview, &state)?;
+    let wanted = match accelerator.as_deref() {
+        None => state.prefs.get().compact_shortcut,
+        Some(spec) if spec.trim().is_empty() => String::new(),
+        Some(spec) => connectors::capture::parse_accelerator(spec)?.display,
+    };
+    let (capture_on, capture_keys) = state.connectors.shortcut_setting();
+    if enabled && capture_on && wanted == capture_keys {
+        return Err(format!("{capture_keys} already takes a screenshot. Choose a different shortcut."));
+    }
+    state.prefs.set_compact_shortcut(enabled, Some(wanted.as_str()))?;
+    let handle = app.clone();
+    tokio::task::spawn_blocking(move || surface::apply_shortcut(&handle))
+        .await
+        .map_err(|_| "The quick card shortcut could not be changed.".to_string())?;
     apply_preferences(&app);
     Ok(state.presence_state())
 }
@@ -1111,6 +1388,10 @@ fn notifications_settings(webview: tauri::Webview, state: tauri::State<'_, App>)
 fn renderer_ready(webview: tauri::Webview, state: tauri::State<'_, App>) -> CommandResult<()> {
     trusted(&webview, &state)?;
     state.close.locked().ready = true;
+    // A page that came up late draws its own title bar again, so Windows' frame goes.
+    if std::mem::take(&mut state.frame.locked().restored) {
+        let _ = webview.window().set_decorations(false);
+    }
     Ok(())
 }
 
@@ -1614,6 +1895,8 @@ fn main() {
         if let Err(error) = update::apply_helper(&args) { fatal(&error); }
         return;
     }
+    // Windows starts Memoria this way at sign-in (presence::login_command).
+    let background = presence::background_launch(&args);
     let mut context = tauri::generate_context!();
     // A check run against a scratch data folder must not hand off to the
     // player's own running copy, which shares the app id.
@@ -1699,14 +1982,34 @@ fn main() {
         bounds: Mutex::new(None),
         tray: Mutex::new(None),
         zoom: Mutex::new(1.0),
+        frame: Mutex::new(FrameFallback::default()),
+        window_state: Mutex::new(None),
         connectors: connectors::ConnectorManager::new_with_captures(&data, captures_dir(&data)),
+        surface: Mutex::new(surface::SurfaceMachine::new(background)),
+        compact_bounds: Mutex::new(None),
+        compact_hotkey: Mutex::new(None),
+        compact_shortcut: Mutex::new(surface::ShortcutRuntime::default()),
+        inactive_reveal: AtomicBool::new(false),
     };
 
     let app = tauri::Builder::default()
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| focus_window(app)))
+        // A second start shows the open window, unless it is Windows' own start at sign-in.
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if !presence::background_launch(&args) {
+                focus_window(app);
+            }
+        }))
         .manage(state)
         .invoke_handler(tauri::generate_handler![
             set_zoom,
+            window_minimize,
+            window_toggle_maximize,
+            window_close,
+            window_state,
+            window_enter_compact,
+            window_exit_compact,
+            window_set_compact_pin,
+            window_surface,
             launch_list,
             launch_choose,
             launch_clear,
@@ -1716,6 +2019,7 @@ fn main() {
             update_install,
             presence_get,
             presence_set,
+            presence_set_compact_shortcut,
             games_watch,
             game_notify,
             renderer_ready,
@@ -1791,10 +2095,19 @@ fn main() {
                         .locked()
                         .insert(game_id.clone(), Instant::now());
                     emit(&stops, "memoria:game-stopped", json!(game_id));
+                    // What is left is the next thing the player wants to know: the
+                    // quick card says it, without taking focus, if they asked for it.
+                    if state.prefs.get().compact_pop_out_on_stop {
+                        let app = stops.clone();
+                        let _ = stops.run_on_main_thread(move || surface::pop_out_after(&app, game_id));
+                    }
                 },
             ));
-            create_window(&handle, &token)?;
+            create_window(&handle, &token, background)?;
             create_tray(&handle)?;
+            if state.packaged {
+                presence::login::refresh(state.prefs.get().open_at_login);
+            }
             apply_preferences(&handle);
             // A screenshot folder chosen earlier is watched again from the start.
             if let Some(dir) = state.connectors.watch_dir() {
@@ -1804,6 +2117,10 @@ fn main() {
             // The capture shortcut, if the player turned it on before.
             if state.connectors.shortcut_setting().0 {
                 connectors::capture::apply_shortcut(&handle);
+            }
+            // The quick card's shortcut likewise. Blank and off unless the player chose one.
+            if state.prefs.get().compact_shortcut_enabled {
+                surface::apply_shortcut(&handle);
             }
             let notices = handle.clone();
             reminders::start(core, reminder_changes, reminder_preferences, data.clone(), move |notice| {
@@ -1828,6 +2145,7 @@ fn main() {
             }
             state.connectors.stop_watcher();
             connectors::capture::stop_shortcut(app);
+            surface::stop_shortcut(app);
             let install = std::mem::take(&mut state.close.locked().install_on_quit);
             if install
                 && let Err(error) = update::run_staged_installer(&state.root, &state.update_paths) {
@@ -1917,5 +2235,17 @@ mod tests {
         };
         let fitted = window_bounds(Some(huge), &[screen]);
         assert_eq!((fitted.width, fitted.height, fitted.x, fitted.y), (1920, 1040, 0, 0));
+    }
+
+    #[test]
+    fn a_window_belongs_to_the_display_it_overlaps_most() {
+        let left = Bounds { x: 0, y: 0, width: 1920, height: 1040 };
+        let right = Bounds { x: 1920, y: 0, width: 2560, height: 1400 };
+        let straddling = Bounds { x: 1800, y: 100, width: 380, height: 520 };
+        assert_eq!(overlap(&straddling, &left), 120 * 520);
+        assert_eq!(best_area(&straddling, &[left, right]), Some(right));
+        let gone = Bounds { x: 9000, y: 0, width: 380, height: 520 };
+        assert_eq!(best_area(&gone, &[left, right]), None);
+        assert_eq!(overlap(&gone, &left), 0);
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Colour palettes a player can pick in Settings → General, the way an editor
+ * Colour palettes a player can pick in Settings → Appearance, the way an editor
  * offers colour themes. Each family has one or more dark flavours, one light
  * variant and a set of named accents. Light or dark still follows the Theme
  * setting.

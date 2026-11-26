@@ -1,8 +1,3 @@
-import genshinArtwork from '../assets/livestreams/genshin-7.2.webp';
-import nteArtwork from '../assets/livestreams/nte-1.5.webp';
-import wuwaArtwork from '../assets/livestreams/wuwa-3.7.webp';
-import hsrArtwork from '../assets/livestreams/hsr-4.7.webp';
-
 /**
  * What each game version added, curated by hand from official notices and
  * cross-checked press. See docs/research/catch-up-2026-11-05.md for sources.
@@ -66,7 +61,6 @@ export interface VersionDigest {
   release: string;
   ends?: string;
   summary: string;
-  artwork?: { src: string; alt: string };
   /** The version's livestream, once it has aired. */
   stream?: { aired: string; replay: string };
   characters: Section<CatchUpCharacter>;
@@ -113,7 +107,6 @@ export const VERSION_DIGESTS: VersionDigest[] = [
     ends: '2026-12-16',
     summary:
       'Mitya arrives with Valeriy, the Archon Quest continues into Novokitezhgrad and Wingspan Peak, and The Grand Defense hands out a four-star of your choice.',
-    artwork: { src: genshinArtwork, alt: 'Genshin Impact Version 7.2 Special Program artwork, Hour of Ruin' },
     stream: { aired: '2026-10-23T12:00:00Z', replay: 'https://www.youtube.com/watch?v=8XhQlIxJzUk' },
     characters: complete([
       { name: 'Mitya', rank: '5★', traits: ['Electro', 'Catalyst'] },
@@ -206,7 +199,6 @@ export const VERSION_DIGESTS: VersionDigest[] = [
     release: '2026-11-11',
     summary:
       'Aha joins as the first playable Aeon, alongside a new Currency Wars season and a free character selection.',
-    artwork: { src: hsrArtwork, alt: 'Honkai: Star Rail Version 4.7 Special Program artwork, Aha’s Night' },
     stream: { aired: '2026-10-30T11:30:00Z', replay: 'https://www.youtube.com/watch?v=psifFhA2QAA' },
     characters: partial([{ name: 'Aha', rank: '5★', traits: ['Quantum', 'Elation'] }]),
     weapons: partial([
@@ -342,7 +334,6 @@ export const VERSION_DIGESTS: VersionDigest[] = [
     release: '2026-09-30',
     summary:
       'Hsin and Suoming arrive with three new Echo sets, and a long list of comforts lands: main quest replay, Echo stacking and twenty team slots.',
-    artwork: { src: wuwaArtwork, alt: 'Wuthering Waves Version 3.7 artwork' },
     stream: { aired: '2026-09-19T11:00:00Z', replay: 'https://www.youtube.com/watch?v=nMa_e5ChL6w' },
     characters: complete([
       { name: 'Hsin', rank: '5★', traits: ['Electro'] },
@@ -398,7 +389,6 @@ export const VERSION_DIGESTS: VersionDigest[] = [
     release: '2026-11-11',
     ends: '2026-12-23',
     summary: 'Elyms and Exe join, the city gets logistics runs and tank battles, and auto-drive learns to roam.',
-    artwork: { src: nteArtwork, alt: 'NTE Version 1.5 preview artwork, Once Upon a Glitched Call' },
     stream: { aired: '2026-10-28T11:30:00Z', replay: 'https://www.youtube.com/watch?v=UxT6b7h5Mcc' },
     characters: partial([
       { name: 'Elyms', rank: 'S', traits: ['Cosmos', 'Support'] },

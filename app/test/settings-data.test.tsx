@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { emptyState } from '@memoria/shared';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { makeGame } from '../../shared/test/helpers';
@@ -80,4 +80,39 @@ it('shows an initial shared-folder connection error before a filename is availab
   render(<SettingsPage />);
   expect(screen.getByText('Cannot open this file.')).toBeVisible();
   expect(screen.getByRole('button', { name: 'Use existing file…' })).toBeVisible();
+});
+
+it('keeps the backup counts on screen in Minimal mode, upright, beside a button-sized file picker', () => {
+  useApp.setState({ state: { ...emptyState(), games: [makeGame()] } });
+  render(<SettingsPage />);
+  // A count is a fact: never under `.say`, which Minimal hides, and never in the italic aside.
+  const counts = screen.getByText('1 game · 0 events');
+  expect(counts.closest('.say')).toBeNull();
+  expect(counts.closest('.aside')).toBeNull();
+  // The file picker is a button-sized label that keeps the input in the tab order.
+  const picker = screen.getByLabelText('Import backup');
+  expect(picker).toHaveClass('sr-only');
+  expect(picker.closest('label')).toHaveClass('focus-ring-group', 'min-h-(--control-h)');
+});
+
+it('has eight sections, and folded ones open where they went', () => {
+  useApp.setState({ state: emptyState() });
+  render(<SettingsPage />);
+  const menu = screen.getByRole('navigation', { name: 'Settings sections' });
+  // This PC joins the list only in the Windows app.
+  expect(
+    within(menu)
+      .getAllByRole('button')
+      .map((button) => button.querySelector('span')?.textContent),
+  ).toEqual(['Games', 'Time & reminders', 'Appearance', 'Device sync', 'Accounts', 'Data', 'Activity & About']);
+  act(() => useUI.getState().openSettings('general'));
+  expect(useUI.getState().settingsSection).toBe('reminders');
+  expect(screen.getByRole('heading', { name: 'Time & reminders', level: 2 })).toBeInTheDocument();
+  expect(screen.getByRole('combobox', { name: 'Home timezone' })).toBeInTheDocument();
+  act(() => useUI.getState().openSettings('updates'));
+  expect(useUI.getState().settingsSection).toBe('activity');
+  // The guide and the keys moved here from the page bar.
+  expect(screen.getByRole('button', { name: 'Open guide' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Show shortcuts' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Guide', exact: true })).not.toBeInTheDocument();
 });

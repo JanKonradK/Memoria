@@ -82,8 +82,10 @@ describe('splash exit', () => {
     localStorage.setItem('memoria-splash-seen', '1');
     const node = mountSplash();
     const { splashDone, REPEAT_INTRO_MS } = await loadSplash();
+    // No intro beat at all: the splash waits only for the app's first paint under it.
+    expect(REPEAT_INTRO_MS).toBe(0);
     splashDone();
-    await flush(REPEAT_INTRO_MS + 100);
+    await flush(50);
     expect(node.classList.contains('leave')).toBe(true);
   });
 

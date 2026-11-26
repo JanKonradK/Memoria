@@ -2,12 +2,12 @@ import { memo, useCallback, useMemo, useRef, useState, type CSSProperties } from
 import { DateTime } from 'luxon';
 import { isPredictedWindow, morningOf, packSpans, shownEnd, type Game, type GameEvent } from '@memoria/shared';
 import { useApp } from '../store';
-import { useElementWidth, useMediaQuery } from '../hooks';
+import { useElementWidth, useMediaQuery, useReducedMotion } from '../hooks';
 import { useUI } from '../ui-store';
 import { claimPointer, releasePointer } from '../gestures';
 import { Pill } from './primitives';
 import { rosterGames, useIdentityColors } from './roster';
-import { Btn, Page, ServerChip, TOUCH_BUTTON } from './ui';
+import { Btn, Page, ServerChip, Tooltip } from './ui';
 import { GameLogo } from './GameLogo';
 import { RangeStepper, RangeSwitch, TimelineTools } from './TimelineTools';
 import { CalendarToolbar } from './CalendarToolbar';
@@ -85,7 +85,7 @@ function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; 
         </div>
       </div>
       <Btn
-        className={`shrink-0 ${TOUCH_BUTTON}`}
+        className="shrink-0"
         aria-label={`Resume tracking for ${game.name}${account ? `, ${account}` : ''}, ${server}`}
         onClick={onResume}
       >
@@ -97,6 +97,13 @@ function PausedTimelineGame({ game, now, onResume }: { game: Game; now: number; 
 
 /** When the Calendar stacks: a narrow window, or a tablet held upright. Matches timeline.css. */
 const STACKED = '(max-width: 1023px), (orientation: portrait) and (pointer: coarse)';
+/** A phone opens the Calendar on its Agenda: a week of lanes leaves a bar no room for its name. */
+const PHONE = '(max-width: 639px)';
+/** A stacked lane opens by itself only for something unfinished ending this soon. */
+const OPEN_LANE_WITHIN = 48 * HOUR;
+/** How far the board follows a sideways finger before letting go steps the week. */
+const PAN_MAX_PX = 96;
+const PAN_FOLLOW = 0.55;
 
 /** Where a span sits on the track, as percentages, clipped to the range. */
 function place(start: number, end: number, ws: number, we: number) {
@@ -159,14 +166,15 @@ const TimelineBar = memo(function TimelineBar({
   const countdown = barCountdown(ev, now, we, localTz, morning);
   const description = scheduleText(ev, localTz);
   const open = (
-    <button
-      type="button"
-      className="tl-open"
-      onClick={() => onOpenEvent(ev)}
-      aria-label={`Open ${game.name} event: ${ev.name}`}
-      aria-description={description}
-      title={`${ev.name}. ${description}`}
-    />
+    <Tooltip content={`${ev.name}. ${description}`}>
+      <button
+        type="button"
+        className="tl-open"
+        onClick={() => onOpenEvent(ev)}
+        aria-label={`Open ${game.name} event: ${ev.name}`}
+        aria-description={description}
+      />
+    </Tooltip>
   );
 
   // A confirmed livestream is a moment, not a span: a diamond at its start.
@@ -269,20 +277,22 @@ function MaintenanceBand({
   onOpenEvent: (event: GameEvent) => void;
 }) {
   const { left, width } = place(ev.start, ev.end, ws, we);
+  const description = scheduleText(ev, localTz);
   return (
-    <button
-      type="button"
-      data-event-id={ev.id}
-      data-timeline-event-row
-      className="tl-maint"
-      style={{ left: pct(left), width: `max(${pct(width)}, 6px)` }}
-      onClick={() => onOpenEvent(ev)}
-      aria-label={`Open ${game.name} event: ${ev.name}`}
-      aria-description={scheduleText(ev, localTz)}
-      title={`${ev.name}. ${scheduleText(ev, localTz)}`}
-    >
-      <span data-event-bar aria-hidden />
-    </button>
+    <Tooltip content={`${ev.name}. ${description}`}>
+      <button
+        type="button"
+        data-event-id={ev.id}
+        data-timeline-event-row
+        className="tl-maint"
+        style={{ left: pct(left), width: `max(${pct(width)}, 6px)` }}
+        onClick={() => onOpenEvent(ev)}
+        aria-label={`Open ${game.name} event: ${ev.name}`}
+        aria-description={description}
+      >
+        <span data-event-bar aria-hidden />
+      </button>
+    </Tooltip>
   );
 }
 
@@ -391,9 +401,11 @@ const TimelineLane = memo(function TimelineLane({
           >
             <GameLogo game={game} size={compact ? 24 : 28} />
             <span className="tl-head-text">
-              <span className="tl-head-name" style={{ color: nameInk }} title={game.name}>
-                {shownName}
-              </span>{' '}
+              <Tooltip content={game.name}>
+                <span className="tl-head-name" style={{ color: nameInk }}>
+                  {shownName}
+                </span>
+              </Tooltip>{' '}
               <span className="tl-head-count numeral">{countLine}</span>
               {/* The name is the words on screen, so a voice user can say what they see. */}
               <span className="sr-only">
@@ -441,21 +453,20 @@ const TimelineLane = memo(function TimelineLane({
         {!open ? (
           <div className="tl-row tl-summary">
             <p className="tl-label tl-summary-text">{summary}</p>
-            {!compact && (
-              <div className="tl-track tl-density" aria-hidden>
-                {rows.flatMap((row, index) =>
-                  row.events.map((ev) => {
-                    const { left, width } = place(ev.start, ev.end, ws, we);
-                    return (
-                      <i
-                        key={ev.id}
-                        style={{ left: pct(left), width: `max(${pct(width)}, 3px)`, top: (index % 4) * 5 + 6 }}
-                      />
-                    );
-                  }),
-                )}
-              </div>
-            )}
+            {/* The folded lane in miniature: where its events fall. Stacked, under its summary. */}
+            <div className="tl-track tl-density" aria-hidden>
+              {rows.flatMap((row, index) =>
+                row.events.map((ev) => {
+                  const { left, width } = place(ev.start, ev.end, ws, we);
+                  return (
+                    <i
+                      key={ev.id}
+                      style={{ left: pct(left), width: `max(${pct(width)}, 3px)`, top: (index % 4) * 5 + 6 }}
+                    />
+                  );
+                }),
+              )}
+            </div>
           </div>
         ) : events.length === 0 ? (
           <p className="tl-note text-label text-muted">
@@ -561,7 +572,13 @@ export function TimelinePage({ now }: { now: number }) {
   const localTz = state.settings.localTz;
   const morning = morningOf(state.settings);
   const [trackRef, trackPx] = useElementWidth();
-  const view = useUI((s) => s.timelineView) ?? 'lanes';
+  // Latched when the page opens: turning or resizing the window never swaps the
+  // view under the player, and a view they chose always wins.
+  const [phoneFirst] = useState(() => window.matchMedia(PHONE).matches);
+  const [compactFirst] = useState(() => window.matchMedia(STACKED).matches);
+  const [openedAt] = useState(() => Math.floor(now / MINUTE) * MINUTE);
+  const view = useUI((s) => s.timelineView) ?? (phoneFirst ? 'agenda' : 'lanes');
+  const reducedMotion = useReducedMotion();
   // Narrow windows and upright touch screens stack names above their lanes and fold the bar's tools.
   const compact = useMediaQuery(STACKED);
   const showFinished = useUI((s) => s.timelineShowFinished);
@@ -661,12 +678,22 @@ export function TimelinePage({ now }: { now: number }) {
   const lanes = view === 'lanes';
 
   // A phone swipes between weeks; a trackpad's sideways scroll does the same.
-  const swipe = useRef<{ x: number; y: number } | null>(null);
+  // The finger drags the days with it (damped, on the compositor), and letting
+  // go either steps the week or springs back.
+  const swipe = useRef<{ x: number; y: number; panning: boolean } | null>(null);
   const wheel = useRef({ dx: 0, at: 0 });
+  const settlePan = (board: HTMLElement, stepped: boolean) => {
+    if (!('panning' in board.dataset)) return;
+    delete board.dataset.panning;
+    board.style.removeProperty('--tl-pan');
+    if (stepped) return;
+    board.dataset.panRelease = '';
+    window.setTimeout(() => delete board.dataset.panRelease, 320);
+  };
 
   const addButton = (
     <Btn
-      className={`inline-flex items-center gap-1.5 ${TOUCH_BUTTON}`}
+      className="inline-flex items-center gap-1.5"
       aria-label="Add an event"
       onClick={() => openSheet({ kind: 'event' })}
     >
@@ -798,16 +825,37 @@ export function TimelinePage({ now }: { now: number }) {
           onPointerCancel={(e) => releasePointer(e.pointerId)}
           onTouchStart={(e) => {
             const touch = e.touches[0];
-            swipe.current = touch && e.touches.length === 1 ? { x: touch.clientX, y: touch.clientY } : null;
+            swipe.current =
+              touch && e.touches.length === 1 ? { x: touch.clientX, y: touch.clientY, panning: false } : null;
+          }}
+          onTouchMove={(e) => {
+            const start = swipe.current;
+            const touch = e.touches[0];
+            if (!start || !touch || reducedMotion) return;
+            const dx = touch.clientX - start.x;
+            const dy = touch.clientY - start.y;
+            // Only a clearly sideways drag moves the days; anything else is the page scrolling.
+            if (!start.panning && (Math.abs(dx) < 10 || Math.abs(dx) <= Math.abs(dy) * 1.5)) return;
+            start.panning = true;
+            const board = e.currentTarget;
+            board.dataset.panning = '';
+            delete board.dataset.panRelease;
+            board.style.setProperty('--tl-pan', `${Math.sign(dx) * Math.min(PAN_MAX_PX, Math.abs(dx) * PAN_FOLLOW)}px`);
           }}
           onTouchEnd={(e) => {
             const start = swipe.current;
             const touch = e.changedTouches[0];
             swipe.current = null;
-            if (!start || !touch) return;
+            if (!start || !touch) return settlePan(e.currentTarget, false);
             const dx = touch.clientX - start.x;
             const dy = touch.clientY - start.y;
-            if (Math.abs(dx) >= SWIPE_PX && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
+            const stepped = Math.abs(dx) >= SWIPE_PX && Math.abs(dx) > Math.abs(dy) * 1.5;
+            settlePan(e.currentTarget, stepped);
+            if (stepped) step(dx < 0 ? 1 : -1);
+          }}
+          onTouchCancel={(e) => {
+            swipe.current = null;
+            settlePan(e.currentTarget, false);
           }}
           onWheel={(e) => {
             if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
@@ -846,6 +894,11 @@ export function TimelinePage({ now }: { now: number }) {
               const inRange = eventsByGame.get(game.id) ?? [];
               const shown = inRange.filter(isShown);
               const ink = laneInk[game.id] ?? colors.color;
+              // Stacked, a lane folds to its summary unless something unfinished ends within two days.
+              const pressing = inRange.some(
+                (ev) =>
+                  ev.type !== 'maintenance' && !ev.done && ev.end > openedAt && ev.end - openedAt <= OPEN_LANE_WITHIN,
+              );
               return (
                 <TimelineLane
                   key={game.id}
@@ -854,7 +907,7 @@ export function TimelinePage({ now }: { now: number }) {
                   nameInk={legible(ink, ground, 4.5)}
                   events={shown}
                   finishedHidden={inRange.length - shown.length}
-                  open={laneOpen[game.id] ?? inRange.length > 0}
+                  open={laneOpen[game.id] ?? (compactFirst ? pressing : inRange.length > 0)}
                   onOpenChange={(open) => setLaneOpen((current) => ({ ...current, [game.id]: open }))}
                   now={minuteNow}
                   ws={ws}

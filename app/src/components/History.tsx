@@ -14,7 +14,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useElementWidth, useNow } from '../hooks';
 import { useGround } from '../theme';
 import { assignGameInks } from '../game-color';
-import { SectionTitle } from './ui';
+import { SectionTitle, Tooltip } from './ui';
 import { GameSavingsPanel, useOpenBanners } from './Savings';
 import { GamePityPanel } from './Pity';
 import { rosterGames } from './roster';
@@ -605,18 +605,18 @@ function VersionTable({ game }: { game: GameMeta }) {
               </td>
               <td>
                 {row.record.sources.map((source, index) => (
-                  <a
-                    key={source.url}
-                    href={source.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    title={source.label}
-                    aria-label={`${source.label}, ${new URL(source.url).hostname.replace(/^www\./, '')}`}
-                    className="history-source"
-                  >
-                    {index > 0 && <span aria-hidden> · </span>}
-                    {new URL(source.url).hostname.replace(/^www\./, '')}
-                  </a>
+                  <Tooltip key={source.url} content={source.label}>
+                    <a
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`${source.label}, ${new URL(source.url).hostname.replace(/^www\./, '')}`}
+                      className="history-source"
+                    >
+                      {index > 0 && <span aria-hidden> · </span>}
+                      {new URL(source.url).hostname.replace(/^www\./, '')}
+                    </a>
+                  </Tooltip>
                 ))}
               </td>
             </tr>

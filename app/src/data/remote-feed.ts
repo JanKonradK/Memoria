@@ -1,9 +1,11 @@
 import { verifyPublished, FEED_CONTEXT, type SignedFile, type TrustStamp } from '@memoria/shared/publisher';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
-import { MAX_EVENT_FEED_BYTES, RemoteEventFeedSchema, type FeedCode, type RemoteEventFeed } from '@memoria/shared';
-import { create } from 'zustand';
+import { MAX_EVENT_FEED_BYTES, RemoteEventFeedSchema, type RemoteEventFeed } from '@memoria/shared';
 import { launcherFetch, servedByLauncher } from '../launcher';
 import { useApp } from '../store';
+import { useRemoteFeed } from './remote-feed-state';
+
+export { useRemoteFeed };
 
 export const PUBLIC_EVENT_FEED_URL = 'https://raw.githubusercontent.com/JanKonradK/Memoria/main/app/public/events.json';
 const CACHE_KEY = 'memoria-public-calendar';
@@ -13,14 +15,6 @@ function verified(payload: unknown) {
   return verifyPublished<RemoteEventFeed>(payload, FEED_CONTEXT, previous);
 }
 const REFRESH_MS = 6 * 60 * 60_000;
-
-export const useRemoteFeed = create<{
-  status: 'idle' | 'checking' | 'ok' | 'error';
-  error: string;
-  lastSuccessAt: number | null;
-  /** Reward codes from the latest verified feed. */
-  codes: FeedCode[];
-}>(() => ({ status: 'idle', error: '', lastSuccessAt: null, codes: [] }));
 
 let inFlight: Promise<void> | null = null;
 let cached: RemoteEventFeed | null = null;

@@ -94,6 +94,16 @@
         -webkit-user-select: none;
         user-select: none;
       }
+      /* The Windows app's window is frameless: its top band moves it even
+         while the intro covers the page. Everywhere else app-region is ignored. */
+      #splash::before {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto;
+        height: calc(32px * var(--chrome-zoom, 1));
+        -webkit-app-region: drag;
+        app-region: drag;
+      }
       /* The mark over its name, centred as one object. */
       .splash-lockup {
         display: grid;

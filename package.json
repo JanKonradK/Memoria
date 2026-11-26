@@ -11,6 +11,7 @@
     "build": "npm -w app run build && npm run build:desktop",
     "build:desktop": "esbuild desktop/shared-core.mjs --bundle --platform=node --format=esm --outfile=desktop/dist/shared-core.mjs && esbuild desktop/tauri/core-entry.mjs --bundle --platform=neutral --main-fields=module,main --format=iife --global-name=MemoriaCore --target=es2020 --minify --outfile=desktop/dist/core.js --log-level=warning",
     "build:android": "node scripts/build-android.mjs",
+    "check:android": "node scripts/check-android.mjs",
     "android:open": "cd app && cap open android",
     "test": "npm -w shared run test && npm -w app run test && npm run test:desktop",
     "test:desktop": "vitest run --config vitest.desktop.config.mjs",

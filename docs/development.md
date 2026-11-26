@@ -67,6 +67,8 @@ Session storage holds the token. Requests send it in a header, not a cookie. It 
 Optional cloud sync uses a user-selected file in an existing synced folder.
 The provider's client transfers the file. Memoria reads it before each write and merges the data.
 For conflicting rows, the later `updatedAt` value wins. Deleted rows retain tombstones.
+A tombstone is kept for 365 days. After 90 days it drops its content and keeps only the fields every version requires.
+Above 20,000 energy readings, each resource keeps its newest and latest real reading, and the oldest readings go first, evenly across resources.
 If a provider creates a conflict copy, import that copy through Settings to merge it.
 
 Optional Wi-Fi sync uses a separate listener on TCP port 17820.
@@ -100,11 +102,15 @@ npm ci
 npm run build:android
 ```
 
-The output is `dist/release/Memoria-android.apk`, a release build. Its version comes from `package.json`.
+The output is `dist/release/Memoria-android.apk`, a release build of the `direct` flavour, which updates itself from GitHub releases. Its version comes from `package.json`.
+`npm run build:android -- --flavor play` builds the Google Play bundle instead, `dist/release/Memoria-play.aab`, without the updater or the permissions Play reserves for other apps. `docs/play-store-compliance.md` lists every difference.
 The APK contains the app assets and supports offline startup. The minimum version is Android 7 (API 24).
 It is signed with `~/.android/debug.keystore`, the key already on installed devices, until the move to a dedicated release key described in `docs/android-signing.md`. Set `MEMORIA_KEYSTORE` and its password variables to use another.
 Android refuses an update signed with a different key, so every published APK must use this one.
 The release workflow restores it from the `ANDROID_KEYSTORE_BASE64` repository secret.
+
+To check that the Java code, manifest and resources still compile, without a release build or a signing key, run `npm run check:android`.
+It syncs the same web assets and content policy, then runs `assembleDirectDebug` and `assemblePlayDebug`. It then fails if the Play build's merged manifest declares a permission or component Play does not allow, or if any 64-bit native library in either APK is not aligned for 16 KB memory pages. Nothing is copied to `dist/`.
 
 Native Back closes the active editor through its normal cancel control.
 The Android backup command opens the system file picker.
@@ -195,7 +201,7 @@ git push --follow-tags
 ```
 
 Use `minor` or `major` instead of `patch` when appropriate.
-Write the release notes in `docs/releases/<version>.md` before tagging, and keep every version file in lockstep (`package.json`, `app/package.json`, `shared/package.json`, `package-lock.json`, `desktop/tauri/Cargo.toml`, `desktop/tauri/Cargo.lock`, `desktop/tauri/tauri.conf.json`). The app shows those release notes in **Settings → Updates**.
+Write the release notes in `docs/releases/<version>.md` before tagging, and keep every version file in lockstep (`package.json`, `app/package.json`, `shared/package.json`, `package-lock.json`, `desktop/tauri/Cargo.toml`, `desktop/tauri/Cargo.lock`, `desktop/tauri/tauri.conf.json`). The app shows those release notes in **Settings → Activity & About**.
 Tags are the bare version (`0.6.0`); `.npmrc` makes `npm version` tag that way, and that tag starts [the release workflow](../.github/workflows/release.yml).
 The tag must match the version in `package.json`. The app shows it as "Beta 0.6.0".
 

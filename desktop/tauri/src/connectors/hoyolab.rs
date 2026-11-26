@@ -506,7 +506,7 @@ fn checkin_answer(retcode: i64, data: &Value) -> Value {
             false,
             "auth",
             Some(retcode),
-            "HoYoLAB sign-in expired. Sign in again in Settings \u{2192} Connections.",
+            "HoYoLAB sign-in expired. Sign in again in Settings \u{2192} Accounts.",
         ),
         _ => action(false, "failed", Some(retcode), &format!("HoYoLAB check-in failed (code {retcode}).")),
     }
@@ -572,7 +572,7 @@ fn redeem_answer(retcode: i64) -> Value {
         -1071 | -100 | 10001 => (
             false,
             "auth",
-            "Sign in to HoYoLAB again in Settings \u{2192} Connections for 1-click claiming, or open the redeem page.",
+            "Sign in to HoYoLAB again in Settings \u{2192} Accounts for 1-click claiming, or open the redeem page.",
         ),
         -2006 => (false, "expired", "Max redemptions reached for this code."),
         -2004 => (false, "failed", "Account level is too low to claim this code."),

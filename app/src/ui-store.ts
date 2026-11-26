@@ -135,17 +135,28 @@ export function applyTheme(theme: Theme, palette: string = DEFAULT_PALETTE, acce
 
 export type GameEditorSection = 'game' | 'resets' | 'resources' | 'spend' | 'tasks' | 'reminders' | 'events';
 
+/**
+ * Settings' eight sections, in menu order. The keys outlive their labels:
+ * `reminders` reads "Time & reminders", `connections` "Accounts", `device`
+ * "This PC", `activity` "Activity & About".
+ */
 export type SettingsSection =
-  | 'games'
-  | 'general'
-  | 'appearance'
-  | 'reminders'
-  | 'sync'
-  | 'connections'
-  | 'device'
-  | 'updates'
-  | 'data'
-  | 'activity';
+  'games' | 'reminders' | 'appearance' | 'sync' | 'connections' | 'device' | 'data' | 'activity';
+
+/**
+ * Sections that were folded into others, and where each now lives: General's
+ * timezone went to Time & reminders, Updates to Activity & About.
+ */
+const FOLDED_SECTIONS = { general: 'reminders', updates: 'activity' } as const satisfies Record<
+  string,
+  SettingsSection
+>;
+export type LegacySettingsSection = keyof typeof FOLDED_SECTIONS;
+
+/** A section as asked for, by a current key or a folded one, as it is now shown. */
+export function settingsSectionFor(section: SettingsSection | LegacySettingsSection): SettingsSection {
+  return section in FOLDED_SECTIONS ? FOLDED_SECTIONS[section as LegacySettingsSection] : (section as SettingsSection);
+}
 
 export type SheetRoute =
   | { kind: 'game'; gameId: string; section?: GameEditorSection }
@@ -181,9 +192,6 @@ interface UIStore {
   /** Steps or Games on Today. Remembered on this device. */
   todayView: TodayView;
   setTodayView(view: TodayView): void;
-  /** The game whose card sits beside Today's list. Null follows the most urgent game. */
-  todayGameId: string | null;
-  setTodayGameId(gameId: string | null): void;
   /** Session-only route controls survive navigation, without entering backups. */
   timelineView: TimelineView | null;
   timelineShowFinished: boolean;
@@ -197,7 +205,7 @@ interface UIStore {
   setTimelineShowFinished(show: boolean): void;
   /** Set when first-run setup finishes: only a new install sees the hints. */
   setFocusedGameId(gameId: string | null): void;
-  /** The last game whose page was open, for a swipe from Today towards Games. Session only. */
+  /** The last game whose page was open, for Alt+4 (Games) from another place. Session only. */
   lastGameId: string | null;
   setTab(tab: Tab): void;
   /** The Settings pane shown beside its menu on wide windows. Session only. */
@@ -209,7 +217,8 @@ interface UIStore {
   settingsPicked: boolean;
   /** Back to the menu on a narrow screen. */
   closeSettingsSection(): void;
-  openSettings(section: SettingsSection): void;
+  /** Also takes a folded section's old key, and opens where it went. */
+  openSettings(section: SettingsSection | LegacySettingsSection): void;
   openSheet(sheet: NonNullable<SheetRoute>): void;
   closeSheet(): void;
   setReserveOpen(id: string, open: boolean | undefined): void;
@@ -248,7 +257,10 @@ interface UIStore {
   /** Vibration on touch: swipes, scrubs and ticks. Remembered on this device. */
   vibration: boolean;
   setVibration(on: boolean): void;
-  /** The dock's game shelf, on a tall screen. Opens with a game's page, closes with any other place. Session only. */
+  /**
+   * The dock's game shelf, on a tall screen: a moment's overlay that only Games
+   * opens. Any route change, a picked game included, closes it. Session only.
+   */
   shelfOpen: boolean;
   setShelfOpen(open: boolean): void;
   /** The side rail's game list, on a wide screen. Open unless folded away. Remembered on this device. */
@@ -355,14 +367,11 @@ export const useUI = create<UIStore>()(
       setFocusedGameId: (focusedGameId) =>
         set(focusedGameId ? { focusedGameId, lastGameId: focusedGameId } : { focusedGameId }),
       lastGameId: null,
-      todayGameId: null,
-      setTodayGameId: (todayGameId) => set({ todayGameId }),
-      setTab: (tab) =>
-        set({ tab, shelfOpen: tab === 'home', ...(tab === 'settings' ? { settingsPicked: false } : {}) }),
+      setTab: (tab) => set({ tab, shelfOpen: false, ...(tab === 'settings' ? { settingsPicked: false } : {}) }),
       settingsSection: 'games',
       settingsPicked: false,
-      openSettings: (settingsSection) =>
-        set({ tab: 'settings', settingsSection, settingsPicked: true, shelfOpen: false }),
+      openSettings: (section) =>
+        set({ tab: 'settings', settingsSection: settingsSectionFor(section), settingsPicked: true, shelfOpen: false }),
       closeSettingsSection: () => set({ settingsPicked: false }),
       openSheet: (sheet) => set({ sheet }),
       closeSheet: () => set({ sheet: null }),

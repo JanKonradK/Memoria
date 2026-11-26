@@ -3,6 +3,14 @@
 // granted in capabilities/main.json (or, for the snip window, capabilities/snip.json).
 const COMMANDS: &[&str] = &[
     "set_zoom",
+    "window_minimize",
+    "window_toggle_maximize",
+    "window_close",
+    "window_state",
+    "window_enter_compact",
+    "window_exit_compact",
+    "window_set_compact_pin",
+    "window_surface",
     "launch_list",
     "launch_choose",
     "launch_clear",
@@ -12,6 +20,7 @@ const COMMANDS: &[&str] = &[
     "update_install",
     "presence_get",
     "presence_set",
+    "presence_set_compact_shortcut",
     "games_watch",
     "game_notify",
     "renderer_ready",

@@ -5,6 +5,17 @@
     <string name="package_name">app.memoria.tracker</string>
     <string name="custom_url_scheme">app.memoria.tracker</string>
     <string name="widget_description">Eight games with energy, time to full and dailies</string>
+    <string name="widget_glance_label">Memoria Glance</string>
     <string name="widget_refresh">Refresh</string>
     <string name="widget_empty">Open Memoria to show your games here.</string>
+    <string name="widget_single_label">Memoria game</string>
+    <string name="widget_single_description">One game: its dailies ring, energy and time to full</string>
+    <string name="widget_single_pick">Pick a game</string>
+    <string name="widget_single_none">Open Memoria and add a game, then place this widget again.</string>
+    <string name="widget_single_gone">Open Memoria to show this game.</string>
+    <string name="widget_scan_label">Memoria scan</string>
+    <string name="widget_scan_description">Read a game screen with the camera</string>
+    <string name="widget_scan">Scan</string>
+    <string name="camera_title">Scan a game screen</string>
+    <string name="cancel">Cancel</string>
 </resources>

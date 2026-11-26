@@ -2,8 +2,18 @@
    so a tall card only lengthens its own column. A note in a colour is tinted by
    --note-ink; the look's own radii and fills do the rest. */
 
+/* One toolbar: search, whose notes (the game filter), View, and + Note. On a
+   phone the filter takes its own line under the other three. */
+.notes-bar .page-bar-end {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 .notes-search {
   width: min(18rem, 100%);
+}
+.notes-scope {
+  padding-inline: 6px;
+  border-inline: 1px solid var(--color-line-hairline);
 }
 @media (max-width: 767px) {
   .notes-page .page-bar-end {
@@ -12,6 +22,12 @@
   .notes-search {
     flex: 1;
     width: auto;
+  }
+  .notes-scope {
+    order: 5;
+    flex-basis: 100%;
+    padding-inline: 0;
+    border-inline: 0;
   }
 }
 
@@ -62,74 +78,6 @@
   .notes-add-quiet {
     width: 44px;
   }
-}
-
-/* Filters on the left, the arrangement on the right; on a phone the filters
-   scroll sideways and the controls wrap under them. */
-.notes-tools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 16px;
-  margin: 4px 0 20px;
-}
-.notes-filters {
-  display: flex;
-  flex: 1 1 24rem;
-  gap: 6px;
-  min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding: 2px;
-}
-.notes-filters::-webkit-scrollbar {
-  display: none;
-}
-.notes-chip {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 6px;
-  min-height: 34px;
-  padding: 0 12px;
-  border-radius: var(--radius-ui-full, 999px);
-  box-shadow: inset 0 0 0 1px var(--color-line);
-  color: var(--color-fg-soft);
-  font-size: var(--text-meta);
-  font-weight: 600;
-  transition:
-    background-color var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out);
-}
-.notes-chip:has(.game-logo, [data-game-logo]) {
-  padding-left: 6px;
-}
-.notes-chip[data-faint] {
-  color: var(--color-muted);
-}
-.notes-chip[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--chip-ink, var(--color-accent)) 20%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-ink, var(--color-accent)) 55%, transparent);
-  color: var(--color-fg);
-}
-@media (hover: hover) {
-  .notes-chip:hover:not([aria-pressed='true']) {
-    background: var(--color-fill-2);
-  }
-}
-@media (pointer: coarse) {
-  .notes-chip {
-    min-height: 40px;
-  }
-}
-.notes-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-.notes-sort {
-  width: 10.5rem;
 }
 
 .notes-wall {
@@ -359,7 +307,7 @@
 }
 @media (pointer: coarse) {
   .note-check {
-    min-height: 40px;
+    min-height: 44px;
     align-items: center;
   }
   .note-box {

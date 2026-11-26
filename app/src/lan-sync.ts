@@ -1,14 +1,6 @@
 import { assertSyncProtocol, MAX_SYNC_BYTES } from '@memoria/shared';
-import {
-  newDeviceKey,
-  devicePublicKey,
-  deviceFingerprint,
-  lanKeys,
-  sealLan,
-  openLan,
-  relayRoom,
-  type LanPacket,
-} from '@memoria/shared/lan-crypto';
+import type * as LanCrypto from '@memoria/shared/lan-crypto';
+import type { LanPacket } from '@memoria/shared/lan-crypto';
 import { Capacitor, CapacitorHttp, registerPlugin } from '@capacitor/core';
 import {
   emptyState,
@@ -23,6 +15,13 @@ import { create } from 'zustand';
 import { useApp } from './store';
 export { normalizeLanHost } from '@memoria/shared';
 
+/**
+ * The key exchange and cipher load with the first pairing or sync, not with the
+ * first screen. Once loaded, `lan ?? await lanCrypto()` goes on without waiting.
+ */
+let lan: typeof LanCrypto | undefined;
+const lanCrypto = async () => (lan ??= await import('@memoria/shared/lan-crypto'));
+
 const PAIR_KEY = 'memoria-wifi-device';
 /** Set from pairing until the first sync has been cleared to run. Survives a restart. */
 const FIRST_SYNC_KEY = 'memoria-wifi-first-sync';
@@ -35,7 +34,6 @@ type Pair = {
   host: string;
   hosts: string[];
   secret: string;
-  publicKey: string;
   fingerprint: string;
   deviceId: string;
   relay?: string;
@@ -182,12 +180,12 @@ function wifi(host: string, connectTimeout = 8000): Transport {
 
 /** Through the owner's relay, into the PC's mailbox: the same sealed packets, carried. */
 function relayed(relay: string, fingerprint: string): Transport {
-  const url = `${relay}/v1/rooms/${relayRoom(fingerprint)}/call`;
   return {
     relayed: true,
     send: async (path, data) => {
+      const { relayRoom } = lan ?? (await lanCrypto());
       const response = await CapacitorHttp.post({
-        url,
+        url: `${relay}/v1/rooms/${relayRoom(fingerprint)}/call`,
         data: { path, body: data },
         headers: { 'Content-Type': 'application/json' },
         responseType: 'json',
@@ -224,6 +222,7 @@ async function request(
 ): Promise<Record<string, unknown>> {
   if (!isNativeDevice()) throw new Error('Wi-Fi pairing is available in the Android app.');
   if (!connection) throw new Error('Pair this PC again to enable encrypted sync.');
+  const { deviceFingerprint, devicePublicKey, lanKeys, sealLan, openLan } = lan ?? (await lanCrypto());
   const unreachable = transport.relayed ? UNREACHABLE_ANYWHERE : UNREACHABLE;
   let response;
   let packet: LanPacket;
@@ -370,6 +369,8 @@ export async function pairLanFromQr(text: string): Promise<void> {
 }
 
 async function connectToPc(hosts: string[], code: string, fingerprint: string): Promise<void> {
+  // Loaded before the checks below, so the in-progress guard is still set without a gap.
+  const { newDeviceKey } = lan ?? (await lanCrypto());
   if (pairingInProgress) throw new Error('Already connecting.');
   if (!/^\d{8}$/.test(code.replace(/\s/g, ''))) throw new Error('Enter the eight-digit code from PC Settings.');
   if (!/^[a-f0-9]{64}$/.test(fingerprint)) throw new Error('Enter the PC key fingerprint from PC Settings.');
@@ -406,7 +407,6 @@ async function connectToPc(hosts: string[], code: string, fingerprint: string): 
       host,
       hosts: knownHosts(host, hosts, []),
       secret,
-      publicKey: devicePublicKey(secret),
       fingerprint,
       deviceId: body.deviceId,
     });
@@ -606,7 +606,6 @@ export function initLanSync(): void {
         host,
         hosts: knownHosts(host, saved.hosts, []),
         secret,
-        publicKey: devicePublicKey(secret),
         fingerprint: saved.fingerprint!,
         deviceId: saved.deviceId!,
         relay: relayFrom(saved.relay),

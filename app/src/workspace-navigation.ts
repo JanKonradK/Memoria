@@ -1,7 +1,8 @@
 import { flushSync } from 'react-dom';
 import { useUI } from './ui-store';
+import { arrivePage } from './page-arrival';
+import { startViewTransitionOf } from './view-transition';
 
-let active: Animation | undefined;
 let morph: ViewTransition | undefined;
 let rosterScroll = 0;
 let historyReady = false;
@@ -9,6 +10,8 @@ let historyReady = false;
 /** Browser Back owns the same game-to-Today transition as the rail's Today button and Alt+Left. */
 export function initWorkspaceHistory(): () => void {
   historyReady = true;
+  const previousScrollRestoration = 'scrollRestoration' in history ? history.scrollRestoration : undefined;
+  if (previousScrollRestoration) history.scrollRestoration = 'manual';
   // Focused games are session routes; a reload starts at the overview.
   history.replaceState({ ...history.state, memoriaWorkspace: null, memoriaTab: useUI.getState().tab }, '');
   let restoringOverlay = false;
@@ -20,9 +23,12 @@ export function initWorkspaceHistory(): () => void {
     const route = event.state as { memoriaWorkspace?: string | null; memoriaTab?: string } | null;
     if (!route || !Object.hasOwn(route, 'memoriaWorkspace')) return;
     const state = useUI.getState();
+    // One still playing its exit (Radix marks it closed) is already gone as far as Back is concerned.
     if (
       state.sheet ||
-      document.querySelector('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]')
+      document.querySelector(
+        ':is([role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]):not([data-state="closed"])',
+      )
     ) {
       // Back dismisses the top overlay first. Its Escape handler can refuse
       // dismissal when a draft has unsaved changes; keep the game route either way.
@@ -45,6 +51,7 @@ export function initWorkspaceHistory(): () => void {
   window.addEventListener('popstate', onPopState);
   return () => {
     historyReady = false;
+    if (previousScrollRestoration) history.scrollRestoration = previousScrollRestoration;
     window.removeEventListener('popstate', onPopState);
   };
 }
@@ -79,10 +86,11 @@ export function navigateWorkspace(
   update: () => void,
   fromHistory = false,
 ): void {
-  active?.cancel();
-  active = undefined;
+  // A page still arriving settles first, so nothing is captured mid-fade.
+  arrivePage(null, 0);
   morph?.skipTransition();
   morph = undefined;
+  document.documentElement.style.viewTransitionName = '';
   const id = gameId ?? previousId;
   const findRow = () => (id ? document.querySelector<HTMLElement>(`[data-roster-game="${CSS.escape(id)}"]`) : null);
   const row = findRow();
@@ -111,14 +119,9 @@ export function navigateWorkspace(
       // A new route restores its own scroll; one game's page replacing another starts at the top.
       if (before.tab === 'home') {
         window.scrollTo({ top: 0, behavior: 'instant' });
-        // One game to the next settles in rather than snapping. Opacity only,
-        // so it stays on the compositor and costs a phone nothing.
-        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-          document.querySelector<HTMLElement>('.focus-workspace')?.animate?.([{ opacity: 0.4 }, { opacity: 1 }], {
-            duration: 160,
-            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-          });
-        }
+        // One game to the next settles in rather than snapping: a fade in
+        // place under the bar, which already names the new game.
+        arrivePage(document.querySelector('.page-enter'), 0);
       }
       focusHeading(originalFocus);
     }
@@ -131,23 +134,37 @@ export function navigateWorkspace(
     return;
   }
   // The game's logo travels between its row and its page heading, so the eye
-  // keeps hold of which game opened. Everything else arrives as before.
+  // keeps hold of which game opened. Everything else arrives as before. The
+  // root is never captured: the page stays live, so the morph costs one
+  // logo's snapshot and never stands between a click and the page.
   const logoIn = (scope: Element | null) => scope?.querySelector<HTMLElement>('[data-game-logo]') ?? null;
   const source = logoIn(toRoster ? document.querySelector('.focus-workspace') : row);
   if (source) source.style.viewTransitionName = 'game-logo';
+  document.documentElement.style.viewTransitionName = 'none';
   let landed: HTMLElement | null = null;
-  const transition = document.startViewTransition(() => {
+  let transition: ViewTransition;
+  try {
+    // Defined: startViewTransition was checked for above.
+    transition = startViewTransitionOf('game-logo', () => {
+      if (source) source.style.viewTransitionName = '';
+      commit();
+      landed = logoIn(toRoster ? findRow() : document.querySelector('.focus-workspace'));
+      if (landed) landed.style.viewTransitionName = 'game-logo';
+    })!;
+  } catch (error) {
     if (source) source.style.viewTransitionName = '';
-    commit();
-    landed = logoIn(toRoster ? findRow() : document.querySelector('.focus-workspace'));
-    if (landed) landed.style.viewTransitionName = 'game-logo';
-  });
+    document.documentElement.style.viewTransitionName = '';
+    throw error;
+  }
   morph = transition;
   void transition.finished
     .catch(() => undefined)
     .finally(() => {
       if (landed) landed.style.viewTransitionName = '';
-      if (morph === transition) morph = undefined;
+      if (morph === transition) {
+        document.documentElement.style.viewTransitionName = '';
+        morph = undefined;
+      }
     });
 }
 
@@ -187,23 +204,8 @@ function arrive(
   }
 
   if (reducedMotion) return;
-
-  const destination = document.querySelector<HTMLElement>(toRoster ? '.today-page' : '.focus-workspace');
-  if (!destination?.animate) return;
-  // A short directional arrival explains forward/back navigation. Only the
-  // content moves; the fixed rail never enters a snapshot or layer.
-  // No fill mode leaves a visible, usable page if motion is interrupted.
-  const animation = destination.animate(
-    [
-      { opacity: 0, transform: `translate3d(${toRoster ? -18 : 18}px, 0, 0)` },
-      { opacity: 1, transform: 'translate3d(0, 0, 0)' },
-    ],
-    { duration: 200, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
-  );
-  active = animation;
-  void animation.finished
-    .catch(() => undefined)
-    .finally(() => {
-      if (active === animation) active = undefined;
-    });
+  // A short directional arrival explains forward/back navigation: into a
+  // game, back to the list. Only what is under the page bar moves; the bar
+  // and the fixed rail never enter a snapshot or layer.
+  arrivePage(document.querySelector('.page-enter'), toRoster ? -1 : 1);
 }

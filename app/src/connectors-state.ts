@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { create } from 'zustand';
-import type { OcrReadingCandidate, OcrScreenshotMatches } from '@memoria/shared';
+import type { OcrCapture, OcrPass, OcrReadingCandidate, OcrScreenshotMatches } from '@memoria/shared';
 import type { BrowserStartResult, ConnectorStatus } from './desktop-host';
 import { isNativeApp } from './native';
 
@@ -15,7 +15,7 @@ export const PENDING_SCREENSHOT_EVENT = 'memoria:pending-screenshot';
 /** Fired with a warning or error notice as its `detail`, so it can show outside Settings. */
 export const CONNECTOR_NOTICE_EVENT = 'memoria:connector-notice';
 
-export type ScreenshotSource = 'windows-ocr' | 'android-share' | 'file';
+export type ScreenshotSource = 'windows-ocr' | 'android-share' | 'android-camera' | 'file';
 
 export interface PendingScreenshot {
   /** One capture's identity. A fresh capture gets a new one; a region merged in keeps it. */
@@ -29,6 +29,10 @@ export interface PendingScreenshot {
   dataUrl?: string;
   /** How many snipped regions the text covers. Missing means one. */
   regionCount?: number;
+  /** Every pass Windows read, each naming its region, so a merged capture keeps its passes per region. */
+  passes?: OcrPass[];
+  /** What each region was read from, by region index, when the host said. */
+  captures?: (OcrCapture | null)[];
   source: ScreenshotSource;
   /** The bar readings in `matches`, kept for older callers. */
   candidates: OcrReadingCandidate[];

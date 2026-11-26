@@ -90,17 +90,18 @@ test('Today and game controls adapt while a PC window is resized', async ({ page
       expect(geometry.pageWidth).toBe(viewport.width - geometry.railRight);
     }
     expect(geometry.controlsFit).toBe(true);
-    // One ranked column at every width, so fill levels and countdowns compare down the list.
-    expect(geometry.priorityColumns).toBe(1);
+    // One ranked column until there is room for two cards side by side; then a
+    // grid of them. Never a card for one game beside the list.
+    if (viewport.width < 1100) expect(geometry.priorityColumns).toBe(1);
+    else expect(geometry.priorityColumns).toBeGreaterThanOrEqual(2);
     expect(geometry.rowsInside).toBe(true);
-    await expect(page.locator('.today-detail')).toBeVisible({ visible: viewport.width >= 900 });
+    await expect(page.locator('.today-detail, .today-card')).toHaveCount(0);
     await page.screenshot({ path: info.outputPath(`today-${viewport.width}.png`) });
   }
 
   // A game's page keeps a typed value while the window resizes.
   await page.setViewportSize({ width: 960, height: 650 });
   await page.locator('[data-roster-game="adaptive-0"]').click();
-  await page.getByRole('button', { name: 'Open full page' }).click();
   const energy = page.getByLabel('Energy current value', { exact: true });
   await energy.fill('83');
   await page.setViewportSize({ width: 360, height: 600 });

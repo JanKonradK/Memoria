@@ -26,12 +26,13 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(NativeBackupPlugin.class);
         registerPlugin(PairingScannerPlugin.class);
-        registerPlugin(AppUpdaterPlugin.class);
         registerPlugin(HomeWidgetPlugin.class);
         registerPlugin(DeviceKeyPlugin.class);
         registerPlugin(ReminderChannelsPlugin.class);
-        registerPlugin(AlarmClockPlugin.class);
         registerPlugin(ConnectorPlugin.class);
+        registerPlugin(EntitlementsPlugin.class);
+        // The GitHub build adds its updater and alarm ringer; the Play build adds nothing.
+        FlavorPlugins.register(this);
         super.onCreate(savedInstanceState);
         // Honour the page's viewport width, so the app can scale itself to the screen
         // (screen-scale.ts): larger on a tablet, a touch smaller on a small phone.

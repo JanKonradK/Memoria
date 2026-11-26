@@ -20,7 +20,7 @@ Check the starting values against your game: server regions and patches change t
 - **Events:** the **Timeline** lists events, banners, resets and livestreams; **Agenda**, **Month** and **Ending soon** show the same schedule in list, calendar and urgency views. **+ → Event** adds one; **Manage events** on a game edits its events.
 - **Genshin:** Teyvat events come first, Miliastra Wonderland next, banners last.
 - **Pause a game:** pencil → **Pause tracking**. Your progress stays.
-- **Theme, Looks, Mark & General:** pick theme, colour palette, look, icon set, game icons, mark finish (colour, shading, tile), app backdrop and detail level under **Settings → Appearance**; change your **Home timezone** and **Vibration** under **Settings → General**.
+- **Look, theme & brand:** pick look, theme, colour palette and accent, detail level, vibration, icon set and game icons under **Settings → Appearance**; its **Brand** group holds the mark finish (colour, shading, tile), the app backdrop and the Store preview. Change your **Home timezone** under **Settings → Time & reminders**. The guide, keyboard shortcuts, the version and updates are under **Settings → Activity & About**.
 
 Dates and clocks use your **Home timezone** from Settings. Bundled event dates can change, so check important deadlines in the game.
 
@@ -45,7 +45,7 @@ The quest lists come from community wikis and are not complete. Your own quest l
 
 ## Live numbers (Connections)
 
-Manual entry stays complete and offline by default. Under **Settings → Connections** you can opt in per device:
+Manual entry stays complete and offline by default. Under **Settings → Accounts** you can opt in per device:
 
 - **HoYoLAB & SKPORT live numbers** (Genshin, HSR, ZZZ via HoYoLAB and Arknights: Endfield via SKPORT in the Windows and Android apps): sign in through the isolated webview (reusing a saved session when valid), connect from Chrome, Edge or Firefox via the bundled **Memoria Browser Connect** extension and a one-time 6-character code, or paste a browser session. Credentials are sealed on this device with **Windows DPAPI** or **Android Keystore** and never written to backups, sync or browser storage. Link each role to its tracked game and tap **Refresh** (or turn on **Refresh when a game closes** on Windows) to pull energy, dailies, endgame cycles and check-in state, or claim HoYoLAB daily check-in and gift codes in one tap. If HoYoLAB returns code `10102`, enable **Real-Time Notes** inside HoYoLAB's Battle Chronicle settings; on code `1034`, Memoria backs off automatically and asks you to pass a check in HoYoLAB once.
 - **Screenshot reader** (all games): on Windows, press `Ctrl+Shift+M` (or click **Snip** / press `Shift+S`), pick an image, or watch your screenshot folder — drag up to 8 regions on the frozen screen (or press `Enter` for the whole screen) and Windows OCR reads bars, reserves, tasks, endgame cycles and savings together in one pass, or captures extra regions directly into an already-open sheet. On Android, pick an image or share a screenshot directly to Memoria; in a browser, pick a screenshot file and enter values beside the preview. Memoria always asks you to review and **Save** (with one Undo for the whole batch) before recording anything.
@@ -59,7 +59,7 @@ The Android and Windows apps plan reminders a week ahead:
 - three hours before an unfinished event ends;
 - two hours before a freshly read bar caps.
 
-Nothing is sent for work you have ticked off. Turn them on in setup, from the prompt on Today, or in **Settings → Reminders**.
+Nothing is sent for work you have ticked off. Turn them on in setup, from the prompt on Today, or in **Settings → Time & reminders**.
 
 - **Styles:** each kind arrives **Silent**, **Gentle**, **Standard** or **Alarm**. Alarms ring at alarm volume with **Snooze 10 min**; pick their ring under **Alarm ring**. **Test** sends a sample.
 - **Your reminders:** **+ → Reminder**, once or on repeat, in any style.

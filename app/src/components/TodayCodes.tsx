@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useCopyCode, useLiveCodes } from '../codes';
 import { fmtDur } from '../util';
 import { CodeClaim, markCodeRedeemed } from './CodeClaim';
-import { Btn } from './ui';
+import { Btn, Tooltip } from './ui';
 
 const LINK_CLASS =
   'min-h-11 shrink-0 content-center px-1 text-meta font-semibold text-accent-fg underline underline-offset-4 fine:min-h-8';
@@ -31,10 +31,12 @@ export function TodayCodes({ games, now }: { games: Game[]; now: number }) {
                 <span className="text-muted">{game.short} · </span>
                 <code className="numeral select-all font-semibold">{code}</code>
               </p>
-              <p className="aside truncate text-caption text-muted" title={rewards}>
-                {expiresAt ? `${fmtDur(expiresAt - now)} left · ` : ''}
-                {rewards}
-              </p>
+              <Tooltip content={rewards}>
+                <p className="aside truncate text-caption text-muted">
+                  {expiresAt ? `${fmtDur(expiresAt - now)} left · ` : ''}
+                  {rewards}
+                </p>
+              </Tooltip>
             </div>
             <Btn className="min-w-16 shrink-0" onClick={() => void copy(code)} aria-label={`Copy ${code}`}>
               {copied === code ? 'Copied' : 'Copy'}

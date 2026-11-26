@@ -24,13 +24,10 @@ test('daily task rules can change on the card, including count targets and new t
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await showTodayGames(page);
   await page.screenshot({ path: info.outputPath('game-cards.png') });
-  // Only a wide window has the card beside Today's list.
-  if (page.viewportSize()!.width >= 900) {
-    const card = page.locator('.today-card');
-    await expect(card).toBeVisible();
-    await card.screenshot({ path: info.outputPath('card-edge.png') });
-  }
+  // Today's rows open the game's page at every width; its card is edited there.
+  await expect(page.locator('.today-card')).toHaveCount(0);
   await openGame(page, 'Wuthering Waves');
+  await page.locator('.focus-workspace').screenshot({ path: info.outputPath('card-edge.png') });
   await page
     .getByRole('button', { name: 'Weekly Challenge ×3: 0 of 3 done, click to mark one more', exact: true })
     .click();

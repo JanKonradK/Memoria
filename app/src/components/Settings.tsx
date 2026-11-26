@@ -2,7 +2,7 @@ import { Activity } from './settings/Activity';
 import { lazy, Suspense, useRef, useState, type ReactNode } from 'react';
 import { detectLocalTz, normalizeState, safeParseAppState } from '@memoria/shared';
 import { useApp } from '../store';
-import { PageBar, PageBarEnd, PageTitle } from './shell/PageBar';
+import { PageBar, PageTitle } from './shell/PageBar';
 import { useUI, type ThemePreference } from '../ui-store';
 import { servedByLauncher } from '../launcher';
 import { syncNow } from '../sync';
@@ -13,11 +13,13 @@ import { GameIconsRow, IconSetRow } from './settings/IconPicker';
 import { MarkPicker, StorePreviewRow } from './settings/MarkPicker';
 import { SettingRow, SettingsGroup } from './settings/SettingRow';
 import { usePresence } from '../presence';
-import { APP_VERSION, displayVersion, updateTarget, useAppUpdate } from '../app-update';
+import { APP_VERSION, displayVersion, updateTarget, useAppUpdate } from '../app-update-state';
 import { useMediaQuery } from '../hooks';
 import type { SettingsSection } from '../ui-store';
 import { RemindersPane } from './settings/RemindersPane';
 import { AppUpdates } from './settings/AppUpdates';
+import { AutoBackupRow } from './settings/AutoBackup';
+import { useEntitlements } from '../entitlements';
 import { DesktopPresence } from './settings/DesktopPresence';
 import { GameRosterRow } from './settings/GameRosterRow';
 import { disconnectLanSync } from '../lan-sync';
@@ -36,7 +38,7 @@ import { resolveHomeTimeZone, SYSTEM_TIMEZONE_VALUE } from '../timezone';
 import { fmtClock } from '../util';
 import { HomeTimeZoneField } from './HomeTimeZoneField';
 import { rosterGames, useIdentityColors } from './roster';
-import { Btn, Page, Segmented, TOUCH_BUTTON } from './ui';
+import { Btn, FileButton, Page, Segmented } from './ui';
 import { confirmDialog } from './ConfirmDialog';
 // Today is lazy-loaded, so its heading rule is brought in here as well.
 import '../today.css';
@@ -66,8 +68,11 @@ export function SettingsPage() {
   const picked = useUI((state) => state.settingsPicked);
   const closeSection = useUI((state) => state.closeSettingsSection);
   const split = useMediaQuery('(min-width: 900px)');
+  const touch = useMediaQuery('(pointer: coarse)');
   const presence = usePresence((store) => store.presence);
   const update = useAppUpdate();
+  // The Android build (GitHub or Play) decides whether the updater rows show.
+  useEntitlements((store) => store.distribution);
   const launcher = servedByLauncher();
   const detectedTz = detectLocalTz();
   const games = rosterGames(trackedGames);
@@ -144,24 +149,36 @@ export function SettingsPage() {
   const syncBadge = cloudConnected && cloudStatus === 'ok' ? cloudFileName : undefined;
   const sections: Array<{ key: SettingsSection; label: string; badge?: ReactNode }> = [
     { key: 'games', label: 'Games', badge: <span className="numeral">{games.length}</span> },
-    { key: 'general', label: 'General' },
+    { key: 'reminders', label: 'Time & reminders' },
     { key: 'appearance', label: 'Appearance' },
-    { key: 'reminders', label: 'Reminders' },
     { key: 'sync', label: 'Device sync', badge: syncBadge },
-    { key: 'connections', label: 'Connections' },
+    { key: 'connections', label: 'Accounts' },
   ];
-  if (presence) sections.push({ key: 'device', label: 'On this PC' });
-  if (updateTarget() !== 'none')
-    sections.push({
-      key: 'updates',
-      label: 'Updates',
-      badge: update.release ? <span className="settings-nav-new">New</span> : displayVersion(APP_VERSION),
-    });
-  sections.push({ key: 'data', label: 'Data' }, { key: 'activity', label: 'Activity' });
+  if (presence) sections.push({ key: 'device', label: 'This PC' });
+  sections.push(
+    { key: 'data', label: 'Data' },
+    {
+      key: 'activity',
+      label: 'Activity & About',
+      badge:
+        update.release && updateTarget() !== 'none' ? (
+          <span className="settings-nav-new">New</span>
+        ) : (
+          <span className="numeral">{displayVersion(APP_VERSION)}</span>
+        ),
+    },
+  );
   const active = sections.some((section) => section.key === requestedSection) ? requestedSection : 'games';
   // A wide window shows one pane beside the menu; a narrow one is one page of every section.
   // A narrow screen is a menu, then one section at a time, like the phone's own settings.
   const menu = !split && !picked;
+  // On a narrow screen, choosing a section pushes it in from the right and Back
+  // brings the menu in from the left, as a phone's own settings do. Kept with
+  // the menu state it was decided on; nothing moves on a first arrival.
+  const [step, setStep] = useState<{ menu: boolean; split: boolean; way?: 'forward' | 'back' }>({ menu, split });
+  if (step.menu !== menu || step.split !== split) {
+    setStep({ menu, split, way: step.split === split ? (menu ? 'back' : 'forward') : undefined });
+  }
   const pane = (key: SettingsSection) => ({
     id: key,
     title: sections.find((section) => section.key === key)?.label ?? '',
@@ -182,13 +199,9 @@ export function SettingsPage() {
           </button>
         )}
         <PageTitle>{split || menu ? 'Settings' : activeLabel}</PageTitle>
-        <PageBarEnd>
-          <Btn onClick={() => useUI.getState().openSheet({ kind: 'shortcuts' })}>Shortcuts</Btn>
-          <Btn onClick={() => useUI.getState().openSheet({ kind: 'guide' })}>Guide</Btn>
-        </PageBarEnd>
       </PageBar>
       <div className="settings-shell">
-        <div className="settings-layout">
+        <div className="settings-layout" data-step={split ? undefined : step.way}>
           {(split || menu) && (
             <nav className={`settings-nav ${menu ? 'settings-menu' : ''}`} aria-label="Settings sections">
               <ul>
@@ -226,11 +239,7 @@ export function SettingsPage() {
           <div className="settings-panes">
             <SettingsPane
               {...pane('games')}
-              action={
-                <Btn className={TOUCH_BUTTON} onClick={() => openSheet({ kind: 'addGame' })}>
-                  Add a game
-                </Btn>
-              }
+              action={<Btn onClick={() => openSheet({ kind: 'addGame' })}>Add a game</Btn>}
             >
               {games.length > 0 ? (
                 <ul className="settings-roster" aria-label="Your games">
@@ -248,9 +257,10 @@ export function SettingsPage() {
               )}
             </SettingsPane>
 
-            <SettingsPane {...pane('general')}>
+            {/* The clock every reset and reminder is read on, then everything that reaches you outside the app. */}
+            <SettingsPane {...pane('reminders')}>
               <div className="settings-rows">
-                <SettingRow label="Home timezone" hint="Resets and countdowns are shown on this clock.">
+                <SettingRow label="Home timezone" hint="Resets, countdowns and reminders are shown on this clock.">
                   <HomeTimeZoneField
                     value={settings.localTz === detectedTz ? SYSTEM_TIMEZONE_VALUE : settings.localTz}
                     resolvedTz={settings.localTz}
@@ -258,21 +268,27 @@ export function SettingsPage() {
                     onChange={(value) => updateSettings({ localTz: resolveHomeTimeZone(value) })}
                   />
                 </SettingRow>
-                <VibrationRow />
               </div>
+              <RemindersPane />
             </SettingsPane>
 
+            {/* How the app looks and feels, then Memoria's own mark, apart from it. */}
             <SettingsPane {...pane('appearance')}>
               <div className="settings-rows">
-                <MarkPicker />
                 <LookPicker />
-                <IconSetRow />
-                <GameIconsRow />
-                <DetailRow />
                 <ThemeRow />
                 <PaletteSettings />
-                <StorePreviewRow />
+                <DetailRow />
+                <VibrationRow />
+                <IconSetRow />
+                <GameIconsRow />
               </div>
+              <SettingsGroup title="Brand">
+                <div className="settings-rows">
+                  <MarkPicker />
+                  <StorePreviewRow />
+                </div>
+              </SettingsGroup>
             </SettingsPane>
 
             <SettingsPane {...pane('sync')}>
@@ -298,7 +314,6 @@ export function SettingsPage() {
                           <div className="flex flex-wrap items-center gap-2">
                             <Btn
                               kind={syncAvailable ? 'ghost' : 'primary'}
-                              className={TOUCH_BUTTON}
                               onClick={() => {
                                 setStatusMessage('');
                                 void connectNewCloudFile()
@@ -309,7 +324,6 @@ export function SettingsPage() {
                               Create sync file…
                             </Btn>
                             <Btn
-                              className={TOUCH_BUTTON}
                               onClick={() => {
                                 setStatusMessage('');
                                 void connectExistingCloudFile()
@@ -329,24 +343,15 @@ export function SettingsPage() {
                       {cloudSupported && cloudConnected && (
                         <div className="flex flex-wrap items-center gap-3">
                           {cloudStatus === 'needs-permission' ? (
-                            <Btn
-                              kind="primary"
-                              className={TOUCH_BUTTON}
-                              onClick={() => void reconnectCloudFile().catch(reportError)}
-                            >
+                            <Btn kind="primary" onClick={() => void reconnectCloudFile().catch(reportError)}>
                               Reconnect
                             </Btn>
                           ) : (
-                            <Btn
-                              kind="primary"
-                              className={TOUCH_BUTTON}
-                              onClick={() => void cloudSyncNow().catch(reportError)}
-                            >
+                            <Btn kind="primary" onClick={() => void cloudSyncNow().catch(reportError)}>
                               Sync now
                             </Btn>
                           )}
                           <Btn
-                            className={TOUCH_BUTTON}
                             onClick={() => {
                               void disconnectCloudFile()
                                 .then(() => setStatusMessage('Stopped syncing.'))
@@ -381,10 +386,6 @@ export function SettingsPage() {
               </Suspense>
             </SettingsPane>
 
-            <SettingsPane {...pane('reminders')}>
-              <RemindersPane />
-            </SettingsPane>
-
             {presence && (
               <SettingsPane {...pane('device')}>
                 <div className="settings-rows">
@@ -393,22 +394,12 @@ export function SettingsPage() {
               </SettingsPane>
             )}
 
-            {updateTarget() !== 'none' && (
-              <SettingsPane {...pane('updates')}>
-                <div className="settings-rows">
-                  <AppUpdates />
-                </div>
-              </SettingsPane>
-            )}
-
-            <SettingsPane {...pane('activity')}>
-              <Activity />
-            </SettingsPane>
             <SettingsPane {...pane('data')}>
               <div className="settings-rows">
                 {launcher && (
                   <SettingRow
                     label="Save to this PC"
+                    hintKind="fact"
                     hint={
                       <span role="status">
                         {syncStatus === 'syncing'
@@ -419,9 +410,7 @@ export function SettingsPage() {
                       </span>
                     }
                   >
-                    <Btn className={TOUCH_BUTTON} onClick={() => void syncNow().catch(reportError)}>
-                      Save now
-                    </Btn>
+                    <Btn onClick={() => void syncNow().catch(reportError)}>Save now</Btn>
                   </SettingRow>
                 )}
                 {syncStatus === 'error' && (
@@ -434,33 +423,22 @@ export function SettingsPage() {
                 )}
                 <SettingRow
                   label="Backup"
+                  hintKind="fact"
                   hint={
                     <span className="numeral">
-                      {games.length} games · {eventCount} events
+                      {games.length} game{games.length === 1 ? '' : 's'} · {eventCount} event
+                      {eventCount === 1 ? '' : 's'}
                     </span>
                   }
                 >
                   <div className="flex flex-wrap items-center justify-end gap-2">
-                    <Btn className={TOUCH_BUTTON} onClick={exportJson}>
-                      Export backup
-                    </Btn>
-                    <label className="focus-ring-group btn-compact flex min-h-11 cursor-pointer items-center rounded-ui-md bg-fill-2 px-3 py-1 text-caption font-semibold text-fg-soft ring-1 ring-line-hairline transition hover:bg-fill-3 fine:min-h-8">
+                    <Btn onClick={exportJson}>Export backup</Btn>
+                    <FileButton accept="application/json" onFile={importJson}>
                       Import backup
-                      {/* sr-only, never `hidden`: display:none drops the input out of the
-                          tab order and the wrapping label is not focusable. */}
-                      <input
-                        type="file"
-                        accept="application/json"
-                        className="sr-only"
-                        onChange={(event) => {
-                          const file = event.target.files?.[0];
-                          event.target.value = '';
-                          importJson(file);
-                        }}
-                      />
-                    </label>
+                    </FileButton>
                   </div>
                 </SettingRow>
+                {isNativeApp && <AutoBackupRow />}
                 {importDraft && (
                   <div className="settings-note my-3 border-l-2 border-warn/60 pl-3">
                     <p className="text-body font-semibold text-warn-fg">
@@ -472,7 +450,6 @@ export function SettingsPage() {
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Btn
                         kind="primary"
-                        className={TOUCH_BUTTON}
                         onClick={() => {
                           const ok = importStateJson(importDraft.text);
                           setStatusMessage(ok ? 'Backup merged.' : 'Import failed.');
@@ -481,19 +458,16 @@ export function SettingsPage() {
                       >
                         Merge backup
                       </Btn>
-                      <Btn className={TOUCH_BUTTON} onClick={() => setImportDraft(null)}>
-                        Cancel
-                      </Btn>
+                      <Btn onClick={() => setImportDraft(null)}>Cancel</Btn>
                     </div>
                   </div>
                 )}
                 <SettingRow label="Clear local data" hint="Deletes every game, reading and event on this device.">
                   <Btn
                     kind="danger"
-                    className={TOUCH_BUTTON}
                     onClick={async () => {
                       const clear = await confirmDialog({
-                        title: 'Delete all Memoria data in this browser?',
+                        title: 'Delete all Memoria data on this device?',
                         description: 'Export a backup first if you need one.',
                         confirmLabel: 'Clear local data',
                         danger: true,
@@ -511,6 +485,32 @@ export function SettingsPage() {
                   </Btn>
                 </SettingRow>
               </div>
+            </SettingsPane>
+
+            {/* The app itself, its version, tour and keys, then what has changed on this device. */}
+            <SettingsPane {...pane('activity')}>
+              <SettingsGroup title="About">
+                <div className="settings-rows">
+                  {updateTarget() === 'none' ? (
+                    <SettingRow label="Memoria" hint={displayVersion(APP_VERSION)} hintKind="fact" />
+                  ) : (
+                    <AppUpdates />
+                  )}
+                  <SettingRow
+                    label="Guide"
+                    hint="Today, bars, your games, overnight and getting around, in five steps."
+                  >
+                    <Btn onClick={() => openSheet({ kind: 'guide' })}>Open guide</Btn>
+                  </SettingRow>
+                  {/* Keys need a keyboard: on a touch screen there is nothing to show. */}
+                  {!touch && (
+                    <SettingRow label="Keyboard shortcuts" hint="Every key Memoria answers to, on one sheet.">
+                      <Btn onClick={() => openSheet({ kind: 'shortcuts' })}>Show shortcuts</Btn>
+                    </SettingRow>
+                  )}
+                </div>
+              </SettingsGroup>
+              <Activity />
             </SettingsPane>
 
             {/* One status line for actions in any pane: backups, shared-folder sync, clearing data. */}

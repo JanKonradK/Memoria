@@ -1,5 +1,8 @@
-import { refreshRemoteFeed, useRemoteFeed } from '../data/remote-feed';
+import { useRemoteFeed } from '../data/remote-feed-state';
 import { Tooltip } from './ui';
+
+/** The download and signature check load on a retry, not with the calendar. */
+const retry = () => void import('../data/remote-feed').then(({ refreshRemoteFeed }) => refreshRemoteFeed());
 
 /**
  * New events go straight onto the calendar, so a current feed says nothing.
@@ -14,7 +17,7 @@ export function CalendarFeedStatus() {
       <button
         type="button"
         className="min-h-11 text-meta text-accent-fg underline underline-offset-4 fine:min-h-8"
-        onClick={() => void refreshRemoteFeed()}
+        onClick={retry}
       >
         Events not updated · Retry
       </button>

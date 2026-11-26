@@ -17,6 +17,7 @@ import { openGame } from './workspace-navigation';
 const HomeWidget = registerPlugin<{
   update(options: { snapshot: string }): Promise<void>;
   takeQueue(): Promise<{ queue: string }>;
+  placedGames?(): Promise<{ ids?: string[] }>;
 }>('HomeWidget');
 
 /**
@@ -54,35 +55,41 @@ async function takeWidgetTicks() {
   });
 }
 
-/** Four rows of two. */
-const CELLS = 8;
+/**
+ * Every active game, up to this many: the Glance widget draws the first eight
+ * (four rows of two), and a single-game widget can be set to any of them.
+ */
+const ROWS = 24;
 /** Coin images are drawn at this many pixels square. */
 const COIN_PX = 112;
 
 /**
- * What the Android home screen widget draws: Today's most urgent active games,
- * each with its logo, account, main energy meter and daily progress. The widget
- * moves energy forward by the clock and empties the dailies ring at reset.
+ * What the Android home screen widgets draw: active games, most urgent first,
+ * each with its logo, account, main energy meter and daily progress. The widgets
+ * move energy forward by the clock and empty the dailies ring at reset.
  */
-export function widgetSnapshot(state: AppState, now: number) {
+export function widgetSnapshot(state: AppState, now: number, includeIds: readonly string[] = []) {
   const context = buildUrgencyContext(state, now);
-  const rows = urgencyOrder(state, now, context)
-    .filter((entry) => !entry.game.paused)
-    .slice(0, CELLS)
-    .map(({ game }) => {
-      const dailies = (context.checklistByGame.get(game.id) ?? []).filter((item) => item.cadence === 'daily');
-      return {
-        id: game.id,
-        logoKey: logoSide(game),
-        label: game.accountLabel || game.short,
-        ring: logoRing(game)[0],
-        meter: gameGlance(state, game, now, context).energy[0] ?? null,
-        dailyDone: dailies.filter((item) => item.done).length,
-        dailyTotal: dailies.length,
-        /** When the current dailies reset; the widget treats them as undone after it. */
-        dailyResetAt: dailies.length ? Math.min(...dailies.map((item) => item.resetAt)) : null,
-      };
-    });
+  const ordered = urgencyOrder(state, now, context).filter((entry) => !entry.game.paused);
+  const top = ordered.slice(0, ROWS);
+  const seen = new Set(top.map((entry) => entry.game.id));
+  const extras = ordered.slice(ROWS).filter((entry) => includeIds.includes(entry.game.id) && !seen.has(entry.game.id));
+  const rows = [...top, ...extras].map(({ game }) => {
+    const dailies = (context.checklistByGame.get(game.id) ?? []).filter((item) => item.cadence === 'daily');
+    return {
+      id: game.id,
+      logoKey: logoSide(game),
+      /** The name the single-game widget's picker lists. */
+      name: game.accountLabel ? `${game.name} (${game.accountLabel})` : game.name,
+      label: game.accountLabel || game.short,
+      ring: logoRing(game)[0],
+      meter: gameGlance(state, game, now, context).energy[0] ?? null,
+      dailyDone: dailies.filter((item) => item.done).length,
+      dailyTotal: dailies.length,
+      /** When the current dailies reset; the widget treats them as undone after it. */
+      dailyResetAt: dailies.length ? Math.min(...dailies.map((item) => item.resetAt)) : null,
+    };
+  });
   return { generatedAt: now, rows };
 }
 
@@ -136,7 +143,11 @@ async function coinImage(game: Game): Promise<string> {
 
 async function pushSnapshot() {
   const state = useApp.getState().state;
-  const snapshot = widgetSnapshot(state, Date.now());
+  const placed =
+    (await HomeWidget.placedGames?.()
+      .then((result) => (Array.isArray(result?.ids) ? result.ids : []))
+      .catch(() => [])) ?? [];
+  const snapshot = widgetSnapshot(state, Date.now(), placed);
   const rows = await Promise.all(
     snapshot.rows.map(async (row) => {
       const game = state.games.find((item) => item.id === row.id)!;
@@ -146,8 +157,15 @@ async function pushSnapshot() {
   await HomeWidget.update({ snapshot: JSON.stringify({ ...snapshot, rows }) });
 }
 
-/** `memoria://game/<id>` opens that game; anything else opens Today. */
-function openFromWidget(url: string) {
+/**
+ * `memoria://game/<id>` opens that game, `memoria://scan` (the Quick Scan
+ * widget) the camera reader; anything else opens Today.
+ */
+export function openFromWidget(url: string) {
+  if (/^memoria:\/\/scan\/?$/.test(url)) {
+    void import('./connectors').then(({ scanWithCamera }) => scanWithCamera()).catch(() => undefined);
+    return;
+  }
   const match = /^memoria:\/\/game\/(.+)$/.exec(url);
   const gameId = match ? decodeURIComponent(match[1]!) : null;
   if (gameId && useApp.getState().state.games.some((game) => game.id === gameId && !game.deleted)) openGame(gameId);

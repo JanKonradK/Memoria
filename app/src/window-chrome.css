@@ -1,0 +1,86 @@
+/* The Windows app's title bar (WindowChrome.tsx): Windows 11's own measures,
+   32px tall with 46px caption buttons. It is drawn at that size whatever the
+   page zoom: --chrome-zoom (set by the desktop bridge) is the zoom's inverse,
+   and index.css offsets the layout by the same --desktop-chrome-h. */
+.window-chrome {
+  position: fixed;
+  inset: 0 0 auto;
+  /* Above sheets (z-50), the update screen (z-75) and confirms (z-90): the
+     window can always be moved, minimized and closed. */
+  z-index: 110;
+  display: flex;
+  align-items: stretch;
+  height: 32px;
+  zoom: var(--chrome-zoom, 1);
+  /* A modal dialog turns pointer events off on the body; the buttons stay live. */
+  pointer-events: auto;
+  background: var(--backdrop-ground, var(--color-surface-0));
+  color: var(--color-dim);
+  font:
+    400 12px/32px 'Segoe UI Variable Text',
+    'Segoe UI',
+    var(--font-body),
+    sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Windows moves the window, maximizes it on a double-click and opens its
+     menu on a right-click anywhere here but the buttons. */
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+.window-chrome[data-active] {
+  color: var(--color-muted);
+}
+.window-chrome-title {
+  min-width: 0;
+  padding-inline: 16px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.window-chrome-buttons {
+  display: flex;
+  margin-left: auto;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+.window-chrome-buttons button {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 32px;
+  color: inherit;
+  font:
+    10px/1 'Segoe Fluent Icons',
+    'Segoe MDL2 Assets';
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.window-chrome[data-active] .window-chrome-buttons button {
+  color: var(--color-fg);
+}
+.window-chrome-buttons button:hover {
+  background: var(--color-fill-3);
+}
+.window-chrome-buttons button:active {
+  background: var(--color-fill-2);
+}
+/* Windows' own close red, with a white glyph, focused or not. */
+.window-chrome-buttons button[data-close]:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+.window-chrome-buttons button[data-close]:active {
+  background: rgb(196 43 28 / 0.9);
+  color: rgb(255 255 255 / 0.7);
+}
+@media (forced-colors: active) {
+  .window-chrome-buttons button:hover {
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .window-chrome-buttons button {
+    transition: none;
+  }
+}

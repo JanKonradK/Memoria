@@ -27,6 +27,19 @@ export async function setPresence(changes: Partial<DesktopPreferences>): Promise
   }
 }
 
+/** The quick card's global shortcut: on or off, new keys, or blank to clear it. Says why Windows refused. */
+export async function setCompactShortcut(enabled: boolean, accelerator: string | null): Promise<void> {
+  const host = window.memoriaDesktop?.presence;
+  if (!host?.setCompactShortcut) return;
+  try {
+    usePresence.setState({ presence: await host.setCompactShortcut(enabled, accelerator), error: '' });
+  } catch (error) {
+    usePresence.setState({
+      error: error instanceof Error && error.message ? error.message : 'Windows did not accept the change. Try again.',
+    });
+  }
+}
+
 /** A launcher starts every game it manages, so only a game's own program counts. */
 const isLauncher = (file: string) => /launcher|^hyp\.exe$/i.test(file);
 

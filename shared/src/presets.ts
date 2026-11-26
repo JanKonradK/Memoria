@@ -601,8 +601,8 @@ export const PRESETS: GamePreset[] = [
     ],
     notes:
       "City Stamina has no regeneration: it refills to your cap every Monday 05:00, and the cap rises with City Tycoon level (100 up to 700) — set yours. It has no reserve, so use it before Monday. Since 1.5, excess Character Pixels (cap 240, 360 with Dream Weaver's Knot) to Photo Paper Supply (2,400). The Tycoon Incentive Fund runs Monday-to-Monday 14-day periods (anchored to 2026-11-09).",
-    // Best guess — verify in Task Manager while NTE runs and edit if needed.
-    processNames: ['NTE'],
+    // HTGame is the program the PC client runs as; NTE, the first guess, stays and costs nothing.
+    processNames: ['NTE', 'HTGame'],
   },
   {
     key: 'lads',

@@ -5,7 +5,7 @@ import { useHoyolabLinked } from '../connectors-state';
 import type { HoyolabRedeemResult } from '../desktop-host';
 import { useApp } from '../store';
 import { Pill } from './primitives';
-import { Btn, TOUCH_BUTTON } from './ui';
+import { Btn } from './ui';
 
 /** The parts of a code a claim needs, from a game's list or Today's. */
 export interface ClaimableCode {
@@ -87,7 +87,7 @@ export function CodeClaim({
       {linked && (
         <Btn
           kind="primary"
-          className={`shrink-0 ${TOUCH_BUTTON}`}
+          className="shrink-0"
           aria-label={`Claim ${item.code}`}
           aria-busy={busy}
           disabled={busy}
@@ -114,14 +114,14 @@ export function CodeClaim({
       {opened && (
         <>
           <Btn
-            className={`shrink-0 ${TOUCH_BUTTON}`}
+            className="shrink-0"
             aria-label={`${item.code} worked`}
             onClick={() => done(`Marked ${item.code} redeemed`)}
           >
             Worked ✓
           </Btn>
           <Btn
-            className={`shrink-0 ${TOUCH_BUTTON}`}
+            className="shrink-0"
             aria-label={`${item.code} failed`}
             onClick={() => {
               setOpened(false);

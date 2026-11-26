@@ -11,6 +11,11 @@ export function presetKeyOf(game: GameLike): string | undefined {
   return game.presetKey ?? presetForGame(game)?.key;
 }
 
+/** Two games are the same game on other accounts when they share a preset, or for a custom game, a name. */
+export function sameGameKey(game: GameLike): string {
+  return presetKeyOf(game) ?? `custom:${game.name.trim().toLowerCase()}`;
+}
+
 export function gameServers(game: GameLike): readonly GameServer[] {
   return serversFor(presetKeyOf(game));
 }

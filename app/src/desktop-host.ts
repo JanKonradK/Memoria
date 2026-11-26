@@ -1,5 +1,12 @@
 import { useLayoutEffect } from 'react';
-import type { GachaPresetKey, HoyolabPresetKey, RawGachaPull, SkportPresetKey } from '@memoria/shared';
+import type {
+  GachaPresetKey,
+  HoyolabPresetKey,
+  OcrCapture,
+  OcrPass,
+  RawGachaPull,
+  SkportPresetKey,
+} from '@memoria/shared';
 import { confirmDialog } from './components/ConfirmDialog';
 import { flushPersist, useApp } from './store';
 import { flushSync } from './sync';
@@ -12,6 +19,8 @@ export interface DesktopCloseResult {
 /** Narrow native actions only, never Node, cookies or arbitrary IPC. */
 export interface DesktopHost {
   version: 1;
+  /** The frameless window's title bar buttons (WindowChrome). Older hosts lack it. */
+  window?: DesktopWindow;
   /** Start a tracked game. Targets are picked in a native dialog and never leave this PC. */
   launch?: {
     list(): Promise<LaunchTargets>;
@@ -30,6 +39,8 @@ export interface DesktopHost {
   presence?: {
     get(): Promise<DesktopPresence>;
     set(changes: Partial<DesktopPreferences>): Promise<DesktopPresence>;
+    /** The quick card's global shortcut. Blank turns it off. Older hosts lack it. */
+    setCompactShortcut?(enabled: boolean, accelerator: string | null): Promise<DesktopPresence>;
     /** Program names per game id, e.g. `{ genshin: ['GenshinImpact'] }`. */
     watch(games: Record<string, string[]>): Promise<boolean>;
     notify(notice: { gameId: string; title: string; body: string }): Promise<boolean>;
@@ -52,6 +63,56 @@ export interface DesktopHost {
   completeClose(requestId: string, result: DesktopCloseResult): void;
 }
 
+export interface DesktopWindowState {
+  maximized: boolean;
+  focused: boolean;
+  /** The page zoom (Ctrl and + or -), which the title bar undoes. */
+  zoom: number;
+}
+
+export interface DesktopWindow {
+  minimize(): Promise<void>;
+  toggleMaximize(): Promise<DesktopWindowState>;
+  /** The window's own close: into the tray, or the page's save first. */
+  close(): Promise<void>;
+  getState(): Promise<DesktopWindowState>;
+  onStateChanged(listener: (state: DesktopWindowState) => void): () => void;
+  /**
+   * The quick card: the window shrinks to one game's energy and dailies. A null
+   * game lets the page pick. Older hosts lack these five.
+   */
+  enterCompact?(gameId?: string | null): Promise<DesktopSurface>;
+  /** `openGameId` opens the full app on that game; `toTray` picks where the card goes; neither dismisses it. */
+  exitCompact?(options?: { openGameId?: string | null; toTray?: boolean }): Promise<DesktopSurface>;
+  setCompactPin?(pinned: boolean): Promise<DesktopSurface>;
+  getSurface?(): Promise<DesktopSurface>;
+  onSurfaceChanged?(listener: (surface: DesktopSurfaceChange) => void): () => void;
+}
+
+/** What the one window shows: the full app (on screen or in the tray), or the quick card. */
+export interface DesktopSurface {
+  mode: 'full' | 'compact';
+  /** The card's game; null lets the page pick the most urgent one. */
+  gameId: string | null;
+  /** The card floats over other windows. */
+  pinned: boolean;
+  /** Memoria opened the card itself (a game closed), without taking focus. */
+  autoOpened: boolean;
+}
+
+export interface DesktopSurfaceChange extends DesktopSurface {
+  /** Leaving the card for the full app on this game. */
+  openGameId?: string | null;
+}
+
+/** The quick card's global shortcut. Blank until the player picks one. */
+export interface CompactShortcutStatus {
+  enabled: boolean;
+  accelerator: string;
+  registered: boolean;
+  error?: string | null;
+}
+
 /** enabled; app: off for Memoria; user: all notifications off; policy: set by an administrator. */
 export type WindowsToastSetting = 'enabled' | 'app' | 'user' | 'policy' | 'unknown';
 
@@ -60,12 +121,20 @@ export interface DesktopPreferences {
   closeToTray: boolean;
   gameStartNotices: boolean;
   remindersOnPc: boolean;
+  /** Open the quick card when a followed game closes. Older hosts lack it. */
+  compactPopOutOnStop?: boolean;
+  /** The quick card floats over other windows. Older hosts lack it. */
+  compactAlwaysOnTop?: boolean;
 }
 
 export interface DesktopPresence extends DesktopPreferences {
   /** False in a development checkout, which never registers itself with Windows. */
   canStartWithWindows: boolean;
+  /** Task Manager switched off the start at sign-in. Turning it on here undoes that. Older hosts lack it. */
+  startupBlockedByWindows?: boolean;
   gameWatch: boolean;
+  /** Older hosts lack it. */
+  compactShortcut?: CompactShortcutStatus;
 }
 
 /** A published GitHub release, as both the desktop host and the app read it. */
@@ -225,6 +294,14 @@ export interface ScreenshotOcrResult {
    * are set apart by one empty line. Missing means one.
    */
   regionCount?: number;
+  /**
+   * Every way each region was read (as captured, upscaled, as bright text,
+   * a window's top band), with word boxes. `lines` stays the primary reading.
+   * Older hosts lack it.
+   */
+  passes?: OcrPass[];
+  /** What was read: a snip, the game window or an image file. Older hosts lack it. */
+  source?: OcrCapture;
 }
 
 export interface DesktopConnectors {
@@ -311,6 +388,19 @@ export function useUnsavedDraft(dirty: boolean): void {
 export function isDesktopApp(): boolean {
   return window.memoriaDesktop?.version === 1;
 }
+
+/** Segoe caption and quick-card glyphs (Fluent Icons on Windows 11, MDL2 Assets on 10). */
+export const DESKTOP_CHROME_GLYPHS = {
+  minimize: '\uE921',
+  maximize: '\uE922',
+  restore: '\uE923',
+  close: '\uE8BB',
+  pin: '\uE718',
+  pinned: '\uE841',
+} as const;
+
+/** A caption button never takes focus: whatever was being typed into keeps it. */
+export const keepFocus = (event: { preventDefault(): void }) => event.preventDefault();
 
 /** Keep the renderer alive until both local stores acknowledge the final edit. */
 export function initDesktopHost(): (() => void) | undefined {

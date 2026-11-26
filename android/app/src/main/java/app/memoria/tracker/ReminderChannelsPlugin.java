@@ -97,7 +97,8 @@ public class ReminderChannelsPlugin extends Plugin {
         ringing.enableVibration(false);
         ringing.setBypassDnd(true);
         ringing.setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
-        channels.add(ringing);
+        // The Google Play build has no ringer (see its manifest), so no channel for one.
+        if (!BuildConfig.IS_PLAY_BUILD) channels.add(ringing);
         manager.createNotificationChannels(channels);
     }
 

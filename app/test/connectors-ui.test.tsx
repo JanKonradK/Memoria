@@ -36,6 +36,7 @@ import { closeTabSyncForTest, flushPersist, useApp } from '../src/store';
 import { useUI } from '../src/ui-store';
 import {
   captureScreenshot,
+  choosePendingScreenshotGame,
   CONNECTOR_NOTICE_EVENT,
   initConnectors,
   loadConnectorStatus,
@@ -611,7 +612,7 @@ describe('ScreenshotConfirm · every field at once', () => {
 describe('ScreenshotConfirm', () => {
   it('offers another bar the screenshot did not show', () => {
     const gameId = addPreset('genshin');
-    const condensed = resourceNamed(gameId, 'Condensed Resin');
+    const realm = resourceNamed(gameId, 'Realm Currency');
     act(() => {
       openScreenshotOcr({
         fileName: 'shot.png',
@@ -621,12 +622,97 @@ describe('ScreenshotConfirm', () => {
       });
     });
     render(<ScreenshotConfirm />);
-    expect(screen.queryByLabelText('Condensed Resin value')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Realm Currency value')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Include another bar' }));
-    expect(screen.getByLabelText('Include Condensed Resin')).not.toBeChecked();
-    fireEvent.change(screen.getByLabelText('Condensed Resin value'), { target: { value: '3' } });
+    expect(screen.getByLabelText('Include Realm Currency')).not.toBeChecked();
+    // Condensed Resin stays inside the Original Resin row, never a second row of its own.
+    expect(screen.getAllByLabelText('Condensed Resin value')).toHaveLength(1);
+    expect(screen.getAllByRole('checkbox', { name: 'Include Condensed Resin' })).toHaveLength(1);
+    fireEvent.change(screen.getByLabelText('Realm Currency value'), { target: { value: '300' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save 2 updates' }));
+    expect(latest(realm.id)?.value).toBe(300);
+  });
+
+  it('reads the Condensed Resin bank inside the Original Resin row, one tap per count', () => {
+    const gameId = addPreset('genshin');
+    const resin = resourceNamed(gameId, 'Original Resin');
+    const condensed = resourceNamed(gameId, 'Condensed Resin');
+    act(() => {
+      openScreenshotOcr({ fileName: 'shot.png', observedAt: Date.now(), lines: ['120/200'], source: 'file' });
+    });
+    render(<ScreenshotConfirm />);
+    const bank = screen.getByLabelText('Include Condensed Resin');
+    expect(bank).not.toBeChecked();
+    expect(screen.getByLabelText('Condensed Resin value')).toHaveValue(null);
+    expect(screen.getByLabelText('Condensed Resin value')).toHaveAttribute('placeholder', 'Keep as is');
+    const chips = within(screen.getByRole('group', { name: 'Condensed Resin count' })).getAllByRole('button');
+    expect(chips.map((chip) => chip.textContent)).toEqual(['0', '1', '2', '3', '4', '5']);
+
+    fireEvent.click(chips[3]!);
+    expect(bank).toBeChecked();
+    expect(chips[3]).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('Condensed Resin value')).toHaveValue(3);
+    fireEvent.click(screen.getByRole('button', { name: 'Save 2 updates' }));
+    expect(latest(resin.id)?.value).toBe(120);
     expect(latest(condensed.id)?.value).toBe(3);
+  });
+
+  it('prefills the bank from its own match and saves it alone', () => {
+    const gameId = addPreset('genshin');
+    const resin = resourceNamed(gameId, 'Original Resin');
+    const condensed = resourceNamed(gameId, 'Condensed Resin');
+    const before = latest(resin.id)?.id;
+    act(() => {
+      openScreenshotOcr({
+        fileName: 'shot.png',
+        observedAt: Date.now(),
+        lines: ['Condensed Resin 4/5'],
+        source: 'file',
+      });
+    });
+    render(<ScreenshotConfirm />);
+    // Its bar's row is there to hold it, but only the counter the screenshot showed is ticked.
+    expect(screen.getByLabelText('Include Original Resin')).not.toBeChecked();
+    expect(screen.getByLabelText('Include Condensed Resin')).toBeChecked();
+    expect(screen.getByLabelText('Condensed Resin value')).toHaveValue(4);
+    fireEvent.click(screen.getByRole('button', { name: 'Save reading' }));
+    expect(latest(condensed.id)?.value).toBe(4);
+    expect(latest(resin.id)?.id).toBe(before);
+    expect(useUI.getState().undoNotice?.text).toBe('Saved Condensed Resin from a screenshot');
+  });
+
+  it('keeps every denominator on one line', () => {
+    const gameId = addPreset('hsr');
+    const echo = taskByKey(gameId, 'hsr-echo-of-war');
+    act(() => {
+      openScreenshotOcr({
+        fileName: 'shot.png',
+        observedAt: Date.now(),
+        lines: ['Trailblaze Power 180/300', 'Echo of War 1/3'],
+        source: 'file',
+      });
+    });
+    render(<ScreenshotConfirm />);
+    for (const text of ['/ 300', '/ 2400 Reserved Trailblaze Power', '/ 3']) {
+      expect(screen.getByText(text)).toHaveClass('whitespace-nowrap', 'shrink-0');
+    }
+    expect(screen.getByLabelText(`${echo.name} done`)).toHaveValue(1);
+  });
+
+  it('includes rows with a tick a finger can hit', () => {
+    addPreset('genshin');
+    act(() => {
+      openScreenshotOcr({ fileName: 'shot.png', observedAt: Date.now(), lines: ['120/200'], source: 'file' });
+    });
+    render(<ScreenshotConfirm />);
+    const tick = screen.getByRole('checkbox', { name: 'Include Original Resin' });
+    expect(tick.tagName).toBe('BUTTON');
+    // 44px everywhere but a fine pointer on a wide screen.
+    expect(tick).toHaveClass('size-11', 'fine:size-8');
+    expect(tick).toBeChecked();
+    fireEvent.click(tick);
+    expect(tick).not.toBeChecked();
+    expect(screen.getByText('Tick at least one row to save.')).toBeInTheDocument();
   });
 
   it('suggests the OCR reading, saves the edited value as a screenshot reading, and undoes', () => {
@@ -917,9 +1003,11 @@ describe('Screen capture and the global shortcut', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Change shortcut, now Ctrl+Shift+M' }));
     const recorder = screen.getByRole('button', { name: 'Press shortcut… (Esc cancels)' });
-    // A bare letter needs a modifier.
+    // A bare letter or Shift-only letter needs Ctrl or Alt.
     fireEvent.keyDown(recorder, { key: 'k', code: 'KeyK' });
-    expect(screen.getByText('Add Ctrl, Alt or Shift to that key.')).toBeInTheDocument();
+    expect(screen.getByText('Add Ctrl or Alt to that key.')).toBeInTheDocument();
+    fireEvent.keyDown(recorder, { key: 'K', code: 'KeyK', shiftKey: true });
+    expect(screen.getByText('Add Ctrl or Alt to that key.')).toBeInTheDocument();
     expect(setShortcut).toHaveBeenCalledTimes(1);
     fireEvent.keyDown(recorder, { key: 'K', code: 'KeyK', ctrlKey: true, altKey: true });
     await waitFor(() => expect(setShortcut).toHaveBeenLastCalledWith(true, 'Ctrl+Alt+K'));
@@ -1046,6 +1134,9 @@ describe('Screenshot game choice', () => {
     open('NTE.exe');
     expect(useConnectors.getState().pendingScreenshot?.gameId).toBe(nte);
     open('nte');
+    expect(useConnectors.getState().pendingScreenshot?.gameId).toBe(nte);
+    act(() => useConnectors.setState({ pendingScreenshot: null }));
+    open('HTGame.exe');
     expect(useConnectors.getState().pendingScreenshot?.gameId).toBe(nte);
   });
 
@@ -1648,6 +1739,117 @@ describe('ScreenshotConfirm · more captures while it is open', () => {
     } finally {
       stop();
     }
+  });
+});
+
+describe('ScreenshotConfirm · several OCR passes', () => {
+  it('reads every pass, keeps the primary lines as they came, and merges passes per region', () => {
+    const gameId = addPreset('genshin');
+    const resin = resourceNamed(gameId, 'Original Resin');
+    const abyss = cycleEvent(gameId, 'Spiral Abyss');
+    act(() => {
+      openScreenshotOcr({
+        fileName: 'Screen capture',
+        observedAt: Date.now(),
+        lines: ['80/2000 0 Floor 12 Chamber 3'],
+        passes: [
+          { name: 'raw1x', lines: ['80/2000 0 Floor 12 Chamber 3'] },
+          { name: 'raw2x', lines: ['80/200 0 Floor 12 Chamber 3'] },
+        ],
+        capture: 'snip',
+        source: 'windows-ocr',
+      });
+    });
+    const first = useConnectors.getState().pendingScreenshot!;
+    expect(first.gameId).toBe(gameId);
+    expect(first.lines).toEqual(['80/2000 0 Floor 12 Chamber 3']);
+    expect(first.captures).toEqual(['snip']);
+    // The plain 2x read lifts the 1x read past its glued glyph.
+    expect(first.matches.readings).toEqual([
+      expect.objectContaining({ resourceId: resin.id, value: 80, confidence: 'high' }),
+    ]);
+    expect(first.matches.events).toEqual([
+      expect.objectContaining({ eventId: abyss, progress: 'partial', detail: 'Floor 12 Chamber 3', confidence: 'low' }),
+    ]);
+
+    act(() => {
+      openScreenshotOcr({
+        fileName: 'Screen capture',
+        observedAt: Date.now(),
+        lines: ['Primogems 2086'],
+        passes: [
+          { name: 'raw1x', lines: ['Primogems 2086'] },
+          { name: 'topBand2x', lines: ['Primogems 2086'] },
+        ],
+        capture: 'window',
+        source: 'windows-ocr',
+      });
+    });
+    const merged = useConnectors.getState().pendingScreenshot!;
+    expect(merged.captureKey).toBe(first.captureKey);
+    expect(merged.lines).toEqual(['80/2000 0 Floor 12 Chamber 3', '', 'Primogems 2086']);
+    expect(merged.passes?.map((pass) => [pass.name, pass.region ?? 0])).toEqual([
+      ['raw1x', 0],
+      ['raw2x', 0],
+      ['raw1x', 1],
+      ['topBand2x', 1],
+    ]);
+    expect(merged.captures).toEqual(['snip', 'window']);
+    expect(merged.matches.readings[0]).toEqual(expect.objectContaining({ value: 80, confidence: 'high' }));
+    expect(merged.matches.savings).toEqual([expect.objectContaining({ field: 'currency', value: 2086 })]);
+
+    render(<ScreenshotConfirm />);
+    expect(screen.getByLabelText('Original Resin value')).toHaveValue(80);
+    expect(screen.getByText('Floor 12 Chamber 3')).toBeInTheDocument();
+    // Recognised text lists the primary lines only, never a pass's.
+    expect(screen.getByText('Recognised text (2 lines)')).toBeInTheDocument();
+  });
+
+  it('takes passes and the capture kind from the Windows host', () => {
+    addPreset('genshin');
+    const { emitOcr } = mockFullDesktop(fullStatus());
+    const stop = initConnectors();
+    try {
+      act(() =>
+        emitOcr({
+          fileName: 'Screen capture',
+          observedAt: Date.now(),
+          lines: [],
+          passes: [{ name: 'raw1x', lines: ['Original Resin 145/200'], words: [] }],
+          source: 'snip',
+          processName: 'GenshinImpact',
+        }),
+      );
+      const pending = useConnectors.getState().pendingScreenshot!;
+      expect(pending.captures).toEqual(['snip']);
+      expect(pending.passes).toHaveLength(1);
+      // The 1x pass read what the primary lines missed.
+      expect(pending.candidates).toEqual([expect.objectContaining({ value: 145, confidence: 'high' })]);
+    } finally {
+      stop();
+    }
+  });
+
+  it('matches every pass again when another game is chosen', () => {
+    const genshin = addPreset('genshin');
+    const hsr = addPreset('hsr');
+    act(() => {
+      openScreenshotOcr({
+        fileName: 'Screen capture',
+        observedAt: Date.now(),
+        lines: [],
+        passes: [{ name: 'raw1x', lines: ['Original Resin 120/200'] }],
+        capture: 'file',
+        source: 'windows-ocr',
+      });
+    });
+    expect(useConnectors.getState().pendingScreenshot?.gameId).toBe(genshin);
+    act(() => choosePendingScreenshotGame(hsr));
+    expect(useConnectors.getState().pendingScreenshot?.matches.readings).toEqual([]);
+    act(() => choosePendingScreenshotGame(genshin));
+    expect(useConnectors.getState().pendingScreenshot?.candidates).toEqual([
+      expect.objectContaining({ resourceName: 'Original Resin', value: 120 }),
+    ]);
   });
 });
 

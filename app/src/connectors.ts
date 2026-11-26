@@ -7,7 +7,7 @@ import {
   mapSkportEndfieldCard,
   inferScreenshotGame,
   matchOcrReadings,
-  matchScreenshotOcr,
+  matchScreenshotOcrPasses,
   parseGachaExport,
   presetForGame,
   skportErrorGuidance,
@@ -15,6 +15,9 @@ import {
   type GachaPresetKey,
   type Game,
   type HoyolabPresetKey,
+  type OcrCapture,
+  type OcrPass,
+  type OcrScreenshotInput,
   type OcrScreenshotMatches,
   type Resource,
   type SkportPresetKey,
@@ -72,11 +75,20 @@ export const GACHA_PRESETS: readonly GachaPresetKey[] = ['genshin', 'hsr', 'zzz'
 /** Screenshots bigger than this are refused before they are read. */
 export const MAX_SCREENSHOT_BYTES = 15 * 1024 * 1024;
 
+/**
+ * An image from Android: downscaled, plus what ML Kit read on the phone. `lines`
+ * is the reading top to bottom; its one `mlkit` pass carries word boxes as
+ * fractions of the image.
+ */
 interface SharedImage {
   fileName: string;
   observedAt: number;
   dataUrl: string;
+  lines?: string[];
+  passes?: OcrPass[];
 }
+
+type AndroidImageResult = Partial<SharedImage> & { cancelled?: boolean };
 
 interface AndroidConnector {
   status(): Promise<ConnectorStatus>;
@@ -104,7 +116,9 @@ interface AndroidConnector {
   }): Promise<ConnectorStatus>;
   skportRefresh(opts: { gameId: string; auto?: boolean }): Promise<HoyolabRefreshResult>;
   skportPrefs(opts: { autoRefreshOnExit?: boolean }): Promise<ConnectorStatus>;
-  pickScreenshot(): Promise<{ cancelled?: boolean; fileName?: string; observedAt?: number; dataUrl?: string }>;
+  pickScreenshot(): Promise<AndroidImageResult>;
+  /** The camera viewfinder (CameraCaptureActivity), read the same way as a picked screenshot. */
+  captureScreenshot(): Promise<AndroidImageResult>;
   consumePendingShare(): Promise<{ image: SharedImage | null }>;
   addListener(event: 'statusChanged', listener: (status: ConnectorStatus) => void): Promise<PluginListenerHandle>;
   addListener(
@@ -610,10 +624,19 @@ function gameTasks(gameId: string): Task[] {
   return useApp.getState().state.tasks.filter((task) => task.gameId === gameId && !task.deleted);
 }
 
-function screenshotMatches(lines: readonly string[], gameId: string, observedAt: number): OcrScreenshotMatches {
+/** A screenshot's text as the matcher takes it: the primary lines, every pass, and how each region was read. */
+function ocrInput(text: Pick<PendingScreenshot, 'lines' | 'passes' | 'captures'>): OcrScreenshotInput {
+  return {
+    lines: text.lines ?? [],
+    ...(text.passes?.length ? { passes: text.passes } : {}),
+    ...(text.captures?.some(Boolean) ? { captures: text.captures } : {}),
+  };
+}
+
+function screenshotMatches(input: OcrScreenshotInput, gameId: string, observedAt: number): OcrScreenshotMatches {
   const { games, events } = useApp.getState().state;
   const game = games.find((item) => item.id === gameId);
-  return matchScreenshotOcr(lines, {
+  return matchScreenshotOcrPasses(input, {
     game,
     resources: gameResources(gameId),
     tasks: gameTasks(gameId),
@@ -653,6 +676,11 @@ function regionsIn(count: number | undefined): number {
   return count != null && Number.isFinite(count) && count >= 1 ? Math.round(count) : 1;
 }
 
+/** What each of `count` regions was read from, null where nobody said. */
+function regionCaptures(captures: readonly (OcrCapture | null)[] | undefined, count: number): (OcrCapture | null)[] {
+  return Array.from({ length: count }, (_, region) => captures?.[region] ?? null);
+}
+
 /** Shows a waiting screenshot and asks App to mount the sheet. */
 function showPending(pending: PendingScreenshot): PendingScreenshot {
   useConnectors.setState({ pendingScreenshot: pending });
@@ -662,8 +690,9 @@ function showPending(pending: PendingScreenshot): PendingScreenshot {
 
 /**
  * Adds another capture of the same game to the screenshot already waiting:
- * its text joins as a new region, every match is read again, and the sheet's
- * edits stay because `captureKey` does not change.
+ * its text joins as new regions, its passes keep their own regions (moved
+ * past the ones already there, never mixed into them), every match is read
+ * again, and the sheet's edits stay because `captureKey` does not change.
  */
 function mergePending(
   existing: PendingScreenshot,
@@ -672,18 +701,34 @@ function mergePending(
 ): PendingScreenshot {
   const before = existing.lines ?? [];
   const added = payload.lines ?? [];
-  const lines = before.length > 0 && added.length > 0 ? [...before, '', ...added] : [...before, ...added];
+  // One empty line between regions, even around one with no text, so region i of the lines is region i of the passes.
+  const lines = before.length > 0 || added.length > 0 ? [...before, '', ...added] : [];
+  const regionsBefore = regionsIn(existing.regionCount);
+  const regionsAdded = regionsIn(payload.regionCount);
+  const passes = [
+    ...(existing.passes ?? []),
+    ...(payload.passes ?? []).map((pass) => ({ ...pass, region: (pass.region ?? 0) + regionsBefore })),
+  ];
+  const captures = [
+    ...regionCaptures(existing.captures, regionsBefore),
+    ...Array<OcrCapture | null>(regionsAdded).fill(payload.capture ?? null),
+  ];
+  const text = {
+    ...(existing.lines || payload.lines ? { lines } : {}),
+    ...(passes.length > 0 ? { passes } : {}),
+    ...(captures.some(Boolean) ? { captures } : {}),
+  };
   const mergedAt = Math.max(existing.observedAt, observedAt);
-  const matches = screenshotMatches(lines, existing.gameId, mergedAt);
+  const matches = screenshotMatches(ocrInput(text), existing.gameId, mergedAt);
   const dataUrl = payload.dataUrl || existing.dataUrl;
   return showPending({
     ...existing,
+    ...text,
     revision: existing.revision + 1,
     fileName: payload.fileName || existing.fileName,
     observedAt: mergedAt,
-    ...(existing.lines || payload.lines ? { lines } : {}),
     ...(dataUrl ? { dataUrl } : {}),
-    regionCount: regionsIn(existing.regionCount) + regionsIn(payload.regionCount),
+    regionCount: regionsBefore + regionsAdded,
     candidates: matches.readings,
     matches,
   });
@@ -703,6 +748,10 @@ export function openScreenshotOcr(payload: {
   processName?: string | null;
   /** How many snipped regions `lines` covers. */
   regionCount?: number;
+  /** Every way Windows read each region; `lines` stays the primary reading. */
+  passes?: OcrPass[];
+  /** What the text was read from: a snip, the game window, an image file. */
+  capture?: OcrCapture;
   source: ScreenshotSource;
 }): PendingScreenshot | null {
   const games = liveGames();
@@ -711,6 +760,14 @@ export function openScreenshotOcr(payload: {
     return null;
   }
   const lines = payload.lines ?? [];
+  const regionCount = regionsIn(payload.regionCount);
+  const { capture } = payload;
+  const text = {
+    ...(payload.lines ? { lines: payload.lines } : {}),
+    ...(payload.passes?.length ? { passes: payload.passes } : {}),
+    ...(capture ? { captures: Array<OcrCapture>(regionCount).fill(capture) } : {}),
+  };
+  const input = ocrInput(text);
   const observedAt = Number.isFinite(payload.observedAt) && payload.observedAt > 0 ? payload.observedAt : Date.now();
   const state = useApp.getState().state;
   const resources = state.resources.filter((res) => !res.deleted && games.some((game) => game.id === res.gameId));
@@ -722,7 +779,12 @@ export function openScreenshotOcr(payload: {
       games,
       resources,
       state.tasks.filter((task) => !task.deleted),
-      { events: state.events, observedAt },
+      {
+        events: state.events,
+        observedAt,
+        ...(input.passes ? { passes: input.passes } : {}),
+        ...(input.captures ? { captures: input.captures } : {}),
+      },
     );
   const existing = useConnectors.getState().pendingScreenshot;
   if (existing && games.some((game) => game.id === existing.gameId) && (!named || named === existing.gameId)) {
@@ -741,16 +803,16 @@ export function openScreenshotOcr(payload: {
     (focused && games.some((game) => game.id === focused) ? focused : undefined) ??
     games.find((game) => !game.paused)?.id ??
     games[0]!.id;
-  const matches = screenshotMatches(lines, gameId, observedAt);
+  const matches = screenshotMatches(input, gameId, observedAt);
   captureSeq += 1;
   return showPending({
     captureKey: `${gameId}:${observedAt}:${captureSeq}`,
     revision: 0,
     fileName: payload.fileName,
     observedAt,
-    ...(payload.lines ? { lines: payload.lines } : {}),
+    ...text,
     ...(payload.dataUrl ? { dataUrl: payload.dataUrl } : {}),
-    regionCount: regionsIn(payload.regionCount),
+    regionCount,
     source: payload.source,
     candidates: matches.readings,
     matches,
@@ -762,7 +824,7 @@ export function openScreenshotOcr(payload: {
 export function choosePendingScreenshotGame(gameId: string): void {
   const pending = useConnectors.getState().pendingScreenshot;
   if (!pending) return;
-  const matches = screenshotMatches(pending.lines ?? [], gameId, pending.observedAt);
+  const matches = screenshotMatches(ocrInput(pending), gameId, pending.observedAt);
   useConnectors.setState({ pendingScreenshot: { ...pending, gameId, candidates: matches.readings, matches } });
 }
 
@@ -808,14 +870,36 @@ export async function pickScreenshotFile(): Promise<void> {
   }
   if (native) {
     const res = await run('screenshot', () => native.pickScreenshot(), 'That screenshot could not be opened.');
-    if (!res || res.cancelled || !res.dataUrl) return;
-    openScreenshotOcr({
-      fileName: res.fileName ?? 'Screenshot',
-      observedAt: res.observedAt ?? Date.now(),
-      dataUrl: res.dataUrl,
-      source: 'android-share',
-    });
+    if (res && !res.cancelled) openAndroidImage(res, 'file', 'android-share');
   }
+}
+
+/** An Android image, with ML Kit's reading when it found text, as the confirmation sheet takes it. */
+function openAndroidImage(res: AndroidImageResult, capture: OcrCapture, source: ScreenshotSource): void {
+  if (!res.dataUrl) return;
+  openScreenshotOcr({
+    fileName: res.fileName ?? 'Screenshot',
+    observedAt: res.observedAt ?? Date.now(),
+    dataUrl: res.dataUrl,
+    ...(Array.isArray(res.lines) ? { lines: res.lines.filter((line) => typeof line === 'string') } : {}),
+    ...(Array.isArray(res.passes) && res.passes.length > 0 ? { passes: res.passes } : {}),
+    capture,
+    source,
+  });
+}
+
+/** Whether this phone can scan with its camera: the Android app only. */
+export function canScanWithCamera(): boolean {
+  return Boolean(android());
+}
+
+/** Android: the camera viewfinder, read on the phone, then the confirmation sheet. */
+export async function scanWithCamera(): Promise<void> {
+  const native = android();
+  if (!native) return;
+  setConnectorNotice(null);
+  const res = await run('camera', () => native.captureScreenshot(), 'The camera could not take that picture.');
+  if (res && !res.cancelled) openAndroidImage(res, 'camera', 'android-camera');
 }
 
 /** A Windows OCR reading, with its preview and program, as the confirmation sheet takes it. */
@@ -827,6 +911,8 @@ function desktopReading(res: ScreenshotOcrResult): Parameters<typeof openScreens
     dataUrl: res.dataUrl ?? null,
     processName: res.processName ?? null,
     ...(res.regionCount != null ? { regionCount: res.regionCount } : {}),
+    ...(Array.isArray(res.passes) && res.passes.length > 0 ? { passes: res.passes } : {}),
+    ...(res.source ? { capture: res.source } : {}),
     source: 'windows-ocr',
   };
 }
@@ -891,7 +977,7 @@ export async function clearScreenshotCaptures(): Promise<ConnectorStatus | undef
 async function consumeShare(native: AndroidConnector): Promise<void> {
   try {
     const { image } = await native.consumePendingShare();
-    if (image?.dataUrl) openScreenshotOcr({ ...image, source: 'android-share' });
+    if (image) openAndroidImage(image, 'share', 'android-share');
   } catch (error) {
     setConnectorNotice({ tone: 'error', text: message(error, 'The shared screenshot could not be opened.') });
   }

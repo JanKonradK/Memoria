@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { Game } from '@memoria/shared';
 import {
   canImportBrowser,
@@ -26,6 +26,7 @@ import {
   pickScreenshotFile,
   refreshHoyolab,
   refreshSkport,
+  scanWithCamera,
   setAutoRefreshOnExit,
   setConnectorNotice,
   setScreenshotShortcut,
@@ -44,8 +45,9 @@ import { openGame } from '../../workspace-navigation';
 import { fmtDur } from '../../util';
 import { rosterGames } from '../roster';
 import { confirmDialog } from '../ConfirmDialog';
-import { Btn, Select, TextInput, Toggle, TOUCH_BUTTON } from '../ui';
+import { Btn, Select, TextInput, Toggle } from '../ui';
 import { SettingRow, SettingsGroup } from './SettingRow';
+import { ShortcutRecorder } from './ShortcutRecorder';
 
 const NOT_LINKED = '';
 /** The Windows app's own default; Reset returns to it. */
@@ -138,7 +140,6 @@ export function Connections() {
             {gachaGames.map((game) => (
               <SettingRow key={game.id} label={game.name}>
                 <Btn
-                  className={TOUCH_BUTTON}
                   aria-label={`Open ${game.name} pulls`}
                   onClick={() => {
                     useUI.getState().setGameTab('pulls');
@@ -178,7 +179,7 @@ function HoyolabRows({
           label="Sign in to HoYoLAB"
           hint="Reads resin, stamina, dailies, weekly bosses and endgame cycles for the games you link. Nothing is changed in your account."
         >
-          <Btn kind="primary" className={TOUCH_BUTTON} disabled={busy.login} onClick={() => void signInHoyolab()}>
+          <Btn kind="primary" disabled={busy.login} onClick={() => void signInHoyolab()}>
             {busy.login ? 'Opening…' : 'Sign in'}
           </Btn>
         </SettingRow>
@@ -193,13 +194,13 @@ function HoyolabRows({
         hint="Refresh your sign-in for 1-click claiming, or sign out to remove it from this device."
       >
         <div className="flex flex-wrap justify-end gap-2">
-          <Btn className={TOUCH_BUTTON} disabled={busy.login} onClick={() => void signInHoyolab()}>
+          <Btn disabled={busy.login} onClick={() => void signInHoyolab()}>
             {busy.login ? 'Opening…' : 'Sign in again'}
           </Btn>
-          <Btn className={TOUCH_BUTTON} disabled={busy.login} onClick={() => void signInHoyolab(true)}>
+          <Btn disabled={busy.login} onClick={() => void signInHoyolab(true)}>
             Switch account
           </Btn>
-          <Btn className={TOUCH_BUTTON} disabled={busy.disconnect} onClick={() => void disconnectHoyolab()}>
+          <Btn disabled={busy.disconnect} onClick={() => void disconnectHoyolab()}>
             Disconnect
           </Btn>
         </div>
@@ -253,6 +254,7 @@ function HoyolabGameRow({
     <SettingRow
       label={game.name}
       hint={roles.length === 0 ? 'No account for this game on your HoYoLAB profile.' : undefined}
+      hintKind="fact"
       control="below"
     >
       <div className="flex flex-wrap items-center gap-2">
@@ -281,7 +283,6 @@ function HoyolabGameRow({
         </div>
         {link && (
           <Btn
-            className={TOUCH_BUTTON}
             disabled={refreshing || backoff}
             aria-label={`Refresh now: ${game.name}`}
             onClick={() => void refreshHoyolab(game.id)}
@@ -314,7 +315,6 @@ function SkportRows({ games, status, runtime }: { games: Game[]; status: Status;
         >
           <Btn
             kind="primary"
-            className={TOUCH_BUTTON}
             aria-label="Sign in to SKPORT"
             disabled={busy['skport:login']}
             onClick={() => void signInSkport()}
@@ -330,16 +330,10 @@ function SkportRows({ games, status, runtime }: { games: Game[]; status: Status;
     <div className="settings-rows">
       <SettingRow label={`Connected · ${skport.maskedUid ?? 'SKPORT'}`} hint="Signing out removes it from this device.">
         <div className="flex flex-wrap justify-end gap-2">
-          <Btn
-            className={TOUCH_BUTTON}
-            aria-label="Sign in to SKPORT again"
-            disabled={busy['skport:login']}
-            onClick={() => void signInSkport()}
-          >
+          <Btn aria-label="Sign in to SKPORT again" disabled={busy['skport:login']} onClick={() => void signInSkport()}>
             {busy['skport:login'] ? 'Opening…' : 'Sign in again'}
           </Btn>
           <Btn
-            className={TOUCH_BUTTON}
             aria-label="Switch SKPORT account"
             disabled={busy['skport:login']}
             onClick={() => void signInSkport(true)}
@@ -347,7 +341,6 @@ function SkportRows({ games, status, runtime }: { games: Game[]; status: Status;
             Switch account
           </Btn>
           <Btn
-            className={TOUCH_BUTTON}
             aria-label="Disconnect SKPORT"
             disabled={busy['skport:disconnect']}
             onClick={() => void disconnectSkport()}
@@ -414,12 +407,7 @@ function BrowserConnect({ provider }: { provider: 'hoyolab' | 'skport' }) {
       control="below"
     >
       <div className="space-y-3">
-        <Btn
-          className={TOUCH_BUTTON}
-          aria-expanded={open}
-          aria-label={`Use my browser for ${name}`}
-          onClick={() => setOpen((value) => !value)}
-        >
+        <Btn aria-expanded={open} aria-label={`Use my browser for ${name}`} onClick={() => setOpen((value) => !value)}>
           {open ? 'Hide browser options' : 'Use my browser'}
         </Btn>
         {open && helper && (
@@ -437,19 +425,11 @@ function BrowserConnect({ provider }: { provider: 'hoyolab' | 'skport' }) {
                   {mine.code}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <Btn className={TOUCH_BUTTON} onClick={() => void copy(mine.code)}>
-                    {copied === mine.code ? 'Copied' : 'Copy code'}
-                  </Btn>
-                  <Btn
-                    className={TOUCH_BUTTON}
-                    disabled={busy['browser:helper']}
-                    onClick={() => void openBrowserHelper()}
-                  >
+                  <Btn onClick={() => void copy(mine.code)}>{copied === mine.code ? 'Copied' : 'Copy code'}</Btn>
+                  <Btn disabled={busy['browser:helper']} onClick={() => void openBrowserHelper()}>
                     Open extension folder
                   </Btn>
-                  <Btn className={TOUCH_BUTTON} onClick={() => void cancelBrowserConnect()}>
-                    Cancel
-                  </Btn>
+                  <Btn onClick={() => void cancelBrowserConnect()}>Cancel</Btn>
                 </div>
                 <p role="status" className="text-meta text-fg-soft">
                   {message}
@@ -458,7 +438,6 @@ function BrowserConnect({ provider }: { provider: 'hoyolab' | 'skport' }) {
             ) : (
               <Btn
                 kind="primary"
-                className={TOUCH_BUTTON}
                 disabled={busy[`browser:${provider}`]}
                 onClick={() => void startBrowserConnect(provider)}
               >
@@ -491,7 +470,6 @@ function BrowserConnect({ provider }: { provider: 'hoyolab' | 'skport' }) {
               <Btn
                 kind="primary"
                 type="submit"
-                className={TOUCH_BUTTON}
                 aria-label={`Connect ${name} from pasted request`}
                 disabled={busy[`${provider}:import`]}
               >
@@ -517,6 +495,7 @@ function SkportGameRow({ game, skport }: { game: Game; skport: NonNullable<NonNu
     <SettingRow
       label={game.name}
       hint={roles.length === 0 ? 'No Arknights: Endfield account on your SKPORT profile.' : undefined}
+      hintKind="fact"
       control="below"
     >
       <div className="flex flex-wrap items-center gap-2">
@@ -552,7 +531,6 @@ function SkportGameRow({ game, skport }: { game: Game; skport: NonNullable<NonNu
         </div>
         {link && (
           <Btn
-            className={TOUCH_BUTTON}
             disabled={refreshing}
             aria-label={`Refresh now: ${game.name}`}
             onClick={() => void refreshSkport(game.id)}
@@ -562,93 +540,6 @@ function SkportGameRow({ game, skport }: { game: Game; skport: NonNullable<NonNu
         )}
       </div>
     </SettingRow>
-  );
-}
-
-/** Letters, digits, F1–F12 and PrintScreen, named as the Windows app reads them; null for any other key. */
-function shortcutKey(event: ReactKeyboardEvent): string | null {
-  const code = event.code;
-  if (/^Key[A-Z]$/.test(code)) return code.slice(3);
-  if (/^Digit[0-9]$/.test(code)) return code.slice(5);
-  if (/^F([1-9]|1[0-2])$/.test(code)) return code;
-  if (code === 'PrintScreen' || event.key === 'PrintScreen') return 'PrintScreen';
-  return null;
-}
-
-/** Function keys and PrintScreen may stand alone; a letter or digit needs Ctrl, Alt or Shift. */
-function standsAlone(key: string): boolean {
-  return key === 'PrintScreen' || /^F[0-9]+$/.test(key);
-}
-
-/** Click, then press the keys. Esc cancels; Tab moves on, so the keyboard is never trapped. */
-function ShortcutRecorder({
-  accelerator,
-  disabled,
-  onChange,
-}: {
-  accelerator: string;
-  disabled: boolean;
-  onChange: (next: string) => void;
-}) {
-  const [recording, setRecording] = useState(false);
-  const [hint, setHint] = useState('');
-  const stop = () => {
-    setRecording(false);
-    setHint('');
-  };
-
-  const record = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
-    if (!recording) return;
-    if (event.key === 'Tab') {
-      stop();
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-    if (event.key === 'Escape') {
-      stop();
-      return;
-    }
-    const key = shortcutKey(event);
-    if (!key) return;
-    const modifiers = [event.ctrlKey && 'Ctrl', event.altKey && 'Alt', event.shiftKey && 'Shift'].filter(
-      (part): part is string => typeof part === 'string',
-    );
-    if (modifiers.length === 0 && !standsAlone(key)) {
-      setHint('Add Ctrl, Alt or Shift to that key.');
-      return;
-    }
-    stop();
-    const next = [...modifiers, key].join('+');
-    if (next !== accelerator) onChange(next);
-  };
-
-  return (
-    <div className="flex flex-col items-end gap-1">
-      <Btn
-        className={`min-w-36 font-mono ${TOUCH_BUTTON}`}
-        aria-label={recording ? 'Press shortcut… (Esc cancels)' : `Change shortcut, now ${accelerator}`}
-        aria-pressed={recording}
-        disabled={disabled}
-        onClick={() => {
-          setHint('');
-          setRecording((value) => !value);
-        }}
-        onKeyDown={record}
-        onKeyUp={(event) => {
-          // Windows hands PrintScreen to a page only on key up.
-          if (recording && event.key === 'PrintScreen') record(event);
-        }}
-        onBlur={stop}
-      >
-        {recording ? 'Press shortcut… (Esc cancels)' : accelerator}
-      </Btn>
-      {hint && (
-        <span role="status" className="text-caption text-warn-fg">
-          {hint}
-        </span>
-      )}
-    </div>
   );
 }
 
@@ -675,7 +566,6 @@ function ScreenshotShortcutRows({ status }: { status: Status }) {
           />
           {accelerator !== DEFAULT_SCREENSHOT_SHORTCUT && (
             <Btn
-              className={TOUCH_BUTTON}
               disabled={busy}
               aria-label={`Reset shortcut to ${DEFAULT_SCREENSHOT_SHORTCUT}`}
               onClick={() => void setScreenshotShortcut(shortcut.enabled, DEFAULT_SCREENSHOT_SHORTCUT)}
@@ -724,6 +614,7 @@ function SavedCapturesRow({ status }: { status: Status }) {
   return (
     <SettingRow
       label="Saved captures"
+      hintKind={count === 0 ? 'say' : 'fact'}
       hint={
         count === 0 ? (
           'Captures you take with Memoria are saved to their own folder so you can clear them anytime.'
@@ -736,10 +627,10 @@ function SavedCapturesRow({ status }: { status: Status }) {
       }
     >
       <div className="flex flex-wrap justify-end gap-2">
-        <Btn className={TOUCH_BUTTON} disabled={busy} onClick={() => void openScreenshotCaptures()}>
+        <Btn disabled={busy} onClick={() => void openScreenshotCaptures()}>
           Open folder
         </Btn>
-        <Btn className={TOUCH_BUTTON} disabled={busy || count === 0} onClick={() => void clear()}>
+        <Btn disabled={busy || count === 0} onClick={() => void clear()}>
           Clear captures
         </Btn>
       </div>
@@ -761,7 +652,9 @@ function ScreenshotRows({
   const hint =
     runtime === 'desktop'
       ? 'Memoria reads the numbers with Windows’ own text recognition, on this PC. You confirm before anything is saved.'
-      : 'Type the numbers beside your screenshot; nothing is read automatically here.';
+      : runtime === 'android'
+        ? 'Read on this phone by ML Kit; the picture never leaves it. You confirm before anything is saved.'
+        : 'Type the numbers beside your screenshot; nothing is read automatically here.';
 
   return (
     <div className="settings-rows">
@@ -771,15 +664,10 @@ function ScreenshotRows({
           hint="Drag one or more areas on the frozen screen, then press Enter, or press Enter right away for the whole screen. Snip again while the confirmation is open to add more areas. Capture window reads the game in front."
         >
           <div className="flex flex-wrap justify-end gap-2">
-            <Btn
-              kind="primary"
-              className={TOUCH_BUTTON}
-              disabled={busy.capture}
-              onClick={() => void captureScreenshot('snip')}
-            >
+            <Btn kind="primary" disabled={busy.capture} onClick={() => void captureScreenshot('snip')}>
               Snip screen
             </Btn>
-            <Btn className={TOUCH_BUTTON} disabled={busy.capture} onClick={() => void captureScreenshot('window')}>
+            <Btn disabled={busy.capture} onClick={() => void captureScreenshot('window')}>
               Capture window
             </Btn>
           </div>
@@ -804,13 +692,20 @@ function ScreenshotRows({
                 if (file) void openBrowserScreenshot(file);
               }}
             />
-            <Btn className={TOUCH_BUTTON} onClick={() => fileRef.current?.click()}>
-              Pick a screenshot…
-            </Btn>
+            <Btn onClick={() => fileRef.current?.click()}>Pick a screenshot…</Btn>
           </>
+        ) : runtime === 'android' ? (
+          <div className="flex flex-wrap justify-end gap-2">
+            <Btn kind="primary" disabled={busy.camera} onClick={() => void scanWithCamera()}>
+              Scan with camera
+            </Btn>
+            <Btn disabled={busy.screenshot} onClick={() => void pickScreenshotFile()}>
+              Pick screenshot
+            </Btn>
+          </div>
         ) : (
-          <Btn className={TOUCH_BUTTON} disabled={busy.screenshot} onClick={() => void pickScreenshotFile()}>
-            {runtime === 'desktop' ? 'Read a screenshot…' : 'Pick a screenshot…'}
+          <Btn disabled={busy.screenshot} onClick={() => void pickScreenshotFile()}>
+            Read a screenshot…
           </Btn>
         )}
       </SettingRow>
@@ -822,6 +717,7 @@ function ScreenshotRows({
       {runtime === 'desktop' && (
         <SettingRow
           label="Watch a screenshot folder"
+          hintKind={status?.screenshotWatch.enabled ? 'fact' : 'say'}
           hint={
             status?.screenshotWatch.enabled
               ? `Watching ${status.screenshotWatch.folderName ?? 'a folder'}. New screenshots there open for you to confirm.`
@@ -829,11 +725,11 @@ function ScreenshotRows({
           }
         >
           {status?.screenshotWatch.enabled ? (
-            <Btn className={TOUCH_BUTTON} disabled={busy.watch} onClick={() => void clearScreenshotFolder()}>
+            <Btn disabled={busy.watch} onClick={() => void clearScreenshotFolder()}>
               Stop watching
             </Btn>
           ) : (
-            <Btn className={TOUCH_BUTTON} disabled={busy.watch} onClick={() => void chooseScreenshotFolder()}>
+            <Btn disabled={busy.watch} onClick={() => void chooseScreenshotFolder()}>
               Watch folder…
             </Btn>
           )}

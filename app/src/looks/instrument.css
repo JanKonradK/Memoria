@@ -156,7 +156,7 @@
     text-transform: uppercase;
     border-radius: 6px;
   }
-  .view-switch button:is([aria-pressed='true'], [aria-selected='true']) {
+  .view-switch button:is([aria-pressed='true'], [aria-selected='true'], [aria-checked='true'], [data-state='on']) {
     background: var(--color-fg);
     color: var(--color-fg-invert);
   }

@@ -5,7 +5,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useUI } from '../ui-store';
 import { fmtDateTimeLocalInput, parseDateTimeLocalInput } from '../util';
 import { rosterGames } from './roster';
-import { Sheet } from './Sheet';
+import { confirmDiscard, Sheet, SheetFooter } from './Sheet';
 import { Btn, Field, Select, TextInput } from './ui';
 import { REPEAT_OPTIONS } from './settings/reminder-repeat';
 import { STYLE_HINTS, STYLE_LABELS } from './settings/ReminderStyles';
@@ -28,6 +28,7 @@ export function ReminderSheet({ open }: { open: boolean }) {
   const dateErrorId = useId();
   const unavailableGame = Boolean(gameId && !games.some((game) => game.id === gameId));
   const [savedDraft, setSavedDraft] = useState(() => JSON.stringify({ message, when, gameId }));
+  const dirty = JSON.stringify({ message, when, gameId }) !== savedDraft || repeatDays !== 0 || style !== '';
 
   useEffect(() => {
     if (open) {
@@ -48,18 +49,21 @@ export function ReminderSheet({ open }: { open: boolean }) {
     <Sheet
       open={open}
       onClose={closeSheet}
-      dirty={JSON.stringify({ message, when, gameId }) !== savedDraft || repeatDays !== 0 || style !== ''}
+      dirty={dirty}
       title="New reminder"
       footer={
-        <Btn
-          kind="primary"
-          type="submit"
-          form={formId}
-          className="w-full"
-          disabled={!message.trim() || at == null || unavailableGame}
-        >
-          Add reminder
-        </Btn>
+        <SheetFooter>
+          <Btn
+            onClick={async () => {
+              if (!dirty || (await confirmDiscard())) closeSheet();
+            }}
+          >
+            Cancel
+          </Btn>
+          <Btn kind="primary" type="submit" form={formId} disabled={!message.trim() || at == null || unavailableGame}>
+            Add reminder
+          </Btn>
+        </SheetFooter>
       }
     >
       <form

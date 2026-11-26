@@ -74,6 +74,14 @@ impl Mode {
             _ => None,
         }
     }
+
+    /// What the page is told the reading came from.
+    pub fn source(self) -> &'static str {
+        match self {
+            Self::Window => "window",
+            Self::Snip => "snip",
+        }
+    }
 }
 
 /// A screen rectangle in physical pixels, right and bottom exclusive.
@@ -359,8 +367,8 @@ pub fn parse_accelerator(spec: &str) -> Result<ParsedHotkey, String> {
         key = Some(parse_key(&lower).ok_or_else(invalid)?);
     }
     let (vk, name, alone) = key.ok_or_else(invalid)?;
-    if modifiers == 0 && !alone {
-        return Err("Add Ctrl, Alt, Shift or Win to the shortcut.".into());
+    if (modifiers & !MOD_SHIFT) == 0 && !alone {
+        return Err("Add Ctrl, Alt or Win to the shortcut.".into());
     }
     let mut display: Vec<&str> = [
         (MOD_CONTROL, "Ctrl"),
@@ -429,14 +437,31 @@ pub fn save_capture_jpeg(dir: &Path, jpeg: &[u8], observed_at: u64, process_name
     None
 }
 
+/// What a grab's areas read: the primary lines (see `join_region_lines`) and
+/// every pass of every area, each naming its region.
+pub struct CropReading {
+    pub lines: Vec<String>,
+    pub passes: Vec<Value>,
+}
+
 /// A capture's reading for the page. `regionCount` says how many areas were
 /// read; with more than one, `lines` holds one empty line between areas
-/// (see `join_region_lines`) and `dataUrl` is their contact sheet.
-fn payload(observed_at: u64, lines: Vec<String>, data_url: &str, process_name: Option<&str>, regions: usize) -> Value {
+/// (see `join_region_lines`) and `dataUrl` is their contact sheet. `passes`
+/// holds every way each area was read, and `source` the capture mode.
+fn payload(
+    observed_at: u64,
+    read: CropReading,
+    data_url: &str,
+    process_name: Option<&str>,
+    regions: usize,
+    mode: Mode,
+) -> Value {
     json!({
         "fileName": FILE_NAME,
         "observedAt": observed_at,
-        "lines": lines,
+        "lines": read.lines,
+        "passes": read.passes,
+        "source": mode.source(),
         "dataUrl": super::ocr::data_url_json(data_url),
         "processName": process_name,
         "regionCount": regions,
@@ -657,25 +682,25 @@ mod win {
         }
     }
 
-    const HOTKEY_ID: i32 = 1;
     /// Wakes the shortcut thread to read its request channel.
     const WM_CONTROL: u32 = WM_APP + 0x4D;
 
     type Reply = mpsc::Sender<Result<(), String>>;
 
-    /// The thread that owns the global shortcut. Hotkeys belong to the thread
+    /// The thread that owns one global shortcut. Hotkeys belong to the thread
     /// that registers them, so this one registers, listens and unregisters.
+    /// `id` tells Memoria's shortcuts apart (`HOTKEY_ID`, `surface::HOTKEY_ID`).
     pub struct Hotkey {
         thread_id: u32,
         requests: mpsc::Sender<(Option<ParsedHotkey>, Reply)>,
     }
 
     impl Hotkey {
-        pub fn start(on_press: impl Fn() + Send + 'static) -> Option<Self> {
+        pub fn start(id: i32, on_press: impl Fn() + Send + 'static) -> Option<Self> {
             let (requests, inbox) = mpsc::channel::<(Option<ParsedHotkey>, Reply)>();
             let (ready, started) = mpsc::channel::<u32>();
             std::thread::Builder::new()
-                .name("memoria-capture-shortcut".into())
+                .name(format!("memoria-shortcut-{id}"))
                 .spawn(move || {
                     // SAFETY: a message loop on this thread's own queue.
                     unsafe {
@@ -690,11 +715,11 @@ mod win {
                                 break;
                             }
                             match message.message {
-                                WM_HOTKEY if message.wParam == HOTKEY_ID as usize => on_press(),
+                                WM_HOTKEY if message.wParam == id as usize => on_press(),
                                 WM_CONTROL => {
                                     while let Ok((hotkey, reply)) = inbox.try_recv() {
                                         if registered {
-                                            UnregisterHotKey(std::ptr::null_mut(), HOTKEY_ID);
+                                            UnregisterHotKey(std::ptr::null_mut(), id);
                                             registered = false;
                                         }
                                         let result = match hotkey {
@@ -702,7 +727,7 @@ mod win {
                                             Some(hotkey) => {
                                                 registered = RegisterHotKey(
                                                     std::ptr::null_mut(),
-                                                    HOTKEY_ID,
+                                                    id,
                                                     hotkey.modifiers | MOD_NOREPEAT,
                                                     hotkey.vk,
                                                 ) != 0;
@@ -723,7 +748,7 @@ mod win {
                             }
                         }
                         if registered {
-                            UnregisterHotKey(std::ptr::null_mut(), HOTKEY_ID);
+                            UnregisterHotKey(std::ptr::null_mut(), id);
                         }
                     }
                 })
@@ -734,7 +759,7 @@ mod win {
 
         /// Registers `hotkey`, or releases the shortcut when None.
         pub fn set(&self, hotkey: Option<ParsedHotkey>) -> Result<(), String> {
-            let stopped = || "The capture shortcut stopped. Restart Memoria.".to_string();
+            let stopped = || "The shortcut stopped listening. Restart Memoria.".to_string();
             let (reply, answer) = mpsc::channel();
             self.requests.send((hotkey, reply)).map_err(|_| stopped())?;
             // SAFETY: posts to a thread whose queue exists.
@@ -753,6 +778,9 @@ mod win {
 
 #[cfg(windows)]
 pub use win::Hotkey;
+
+/// The capture shortcut's id with `RegisterHotKey`; the quick card's is `surface::HOTKEY_ID`.
+pub const HOTKEY_ID: i32 = 1;
 
 /// Without Windows there is no global shortcut.
 #[cfg(not(windows))]
@@ -777,7 +805,17 @@ fn grab_blocking() -> Result<Grab, String> {
     Err("Screen capture needs Windows.".into())
 }
 
-/// Reads text in crops of a grab, in order: `(lines, preview data URL, JPEG
+/// The passes each of `crops` areas is read with in `mode`: a whole window in
+/// full and its top band; a snip's areas every pass while there are at most
+/// `MULTI_PASS_MAX_CROPS`, so a many-area snip stays quick.
+pub fn crop_plan(mode: Mode, width: u32, height: u32, crops: usize, engine_max: u32) -> Vec<super::ocr::PassKind> {
+    match mode {
+        Mode::Window => super::ocr::window_plan(width, height, engine_max),
+        Mode::Snip => super::ocr::image_plan(width, height, engine_max, crops <= super::ocr::MULTI_PASS_MAX_CROPS),
+    }
+}
+
+/// Reads text in crops of a grab, in order: `(reading, preview data URL, JPEG
 /// bytes)`. Several areas' lines are joined by `join_region_lines` and
 /// previewed as one contact sheet; one area previews as itself. Blocking.
 #[cfg(windows)]
@@ -786,7 +824,8 @@ fn read_crops(
     width: u32,
     height: u32,
     areas: &[(u32, u32, u32, u32)],
-) -> Result<(Vec<String>, String, Vec<u8>), String> {
+    mode: Mode,
+) -> Result<(CropReading, String, Vec<u8>), String> {
     let crops = areas
         .iter()
         .map(|&(x, y, crop_width, crop_height)| {
@@ -795,11 +834,17 @@ fn read_crops(
                 .ok_or_else(|| "That part of the screen could not be read.".to_string())
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let read = crops
-        .iter()
-        .map(|(pixels, crop_width, crop_height)| super::ocr::recognize_bgra(pixels, *crop_width, *crop_height))
-        .collect::<Result<Vec<_>, _>>()?;
-    let lines = join_region_lines(read);
+    let engine_max = super::ocr::engine_max_side();
+    let mut regions = Vec::with_capacity(crops.len());
+    let mut passes = Vec::new();
+    for (region, (pixels, crop_width, crop_height)) in crops.iter().enumerate() {
+        let plan = crop_plan(mode, *crop_width, *crop_height, crops.len(), engine_max);
+        let read = super::ocr::recognize_passes(pixels, *crop_width, *crop_height, &plan)?;
+        // The primary pass's lines, as one reading always gave.
+        regions.push(read.first().map(|pass| pass.text.lines.clone()).unwrap_or_default());
+        passes.extend(super::ocr::passes_json(region, &read));
+    }
+    let lines = join_region_lines(regions);
     // The preview is best effort, like the JPEG kept: the text is what counts.
     let (data_url, jpeg) = match crops.as_slice() {
         [(pixels, crop_width, crop_height)] => super::ocr::software_bitmap(pixels, *crop_width, *crop_height)
@@ -812,11 +857,17 @@ fn read_crops(
             .map(|bitmap| super::ocr::encode_preview(&bitmap, SHEET_PREVIEW_MAX_SIDE))
             .unwrap_or_default(),
     };
-    Ok((lines, data_url, jpeg))
+    Ok((CropReading { lines, passes }, data_url, jpeg))
 }
 
 #[cfg(not(windows))]
-fn read_crops(_: &[u8], _: u32, _: u32, _: &[(u32, u32, u32, u32)]) -> Result<(Vec<String>, String, Vec<u8>), String> {
+fn read_crops(
+    _: &[u8],
+    _: u32,
+    _: u32,
+    _: &[(u32, u32, u32, u32)],
+    _: Mode,
+) -> Result<(CropReading, String, Vec<u8>), String> {
     Err("Screen capture needs Windows.".into())
 }
 
@@ -875,16 +926,16 @@ pub async fn start(app: &AppHandle, mode: Mode) -> Result<Option<Value>, String>
     match mode {
         Mode::Window => {
             let dir = app.state::<App>().connectors.captures_dir().to_path_buf();
-            let (lines, data_url, observed_at, process_name, saved) = blocking(move || {
+            let (read, data_url, observed_at, process_name, saved) = blocking(move || {
                 let grab = grab_blocking()?;
                 let area = window_area(grab.foreground, grab.monitor);
-                let (lines, data_url, jpeg) = read_crops(&grab.bgra, grab.width, grab.height, &[area])?;
+                let (read, data_url, jpeg) = read_crops(&grab.bgra, grab.width, grab.height, &[area], Mode::Window)?;
                 let saved =
                     save_capture_jpeg(&dir, &jpeg, grab.observed_at, grab.process_name.as_deref()).is_some();
-                Ok((lines, data_url, grab.observed_at, grab.process_name, saved))
+                Ok((read, data_url, grab.observed_at, grab.process_name, saved))
             })
             .await?;
-            let reading = payload(observed_at, lines, &data_url, process_name.as_deref(), 1);
+            let reading = payload(observed_at, read, &data_url, process_name.as_deref(), 1, Mode::Window);
             deliver(app, &reading, saved);
             Ok(Some(reading))
         }
@@ -952,11 +1003,10 @@ fn open_snip(app: &AppHandle, id: u64, place: (i32, i32, u32, u32)) -> Result<()
         .data_directory(state.data.join("webview"))
         .on_navigation(move |url| url.as_str() == page)
         .on_new_window(|_, _| NewWindowResponse::Deny);
-    let builder = match crate::webview_browser_args() {
-        Some(args) => builder.additional_browser_args(&args),
-        None => builder,
-    };
-    let window = builder.build().map_err(|_| failed())?;
+    let window = builder
+        .additional_browser_args(&crate::webview_browser_args())
+        .build()
+        .map_err(|_| failed())?;
     let (left, top, width, height) = place;
     let _ = window.set_position(tauri::PhysicalPosition::new(left, top));
     let _ = window.set_size(tauri::PhysicalSize::new(width, height));
@@ -1020,14 +1070,14 @@ pub fn snip_commit(app: &AppHandle, regions: &[SnipRegion], view: (f64, f64)) ->
         let label = process_name.clone();
         let count = areas.len();
         let read = blocking(move || {
-            let (lines, data_url, jpeg) = read_crops(&bgra, width, height, &areas)?;
+            let (read, data_url, jpeg) = read_crops(&bgra, width, height, &areas, Mode::Snip)?;
             let saved = save_capture_jpeg(&dir, &jpeg, observed_at, label.as_deref()).is_some();
-            Ok((lines, data_url, saved))
+            Ok((read, data_url, saved))
         });
         match read.await {
-            Ok((lines, data_url, saved)) => deliver(
+            Ok((read, data_url, saved)) => deliver(
                 &app,
-                &payload(observed_at, lines, &data_url, process_name.as_deref(), count),
+                &payload(observed_at, read, &data_url, process_name.as_deref(), count, Mode::Snip),
                 saved,
             ),
             Err(error) => {
@@ -1069,7 +1119,7 @@ pub fn apply_shortcut(app: &AppHandle) {
             return;
         }
         let presser = app.clone();
-        *hotkey = win::Hotkey::start(move || trigger(&presser, Mode::Snip, Duration::ZERO));
+        *hotkey = win::Hotkey::start(HOTKEY_ID, move || trigger(&presser, Mode::Snip, Duration::ZERO));
     }
     let Some(thread) = hotkey.as_ref() else {
         connectors.set_shortcut_runtime(false, Some("Memoria could not listen for the shortcut.".into()));
@@ -1212,9 +1262,12 @@ mod tests {
         let print = parse_accelerator("Ctrl+PrtSc").unwrap();
         assert_eq!((print.vk, print.display.as_str()), (0x2C, "Ctrl+PrintScreen"));
         assert_eq!(parse_accelerator("PrintScreen").unwrap().modifiers, 0);
+        assert!(parse_accelerator("Shift+F9").is_ok());
         for bad in [
             "A",
+            "Shift+A",
             "5",
+            "Shift+5",
             "",
             "Ctrl",
             "Ctrl+",
@@ -1235,12 +1288,31 @@ mod tests {
         assert_eq!(Mode::parse("window"), Some(Mode::Window));
         assert_eq!(Mode::parse("snip"), Some(Mode::Snip));
         assert_eq!(Mode::parse("full"), None);
-        let reading = payload(5, vec!["Sanity 120/180".into()], "", Some("Endfield"), 1);
+        let read = CropReading {
+            lines: vec!["Sanity 120/180".into()],
+            passes: vec![json!({ "name": "raw1x", "region": 0, "lines": ["Sanity 120/180"], "words": [] })],
+        };
+        let reading = payload(5, read, "", Some("Endfield"), 1, Mode::Window);
         assert_eq!(reading["fileName"], "Screen capture");
         assert_eq!(reading["dataUrl"], Value::Null);
         assert_eq!(reading["processName"], "Endfield");
         assert_eq!(reading["lines"][0], "Sanity 120/180");
         assert_eq!(reading["regionCount"], 1);
+        assert_eq!(reading["source"], "window");
+        assert_eq!(reading["passes"][0]["name"], "raw1x");
+        assert_eq!(Mode::Snip.source(), "snip");
+    }
+
+    #[test]
+    fn each_mode_reads_its_own_passes() {
+        use super::super::ocr::PassKind::*;
+        // The whole window in full and its top band, where the HUD bars sit.
+        assert_eq!(crop_plan(Mode::Window, 1920, 1080, 1, 10_000), [Raw1x, TopBand2x]);
+        // A small snipped area every pass, while the snip has few areas.
+        assert_eq!(crop_plan(Mode::Snip, 320, 90, 4, 10_000), [Raw2x, Raw1x, Bright2x]);
+        assert_eq!(crop_plan(Mode::Snip, 320, 90, 5, 10_000), [Raw2x]);
+        // A large snip reads once, as before.
+        assert_eq!(crop_plan(Mode::Snip, 1920, 1080, 1, 10_000), [Raw1x]);
     }
 
     fn region(x: f64, y: f64, width: f64, height: f64) -> SnipRegion {
@@ -1363,7 +1435,7 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn hotkey_thread_starts_answers_and_stops() {
-        let thread = win::Hotkey::start(|| {}).unwrap();
+        let thread = win::Hotkey::start(HOTKEY_ID, || {}).unwrap();
         // Releasing when nothing is held always succeeds.
         assert!(thread.set(None).is_ok());
         thread.stop();

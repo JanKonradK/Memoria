@@ -88,12 +88,12 @@ function strip(events: GameEvent[], props: Partial<Parameters<typeof EventStrip>
 }
 
 beforeEach(() => {
-  useUI.setState({ tab: 'today', sheet: null, focusedGameId: null, todayGameId: null });
+  useUI.setState({ tab: 'today', sheet: null, focusedGameId: null });
 });
 
 afterEach(() => {
   useApp.setState({ state: emptyState() });
-  useUI.setState({ tab: 'today', sheet: null, focusedGameId: null, todayGameId: null });
+  useUI.setState({ tab: 'today', sheet: null, focusedGameId: null });
 });
 
 describe('game page event list', () => {
@@ -232,16 +232,14 @@ describe('game page controls', () => {
   });
 });
 
-describe("Today's selected game", () => {
-  it('gives the selected game an Open full page button in its heading', () => {
+describe("Today's games", () => {
+  it('open the game page itself, with no card or extra step beside the list', () => {
     useApp.setState({ state: roster(), loaded: true });
     // The ranked games are Today's second view.
     useUI.setState({ todayView: 'games' });
     show(<TodayPage now={NOW} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Review Testland', exact: true }));
-    const bar = screen.getByLabelText('Testland tracking controls');
-    expect(bar.closest('.game-card-heading')).not.toBeNull();
-    expect(within(bar).getByRole('button', { name: 'Open full page', exact: true })).toBeInTheDocument();
-    expect(within(bar).getAllByRole('button').at(-1)).toHaveAccessibleName('Open full page');
+    expect(screen.queryByLabelText('Testland tracking controls')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Open Testland', exact: true }));
+    expect(useUI.getState()).toMatchObject({ tab: 'home', focusedGameId: game.id });
   });
 });

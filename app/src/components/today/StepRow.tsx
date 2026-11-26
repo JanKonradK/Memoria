@@ -25,6 +25,7 @@ import { EventTick } from '../GameCard';
 import { GameLogo } from '../GameLogo';
 import { NightMark } from '../NightMark';
 import { Pill, Tick } from '../primitives';
+import { Tooltip } from '../ui';
 import { useCheckInClaim } from '../CheckInClaim';
 import { cadenceNoun, countdown, hhmm, stepTone } from './step-format';
 
@@ -78,29 +79,54 @@ export function BankMeter({ bank, color, owner }: { bank: EnergyBank; color: str
   const fill = bank.value == null || bank.cap <= 0 ? 0 : Math.min(1, bank.value / bank.cap);
   const figure = bank.value == null ? '—' : compactCount(bank.value);
   return (
-    <span className="today-step-bank" data-full={bank.full || undefined} title={`${bank.label} for ${owner}`}>
-      <span aria-hidden className="today-step-bank-tube meter" style={{ '--meter-ink': color } as CSSProperties}>
-        <i style={{ transform: `scaleX(${fill})`, background: color }} />
+    <Tooltip content={`${bank.label} for ${owner}`}>
+      <span className="today-step-bank" data-full={bank.full || undefined}>
+        <span aria-hidden className="today-step-bank-tube meter" style={{ '--meter-ink': color } as CSSProperties}>
+          <i style={{ transform: `scaleX(${fill})`, background: color }} />
+        </span>
+        <span aria-hidden className="today-step-bank-figure numeral">
+          <b>{figure}</b>/{compactCount(bank.cap)}
+        </span>
+        <span className="sr-only">
+          {bank.label}: {bank.value == null ? 'not read yet' : `${bank.value} of ${bank.cap}`}
+        </span>
       </span>
-      <span aria-hidden className="today-step-bank-figure numeral">
-        <b>{figure}</b>/{compactCount(bank.cap)}
-      </span>
-      <span className="sr-only">
-        {bank.label}: {bank.value == null ? 'not read yet' : `${bank.value} of ${bank.cap}`}
-      </span>
-    </span>
+    </Tooltip>
   );
 }
+
+/** A press on the tray must not take focus from the field it changes: the keyboard stays up. */
+const keepFocus = (event: { preventDefault: () => void }) => event.preventDefault();
+const TRAY_STEPS = [-10, -1, 1, 10] as const;
 
 /**
  * The bar's value, as the card enters it: type it, or step it by one. The ±1
  * buttons show on hover and focus. Entry follows EnergyRow: Enter commits even
  * an unchanged value (a fresh reading), a blur commits only a real edit, Escape
  * throws the draft away, and A/S/D/F step it.
+ *
+ * On a phone the ± buttons never squeeze in beside the pill, which shifted the
+ * row sideways as it took focus. While the field has focus a tray opens under
+ * the whole row instead: ±10 and ±1, then Spent all and Full, set apart.
  */
-function EnergyControl({ step, game, ink, bankInk }: { step: EnergyStep; game: Game; ink: string; bankInk: string }) {
+function EnergyControl({
+  step,
+  game,
+  ink,
+  bankInk,
+  tray,
+}: {
+  step: EnergyStep;
+  game: Game;
+  ink: string;
+  bankInk: string;
+  /** Narrow rows: steps and quick values in a tray under the row while the field has focus. */
+  tray: boolean;
+}) {
   const setEnergy = useApp((store) => store.setEnergy);
   const [draft, setDraft] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const trayRef = useRef<HTMLDivElement>(null);
   const edit = useRef({ dirty: false, cancelled: false });
   const live = useRef(step.value);
   useEffect(() => {
@@ -125,47 +151,106 @@ function EnergyControl({ step, game, ink, bankInk }: { step: EnergyStep; game: G
     onCommit: (value) => commit(value),
     onCancel: () => setDraft(null),
   });
+  const stepBy = (delta: number) =>
+    commit((draft != null && draft !== '' ? intOr(draft, live.current) : live.current) + delta);
+  // Focus leaving for the tray keeps it open; leaving both closes it.
+  const stillHere = (next: EventTarget | null) =>
+    next instanceof Node && (Boolean(trayRef.current?.contains(next)) || Boolean(field.current?.contains(next)));
   return (
-    <span ref={field} className="today-step-energy" {...scrub}>
-      <ValueStepper
-        value={shown}
-        placeholder={step.unmeasured ? '—' : undefined}
-        cap={step.cap}
-        color={ink}
-        label={step.name}
-        ariaLabel={`${step.name} current value`}
-        valueClassName="text-body font-bold leading-none"
-        onStep={(delta) => commit((draft != null && draft !== '' ? intOr(draft, live.current) : live.current) + delta)}
-        onBeginEdit={() => {
-          edit.current = { dirty: false, cancelled: false };
-          setDraft(step.unmeasured ? '' : String(live.current));
-        }}
-        onDraft={(text) => {
-          edit.current.dirty = true;
-          setDraft(text);
-        }}
-        onCommit={() => {
-          // An empty field on a bar never read has nothing to save.
-          if (step.unmeasured && shown === '') setDraft(null);
-          else commit(intOr(shown, live.current));
-        }}
-        onCommitNext={(reverse) =>
-          focusNextReading(field.current?.querySelector<HTMLElement>('.energy-value-input') ?? null, reverse)
-        }
-        onCancel={() => {
-          edit.current.cancelled = true;
-          setDraft(null);
-        }}
-        onEndEdit={() => {
-          const { cancelled, dirty } = edit.current;
-          if (!cancelled && dirty && draft != null && draft !== '' && intOr(draft, -1) !== live.current) {
-            commit(intOr(draft, live.current));
-          } else setDraft(null);
-          edit.current = { dirty: false, cancelled: false };
-        }}
-      />
-      {step.bank && <BankMeter bank={step.bank} color={bankInk} owner={step.name} />}
-    </span>
+    <>
+      <span className="today-step-ctl">
+        <span ref={field} className="today-step-energy" {...scrub}>
+          <ValueStepper
+            value={shown}
+            placeholder={step.unmeasured ? '—' : undefined}
+            cap={step.cap}
+            color={ink}
+            label={step.name}
+            ariaLabel={`${step.name} current value`}
+            valueClassName="text-body font-bold leading-none"
+            onStep={stepBy}
+            onBeginEdit={() => {
+              setEditing(true);
+              edit.current = { dirty: false, cancelled: false };
+              setDraft(step.unmeasured ? '' : String(live.current));
+            }}
+            onDraft={(text) => {
+              edit.current.dirty = true;
+              setDraft(text);
+            }}
+            onCommit={() => {
+              // An empty field on a bar never read has nothing to save.
+              if (step.unmeasured && shown === '') setDraft(null);
+              else commit(intOr(shown, live.current));
+            }}
+            onCommitNext={(reverse) =>
+              focusNextReading(field.current?.querySelector<HTMLElement>('.energy-value-input') ?? null, reverse)
+            }
+            onCancel={() => {
+              edit.current.cancelled = true;
+              setDraft(null);
+            }}
+            onEndEdit={(event) => {
+              const { cancelled, dirty } = edit.current;
+              if (!cancelled && dirty && draft != null && draft !== '' && intOr(draft, -1) !== live.current) {
+                commit(intOr(draft, live.current));
+              } else setDraft(null);
+              edit.current = { dirty: false, cancelled: false };
+              if (!stillHere(event?.relatedTarget ?? null)) setEditing(false);
+            }}
+          />
+          {step.bank && <BankMeter bank={step.bank} color={bankInk} owner={step.name} />}
+        </span>
+      </span>
+      {tray && editing && (
+        <div
+          ref={trayRef}
+          className="today-step-tray"
+          role="group"
+          aria-label={`${step.name} quick changes`}
+          onBlur={(event) => {
+            if (!stillHere(event.relatedTarget)) setEditing(false);
+          }}
+        >
+          {TRAY_STEPS.map((delta) => (
+            <button
+              key={delta}
+              type="button"
+              className="today-step-chip numeral"
+              aria-label={`${delta > 0 ? 'Increase' : 'Decrease'} ${step.name} by ${Math.abs(delta)}`}
+              onPointerDown={keepFocus}
+              onMouseDown={keepFocus}
+              onClick={() => stepBy(delta)}
+            >
+              {delta > 0 ? `+${delta}` : `−${-delta}`}
+            </button>
+          ))}
+          <span aria-hidden className="today-step-tray-rule" />
+          <button
+            type="button"
+            className="today-step-chip"
+            data-quick-set
+            aria-label={`Spent all ${step.name}`}
+            onPointerDown={keepFocus}
+            onMouseDown={keepFocus}
+            onClick={() => runWithUndo(`${step.name} set to 0`, () => commit(0))}
+          >
+            Spent all
+          </button>
+          <button
+            type="button"
+            className="today-step-chip"
+            data-quick-set
+            aria-label={`${step.name} full`}
+            onPointerDown={keepFocus}
+            onMouseDown={keepFocus}
+            onClick={() => runWithUndo(`${step.name} set to full`, () => commit(step.cap))}
+          >
+            Full
+          </button>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -460,15 +545,18 @@ export function StepRow({
           </span>
         </span>
       </button>
-      <span className="today-step-ctl">
-        {step.kind === 'energy' ? (
-          <EnergyControl step={step} game={game.game} ink={game.text} bankInk={game.support} />
-        ) : step.kind === 'task' ? (
-          <TaskControl step={step} ink={game.ink} what={what} now={now} />
-        ) : (
-          <EventControl step={step} ink={game.ink} />
-        )}
-      </span>
+      {step.kind === 'energy' ? (
+        // Its own control cell, and on a phone the tray under the row.
+        <EnergyControl step={step} game={game.game} ink={game.text} bankInk={game.support} tray={compact} />
+      ) : (
+        <span className="today-step-ctl">
+          {step.kind === 'task' ? (
+            <TaskControl step={step} ink={game.ink} what={what} now={now} />
+          ) : (
+            <EventControl step={step} ink={game.ink} />
+          )}
+        </span>
+      )}
       <span id={whenId} className="today-step-when numeral" data-tone={tone}>
         {unmeasured ? (
           // A bar never read has no cap to count down to; it asks for a reading.

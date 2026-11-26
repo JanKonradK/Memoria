@@ -322,15 +322,31 @@ describe('motion runs on the shared ladder', () => {
     // motion.ts mirrors these by hand for the Motion library, which cannot read
     // CSS variables. If they drift, CSS transitions and JS animations disagree.
     const motion = readFileSync(join(SRC, 'motion.ts'), 'utf8');
-    for (const [token, seconds] of [
-      ['fast', 0.14],
-      ['base', 0.26],
-      ['slow', 0.42],
-    ] as const) {
-      const css = CSS.match(new RegExp(`--dur-${token}:\\s*(\\d+)ms`));
-      expect(css, `--dur-${token} missing from index.css`).not.toBeNull();
+    const scale = [0.12, 0.18, 0.24, 0.32] as const;
+    scale.forEach((seconds, index) => {
+      const step = index + 1;
+      const css = CSS.match(new RegExp(`--dur-${step}:\\s*(\\d+)ms`));
+      expect(css, `--dur-${step} missing from index.css`).not.toBeNull();
       expect(Number(css![1]) / 1000).toBeCloseTo(seconds, 5);
-      expect(motion).toContain(`${token}: ${seconds}`);
+      expect(motion).toContain(`${step}: ${seconds}`);
+    });
+    // The older names are aliases on the same scale, in both places.
+    for (const [alias, step] of [
+      ['fast', 1],
+      ['base', 3],
+      ['slow', 4],
+    ] as const) {
+      expect(CSS).toMatch(new RegExp(`--dur-${alias}:\\s*var\\(--dur-${step}\\)`));
+      expect(motion).toContain(`${alias}: ${scale[step - 1]}`);
     }
+    for (const [name, curve] of [
+      ['enter', '0.16, 1, 0.3, 1'],
+      ['move', '0.22, 1, 0.36, 1'],
+      ['exit', '0.4, 0, 1, 1'],
+    ] as const) {
+      expect(CSS).toContain(`--ease-${name}: cubic-bezier(${curve});`);
+      expect(motion).toContain(`${name}: [${curve}]`);
+    }
+    expect(CSS).toContain('--ease-out: var(--ease-enter);');
   });
 });

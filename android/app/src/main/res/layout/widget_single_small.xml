@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Single game, 2×1: the coin beside the account, energy and time to full. Same ids as widget_single. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/single_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="8dp"
+    android:paddingEnd="12dp">
+
+    <ImageView
+        android:id="@+id/single_logo"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@drawable/widget_row" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/single_label"
+            style="@style/WidgetLabel" />
+
+        <TextView
+            android:id="@+id/single_energy"
+            style="@style/WidgetEnergy" />
+
+        <TextView
+            android:id="@+id/single_full"
+            style="@style/WidgetFull" />
+
+        <Chronometer
+            android:id="@+id/single_timer"
+            style="@style/WidgetTimer"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/single_empty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_single_gone"
+            android:textColor="@color/widget_muted"
+            android:textSize="12sp"
+            android:visibility="gone" />
+    </LinearLayout>
+</LinearLayout>

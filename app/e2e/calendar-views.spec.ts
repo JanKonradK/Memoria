@@ -46,9 +46,11 @@ test('month grid shows the month, today and the chosen day, and opens events', a
   } else {
     await expect(page.locator('.cal-end').first()).toBeVisible();
   }
+  // Controls follow the pointer: 44px under a finger, the shared 36px under a mouse at any width.
+  const touch = await page.evaluate(() => matchMedia('(pointer: coarse)').matches);
   for (const name of ['Previous month', 'Next month', 'Today']) {
     const box = (await page.locator('.cal-month-nav').getByRole('button', { name, exact: true }).boundingBox())!;
-    if (phone) expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
+    if (phone) expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(touch ? 44 : 36);
   }
   await page.screenshot({ path: info.outputPath('month.png'), fullPage: true });
   await fitsAndPasses(page, '.cal-month');

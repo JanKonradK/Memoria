@@ -1,4 +1,5 @@
 import { TIMELINE_RANGES, type TimelineRangeKey } from '../timeline-window';
+import { Tooltip } from './ui';
 
 const ICON = {
   viewBox: '0 0 20 20',
@@ -25,26 +26,28 @@ export function TimelineTools({
   compact?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      className="calendar-tool"
-      data-icon-only={compact || undefined}
-      aria-label={showFinished ? 'Hide finished events' : 'Show finished events'}
-      title={showFinished ? 'Hide finished' : 'Show finished'}
-      onClick={() => onShowFinished(!showFinished)}
-    >
-      <svg key={String(showFinished)} className="icon h-4 w-4" {...ICON}>
-        {showFinished ? (
-          <path d="M3 3l14 14M8.6 5.2A8.6 8.6 0 0 1 10 5c4.5 0 7.5 5 7.5 5a14 14 0 0 1-2.1 2.7M5.4 6.6C3.5 8 2.5 10 2.5 10s3 5 7.5 5c1.3 0 2.5-.4 3.5-1M8.3 8.4a2.4 2.4 0 0 0 3.3 3.3" />
-        ) : (
-          <>
-            <path d="M2.5 10s3-5 7.5-5 7.5 5 7.5 5-3 5-7.5 5-7.5-5-7.5-5Z" />
-            <circle cx="10" cy="10" r="2.4" />
-          </>
-        )}
-      </svg>
-      {!compact && <span className="calendar-tool-text">{showFinished ? 'Hide finished' : 'Show finished'}</span>}
-    </button>
+    // The words are on the button unless it is icon only.
+    <Tooltip content={compact ? (showFinished ? 'Hide finished' : 'Show finished') : ''}>
+      <button
+        type="button"
+        className="calendar-tool"
+        data-icon-only={compact || undefined}
+        aria-label={showFinished ? 'Hide finished events' : 'Show finished events'}
+        onClick={() => onShowFinished(!showFinished)}
+      >
+        <svg key={String(showFinished)} className="icon h-4 w-4" {...ICON}>
+          {showFinished ? (
+            <path d="M3 3l14 14M8.6 5.2A8.6 8.6 0 0 1 10 5c4.5 0 7.5 5 7.5 5a14 14 0 0 1-2.1 2.7M5.4 6.6C3.5 8 2.5 10 2.5 10s3 5 7.5 5c1.3 0 2.5-.4 3.5-1M8.3 8.4a2.4 2.4 0 0 0 3.3 3.3" />
+          ) : (
+            <>
+              <path d="M2.5 10s3-5 7.5-5 7.5 5 7.5 5-3 5-7.5 5-7.5-5-7.5-5Z" />
+              <circle cx="10" cy="10" r="2.4" />
+            </>
+          )}
+        </svg>
+        {!compact && <span className="calendar-tool-text">{showFinished ? 'Hide finished' : 'Show finished'}</span>}
+      </button>
+    </Tooltip>
   );
 }
 
@@ -93,16 +96,17 @@ export function RangeStepper({
           <path d="m12 5-5 5 5 5" />
         </svg>
       </button>
-      <button
-        type="button"
-        className="calendar-tool"
-        data-current={atToday || undefined}
-        aria-label="Show today"
-        title={label}
-        onClick={onToday}
-      >
-        Today
-      </button>
+      <Tooltip content={label}>
+        <button
+          type="button"
+          className="calendar-tool"
+          data-current={atToday || undefined}
+          aria-label="Show today"
+          onClick={onToday}
+        >
+          Today
+        </button>
+      </Tooltip>
       <button type="button" className="calendar-tool" data-icon-only aria-label="Later week" onClick={() => onStep(1)}>
         <svg className="icon h-4 w-4" {...ICON}>
           <path d="m8 5 5 5-5 5" />

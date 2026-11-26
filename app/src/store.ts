@@ -10,6 +10,7 @@ import {
   restoreCheckpoint,
   sameValue,
   stampChanges,
+  thinStateSnapshots,
   TOMBSTONE_RETENTION_MS,
   undoAction,
   checklistFor,
@@ -379,8 +380,11 @@ export async function flushPersist(): Promise<void> {
     try {
       await withIdbLock(async () => {
         if (state && state !== lastWrittenState) {
-          assertStateCapacity(state);
-          await idbSet(IDB_KEY, normalizeState(state));
+          // A reading log over the limit is thinned on its way to disk. Any
+          // other collection over capacity still refuses the write.
+          const fitted = thinStateSnapshots(state);
+          assertStateCapacity(fitted);
+          await idbSet(IDB_KEY, normalizeState(fitted));
           lastWrittenState = state;
           wroteState = true;
         }
@@ -924,20 +928,11 @@ export const useApp = create<AppStore>((set, get) => ({
         next = stamped.state;
         history = recordAction({ ...history, clock: stamped.clock }, raw as AppState, next, 'Migration', at, uid());
       }
+      // The same object when nothing was dropped, slimmed, or pruned, so a
+      // slimmed tombstone is written once and not again on every load.
       const compacted = compactState(next, at - TOMBSTONE_RETENTION_MS);
-      const compactedSomething =
-        compacted.games.length !== next.games.length ||
-        compacted.resources.length !== next.resources.length ||
-        compacted.tasks.length !== next.tasks.length ||
-        compacted.completions.length !== next.completions.length ||
-        compacted.events.length !== next.events.length ||
-        compacted.chips.length !== next.chips.length ||
-        compacted.alertRules.length !== next.alertRules.length ||
-        compacted.reminders.length !== next.reminders.length ||
-        compacted.questMarks.length !== next.questMarks.length ||
-        compacted.customQuests.length !== next.customQuests.length ||
-        compacted.notes.length !== next.notes.length;
-      if (compactedSomething) next = compacted;
+      const compactedSomething = compacted !== next;
+      next = compacted;
       const daily = ensureDailyCheckpoint(history, next, at);
       history = daily.history;
       const stateUnchangedOnDisk =
@@ -1074,8 +1069,15 @@ export const useApp = create<AppStore>((set, get) => ({
     history = daily.history;
     const stamped = stampChanges(state, collapseSourceTwins(changed, at), history, at);
     if (sameJson(state, stamped.state)) return;
-    history = recordAction({ ...history, clock: stamped.clock }, state, stamped.state, label, at, uid());
-    const finalState = daily.added ? compactState(stamped.state, at - TOMBSTONE_RETENTION_MS) : stamped.state;
+    const recorded = recordAction({ ...history, clock: stamped.clock }, state, stamped.state, label, at, uid());
+    // No entry means no row changed, only their order, so nothing carries the
+    // new clock. Keeping the history object skips rewriting its whole blob.
+    if (recorded.journal !== history.journal) history = recorded;
+    // Retention, not an edit: neither compaction nor reading thinning is journaled.
+    // Thinning here keeps the document every sync sends within the schema limit.
+    const finalState = thinStateSnapshots(
+      daily.added ? compactState(stamped.state, at - TOMBSTONE_RETENTION_MS) : stamped.state,
+    );
     set({ state: finalState, history });
     persist(finalState, history, { broadcast: true });
     announceMutation();

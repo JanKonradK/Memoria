@@ -1,7 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { assertStateCapacity, compactState, mergeState, normalizeState, pruneCompletions } from '../src/merge';
-import { MAX_GAME_IMAGE_LENGTH } from '../src/types';
-import { FUTURE_CLOCK_SKEW_TOLERANCE_MS, safeParseAppState } from '../src/validation';
+import {
+  assertStateCapacity,
+  COMPLETION_RETENTION_MS,
+  compactState,
+  mergeState,
+  normalizeState,
+  pruneCompletions,
+  slimTombstones,
+  thinSnapshots,
+  TOMBSTONE_RETENTION_MS,
+  TOMBSTONE_SLIM_MS,
+} from '../src/merge';
+import { latestSnapshots } from '../src/energy';
+import { groupBy } from '../src/internal';
+import { MAX_GAME_IMAGE_LENGTH, type AppState, type Snapshot } from '../src/types';
+import { APP_STATE_COLLECTION_LIMITS, FUTURE_CLOCK_SKEW_TOLERANCE_MS, safeParseAppState } from '../src/validation';
 import { makeEvent, makeGame, makeResource, makeSnapshot, makeState, makeTask } from './helpers';
 
 describe('mergeState', () => {
@@ -284,6 +297,297 @@ describe('compactState', () => {
 
     expect(mergeState(alreadyPruned, stale).completions.map((completion) => completion.id)).toEqual(['stale']);
     expect(compactState(mergeState(alreadyPruned, stale), 0, cutoff).completions).toEqual([]);
+  });
+
+  it('still prunes completions at 120 days now that tombstones are kept for a year', () => {
+    const at = Date.now();
+    const completion = (id: string, age: number) => ({
+      id,
+      taskId: 't',
+      periodKey: id,
+      done: true,
+      updatedAt: at - age,
+    });
+    const state = makeState({
+      completions: [
+        completion('old', COMPLETION_RETENTION_MS + 1_000),
+        completion('recent', COMPLETION_RETENTION_MS - 1_000),
+      ],
+    });
+    expect(compactState(state, at - TOMBSTONE_RETENTION_MS).completions.map((row) => row.id)).toEqual(['recent']);
+  });
+
+  it('returns the same state when there is nothing to drop, slim, or prune', () => {
+    const state = makeState({ games: [makeGame(), makeGame({ id: 'gone', deleted: true, updatedAt: Date.now() })] });
+    expect(compactState(state, Date.now() - TOMBSTONE_RETENTION_MS)).toBe(state);
+  });
+});
+
+describe('tombstone slimming', () => {
+  const DAY = 86_400_000;
+
+  /** One row per slimmed collection, carrying every heavy optional field. */
+  function heavyRows(updatedAt: number, deleted = true): AppState {
+    const meta = { deleted, updatedAt, hlc: { wall: updatedAt, counter: 0, device: 'phone' }, deviceId: 'phone' };
+    return normalizeState(
+      makeState({
+        games: [
+          makeGame({
+            ...meta,
+            id: 'g-dead',
+            presetKey: 'genshin',
+            image: 'data:image/png;base64,iVBORw0KGgo=',
+            notes: 'old game notes',
+            cardLayout: [{ id: 'events' }],
+            codes: [{ id: 'code-1', code: 'GIFT2026', addedAt: 1 }],
+            processNames: ['GenshinImpact.exe'],
+            titleFont: 'Serif',
+            accountLabel: 'Main EU',
+            server: 'eu',
+          }),
+        ],
+        resources: [makeResource({ ...meta, id: 'r-dead', gameId: 'g-dead', reserveLabel: 'Spare' })],
+        tasks: [
+          makeTask({
+            ...meta,
+            id: 't-check',
+            gameId: 'g-dead',
+            mode: 'check',
+            timelineMatch: 'Boss',
+            timerStepMinutes: 5,
+            timerDurationMinutes: 30,
+            timerEndsAt: null,
+          }),
+          makeTask({
+            ...meta,
+            id: 't-timer',
+            gameId: 'g-dead',
+            mode: 'timer',
+            timelineMatch: 'Expedition',
+            timerDurationMinutes: 45,
+            timerEndsAt: null,
+          }),
+        ],
+        completions: [
+          {
+            ...meta,
+            id: 'c-dead',
+            taskId: 't-check',
+            periodKey: 'p',
+            done: true,
+            provenance: { kind: 'manual', observedAt: 1, importedAt: 1 },
+          },
+        ],
+        events: [
+          makeEvent({
+            ...meta,
+            id: 'e-dead',
+            gameId: 'g-dead',
+            notes: 'x'.repeat(5_000),
+            reward: 60,
+            sourceKey: 'genshin:banner-1',
+            seedHash: 'abc123',
+          }),
+        ],
+        reminders: [{ ...meta, id: 'm-dead', gameId: null, message: 'Spend resin before bed', at: 1 }],
+        customQuests: [
+          {
+            ...meta,
+            id: 'q-dead',
+            gameId: 'g-dead',
+            title: 'Archon Quest',
+            kind: 'main',
+            series: 'Prologue',
+            characters: ['Paimon'],
+            parts: [{ id: 'p1', title: 'Part 1' }],
+            notes: 'quest notes',
+          },
+        ],
+        notes: [{ ...meta, id: 'n-dead', gameId: null, title: 'Pity plan', body: 'y'.repeat(5_000), sort: 0 }],
+      }),
+    );
+  }
+
+  const SLIMMED = [
+    'games',
+    'resources',
+    'tasks',
+    'completions',
+    'events',
+    'reminders',
+    'customQuests',
+    'notes',
+  ] as const;
+
+  it('keeps every required field and the clock, and sheds the payload, after 90 days', () => {
+    const at = Date.now();
+    const full = heavyRows(at - 100 * DAY);
+    const slim = compactState(full, at - TOMBSTONE_RETENTION_MS);
+
+    // The same schema validates v0.6 and v0.7 documents.
+    expect(safeParseAppState(slim).success).toBe(true);
+    for (const key of [
+      'image',
+      'notes',
+      'cardLayout',
+      'codes',
+      'processNames',
+      'titleFont',
+      'accountLabel',
+      'server',
+    ]) {
+      expect(slim.games[0]).not.toHaveProperty(key);
+    }
+    expect(slim.resources[0]).not.toHaveProperty('reserveLabel');
+    expect(slim.completions[0]).not.toHaveProperty('provenance');
+    expect(slim.events[0]).not.toHaveProperty('reward');
+    expect(slim.events[0]).toMatchObject({ notes: '', sourceKey: 'genshin:banner-1', seedHash: 'abc123' });
+    expect(slim.reminders[0]!.message).toBe('');
+    expect(slim.notes[0]).toMatchObject({ title: '', body: '' });
+    for (const key of ['series', 'characters', 'parts', 'notes']) expect(slim.customQuests[0]).not.toHaveProperty(key);
+    const [check, timer] = slim.tasks;
+    for (const key of ['timelineMatch', 'timerStepMinutes', 'timerDurationMinutes', 'timerEndsAt']) {
+      expect(check).not.toHaveProperty(key);
+    }
+    // The normalizer infers these for a timer task, so stripping them would only
+    // bring them back on the next load and strip them again.
+    expect(timer).not.toHaveProperty('timelineMatch');
+    expect(timer).toMatchObject({ timerDurationMinutes: 45, timerEndsAt: null });
+
+    // Whatever is kept is kept unchanged, identity and clock included.
+    for (const collection of SLIMMED) {
+      full[collection].forEach((row, index) => {
+        const slimmed = slim[collection][index] as unknown as Record<string, unknown>;
+        const original = row as unknown as Record<string, unknown>;
+        for (const [key, value] of Object.entries(slimmed)) if (value !== '') expect(value).toEqual(original[key]);
+        expect(slimmed).toMatchObject({ id: row.id, deleted: true, updatedAt: row.updatedAt, hlc: row.hlc });
+      });
+    }
+    expect(JSON.stringify(slim).length).toBeLessThan(JSON.stringify(full).length / 4);
+  });
+
+  it('writes a slimmed tombstone once: it is a fixed point of loading and compaction', () => {
+    const at = Date.now();
+    const slim = compactState(heavyRows(at - 100 * DAY), at - TOMBSTONE_RETENTION_MS);
+    expect(normalizeState(slim)).toEqual(slim);
+    expect(compactState(normalizeState(slim), at - TOMBSTONE_RETENTION_MS)).toEqual(slim);
+    expect(compactState(slim, at - TOMBSTONE_RETENTION_MS)).toBe(slim);
+    expect(slimTombstones(slim, at)).toBe(slim);
+  });
+
+  it('leaves live rows and tombstones younger than 90 days as they are', () => {
+    const at = Date.now();
+    const fresh = heavyRows(at - 89 * DAY);
+    expect(compactState(fresh, at - TOMBSTONE_RETENTION_MS)).toBe(fresh);
+    const live = heavyRows(at - 300 * DAY, false);
+    expect(slimTombstones(live, at)).toBe(live);
+  });
+
+  it('keeps beating every older live copy, so an old backup cannot bring the row back', () => {
+    const at = Date.now();
+    const slim = compactState(heavyRows(at - 100 * DAY), at - TOMBSTONE_RETENTION_MS);
+    const backup = heavyRows(at - 101 * DAY, false);
+    const merged = mergeState(slim, backup);
+    expect(merged).toEqual(mergeState(backup, slim));
+    for (const collection of SLIMMED) {
+      expect(merged[collection].map((row) => row.deleted)).toEqual(slim[collection].map(() => true));
+    }
+    expect(merged.notes[0]!.body).toBe('');
+  });
+
+  it('prefers the slimmed copy of one deletion over the full one, on either side', () => {
+    const at = Date.now();
+    const full = heavyRows(at - 100 * DAY);
+    const slim = compactState(full, at - TOMBSTONE_RETENTION_MS);
+    // A peer that has not compacted yet must not undo the slimming on every sync.
+    expect(mergeState(full, slim)).toEqual(mergeState(slim, slim));
+    expect(mergeState(slim, full)).toEqual(mergeState(slim, slim));
+    expect(mergeState(full, slim).events[0]!.notes).toBe('');
+  });
+
+  it('drops a tombstone only once it is older than 365 days', () => {
+    const at = Date.now();
+    expect(TOMBSTONE_RETENTION_MS).toBe(365 * DAY);
+    expect(TOMBSTONE_SLIM_MS).toBe(90 * DAY);
+    const kept = compactState(heavyRows(at - 364 * DAY), at - TOMBSTONE_RETENTION_MS);
+    expect(kept.games.map((game) => game.id)).toEqual(['g-dead']);
+    expect(kept.notes.map((note) => note.body)).toEqual(['']);
+    const dropped = compactState(heavyRows(at - 366 * DAY), at - TOMBSTONE_RETENTION_MS);
+    for (const collection of SLIMMED) expect(dropped[collection]).toEqual([]);
+  });
+});
+
+describe('thinSnapshots', () => {
+  /** `resources` resources with `per` hourly readings each, oldest first. */
+  function readings(resources: number, per: number, kind?: (index: number) => 'manual' | 'estimate') {
+    return Array.from({ length: resources * per }, (_, i) => {
+      const resource = Math.floor(i / per);
+      const index = i % per;
+      return makeSnapshot({
+        id: `r${resource}-s${index}`,
+        resourceId: `r${resource}`,
+        value: index,
+        takenAt: 1_000_000 + index * 3_600_000,
+        ...(kind ? { provenance: { kind: kind(index), observedAt: 1, importedAt: 1 } } : {}),
+      });
+    });
+  }
+
+  it('returns the same list when it fits', () => {
+    const list = readings(2, 3);
+    expect(thinSnapshots(list)).toBe(list);
+  });
+
+  it('thins 120 resources at full retention evenly, keeping every newest reading', () => {
+    const log = readings(120, 200);
+    const thinned = thinSnapshots(log);
+    expect(thinned).toHaveLength(APP_STATE_COLLECTION_LIMITS.snapshots);
+    const counts = [...groupBy(thinned, (s) => s.resourceId).values()].map((list) => list.length);
+    expect(counts).toHaveLength(120);
+    expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(1);
+    for (let r = 0; r < 120; r++) expect(thinned.some((s) => s.id === `r${r}-s199`)).toBe(true);
+    // Oldest go first.
+    expect(thinned.some((s) => s.id === 'r0-s0')).toBe(false);
+  });
+
+  it('keeps the latest real reading even when newer estimates crowd it out', () => {
+    // Resource r0 has one real reading, its oldest; everything after it is an estimate.
+    const log = [...readings(1, 200, (i) => (i === 0 ? 'manual' : 'estimate')), ...readings(120, 200).slice(200)];
+    const thinned = thinSnapshots(log);
+    expect(thinned).toHaveLength(APP_STATE_COLLECTION_LIMITS.snapshots);
+    expect(thinned.some((s) => s.id === 'r0-s0')).toBe(true);
+    expect(thinned.some((s) => s.id === 'r0-s199')).toBe(true);
+    expect(latestSnapshots(thinned)).toEqual(latestSnapshots(log));
+  });
+
+  it('lets one overloaded device merge instead of pausing sync, before the capacity check', () => {
+    const device = makeState({ snapshots: readings(120, 200) });
+    expect(() => assertStateCapacity(device)).toThrow('combined snapshots exceed');
+    const merged = mergeState(device, makeState());
+    expect(merged.snapshots).toHaveLength(APP_STATE_COLLECTION_LIMITS.snapshots);
+    expect(safeParseAppState(merged).success).toBe(true);
+    const latestIds = (snapshots: Snapshot[]) => [...latestSnapshots(snapshots)].map(([key, s]) => [key, s.id]);
+    expect(latestIds(merged.snapshots).sort()).toEqual(latestIds(device.snapshots).sort());
+  });
+
+  it('thins a merged union the same way in either order, and a stale side changes nothing', () => {
+    const log = readings(120, 200);
+    const phone = makeState({ snapshots: log.filter((_, i) => i % 2 === 0) });
+    const pc = makeState({ snapshots: log.filter((_, i) => i % 2 === 1) });
+    const merged = mergeState(phone, pc);
+    expect(merged.snapshots).toHaveLength(APP_STATE_COLLECTION_LIMITS.snapshots);
+    expect(merged).toEqual(mergeState(pc, phone));
+    expect(mergeState(merged, merged)).toEqual(merged);
+    expect(mergeState(merged, phone)).toEqual(merged);
+    expect(mergeState(pc, merged)).toEqual(merged);
+  });
+
+  it('still refuses other collections over capacity', () => {
+    const state = makeState({
+      games: Array.from({ length: 101 }, (_, i) => makeGame({ id: `g${i}` })),
+      snapshots: readings(120, 200),
+    });
+    expect(() => mergeState(state, makeState())).toThrow('combined games exceed the 100 item limit');
   });
 });
 

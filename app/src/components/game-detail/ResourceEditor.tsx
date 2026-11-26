@@ -4,7 +4,7 @@ import { effectiveReserveRegenMinutes } from '@memoria/shared';
 import { useApp } from '../../store';
 import { intOr } from '../../util';
 import { TrackingItem } from '../settings/TrackingItem';
-import { Btn, COMPACT_INPUT, ConfirmDelete, Field, NumInput, Select, TextInput, TOUCH_BUTTON } from '../ui';
+import { Btn, ConfirmDelete, Field, NumInput, Select, TextInput } from '../ui';
 
 const RESOURCE_KINDS: Array<{ value: ResourceKind; label: string }> = [
   { value: 'regen', label: 'Regenerates over time' },
@@ -47,7 +47,6 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
             <div className="flex flex-wrap items-end gap-2">
               <Field label="Name" className="min-w-32 flex-[2_1_10rem]">
                 <TextInput
-                  className={COMPACT_INPUT}
                   value={r.name}
                   aria-label="Resource name"
                   onChange={(e) => upsertResource({ id: r.id, gameId: game.id, name: e.target.value })}
@@ -55,7 +54,6 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
               </Field>
               <Field label="Kind" className="min-w-52 flex-[2_1_13rem]">
                 <Select
-                  className={COMPACT_INPUT}
                   value={kind}
                   aria-label={`Resource kind for ${r.name}`}
                   onChange={(e) => upsertResource({ id: r.id, gameId: game.id, kind: e.target.value as ResourceKind })}
@@ -69,14 +67,12 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
               </Field>
               <Field label="Cap" className="w-24 shrink-0">
                 <NumInput
-                  className={COMPACT_INPUT}
                   value={String(r.cap)}
                   onChange={(e) => upsertResource({ id: r.id, gameId: game.id, cap: intOr(e.target.value, r.cap) })}
                 />
               </Field>
               <Field label="Minutes per point" className="w-40 shrink-0">
                 <NumInput
-                  className={COMPACT_INPUT}
                   value={String(r.regenMinutes)}
                   disabled={kind !== 'regen'}
                   onChange={(e) =>
@@ -89,10 +85,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                 />
               </Field>
               {!showReserveFields && (
-                <Btn
-                  className={`shrink-0 ${TOUCH_BUTTON}`}
-                  onClick={() => setReserveOpen((cur) => ({ ...cur, [r.id]: true }))}
-                >
+                <Btn className="shrink-0" onClick={() => setReserveOpen((cur) => ({ ...cur, [r.id]: true }))}>
                   Add reserve
                 </Btn>
               )}
@@ -102,7 +95,6 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
               <div className="mt-3 flex flex-wrap items-end gap-2 border-t border-line-hairline pt-2">
                 <Field label="Reserve cap" className="w-28 shrink-0">
                   <NumInput
-                    className={COMPACT_INPUT}
                     value={String(r.reserveCap)}
                     onChange={(e) =>
                       upsertResource({
@@ -115,7 +107,6 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                 </Field>
                 <Field label="Reserve label" className="min-w-36 flex-1">
                   <TextInput
-                    className={COMPACT_INPUT}
                     value={r.reserveLabel ?? ''}
                     onChange={(e) =>
                       upsertResource({ id: r.id, gameId: game.id, reserveLabel: e.target.value || undefined })
@@ -124,7 +115,6 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
                 </Field>
                 <Field label="Reserve minutes per point" className="w-52 shrink-0">
                   <NumInput
-                    className={COMPACT_INPUT}
                     value={r.reserveRegenMinutes == null ? '' : String(r.reserveRegenMinutes)}
                     placeholder={String(effectiveReserveRegenMinutes(r))}
                     onChange={(e) => {
@@ -143,9 +133,7 @@ export function ResourceEditor({ game, resources }: { game: Game; resources: Res
           </TrackingItem>
         );
       })}
-      <Btn className={TOUCH_BUTTON} onClick={() => upsertResource({ gameId: game.id, name: 'Energy' })}>
-        Add resource
-      </Btn>
+      <Btn onClick={() => upsertResource({ gameId: game.id, name: 'Energy' })}>Add resource</Btn>
     </div>
   );
 }

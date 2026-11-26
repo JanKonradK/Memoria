@@ -1,7 +1,32 @@
-import type { AppState, Game } from './types';
+import type { AppState, Game, GameEvent } from './types';
 import { projectEnergy } from './energy';
 import { effectiveResourceKind } from './tracking';
 import { buildUrgencyContext, type UrgencyContext } from './urgency';
+
+const ENDS_SOON_MS = 72 * 60 * 60_000;
+const ENDS_SOON_MAX = 3;
+
+/** Unfinished active events of `gameId` ending within `windowMs`, soonest first, capped at `max`. */
+export function endingSoon(
+  events: readonly GameEvent[],
+  gameId: string,
+  now: number,
+  windowMs = ENDS_SOON_MS,
+  max = ENDS_SOON_MAX,
+): GameEvent[] {
+  return events
+    .filter(
+      (event) =>
+        event.gameId === gameId &&
+        !event.deleted &&
+        !event.done &&
+        event.start <= now &&
+        event.end > now &&
+        event.end - now <= windowMs,
+    )
+    .sort((a, b) => a.end - b.end)
+    .slice(0, max);
+}
 
 /** What one game needs right now, small enough for a notification or a widget row. */
 export interface GameGlance {

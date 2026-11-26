@@ -1,0 +1,60 @@
+/* GameScope: a logo per game, in the rail's order. On the Calendar each is
+   pressed to show its game, dimmed when hidden; in Notes (data-pick) one is
+   chosen at a time, ringed, and the rest dim only once one is. */
+.calendar-games {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+}
+.calendar-game-toggle {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--color-muted);
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    filter var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+.calendar-game-toggle[aria-pressed='false'] {
+  opacity: 0.32;
+  filter: grayscale(1);
+}
+@media (pointer: fine) {
+  .calendar-game-toggle {
+    width: 36px;
+    height: 36px;
+  }
+}
+@media (hover: hover) {
+  .calendar-game-toggle:hover {
+    background: var(--color-fill-2);
+    opacity: 1;
+  }
+}
+.calendar-games[data-pick] .calendar-game-toggle[aria-pressed='false'] {
+  opacity: 1;
+  filter: none;
+}
+.calendar-games[data-pick]:has([aria-pressed='true']) .calendar-game-toggle[aria-pressed='false'] {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+.calendar-games[data-pick] .calendar-game-toggle[aria-pressed='true'] {
+  background: var(--color-fill-2);
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+  color: var(--color-fg);
+}
+.calendar-game-toggle > svg {
+  width: 20px;
+  height: 20px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .calendar-game-toggle {
+    transition: none;
+  }
+}

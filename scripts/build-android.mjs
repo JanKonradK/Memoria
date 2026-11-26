@@ -1,37 +1,20 @@
-import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { drawPng } from '../app/scripts/draw-icon.mjs';
-import { withAndroidPolicy } from './android-csp.mjs';
+import { androidDir, gradle, root, syncWebAssets } from './android-project.mjs';
 
-const root = resolve(import.meta.dirname, '..');
-const androidDir = join(root, 'android');
-const windows = process.platform === 'win32';
-const env = { ...process.env };
-const sdk = env.ANDROID_HOME || env.ANDROID_SDK_ROOT || (env.LOCALAPPDATA && join(env.LOCALAPPDATA, 'Android', 'Sdk'));
-if (sdk && existsSync(sdk)) env.ANDROID_HOME = sdk;
-const studioJava = join(env.ProgramFiles || 'C:/Program Files', 'Android', 'Android Studio', 'jbr');
-if (!env.JAVA_HOME && windows && existsSync(studioJava)) env.JAVA_HOME = studioJava;
-
-function run(command, args, cwd = root) {
-  const result = spawnSync(command, args, { cwd, env, stdio: 'inherit', windowsHide: true });
-  if (result.error) throw result.error;
-  if (result.status !== 0) process.exit(result.status ?? 1);
+// `--flavor direct` (the default) builds the APK on GitHub releases, which the
+// in-app updater installs. `--flavor play` builds the Google Play bundle (.aab),
+// with no updater and none of the permissions Play reserves for other apps.
+const flagAt = process.argv.indexOf('--flavor');
+const flavor = flagAt >= 0 ? process.argv[flagAt + 1] : 'direct';
+if (flavor !== 'direct' && flavor !== 'play') {
+  console.error(`Unknown flavor "${flavor}". Use --flavor direct or --flavor play.`);
+  process.exit(1);
 }
 
-// Native and browser builds share the same tested, fully local web assets.
-if (windows) run('powershell', ['-NoProfile', '-NonInteractive', '-Command', 'npm -w app run build']);
-else run('npm', ['-w', 'app', 'run', 'build']);
-run(
-  process.execPath,
-  [join(root, 'node_modules', '@capacitor', 'cli', 'bin', 'capacitor'), 'sync', 'android'],
-  join(root, 'app'),
-);
-
-// The WebView has no response headers, so the content policy rides in the page.
-const page = join(androidDir, 'app', 'src', 'main', 'assets', 'public', 'index.html');
-writeFileSync(page, withAndroidPolicy(readFileSync(page, 'utf8')));
+syncWebAssets();
 
 // Reuse the existing Memoria mark rather than shipping Capacitor's starter icon.
 for (const [density, size] of Object.entries({ mdpi: 48, hdpi: 72, xhdpi: 96, xxhdpi: 144, xxxhdpi: 192 })) {
@@ -43,26 +26,32 @@ for (const [density, size] of Object.entries({ mdpi: 48, hdpi: 72, xhdpi: 96, xx
   writeFileSync(join(directory, 'ic_launcher_foreground.png'), drawPng(Math.round(size * 2.25), { maskable: true }));
 }
 
-if (windows)
-  run(
-    'powershell',
-    ['-NoProfile', '-NonInteractive', '-Command', '& ./gradlew.bat assembleRelease --no-daemon'],
-    androidDir,
-  );
-else run('sh', ['./gradlew', 'assembleRelease', '--no-daemon'], androidDir);
+const outputs = join(androidDir, 'app', 'build', 'outputs');
+const build =
+  flavor === 'direct'
+    ? {
+        task: 'assembleDirectRelease',
+        // The in-app updater looks for exactly this asset name on each release.
+        name: 'Memoria-android.apk',
+        from: join(outputs, 'apk', 'direct', 'release', 'app-direct-release.apk'),
+      }
+    : {
+        task: 'bundlePlayRelease',
+        name: 'Memoria-play.aab',
+        from: join(outputs, 'bundle', 'playRelease', 'app-play-release.aab'),
+      };
+gradle(build.task);
 
-// The in-app updater looks for exactly this asset name on each release.
 const releaseDir = join(root, 'dist', 'release');
-const name = 'Memoria-android.apk';
 mkdirSync(releaseDir, { recursive: true });
-const artifact = join(releaseDir, name);
-copyFileSync(join(androidDir, 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk'), artifact);
+const artifact = join(releaseDir, build.name);
+copyFileSync(build.from, artifact);
 const digest = createHash('sha256').update(readFileSync(artifact)).digest('hex');
 const sums = join(releaseDir, 'SHA256SUMS.txt');
 const other = existsSync(sums)
   ? readFileSync(sums, 'utf8')
       .split(/\r?\n/)
-      .filter((line) => line && !line.endsWith(`  ${name}`))
+      .filter((line) => line && !line.endsWith(`  ${build.name}`))
   : [];
-writeFileSync(sums, [...other, `${digest}  ${name}`, ''].join('\n'));
-console.log(`\nAndroid APK: ${artifact}\nsha256 ${digest}`);
+writeFileSync(sums, [...other, `${digest}  ${build.name}`, ''].join('\n'));
+console.log(`\nAndroid ${flavor === 'direct' ? 'APK' : 'Play bundle'}: ${artifact}\nsha256 ${digest}`);

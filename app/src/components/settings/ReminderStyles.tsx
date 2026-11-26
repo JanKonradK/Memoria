@@ -49,8 +49,13 @@ export const TONE_LABELS: Record<AlarmTone, string> = {
 /** How each kind of reminder arrives, the alarm ring, and a sample of each. Shared by every device. */
 export function ReminderStyles() {
   const settings = useApp((s) => s.state.settings);
+  const reminders = useApp((s) => s.state.reminders);
   const updateSettings = useApp((s) => s.updateSettings);
   const onPc = usePresence((s) => s.presence != null);
+  // A ring only matters once something rings: a kind set to Alarm, or one reminder of your own.
+  const ringsAlarm =
+    NOTIFICATION_KINDS.some((kind) => notificationStyle(settings, kind) === 'alarm') ||
+    reminders.some((reminder) => !reminder.deleted && reminder.style === 'alarm');
   const canTest = isNativeApp || onPc;
   const tone = settings.alarmTone ?? 'classic';
   const [message, setMessage] = useState('');
@@ -94,23 +99,25 @@ export function ReminderStyles() {
           })}
         </ul>
       </SettingRow>
-      <SettingRow label="Alarm ring">
-        <div className="flex flex-wrap items-center gap-2">
-          <Select
-            aria-label="Alarm ring"
-            className="!w-40"
-            value={tone}
-            onChange={(event) => updateSettings({ alarmTone: event.target.value as AlarmTone })}
-          >
-            {ALARM_TONES.map((option) => (
-              <option key={option} value={option}>
-                {TONE_LABELS[option]}
-              </option>
-            ))}
-          </Select>
-          {canTest && <Btn onClick={() => test('alarm')}>Ring it</Btn>}
-        </div>
-      </SettingRow>
+      {ringsAlarm && (
+        <SettingRow label="Alarm ring">
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              aria-label="Alarm ring"
+              className="!w-40"
+              value={tone}
+              onChange={(event) => updateSettings({ alarmTone: event.target.value as AlarmTone })}
+            >
+              {ALARM_TONES.map((option) => (
+                <option key={option} value={option}>
+                  {TONE_LABELS[option]}
+                </option>
+              ))}
+            </Select>
+            {canTest && <Btn onClick={() => test('alarm')}>Ring it</Btn>}
+          </div>
+        </SettingRow>
+      )}
       {message && (
         <p role="status" className="settings-note text-body text-muted">
           {message}

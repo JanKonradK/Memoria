@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { DateTime } from 'luxon';
 import {
   endsOvernight,
@@ -21,8 +22,8 @@ import { EventTags } from './EventTags';
 import { NightMark } from './NightMark';
 import { GameLogo } from './GameLogo';
 import { useIdentityColors } from './roster';
-import { Sheet } from './Sheet';
-import { Btn, Segmented, TOUCH_BUTTON } from './ui';
+import { Sheet, SheetFooter } from './Sheet';
+import { Btn, Segmented } from './ui';
 import '../event-peek.css';
 
 /** A pin, drawn small beside a pinned event's name wherever it is listed. */
@@ -60,6 +61,9 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
   );
   const closeSheet = useUI((ui) => ui.closeSheet);
   const openSheet = useUI((ui) => ui.openSheet);
+  useEffect(() => {
+    void import('./EventSheet');
+  }, []);
   const identityColors = useIdentityColors(state.games);
   const event = state.events.find((item) => item.id === eventId && !item.deleted);
   const game = event && state.games.find((item) => item.id === event.gameId && !item.deleted);
@@ -88,15 +92,12 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
       onClose={closeSheet}
       title={event.name}
       footer={
-        <div className="event-peek-actions">
+        // Edit sits apart on the left; the two things you came to do are on the right, under the thumb.
+        <SheetFooter
+          start={<Btn onClick={() => openSheet({ kind: 'event', eventId: event.id, gameId: event.gameId })}>Edit</Btn>}
+        >
           <Btn
-            className={TOUCH_BUTTON}
-            onClick={() => openSheet({ kind: 'event', eventId: event.id, gameId: event.gameId })}
-          >
-            Edit
-          </Btn>
-          <Btn
-            className={`${TOUCH_BUTTON} ml-auto inline-flex items-center gap-2`}
+            className="inline-flex items-center justify-center gap-2"
             aria-pressed={Boolean(event.pinned)}
             onClick={() => togglePinned(event)}
           >
@@ -105,7 +106,6 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
           </Btn>
           <Btn
             kind="primary"
-            className={TOUCH_BUTTON}
             aria-pressed={Boolean(event.done)}
             onClick={() => {
               setProgress(event.done ? 'none' : 'done');
@@ -115,7 +115,7 @@ export function EventPeek({ open, eventId }: { open: boolean; eventId: string })
           >
             {event.done ? 'Done — undo' : 'Mark done'}
           </Btn>
-        </div>
+        </SheetFooter>
       }
     >
       <div className="event-peek" style={{ '--game-ink': ink } as React.CSSProperties}>

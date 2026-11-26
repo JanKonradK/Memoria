@@ -1,6 +1,6 @@
 /*
  * Catch up: an editorial briefing for one game. The newest version leads with
- * its artwork; older versions fold under quieter headings. Sections sit on the
+ * its number as a plate of type; older versions fold under quieter headings. Sections sit on the
  * sheet's ground under small labels and hairlines, as Today does; the game's
  * colour marks identity only.
  */
@@ -54,18 +54,44 @@
 .catch-up-lead .catch-up-body {
   margin-top: 20px;
 }
-.catch-up-art {
+/* The version as type: its number large in the game's colour on a quiet wash of it. */
+.catch-up-plate {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 6px;
+  min-height: 112px;
+  padding: 18px 22px;
   overflow: hidden;
-  margin: 0;
   border-radius: var(--radius-ui-lg, 24px);
-  background: var(--color-inset);
+  background:
+    radial-gradient(
+      120% 140% at 100% 0%,
+      color-mix(in srgb, var(--game-ink, var(--color-accent)) 22%, transparent),
+      transparent 62%
+    ),
+    var(--color-inset);
   box-shadow: inset 0 0 0 1px var(--color-line-hairline);
 }
-.catch-up-art img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
+@media (min-width: 720px) {
+  .catch-up-plate {
+    aspect-ratio: 16 / 9;
+    padding: 24px 28px;
+  }
+}
+.catch-up-plate-version {
+  color: var(--game-ink, var(--color-accent));
+  font-size: clamp(3.5rem, 9vw, 6rem);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+}
+.catch-up-plate-title {
+  color: var(--color-fg-soft);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .catch-up-new {
   display: inline-flex;

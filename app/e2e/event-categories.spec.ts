@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { emptyState } from '@memoria/shared';
 import { makeGame, makeEvent } from '../../shared/test/helpers';
-import { editFromQuickView, openSettings, calendarAxe } from './support';
+import { editFromQuickView, openSettings, calendarAxe, showTimeline } from './support';
 
 test('MW uses an inline tag and owner tag changes persist', async ({ page }) => {
   const now = Date.parse('2026-09-17T12:00:00Z');
@@ -54,10 +54,7 @@ test('MW uses an inline tag and owner tag changes persist', async ({ page }) => 
   });
   await page.getByRole('button', { name: 'Merge backup', exact: true }).click();
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
-  await page
-    .getByRole('radiogroup', { name: 'Event view' })
-    .getByRole('radio', { name: 'Timeline', exact: true })
-    .click();
+  await showTimeline(page);
   await expect(page.locator('[data-event-id="teyvat-test"] [data-event-tag]')).toHaveCount(0);
   await expect(page.locator('[data-event-id="mw-test"] [data-event-tag]')).toHaveText('MW');
   await expect(page.locator('[data-event-category]')).toHaveCount(0);
@@ -74,9 +71,6 @@ test('MW uses an inline tag and owner tag changes persist', async ({ page }) => 
   await page.reload();
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Calendar', exact: true }).click();
-  await page
-    .getByRole('radiogroup', { name: 'Event view' })
-    .getByRole('radio', { name: 'Timeline', exact: true })
-    .click();
+  await showTimeline(page);
   await expect(page.locator('[data-event-id="mw-test"] [data-event-tag]')).toHaveCount(0);
 });

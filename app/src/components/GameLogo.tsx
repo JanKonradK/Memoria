@@ -55,7 +55,7 @@ function useLogoFronts(wanted: boolean): Record<string, string> | null {
   );
 }
 
-const TOSS_MS = 1100;
+const TOSS_MS = 800;
 /** Each coin's leap toward you, while it is in the air. */
 const leaps = new WeakMap<Element, Animation>();
 

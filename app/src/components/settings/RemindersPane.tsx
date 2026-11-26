@@ -36,6 +36,7 @@ function PcReminders() {
       {blocked && (
         <SettingRow
           label="Windows is hiding them"
+          hintKind="warn"
           hint={
             windows === 'user'
               ? 'Notifications are off for every app in Windows. Switch them on so reminders can appear.'

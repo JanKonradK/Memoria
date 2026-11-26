@@ -81,7 +81,7 @@ async function addPreset(page: Page, name: string, short: string, first = false)
   await page.getByRole('option').nth(1).click();
   await page.getByRole('button', { name: `Add ${short}` }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  // Its row opens the page on a phone and brings its card beside the list on desktop.
+  // Its row opens the game's page, at every width.
   await showTodayGames(page);
   await gameRow(page, name).click();
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
@@ -268,6 +268,8 @@ test('wide Today opens integrated game pages while timeline bars stay in scale',
   await addPreset(page, 'Zenless Zone Zero', 'ZZZ');
   await addPreset(page, 'Wuthering Waves', 'WuWa');
   await addPreset(page, 'Neverness to Everness', 'NTE');
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('button', { name: 'Today', exact: true }).click();
+  await showTodayGames(page);
 
   const cards = page.locator('[data-roster-game]');
   await expect(cards).toHaveCount(5);
@@ -384,16 +386,22 @@ test('upright, the rail is a dock along the bottom with 44px targets that tracks
     await expect(nav.locator('[aria-current="page"]')).toHaveCount(1);
     await expectNoPageOverflow(page);
   }
-  // Games raises the shelf; on a game's page its own button is marked, not Today, and the shelf stays up.
+  // Games raises the shelf for a moment; picking a game lowers it, and the dock's
+  // Games, marked as the place rather than Today, wears that game's coin.
   const games = nav.getByRole('button', { name: 'Games', exact: true });
   await expect(games).toHaveAttribute('aria-expanded', 'false');
   await games.click();
   await expect(games).toHaveAttribute('aria-expanded', 'true');
   await nav.getByRole('button', { name: /^Genshin Impact/ }).click();
   await expect(games).toHaveAttribute('aria-current', 'page');
-  await expect(games).toHaveAttribute('aria-expanded', 'true');
-  await expect(nav.getByRole('button', { name: /^Genshin Impact/ })).toHaveAttribute('aria-current', 'page');
+  await expect(games).toHaveAttribute('aria-expanded', 'false');
+  await expect(games.locator('[data-game-logo]')).toBeVisible();
   await expect(nav.getByRole('button', { name: 'Today', exact: true })).not.toHaveAttribute('aria-current');
+  // Raised again, it marks the open game, and a tap on the page lowers it.
+  await games.click();
+  await expect(nav.getByRole('button', { name: /^Genshin Impact/ })).toHaveAttribute('aria-current', 'page');
+  await page.locator('.focus-workspace h1').click();
+  await expect(games).toHaveAttribute('aria-expanded', 'false');
 });
 
 test('? opens the keyboard shortcuts', async ({ page }) => {

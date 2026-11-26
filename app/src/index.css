@@ -46,7 +46,7 @@
   /* ── Interaction ───────────────────────────────────────────────────────────
      The accent marks the selected route, focus, text selection and links, and
      nothing else: the saturated colour on screen belongs to the games. Players
-     pick it, with a colour palette, in Settings → General (palettes.ts), which
+     pick it, with a colour palette, in Settings → Appearance (palettes.ts), which
      re-points these on the root element. These are Memoria's default, Blue;
      Mono is the text colour. */
   --color-accent: #80c3ff;
@@ -162,26 +162,46 @@
   --glass-blur: 24px;
   --nav-ink: var(--color-accent-fg);
 
-  /* One easing for everything that is not the stage. Exponential deceleration
-     from an already-visible default; real objects do not overshoot. */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* The one motion scale (mirrored in motion.ts). Four lengths: a press or
+     hover, a small reveal, a page or panel arriving, and the longest a
+     move may take (a morph, a meter filling). */
+  --dur-1: 120ms;
+  --dur-2: 180ms;
+  --dur-3: 240ms;
+  --dur-4: 320ms;
+  /* Arriving: exponential deceleration from an already-visible default; real
+     objects do not overshoot. */
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Something already on screen changing place: a touch less abrupt at the start. */
+  --ease-move: cubic-bezier(0.22, 1, 0.36, 1);
   /* Leaving is the reverse: slow to start, gone quickly, so nothing lingers over the next action. */
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
-  --dur-fast: 140ms;
-  --dur-base: 260ms;
-  --dur-slow: 420ms;
+  /* The names the stylesheets grew up with, on the same scale. */
+  --ease-out: var(--ease-enter);
+  --dur-fast: var(--dur-1);
+  --dur-base: var(--dur-3);
+  --dur-slow: var(--dur-4);
   --stagger: 40ms;
   /* --app-bar-h is MEASURED and written by the page bar, never guessed. A guess was
      wrong twice: the route control changed the measured height, and the bar
      wraps to two rows below the lg breakpoint, where no single constant holds.
      The fallback only has to be sane for the first paint before the measure lands. */
   --app-bar-h: 3rem;
+  /* The Windows app's own title bar (WindowChrome.tsx), which the rail, the page
+     bars and full-screen layers clear. None anywhere else. */
+  --desktop-chrome-h: 0px;
 
   /* A ring, not a glow, in the accent: palettes.ts holds every accent to 4.5:1
      against the ground, the panel and raised chrome. */
   --focus-ring-color: var(--color-accent);
   --focus-ring-width: 2px;
   --focus-ring-offset: 1px;
+
+  /* One height for buttons, fields, selects and segmented controls, so a row
+     of them lines up. Density follows the pointer, never the width: a mouse
+     gets 36px in a window of any size, a finger 44px on a screen of any size. */
+  --control-h: 36px;
+  --control-h-sm: 28px;
 
   --tick-idle: var(--color-line-strong);
   --tick-ring-width: 1.5px;
@@ -198,6 +218,11 @@
   --icon-sm: 14px;
   --icon-md: 16px;
   --icon-lg: 20px;
+}
+
+/* 32px at any page zoom: --chrome-zoom (the desktop bridge) is the zoom's inverse. */
+:root[data-desktop-chrome] {
+  --desktop-chrome-h: calc(32px * var(--chrome-zoom, 1));
 }
 
 /* Cool neutral light theme; components use the same semantic tokens. */
@@ -280,9 +305,19 @@
 }
 
 @media (pointer: coarse) {
+  :root {
+    --control-h: 44px;
+    --control-h-sm: 44px;
+  }
   .btn-compact {
-    min-width: 2.75rem;
-    min-height: 2.75rem;
+    min-width: var(--control-h);
+    min-height: var(--control-h);
+  }
+  /* A switch's track stays 24px tall to the eye; its hit area reaches 44px. */
+  .ui-switch::before {
+    content: '';
+    position: absolute;
+    inset: -10px 0;
   }
 }
 
@@ -344,7 +379,7 @@ textarea {
    space and truncates; the view switch and tools are icons with labels where
    there is room. */
 .calendar-toolbar {
-  --tool-h: 36px;
+  --tool-h: var(--control-h);
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
@@ -365,10 +400,7 @@ textarea {
   border-radius: var(--radius-ui-full);
   background: var(--color-fill-1);
 }
-@media (pointer: coarse), (max-width: 767px) {
-  .calendar-toolbar {
-    --tool-h: 44px;
-  }
+@media (pointer: coarse) {
   .calendar-views {
     padding: 0;
   }
@@ -469,8 +501,8 @@ html {
 
 .shell-control {
   display: inline-flex;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: var(--control-h);
+  min-height: var(--control-h);
   align-items: center;
   justify-content: center;
   gap: 6px;
@@ -500,12 +532,6 @@ html {
 .shell-control:disabled {
   opacity: 0.6;
 }
-@media (min-width: 640px) and (pointer: fine) {
-  .shell-control {
-    min-height: 36px;
-    min-width: 36px;
-  }
-}
 
 /* Phone check-in: a readable roster, reachable navigation, and a single
    document scroll. Desktop retains its full stage and compact controls. */
@@ -528,13 +554,8 @@ html {
   .app-game-scope {
     width: 100%;
   }
-  .shell-control,
-  .btn-compact,
-  button[role='radio'],
-  button[role='combobox'] {
-    min-height: 44px;
-    min-width: 44px;
-  }
+  /* No 44px controls here: a narrow window under a mouse keeps --control-h,
+     and a finger gets 44px from (pointer: coarse) at any width. */
   .app-page {
     padding-top: 1rem;
     padding-bottom: calc(var(--mobile-nav-h) + 0.75rem);
@@ -651,6 +672,27 @@ input[type='number'] {
   flex-wrap: wrap;
   justify-content: flex-end;
 }
+/* Where readings come from (live numbers, a snip) sit together, apart from the
+   game's other actions; nothing at all when the game has neither. */
+.game-card-sources {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-inline: 0.5rem;
+  border-inline: 1px solid var(--color-line-hairline);
+}
+.game-card-sources:empty {
+  display: none;
+}
+/* The bar's value chips (Spent all, Full) read as their own pair after its verdict. */
+.energy-quick-set {
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--color-line-hairline);
+}
+:empty + .energy-quick-set {
+  padding-left: 0;
+  border-left: 0;
+}
 .focus-workspace .game-card-actions {
   align-self: flex-start;
 }
@@ -689,10 +731,8 @@ input[type='number'] {
   stroke-width: var(--icon-stroke);
 }
 
-/* The page arriving when you change tab: 260ms on the shared curve, so the
-   rail's pressed fill and the page settle together. A short glide from mostly
-   transparent: far enough to say which side it came from, short enough that
-   the page is readable before it lands.
+/* A game's tab sliding in from the side it was chosen or swiped from. A
+   page's own arrival is page-arrival.ts: under its bar only, once.
 
    Note there is no animation-fill-mode: the keyframes run FROM the offset, and
    the element's resting state is the plain, visible one. That is deliberate —
@@ -700,28 +740,24 @@ input[type='number'] {
 @keyframes pageEnterForward {
   from {
     opacity: 0.25;
-    transform: translateX(0.875rem);
+    transform: translateX(0.75rem);
   }
 }
 @keyframes pageEnterBack {
   from {
     opacity: 0.25;
-    transform: translateX(-0.875rem);
+    transform: translateX(-0.75rem);
   }
 }
-/* A sideways drag moves the page a little with the finger, so the swipe answers
-   before it commits. Damped, and it springs back if released short. */
-.page-enter[data-swiping] {
-  transform: translateX(var(--swipe-x, 0px));
+/* A sideways drag moves what sits under the page bar with the finger, so the
+   swipe answers before it commits while the bar stays put. */
+.page-enter[data-swiping] > .app-page > :not(.page-bar, .focus-workspace),
+.page-enter[data-swiping] > .app-page > .focus-workspace > :not(.page-bar) {
+  translate: var(--page-swipe-x, 0px) 0;
 }
-.page-enter[data-swipe-release] {
-  transition: transform var(--dur-base) var(--ease-out);
-}
-.page-enter[data-direction='1'] {
-  animation: pageEnterForward var(--dur-base) var(--ease-out);
-}
-.page-enter[data-direction='-1'] {
-  animation: pageEnterBack var(--dur-base) var(--ease-out);
+.page-enter[data-swipe-release] > .app-page > :not(.page-bar, .focus-workspace),
+.page-enter[data-swipe-release] > .app-page > .focus-workspace > :not(.page-bar) {
+  transition: translate var(--dur-3) var(--ease-move);
 }
 
 /* Sheets retain a mostly opaque reading surface over softly blurred content. */
@@ -807,11 +843,12 @@ input[type='number'] {
 .attention-indicator[data-running='true'] {
   animation-play-state: running;
 }
-.today-card:focus-within .attention-indicator {
+/* Still while the game's bar is in use: its Play and Edit sit beside it. */
+.game-bar:focus-within .attention-indicator {
   animation-play-state: paused;
 }
 @media (hover: hover) {
-  .today-card:hover .attention-indicator {
+  .game-bar:hover .attention-indicator {
     animation-play-state: paused;
   }
 }
@@ -822,7 +859,7 @@ input[type='number'] {
   }
 }
 .fade-in {
-  animation: fadeIn 0.18s ease-out;
+  animation: fadeIn var(--dur-2) var(--ease-enter);
 }
 /* A row the player just added settles into its list. Rows already there when
    the page opened never animate, so arriving on a page stays instant. */
@@ -870,6 +907,26 @@ input[type='number'] {
     transform: scale(1);
   }
 }
+/* The confirm dialog (ConfirmDialog.tsx) and its scrim. Radix keeps both
+   until the exit ends, so a question leaves as calmly as it came; the panel's
+   centring is its translate, which a scale here leaves alone. */
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+  }
+}
+.sheet-scrim.confirm-motion[data-state='open'] {
+  animation: fadeIn var(--dur-2) var(--ease-enter);
+}
+.sheet-scrim.confirm-motion[data-state='closed'] {
+  animation: fadeOut var(--dur-1) var(--ease-exit);
+}
+[role='alertdialog'].confirm-motion[data-state='open'] {
+  animation: popoverOpen var(--dur-2) var(--ease-enter);
+}
+[role='alertdialog'].confirm-motion[data-state='closed'] {
+  animation: popoverClose var(--dur-1) var(--ease-exit);
+}
 .theme-icon {
   animation: themeTurn var(--dur-base) var(--ease-out);
 }
@@ -887,7 +944,7 @@ input[type='number'] {
 /* A task name being struck through.
    `text-decoration: line-through` cannot be animated — it is simply there on
    the next frame — so a completed task used to change in two unrelated ways at
-   once: the tick played its 180ms pop while the rule across the name appeared
+   once: the tick played its short pop while the rule across the name appeared
    instantly. The line is drawn as a background instead, which gives it a width
    to animate, so the rule travels across the word in step with the tick.
    The span shrink-wraps its text, so 100% is the text's own width. */
@@ -920,7 +977,7 @@ input[type='number'] {
 .check-pop {
   transform-box: fill-box;
   transform-origin: center;
-  animation: checkPop 0.18s var(--ease-out);
+  animation: checkPop 160ms var(--ease-enter);
 }
 
 /* The completion burst fires only when the LAST segment lands. Ticking three of
@@ -934,7 +991,7 @@ input[type='number'] {
     opacity: 1;
   }
   38% {
-    transform: scale(1.12);
+    transform: scale(1.08);
   }
   100% {
     transform: scale(1);
@@ -944,7 +1001,7 @@ input[type='number'] {
 .check-burst {
   transform-box: fill-box;
   transform-origin: center;
-  animation: checkBurst var(--dur-base) var(--ease-out) forwards;
+  animation: checkBurst 220ms var(--ease-enter) forwards;
 }
 /* The check is written, not stamped: it draws itself as the disc lands. The
    path carries pathLength="1", so one unit is the whole stroke. Resting state
@@ -978,7 +1035,7 @@ input[type='number'] {
   /* The game's colour (set on the element by Tick), ok green otherwise. An
      inset ring scales with the wave, so it echoes the disc's own edge. */
   box-shadow: inset 0 0 0 2px var(--tick-color, var(--color-ok));
-  animation: novaWave var(--dur-slow) var(--ease-out) forwards;
+  animation: novaWave var(--dur-4) var(--ease-enter) forwards;
 }
 
 @keyframes loaderSpin {
@@ -1036,17 +1093,39 @@ input[type='number'] {
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 2fr);
 }
 
-/* Opening a game: only its logo is carried between the row and the page
-   heading. The page is not cross-faded; its content has its own short arrival. */
-::view-transition-old(root) {
+/* Every view transition's layer lets clicks and taps straight through. */
+::view-transition,
+::view-transition-group(*),
+::view-transition-image-pair(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  pointer-events: none;
+}
+/* Opening a game (type game-logo, workspace-navigation.ts): only its logo is
+   carried between the row and the page heading. The page is not cross-faded;
+   its content has its own short arrival. The root is not captured for this
+   one, so these only hold should a browser capture it anyway. A look's
+   cross-fade is its own type (looks/looks.css). data-vt is the same type for
+   a browser without transition types. */
+:root:active-view-transition-type(game-logo)::view-transition-old(root) {
   display: none;
 }
-::view-transition-new(root) {
+:root:active-view-transition-type(game-logo)::view-transition-new(root) {
   animation: none;
 }
-::view-transition-group(game-logo) {
-  animation-duration: 320ms;
-  animation-timing-function: var(--ease-out);
+:root:active-view-transition-type(game-logo)::view-transition-group(game-logo) {
+  animation-duration: var(--dur-4);
+  animation-timing-function: var(--ease-move);
+}
+:root[data-vt='game-logo']::view-transition-old(root) {
+  display: none;
+}
+:root[data-vt='game-logo']::view-transition-new(root) {
+  animation: none;
+}
+:root[data-vt='game-logo']::view-transition-group(game-logo) {
+  animation-duration: var(--dur-4);
+  animation-timing-function: var(--ease-move);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1151,7 +1230,8 @@ input[type='number'] {
   background: var(--color-fill-2);
 }
 .ui-segmented button,
-.ui-segmented button > span:first-child {
+.ui-segmented button > span:first-child,
+.ui-segmented > span[aria-hidden] {
   border-radius: var(--radius-ui-full);
 }
 .ui-input {
@@ -1204,12 +1284,21 @@ input[type='number'] {
 
 .ui-segmented button {
   min-width: 0;
+  /* The track is --control-h tall: 4px of padding and a 1px edge each side. */
+  min-height: calc(var(--control-h) - 10px);
   white-space: normal;
   overflow-wrap: anywhere;
 }
-@media (pointer: coarse), (max-width: 767px) {
+/* A finger needs the whole 44px, so the segments fill the track edge to edge
+   and the edge is drawn inside rather than added around it. */
+@media (pointer: coarse) {
+  .ui-segmented {
+    padding: 0;
+    border-width: 0;
+    box-shadow: inset 0 0 0 1px var(--color-line-hairline);
+  }
   .ui-segmented button {
-    min-height: 44px;
+    min-height: var(--control-h);
   }
 }
 
@@ -1250,10 +1339,9 @@ input[type='number'] {
 [data-session-need] .energy-value-input,
 [data-session-need] .energy-resource-name,
 [data-session-need] .game-task-row {
+  /* Fades and rings only: a size that animates would push the rows around it. */
   transition:
     opacity var(--dur-base) var(--ease-out),
-    height var(--dur-base) var(--ease-out),
-    font-size var(--dur-base) var(--ease-out),
     box-shadow var(--dur-base) var(--ease-out);
 }
 [data-session-need='energy'] [data-energy-row]:not([data-need]),
@@ -1312,9 +1400,10 @@ input[type='number'] {
   font-size: var(--text-lead);
 }
 
-/* A minute in and still owed: the step pulses until it is dealt with. The
-   halo is drawn once on a layer of its own and only its opacity and scale
-   move, so the compositor runs it without repainting the row. */
+/* A minute in and still owed: the step pulses twice, then settles into the
+   steady 2px ring it already wears. The halo is drawn once on a layer of its
+   own and only its opacity and scale move, so the compositor runs it without
+   repainting the row. */
 @keyframes session-pulse {
   0%,
   100% {
@@ -1349,7 +1438,7 @@ input[type='number'] {
   box-shadow: 0 0 0 5px color-mix(in oklab, var(--session-ink) 35%, transparent);
   opacity: 0;
   will-change: opacity, transform;
-  animation: session-pulse 1.8s var(--ease-out) infinite;
+  animation: session-pulse 1.8s var(--ease-out) 2;
 }
 @media (prefers-reduced-motion: reduce) {
   /* The steady ring above still marks what is owed. */
@@ -1357,8 +1446,9 @@ input[type='number'] {
     display: none;
   }
 }
+/* Twice, then the rail stays in the session's ink. */
 [data-session-need='dailies'][data-session-pulse] [data-cadence='daily'] {
-  animation: session-rail 1.8s var(--ease-out) infinite;
+  animation: session-rail 1.8s var(--ease-out) 2;
 }
 
 /* On a phone the grown reading takes its own line under the bar's name. */
@@ -1419,12 +1509,12 @@ input[type='number'] {
   }
 }
 
-/* A game's tab, or the next game, slides in from the side it was swiped from. */
+/* A game's tab slides in from the side it was chosen or swiped from. */
 .tab-enter[data-direction='1'] {
-  animation: pageEnterForward var(--dur-base) var(--ease-out);
+  animation: pageEnterForward var(--dur-3) var(--ease-enter);
 }
 .tab-enter[data-direction='-1'] {
-  animation: pageEnterBack var(--dur-base) var(--ease-out);
+  animation: pageEnterBack var(--dur-3) var(--ease-enter);
 }
 @media (prefers-reduced-motion: reduce) {
   .tab-enter[data-direction] {

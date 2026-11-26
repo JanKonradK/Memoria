@@ -9,6 +9,7 @@ import {
   updateTarget,
   useAppUpdate,
 } from '../app-update';
+import { keepOpenForWindowChrome, useDialogsSuspended } from './ConfirmDialog';
 import { Btn } from './ui';
 
 /** Release notes are short Markdown. Show headings, bullets and link text, nothing more. */
@@ -51,6 +52,7 @@ const BIG_BUTTON = '!min-h-12 !px-6 !text-body';
 /** A newer version takes the whole screen: every change since this copy, then Update or Later. */
 export function UpdateScreen() {
   const { open, status, release, progress, error } = useAppUpdate();
+  const suspended = useDialogsSuspended();
   const target = updateTarget();
   if (!release || target === 'none') return null;
   const changes = releaseChanges(release);
@@ -74,13 +76,17 @@ export function UpdateScreen() {
     );
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={(next) => !next && !downloading && dismissUpdateNotice()}>
+    <DialogPrimitive.Root
+      open={open && !suspended}
+      onOpenChange={(next) => !next && !downloading && dismissUpdateNotice()}
+    >
       <DialogPrimitive.Portal>
         <DialogPrimitive.Content
           aria-describedby={undefined}
+          onInteractOutside={keepOpenForWindowChrome}
           className="fixed inset-0 z-[75] flex flex-col bg-surface-0 outline-none"
           style={{
-            paddingTop: 'env(safe-area-inset-top)',
+            paddingTop: 'max(env(safe-area-inset-top), var(--desktop-chrome-h))',
             paddingBottom: 'env(safe-area-inset-bottom)',
           }}
         >
