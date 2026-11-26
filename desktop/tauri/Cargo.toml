@@ -1,6 +1,6 @@
 [package]
 name = "memoria"
-version = "0.6.0"
+version = "0.7.0"
 description = "Memoria for Windows"
 edition = "2024"
 publish = false
