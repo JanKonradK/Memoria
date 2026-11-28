@@ -1,6 +1,8 @@
 {
   "updated": "2026-11-18",
-  "withdrawn": ["seed:endfield:1.5-deep-cold-issue"],
+  "withdrawn": [
+    "seed:endfield:1.5-deep-cold-issue"
+  ],
   "events": [
     {
       "game": "crumble",
@@ -4877,6 +4879,15 @@
       "notify": false,
       "notes": "Cadence only (14 days, Fridays), the first season after the 3.4 update. No official schedule notice.",
       "sourceKey": "seed:zzz:da-2026-12-04"
+    },
+    {
+      "game": "hsr",
+      "name": "Planar Fissure Event: Planar Ornaments Drop Rate Doubled for a Limited Time",
+      "type": "event",
+      "start": "2026-11-23 04:00",
+      "end": "2026-12-07 03:59",
+      "notes": "",
+      "sourceKey": "hsr:1453"
     }
   ]
 }
